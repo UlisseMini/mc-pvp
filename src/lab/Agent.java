@@ -1,0 +1,101 @@
+package lab;
+
+import io.github.headlesshq.headlessmc.lwjgl.agent.LwjglAgent;
+import io.github.headlesshq.headlessmc.lwjgl.agent.MacosMenuAgent;
+import java.lang.instrument.*;
+import java.security.ProtectionDomain;
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.*;
+
+/** Only the pinned vanilla 1.8.9 entry points below are instrumented. */
+public final class Agent implements ClassFileTransformer {
+    public static void premain(String args, Instrumentation instrumentation) {
+        System.setProperty("java.awt.headless", "true");
+        if ("client".equals(System.getProperty("lab.role"))) {
+            LwjglAgent.premain("", instrumentation);
+            MacosMenuAgent.premain("", instrumentation);
+        }
+        instrumentation.addTransformer(new Agent());
+        System.out.println("[PvP Lab] Agent loaded: " + System.getProperty("lab.role"));
+    }
+
+    @Override public byte[] transform(ClassLoader loader, String name, Class<?> cls,
+                                      ProtectionDomain domain, byte[] bytes) {
+        if ("org/apache/logging/log4j/core/lookup/JndiLookup".equals(name)) {
+            // Legacy beta Log4j hard-links this class: keep its shape but disable JNDI itself.
+            ClassNode logging = new ClassNode(); new ClassReader(bytes).accept(logging,0);
+            for(MethodNode m:logging.methods)if(m.name.equals("lookup")&&m.desc.endsWith("Ljava/lang/String;")){
+                m.instructions.clear();m.tryCatchBlocks.clear();if(m.localVariables!=null)m.localVariables.clear();
+                m.instructions.add(new InsnNode(Opcodes.ACONST_NULL));m.instructions.add(new InsnNode(Opcodes.ARETURN));
+            }
+            ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES);logging.accept(out);return out.toByteArray();
+        }
+        if (name == null || !(name.equals("ave") || name.equals("j") || name.equals("pr")
+                || name.equals("wn") || name.equals("net/minecraft/server/MinecraftServer"))) return null;
+        try {
+            ClassNode node = new ClassNode();
+            new ClassReader(bytes).accept(node, 0);
+            boolean changed = false;
+            for (MethodNode method : node.methods) {
+                if (name.equals("ave") && method.name.equals("s") && method.desc.equals("()V")) {
+                    method.instructions.insert(callThis("lab/Client", "tick")); changed = true;
+                } else if (name.equals("ave") && method.name.equals("av") && method.desc.equals("()V")) {
+                    method.instructions.insert(callThis("lab/Client", "frame")); changed = true;
+                } else if (name.equals("net/minecraft/server/MinecraftServer") && method.name.equals("A") && method.desc.equals("()V")) {
+                    for (AbstractInsnNode ins : method.instructions.toArray()) if (ins.getOpcode() == Opcodes.RETURN)
+                        method.instructions.insertBefore(ins, callThis("lab/Referee", "tick"));
+                    changed = true;
+                } else if (name.equals("j") && method.name.equals("a") && method.desc.equals("(Lm;Ljava/lang/String;)I")) {
+                    InsnList hook = new InsnList(); LabelNode proceed = new LabelNode();
+                    hook.add(new VarInsnNode(Opcodes.ALOAD, 1)); hook.add(new VarInsnNode(Opcodes.ALOAD, 2));
+                    hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "lab/Referee", "command", "(Ljava/lang/Object;Ljava/lang/String;)Z", false));
+                    hook.add(new JumpInsnNode(Opcodes.IFEQ, proceed)); hook.add(new InsnNode(Opcodes.ICONST_1));
+                    hook.add(new InsnNode(Opcodes.IRETURN)); hook.add(proceed);
+                    method.instructions.insert(hook); changed = true;
+                } else if (name.equals("pr") && method.name.equals("a") && method.desc.equals("(Low;F)Z")) {
+                    for (AbstractInsnNode ins : method.instructions.toArray()) if (ins.getOpcode() == Opcodes.IRETURN) {
+                        InsnList hook = new InsnList(); hook.add(new InsnNode(Opcodes.DUP));
+                        hook.add(new VarInsnNode(Opcodes.ALOAD, 0)); hook.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                        hook.add(new VarInsnNode(Opcodes.FLOAD, 2));
+                        hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "lab/Referee", "hit", "(ZLjava/lang/Object;Ljava/lang/Object;F)V", false));
+                        method.instructions.insertBefore(ins, hook);
+                    }
+                    changed = true;
+                } else if (name.equals("wn") && method.name.equals("d") && method.desc.equals("(Low;F)V")) {
+                    for (AbstractInsnNode ins : method.instructions.toArray()) if (ins.getOpcode() == Opcodes.RETURN)
+                        method.instructions.insertBefore(ins, callThis("lab/Referee", "restoreHealth"));
+                    changed = true;
+                } else if(name.equals("wn")&&method.name.equals("f")&&method.desc.equals("(Lpk;)V")){
+                    InsnList before=new InsnList();before.add(new VarInsnNode(Opcodes.ALOAD,0));before.add(new VarInsnNode(Opcodes.ALOAD,1));
+                    before.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","attackBefore","(Ljava/lang/Object;Ljava/lang/Object;)V",false));
+                    method.instructions.insert(before);
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN){
+                        InsnList after=new InsnList();after.add(new VarInsnNode(Opcodes.ALOAD,0));after.add(new VarInsnNode(Opcodes.ALOAD,1));
+                        after.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","attackAfter","(Ljava/lang/Object;Ljava/lang/Object;)V",false));
+                        method.instructions.insertBefore(ins,after);
+                    }
+                    changed=true;
+                }
+            }
+            if (!changed) return null;
+            // Minecraft 1.8.9 uses Java 6 class files. Preserve legacy verification, avoiding
+            // COMPUTE_FRAMES class loading that would bypass instrumentation of dependencies.
+            if(node.version<=Opcodes.V1_6)for(MethodNode m:node.methods)
+                for(AbstractInsnNode ins:m.instructions.toArray())if(ins instanceof FrameNode)m.instructions.remove(ins);
+            ClassWriter out = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            node.accept(out);
+            System.out.println("[PvP Lab] Instrumented " + name);
+            return out.toByteArray();
+        } catch (Throwable error) {
+            error.printStackTrace();
+            // Fail closed: an uninstrumented experiment would silently invalidate results.
+            Runtime.getRuntime().halt(78);
+            return null;
+        }
+    }
+    private static InsnList callThis(String owner, String method) {
+        InsnList list = new InsnList(); list.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, owner, method, "(Ljava/lang/Object;)V", false));
+        return list;
+    }
+}
