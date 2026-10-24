@@ -20,7 +20,7 @@ public final class Referee {
     static int counter;
 
     static final class Match {
-        String id,a,b,pa,pb,winner="",request=""; int ha,hb,goal=100,arena,pingChanges; long start,finish,durationMs=180_000; boolean scenario; double pingA,pingB,initialPingA,initialPingB;
+        String id,a,b,pa,pb,winner="",request=""; int ha,hb,goal=100,arena,pingChanges; long start,finish,durationMs=180_000; boolean scenario,setupReseated; double pingA,pingB,initialPingA,initialPingB;
         final Properties configA=new Properties(),configB=new Properties();
         Path replay;
         Map<String,Object> state(){
@@ -28,7 +28,7 @@ public final class Referee {
             m.put("id",id);m.put("a",a);m.put("b",b);m.put("policy_a",pa);m.put("policy_b",pb);
             m.put("hits_a",ha);m.put("hits_b",hb);m.put("goal",goal);m.put("ping_a",pingA);m.put("ping_b",pingB);
             m.put("start",start);m.put("finish",finish);m.put("winner",winner);m.put("arena",arena);m.put("request",request);m.put("scenario",scenario);m.put("duration_limit_ms",durationMs);
-            m.put("arena_surface","bedrock_y3_radius128_v1");return m;
+            m.put("arena_surface","bedrock_y3_air_y4_19_radius128_verified_v3");return m;
         }
     }
 
@@ -58,6 +58,16 @@ public final class Referee {
             for(Match m:new ArrayList<>(matches.values())){
                 Object a=player(m.a),b=player(m.b);
                 if(a==null||b==null){m.winner=a==null?m.b:m.a;finish(m,"disconnect");continue;}
+                long setupNow=System.currentTimeMillis();
+                if(!m.setupReseated&&setupNow<m.start&&setupNow>=m.start-1500){
+                    // Initial destination chunks may arrive after the teleport,
+                    // allowing a client to fall into the floor during countdown.
+                    // Re-seat once after terrain delivery, strictly before combat.
+                    double center=4096.0*(m.arena+1);
+                    preparePlayer(a,center-3,4,0,270);preparePlayer(b,center+3,4,0,90);
+                    m.setupReseated=true;
+                    append(m.replay,Map.of("type","setup_reseat","time",setupNow,"combat_start",m.start));
+                }
                 if(System.currentTimeMillis()>m.start&&(R.num(a,"posY")<4-1e-7||R.num(b,"posY")<4-1e-7)){
                     finish(m,"invalid_arena_floor");continue;
                 }
@@ -207,7 +217,11 @@ public final class Referee {
         m.configB.putAll(policies.get(pb));
         Set<Integer> used=new HashSet<>();for(Match current:matches.values())used.add(current.arena);
         while(used.contains(m.arena))m.arena++;
-        prepareArena(R.get(player(a),"worldObj"),m.arena);
+        Object arenaWorld=R.get(player(a),"worldObj");
+        // Warm all normal slots before the first countdown: arena maintenance
+        // must not stall another match's movement or network clocks.
+        if(preparedArenas.isEmpty())for(int i=0;i<4;i++)prepareArena(arenaWorld,i);
+        prepareArena(arenaWorld,m.arena);
         m.start=System.currentTimeMillis()+3000;
         m.replay=DATA.resolve("replays/"+m.id+".jsonl");matches.put(m.id,m);
         configureProxy(a,pingA);configureProxy(b,pingB);
@@ -229,10 +243,30 @@ public final class Referee {
         int center=4096*(arena+1),radius=128;
         // Ordinary unbreakable full blocks: same .6 slipperiness as grass/dirt.
         // Repair old holes before play, without altering movement or combat.
-        for(int x=center-radius;x<center+radius;x+=16)for(int z=-radius;z<radius;z+=16)
+        // Vanilla /fill checks one extra chunk at the positive X/Z boundary
+        // (its loop ends at max+16). Load that border before issuing each fill.
+        for(int x=center-radius;x<=center+radius;x+=16)for(int z=-radius;z<=radius;z+=16)
             R.call(world,"getChunkFromChunkCoords",x>>4,z>>4);
         for(int x=center-radius;x<center+radius;x+=128)for(int z=-radius;z<radius;z+=128)
             vanilla("fill "+x+" 3 "+z+" "+(x+127)+" 3 "+(z+127)+" minecraft:bedrock");
+        // Old test/player blocks above the floor also invalidate flat-ground
+        // comparisons. Each ordinary fill stays within vanilla's 32768 cap.
+        for(int x=center-radius;x<center+radius;x+=64)for(int z=-radius;z<radius;z+=64)
+            for(int y=4;y<20;y+=8)
+                vanilla("fill "+x+" "+y+" "+z+" "+(x+63)+" "+(y+7)+" "+(z+63)+" minecraft:air");
+        Object bedrock=R.get(R.cls("net.minecraft.init.Blocks"),"bedrock");
+        Object air=R.get(R.cls("net.minecraft.init.Blocks"),"air");
+        for(int x=center-radius;x<center+radius;x++)for(int z=-radius;z<radius;z++){
+            Object pos=R.construct("net.minecraft.util.BlockPos",x,3,z);
+            if(R.call(R.call(world,"getBlockState",pos),"getBlock")!=bedrock)
+                throw new IllegalStateException("Arena floor verification failed at "+x+",3,"+z);
+            for(int y=4;y<20;y++){
+                Object above=R.construct("net.minecraft.util.BlockPos",x,y,z);
+                if(R.call(R.call(world,"getBlockState",above),"getBlock")!=air)
+                    throw new IllegalStateException("Arena air verification failed at "+x+","+y+","+z);
+            }
+        }
+        System.out.println("[PvP Lab] Verified 65536 bedrock floor blocks and 1048576 air blocks in arena "+arena);
         preparedArenas.add(arena);
     }
     static void preparePlayer(Object p,double x,double y,double z,int yaw){
