@@ -7,6 +7,8 @@ movement, collision, raycasting, attacks, knockback and damage immunity.
 Current research: [physics validation before policy search](research/README.md).
 The [double-hit investigation](research/double-hit-mechanisms.md) records W-tap
 versus hold-W trials and the native timing differences behind their exchanges.
+The [burst-clicking experiments](research/burst-clicking-results.md) test immediate
+recoil cancellation, continuous one-tick W-tap and critical-aware click scheduling.
 The [formal model](FORMAL-MODEL.md) states the mechanics, hidden information and
 combo proof conditions; controlled native recordings test those claims. Its
 individual equations are much better checked than its full-fight forecasts.
@@ -62,6 +64,7 @@ shared: this first version is intended for **one human player at a time**.
 | `wtap-tick` | Experimental post-hit W release lasting exactly one movement update |
 | `wtap-tick-burst` | Same one-tick W-tap movement; 150 ms defensive click bursts after delayed hurt cues, plus predicted next-hit attempts |
 | `wtap-tick-motion` | Immediate current-motion recoil clicks plus predicted attack windows; planned one-tick W-tap |
+| `wtap-tick-critical` | Motion burst plus one optional locally eligible critical attempt per visible fresh-hit cue |
 | `wtap-tick-window` | Same movement and attack windows, with optional recoil clicks disabled for comparison |
 | `wtap-tick-fast` / `wtap-fast` | Continuous-click controls with zero observation delay; one-update / 50 ms W releases |
 | `hold-w-fast` | Continuous W/Ctrl/clicking control with zero observation delay |
@@ -95,7 +98,7 @@ shared: this first version is intended for **one human player at a time**.
 - W or release and the normal sprint key. Only the explicitly named Zest
   strafing variants use A/D. No S, jumping or blocking.
 - Legacy policies use **150 ms** tactical observation delay. The `motion`,
-  `window` and `fast` comparison policies use **zero artificial delay**, as
+  `critical`, `window` and `fast` comparison policies use **zero artificial delay**, as
   requested; each recording declares both sides' settings. Planned timing is allowed.
 - Fixed policies schedule nominal **10 CPS**, with at least 100 ms between input
   clicks. Frame scheduling makes measured CPS slightly lower. Burst is labelled.
@@ -139,6 +142,7 @@ python3 wtap_research.py models
 python3 burst_science.py my-burst-comparison
 python3 burst_summary.py research/my-burst-comparison.json research/my-burst-summary.json
 python3 burst_science.py my-motion-comparison --motion
+python3 burst_science.py my-critical-comparison --critical
 ```
 
 The pilot compares the hand-written controllers. The latency pilot includes
@@ -191,6 +195,13 @@ limit. The 50 ms attack lead compensates for the shorter input queue delay.
 The fixed 18-game design includes window-only ablations, side swaps and both
 orientations of unequal RTT. Native traces must verify that optional recoil
 contacts actually apply the 0.6 multiplier to backward velocity.
+
+The `--critical` cohort changes only the motion-burst policy's extra critical
+attempt rule. It permits one attempt per visible landed cue when the local
+native critical predicates and ordinary contact checks hold, while preserving
+the next attack slot. Six full 20/20 ms games compare it with hold-W, continuous
+one-tick W-tap and motion burst, with sides swapped. Local eligibility does not
+guarantee a server critical or a damage upgrade; both outcomes are traced.
 
 `wtap_research.py` checkpoints every completed round and freezes the policies,
 build hash and fixture list for each experiment. Its initial model screen ran

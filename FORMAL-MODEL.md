@@ -29,12 +29,16 @@ attack presses are independent short press/releases, at least 100 ms apart.
 Keep the fixed click process running through misses and immunity; the controller
 does not filter attempts using hit results. Nominal 10 CPS is an upper bound:
 record the actual injection times and frame/tick stalls.
+The later [burst-clicking cohorts](research/burst-clicking-results.md) explicitly
+test selective input schedules. They retain ordinary processing of every issued
+click; they do not cancel an immune contact inside the engine.
 
 At decision time t, tactics may use sampled own and visible-opponent state only
-from timestamps s <= t-150 ms, plus the declared policy/RTTs and our already
+from timestamps s <= t-D, plus the declared policy/RTTs and our already
 issued inputs. Known input timing and an open-loop plan are available immediately.
-The 150 ms restriction is separate from network/view latency and from permitted
-current-view aiming.
+D is a declared per-policy observation delay: 150 ms in the original experiments,
+and 0 ms in the newer motion/critical/fast cohorts after the user's rule change.
+It is separate from network/view latency and from permitted current-view aiming.
 
 Predict separately: local trajectory, each rendered remote trajectory, raycast
 availability, local contact slowdown, accepted fresh hits, damage upgrades,
@@ -428,7 +432,7 @@ frame stalls, click realization or current state.
 
 A local fresh cue at L constrains the server event near
 `[L-ownRTT/2-50, L-ownRTT/2]` only under the specified one-dispatch-tick model.
-The extra 150 ms determines when this evidence becomes usable; it is not added
+The declared delay D determines when this evidence becomes usable; it is not added
 to the inferred original hit time. The animation proves fresh **damage**, not
 its source: fall damage emits the same cue and can trigger the native Wtap policy.
 Historical player-hit confirmation must exclude that alternative first; otherwise
@@ -484,7 +488,7 @@ does not prove it. An unanswered score streak alone is weaker than this claim.
 For an indefinite claim, cut the event system immediately after each complete
 fresh server attack and define z_n = X(h_n+). X includes relative bodies/views,
 server motion/sprint/resistance/lastDamage, all pending packets, physical-clock
-phases, Wtap cue/pause state, the last 150 ms of observable history and the
+phases, Wtap cue/pause state, the observation history needed by the declared D and the
 controller's commitments. Translate out common horizontal position only in a
 domain where the world/loaded-region assumptions are translation invariant.
 No reduced state consisting only of gap and velocities is Markov here.

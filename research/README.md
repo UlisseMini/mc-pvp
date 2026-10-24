@@ -56,6 +56,11 @@ records the evidence, remaining composition gap and next minimal experiment.
 
 ## Native evidence
 
+- [Burst-clicking experiments](burst-clicking-results.md): zero-delay current-motion
+  recoil clicks, continuous one-tick W-tap controls, window-only ablations and an
+  optional critical-attempt variant. These newer cohorts explicitly remove the
+  earlier 150 ms observation restriction at the user's request. Every optional
+  recoil contact is checked against its actual native velocity change.
 - [Which return opportunities break a double](trade-return-windows.md): stricter
   A-then-A-before-B scoring, exact contact/S12 ordering, and positive reach
   opportunities between the defender's actual clicks. The
@@ -82,8 +87,9 @@ records the evidence, remaining composition gap and next minimal experiment.
   W+Ctrl. This separates entry from maintenance; two no-click crossing controls
   additionally exercise movement/view geometry without combat impulses.
 
-All comparisons use native 1.8.9, ordinary input, at most 10 physical CPS, 150 ms
-tactical delay, normal speed and no potions. Scientific probes only record state;
+The original mechanism/parity comparisons use native 1.8.9, ordinary input, at
+most 10 physical CPS, 150 ms tactical delay, normal speed and no potions. The
+newer burst report declares zero-delay exceptions per cohort. Scientific probes only record state;
 private server/other-client diagnostics never feed the controller. No-click or
 late-click opponents are explicitly declared handicaps. Ordinary clicking runs
 keep clicking through immunity and misses.

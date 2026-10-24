@@ -165,8 +165,11 @@ not evidence of a successful combo controller. Measure both hit ratios and long
 unanswered streaks against hold-W, then test fresh matches and ping conditions.
 See [the source notes](experiments/ZEST-NOTES.md).
 
-All tactical samples are at least 150 ms old. Aim is the separately permitted
-perfect-aim abstraction and uses only the currently visible local entity.
+These original controllers use tactical samples at least 150 ms old. The later
+motion/critical/fast comparison policies explicitly use zero artificial delay
+after the user's rule change; see [the burst experiments](research/burst-clicking-results.md).
+Aim is the separately permitted perfect-aim abstraction and uses only the
+currently visible local entity.
 
 ## Optimal against a fixed opponent
 
