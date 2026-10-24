@@ -26,6 +26,10 @@ from this baseline; jump-reset claims require a separately declared experiment.
 Aim uses the current **local rendered** opponent and the lab's actual aiming
 rule. It never aims at a server or other client's private position. Physical
 attack presses are independent short press/releases, at least 100 ms apart.
+That is the default action constraint. The later user-requested `wtap-cps*`
+experiment explicitly declares 15/20/25/30 CPS ceilings for its high-rate side;
+the general bound is `ceil(1e9 / declared_CPS)` nanoseconds between completed
+physical inputs. Normal input queuing and vanilla tick processing remain intact.
 Keep the fixed click process running through misses and immunity; the controller
 does not filter attempts using hit results. Nominal 10 CPS is an upper bound:
 record the actual injection times and frame/tick stalls.

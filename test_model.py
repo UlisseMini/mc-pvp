@@ -29,6 +29,8 @@ class JavaModelTest(unittest.TestCase):
              str(lab.ROOT / 'src/lab/MotionClickController.java'),
              str(lab.ROOT / 'tests/MotionClickControllerCheck.java'),
              str(lab.ROOT / 'src/lab/CriticalClickController.java'),
+             str(lab.ROOT / 'src/lab/ClickRate.java'),
+             str(lab.ROOT / 'tests/ClickRateCheck.java'),
              str(lab.ROOT / 'tests/CriticalClickControllerCheck.java'),
              str(lab.ROOT / 'tests/BurstClickControllerCheck.java'),
              str(lab.ROOT / 'tests/MomentumControllerCheck.java'),
@@ -93,6 +95,11 @@ class JavaModelTest(unittest.TestCase):
 
     def test_critical_attempt_budget_and_reserved_slot(self):
         result=subprocess.run([str(lab.JAVA),'-cp',str(self.classes),'CriticalClickControllerCheck'],capture_output=True,text=True,timeout=10)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('PASS',result.stdout)
+
+    def test_declared_click_caps_and_no_catchup(self):
+        result=subprocess.run([str(lab.JAVA),'-cp',str(self.classes),'ClickRateCheck'],capture_output=True,text=True,timeout=10)
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         self.assertIn('PASS',result.stdout)
 

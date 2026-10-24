@@ -29,8 +29,10 @@ def export(identifier):
     strict=True;click_count=0
     for side in ('a','b'):
         clicks=[e for e in clients[side] if e['type']=='click'];click_count+=len(clicks)
+        cps=int(match.get('parameters_'+side,{}).get('click_cps',10))
+        minimum_interval=(1_000_000_000+cps-1)//cps
         strict &= all('monotonic_ns' in e for e in clicks)
-        if strict:strict &= all(b['monotonic_ns']-a['monotonic_ns']>=100_000_000 for a,b in zip(clicks,clicks[1:]))
+        if strict:strict &= all(b['monotonic_ns']-a['monotonic_ns']>=minimum_interval for a,b in zip(clicks,clicks[1:]))
     from native_windows import overlap
     probes={s:[e for e in clients[s] if e['type']=='reach_probe'] for s in ('a','b')}
     native=overlap(probes['a'],probes['b'],match['start'],finish['finish']) if all(probes.values()) else None
@@ -85,7 +87,7 @@ if(D.native_overlap){const n=D.native_overlap;const describe=s=>`${s.toUpperCase
 if(D.combat_metrics){const c=D.combat_metrics;const describe=s=>`${s.toUpperCase()}: longest sustained reach-denial combo ${((c[s].sustained_native_combo?.duration_ms||0)/1000).toFixed(2)} s; longest unanswered streak ${c[s].longest_unanswered_streak} hits`;$('combos').textContent=describe('a')+' · '+describe('b')+'. Final hit score is the primary performance metric. Sustained locks require at least three fresh contacts and no accepted return attack; brief both-out-of-range intervals are allowed.';}
 if(D.combat_metrics?.a?.native_denial_contact_sequence){const describe=s=>{const v=D.combat_metrics[s].native_denial_contact_sequence;return `${s.toUpperCase()}: ${(v.duration_ms/1000).toFixed(2)} s denial contact sequence, ${v.fresh_contacts} fresh hits, largest hit gap ${v.max_contact_gap_ms===null?'unavailable':(v.max_contact_gap_ms/1000).toFixed(2)+' s'}`;};$('sequences').textContent=describe('a')+' · '+describe('b')+'. These sequences require continuous measured defender reach denial and no accepted return hit, with no maximum contact-gap cutoff. The strict combo above caps hit gaps at one second.';}
 $('title').textContent=`${M.policy_a} vs ${M.policy_b}`;
-$('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${M.ping_a}/${M.ping_b} ms · ${M.reaction_ms_a??150}/${M.reaction_ms_b??150} ms tactical reaction · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 hits'}`;
+$('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${M.ping_a}/${M.ping_b} ms · ${M.reaction_ms_a??150}/${M.reaction_ms_b??150} ms tactical reaction · CPS ceilings ${M.click_cps_a??(M.policy_a==='human'?'human':10)}/${M.click_cps_b??10} · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 accepted attacks'}`;
 $('aname').textContent=M.policy_a;$('bname').textContent=M.policy_b;$('scrub').max=duration;
 let now=0,playing=false,previousFrame=performance.now();
 function last(items,time){let lo=0,hi=items.length;while(lo<hi){let mid=(lo+hi)>>1;if(items[mid].time<=time)lo=mid+1;else hi=mid;}return items[Math.max(0,lo-1)];}

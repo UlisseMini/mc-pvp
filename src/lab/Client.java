@@ -142,7 +142,7 @@ public final class Client {
             long now=System.nanoTime();
             if(clickGate&&firstClickEligible==0)firstClickEligible=now;
             long firstDelay=(long)Math.max(0,Math.min(100,number("first_click_delay_ms",0)))*1_000_000L;
-            if(clickGate && now-firstClickEligible>=firstDelay && now-lastClick>=100_000_000L && R.get(mc,"currentScreen")==null) {
+            if(clickGate && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 // A planned Ctrl pulse ends after the first queued click. Native
@@ -150,7 +150,7 @@ public final class Client {
                 // clicks do not automatically re-enable it. No hit-result oracle.
                 if(controls.getProperty("sprint_mode","hold").equals("cycle"))sprintPulse=false;
                 // Pace from completed input injection, not from before reflection/GC pauses.
-                // The next input cannot occur until >=100 ms after this completed input.
+                // No catch-up inputs: wait the full declared interval after completion.
                 lastClick=System.nanoTime();
                 if(criticalOpportunity)criticalClicks.injected(lastObservedTargetHurt);
                 ModelController.click(System.currentTimeMillis());
@@ -159,6 +159,8 @@ public final class Client {
                 issued.put("match",match);issued.put("forward",forward);
                 issued.put("input_poll",nativeInputPoll?"native_tick":"frame");
                 issued.put("reaction_ms",(int)number("reaction_ms",150));
+                issued.put("click_cps",ClickRate.cps(controls));
+                issued.put("minimum_click_interval_ns",ClickRate.intervalNanos(controls));
                 if(controls.getProperty("click_mode","fixed").equals("reactive-burst")&&burstDecision!=null){
                     issued.put("burst_opening",burstDecision.opening());issued.put("burst_defensive",burstDecision.defensive());
                     issued.put("burst_attack_window",burstDecision.attackWindow());issued.put("burst_observation_time",burstObservedAt);
@@ -209,6 +211,7 @@ public final class Client {
                 heartbeat.put("selected_target_dead",opponent!=null&&(Boolean)R.get(opponent,"isDead"));
                 if(opponent!=null){heartbeat.put("target_ticks",R.num(opponent,"ticksExisted"));heartbeat.put("target_region_loaded",regionLoaded(world,opponent));}
                 heartbeat.put("agent_sha256",System.getProperty("lab.agent_sha256","unknown"));
+                heartbeat.put("frame_sleep_ms",Integer.getInteger("hmc.lwjgl.update_sleep",10));
                 heartbeat.put("target_ready",targetReady);
                 heartbeat.put("native_ticks",ticks);
                 Object screen=R.get(mc,"currentScreen");heartbeat.put("screen",screen==null?null:screen.getClass().getName());

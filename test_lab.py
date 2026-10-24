@@ -104,19 +104,21 @@ class RealEngineEvidenceTest(unittest.TestCase):
         samples=clicks=slowdowns=strict_clicks=taps=0
         # Historical cohorts retain their 150 ms requirement; newer cohorts
         # explicitly record the user's chosen zero-delay observation rule.
-        delays={}
+        delays={};rates={}
         for result in (lab.RUNTIME/'results').glob('*.json'):
             game=json.loads(result.read_text())
             for side in ('a','b'):
                 if side in game:
                     delays[game['id'],game[side]]=int(game.get('parameters_'+side,{}).get(
                         'reaction_ms',game.get('reaction_ms_'+side,150)))
+                    rates[game['id'],game[side]]=int(game.get('parameters_'+side,{}).get('click_cps',10))
         for path in (lab.RUNTIME/'bots').glob('*/events.jsonl'):
             last={}
             player='LabSlot'+path.parent.name if path.parent.name.isdigit() else path.parent.name
             for line in path.read_text().splitlines():
                 event=json.loads(line)
                 delay=delays.get((event.get('match'),player),150)
+                cps=rates.get((event.get('match'),player),10)
                 if event['type']=='observation':
                     self.assertGreaterEqual(event['time']-event['observation_time'],delay);samples+=1
                     if 'target_removed' in event:self.assertFalse(event['target_removed'])
@@ -126,7 +128,7 @@ class RealEngineEvidenceTest(unittest.TestCase):
                     previous=last.get(event['match'])
                     if 'monotonic_ns' in event:
                         if previous is not None and 'monotonic_ns' in previous:
-                            self.assertGreaterEqual(event['monotonic_ns']-previous['monotonic_ns'],100_000_000)
+                            self.assertGreaterEqual(event['monotonic_ns']-previous['monotonic_ns'],(1_000_000_000+cps-1)//cps)
                         strict_clicks+=1
                     last[event['match']]=event;clicks+=1
                 elif event['type']=='wtap':

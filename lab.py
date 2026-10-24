@@ -193,11 +193,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('command', choices=['prepare', 'build','sandbox-test','logging-test','serve','stop','reload-bots','status','match','ping-match','verify-ux'])
     parser.add_argument('extra',nargs='*')
+    parser.add_argument('--frame-sleep-ms',type=int,default=10,help='Headless display throttle for serve; 1 ms gives finer input scheduling')
     args = parser.parse_args()
     if args.command in ('prepare','build'):globals()[args.command]()
     else:
         import lab_runtime
-        lab_runtime.run(args.command,args.extra)
+        lab_runtime.run(args.command,args.extra,frame_sleep_ms=args.frame_sleep_ms)
 
 
 if __name__ == '__main__':

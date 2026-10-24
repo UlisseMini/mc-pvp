@@ -55,7 +55,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
             reservation_path.write_text(json.dumps(reservations))
         await asyncio.sleep(1)
     print(f'Started {a} vs {b}, RTT {ping_a}/{ping_b}',flush=True)
-    deadline=time.monotonic()+220;issues=set();checks=0;client_builds={}
+    deadline=time.monotonic()+220;issues=set();checks=0;client_builds={};client_frame_sleep={}
     while time.monotonic()<deadline:
         for p in (RUNTIME/'results').glob('*.json'):
             result=json.loads(p.read_text())
@@ -66,6 +66,9 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                     path=RUNTIME/'bots'/result[side].removeprefix('LabSlot')/'events.jsonl'
                     events=list(match_events(path,result['id']))
                     reaction=int(parameters[result['policy_'+side]].get('reaction_ms',150))
+                    click_cps=int(parameters[result['policy_'+side]].get('click_cps',10))
+                    if not 1<=click_cps<=30:raise ValueError('Invalid declared click rate')
+                    minimum_interval=(1_000_000_000+click_cps-1)//click_cps
                     critical_cues=set()
                     clicks=[e for e in events if e['type']=='click']
                     if parameters[result['policy_'+side]].get('kind')=='standstill':
@@ -81,9 +84,11 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                     else:
                         gaps=[y['monotonic_ns']-x['monotonic_ns'] for x,y in zip(clicks,clicks[1:])]
                         intervals.extend(gaps)
-                        if min(gaps,default=100_000_000)<100_000_000:issues.add(f'{side}: click cap violated')
+                        if min(gaps,default=minimum_interval)<minimum_interval:issues.add(f'{side}: declared click cap violated')
+                        if any(e.get('click_cps',click_cps)!=click_cps for e in clicks):issues.add(f'{side}: click rate differs from frozen policy')
                         ordered=sorted(gaps)
-                        input_metrics[side]={'clicks':len(clicks),'mean_click_gap_ms':sum(gaps)/len(gaps)/1e6 if gaps else None,
+                        input_metrics[side]={'clicks':len(clicks),'declared_cps':click_cps,'minimum_interval_ns':minimum_interval,
+                                             'mean_click_gap_ms':sum(gaps)/len(gaps)/1e6 if gaps else None,
                                              'p95_click_gap_ms':ordered[min(len(ordered)-1,int(.95*len(ordered)))]/1e6 if ordered else None}
                     target_tick=None;target_advanced_at=None
                     for event in events:
@@ -128,6 +133,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                     if r['frozen_remote']:issues.add(f'{side}: frozen opponent replication')
                     if r['best']['samples']>=20 and r['best']['median_squared_residual']>.25:issues.add(f'{side}: large opponent replication residual')
                 result['client_builds']=client_builds
+                result['client_frame_sleep_ms']=client_frame_sleep
                 result['input_metrics']=input_metrics
                 result['validation']={'passed':not issues and checks>0,'client_checks':checks,'issues':sorted(issues),
                                       'click_intervals_checked':len(intervals),'min_click_gap_ns':min(intervals,default=None),'post_hit_resets':resets}
@@ -149,6 +155,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                 if time.time()-heartbeat['time']/1000>4:issues.add(f'{side}: client stopped ticking')
                 if heartbeat.get('match')==game['id']:
                     client_builds[side]=heartbeat.get('agent_sha256','unknown')
+                    client_frame_sleep[side]=heartbeat.get('frame_sleep_ms',10)
                     if client_builds[side]!='unknown' and client_builds[side]!=hashlib.sha256((ROOT/'build/lab-agent.jar').read_bytes()).hexdigest():issues.add(f'{side}: old client build; reload idle bots')
                     if game[other] not in heartbeat['visible_players']:issues.add(f'{side}: opponent missing from client world')
                     if not heartbeat['alive']:issues.add(f'{side}: client was dead')

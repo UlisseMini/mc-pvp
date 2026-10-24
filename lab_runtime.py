@@ -163,7 +163,9 @@ max-tick-time=60000
     assets=CACHE/'assets';assets.mkdir(exist_ok=True)
 
 
-async def serve():
+async def serve(frame_sleep_ms=10):
+    if not isinstance(frame_sleep_ms,int) or not 1<=frame_sleep_ms<=50:
+        raise ValueError('Headless frame sleep must be 1 through 50 ms')
     lock_file=RUNTIME/'manager.lock';RUNTIME.mkdir(exist_ok=True)
     lock=open(lock_file,'w')
     try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
@@ -200,6 +202,7 @@ async def serve():
             name=f'LabSlot{i}';bot=RUNTIME/f'bots/{i}'
             digest=hashlib.sha256((BUILD/'lab-agent.jar').read_bytes()).hexdigest()
             launch(f'bot{i}',[*base,'-Dlab.agent_sha256='+digest,'-Dlab.role=client',f'-Dlab.slot={i}',f'-Dlab.port={25570+i}',
+                f'-Dhmc.lwjgl.update_sleep={frame_sleep_ms}',
                 '-Dlog4j.configurationFile='+str(CACHE/'client-logging.xml'),'-Djoml.nounsafe=true',
                 '-cp',classpath,'net.minecraft.client.main.Main','--version','1.8.9','--gameDir',bot,
                 '--assetsDir',CACHE/'assets','--assetIndex','1.8','--username',name,'--uuid',uuid.uuid3(uuid.NAMESPACE_DNS,name).hex,
@@ -207,7 +210,7 @@ async def serve():
         for i in range(BOT_SLOTS):
             proxies.append(await latency_proxy(25570+i,RUNTIME/f'proxy/slot{i}.properties'))
             start_bot(i)
-        (RUNTIME/'manager.json').write_text(json.dumps({'pid':os.getpid(),'address':'127.0.0.1:25565','version':'1.8.9','started':time.time()}))
+        (RUNTIME/'manager.json').write_text(json.dumps({'pid':os.getpid(),'address':'127.0.0.1:25565','version':'1.8.9','started':time.time(),'frame_sleep_ms':frame_sleep_ms}))
         print(f'Server address: 127.0.0.1:25565 (Minecraft Java 1.8.9). Waiting for {BOT_SLOTS} real clients.',flush=True)
         initialized=False
         while not stop.is_set():
@@ -301,10 +304,10 @@ def verify_ux():
     if result.returncode or not all(checks.values()):raise RuntimeError('UX verification failed; inspect runtime/logs/observer.log')
 
 
-def run(command,extra):
+def run(command,extra,frame_sleep_ms=10):
     if command=='sandbox-test':sandbox_test()
     elif command=='logging-test':logging_test()
-    elif command=='serve':asyncio.run(serve())
+    elif command=='serve':asyncio.run(serve(frame_sleep_ms))
     elif command=='stop':send('shutdown')
     elif command=='reload-bots':send('reload-bots')
     elif command=='status':print((RUNTIME/'status.json').read_text())

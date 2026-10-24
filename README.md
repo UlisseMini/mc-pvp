@@ -68,6 +68,7 @@ shared: this first version is intended for **one human player at a time**.
 | `wtap-tick-window` | Same movement and attack windows, with optional recoil clicks disabled for comparison |
 | `wtap-tick-fast` / `wtap-fast` | Continuous-click controls with zero observation delay; one-update / 50 ms W releases |
 | `hold-w-fast` | Continuous W/Ctrl/clicking control with zero observation delay |
+| `wtap-cps10` / `wtap-cps15` / `wtap-cps20` / `wtap-cps25` / `wtap-cps30` | Explicit click-rate experiment: same one-tick W-tap movement, with the named physical CPS ceiling |
 | `trade-wtap` | Post-hit reset that prefers to release just after receiving a hit |
 | `hit-reset` | Older confirmed-hit W-tap timing |
 | `periodic-tap` | Fixed-rhythm control experiment; not normal W-tapping |
@@ -100,8 +101,10 @@ shared: this first version is intended for **one human player at a time**.
 - Legacy policies use **150 ms** tactical observation delay. The `motion`,
   `critical`, `window` and `fast` comparison policies use **zero artificial delay**, as
   requested; each recording declares both sides' settings. Planned timing is allowed.
-- Fixed policies schedule nominal **10 CPS**, with at least 100 ms between input
-  clicks. Frame scheduling makes measured CPS slightly lower. Burst is labelled.
+- Default fixed policies schedule nominal **10 CPS**, with at least 100 ms between
+  input clicks. The explicitly requested `wtap-cps15/20/25/30` experiments raise
+  only their own ceiling. Each match records per-side rates; frame scheduling
+  makes measured CPS lower than the configured ceiling. Burst is labelled.
 - Every scheduled click enters normal Minecraft input and attack handling,
   including immune-frame attacks, air misses and their native slowdown/cooldown.
 - Zest entry/recovery can explicitly hit-select, waiting for an incoming-hit
@@ -143,6 +146,7 @@ python3 burst_science.py my-burst-comparison
 python3 burst_summary.py research/my-burst-comparison.json research/my-burst-summary.json
 python3 burst_science.py my-motion-comparison --motion
 python3 burst_science.py my-critical-comparison --critical
+python3 cps_science.py my-cps-comparison
 ```
 
 The pilot compares the hand-written controllers. The latency pilot includes
@@ -159,6 +163,20 @@ sustained combo duration as a secondary objective. Each candidate plays both
 starting sides at 20/100 ms RTT. W-tap controls and fresh matches at 0/0 and
 100/20 ms test whether the selected candidate improves beyond its selection
 games. A saved candidate is an experiment, not a proven champion.
+
+`cps_science.py` compares the same continuous-click one-tick W-tap at 15, 20, 25
+and 30 CPS against 10 CPS. Each rate gets four games at 20/20 ms added RTT, two
+per starting side, with rate order reversed between repeats. Two 10-vs-10
+controls bracket the cohort. Fresh-hit counts and damage upgrades are reported
+separately; the existing first-to-100-accepted-attacks stopping rule is unchanged.
+Inputs retain vanilla processing, including multiple queued clicks within one
+native tick. The runner checks per-policy physical ceilings, measured rates,
+native cadence and replication. `--smoke` runs four short setup checks.
+For this comparison, start an idle lab with `python3 lab.py serve --frame-sleep-ms 1`.
+This uses HeadlessMC's existing display-sleep setting equally for all bots, giving
+the input scheduler finer timing. Ordinary startup retains its 10 ms display
+sleep. The suite records that setting, actual CPS, and the unchanged native
+20 Hz movement cadence; it rejects rates below 90% of their declared ceiling.
 
 `compare_wtap.py league` runs the fixed-policy 36-game comparison of W-tap,
 hold-W and the candidate, with four games per pair and oriented RTT condition.
