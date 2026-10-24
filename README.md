@@ -119,6 +119,7 @@ python3 experiments.py league --bots hold-w zest-w zest-strafe --rtts 0,0 20,100
 python3 compare_wtap.py league
 python3 compare_wtap.py ablation
 python3 compare_wtap.py standstill
+python3 wtap_research.py models
 ```
 
 The pilot compares the hand-written controllers. The latency pilot includes
@@ -143,6 +144,16 @@ hold-W and the candidate, with four games per pair and oriented RTT condition.
 `opponent_model=wtap`; movement choices, controller weights and physical click
 timing stay the same. `standstill` checks stationary input and native knockback
 against three pursuit policies at 20/100 ms.
+
+`wtap_research.py` checkpoints every completed round and freezes the policies,
+build hash and fixture list for each experiment. Its initial model screen ran
+24 games: the unchanged known-W-tap model won two of four, while none of five
+isolated weight/observer/dwell changes won a game. These changes did not produce
+a reliable W-tap counter. See [the full model screen](experiments/antiwt-model-screen.md).
+Use a fresh `--name` when rerunning, so earlier data stays intact. The new
+`momentum` policy supports isolated sprint-reset timing, retaining W during a
+Ctrl release, pursuit spacing and A/D experiments; these features use ordinary
+keys and keep the fixed click clock.
 
 `evolve-locks` is a diagnostic search against the non-clicking probe using the
 conditional native one-sided percentage. It searches a small set of controller

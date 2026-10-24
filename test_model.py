@@ -22,6 +22,8 @@ class JavaModelTest(unittest.TestCase):
              str(lab.ROOT / 'src/lab/ComboModel.java'),
              str(lab.ROOT / 'src/lab/VisibleTracker.java'),
              str(lab.ROOT / 'src/lab/TargetWatchdog.java'),
+             str(lab.ROOT / 'src/lab/MomentumController.java'),
+             str(lab.ROOT / 'tests/MomentumControllerCheck.java'),
              str(lab.ROOT / 'tests/TargetWatchdogCheck.java'),
              str(lab.ROOT / 'tests/JavaModelCheck.java')],
             cwd=lab.ROOT, capture_output=True, text=True, timeout=30,
@@ -42,6 +44,12 @@ class JavaModelTest(unittest.TestCase):
 
     def test_visible_only_observer(self):
         self.run_checks('tracker')
+
+    def test_momentum_and_planner_control_limits(self):
+        result = subprocess.run([str(lab.JAVA), '-cp', str(self.classes), 'MomentumControllerCheck'],
+                                capture_output=True, text=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('PASS', result.stdout)
 
     def test_target_watchdog_fails_closed(self):
         result = subprocess.run([str(lab.JAVA), '-cp', str(self.classes), 'lab.TargetWatchdogCheck'],

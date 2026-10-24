@@ -72,6 +72,46 @@ the target's visible hurt timer was 9. The previous server-accepted attack was
 83 ms earlier; the next was 469 ms later. The velocity ratio is exactly 0.6.
 The native attack log is saved in `experiments/immune-click-example.json`.
 
+## Controlled best responses to W-tap
+
+The `momentum` controller keeps the fixed physical click clock. With every
+optional feature off, it reproduces the delayed post-hit50ms W-tap. Separate
+features add a further reset delay, alternating-hit resets, a predicted pursuit
+spacing brake, safe-chase reset skipping, an opening movement delay, or normal
+A/D alternation. All tactical input comes from the same150ms-old observations;
+own previously issued click times can be used immediately for planning.
+
+Fresh-hit timing matters independently of damage upgrades. A falling critical
+can upgrade damage during the target's ordinary immunity period. A sprint
+upgrade consumes the server sprint state without a fresh base-knockback event.
+An early post-hit reset can therefore be spent before the next fresh hit. The
+late-reset experiment starts with an extra delay of max(0,200-ownRTT)ms. A
+separate phase variant estimates the next fresh local attack near visible cue
+time+500-ownRTT-25ms, projects the normal105ms physical clock onto native50ms
+ticks, and releases on the preceding predicted click tick. It resumes on the
+intervening non-click tick: within a native tick the attack precedes the sprint
+state transmission. This controls movement keys only; immune clicks still run.
+The cue time and click forecast are estimates, so native evaluation remains
+necessary.
+
+The `reset_walk` factor retains W and releases only Ctrl during the reset.
+On a real local contact the attack itself cancels local sprint; leaving Ctrl
+released lets the normal STOP command occur while W still supplies forward
+acceleration. Ctrl returns on the next non-click tick. An air miss does not
+cancel sprint, so this is not a guaranteed reset; no sprint flags are written
+directly. Its factorial comparison is ordinary W-tap, phase timing only,
+Ctrl-only reset only, and phase timing plus Ctrl-only reset. This tests whether
+timing and retaining forward movement help separately or through interaction.
+
+The model screen changes one setting at a time. A second model knob charges
+for input switches; the old0.15 cost was tiny beside a1000 hit reward. A separate
+restriction can remove WALK from proposed plans without altering replayed input
+history. Each experiment snapshots policies, build hash and planned fixtures,
+balances starting sides, checkpoints completed rounds, and reports fresh hits
+separately from upgrades. Selection games and fresh confirmation games must
+remain separate. Promising combinations should receive a full two-factor
+comparison: neither feature, A only, B only, and both, at matched ping settings.
+
 ## Initial hand-written policies
 
 - `hold-w`: W and the sprint key, fixed click clock. Establishes what the game

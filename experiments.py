@@ -59,7 +59,7 @@ async def match(a,b,ping_a=20,ping_b=20):
             result=json.loads(p.read_text())
             if result.get('request')==request:
                 result['parameters']=parameters
-                intervals=[];resets=0
+                intervals=[];resets=0;input_metrics={}
                 for side in ('a','b'):
                     path=RUNTIME/'bots'/result[side].removeprefix('LabSlot')/'events.jsonl'
                     events=[e for line in path.read_text().splitlines() if (e:=json.loads(line)).get('match')==result['id']]
@@ -78,8 +78,13 @@ async def match(a,b,ping_a=20,ping_b=20):
                         gaps=[y['monotonic_ns']-x['monotonic_ns'] for x,y in zip(clicks,clicks[1:])]
                         intervals.extend(gaps)
                         if min(gaps,default=100_000_000)<100_000_000:issues.add(f'{side}: click cap violated')
+                        ordered=sorted(gaps)
+                        input_metrics[side]={'clicks':len(clicks),'mean_click_gap_ms':sum(gaps)/len(gaps)/1e6 if gaps else None,
+                                             'p95_click_gap_ms':ordered[min(len(ordered)-1,int(.95*len(ordered)))]/1e6 if ordered else None}
                     target_tick=None;target_advanced_at=None
                     for event in events:
+                        if event['type'] in ('momentum_plan','mpc_plan') and event['time']-event['observation_time']<150:
+                            issues.add(f'{side}: tactical plan reacted before150ms')
                         if event['type']=='engine_attack' and 'native_raycast_distance' in event:
                             if event['native_raycast_distance']>3.00001:issues.add(f'{side}: native attack exceeded three blocks')
                             if not all(event.get(k) for k in ('target_ready','target_loaded_identity','ray_selected_target')):issues.add(f'{side}: attack used an invalid native view')
@@ -102,6 +107,7 @@ async def match(a,b,ping_a=20,ping_b=20):
                     if r['frozen_remote']:issues.add(f'{side}: frozen opponent replication')
                     if r['best']['samples']>=20 and r['best']['median_squared_residual']>.25:issues.add(f'{side}: large opponent replication residual')
                 result['client_builds']=client_builds
+                result['input_metrics']=input_metrics
                 result['validation']={'passed':not issues and checks>0,'client_checks':checks,'issues':sorted(issues),
                                       'click_intervals_checked':len(intervals),'min_click_gap_ns':min(intervals,default=None),'post_hit_resets':resets}
                 if not result['validation']['passed']:

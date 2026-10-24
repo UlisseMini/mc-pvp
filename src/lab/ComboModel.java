@@ -52,6 +52,8 @@ public final class ComboModel {
         public boolean beamDiversity = false;
         /** Compare complete timed pause/resume plans against the final beam. */
         public boolean macroSeeds = false;
+        /** Restrict proposed inputs only; recorded history can still contain WALK. */
+        public boolean allowWalk = true;
         public int clickIntervalMs = 100;
         /** Native value is 500; larger values deliberately extend modeled immunity. */
         public int freshHitIntervalMs = 500;
@@ -101,6 +103,8 @@ public final class ComboModel {
                 throw new IllegalArgumentException("Contact-edge penalty must be finite and nonnegative");
             if (!Double.isFinite(receivedHitPenalty) || receivedHitPenalty < 0)
                 throw new IllegalArgumentException("Received-hit penalty must be finite and nonnegative");
+            if (!Double.isFinite(switchPenalty) || switchPenalty < 0)
+                throw new IllegalArgumentException("Switch penalty must be finite and nonnegative");
             if (!Float.isFinite(baseAttackDamage) || baseAttackDamage <= 0)
                 throw new IllegalArgumentException("Base attack damage must be finite and positive");
             if (defenderReactionMs < 150 || defenderWtapPauseMs < 0)
@@ -692,7 +696,7 @@ public final class ComboModel {
     }
 
     private static boolean legalAction(State state, Action action, Config config) {
-        return action != null && (state.actionTicks == 0
+        return action != null && (config.allowWalk || action != Action.WALK) && (state.actionTicks == 0
                 || state.actionTicks >= config.minimumActionTicks || action == state.previousAction);
     }
 

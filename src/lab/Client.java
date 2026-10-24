@@ -28,6 +28,7 @@ public final class Client {
     static int scriptIndex;
     static long heartbeatAt,respawnAt,probeAt;
     static final TargetWatchdog targetWatchdog=new TargetWatchdog();
+    static final MomentumController momentum=new MomentumController();
     static boolean targetReady;
 
     static final class Observation {
@@ -154,6 +155,7 @@ public final class Client {
                 zestOpened=false;
                 sprintPulse=true;
                 ModelController.reset();
+                momentum.reset();
                 targetWatchdog.reset();targetReady=false;
             }
             opponent=null;
@@ -334,6 +336,25 @@ public final class Client {
             if(kind.equals("mpcprobe")){
                 ComboModel.Action action=ModelController.decide(obs,now);
                 setKeys(action.forward,0,action.sprintKey);
+            }
+            if(kind.equals("momentum")){
+                double nx=(obs.tx-obs.x)/Math.max(.001,obs.distance),nz=(obs.tz-obs.z)/Math.max(.001,obs.distance);
+                MomentumController.Decision decision=momentum.decide(new MomentumController.Input(
+                    now,obs.time,lastObservedTargetHurt,lastObservedHurt,ModelController.lastInjection,obs.distance,
+                    obs.ux*nx+obs.uz*nz,obs.tvx*nx+obs.tvz*nz,obs.vx*nx+obs.vz*nz,
+                    obs.y,obs.ty,obs.ground,ping,oppPing),MomentumController.Settings.from(controls));
+                setKeys(decision.forward(),decision.lateral(),decision.sprintKey());
+                if(decision.resetStarted())log(Map.of("type","wtap","time",now,"match",match,
+                    "cue_time",decision.cue(),"release_until",decision.releaseUntil(),"reason","momentum_planned_reset"));
+                if(now-logAt>=50){
+                    Map<String,Object> entry=new LinkedHashMap<>();entry.put("type","momentum_plan");entry.put("time",now);
+                    entry.put("observation_time",obs.time);entry.put("match",match);entry.put("forward",decision.forward());
+                    entry.put("reset_skipped",decision.resetSkipped());entry.put("landed_cues",decision.landedCount());
+                    entry.put("scheduled_reset_at",decision.scheduledResetAt());
+                    entry.put("sprint_key",decision.sprintKey());
+                    entry.put("pursuing",decision.pursuing());entry.put("predicted_gap",decision.predictedGap());
+                    entry.put("desired_gap",decision.desiredGap());entry.put("window_lower",decision.lower());entry.put("window_upper",decision.upper());log(entry);
+                }
             }
             if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
             // Deliberate burst cadence is a policy choice. No immunity-based click filtering.

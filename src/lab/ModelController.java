@@ -66,6 +66,8 @@ public final class ModelController {
         c.modelCriticals=Client.number("model_criticals",1)>0;
         c.beamDiversity=Client.number("beam_diversity",0)>0;
         c.macroSeeds=Client.number("macro_seeds",0)>0;
+        c.allowWalk=Client.number("model_allow_walk",1)>0;
+        c.switchPenalty=Client.number("model_switch_penalty",.15);
         c.dynamicServerImpulses=Client.number("dynamic_server_impulses",1)>0;
     }
     static ComboModel.State initial(Client.Observation obs){
@@ -168,6 +170,7 @@ public final class ModelController {
     }
     static double binResidual(double predicted,double quantized){return Math.max(quantized,Math.min(quantized+1.0/32-1e-9,predicted))-predicted;}
     static ComboModel.Action decide(Client.Observation obs,long now){
+        long planningStarted=System.nanoTime();
         if(Client.controls.getProperty("observer","legacy").equals("legacy"))return LegacyModelController.decide(obs,now);
         if(particles.isEmpty()){
             Client.Observation first=observations.firstEntry().getValue().obs;originX=first.x;originZ=first.z;
@@ -198,6 +201,7 @@ public final class ModelController {
         Eligible latest=observations.floorEntry(obs.time).getValue();VisibleTracker.Estimate v=latest.estimate;
         Map<String,Object> entry=new LinkedHashMap<>();entry.put("type","mpc_plan");entry.put("time",now);entry.put("observation_time",obs.time);entry.put("match",Client.match);
         entry.put("observer",Client.controls.getProperty("observer"));entry.put("action",decision.action.name());entry.put("predicted_hits",decision.predictedHits);
+        entry.put("planning_ms",(System.nanoTime()-planningStarted)/1_000_000.0);
         entry.put("opponent_model",best.config.defenderWtap?"wtap":best.config.defenderMoves?"hold-w":"standstill");
         entry.put("predicted_opponent_wtaps",decision.predictedEnd.defenderWtapCount-state.defenderWtapCount);
         entry.put("opponent_model_forward",state.defenderForward);
