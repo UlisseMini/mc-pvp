@@ -15,7 +15,8 @@ def summarize(path):
     if plan['stage']!='complete':
         raise ValueError('The full comparison must finish before final reporting')
     groups=collections.defaultdict(list)
-    minimum_gap=float('inf');max_p95=0;max_gap=0;release_counts={}
+    minimum_gap=float('inf');max_p95=0;max_gap=0;release_counts={};recoil=collections.Counter()
+    critical_issued=0;critical_outcomes=collections.Counter()
     for row in plan['results']:
         f=row['fixture'];g=row['game'];diag=row['diagnostic']
         assert g['validation']['passed'] and diag['passed'],g['id']
@@ -24,6 +25,10 @@ def summarize(path):
         for s in (a,b):
             assert row['exchanges']['sides'][s]['counts']['accepted']==g['hits_'+s]
             d=diag['sides'][s]
+            recoil.update(d.get('recoil_audit',{}))
+            critical=d.get('critical_audit',{})
+            critical_issued+=critical.get('issued',0)
+            critical_outcomes.update(critical.get('outcomes',{}))
             minimum_gap=min(minimum_gap,d['minimum_click_gap_ms'])
             max_p95=max(max_p95,d['travel_cadence']['p95_ms'])
             max_gap=max(max_gap,d['travel_cadence']['max_ms'])
@@ -42,6 +47,7 @@ def summarize(path):
         key=(f['focus'],f['opponent'],f['focus_rtt'],f['opponent_rtt'])
         groups[key].append({'id':g['id'],'score':[g['hits_'+a],g['hits_'+b]],
             'fresh':[row['exchanges']['sides'][s]['counts']['fresh']for s in (a,b)],
+            'fresh_sprint':[row['exchanges']['sides'][s]['counts']['fresh_sprint']for s in (a,b)],
             'upgrades':[row['exchanges']['sides'][s]['counts']['upgrades']for s in (a,b)],
             'cps':[diag['sides'][s]['average_cps']for s in (a,b)],
             'longest_unanswered_streak':[g['combat_metrics'][s]['longest_unanswered_streak']for s in (a,b)],
@@ -58,6 +64,8 @@ def summarize(path):
     return {'source':str(path),'source_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
             'games':len(plan['results']),'groups':out,'minimum_physical_click_gap_ms':minimum_gap,
             'maximum_client_travel_p95_ms':max_p95,'maximum_client_travel_gap_ms':max_gap,
+            'optional_recoil_audit':dict(recoil),
+            'optional_critical_audit':{'issued':critical_issued,'outcomes':dict(critical_outcomes)},
             'native_release_runs':release_counts,
             'caution':'Small exploratory cohorts; inspect game counts per condition. No claim of a phase-independent advantage or combo invariant. Fresh attacks exclude within-immunity damage upgrades. Drag counts describe contacts, not a causal decomposition.'}
 

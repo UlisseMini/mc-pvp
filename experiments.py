@@ -66,6 +66,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                     path=RUNTIME/'bots'/result[side].removeprefix('LabSlot')/'events.jsonl'
                     events=list(match_events(path,result['id']))
                     reaction=int(parameters[result['policy_'+side]].get('reaction_ms',150))
+                    critical_cues=set()
                     clicks=[e for e in events if e['type']=='click']
                     if parameters[result['policy_'+side]].get('kind')=='standstill':
                         controls=[e for e in events if e['type']=='observation']
@@ -95,11 +96,16 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                         if event['type']=='click' and parameters[result['policy_'+side]].get('click_mode') in ('reactive-burst','motion-burst'):
                             if event['time']-event.get('burst_observation_time',event['time'])<reaction:
                                 issues.add(f'{side}: burst click missing delayed-observation evidence')
-                            if not any(event.get('burst_'+reason) for reason in ('opening','defensive','attack_window','recoil')):
+                            if not any(event.get('burst_'+reason) for reason in ('opening','defensive','attack_window','recoil','critical')):
                                 issues.add(f'{side}: burst click outside declared windows')
                             if event.get('burst_recoil') and (event.get('input_poll')!='native_tick' or not event.get('burst_local_sprint') or not event.get('burst_local_contact_ready')
                                     or event.get('burst_radial_motion',0)>=-.005 or event['burst_observation_time']+100>=event['burst_attack_start_at']):
                                 issues.add(f'{side}: recoil click violated current-motion or reserved-slot rule')
+                            if event.get('burst_critical'):
+                                cue=event.get('burst_landed_cue',0)
+                                if cue<=0 or cue in critical_cues or event.get('input_poll')!='native_tick' or not event.get('burst_local_critical') or not event.get('burst_local_contact_ready') or event['burst_observation_time']+100>=event['burst_attack_start_at']:
+                                    issues.add(f'{side}: optional critical attempt violated budget or input-slot rule')
+                                critical_cues.add(cue)
                         if event['type']=='engine_attack' and 'native_raycast_distance' in event:
                             if event['native_raycast_distance']>3.00001:issues.add(f'{side}: native attack exceeded three blocks')
                             if not all(event.get(k) for k in ('target_ready','target_loaded_identity','ray_selected_target')):issues.add(f'{side}: attack used an invalid native view')

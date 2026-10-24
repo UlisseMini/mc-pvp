@@ -21,6 +21,8 @@ PAIRS=[('wtap-tick-burst','hold-w'),('wtap-tick-burst','wtap-tick'),
 MOTION_PAIRS=[('wtap-tick-motion','hold-w-fast'),('wtap-tick-motion','wtap-tick-fast'),
               ('wtap-tick-fast','wtap-fast'),('wtap-tick-window','hold-w-fast'),
               ('wtap-tick-window','wtap-tick-fast'),('wtap-tick-fast','hold-w-fast')]
+CRITICAL_PAIRS=[('wtap-tick-critical','hold-w-fast'),('wtap-tick-critical','wtap-tick-fast'),
+                ('wtap-tick-critical','wtap-tick-motion')]
 
 
 def cadence(times):
@@ -50,7 +52,7 @@ def diagnostic(game):
             category='no_sprint_drag' if not e['sprint_before'] else 'backward_drag' if speed<-.005 else 'forward_drag' if speed>.005 else 'near_stationary_drag'
             c[category]+=1
             inj=linked.get(e['click_attempt'],{})
-            reasons=[k for k in ('opening','defensive','attack_window','recoil') if inj.get('burst_'+k)]
+            reasons=[k for k in ('opening','defensive','attack_window','recoil','critical') if inj.get('burst_'+k)]
             reason_counts['+'.join(reasons) or 'fixed'][category]+=1
             if inj.get('burst_recoil'):
                 recoil['contacts']+=1
@@ -71,6 +73,20 @@ def diagnostic(game):
             'quiet_plan_fraction':sum(not p['click_gate'] for p in plans)/len(plans) if plans else None,
             'travel_cadence':ticks}
         if recoil['wrong_phase'] or recoil['missing_native_drag']:issues.append(side+': optional recoil input failed intended native effect')
+        if any(e.get('burst_critical') for e in injections):
+            from trade_return_windows import link_clicks
+            rows,_,audit=link_clicks(raw,events,game,side)
+            if audit['errors']:issues.append(side+': critical input/server linkage failed')
+            critical=collections.Counter()
+            for row in rows:
+                inj=linked.get(row['sequence'],{})
+                if not inj.get('burst_critical'):continue
+                critical[row['outcome']]+=1
+                if row.get('server_attack_index') is not None:
+                    state=raw[row['server_attack_index']]['attacker_before']
+                    critical['server_falling']+=state['fallDistance']>0 and not state['ground']
+            sides[side]['critical_audit']={'issued':sum(e.get('burst_critical',False) for e in injections),
+                'outcomes':dict(critical),'linkage':audit}
     for label,c in [('server',server_cadence),*[(s,r['travel_cadence']) for s,r in sides.items()]]:
         if c['intervals']<20 or c['p95_ms']>80 or c['fraction_over_100ms']>.01 or c['max_ms']>250:
             issues.append(label+': native tick cadence outside preregistered gate')
@@ -78,7 +94,7 @@ def diagnostic(game):
             'drag_meaning':'Per-contact local motion projected toward the rendered opponent. Backward drag reduces current retreat; forward drag reduces pursuit. Counts are not net displacement or a causal performance attribution.'}
 
 
-async def run(name,smoke=False,motion=False):
+async def run(name,smoke=False,motion=False,critical=False):
     path=OUT/(name+'.json')
     if path.exists():raise ValueError('Choose a fresh evidence name')
     deadline=time.monotonic()+150
@@ -89,7 +105,8 @@ async def run(name,smoke=False,motion=False):
         except (FileNotFoundError,RuntimeError,json.JSONDecodeError):pass
         if time.monotonic()>=deadline:raise RuntimeError('Native server/clients did not become ready')
         await asyncio.sleep(.5)
-    pairs=MOTION_PAIRS if motion else PAIRS
+    motion=motion or critical
+    pairs=CRITICAL_PAIRS if critical else MOTION_PAIRS if motion else PAIRS
     names={p:('trace-motion-' if motion else 'trace-burst-')+p for pair in pairs for p in pair}
     for original,traced in names.items():
         save_policy(traced,{**properties(ROOT/'policies'/f'{original}.properties'),'science_trace':1,'science_network_trace':1})
@@ -101,7 +118,7 @@ async def run(name,smoke=False,motion=False):
         for repeat in range(2):
             for focus,opponent in (pairs if repeat==0 else list(reversed(pairs))):
                 fixtures.append(dict(focus=focus,opponent=opponent,focus_rtt=20,opponent_rtt=20,reverse=bool(repeat),repeat=repeat,duration_ms=None))
-        for pa,pb in ((20,100),(100,20)):
+        for pa,pb in (() if critical else ((20,100),(100,20))):
             for focus,opponent in (pairs[0],pairs[1],pairs[3]):
                 fixtures.append(dict(focus=focus,opponent=opponent,focus_rtt=pa,opponent_rtt=pb,reverse=pa>pb,repeat=0,duration_ms=None))
     else:
@@ -111,7 +128,7 @@ async def run(name,smoke=False,motion=False):
                     fixtures.append(dict(focus=focus,opponent=opponent,focus_rtt=pa,opponent_rtt=pb,reverse=bool(repeat%2),repeat=repeat,duration_ms=None))
     digest=lambda:hashlib.sha256((BUILD/'lab-agent.jar').read_bytes()).hexdigest()
     sources=['burst_science.py','src/lab/BurstClickController.java','src/lab/MotionClickController.java',
-             'src/lab/MomentumController.java','src/lab/Client.java','src/lab/Referee.java','experiments.py']
+             'src/lab/MomentumController.java','src/lab/CriticalClickController.java','src/lab/Client.java','src/lab/Referee.java','experiments.py']
     plan={'created_unix':time.time(),'stage':'preregistered','agent_sha256':digest(),
           'source_sha256':{s:hashlib.sha256((ROOT/s).read_bytes()).hexdigest() for s in sources},
           'policies':{p:properties(ROOT/'policies'/f'{p}.properties') for p in names.values()},
@@ -127,6 +144,11 @@ async def run(name,smoke=False,motion=False):
             'hypothesis':'Recoil clicks should actually multiply backward native motion by0.6. Any score benefit is tested rather than assumed; recoil cancellation can preserve an opponent return opportunity.',
             'timing_choice':'50ms attack lead compensates for removing frame-to-consumption delay; frozen before the motion cohort, based on old trace timing. No hidden server immunity input.',
             'design':'Two side-swapped games per each of six pairings at20/20. One game per oriented asymmetric ping for motion-v-hold, motion-v-fixed, and window-v-hold. Exploratory18-game cohort, no parameter search.'})
+    if critical:
+        plan.update({'cohort':'one optional critical attempt per visible fresh cue',
+            'intervention':'Only burst_critical=1 differs from wtap-tick-motion. Optional attempts require native-poll local critical predicates, native contact readiness and100ms reserved before the next window. Budget charged on injection, including overlap with recoil. Server damage and immunity remain unobserved by the policy.',
+            'hypothesis':'Recover some legitimate within-immunity critical upgrades; possible costs are forward contact drag and server sprint consumption before the next fresh attack.',
+            'design':'Six full matches: two side-swapped games each against hold-W, continuous one-tick W-tap, and otherwise-identical motion burst. All20/20ms RTT. Parameters frozen before this cohort.'})
     def checkpoint():
         temp=path.with_suffix('.tmp');temp.write_text(json.dumps(plan,indent=2)+'\n');temp.replace(path)
     checkpoint()
@@ -155,5 +177,5 @@ async def run(name,smoke=False,motion=False):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('--smoke',action='store_true');p.add_argument('--motion',action='store_true')
-    a=p.parse_args();asyncio.run(run(a.name,a.smoke,a.motion))
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('name');p.add_argument('--smoke',action='store_true');p.add_argument('--motion',action='store_true');p.add_argument('--critical',action='store_true')
+    a=p.parse_args();asyncio.run(run(a.name,a.smoke,a.motion,a.critical))

@@ -102,12 +102,23 @@ class NetworkTest(unittest.IsolatedAsyncioTestCase):
 class RealEngineEvidenceTest(unittest.TestCase):
     def test_logged_controls_respect_reaction_delay_and_click_cap(self):
         samples=clicks=slowdowns=strict_clicks=taps=0
+        # Historical cohorts retain their 150 ms requirement; newer cohorts
+        # explicitly record the user's chosen zero-delay observation rule.
+        delays={}
+        for result in (lab.RUNTIME/'results').glob('*.json'):
+            game=json.loads(result.read_text())
+            for side in ('a','b'):
+                if side in game:
+                    delays[game['id'],game[side]]=int(game.get('parameters_'+side,{}).get(
+                        'reaction_ms',game.get('reaction_ms_'+side,150)))
         for path in (lab.RUNTIME/'bots').glob('*/events.jsonl'):
             last={}
+            player='LabSlot'+path.parent.name if path.parent.name.isdigit() else path.parent.name
             for line in path.read_text().splitlines():
                 event=json.loads(line)
+                delay=delays.get((event.get('match'),player),150)
                 if event['type']=='observation':
-                    self.assertGreaterEqual(event['time']-event['observation_time'],150);samples+=1
+                    self.assertGreaterEqual(event['time']-event['observation_time'],delay);samples+=1
                     if 'target_removed' in event:self.assertFalse(event['target_removed'])
                 elif event['type']=='click':
                     # Legacy wall-clock logs cannot distinguish logger pauses from input spacing.
@@ -119,7 +130,7 @@ class RealEngineEvidenceTest(unittest.TestCase):
                         strict_clicks+=1
                     last[event['match']]=event;clicks+=1
                 elif event['type']=='wtap':
-                    self.assertGreaterEqual(event['time']-event['cue_time'],150)
+                    self.assertGreaterEqual(event['time']-event['cue_time'],delay)
                     self.assertGreater(event['release_until'],event['time']);taps+=1
                 elif event['type']=='engine_attack' and event['sprint_before'] and event['target_visible_hurt']>0 and abs(event['vx_before'])>.01:
                     self.assertAlmostEqual(event['vx_after'],event['vx_before']*.6,places=9)

@@ -33,6 +33,7 @@ public final class Client {
     static BurstClickController.Decision burstDecision;
     static long burstObservedAt;
     static boolean nativeInputPoll;
+    static final CriticalClickController criticalClicks=new CriticalClickController();
     static boolean targetReady;
 
     static final class Observation {
@@ -106,7 +107,7 @@ public final class Client {
                 log(probe);
             }
             MotionClickController.Decision motionClick=null;
-            double radialMotion=0;boolean localSprint=false,localContactReady=false;
+            double radialMotion=0;boolean localSprint=false,localContactReady=false,criticalOpportunity=false,localCritical=false;
             if(controls.getProperty("click_mode","fixed").equals("motion-burst")){
                 if(number("reaction_ms",150)!=0)throw new IllegalArgumentException("Motion burst requires zero artificial reaction delay");
                 radialMotion=(R.num(player,"motionX")*dx+R.num(player,"motionZ")*dz)/Math.max(.001,Math.hypot(dx,dz));
@@ -114,13 +115,24 @@ public final class Client {
                 localContactReady=selected==opponent&&R.num(mc,"leftClickCounter")<=0;
                 motionClick=MotionClickController.decide(new MotionClickController.Input(wall,lastObservedTargetHurt,
                         number("ping",0),radialMotion,localSprint,nativeInputPoll,localContactReady),MotionClickController.Settings.from(controls));
-                clickGate=motionClick.click();
+                if(number("burst_critical",0)>0&&nativeInputPoll&&localContactReady){
+                    // Native 1.8 critical predicates, using only our current local
+                    // body. The server can still disagree at a movement boundary.
+                    localCritical=R.num(player,"fallDistance")>0&&!(Boolean)R.get(player,"onGround")
+                            &&!(Boolean)R.call(player,"isOnLadder")&&!(Boolean)R.call(player,"isInWater")
+                            &&!(Boolean)R.call(player,"isPotionActive",R.get(R.cls("net.minecraft.potion.Potion"),"blindness"))
+                            &&R.get(player,"ridingEntity")==null;
+                    criticalOpportunity=criticalClicks.eligible(wall,lastObservedTargetHurt,motionClick.attackStartAt(),
+                            motionClick.opening(),motionClick.attackWindow(),nativeInputPoll,localContactReady,localCritical);
+                }
+                clickGate=motionClick.click()||criticalOpportunity;
                 if(nativeInputPoll){
                     Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","motion_click_plan");plan.put("time",wall);
                     plan.put("monotonic_ns",System.nanoTime());plan.put("match",match);plan.put("native_tick",ticks);
                     plan.put("observation_time",wall);plan.put("landed_cue",lastObservedTargetHurt);
                     plan.put("radial_motion",radialMotion);plan.put("local_sprint",localSprint);
                     plan.put("local_contact_ready",localContactReady);
+                    plan.put("local_critical",localCritical);plan.put("critical_opportunity",criticalOpportunity);
                     plan.put("opening",motionClick.opening());plan.put("attack_window",motionClick.attackWindow());
                     plan.put("recoil",motionClick.recoil());plan.put("recoil_opportunity",motionClick.recoilOpportunity());
                     plan.put("reserved",motionClick.reserved());plan.put("estimated_ready_at",motionClick.readyAt());
@@ -140,6 +152,7 @@ public final class Client {
                 // Pace from completed input injection, not from before reflection/GC pauses.
                 // The next input cannot occur until >=100 ms after this completed input.
                 lastClick=System.nanoTime();
+                if(criticalOpportunity)criticalClicks.injected(lastObservedTargetHurt);
                 ModelController.click(System.currentTimeMillis());
                 Map<String,Object> issued=new LinkedHashMap<>();
                 issued.put("type","click");issued.put("time",System.currentTimeMillis());issued.put("monotonic_ns",lastClick);
@@ -155,6 +168,8 @@ public final class Client {
                     issued.put("burst_recoil",motionClick.recoil());issued.put("burst_observation_time",wall);
                     issued.put("burst_radial_motion",radialMotion);issued.put("burst_local_sprint",localSprint);
                     issued.put("burst_local_contact_ready",localContactReady);
+                    issued.put("burst_critical",criticalOpportunity);issued.put("burst_local_critical",localCritical);
+                    issued.put("burst_landed_cue",lastObservedTargetHurt);
                     issued.put("burst_attack_start_at",motionClick.attackStartAt());
                 }
                 log(issued);
@@ -220,6 +235,7 @@ public final class Client {
                 ModelController.reset();
                 momentum.reset();
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
+                criticalClicks.reset();
                 targetWatchdog.reset();targetReady=false;
             }
             opponent=null;

@@ -28,6 +28,8 @@ class JavaModelTest(unittest.TestCase):
              str(lab.ROOT / 'src/lab/BurstClickController.java'),
              str(lab.ROOT / 'src/lab/MotionClickController.java'),
              str(lab.ROOT / 'tests/MotionClickControllerCheck.java'),
+             str(lab.ROOT / 'src/lab/CriticalClickController.java'),
+             str(lab.ROOT / 'tests/CriticalClickControllerCheck.java'),
              str(lab.ROOT / 'tests/BurstClickControllerCheck.java'),
              str(lab.ROOT / 'tests/MomentumControllerCheck.java'),
              str(lab.ROOT / 'tests/NativeClockReplay.java'),
@@ -86,6 +88,11 @@ class JavaModelTest(unittest.TestCase):
     def test_motion_bursts_use_velocity_and_reserve_attack_slot(self):
         result=subprocess.run([str(lab.JAVA),'-cp',str(self.classes),'MotionClickControllerCheck'],
                               capture_output=True,text=True,timeout=10)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('PASS',result.stdout)
+
+    def test_critical_attempt_budget_and_reserved_slot(self):
+        result=subprocess.run([str(lab.JAVA),'-cp',str(self.classes),'CriticalClickControllerCheck'],capture_output=True,text=True,timeout=10)
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         self.assertIn('PASS',result.stdout)
 
