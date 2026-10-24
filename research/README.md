@@ -56,6 +56,17 @@ records the evidence, remaining composition gap and next minimal experiment.
 
 ## Native evidence
 
+- [Which return opportunities break a double](trade-return-windows.md): stricter
+  A-then-A-before-B scoring, exact contact/S12 ordering, and positive reach
+  opportunities between the defender's actual clicks. The
+  [late-coast response](trade-coast-response.json) also measures how little a
+  last-minute local movement change can affect the opponent's already delayed
+  view; its frozen boundary conditions are explicit.
+- [Unreset local trajectory replay](trade-local-replay-v1.json): 13,209 movement
+  steps across 14 clients, with no position/motion corrections and zero differing
+  checked bits. Recorded contact/sprint/aim/acceleration and S12 streams remain
+  boundary inputs. This is a larger conditional composition check, not the full
+  two-player autonomous replay standard above.
 - [Why W-tap sometimes doubles hold-W](double-hit-mechanisms.md): full baseline
   games, isolated reset changes, native click results and landing-phase evidence.
   The exact packet links in [trade-grounding.json](trade-grounding.json) retain

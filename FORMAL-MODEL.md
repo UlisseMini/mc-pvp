@@ -652,3 +652,64 @@ with the installed JDK's `javap -classpath .cache/client.jar -c -p CLASS`
 Bytecode offsets refer to the pinned binary, not source line numbers. Instrumented
 logging must preserve these transitions; the referee's health restoration and
 setup actions must remain explicit experiment exceptions.
+
+## 12. A repeatable double is a return-window control problem
+
+Use a stronger outcome than a short delay in the opponent's return. Given a
+uniquely paired fresh trade `(A0,B0)`, discard its two attacks, then group the
+remaining fresh attacks by server tick. A **true follow-up double** means the
+first two nonempty groups contain A only: `A1,A2` before `B1`. A group containing
+both players is a trade regardless of packet ordering inside that tick. Record
+both inter-hit intervals; a double after a long disengagement is not an infinite
+combo. End-of-match incomplete groups are censored. Critical damage upgrades
+remain separate score events and still affect sprint/momentum.
+
+For each actually consumed B click at local time `c` and its eventual server
+processing event `r`, a fresh B return requires all of the following:
+
+1. Native click consumption is permitted and its cached ray selects A.
+2. The emitted ATTACK passes the ordinary server identity/visibility/distance
+   checks at `r`.
+3. A's resistance at `r` is at most 10 (and ordinary damage eligibility holds).
+
+Within the experiment's ordinary alive/survival scope these are the fresh-return
+gates. The full hit score additionally admits a larger-damage upgrade at H>10.
+A's knockback packet cannot retroactively remove an already emitted ATTACK.
+Even packet application is not displacement: B may consume another click before
+its first movement with the new velocity. The relevant deadline is contact
+generation, not the eventual scoreboard change or S12 receipt alone.
+
+With fixed consumed click times, denying only those samples can produce a true
+double. That does not establish phase-independent denial. To withstand uncertain
+opponent click phase, the strategy must close every native contact window whose
+ATTACK could arrive while A is damage-eligible, or demonstrate that its permitted timing
+control robustly avoids them. A sufficient empty-scene geometric denial is
+`distance(B_eye, B_rendered_A_expanded_box) > 3` for the whole relevant interval.
+This is stronger than missing one cached ray. A must simultaneously retain its
+own native contact opportunities when B becomes eligible, through two accepted
+fresh hits. Both directions use their own view, not server separation.
+
+For a controller with delayed observations, let `Belief_t` contain all native
+states, queues and clock phases consistent with its allowed history. An
+every-time claim over a declared initial-state/latency/jitter envelope requires
+one legal observation-based policy to meet these event conditions for **every**
+state/schedule in that envelope. Picking a different input using private current
+state in each offline replay would not establish such a policy. If no allowed
+input sequence works from some reachable trade state, a winning controller must
+avoid entering that state; a later reactive reset cannot repair an emitted hit.
+
+The [return-window investigation](research/trade-return-windows.md) identifies
+the native gates in the recorded 20/20 ms RTT cohort. It is not a proof that a
+guaranteed policy exists or is impossible. The
+[focused response calculation](research/trade-coast-response.json) quantifies
+local coasting and remote interpolation with specified boundary events held
+fixed; it is not a closed-loop counterfactual duel.
+
+The [unreset local replay](research/trade-local-replay-v1.json) starts each of 14
+clients once and reproduces 13,209 consecutive native travel steps, 3,700 contact
+events and 897 S12 applications with zero bit differences in all checked
+fields. It consumes recorded contact/sprint decisions, aim, acceleration getters
+and incoming packets. No subsequent native position or velocity is assimilated,
+except the actual S12 overwrite operation. This extends conditional component
+parity to the local trajectory composition; generating those boundary events
+from the two input histories remains required for autonomous duel parity.
