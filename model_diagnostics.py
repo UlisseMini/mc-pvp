@@ -10,8 +10,11 @@ def diagnostics(identifier):
     for s in ('a','b'):
         events[s]=[e for l in (RUNTIME/'bots'/m[s].removeprefix('LabSlot')/'events.jsonl').read_text().splitlines() if (e:=json.loads(l)).get('match')==identifier]
     obs={s:[e for e in events[s] if e['type']=='observation'] for s in ('a','b')}
-    plans=[e for e in events['a'] if e['type']=='mpc_plan'];truth=obs['b'];times=[e['time'] for e in truth]
-    origin=obs['a'][0];errors={'latent_defender':[],'defender_view_of_attacker':[],'own_delayed_residual':[],'rendered_delayed_residual':[]}
+    model_side=next((side for side in ('a','b') if any(e['type']=='mpc_plan' for e in events[side])), 'a')
+    opponent_side='b' if model_side=='a' else 'a'
+    plans=[e for e in events[model_side] if e['type']=='mpc_plan'];truth=obs[opponent_side];times=[e['time'] for e in truth];own=obs[model_side]
+    origin=own[0];errors={k:[] for k in ('latent_defender','defender_view_of_attacker','present_own','present_rendered_target','own_delayed_residual','rendered_delayed_residual')}
+    own_times=[e['time'] for e in own]
     for p in plans:
         i=bisect.bisect_right(times,p['time'])
         if i<1 or i>=len(times) or times[i]-times[i-1]>150:continue
@@ -24,6 +27,12 @@ def diagnostics(identifier):
                     offset=4 if axis=='y' else origin[axis]
                     err.append((p[prefix+axis]+offset-actual(t_prefix+axis))**2)
                 errors[label].append(math.sqrt(sum(err)))
+            j=bisect.bisect_right(own_times,p['time'])
+            if 0<j<len(own_times) and own_times[j]-own_times[j-1]<=150:
+                left,right=own[j-1:j+1];fraction=(p['time']-left['time'])/(right['time']-left['time'])
+                for label,prefix,t_prefix in [('present_own','predicted_own_',''),('present_rendered_target','predicted_target_view_','target_')]:
+                    if prefix+'z' not in p:continue
+                    errors[label].append(math.sqrt(sum((p[prefix+axis]+(4 if axis=='y' else origin[axis])-(left[t_prefix+axis]+fraction*(right[t_prefix+axis]-left[t_prefix+axis])))**2 for axis in ('x','y','z'))))
         # Early visible-observer logs used a placeholder zero for own residual.
         # Do not report those placeholders as measured prediction accuracy.
         if not p.get('observer') or p.get('own_error_measured'):errors['own_delayed_residual'].append(p['own_observation_error'])
@@ -31,7 +40,7 @@ def diagnostics(identifier):
     def describe(values):
         v=sorted(values)
         return {'samples':len(v),'median_m':statistics.median(v),'p90_m':v[min(len(v)-1,int(.9*len(v)))],'max_m':max(v)} if v else None
-    result={'match':identifier,'rtt_a':m['ping_a'],'rtt_b':m['ping_b'],'errors':{k:describe(v) for k,v in errors.items()},'method':'Post-hoc comparison at real host timestamps, linear interpolation of actual client observations; no private data enters bot'}
+    result={'match':identifier,'model_side':model_side,'rtt_a':m['ping_a'],'rtt_b':m['ping_b'],'errors':{k:describe(v) for k,v in errors.items()},'method':'Post-hoc comparison at real host timestamps, linear interpolation of actual client observations; no private data enters bot'}
     finish=next((e['result'] for e in raw if e['type']=='finish'),None)
     if finish:result['native_overlap']=combat_metrics(finish).get('native_overlap')
     return result

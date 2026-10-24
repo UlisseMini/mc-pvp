@@ -33,15 +33,15 @@ def export(identifier):
     from native_windows import overlap
     probes={s:[e for e in clients[s] if e['type']=='reach_probe'] for s in ('a','b')}
     native=overlap(probes['a'],probes['b'],match['start'],finish['finish']) if all(probes.values()) else None
-    qualification=None
+    qualification=None;metrics=None
     for report in (ROOT/'experiments').glob('*.json'):
         document=json.loads(report.read_text())
         for result in document.get('results',[]):
             if result.get('id')==identifier and 'validation' in result:
-                qualification=result['validation'];break
+                qualification=result['validation'];metrics=result.get('combat_metrics');break
         if qualification is not None:break
     data={'match':match,'result':finish,'ticks':ticks,'hits':[e for e in events if e['type']=='hit'],'clients':clients,
-          'native_overlap':native,'qualification':qualification,
+          'native_overlap':native,'combat_metrics':metrics,'qualification':qualification,
           'input_clock_verified':bool(strict and click_count),
           'ping_changes':[e for e in events if e['type']=='ping_change']}
     output=ROOT/'recordings'/f'{identifier}.html';output.parent.mkdir(exist_ok=True)
@@ -63,7 +63,7 @@ TEMPLATE=r'''<!doctype html>
 <div class="controls"><button id="play">Play</button><select id="speed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select><span id="time" class="mono"></span><span id="gap" class="mono"></span></div>
 <input id="scrub" type="range" min="0" value="0" step="1" aria-label="Match time">
 <canvas id="graph" aria-label="Accepted hits over time; click to seek"></canvas>
-<p class="mono" id="actions"></p><p id="opportunities"></p>
+<p class="mono" id="actions"></p><p id="combos"></p><p id="opportunities"></p>
 <footer>This is an analysis replay of recorded Minecraft positions, attacks and inputs. It is not Minecraft video. Circles show a 3-block horizontal reference distance, not a substituted reach test. The real engine performed all raycasts, damage checks, movement and knockback. Data is embedded; this file makes no network requests.</footer></main>
 <script id="data" type="application/json">__DATA__</script>
 <script>
@@ -73,6 +73,7 @@ const $=id=>document.getElementById(id), colors=['#75ddc9','#f6b78e'];
 $('provenance').textContent=D.qualification?.passed?'PvP Lab · native engine · input and replication checks passed':D.input_clock_verified?'PvP Lab · preliminary recording · replication unqualified':'PvP Lab · historical preliminary recording · old input clock';
 if(D.qualification?.issues?.length)$('provenance').textContent+=' · '+D.qualification.issues.join('; ');
 if(D.native_overlap){const n=D.native_overlap;const describe=s=>`${s.toUpperCase()}: ${(100*n[s].one_sided_fraction_given_attacker_can_hit).toFixed(1)}% one-sided / ${(n[s].attacker_can_hit_ms/1000).toFixed(1)} s able to hit; longest continuous window ${(n[s].longest_one_sided_window_ms/1000).toFixed(2)} s`;$('opportunities').textContent=describe('a')+' · '+describe('b')+`. Each percentage divides time that only this player could hit by all time this player could hit. Both native client POVs use shared host timestamps. Paired coverage ${(100*n.paired_coverage_fraction).toFixed(1)}%.`;}
+if(D.combat_metrics){const c=D.combat_metrics;const describe=s=>`${s.toUpperCase()}: longest sustained reach-denial combo ${((c[s].sustained_native_combo?.duration_ms||0)/1000).toFixed(2)} s; longest unanswered streak ${c[s].longest_unanswered_streak} hits`;$('combos').textContent=describe('a')+' · '+describe('b')+'. Final hit score is the primary performance metric. Sustained locks require at least three fresh contacts and no accepted return attack; brief both-out-of-range intervals are allowed.';}
 $('title').textContent=`${M.policy_a} vs ${M.policy_b}`;
 $('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${M.ping_a}/${M.ping_b} ms · 150 ms tactical reaction · first to 100 hits`;
 $('aname').textContent=M.policy_a;$('bname').textContent=M.policy_b;$('scrub').max=duration;

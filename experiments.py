@@ -160,8 +160,14 @@ def combat_metrics(result):
                 metrics[side]['native_range_after_third_received_hit']={'samples':len(probes),'in_range_samples':sum(p['in_range'] for p in probes),
                     'in_range_fraction':sum(p['in_range'] for p in probes)/len(probes),'longest_denial_ms':longest,'duration_ms':probes[-1]['time']-probes[0]['time'],
                     'criterion':'native client raycast, ignoring damage immunity; entry excluded through third fresh hurt'}
-    from native_windows import overlap
-    if all(all_probes.values()):metrics['native_overlap']=overlap(all_probes['a'],all_probes['b'],result['start'],result['finish'])
+    from native_windows import overlap,sustained_combo
+    if all(all_probes.values()):
+        native=overlap(all_probes['a'],all_probes['b'],result['start'],result['finish'],include_windows=True)
+        for side,other in [('a','b'),('b','a')]:
+            contacts=[h['time']for h in hits if h['attacker']==result[side]and h.get('target_state',{}).get('hurtResistantTime')==20]
+            returns=[h['time']for h in hits if h['attacker']==result[other]]
+            metrics[side]['sustained_native_combo']=sustained_combo(native[side].pop('defender_denial_windows'),contacts,returns)
+        metrics['native_overlap']=native
     return metrics
 
 async def batch(fixtures,parallel=3):
@@ -180,25 +186,26 @@ def record(name,results,metadata=None):
     stats=collections.defaultdict(lambda:{'wins':0,'losses':0,'draws':0,'hits_for':0,'hits_against':0})
     for r in results:
         if r['reason']!='100_hits' or not r.get('validation',{}).get('passed'):continue
+        if any(r.get('parameters',{}).get(r['policy_'+s],{}).get('click_mode')=='none' for s in ('a','b')):continue
         for side,other in [('a','b'),('b','a')]:
             s=stats[r['policy_'+side]];s['hits_for']+=r['hits_'+side];s['hits_against']+=r['hits_'+other]
             s['wins' if r['winner']==r[side] else 'draws' if not r['winner'] else 'losses']+=1
-    lines=['# Experiment match results','', 'These are real vanilla 1.8.9 matches through basic HeadlessMC. Small samples do not establish a general ranking. Win totals summarize these fixtures; opponents and latency conditions may differ.','',
+    lines=['# Experiment match results','', 'These are real vanilla 1.8.9 matches through basic HeadlessMC. Small samples do not establish a general ranking. Win totals cover clicking opponents only; non-clicking probes are diagnostic fixtures. Opponents and latency conditions may differ.','',
            '| Bot | Wins | Losses | Draws | Hits for | Hits against |','|---|---:|---:|---:|---:|---:|']
     for bot,s in sorted(stats.items(),key=lambda item:(-item[1]['wins'],item[1]['losses'])):
         lines.append(f'| {bot} | {s["wins"]} | {s["losses"]} | {s["draws"]} | {s["hits_for"]} | {s["hits_against"]} |')
     lines+=['','| Match | A | B | RTT A/B (ms) | Score | Finish |','|---|---|---|---|---|---|']
     for r in results:lines.append(f'| {r["id"]} | {r["policy_a"]} | {r["policy_b"]} | {r["ping_a"]}/{r["ping_b"]} | {r["hits_a"]}–{r["hits_b"]} | {r["reason"]} |')
     if any(r.get('combat_metrics',{}).get('native_overlap')for r in results):
-        lines+=['','Primary opportunity metric: time only this side could hit / all time this side could hit, measured from each native client POV. Damage immunity is excluded.','',
-                '| Match | Side | One-sided opportunity | Able to hit (s) | Longest continuous window (s) | Paired coverage | Validation |',
-                '|---|---|---:|---:|---:|---:|---|']
+        lines+=['','Actual PvP hit margin is the primary objective; sustained combo duration is secondary. The conditional reach percentage below is diagnostic, measured from both native client POVs. Damage immunity does not remove reach.','',
+                '| Match | Side | One-sided opportunity | Able to hit (s) | Sustained combo (s) | Longest one-sided window (s) | Paired coverage | Validation |',
+                '|---|---|---:|---:|---:|---:|---:|---|']
         for r in results:
             n=r.get('combat_metrics',{}).get('native_overlap')
             if not n:continue
             for side in ('a','b'):
                 v=n[side];ratio=v['one_sided_fraction_given_attacker_can_hit'];percentage=f'{ratio:.1%}'if ratio is not None else '—'
-                lines.append(f'| {r["id"]} | {r["policy_"+side]} | {percentage} | {v["attacker_can_hit_ms"]/1000:.1f} | {v["longest_one_sided_window_ms"]/1000:.2f} | {n.get("paired_coverage_fraction",n["paired_time_ms"]/(r["finish"]-r["start"])):.1%} | {"passed"if r.get("validation",{}).get("passed")else "provisional"} |')
+                lines.append(f'| {r["id"]} | {r["policy_"+side]} | {percentage} | {v["attacker_can_hit_ms"]/1000:.1f} | {r['combat_metrics'][side].get('sustained_native_combo',{}).get('duration_ms',0)/1000:.2f} | {v["longest_one_sided_window_ms"]/1000:.2f} | {n.get("paired_coverage_fraction",n["paired_time_ms"]/(r["finish"]-r["start"])):.1%} | {"passed"if r.get("validation",{}).get("passed")else "provisional"} |')
     (OUT/'RESULTS.md').write_text('\n'.join(lines)+'\n')
     return document
 
@@ -300,7 +307,7 @@ async def evolve_locks(population=4,generations=1):
     """Small native-engine search; the deployed bot still sees only its own delayed POV."""
     rng=random.Random(1849);parent=properties(ROOT/'policies/mpc-replay.properties');results=[];history=[]
     bounds={'opportunity_penalty':(80,600,110),'penetration_penalty':(0,500,100),
-            'contact_edge_penalty':(0,1200,300),'anchor_velocity_gain':(0,.9,.2),'goal_source_shift_ms':(-40,40,15),
+            'anchor_velocity_gain':(0,.9,.2),'goal_source_shift_ms':(-40,40,15),
             'anchor_fit_weight':(0,2,.5)}
     for generation in range(generations):
         candidates={}
@@ -331,8 +338,54 @@ async def evolve_locks(population=4,generations=1):
           'scope':'Small exploratory native search, two selection games per candidate with starting sides swapped; fresh repeats and ping holdouts are reported separately'})
     return results
 
+
+def pvp_fitness(result,side):
+    """Lexicographic: actual hit margin first, sustained lock duration second."""
+    other='b'if side=='a'else'a'
+    return (result['hits_'+side]-result['hits_'+other],result['combat_metrics'][side]['sustained_native_combo']['duration_ms'])
+
+
+async def evolve_pvp(population=4,generations=1):
+    rng=random.Random(1849);parent_path=ROOT/'policies/duel-search-parent.properties'
+    parent=properties(parent_path if parent_path.exists() else ROOT/'policies/mpc-score.properties');results=[];history=[]
+    baseline=await batch([('wtap','hold-w',20,100),('hold-w','wtap',100,20)])
+    results.extend(baseline)
+    bounds={'received_hit_penalty':(600,1600,250),'opportunity_penalty':(0,50,10),
+            'anchor_velocity_gain':(0,.9,.15),'goal_source_shift_ms':(-30,30,10),
+            'own_fit_weight':(0,6,1),'model_horizon_ticks':(40,60,5)}
+    for generation in range(generations):
+        candidates={}
+        for index in range(population):
+            name=f'pvp-search-g{generation+1}-{index+1:02d}';p=dict(parent)
+            if index:
+                for key,(low,high,sigma)in bounds.items():p[key]=round(min(high,max(low,float(parent.get(key,0))+rng.gauss(0,sigma))),3)
+                if index==1:p['opportunity_penalty']=0
+            p['contact_edge_penalty']=0
+            p['model_horizon_ticks']=int(round(float(p['model_horizon_ticks'])))
+            p['description']='Duel search candidate; ordinary keys and clicks, model of clicking hold-W'
+            save_policy(name,p);candidates[name]=p
+        fixtures=[]
+        for name in candidates:fixtures.extend([(name,'hold-w',20,100),('hold-w',name,100,20)])
+        evaluated=await batch(fixtures);results.extend(evaluated)
+        scores={}
+        for name in candidates:
+            values=[pvp_fitness(r,'a'if r['policy_a']==name else'b')for r in evaluated if name in(r['policy_a'],r['policy_b'])]
+            scores[name]=tuple(sum(x[i]for x in values)/len(values)for i in range(2))
+        selected=max(scores,key=scores.get);parent=candidates[selected]
+        history.append({'generation':generation+1,'scores_hit_margin_then_lock_ms':scores,'selected':selected,'parameters':parent})
+        record('pvp-search-progress',results,{'seed':1849,'history':history,'status':'paired selection; fresh tests pending','objective_priority':['hit margin against clicking hold-W','sustained native combo duration']})
+        print('Selected '+selected+' '+str(scores[selected]),flush=True)
+    save_policy('pvp-candidate',{**parent,'description':'Selected duel candidate; check fresh holdout scores before treating it as a champion'})
+    holdout=await batch([('pvp-candidate','hold-w',0,0),('hold-w','pvp-candidate',0,0),
+                         ('pvp-candidate','hold-w',20,100),('pvp-candidate','hold-w',100,20)])
+    results.extend(holdout)
+    record('pvp-search',results,{'seed':1849,'population':population,'generations':generations,'history':history,'holdout_ids':[r['id']for r in holdout],
+          'objective_priority':['actual hit margin against clicking hold-W','sustained native combo duration'],'baseline_ids':[r['id']for r in baseline],
+          'scope':'Small paired native search, with a W-tap control and fresh ping/side tests; conditional reach percentage is diagnostic only'})
+    return results
+
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('command',choices=['pilot','latency-pilot','integrity-load','evolve','evolve-locks','league']);parser.add_argument('--population',type=int,default=4);parser.add_argument('--generations',type=int,default=1)
+    parser=argparse.ArgumentParser();parser.add_argument('command',choices=['pilot','latency-pilot','integrity-load','evolve','evolve-locks','evolve-pvp','league']);parser.add_argument('--population',type=int,default=4);parser.add_argument('--generations',type=int,default=1)
     parser.add_argument('--bots',nargs='+',default=['hold-w','wtap','hit-reset','predictive'])
     parser.add_argument('--rtts',nargs='+',default=['20,20']);parser.add_argument('--repeats',type=int,default=1)
     args=parser.parse_args()
@@ -345,6 +398,6 @@ def main():
             if len(pair)!=2 or any(not math.isfinite(p) or not 0<=p<=500 for p in pair):raise ValueError()
             rtts.append(pair)
         except ValueError:parser.error('RTTs must be pairs of 0–500 ms, e.g. --rtts 20,20 20,120')
-    asyncio.run(pilot() if args.command=='pilot' else latency_pilot() if args.command=='latency-pilot' else integrity_load() if args.command=='integrity-load' else evolve(args.population,args.generations) if args.command=='evolve' else evolve_locks(args.population,args.generations) if args.command=='evolve-locks' else league(args.bots,rtts,args.repeats))
+    asyncio.run(pilot() if args.command=='pilot' else latency_pilot() if args.command=='latency-pilot' else integrity_load() if args.command=='integrity-load' else evolve(args.population,args.generations) if args.command=='evolve' else evolve_locks(args.population,args.generations) if args.command=='evolve-locks' else evolve_pvp(args.population,args.generations) if args.command=='evolve-pvp' else league(args.bots,rtts,args.repeats))
 
 if __name__=='__main__':main()

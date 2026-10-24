@@ -17,6 +17,7 @@ public final class TargetWatchdogCheck {
         require(!watch.update(replacement,550,0,true,true,true));
         require(!watch.update(replacement,600,1,true,true,true));
         require(watch.update(replacement,650,2,true,true,true));
+        watch.invalidate();require(!watch.update(replacement,675,3,true,true,true));
         watch.reset();require(!watch.update(replacement,700,3,true,true,true));
         System.out.println("PASS target watchdog");
     }

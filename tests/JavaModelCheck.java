@@ -1,5 +1,7 @@
 import lab.ComboModel;
 import lab.VisibleTracker;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -260,6 +262,487 @@ public final class JavaModelCheck {
         near(immune.accumulatedReward, 0, 1e-9, "immune contact does not pay a fresh-hit penalty");
     }
 
+    private static ComboModel.Config clickingConfig() {
+        var config = new ComboModel.Config();
+        config.defenderClicks = true;
+        config.ownRttMs = config.opponentRttMs = 0;
+        config.serverPhaseMs = 25;
+        config.opponentPhaseMs = 10;
+        config.modelServerCollisionPush = false;
+        config.opportunityPenalty = config.penetrationPenalty = config.switchPenalty = 0;
+        return config;
+    }
+
+    private static void defenderClickClockAndLocalDrag() {
+        var config = clickingConfig();
+        for (int interval : new int[] {100, 101}) {
+            config.defenderClickIntervalMs = interval;
+            var far = state(1000, 0, false);
+            for (int i = 0; i < 40; i++)
+                far = ComboModel.advanceRecorded(far, ComboModel.Action.RELEASE, false, config);
+            require(far.defenderPhysicalClicks == 20 && far.defenderAirMisses == 20,
+                    "defender short press/release cadence survives air misses: " + interval);
+            require(far.receivedHits == 0, "air misses cannot become incoming server hits");
+        }
+        config.defenderClickIntervalMs = 100;
+        config.defenderControlAtMs = 150;
+        config.defenderFirstClickAtMs = 200;
+        var waiting = state(1000, 0, false);
+        for (int i = 0; i < 3; i++)
+            waiting = ComboModel.advanceRecorded(waiting, ComboModel.Action.RELEASE, false, config);
+        require(waiting.b.x == 1000 && waiting.defenderPhysicalClicks == 0,
+                "defender neither moves nor clicks during its initial wait");
+        waiting = ComboModel.advanceRecorded(waiting, ComboModel.Action.RELEASE, false, config);
+        require(waiting.b.x < 1000 && waiting.defenderPhysicalClicks == 0,
+                "movement and the independently hypothesized first click have separate times");
+        waiting = ComboModel.advanceRecorded(waiting, ComboModel.Action.RELEASE, false, config);
+        require(waiting.defenderPhysicalClicks == 1, "defender first click phase is honored");
+
+        config = clickingConfig();
+        var immune = state(3, 0, false);
+        immune.b.vx = -.2;
+        immune.ownVulnerableAtMs = 10000;
+        immune = ComboModel.advanceRecorded(immune, ComboModel.Action.RELEASE, false, config);
+        require(immune.receivedHits == 0 && immune.defenderPhysicalClicks == 1,
+                "A immunity rejects damage without filtering the defender's click");
+        near(immune.b.vx, (-.2 * .6 - .1274) * .54600006, 1e-9,
+                "immune defender contact still drags its local sprint velocity");
+        require(immune.b.sprint && immune.bLastSentSprint && immune.bServerSprint,
+                "held Ctrl restores local sprint while an immune server contact preserves its flag");
+
+        var fresh = state(3, 0, false);
+        fresh.b.vx = -.2;
+        fresh = ComboModel.advanceRecorded(fresh, ComboModel.Action.RELEASE, false, config);
+        require(fresh.receivedHits == 1 && fresh.b.sprint && fresh.bLastSentSprint && !fresh.bServerSprint,
+                "fresh B hit consumes server sprint; local Ctrl restoration sends no new START");
+        require(fresh.a.y == 0, "zero-RTT incoming velocity waits for the next A client tick");
+        near(fresh.accumulatedReward, -config.receivedHitPenalty, 1e-9,
+                "incoming fresh hit enters the planner's score");
+        fresh = ComboModel.advanceRecorded(fresh, ComboModel.Action.RELEASE, false, config);
+        require(fresh.a.x < -.8 && fresh.a.y > .4 && fresh.lastPredictedOwnHurtCueMs == 50,
+                "A receives fresh sprint knockback and its own visible hurt cue");
+        require(!fresh.bServerSprint, "continued Ctrl does not recreate consumed server sprint");
+
+        config.defenderClicks = false;
+        var probe = state(3, 0, false);
+        probe.b.vx = -.2;
+        probe = ComboModel.advanceRecorded(probe, ComboModel.Action.RELEASE, false, config);
+        near(probe.b.vx, (-.2 - .1274) * .54600006, 1e-9, "default probe has no attack slowdown");
+        require(probe.receivedHits == 0 && probe.defenderPhysicalClicks == 0,
+                "disabled defender attacks preserve probe behavior");
+        config.defenderClickIntervalMs = 99;
+        boolean rejected = false;
+        try { config.validate(); } catch (IllegalArgumentException expected) { rejected = true; }
+        require(rejected, "defender policy cannot exceed ten physical CPS");
+    }
+
+    private static void incomingKnockbackAndIndependentImmunity() {
+        var config = clickingConfig();
+        var zAxis = state(0, 3, false);
+        zAxis.serverMotionA.vx = .2;
+        zAxis.serverMotionA.vy = -.3043;
+        zAxis.serverMotionA.vz = -.1;
+        zAxis.serverMotionB.vx = 2; // Hitter motion must not replace victim motion.
+        double[] incoming = ComboModel.predictedIncomingKnockback(zAxis, false, config);
+        near(incoming[0], .1, 1e-6, "incoming KB retains half A's server lateral motion");
+        near(incoming[1], .24775, 1e-6, "incoming KB uses A's server vertical motion");
+        near(incoming[2], -.45, 1e-6, "incoming base KB points away from B in z");
+        incoming = ComboModel.predictedIncomingKnockback(zAxis, true, config);
+        near(incoming[2], -.95, 1e-6, "incoming sprint bonus follows B server yaw");
+        zAxis.serverMotionA.vz = 0;
+        zAxis.serverB.lookZ = 1;
+        incoming = ComboModel.predictedIncomingKnockback(zAxis, true, config);
+        near(incoming[2], .099875, 1e-6, "stale B yaw can reverse the incoming sprint bonus");
+
+        var trade = ComboModel.advanceRecorded(state(3, 0, true), ComboModel.Action.SPRINT, true, config);
+        require(trade.acceptedHits == 1 && trade.receivedHits == 1,
+                "fresh outgoing and incoming hits have independent immunity windows");
+        require(trade.targetVulnerableAtMs == 525 && trade.ownVulnerableAtMs == 525,
+                "each victim receives its own 500ms fresh-hit deadline");
+        require(!trade.aServerSprint && !trade.bServerSprint,
+                "both server sprint flags can be consumed in one trade");
+        require(trade.lastPredictedImpulseX > .8 && trade.lastReceivedImpulseX < -.8,
+                "the two fresh impulses point in opposite directions");
+        require(trade.unansweredHits == 0 && trade.longestUnansweredHits == 1,
+                "incoming accepted hit ends the unanswered-hit streak");
+        near(trade.accumulatedReward, config.hitReward - config.receivedHitPenalty, 1e-9,
+                "trade score includes both accepted hits");
+
+        config.opponentRttMs = 100;
+        config.ownRttMs = 200;
+        var delayed = state(3, 0, false);
+        delayed = ComboModel.advanceRecorded(delayed, ComboModel.Action.RELEASE, false, config);
+        require(delayed.receivedHits == 0, "B attack waits for B-to-server latency");
+        delayed = ComboModel.advanceRecorded(delayed, ComboModel.Action.RELEASE, false, config);
+        require(delayed.receivedHits == 1 && delayed.lastPredictedReceivedHitMs == 75,
+                "B attack is processed at the first eligible server tick");
+        for (int i = 0; i < 2; i++)
+            delayed = ComboModel.advanceRecorded(delayed, ComboModel.Action.RELEASE, false, config);
+        require(delayed.a.y == 0 && delayed.lastPredictedOwnHurtCueMs == Long.MIN_VALUE,
+                "incoming impulse waits for server-to-A latency");
+        delayed = ComboModel.advanceRecorded(delayed, ComboModel.Action.RELEASE, false, config);
+        require(delayed.a.y > .4 && delayed.lastPredictedOwnHurtCueMs == 200,
+                "incoming velocity and visible cue arrive on A's next eligible tick");
+    }
+
+    private static void confirmedIncomingReplayAndCopies() {
+        var config = clickingConfig();
+        var pending = state(3, 0, false);
+        require(pending.scheduleConfirmedIncomingHit(125, config), "incoming confirmation schedules once");
+        require(!pending.scheduleConfirmedIncomingHit(125, config), "incoming schedule is idempotent");
+        var original = pending.copy();
+        for (int tick = 0; tick < 5; tick++) {
+            if (tick == 4) {
+                pending.ownVulnerableAtMs = 0;
+                pending.a = new ComboModel.Body(0, 0, 0, 0, -.0784, 0, true, false);
+                pending.b = new ComboModel.Body(3, 0, 0, 0, -.0784, 0, true, true);
+                pending.aSeesB = new ComboModel.View(3, 0, 0);
+                pending.bSeesA = new ComboModel.View(0, 0, 0);
+            }
+            // A's contact at the confirmed B hit time must remain independent.
+            pending = ComboModel.advanceRecorded(pending, ComboModel.Action.RELEASE, tick == 2, config);
+        }
+        require(pending.receivedHits == 1 && pending.acceptedHits == 1,
+                "incoming deduplication suppresses only B's attacks before/after confirmation");
+        require(!pending.scheduleConfirmedIncomingHit(125, config),
+                "consumed incoming confirmation remains idempotent");
+        require(original.receivedHits == 0 && original.defenderPhysicalClicks == 0,
+                "replay preserves the copied anchor and defender clock");
+        require(!original.scheduleConfirmedIncomingHit(125, config), "copy preserves incoming ledger");
+        original.scheduleConfirmedHit(125, config);
+        original.scheduleConfirmedIncomingHit(625, config);
+        config.defenderClicks = false;
+        for (int tick = 0; tick < 13; tick++)
+            original = ComboModel.advanceRecorded(original, ComboModel.Action.RELEASE, false, config);
+        require(original.acceptedHits == 1 && original.receivedHits == 2,
+                "outgoing and multiple incoming confirmed events have independent ledgers");
+        require(pending.receivedHits == 1, "new copied ledger entries do not change another state");
+
+        config = clickingConfig();
+        config.horizonTicks = 6;
+        config.beamWidth = 8;
+        var initial = state(3, 0, true);
+        var decision = ComboModel.choose(initial, config);
+        require(initial.receivedHits == 0 && initial.defenderPhysicalClicks == 0,
+                "planning against clicking hold-W leaves the initial estimate untouched");
+        require(decision.predictedReceivedHits == decision.predictedEnd.receivedHits - initial.receivedHits,
+                "planner exposes incoming hit count alongside its outgoing count");
+        require(decision.predictedEnd.defenderPhysicalClicks > 0,
+                "all search branches include the configured clicking opponent");
+    }
+
+    private static ComboModel.Config damageConfig() {
+        var config = clickingConfig();
+        config.defenderClicks = false;
+        config.defenderControlAtMs = Long.MAX_VALUE;
+        config.opponentPhaseMs = 45;
+        config.missPenalty = 0;
+        return config;
+    }
+
+    private static ComboModel.State fallingContact(boolean sprint) {
+        var current = state(3, 0, sprint);
+        current.a.y = current.serverA.y = current.serverMotionA.y = 1;
+        current.a.ground = current.serverMotionA.ground = false;
+        current.a.vy = -.05;
+        current.serverFallDistanceA = .1f;
+        return current;
+    }
+
+    private static void criticalDamageAndImmunity() {
+        var config = damageConfig();
+        var upgrade = fallingContact(false);
+        upgrade.targetHurtResistantTicks = 15;
+        upgrade.targetLastDamage = 8;
+        var anchor = upgrade.copy();
+        upgrade = ComboModel.advanceRecorded(upgrade, ComboModel.Action.RELEASE, true, config);
+        require(upgrade.acceptedHits == 1 && upgrade.acceptedDamageUpgrades == 1
+                        && upgrade.acceptedFreshHits == 0, "12 after 8 during immunity is one scored upgrade");
+        near(upgrade.damageDealt, 4, 1e-9, "upgrade deals only the positive damage difference");
+        near(upgrade.accumulatedReward, config.hitReward, 1e-9, "upgrade receives the full accepted-hit score");
+        require(upgrade.targetLastDamage == 12 && upgrade.targetHurtResistantTicks == 14
+                        && upgrade.targetVulnerableAtMs == 0,
+                "upgrade changes lastDamage but neither restarts immunity nor its deadline");
+        require(upgrade.lastPredictedHitMs == Long.MIN_VALUE
+                        && upgrade.lastPredictedHurtCueMs == Long.MIN_VALUE,
+                "upgrade does not manufacture a fresh-hit timestamp or visible hurt cue");
+        config.contactEdgePenalty = 1000;
+        var edgeUpgrade = ComboModel.advanceRecorded(anchor, ComboModel.Action.RELEASE, true, config);
+        near(edgeUpgrade.accumulatedReward, config.hitReward, 1e-9,
+                "fresh-contact edge cost does not penalize an immune damage upgrade");
+        config.contactEdgePenalty = 0;
+        require(anchor.targetLastDamage == 8 && anchor.targetHurtResistantTicks == 15,
+                "copy keeps independent damage history and immunity counters");
+
+        var equal = fallingContact(false);
+        equal.targetHurtResistantTicks = 15;
+        equal.targetLastDamage = 12;
+        equal = ComboModel.advanceRecorded(equal, ComboModel.Action.RELEASE, true, config);
+        require(equal.acceptedHits == 0 && equal.damageDealt == 0,
+                "equal critical damage is rejected during the protected half-window");
+
+        for (int ticks : new int[] {11, 10}) {
+            var boundary = state(3, 0, false);
+            boundary.targetHurtResistantTicks = ticks;
+            boundary.targetLastDamage = 12;
+            boundary = ComboModel.advanceRecorded(boundary, ComboModel.Action.RELEASE, true, config);
+            require(boundary.acceptedHits == (ticks == 10 ? 1 : 0),
+                    "native hurtResistantTime comparison is strictly greater than ten: " + ticks);
+            if (ticks == 10) require(boundary.targetLastDamage == 8
+                            && boundary.targetHurtResistantTicks == 19 && boundary.acceptedFreshHits == 1,
+                    "ordinary damage starts a new full window at exactly ten, even after a critical");
+        }
+
+        // Victim latency keeps the local target stationary while the native
+        // server timer is checked independently of geometry/knockback arrival.
+        config.opponentRttMs = 2000;
+        var cycle = ComboModel.advanceRecorded(state(3, 0, false), ComboModel.Action.RELEASE, true, config);
+        for (int i = 0; i < 8; i++)
+            cycle = ComboModel.advanceRecorded(cycle, ComboModel.Action.RELEASE, false, config);
+        require(cycle.targetHurtResistantTicks == 11 && cycle.nowMs == 450,
+                "fresh damage decrements once per server tick, including its processing tick");
+        var tooSoon = ComboModel.advanceRecorded(cycle, ComboModel.Action.RELEASE, true, config);
+        require(tooSoon.acceptedHits == 1, "450ms after a fresh hit remains protected");
+        cycle = ComboModel.advanceRecorded(cycle, ComboModel.Action.RELEASE, false, config);
+        cycle = ComboModel.advanceRecorded(cycle, ComboModel.Action.RELEASE, true, config);
+        require(cycle.acceptedFreshHits == 2 && cycle.lastPredictedHitMs == 525,
+                "500ms after a fresh hit starts the next native damage window");
+        var stalled = ComboModel.advanceRecorded(state(3, 0, false), ComboModel.Action.RELEASE, true, config);
+        stalled.nowMs += 1000;
+        stalled = ComboModel.advanceRecorded(stalled, ComboModel.Action.RELEASE, true, config);
+        require(stalled.acceptedHits == 1 && stalled.targetHurtResistantTicks == 18,
+                "wall-clock delay without server ticks does not expire native immunity");
+    }
+
+    private static void criticalFallHistoryAndSprintUpgrade() {
+        var config = damageConfig();
+        var descent = state(100, 0, false);
+        descent.a.y = descent.serverA.y = descent.serverMotionA.y = 1;
+        descent.a.ground = descent.serverMotionA.ground = false;
+        descent.a.vy = -.1;
+        descent.serverMotionA.vy = .2; // Deliberately opposite latent vertical velocity.
+        descent = ComboModel.advanceRecorded(descent, ComboModel.Action.RELEASE, false, config);
+        near(descent.serverFallDistanceA, .1, 1e-6, "reported descent accumulates native float fallDistance");
+        require(descent.serverMotionA.vy > 0 && ComboModel.predictedAttackDamage(descent, true, config) == 12,
+                "critical eligibility follows reported fall history, not latent motionY sign");
+        descent.a.y = .01;
+        descent.a.vy = -.1;
+        descent = ComboModel.advanceRecorded(descent, ComboModel.Action.RELEASE, false, config);
+        require(descent.serverFallDistanceA == 0 && ComboModel.predictedAttackDamage(descent, true, config) == 8,
+                "a reported on-ground landing clears falling critical eligibility");
+
+        var rising = state(100, 0, false);
+        rising.a.y = rising.serverA.y = rising.serverMotionA.y = 1;
+        rising.a.ground = rising.serverMotionA.ground = false;
+        rising.a.vy = .1;
+        rising.serverMotionA.vy = -.3;
+        rising = ComboModel.advanceRecorded(rising, ComboModel.Action.RELEASE, false, config);
+        require(rising.serverMotionA.vy < 0 && rising.serverFallDistanceA == 0
+                        && ComboModel.predictedAttackDamage(rising, true, config) == 8,
+                "server gravity alone cannot invent fallDistance for a rising client");
+
+        var sprint = fallingContact(true);
+        sprint.targetHurtResistantTicks = 15;
+        sprint.targetLastDamage = 8;
+        sprint.serverMotionB.vx = .02;
+        sprint.serverMotionB.vy = -.2;
+        var blocked = sprint.copy();
+        blocked.targetLastDamage = 12;
+        sprint = ComboModel.advanceRecorded(sprint, ComboModel.Action.SPRINT, true, config);
+        blocked = ComboModel.advanceRecorded(blocked, ComboModel.Action.SPRINT, true, config);
+        require(sprint.acceptedDamageUpgrades == 1 && !sprint.aServerSprint
+                        && sprint.a.sprint && sprint.aLastSentSprint,
+                "sprinting critical upgrades consume server sprint while held Ctrl restores local sprint");
+        near(sprint.serverMotionB.vx, .52, 1e-9, "upgrade retains sprint bonus in victim server motion");
+        near(sprint.serverMotionB.vy, -.1, 1e-9, "upgrade adds only sprint vertical bonus, not fresh base KB");
+        near(sprint.b.x, blocked.b.x, 1e-9, "upgrade sends no victim S12 horizontal impulse");
+        near(sprint.b.y, blocked.b.y, 1e-9, "upgrade sends no victim S12 vertical impulse");
+        require(sprint.lastPredictedHurtCueMs == Long.MIN_VALUE,
+                "sprint bonus does not turn upgrade damage into a fresh hurt animation");
+        for (int i = 0; i < 3; i++) {
+            sprint = ComboModel.advanceRecorded(sprint, ComboModel.Action.RELEASE, false, config);
+            blocked = ComboModel.advanceRecorded(blocked, ComboModel.Action.RELEASE, false, config);
+        }
+        near(sprint.b.x, blocked.b.x, 1e-9, "player tracker does not later deliver upgrade server velocity");
+        near(sprint.b.y, blocked.b.y, 1e-9, "upgrade retains client trajectory after tracker updates");
+
+        var freshCritical = fallingContact(true);
+        freshCritical = ComboModel.advanceRecorded(freshCritical, ComboModel.Action.SPRINT, true, config);
+        require(freshCritical.acceptedFreshHits == 1 && freshCritical.targetLastDamage == 12
+                        && freshCritical.lastPredictedImpulseX > .8 && freshCritical.b.y > .4,
+                "fresh sprint critical still sends ordinary sprint knockback and full damage");
+        near(freshCritical.damageDealt, 12, 1e-9, "fresh critical deals its full damage");
+    }
+
+    private static void incomingCriticalAndConfirmedFresh() {
+        var config = clickingConfig();
+        var incoming = state(3, 0, false);
+        incoming.b.y = incoming.serverB.y = incoming.serverMotionB.y = 1;
+        incoming.b.ground = incoming.serverMotionB.ground = false;
+        incoming.serverFallDistanceB = .1f;
+        incoming.ownHurtResistantTicks = 15;
+        incoming.ownLastDamage = 8;
+        incoming.unansweredHits = 3;
+        incoming = ComboModel.advanceRecorded(incoming, ComboModel.Action.RELEASE, false, config);
+        require(incoming.receivedHits == 1 && incoming.receivedDamageUpgrades == 1
+                        && incoming.receivedFreshHits == 0 && incoming.ownLastDamage == 12,
+                "clicking defender can score the same critical immunity upgrade");
+        require(incoming.ownHurtResistantTicks == 14 && incoming.unansweredHits == 0,
+                "incoming upgrade ends an unanswered score streak without resetting immunity");
+        near(incoming.damageReceived, 4, 1e-9, "incoming upgrade damage is the difference");
+        near(incoming.accumulatedReward, -config.receivedHitPenalty, 1e-9,
+                "incoming upgrade receives the full score penalty");
+        require(incoming.lastPredictedReceivedHitMs == Long.MIN_VALUE
+                        && incoming.lastPredictedOwnHurtCueMs == Long.MIN_VALUE,
+                "incoming upgrade cannot manufacture our fresh hurt cue");
+
+        config = damageConfig();
+        var confirmed = fallingContact(false);
+        confirmed.targetHurtResistantTicks = 15;
+        confirmed.targetLastDamage = 12;
+        confirmed.scheduleConfirmedHit(25, config);
+        confirmed = ComboModel.advanceRecorded(confirmed, ComboModel.Action.RELEASE, false, config);
+        require(confirmed.acceptedFreshHits == 1 && confirmed.acceptedDamageUpgrades == 0
+                        && confirmed.targetLastDamage == 12 && confirmed.targetHurtResistantTicks == 19,
+                "hurt-cue confirmation forces fresh damage while retaining reconstructed critical damage");
+        var copied = confirmed.copy();
+        copied.serverFallDistanceA = 2;
+        copied.targetLastDamage = 8;
+        require(confirmed.serverFallDistanceA != 2 && confirmed.targetLastDamage == 12,
+                "confirmation snapshot owns independent critical and immunity history");
+    }
+
+    private static void optionalSearchDiversity() {
+        var config = clickingConfig();
+        require(!config.beamDiversity, "diversity defaults off for controlled native comparisons");
+        config.horizonTicks = 20;
+        config.beamWidth = 24;
+        config.minimumActionTicks = 1;
+        var initial = state(6, 0, false);
+        initial.scheduleAttackerImpulse(400, -.4, .36, 0);
+        var original = initial.copy();
+        config.beamDiversity = true;
+        var diverse = ComboModel.choose(initial, config);
+        require(diverse.rootActionsRetained == 3,
+                "a sufficiently wide diverse beam retains all three legal first actions through the horizon");
+        require(diverse.finalBeamSize > 0 && diverse.finalBeamSize <= config.beamWidth
+                        && diverse.distinctStateBins > 1 && diverse.distinctStateBins <= diverse.finalBeamSize,
+                "diversity returns a bounded beam with physically distinct alternatives");
+        require(diverse.plan.size() == config.horizonTicks
+                        && diverse.predictedEnd.nowMs == initial.nowMs + 50L * config.horizonTicks,
+                "root quotas do not shorten the requested planning horizon");
+        require(initial.pendingPacketCount() == original.pendingPacketCount()
+                        && initial.a.x == original.a.x && initial.b.x == original.b.x
+                        && initial.acceptedHits == 0 && initial.receivedHits == 0,
+                "diversity exploration preserves the anchor and its pending incoming impulse");
+
+        // A real ongoing key dwell can make two roots illegal. Exploration
+        // must respect that input constraint instead of inventing alternatives.
+        initial = ComboModel.advanceRecorded(state(6, 0, false), ComboModel.Action.WALK, false, config);
+        config.minimumActionTicks = 2;
+        var constrained = ComboModel.choose(initial, config);
+        require(constrained.action == ComboModel.Action.WALK && constrained.rootActionsRetained == 1,
+                "root protection cannot bypass the configured minimum action duration");
+
+        // With fewer slots than legal roots, global rank still decides which
+        // roots survive; enum iteration order must not force an arbitrary one.
+        config.minimumActionTicks = 1;
+        config.beamWidth = 1;
+        initial = state(6, 0, false);
+        var narrow = ComboModel.choose(initial, config);
+        config.beamDiversity = false;
+        var ranked = ComboModel.choose(initial, config);
+        require(narrow.finalBeamSize == 1 && narrow.rootActionsRetained == 1
+                        && narrow.plan.equals(ranked.plan),
+                "a one-slot diverse beam respects the width and retains rank-based behavior");
+        near(narrow.score, ranked.score, 1e-9, "disabled and one-slot search have the same score");
+    }
+
+    private static void completeMacrosAndWarmPlans() {
+        var config = new ComboModel.Config();
+        require(!config.macroSeeds, "complete macro candidates default off for controlled comparisons");
+        config.defenderClicks = true;
+        config.defenderControlAtMs = 150;
+        config.clickIntervalMs = config.defenderClickIntervalMs = 105;
+        config.minimumActionTicks = 1;
+        config.horizonTicks = 60;
+        config.beamWidth = 24;
+        config.opportunityPenalty = config.penetrationPenalty = config.contactEdgePenalty = 0;
+        // Documented pure-model case: both initially stationary, 6m apart,
+        // declared RTT 20/100, both clocks start at 150ms and then click at105ms.
+        var initial = new ComboModel.State(150,
+                new ComboModel.Body(0, 0, 0, -.0784, true, false),
+                new ComboModel.Body(6, 0, 0, -.0784, true, false),
+                new ComboModel.View(6, 0), new ComboModel.View(0, 0),
+                new ComboModel.View(0, 0), new ComboModel.View(6, 0));
+        var hold = initial;
+        for (int tick = 0; tick < config.horizonTicks; tick++)
+            hold = ComboModel.advance(hold, ComboModel.Action.SPRINT, config);
+        var ranked = ComboModel.choose(initial, config);
+        require(ranked.planSource.equals("beam"), "disabled macro/warm candidates preserve the beam source");
+        config.macroSeeds = true;
+        var seeded = ComboModel.choose(initial, config);
+        require(seeded.planSource.startsWith("macro:") && seeded.score > ranked.score,
+                "a complete delayed-payoff opening can beat the final ranked beam");
+        require(seeded.predictedHits - seeded.predictedReceivedHits > hold.acceptedHits - hold.receivedHits,
+                "macro opening beats all-SPRINT on the documented three-second score case");
+        require(initial.nowMs == 150 && initial.pendingPacketCount() == 0
+                        && initial.acceptedHits == 0 && initial.receivedHits == 0,
+                "complete rollout candidates do not mutate their shared input anchor");
+        require(seeded.plan.size() == 60 && seeded.predictedEnd.nowMs == 3150,
+                "macro and beam candidates receive the same complete horizon");
+
+        // Supplying that same plan as a warm candidate must retain the score
+        // and choose it on an exact tie, even when macro generation is disabled.
+        config.macroSeeds = false;
+        var warmInputs = new ArrayList<>(seeded.plan);
+        var warmed = ComboModel.choose(initial, config, warmInputs);
+        require(warmed.planSource.equals("warm") && warmed.plan.equals(seeded.plan),
+                "a full warm plan survives intermediate pruning and wins an equal-score tie");
+        near(warmed.score, seeded.score, 1e-9, "warm candidate uses the same rollout/scoring rules");
+        warmInputs.set(0, ComboModel.Action.WALK);
+        require(warmed.plan.get(0) == seeded.plan.get(0), "returned plan does not alias the caller's list");
+
+        // Reuse after one issued tick: caller shifts once and the implementation
+        // extends the final action, rather than accidentally replaying the first.
+        var afterFirst = ComboModel.advance(initial, seeded.plan.get(0), config);
+        var shifted = seeded.plan.subList(1, seeded.plan.size());
+        var continued = ComboModel.choose(afterFirst, config, shifted);
+        var expected = ComboModel.advance(afterFirst, shifted, config);
+        expected = ComboModel.advance(expected, shifted.get(shifted.size() - 1), config);
+        require(continued.planSource.equals("warm") && continued.plan.get(0) == shifted.get(0),
+                "already shifted warm plan begins with the next input and holds its last action");
+        near(continued.predictedEnd.a.x, expected.a.x, 1e-9, "shifted warm rollout has no duplicated first tick");
+        require(continued.predictedEnd.acceptedHits == expected.acceptedHits
+                        && continued.predictedEnd.receivedHits == expected.receivedHits,
+                "shifted warm rollout retains the same predicted score events");
+
+        config.horizonTicks = 6;
+        config.minimumActionTicks = 3;
+        config.macroSeeds = true;
+        var dwell = ComboModel.advanceRecorded(state(6, 0, false), ComboModel.Action.WALK, false, config);
+        var restricted = ComboModel.choose(dwell, config, List.of(ComboModel.Action.RELEASE));
+        require(restricted.action == ComboModel.Action.WALK && restricted.planSource.equals("beam"),
+                "macro and warm candidates cannot bypass an existing initial action dwell");
+
+        // Every returned transition must also respect dwell later in a plan,
+        // including short release windows and a switch back to sprint/walk.
+        config.minimumActionTicks = 4;
+        config.horizonTicks = 20;
+        var constrained = ComboModel.choose(initial, config);
+        var replay = initial;
+        for (var action : constrained.plan) {
+            require(replay.actionTicks == 0 || replay.actionTicks >= config.minimumActionTicks
+                            || action == replay.previousAction,
+                    "complete candidate respects minimum action duration at every transition");
+            replay = ComboModel.advance(replay, action, config);
+        }
+        config.horizonTicks = 1;
+        var tiny = ComboModel.choose(initial, config, List.of());
+        require(tiny.plan.size() == 1 && tiny.planSource.equals("beam"),
+                "short horizons and empty warm plans need no complete pause/resume candidate");
+    }
+
     private static void visibleInterpolation() {
         var tracker = new VisibleTracker();
         require(!tracker.update(0, 0, 0, 0, 0).valid, "one sample cannot reveal interpolation");
@@ -353,7 +836,15 @@ public final class JavaModelCheck {
             correctionAndPlanningIsolation();
             confirmedHitReplay();
             freshContactEdgeScoring();
-            System.out.println("PASS model geometry, controls, latent motion, confirmed replay, contact scoring and planning isolation");
+            defenderClickClockAndLocalDrag();
+            incomingKnockbackAndIndependentImmunity();
+            confirmedIncomingReplayAndCopies();
+            criticalDamageAndImmunity();
+            criticalFallHistoryAndSprintUpgrade();
+            incomingCriticalAndConfirmedFresh();
+            optionalSearchDiversity();
+            completeMacrosAndWarmPlans();
+            System.out.println("PASS model geometry, controls, symmetric combat, critical upgrades, confirmed replay, scoring, diversity and complete macro/warm rollouts");
         }
         if (group.equals("all") || group.equals("tracker")) {
             visibleInterpolation();

@@ -65,6 +65,14 @@ public final class Client {
             Object renderer=R.get(mc,"entityRenderer"); R.call(renderer,"getMouseOver",1.0f);
             Object ray=R.get(mc,"objectMouseOver"),selected=ray==null?null:R.get(ray,"entityHit");
             long wall=System.currentTimeMillis();
+            Object world=R.get(mc,"theWorld");
+            boolean canonical=R.call(world,"getEntityByID",(int)R.call(opponent,"getEntityId"))==opponent;
+            boolean staleRay=selected!=null&&selected!=opponent&&R.name(selected).equals(controls.getProperty("opponent",""));
+            if(!canonical||!identityContains(R.get(world,"loadedEntityList"),opponent)||staleRay){
+                targetWatchdog.invalidate();targetReady=false;clickGate=false;setKeys(false);
+                R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"unPressAllKeys");
+                log(Map.of("type","invalid_native_view","time",wall,"match",match,"canonical",canonical,"stale_raycast",staleRay));return;
+            }
             if(wall-probeAt>=50){
                 probeAt=wall;Map<String,Object> probe=new LinkedHashMap<>();
                 probe.put("type","reach_probe");probe.put("time",wall);probe.put("match",match);

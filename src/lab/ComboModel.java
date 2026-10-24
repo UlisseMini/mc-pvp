@@ -2,11 +2,14 @@ package lab;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Provisional, three-coordinate forward model for a W-only attacker and a
- * non-clicking defender that holds W + Ctrl and aims at its local opponent.
+ * defender that holds W + Ctrl and aims at its local opponent. The defender
+ * is a non-clicking probe by default; Config.defenderClicks enables attacks.
  *
  * This is a planning approximation, NOT a replacement for vanilla evaluation.
  * Its inputs must be estimates obtained from observations at least 150 ms old,
@@ -20,9 +23,10 @@ import java.util.List;
  * at a delayed observation can be advanced with the already issued actions to
  * obtain a present prediction. choose() returns the next normal W/Ctrl action.
  *
- * Important omissions: A/D, incoming attacks, criticals, exact body collisions,
- * exact packet/tick phases and rendering
- * float rounding. Position replication is modeled with 2-tick server tracking,
+ * Important omissions: A/D, enchantments, armor/potions, water/ladders/mounts,
+ * exact body collisions, exact packet/tick phases and rendering float rounding.
+ * Critical damage assumes the lab's dry, flat arena and unenchanted weapon.
+ * Position replication is modeled with 2-tick server tracking,
  * 1/32-block quantization, network queues and 3-tick client interpolation.
  */
 public final class ComboModel {
@@ -43,13 +47,29 @@ public final class ComboModel {
         /** Phases relative to the attacker tick, each in [0,49] ms. */
         public int serverPhaseMs = 25, opponentPhaseMs = 10, trackerPhase = 0;
         public int horizonTicks = 26, beamWidth = 24, minimumActionTicks = 2;
-        public int clickIntervalMs = 100, freshHitIntervalMs = 500;
+        /** Optional approximate state deduplication plus per-root-action quotas. */
+        public boolean beamDiversity = false;
+        /** Compare complete timed pause/resume plans against the final beam. */
+        public boolean macroSeeds = false;
+        public int clickIntervalMs = 100;
+        /** Native value is 500; larger values deliberately extend modeled immunity. */
+        public int freshHitIntervalMs = 500;
+        /** Native lab weapon damage, before the 1.5x falling critical multiplier. */
+        public float baseAttackDamage = 8;
+        public boolean modelCriticals = true;
+        /** Known opponent policy, not a read of its private live controls. */
+        public boolean defenderClicks = false;
+        public int defenderClickIntervalMs = 100;
+        /** Optional hypothesized physical click phase; never before control starts. */
+        public long defenderFirstClickAtMs = Long.MIN_VALUE;
         /** The native probe waits for its initial delayed observation before W. */
         public long defenderControlAtMs = Long.MIN_VALUE;
         /** Current model uses these calibrated hypotheses, not hidden S12 reads. */
         public double normalImpulseX = .4, normalImpulseY = .3608;
         public double sprintImpulseX = .9, sprintImpulseY = .4608;
         public double hitReward = 1000, opportunityPenalty = 300;
+        /** Cost of any accepted incoming hit, including a critical damage upgrade. */
+        public double receivedHitPenalty = 1000;
         /** Optional fresh-hit cost for contact inside the 3-block local ray edge. */
         public double contactEdgePenalty = 0;
         public double oneSidedReward = 0, mutualOpportunityPenalty = 0;
@@ -68,11 +88,15 @@ public final class ComboModel {
                     || opponentPhaseMs < 0 || opponentPhaseMs >= TICK_MS)
                 throw new IllegalArgumentException("Tick phases must be 0..49 ms");
             if (horizonTicks < 1 || horizonTicks > 60 || beamWidth < 1 || beamWidth > 256
-                    || minimumActionTicks < 1 || clickIntervalMs < 100
+                    || minimumActionTicks < 1 || clickIntervalMs < 100 || defenderClickIntervalMs < 100
                     || freshHitIntervalMs < 500)
                 throw new IllegalArgumentException("Invalid search or click limits");
             if (!Double.isFinite(contactEdgePenalty) || contactEdgePenalty < 0)
                 throw new IllegalArgumentException("Contact-edge penalty must be finite and nonnegative");
+            if (!Double.isFinite(receivedHitPenalty) || receivedHitPenalty < 0)
+                throw new IllegalArgumentException("Received-hit penalty must be finite and nonnegative");
+            if (!Float.isFinite(baseAttackDamage) || baseAttackDamage <= 0)
+                throw new IllegalArgumentException("Base attack damage must be finite and positive");
         }
     }
 
@@ -134,8 +158,9 @@ public final class ComboModel {
         }
     }
 
-    private enum PacketKind { A_MOVE, B_MOVE, A_SPRINT, B_SPRINT, ATTACK, CONFIRMED_HIT,
-        A_VIEW, B_VIEW, B_VELOCITY, A_HURT_CUE }
+    private enum PacketKind { A_MOVE, B_MOVE, A_SPRINT, B_SPRINT, ATTACK, B_ATTACK,
+        CONFIRMED_HIT, CONFIRMED_B_HIT, A_VIEW, B_VIEW, A_VELOCITY, B_VELOCITY,
+        A_HURT_CUE, A_OWN_HURT_CUE }
 
     /** Immutable predicted packet; queue ownership is confined to one State. */
     private static final class Packet {
@@ -156,7 +181,14 @@ public final class ComboModel {
 
     public static final class State {
         public long nowMs, nextPhysicalClickMs, targetVulnerableAtMs;
+        public long nextDefenderPhysicalClickMs, ownVulnerableAtMs;
+        /** Native per-victim timers; >10 allows only damage greater than lastDamage. */
+        public int targetHurtResistantTicks, ownHurtResistantTicks;
+        public float targetLastDamage, ownLastDamage;
+        /** Server fallDistance follows reported C03 descent, not latent motionY. */
+        public float serverFallDistanceA, serverFallDistanceB;
         public long lastPredictedHurtCueMs = Long.MIN_VALUE;
+        public long lastPredictedOwnHurtCueMs = Long.MIN_VALUE;
         public Body a, b;
         /** Latent server motion, evolved from our predicted C03 stream, never read live. */
         public Body serverMotionA, serverMotionB;
@@ -169,6 +201,13 @@ public final class ComboModel {
         public int serverTicks, actionTicks;
         public Action previousAction = Action.RELEASE;
         public int acceptedHits, defenderOpportunityTicks, physicalClicks, airMisses;
+        public int receivedHits, defenderPhysicalClicks, defenderAirMisses;
+        public int acceptedFreshHits, acceptedDamageUpgrades;
+        public int receivedFreshHits, receivedDamageUpgrades;
+        /** Actual health damage before armor; upgrades deal only the positive difference. */
+        public double damageDealt, damageReceived;
+        /** Consecutive accepted outgoing hits since the latest accepted incoming hit. */
+        public int unansweredHits, longestUnansweredHits;
         public int attackerOpportunityTicks, oneSidedOpportunityTicks, mutualOpportunityTicks;
         public double minimumDefenderRay = Double.POSITIVE_INFINITY;
         public double lastOurRay = Double.POSITIVE_INFINITY;
@@ -179,12 +218,20 @@ public final class ComboModel {
         public long lastPredictedHitMs = Long.MIN_VALUE, lastServerSprintCommandMs = Long.MIN_VALUE;
         public double lastPredictedImpulseX, lastPredictedImpulseY, lastPredictedImpulseZ;
         public boolean lastPredictedHitSprint;
+        public long lastPredictedReceivedHitMs = Long.MIN_VALUE;
+        public double lastReceivedImpulseX, lastReceivedImpulseY, lastReceivedImpulseZ;
+        public boolean lastReceivedHitSprint;
         private double trackedAX, trackedAY, trackedAZ, trackedBX, trackedBY, trackedBZ;
         private long nextPacketSequence;
+        // Public vulnerableAt fields remain compatibility/diagnostic estimates.
+        // Detect explicit caller changes, then use server ticks rather than wall
+        // time internally so a delayed server tick cannot expire immunity early.
+        private long mirroredTargetVulnerableAtMs, mirroredOwnVulnerableAtMs;
         private final ArrayList<Packet> packets = new ArrayList<>();
         // Keep consumed entries as well: later ordinary attacks must not recreate
         // a confirmed event, and repeated historical replay must be idempotent.
         private final ArrayList<Long> confirmedHitTimes = new ArrayList<>();
+        private final ArrayList<Long> confirmedReceivedHitTimes = new ArrayList<>();
 
         /**
          * Exact required initial estimates are deliberately explicit. Views are
@@ -194,7 +241,7 @@ public final class ComboModel {
          */
         public State(long nowMs, Body attacker, Body defender, View attackerView,
                      View defenderView, View serverAttacker, View serverDefender) {
-            this.nowMs = nowMs; nextPhysicalClickMs = nowMs;
+            this.nowMs = nowMs; nextPhysicalClickMs = nextDefenderPhysicalClickMs = nowMs;
             a = attacker.copy(); b = defender.copy();
             aSeesB = attackerView.copy(); bSeesA = defenderView.copy();
             serverA = serverAttacker.copy(); serverB = serverDefender.copy();
@@ -214,14 +261,34 @@ public final class ComboModel {
         public State copy() {
             State result = new State(nowMs, a, b, aSeesB, bSeesA, serverA, serverB);
             result.nextPhysicalClickMs = nextPhysicalClickMs;
+            result.nextDefenderPhysicalClickMs = nextDefenderPhysicalClickMs;
             result.targetVulnerableAtMs = targetVulnerableAtMs;
+            result.ownVulnerableAtMs = ownVulnerableAtMs;
+            result.mirroredTargetVulnerableAtMs = mirroredTargetVulnerableAtMs;
+            result.mirroredOwnVulnerableAtMs = mirroredOwnVulnerableAtMs;
+            result.targetHurtResistantTicks = targetHurtResistantTicks;
+            result.ownHurtResistantTicks = ownHurtResistantTicks;
+            result.targetLastDamage = targetLastDamage; result.ownLastDamage = ownLastDamage;
+            result.serverFallDistanceA = serverFallDistanceA;
+            result.serverFallDistanceB = serverFallDistanceB;
             result.lastPredictedHurtCueMs = lastPredictedHurtCueMs;
+            result.lastPredictedOwnHurtCueMs = lastPredictedOwnHurtCueMs;
             result.aServerSprint = aServerSprint; result.bServerSprint = bServerSprint;
             result.aLastSentSprint = aLastSentSprint; result.bLastSentSprint = bLastSentSprint;
             result.previousForward = previousForward; result.doubleTapTicks = doubleTapTicks;
             result.serverTicks = serverTicks; result.actionTicks = actionTicks;
             result.previousAction = previousAction;
             result.acceptedHits = acceptedHits;
+            result.receivedHits = receivedHits;
+            result.acceptedFreshHits = acceptedFreshHits;
+            result.acceptedDamageUpgrades = acceptedDamageUpgrades;
+            result.receivedFreshHits = receivedFreshHits;
+            result.receivedDamageUpgrades = receivedDamageUpgrades;
+            result.damageDealt = damageDealt; result.damageReceived = damageReceived;
+            result.defenderPhysicalClicks = defenderPhysicalClicks;
+            result.defenderAirMisses = defenderAirMisses;
+            result.unansweredHits = unansweredHits;
+            result.longestUnansweredHits = longestUnansweredHits;
             result.defenderOpportunityTicks = defenderOpportunityTicks;
             result.attackerOpportunityTicks = attackerOpportunityTicks;
             result.oneSidedOpportunityTicks = oneSidedOpportunityTicks;
@@ -241,12 +308,18 @@ public final class ComboModel {
             result.lastPredictedImpulseY = lastPredictedImpulseY;
             result.lastPredictedImpulseZ = lastPredictedImpulseZ;
             result.lastPredictedHitSprint = lastPredictedHitSprint;
+            result.lastPredictedReceivedHitMs = lastPredictedReceivedHitMs;
+            result.lastReceivedImpulseX = lastReceivedImpulseX;
+            result.lastReceivedImpulseY = lastReceivedImpulseY;
+            result.lastReceivedImpulseZ = lastReceivedImpulseZ;
+            result.lastReceivedHitSprint = lastReceivedHitSprint;
             result.trackedAX = trackedAX; result.trackedAY = trackedAY;
             result.trackedBX = trackedBX; result.trackedBY = trackedBY;
             result.trackedAZ = trackedAZ; result.trackedBZ = trackedBZ;
             result.nextPacketSequence = nextPacketSequence;
             result.packets.addAll(packets); // Packet is immutable.
             result.confirmedHitTimes.addAll(confirmedHitTimes);
+            result.confirmedReceivedHitTimes.addAll(confirmedReceivedHitTimes);
             return result;
         }
 
@@ -271,15 +344,31 @@ public final class ComboModel {
          * receive no contactEdgePenalty; that cost applies to predicted attacks.
          */
         public boolean scheduleConfirmedHit(long serverTimeMs, Config config) {
+            return scheduleConfirmation(serverTimeMs, config, true);
+        }
+
+        /**
+         * Symmetric historical B->A hit, proven only by our eligible delayed own
+         * hurt cue. Uses a separate copied ledger and suppresses only B_ATTACK.
+         * The same rewind-before-hit-minus-100 requirement applies. No opponent
+         * packet or referee input is needed or permitted by the policy.
+         */
+        public boolean scheduleConfirmedIncomingHit(long serverTimeMs, Config config) {
+            return scheduleConfirmation(serverTimeMs, config, false);
+        }
+
+        private boolean scheduleConfirmation(long serverTimeMs, Config config, boolean fromA) {
             config.validate();
-            if (confirmedHitTimes.contains(serverTimeMs)) return false;
+            ArrayList<Long> ledger = fromA ? confirmedHitTimes : confirmedReceivedHitTimes;
+            long previous = fromA ? lastPredictedHitMs : lastPredictedReceivedHitMs;
+            if (ledger.contains(serverTimeMs)) return false;
             if (serverTimeMs < nowMs)
                 throw new IllegalArgumentException("Rewind before scheduling a past confirmed hit");
-            if (lastPredictedHitMs != Long.MIN_VALUE
-                    && Math.abs((double) lastPredictedHitMs - serverTimeMs) <= 100)
+            if (previous != Long.MIN_VALUE && Math.abs((double) previous - serverTimeMs) <= 100)
                 throw new IllegalStateException("Rewind before confirmed hit minus 100 ms to undo a conflicting prediction");
-            confirmedHitTimes.add(serverTimeMs);
-            enqueue(this, PacketKind.CONFIRMED_HIT, serverTimeMs, 0, 0, false);
+            ledger.add(serverTimeMs);
+            enqueue(this, fromA ? PacketKind.CONFIRMED_HIT : PacketKind.CONFIRMED_B_HIT,
+                    serverTimeMs, 0, 0, false);
             return true;
         }
 
@@ -289,6 +378,10 @@ public final class ComboModel {
         }
         public void scheduleDefenderImpulse(double arrivalMs, double vx, double vy, double vz) {
             enqueue3(this, PacketKind.B_VELOCITY, arrivalMs, vx, vy, vz, false);
+        }
+        /** Symmetric incoming-impulse hypothesis from delayed legal observations. */
+        public void scheduleAttackerImpulse(double arrivalMs, double vx, double vy, double vz) {
+            enqueue3(this, PacketKind.A_VELOCITY, arrivalMs, vx, vy, vz, false);
         }
         public void scheduleAttackerView(double arrivalMs, double targetX, double targetY) {
             scheduleAttackerView(arrivalMs, targetX, targetY, 0);
@@ -463,31 +556,63 @@ public final class ComboModel {
     public static final class Decision {
         public final Action action;
         public final List<Action> plan;
+        /** "beam", "warm", or the selected complete pause/resume macro description. */
+        public final String planSource;
         public final double score, minimumDefenderRay;
-        public final int predictedHits, predictedDefenderOpportunityTicks;
+        public final int predictedHits, predictedReceivedHits, predictedDefenderOpportunityTicks;
         public final long firstDefenderOpportunityMs;
         public final State predictedEnd;
-        private Decision(Node best, State initial, Config config) {
+        /** Beam-only diagnostics; complete macro/warm candidates are compared afterward. */
+        public final int finalBeamSize, distinctStateBins, rootActionsRetained;
+        private Decision(Node best, State initial, Config config, List<Node> finalBeam) {
             action = best.plan[0];
             plan = List.of(best.plan.clone());
+            planSource = best.planSource;
             score = rank(best, config) - initial.accumulatedReward;
             predictedHits = best.state.acceptedHits - initial.acceptedHits;
+            predictedReceivedHits = best.state.receivedHits - initial.receivedHits;
             predictedDefenderOpportunityTicks = best.state.defenderOpportunityTicks
                     - initial.defenderOpportunityTicks;
             minimumDefenderRay = best.state.minimumDefenderRay;
             firstDefenderOpportunityMs = best.state.firstDefenderOpportunityMs;
             predictedEnd = best.state.copy();
+            finalBeamSize = finalBeam.size();
+            Set<String> states = new HashSet<>();
+            Set<Action> roots = new HashSet<>();
+            for (Node node : finalBeam) {
+                states.add(stateBin(node.state, config));
+                roots.add(node.plan[0]);
+            }
+            distinctStateBins = states.size(); rootActionsRetained = roots.size();
         }
     }
 
     private static final class Node {
         final State state;
         final Action[] plan;
-        Node(State state, Action[] plan) { this.state = state; this.plan = plan; }
+        final String planSource;
+        Node(State state, Action[] plan) { this(state, plan, "beam"); }
+        Node(State state, Action[] plan, String planSource) {
+            this.state = state; this.plan = plan; this.planSource = planSource;
+        }
     }
 
     /** Beam-search approximation, not an optimal-policy claim. Does not mutate input. */
     public static Decision choose(State initial, Config config) {
+        return choose(initial, config, null);
+    }
+
+    /**
+     * Optionally compare an already shifted prior winning plan. The caller
+     * removes actions actually issued since that decision; the first supplied
+     * action is the next proposed input. A short plan is extended by holding its
+     * final action, and a long plan is truncated to this horizon. An empty/null
+     * plan adds no candidate. Illegal dwell transitions discard the candidate,
+     * without silently rewriting it. Neither the input state nor list is changed.
+     * This complete rollout is independent of Config.macroSeeds. On an exact
+     * score tie the warm plan is retained to avoid a gratuitous plan change.
+     */
+    public static Decision choose(State initial, Config config, List<Action> warmPlan) {
         config.validate();
         State seed = initial.copy();
         seed.minimumDefenderRay = Double.POSITIVE_INFINITY;
@@ -499,9 +624,7 @@ public final class ComboModel {
             ArrayList<Node> next = new ArrayList<>(beam.size() * 3);
             for (Node node : beam) {
                 for (Action action : Action.values()) {
-                    if (node.state.actionTicks > 0
-                            && node.state.actionTicks < config.minimumActionTicks
-                            && action != node.state.previousAction) continue;
+                    if (!legalAction(node.state, action, config)) continue;
                     State state = node.state.copy();
                     step(state, action, config);
                     Action[] plan = new Action[depth + 1];
@@ -511,10 +634,148 @@ public final class ComboModel {
                 }
             }
             next.sort(order);
-            beam = new ArrayList<>(next.subList(0, Math.min(config.beamWidth, next.size())));
+            beam = config.beamDiversity ? diverseBeam(next, config)
+                    : new ArrayList<>(next.subList(0, Math.min(config.beamWidth, next.size())));
         }
         beam.sort(order);
-        return new Decision(beam.get(0), initial, config);
+        Node best = beam.get(0);
+        if (config.macroSeeds) {
+            for (int start : new int[]{0, 1, 2, 3, 4, 6, 8, 10, 12}) {
+                for (int duration : new int[]{1, 2, 3, 4, 6, 8}) {
+                    // Keep the return to forward movement inside the horizon.
+                    if (start + duration >= config.horizonTicks) continue;
+                    for (Action resume : new Action[]{Action.SPRINT, Action.WALK}) {
+                        Action[] plan = new Action[config.horizonTicks];
+                        for (int tick = 0; tick < plan.length; tick++)
+                            plan[tick] = tick < start ? Action.SPRINT
+                                    : tick < start + duration ? Action.RELEASE : resume;
+                        Node candidate = completeRollout(seed, plan, config,
+                                "macro:start=" + start + ",release=" + duration + ",resume=" + resume);
+                        if (candidate != null && rank(candidate, config) > rank(best, config)) best = candidate;
+                    }
+                }
+            }
+        }
+        if (warmPlan != null && !warmPlan.isEmpty()) {
+            Action[] plan = new Action[config.horizonTicks];
+            for (int tick = 0; tick < plan.length; tick++)
+                plan[tick] = warmPlan.get(Math.min(tick, warmPlan.size() - 1));
+            Node candidate = completeRollout(seed, plan, config, "warm");
+            if (candidate != null && rank(candidate, config) >= rank(best, config)) best = candidate;
+        }
+        return new Decision(best, initial, config, beam);
+    }
+
+    private static boolean legalAction(State state, Action action, Config config) {
+        return action != null && (state.actionTicks == 0
+                || state.actionTicks >= config.minimumActionTicks || action == state.previousAction);
+    }
+
+    /** One state copy per complete candidate, then ordinary mutable native-tick steps. */
+    private static Node completeRollout(State seed, Action[] plan, Config config, String source) {
+        State state = seed.copy();
+        for (Action action : plan) {
+            if (!legalAction(state, action, config)) return null;
+            step(state, action, config);
+        }
+        return new Node(state, plan, source);
+    }
+
+    /**
+     * Preserve up to an equal quota for each legal first action, then fill by
+     * score. Within each root keep only the best node in a quantized physical
+     * state bin. Quotas stop an initially costly opener disappearing before its
+     * later payoff; bins prevent many control histories filling the same quota.
+     * A beam narrower than the number of roots cannot protect every root.
+     * These are approximate bins, not an assertion of exact state equivalence.
+     */
+    private static ArrayList<Node> diverseBeam(List<Node> ranked, Config config) {
+        ArrayList<Node> unique = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        Set<Action> roots = new HashSet<>();
+        for (Node node : ranked) {
+            Action root = node.plan[0];
+            if (seen.add(root.ordinal() + ":" + stateBin(node.state, config))) {
+                unique.add(node); roots.add(root);
+            }
+        }
+        if (config.beamWidth < roots.size())
+            return new ArrayList<>(unique.subList(0, Math.min(config.beamWidth, unique.size())));
+        int quota = Math.max(1, config.beamWidth / roots.size());
+        int[] counts = new int[Action.values().length];
+        Set<Node> selected = new HashSet<>();
+        ArrayList<Node> result = new ArrayList<>();
+        for (Node node : unique) {
+            int root = node.plan[0].ordinal();
+            if (counts[root] < quota) {
+                result.add(node); selected.add(node); counts[root]++;
+            }
+        }
+        for (Node node : unique) {
+            if (result.size() >= config.beamWidth) break;
+            if (selected.add(node)) result.add(node);
+        }
+        return result;
+    }
+
+    private static String stateBin(State s, Config c) {
+        StringBuilder key = new StringBuilder(320);
+        // The arena is translation-invariant in x/z. Retain relative body,
+        // client-view and server positions at 0.1m resolution, and each distinct
+        // velocity at 0.025 blocks/tick. Vertical coordinates remain floor-based.
+        positionBin(key, s.b.x, s.b.y, s.b.z, s.a);
+        quantized(key, s.a.y, 10);
+        for (Body body : new Body[]{s.a, s.b, s.serverMotionA, s.serverMotionB}) {
+            quantized(key, body.vx, 40); quantized(key, body.vy, 40); quantized(key, body.vz, 40);
+            key.append(body.ground ? 'g' : 'a');
+        }
+        for (View view : new View[]{s.aSeesB, s.bSeesA, s.serverA, s.serverB}) {
+            positionBin(key, view.x, view.y, view.z, s.a);
+            positionBin(key, view.goalX, view.goalY, view.goalZ, s.a);
+            quantized(key, view.lookX, 20); quantized(key, view.lookZ, 20);
+            key.append(view.interpolationTicks).append('/');
+        }
+        key.append(s.a.sprint).append(s.b.sprint).append(s.aServerSprint).append(s.bServerSprint)
+                .append(s.aLastSentSprint).append(s.bLastSentSprint).append(s.previousForward)
+                .append('/').append(s.targetHurtResistantTicks).append('/').append(s.ownHurtResistantTicks)
+                .append('/').append(s.targetLastDamage).append('/').append(s.ownLastDamage)
+                .append('/').append(s.serverFallDistanceA > 0).append(s.serverFallDistanceB > 0)
+                .append('/').append(s.previousAction.ordinal())
+                .append('/').append(Math.min(s.actionTicks, c.minimumActionTicks))
+                .append('/').append(s.doubleTapTicks)
+                .append('/').append(s.nextPhysicalClickMs - s.nowMs)
+                .append('/').append(s.nextDefenderPhysicalClickMs - s.nowMs);
+        // Equal bodies can still have different futures when START/STOP,
+        // movement, interpolation or impulse packets are in flight. Keep their
+        // order, timing and quantized contents rather than merging those states.
+        for (Packet packet : s.packets) {
+            key.append('|').append(packet.kind.ordinal()).append(':')
+                    .append(Math.round((packet.dueMs - s.nowMs) * 2)).append(':').append(packet.flag);
+            switch (packet.kind) {
+                case A_MOVE, B_MOVE, A_VIEW, B_VIEW -> {
+                    positionBin(key, packet.x, packet.y, packet.z, s.a);
+                    if (Double.isFinite(packet.lookX)) {
+                        quantized(key, packet.lookX, 20); quantized(key, packet.lookZ, 20);
+                    }
+                }
+                case A_VELOCITY, B_VELOCITY -> {
+                    quantized(key, packet.x, 40); quantized(key, packet.y, 40); quantized(key, packet.z, 40);
+                }
+                case ATTACK, B_ATTACK -> quantized(key, packet.x, 10);
+                default -> { }
+            }
+        }
+        for (long hit : s.confirmedHitTimes) if (hit >= s.nowMs - 100) key.append("/A").append(hit - s.nowMs);
+        for (long hit : s.confirmedReceivedHitTimes) if (hit >= s.nowMs - 100) key.append("/B").append(hit - s.nowMs);
+        return key.toString();
+    }
+
+    private static void positionBin(StringBuilder key, double x, double y, double z, Body origin) {
+        quantized(key, x - origin.x, 10); quantized(key, y, 10); quantized(key, z - origin.z, 10);
+    }
+
+    private static void quantized(StringBuilder key, double value, double scale) {
+        key.append('/').append(Math.round(value * scale));
     }
 
     /**
@@ -645,8 +906,29 @@ public final class ComboModel {
         }
         double penetration = Math.max(0, 3 + c.safetyMargin - s.lastDefenderRay);
         s.accumulatedReward -= c.penetrationPenalty * penetration * penetration;
-        // This opponent never attacks. It therefore never incurs local attack drag.
         boolean active = time >= c.defenderControlAtMs;
+        long nextClick = Math.max(s.nextDefenderPhysicalClickMs,
+                Math.max(c.defenderControlAtMs, c.defenderFirstClickAtMs));
+        if (c.defenderClicks && active && time >= nextClick) {
+            s.defenderPhysicalClicks++;
+            // Independent short presses retain their physical phase even when
+            // consumption occurs on a later native tick. Air misses do not add
+            // an artificial 500ms cooldown; key release clears that counter.
+            long injectionTime = Math.max(nextClick, time - TICK_MS + 1);
+            s.nextDefenderPhysicalClickMs = injectionTime + c.defenderClickIntervalMs;
+            if (s.lastDefenderRay <= 3) {
+                enqueue(s, PacketKind.B_ATTACK, time + c.opponentRttMs / 2,
+                        s.lastDefenderRay, 0, false);
+                if (s.b.sprint) {
+                    s.b.vx *= .6;
+                    s.b.vz *= .6;
+                    s.b.sprint = false;
+                }
+            } else s.defenderAirMisses++;
+        }
+        // Native hold-W also holds Ctrl. Restore LOCAL sprint after a contact,
+        // even an immune one. If the last transmitted flag was already true,
+        // this restoration does not send a new server START_SPRINTING command.
         s.b.sprint = active;
         move(s.b, active ? look[0] : 0, active ? look[1] : 0);
         s.bSeesA.step();
@@ -685,6 +967,7 @@ public final class ComboModel {
     }
 
     private static void serverTick(State s, Config c, long time) {
+        synchronizeExternalImmunity(s, c, time);
         List<Packet> incoming = takeDue(s, 0, time);
         for (Packet packet : incoming) {
             switch (packet.kind) {
@@ -693,13 +976,24 @@ public final class ComboModel {
                 case A_SPRINT -> { s.aServerSprint = packet.flag; s.lastServerSprintCommandMs = time; }
                 case B_SPRINT -> s.bServerSprint = packet.flag;
                 case ATTACK -> {
-                    if (nearConfirmedHit(s, time)) break;
+                    if (nearConfirmedHit(s, time, true)) break;
                     double dx = s.serverB.x - s.serverA.x, dy = s.serverB.y - s.serverA.y;
                     double dz = s.serverB.z - s.serverA.z;
-                    if (dx * dx + dy * dy + dz * dz >= 36 || time < s.targetVulnerableAtMs) break;
-                    acceptHit(s, c, time, packet.x);
+                    if (dx * dx + dy * dy + dz * dz >= 36) break;
+                    acceptHit(s, c, time, packet.x, true, false);
                 }
-                case CONFIRMED_HIT -> acceptHit(s, c, time, Double.NaN);
+                case B_ATTACK -> {
+                    if (nearConfirmedHit(s, time, false)) break;
+                    double dx = s.serverA.x - s.serverB.x, dy = s.serverA.y - s.serverB.y;
+                    double dz = s.serverA.z - s.serverB.z;
+                    if (dx * dx + dy * dy + dz * dz >= 36) break;
+                    acceptHit(s, c, time, packet.x, false, false);
+                }
+                // A visible hurt animation proves a FRESH hit, not a damage
+                // upgrade. Its reconstructed critical condition still determines
+                // lastDamage, which controls subsequent ordinary attack attempts.
+                case CONFIRMED_HIT -> acceptHit(s, c, time, Double.NaN, true, true);
+                case CONFIRMED_B_HIT -> acceptHit(s, c, time, Double.NaN, false, true);
                 default -> throw new IllegalStateException("Wrong server packet");
             }
         }
@@ -720,37 +1014,124 @@ public final class ComboModel {
                 s.trackedBX = bx; s.trackedBY = by; s.trackedBZ = bz;
             }
         }
+        // EntityPlayerMP.onUpdate decrements once per world/server tick. Its
+        // per-C03 onUpdateEntity path explicitly does not decrement this timer.
+        // Packets are processed before this update: a fresh 20 becomes 19 here.
+        if (s.targetHurtResistantTicks > 0) s.targetHurtResistantTicks--;
+        if (s.ownHurtResistantTicks > 0) s.ownHurtResistantTicks--;
         s.serverTicks++;
     }
 
-    private static boolean nearConfirmedHit(State state, long serverTimeMs) {
-        for (long confirmed : state.confirmedHitTimes)
+    private static boolean nearConfirmedHit(State state, long serverTimeMs, boolean fromA) {
+        for (long confirmed : fromA ? state.confirmedHitTimes : state.confirmedReceivedHitTimes)
             if (Math.abs((double) serverTimeMs - confirmed) <= 100) return true;
         return false;
     }
 
-    private static void acceptHit(State s, Config c, long time, double localRay) {
-        s.acceptedHits++;
-        s.accumulatedReward += c.hitReward;
-        if (Double.isFinite(localRay)) {
-            double penetration = 3 - localRay;
-            s.accumulatedReward -= c.contactEdgePenalty * penetration * penetration;
+    private static void synchronizeExternalImmunity(State s, Config c, long time) {
+        if (s.targetVulnerableAtMs != s.mirroredTargetVulnerableAtMs) {
+            s.targetHurtResistantTicks = ticksFromDeadline(s.targetVulnerableAtMs, time);
+            if (s.targetHurtResistantTicks > 10 && s.targetLastDamage == 0)
+                s.targetLastDamage = c.baseAttackDamage;
+            s.mirroredTargetVulnerableAtMs = s.targetVulnerableAtMs;
         }
-        s.targetVulnerableAtMs = time + c.freshHitIntervalMs;
-        boolean sprint = s.aServerSprint;
-        double[] impulse = knockback(s, sprint, c);
-        s.lastPredictedHitMs = time; s.lastPredictedHitSprint = sprint;
-        s.lastPredictedImpulseX = impulse[0]; s.lastPredictedImpulseY = impulse[1];
-        s.lastPredictedImpulseZ = impulse[2];
-        // S12 overwrites local velocity using latent server motion, not half of
-        // the victim's actual local velocity. Replayed confirmations use this
-        // same reconstructed event-time state, rather than cue-time motion.
-        enqueueHit(s, PacketKind.B_VELOCITY, time + c.opponentRttMs / 2,
-                impulse[0], impulse[1], impulse[2], time);
-        enqueueHit(s, PacketKind.A_HURT_CUE, time + c.ownRttMs / 2, 0, 0, 0, time);
+        if (s.ownVulnerableAtMs != s.mirroredOwnVulnerableAtMs) {
+            s.ownHurtResistantTicks = ticksFromDeadline(s.ownVulnerableAtMs, time);
+            if (s.ownHurtResistantTicks > 10 && s.ownLastDamage == 0)
+                s.ownLastDamage = c.baseAttackDamage;
+            s.mirroredOwnVulnerableAtMs = s.ownVulnerableAtMs;
+        }
+    }
+
+    private static int ticksFromDeadline(long deadline, long time) {
+        if (deadline <= time) return 0;
+        return (int) Math.min(Integer.MAX_VALUE, 10 + Math.ceil(((double) deadline - time) / TICK_MS));
+    }
+
+    /**
+     * Vanilla 1.8.9 EntityPlayer.attackTargetEntityWithCurrentItem: sprinting is
+     * compatible with criticals. Assume no ladder, water, blindness or mount in
+     * this lab; damage uses server fallDistance and onGround, NOT motionY<0.
+     */
+    public static float predictedAttackDamage(State s, boolean fromA, Config c) {
+        float distance = fromA ? s.serverFallDistanceA : s.serverFallDistanceB;
+        Body motion = fromA ? s.serverMotionA : s.serverMotionB;
+        return c.modelCriticals && distance > 0 && !motion.ground
+                ? c.baseAttackDamage * 1.5f : c.baseAttackDamage;
+    }
+
+    private static void acceptHit(State s, Config c, long time, double localRay,
+                                  boolean fromA, boolean confirmedFresh) {
+        int resistantTicks = fromA ? s.targetHurtResistantTicks : s.ownHurtResistantTicks;
+        float lastDamage = fromA ? s.targetLastDamage : s.ownLastDamage;
+        float damage = predictedAttackDamage(s, fromA, c);
+        boolean fresh = confirmedFresh || resistantTicks <= 10;
+        // EntityLivingBase.attackEntityFrom compares full incoming damage,
+        // deals only the difference for an upgrade, and returns true for it.
+        if (!fresh && damage <= lastDamage) return;
+        float appliedDamage = fresh ? damage : damage - lastDamage;
+        boolean sprint = fromA ? s.aServerSprint : s.bServerSprint;
+        double[] impulse = fresh ? knockback(s, fromA, sprint, c) : null;
+        if (fromA) {
+            s.acceptedHits++;
+            s.targetLastDamage = damage;
+            s.damageDealt += appliedDamage;
+            s.longestUnansweredHits = Math.max(s.longestUnansweredHits, ++s.unansweredHits);
+            s.accumulatedReward += c.hitReward;
+            if (fresh && Double.isFinite(localRay)) {
+                double penetration = 3 - localRay;
+                s.accumulatedReward -= c.contactEdgePenalty * penetration * penetration;
+            }
+            if (fresh) {
+                s.acceptedFreshHits++;
+                s.targetHurtResistantTicks = 10 + (int) Math.ceil(c.freshHitIntervalMs / (double) TICK_MS);
+                s.targetVulnerableAtMs = s.mirroredTargetVulnerableAtMs = time + c.freshHitIntervalMs;
+                s.lastPredictedHitMs = time; s.lastPredictedHitSprint = sprint;
+                s.lastPredictedImpulseX = impulse[0]; s.lastPredictedImpulseY = impulse[1];
+                s.lastPredictedImpulseZ = impulse[2];
+            } else s.acceptedDamageUpgrades++;
+        } else {
+            s.receivedHits++;
+            s.ownLastDamage = damage;
+            s.damageReceived += appliedDamage;
+            s.unansweredHits = 0;
+            s.accumulatedReward -= c.receivedHitPenalty;
+            if (fresh) {
+                s.receivedFreshHits++;
+                s.ownHurtResistantTicks = 10 + (int) Math.ceil(c.freshHitIntervalMs / (double) TICK_MS);
+                s.ownVulnerableAtMs = s.mirroredOwnVulnerableAtMs = time + c.freshHitIntervalMs;
+                s.lastPredictedReceivedHitMs = time; s.lastReceivedHitSprint = sprint;
+                s.lastReceivedImpulseX = impulse[0]; s.lastReceivedImpulseY = impulse[1];
+                s.lastReceivedImpulseZ = impulse[2];
+            } else s.receivedDamageUpgrades++;
+        }
+        if (fresh) {
+            // Fresh damage sets velocityChanged and base knockback. The outer
+            // player attack sends S12 including any sprint bonus, then restores
+            // the victim's pre-hit SERVER motion. Only local client motion changes.
+            double victimRtt = fromA ? c.opponentRttMs : c.ownRttMs;
+            enqueueHit(s, fromA ? PacketKind.B_VELOCITY : PacketKind.A_VELOCITY, time + victimRtt / 2,
+                    impulse[0], impulse[1], impulse[2], time);
+            enqueueHit(s, fromA ? PacketKind.A_HURT_CUE : PacketKind.A_OWN_HURT_CUE,
+                    time + c.ownRttMs / 2, 0, 0, 0, time);
+        } else if (sprint) {
+            // Upgrade damage does not set velocityChanged or base knockback.
+            // addVelocity still adds sprint bonus to latent SERVER motion, but
+            // sets only isAirBorne: no S12 is sent and motion is not restored.
+            // Players have sendVelocityUpdates=false in vanilla EntityTracker,
+            // so the tracker does not deliver this bonus to the victim either.
+            // External pre-existing velocityChanged causes are outside this lab.
+            Body victimMotion = fromA ? s.serverMotionB : s.serverMotionA;
+            View hitter = fromA ? s.serverA : s.serverB;
+            victimMotion.vx += .5 * hitter.lookX;
+            victimMotion.vy += .1;
+            victimMotion.vz += .5 * hitter.lookZ;
+        }
         if (sprint) {
-            s.aServerSprint = false;
-            s.serverMotionA.vx *= .6; s.serverMotionA.vz *= .6;
+            if (fromA) s.aServerSprint = false;
+            else s.bServerSprint = false;
+            Body hitterMotion = fromA ? s.serverMotionA : s.serverMotionB;
+            hitterMotion.vx *= .6; hitterMotion.vz *= .6;
         }
     }
 
@@ -779,6 +1160,14 @@ public final class ComboModel {
                 motion.vz += .2 * lookZ;
             }
         }
+        // EntityPlayerMP.handleFalling is called with the accepted C03 position
+        // delta. Its ordinary simulated moveEntity/updateFallState override is
+        // empty, so latent server gravity must NOT manufacture a critical.
+        float fallDistance = ours ? s.serverFallDistanceA : s.serverFallDistanceB;
+        if (packet.flag) fallDistance = 0;
+        else if (packet.y < position.y) fallDistance = (float) (fallDistance + position.y - packet.y);
+        if (ours) s.serverFallDistanceA = fallDistance;
+        else s.serverFallDistanceB = fallDistance;
         position.x = packet.x; position.y = packet.y; position.z = packet.z;
         position.lookX = lookX; position.lookZ = lookZ;
         motion.x = packet.x; motion.y = packet.y; motion.z = packet.z;
@@ -803,24 +1192,36 @@ public final class ComboModel {
         return knockback(s, sprint, c);
     }
 
+    /** B->A counterpart, using A's latent server motion and B's server yaw. */
+    public static double[] predictedIncomingKnockback(State s, boolean sprint, Config c) {
+        return knockback(s, false, sprint, c);
+    }
+
     private static double[] knockback(State s, boolean sprint, Config c) {
-        double[] away = horizontalUnit(s.serverB.x - s.serverA.x, s.serverB.z - s.serverA.z);
+        return knockback(s, true, sprint, c);
+    }
+
+    private static double[] knockback(State s, boolean fromA, boolean sprint, Config c) {
+        View hitter = fromA ? s.serverA : s.serverB;
+        View victim = fromA ? s.serverB : s.serverA;
+        Body victimMotion = fromA ? s.serverMotionB : s.serverMotionA;
+        double[] away = horizontalUnit(victim.x - hitter.x, victim.z - hitter.z);
         double vx, vy, vz;
         if (c.dynamicServerImpulses) {
-            vx = s.serverMotionB.vx * .5 + .4000000059604645 * away[0];
-            vy = Math.min(.4000000059604645, s.serverMotionB.vy * .5 + .4000000059604645);
-            vz = s.serverMotionB.vz * .5 + .4000000059604645 * away[1];
+            vx = victimMotion.vx * .5 + .4000000059604645 * away[0];
+            vy = Math.min(.4000000059604645, victimMotion.vy * .5 + .4000000059604645);
+            vz = victimMotion.vz * .5 + .4000000059604645 * away[1];
             if (sprint) {
                 // The sprint bonus follows last SERVER yaw, which can oppose
                 // the base displacement direction after the players cross.
-                vx += .5 * s.serverA.lookX; vy += .1; vz += .5 * s.serverA.lookZ;
+                vx += .5 * hitter.lookX; vy += .1; vz += .5 * hitter.lookZ;
             }
         } else {
             vx = c.normalImpulseX * away[0]; vz = c.normalImpulseX * away[1];
             vy = sprint ? c.sprintImpulseY : c.normalImpulseY;
             if (sprint) {
-                vx += (c.sprintImpulseX - c.normalImpulseX) * s.serverA.lookX;
-                vz += (c.sprintImpulseX - c.normalImpulseX) * s.serverA.lookZ;
+                vx += (c.sprintImpulseX - c.normalImpulseX) * hitter.lookX;
+                vz += (c.sprintImpulseX - c.normalImpulseX) * hitter.lookZ;
             }
         }
         return new double[]{velocityQuantize(vx), velocityQuantize(vy), velocityQuantize(vz)};
@@ -831,8 +1232,10 @@ public final class ComboModel {
             switch (packet.kind) {
                 case A_VIEW -> s.aSeesB.receive(packet.x, packet.y, packet.z);
                 case B_VIEW -> s.bSeesA.receive(packet.x, packet.y, packet.z);
+                case A_VELOCITY -> { s.a.vx = packet.x; s.a.vy = packet.y; s.a.vz = packet.z; }
                 case B_VELOCITY -> { s.b.vx = packet.x; s.b.vy = packet.y; s.b.vz = packet.z; }
                 case A_HURT_CUE -> s.lastPredictedHurtCueMs = time;
+                case A_OWN_HURT_CUE -> s.lastPredictedOwnHurtCueMs = time;
                 default -> throw new IllegalStateException("Wrong client packet");
             }
         }
@@ -840,7 +1243,7 @@ public final class ComboModel {
 
     private static int destination(PacketKind kind) {
         return switch (kind) {
-            case A_VIEW, A_HURT_CUE -> 1;
+            case A_VIEW, A_VELOCITY, A_HURT_CUE, A_OWN_HURT_CUE -> 1;
             case B_VIEW, B_VELOCITY -> 2;
             default -> 0;
         };

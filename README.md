@@ -64,6 +64,10 @@ shared: this first version is intended for **one human player at a time**.
 | `evolved-champion` | Selected candidate, once a search finishes |
 | `mpc-probe` | Approximate physics/packet beam search, specialized to the non-clicking probe |
 | `mpc-visible` / `mpc-ensemble` | Experimental visible-trajectory reconstruction, with one or several tick-phase hypotheses |
+| `mpc-duel` | Experimental two-way model of clicking hold-W, choosing ordinary W/Ctrl inputs |
+| `mpc-diverse` | Longer planning horizon with distinct physical states and first-action alternatives |
+| `mpc-macro` | Also compares complete opening/reset sequences and the shifted previous plan |
+| `pvp-candidate` | Latest saved selection from the actual-score search, once it finishes |
 
 - Normal speed, no potions, no enchantments, flat grass, diamond swords.
 - First to 100 **server-accepted attacks**. Health is restored after real damage
@@ -105,6 +109,7 @@ python3 experiments.py latency-pilot
 python3 experiments.py integrity-load
 python3 experiments.py evolve --population 4 --generations 1
 python3 experiments.py evolve-locks --population 4 --generations 1
+python3 experiments.py evolve-pvp --population 4 --generations 1
 python3 experiments.py league --bots hold-w wtap hit-reset predictive --rtts 20,20 20,120
 python3 experiments.py league --bots hold-w zest-w zest-strafe --rtts 0,0 20,100 20,140
 ```
@@ -118,7 +123,13 @@ candidate, then tests different ping and a different opponent outside selection.
 The random seed fixes parameter generation; process scheduling and game/network
 clock phases still vary. Two games per candidate are an exploratory sample.
 
-`evolve-locks` instead selects against the non-clicking probe using the
+`evolve-pvp` selects by **actual hit margin against clicking hold-W**, with
+sustained combo duration as a secondary objective. Each candidate plays both
+starting sides at 20/100 ms RTT. W-tap controls and fresh matches at 0/0 and
+100/20 ms test whether the selected candidate improves beyond its selection
+games. A saved candidate is an experiment, not a proven champion.
+
+`evolve-locks` is a diagnostic search against the non-clicking probe using the
 conditional native one-sided percentage. It searches a small set of controller
 weights and observer timing/velocity corrections. Each candidate gets both
 starting sides at 20/100 ms RTT, followed by fresh repeats and 0/0 and 100/20 ms
@@ -158,17 +169,33 @@ settings use server view distance 8 and client render distance 6, with continuou
 target-tick and loaded-region checks. Larger view distance is needed for the
 vanilla client's surrounding-area guard, even in an otherwise empty arena.
 
-The primary combo metric is time that **A can hit B and B cannot hit A**, divided
-by **all time A can hit B**. Each side's own native `getMouseOver` raycast is
+The main performance metric is **the score against clicking hold-W**. Sustained
+combo duration comes second: at least three fresh knockback contacts while the
+defender continuously lacks native reach, with no accepted return attack and
+at most one second between contacts. Both players can briefly be out of range
+inside that span; a long retreat without fresh contacts does not count.
+
+The conditional reach percentage is a diagnostic: time that **A can hit B and
+B cannot hit A**, divided by **all time A can hit B**. Each side's own native
+`getMouseOver` raycast is
 sampled independently and aligned using shared host timestamps. Damage immunity
 does not remove a reach opportunity. `native_windows.py` integrates durations,
 excludes stale sample gaps, and reports paired coverage, total attack opportunity
-and the longest continuous one-sided window. This prevents a 100–0 score against
-the non-clicking probe from being mistaken for a successful combo lock.
+and the longest continuous one-sided window. A 100–0 score against the
+non-clicking probe is not a PvP win or proof of a sustained combo lock.
 
 The model is a planning approximation. Neither its geometry nor its predicted
 opponent state replaces the two real clients' measurements. Private opponent
 client logs are used only for analysis after a match.
+
+The newer duel model includes both players' contact slowdown, fresh knockback,
+falling critical upgrades, and queued attacks. Early native tests improved from
+losses around 80–100 to wins of 100–75/77 with complete opening sequences.
+The diverse planner's fresh side/ping tests scored 100–77, 100–87 and 100–87.
+These are modest gains over the hold-W baseline, not the requested 100–10/20
+result. They did not produce a sustained reach-denial lock against the clicking
+baseline. See [the actual-score search](experiments/pvp-search.json) for subsequent
+selection games and separately listed fresh tests.
 
 Every match records server trajectories and accepted hits in
 `runtime/replays/<match>.jsonl`, with client input/attack telemetry under

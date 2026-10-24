@@ -130,10 +130,19 @@ perfect-aim abstraction and uses only the currently visible local entity.
 
 ## Optimal against a fixed opponent
 
-### Measure the one-sided window
+### Measure winning play and sustained locks
+
+The final objective is the actual hit score against a clicking hold-W opponent.
+The next priority is continuous combo duration. Count a sustained lock only
+when at least three fresh knockback contacts occur during continuous native
+defender reach denial, with no accepted return attack and no contact gap above
+one second. Brief intervals when neither player can hit can be part of a lock.
+The non-clicking probe is a diagnostic stepping stone, never the final opponent.
+
+### Diagnose the one-sided window
 
 At each real host time t, let A(t) mean A's own client raycast selects B, and
-B(t) mean B's own client raycast selects A. The main metric for A is:
+B(t) mean B's own client raycast selects A. A useful diagnostic for A is:
 
     integral(A(t) AND NOT B(t)) / integral(A(t))
 
@@ -155,8 +164,14 @@ events, native-inspired friction, tracking quantization and interpolation.
 The victim's knockback velocity comes from the **server entity's motion**, not
 half its real local client velocity. The sprint bonus follows the attacker's
 last server yaw. These distinctions matter especially after players cross.
-The approximate model is specialized to a non-clicking W/Ctrl defender; it does
-not yet model return attacks and cannot claim a best response to a clicking bot.
+Probe policies use a non-clicking W/Ctrl defender. `mpc-duel` also models the
+defender's fixed physical click clock, local contact slowdown, server sprint
+state, incoming hit immunity and delayed knockback delivery. Both directions
+use the same event model. The model tracks integer immunity timers, last damage and server fall distance,
+including accepted falling-critical upgrades inside an existing hurt window.
+Those upgrades score without fresh base knockback or a new hurt animation.
+The model still approximates collisions and event phases, so it cannot claim
+an optimal best response.
 
 `VisibleTracker.java` uses only eligible visible positions. If a remote entity
 moves from p to q during one native tick, its interpolation target is
@@ -170,10 +185,21 @@ The experimental ensemble maintains several server, opponent and tracker phases.
 Each receives the same delayed observations and our own input history. A recovered
 goal anchors a historical estimate near its inferred source time, then recorded
 inputs are replayed forward. Phase hypotheses are ranked by their pre-correction
-visible residuals. Only the selected estimate enters beam search. The primary
-native metric determines whether this extra modeling actually improves play.
+visible residuals. Only the selected estimate enters beam search. An optional diverse beam keeps
+separate first-action quotas and quantized physical-state bins, including pending
+causal events. This reduces duplicate histories but does not make pruning exact. Actual native
+PvP scores determine whether this extra modeling improves play.
 
-Newly observed hurt cues constrain the historical server hit to a tick-wide
+Even a diverse beam can prune a useful opening before its delayed payoff. In one
+fully specified three-second model case, ordinary beam search predicted 6:6,
+while a two-tick opening pause predicted 9:6. The extra points were critical
+upgrades, not a sustained lock. An optional planner therefore also evaluates
+complete sprint/pause/resume sequences and the shifted previous winning plan.
+Each candidate still advances the same approximate event model and produces
+ordinary W/Ctrl inputs; every native physical click continues. A simulated score
+advantage must survive native games before it is treated as an improvement.
+
+Newly observed outgoing and incoming hurt cues constrain each historical server hit to a tick-wide
 interval after accounting for our network leg. A phase hypothesis chooses a
 compatible hit time, rewinds before conflicting predicted impulses, and replays
 the already issued inputs with one confirmed historical model event. This

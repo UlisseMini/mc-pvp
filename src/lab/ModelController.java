@@ -8,29 +8,31 @@ public final class ModelController {
     static final TreeMap<Long,Eligible> observations=new TreeMap<>();
     static final ArrayList<Particle> particles=new ArrayList<>();
     static final VisibleTracker tracker=new VisibleTracker();
+    static List<ComboModel.Action> previousPlan=List.of();
     static double originX,originZ;
-    static long lastInjection,lastIssued,lastEligibleTick=-1,lastHurtCue;
+    static long lastInjection,lastIssued,lastEligibleTick=-1,lastHurtCue,lastIncomingCue;
     static Client.Observation previousEligible;
     static final class Issued {
         final ComboModel.Action action;final boolean click;
         Issued(ComboModel.Action action,boolean click){this.action=action;this.click=click;}
     }
     static final class Eligible {
-        final Client.Observation obs;final VisibleTracker.Estimate estimate;final long cue;
-        Eligible(Client.Observation obs,VisibleTracker.Estimate estimate,long cue){this.obs=obs;this.estimate=estimate;this.cue=cue;}
+        final Client.Observation obs;final VisibleTracker.Estimate estimate;final long cue,incomingCue;
+        Eligible(Client.Observation obs,VisibleTracker.Estimate estimate,long cue,long incomingCue){this.obs=obs;this.estimate=estimate;this.cue=cue;this.incomingCue=incomingCue;}
     }
     static final class Particle {
         final ComboModel.Config config=new ComboModel.Config();
         final TreeMap<Long,ComboModel.State> snapshots=new TreeMap<>();
         final TreeMap<Long,Long> confirmed=new TreeMap<>();
+        final TreeMap<Long,Long> confirmedIncoming=new TreeMap<>();
         long processed=Long.MIN_VALUE,lastGoalSource=Long.MIN_VALUE;
         double loss,ownError,renderError,goalError,anchorError;
         ComboModel.State current;
         Particle(int server,int opponent,int tracking){config.serverPhaseMs=server;config.opponentPhaseMs=opponent;config.trackerPhase=tracking;}
     }
     static void reset(){
-        inputs.clear();observations.clear();particles.clear();tracker.reset();previousEligible=null;
-        lastInjection=lastIssued=lastHurtCue=0;lastEligibleTick=-1;LegacyModelController.reset();
+        inputs.clear();observations.clear();particles.clear();tracker.reset();previousEligible=null;previousPlan=List.of();
+        lastInjection=lastIssued=lastHurtCue=lastIncomingCue=0;lastEligibleTick=-1;LegacyModelController.reset();
     }
     static void click(long time){lastInjection=time;LegacyModelController.click(time);}
     static void idle(long time){
@@ -40,7 +42,8 @@ public final class ModelController {
     static void observeEligible(Client.Observation obs){
         if(obs.tick<=lastEligibleTick)return;
         if(obs.targetHurt>0&&(previousEligible==null||obs.targetHurt>previousEligible.targetHurt))lastHurtCue=obs.time;
-        observations.put(obs.time,new Eligible(obs,tracker.update(obs.tick,obs.time,obs.tx,obs.ty,obs.tz),lastHurtCue));
+        if(obs.hurt>0&&(previousEligible==null||obs.hurt>previousEligible.hurt))lastIncomingCue=obs.time;
+        observations.put(obs.time,new Eligible(obs,tracker.update(obs.tick,obs.time,obs.tx,obs.ty,obs.tz),lastHurtCue,lastIncomingCue));
         lastEligibleTick=obs.tick;previousEligible=obs;
     }
     static void configure(ComboModel.Config c){
@@ -52,6 +55,13 @@ public final class ModelController {
         c.penetrationPenalty=Client.number("penetration_penalty",300);
         c.oneSidedReward=Client.number("one_sided_reward",0);c.mutualOpportunityPenalty=Client.number("mutual_opportunity_penalty",0);
         c.contactEdgePenalty=Client.number("contact_edge_penalty",0);
+        c.defenderClicks=Client.number("defender_clicks",0)>0;
+        c.defenderClickIntervalMs=(int)Client.number("defender_click_ms",105);
+        c.defenderFirstClickAtMs=Client.epoch+150+(long)Client.number("defender_click_phase_ms",0);
+        c.receivedHitPenalty=Client.number("received_hit_penalty",1000);
+        c.modelCriticals=Client.number("model_criticals",1)>0;
+        c.beamDiversity=Client.number("beam_diversity",0)>0;
+        c.macroSeeds=Client.number("macro_seeds",0)>0;
         c.dynamicServerImpulses=Client.number("dynamic_server_impulses",1)>0;
     }
     static ComboModel.State initial(Client.Observation obs){
@@ -79,6 +89,7 @@ public final class ModelController {
     }
     static ComboModel.State replay(Particle p,ComboModel.State state,long until){
         for(long hit:p.confirmed.values())if(hit>=state.nowMs)state.scheduleConfirmedHit(hit,p.config);
+        for(long hit:p.confirmedIncoming.values())if(hit>=state.nowMs)state.scheduleConfirmedIncomingHit(hit,p.config);
         for(var issued:new ArrayList<>(inputs.subMap(state.nowMs,true,until,false).entrySet())){
             state.nowMs=issued.getKey();
             Eligible e=observations.get(state.nowMs);if(e!=null)assimilate(state,e,p.config);
@@ -98,7 +109,8 @@ public final class ModelController {
         double dx=o.tx-originX-predicted.aSeesB.x,dy=o.ty-4-predicted.aSeesB.y,dz=o.tz-originZ-predicted.aSeesB.z;
         p.renderError=Math.sqrt(dx*dx+dy*dy+dz*dz);
         p.goalError=v.valid?Math.sqrt(Math.pow(v.goalX-originX-predicted.aSeesB.goalX,2)+Math.pow(v.goalY-4-predicted.aSeesB.goalY,2)+Math.pow(v.goalZ-originZ-predicted.aSeesB.goalZ,2)):0;
-        double loss=p.renderError*p.renderError+(v.highConfidence()?.3*p.goalError*p.goalError:0);
+        double loss=p.renderError*p.renderError+(v.highConfidence()?.3*p.goalError*p.goalError:0)
+                +Client.number("own_fit_weight",0)*p.ownError*p.ownError;
         p.loss=.94*p.loss+.06*Math.min(16,loss);
         ComboModel.State state=predicted.copy();p.anchorError=0;
         double source=v.sourceTimeMs(p.config.ownRttMs,p.config.opponentRttMs)+Client.number("goal_source_shift_ms",0);
@@ -128,26 +140,27 @@ public final class ModelController {
                 state=replay(p,state,o.time);
             }
         }
-        if(e.cue>0&&!p.confirmed.containsKey(e.cue)){
-            double upper=e.cue-p.config.ownRttMs/2,lower=upper-50;
-            long hit;
-            if(predicted.lastPredictedHitMs>=lower&&predicted.lastPredictedHitMs<=upper)hit=predicted.lastPredictedHitMs;
-            else {
-                hit=Math.round((lower+upper)/2);double error=Double.POSITIVE_INFINITY;
-                for(long tick:inputs.headMap(o.time,true).keySet()){
-                    long candidate=tick+p.config.serverPhaseMs;
-                    if(candidate>=lower&&candidate<=upper&&Math.abs(candidate-(lower+upper)/2)<error){hit=candidate;error=Math.abs(candidate-(lower+upper)/2);}
-                }
-            }
-            p.confirmed.put(e.cue,hit);
-            var rewind=p.snapshots.lowerEntry(hit-100);
-            if(rewind!=null){
-                state=rewind.getValue().copy();p.snapshots.tailMap(state.nowMs,true).clear();
-                state=replay(p,state,o.time);
-            }
-        }
+        state=confirm(p,state,e.cue,predicted.lastPredictedHitMs,o.time,false);
+        state=confirm(p,state,e.incomingCue,predicted.lastPredictedReceivedHitMs,o.time,true);
         state.nowMs=o.time;assimilate(state,e,p.config);
         p.snapshots.tailMap(o.time,true).clear();p.snapshots.put(o.time,state.copy());p.processed=o.time;
+    }
+    static ComboModel.State confirm(Particle p,ComboModel.State state,long cue,long predictedTime,long observedAt,boolean incoming){
+        TreeMap<Long,Long> ledger=incoming?p.confirmedIncoming:p.confirmed;
+        if(cue<=0||ledger.containsKey(cue))return state;
+        double upper=cue-p.config.ownRttMs/2,lower=upper-50;
+        long hit;
+        if(predictedTime>=lower&&predictedTime<=upper)hit=predictedTime;
+        else {
+            hit=Math.round((lower+upper)/2);double error=Double.POSITIVE_INFINITY;
+            for(long tick:inputs.headMap(observedAt,true).keySet()){
+                long candidate=tick+p.config.serverPhaseMs;
+                if(candidate>=lower&&candidate<=upper&&Math.abs(candidate-(lower+upper)/2)<error){hit=candidate;error=Math.abs(candidate-(lower+upper)/2);}
+            }
+        }
+        ledger.put(cue,hit);var rewind=p.snapshots.lowerEntry(hit-100);
+        if(rewind!=null){state=rewind.getValue().copy();p.snapshots.tailMap(state.nowMs,true).clear();state=replay(p,state,observedAt);}
+        return state;
     }
     static double binResidual(double predicted,double quantized){return Math.max(quantized,Math.min(quantized+1.0/32-1e-9,predicted))-predicted;}
     static ComboModel.Action decide(Client.Observation obs,long now){
@@ -174,10 +187,20 @@ public final class ModelController {
         }
         ArrayList<Particle> ranked=new ArrayList<>(particles);ranked.sort(Comparator.comparingDouble(p->p.loss));
         Particle best=ranked.get(0);ComboModel.State state=best.current;
-        ComboModel.Decision decision=ComboModel.choose(state,best.config);
+        ComboModel.Decision decision=best.config.macroSeeds
+            ?ComboModel.choose(state,best.config,previousPlan.isEmpty()?List.of():previousPlan.subList(1,previousPlan.size()))
+            :ComboModel.choose(state,best.config);
+        previousPlan=decision.plan;
         Eligible latest=observations.floorEntry(obs.time).getValue();VisibleTracker.Estimate v=latest.estimate;
         Map<String,Object> entry=new LinkedHashMap<>();entry.put("type","mpc_plan");entry.put("time",now);entry.put("observation_time",obs.time);entry.put("match",Client.match);
         entry.put("observer",Client.controls.getProperty("observer"));entry.put("action",decision.action.name());entry.put("predicted_hits",decision.predictedHits);
+        entry.put("predicted_received_hits",decision.predictedReceivedHits);
+        entry.put("plan_source",decision.planSource);entry.put("beam_size",decision.finalBeamSize);
+        entry.put("beam_state_bins",decision.distinctStateBins);entry.put("beam_root_actions",decision.rootActionsRetained);
+        entry.put("predicted_fresh_hits",decision.predictedEnd.acceptedFreshHits-state.acceptedFreshHits);
+        entry.put("predicted_damage_upgrades",decision.predictedEnd.acceptedDamageUpgrades-state.acceptedDamageUpgrades);
+        entry.put("predicted_received_fresh_hits",decision.predictedEnd.receivedFreshHits-state.receivedFreshHits);
+        entry.put("predicted_received_damage_upgrades",decision.predictedEnd.receivedDamageUpgrades-state.receivedDamageUpgrades);
         entry.put("predicted_defender_opportunity_ticks",decision.predictedDefenderOpportunityTicks);entry.put("score",decision.score);
         int can=decision.predictedEnd.attackerOpportunityTicks-state.attackerOpportunityTicks,one=decision.predictedEnd.oneSidedOpportunityTicks-state.oneSidedOpportunityTicks;
         entry.put("predicted_attacker_opportunity_ticks",can);entry.put("predicted_one_sided_ticks",one);entry.put("predicted_one_sided_fraction",can>0?(double)one/can:0);
