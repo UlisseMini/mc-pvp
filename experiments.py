@@ -14,7 +14,7 @@ import re
 import time
 import uuid
 from lab import ROOT,RUNTIME
-from lab_runtime import send,properties
+from lab_runtime import send,properties,match_events
 
 OUT=ROOT/'experiments'
 
@@ -64,7 +64,8 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                 intervals=[];resets=0;input_metrics={}
                 for side in ('a','b'):
                     path=RUNTIME/'bots'/result[side].removeprefix('LabSlot')/'events.jsonl'
-                    events=[e for line in path.read_text().splitlines() if (e:=json.loads(line)).get('match')==result['id']]
+                    events=list(match_events(path,result['id']))
+                    reaction=int(parameters[result['policy_'+side]].get('reaction_ms',150))
                     clicks=[e for e in events if e['type']=='click']
                     if parameters[result['policy_'+side]].get('kind')=='standstill':
                         controls=[e for e in events if e['type']=='observation']
@@ -89,13 +90,16 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                             issues.add(f'{side}: player fell below the declared flat arena floor')
                         if event['type']=='science_move' and any(event[k].get('isCollidedHorizontally',False) for k in ('before','after')):
                             issues.add(f'{side}: unexpected horizontal block collision in flat arena')
-                        if event['type'] in ('momentum_plan','mpc_plan','burst_plan') and event['time']-event['observation_time']<150:
-                            issues.add(f'{side}: tactical plan reacted before150ms')
-                        if event['type']=='click' and parameters[result['policy_'+side]].get('click_mode')=='reactive-burst':
-                            if event['time']-event.get('burst_observation_time',event['time'])<150:
+                        if event['type'] in ('momentum_plan','mpc_plan','burst_plan','motion_click_plan') and event['time']-event['observation_time']<reaction:
+                            issues.add(f'{side}: tactical plan reacted before declared delay')
+                        if event['type']=='click' and parameters[result['policy_'+side]].get('click_mode') in ('reactive-burst','motion-burst'):
+                            if event['time']-event.get('burst_observation_time',event['time'])<reaction:
                                 issues.add(f'{side}: burst click missing delayed-observation evidence')
-                            if not any(event.get('burst_'+reason) for reason in ('opening','defensive','attack_window')):
+                            if not any(event.get('burst_'+reason) for reason in ('opening','defensive','attack_window','recoil')):
                                 issues.add(f'{side}: burst click outside declared windows')
+                            if event.get('burst_recoil') and (event.get('input_poll')!='native_tick' or not event.get('burst_local_sprint') or not event.get('burst_local_contact_ready')
+                                    or event.get('burst_radial_motion',0)>=-.005 or event['burst_observation_time']+100>=event['burst_attack_start_at']):
+                                issues.add(f'{side}: recoil click violated current-motion or reserved-slot rule')
                         if event['type']=='engine_attack' and 'native_raycast_distance' in event:
                             if event['native_raycast_distance']>3.00001:issues.add(f'{side}: native attack exceeded three blocks')
                             if not all(event.get(k) for k in ('target_ready','target_loaded_identity','ray_selected_target')):issues.add(f'{side}: attack used an invalid native view')
@@ -108,7 +112,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                                 elif target_advanced_at is not None and event['time']-target_advanced_at>300:issues.add(f'{side}: opponent stopped ticking')
                         if event['type'] in ('wtap','zest_plan','zest_select'):
                             resets+=1
-                            if event['time']-event['cue_time']<150:issues.add(f'{side}: W-tap reacted before 150 ms')
+                            if event['time']-event['cue_time']<reaction:issues.add(f'{side}: W-tap reacted before declared delay')
                 if result.get('ping_changes',0):issues.add('latency changed during fixed-condition evaluation')
                 from analyze_views import analyze
                 replication=analyze(result['id'])

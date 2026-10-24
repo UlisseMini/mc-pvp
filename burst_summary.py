@@ -44,6 +44,8 @@ def summarize(path):
             'fresh':[row['exchanges']['sides'][s]['counts']['fresh']for s in (a,b)],
             'upgrades':[row['exchanges']['sides'][s]['counts']['upgrades']for s in (a,b)],
             'cps':[diag['sides'][s]['average_cps']for s in (a,b)],
+            'longest_unanswered_streak':[g['combat_metrics'][s]['longest_unanswered_streak']for s in (a,b)],
+            'sustained_combo_ms':[g['combat_metrics'][s]['sustained_native_combo']['duration_ms']for s in (a,b)],
             'duration_seconds':g['duration_seconds'],
             'drag_contacts':[diag['sides'][s]['contact_drag_counts']for s in (a,b)]})
     out=[]
@@ -57,7 +59,7 @@ def summarize(path):
             'games':len(plan['results']),'groups':out,'minimum_physical_click_gap_ms':minimum_gap,
             'maximum_client_travel_p95_ms':max_p95,'maximum_client_travel_gap_ms':max_gap,
             'native_release_runs':release_counts,
-            'caution':'Three games per condition; no claim of a phase-independent advantage or combo invariant. Fresh attacks exclude within-immunity damage upgrades. Drag counts describe contacts, not a causal decomposition.'}
+            'caution':'Small exploratory cohorts; inspect game counts per condition. No claim of a phase-independent advantage or combo invariant. Fresh attacks exclude within-immunity damage upgrades. Drag counts describe contacts, not a causal decomposition.'}
 
 
 if __name__=='__main__':

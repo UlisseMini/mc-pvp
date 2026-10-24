@@ -41,8 +41,9 @@ def client_events(result,side):
     if archive.exists():return list(jsonl(archive))
     source=RUNTIME/'bots'/result[side].removeprefix('LabSlot')/'events.jsonl'
     if not source.exists():return [] # Human input streams are not instrumented.
-    records=[e for e in jsonl(source)
-             if e.get('match')==result['id'] and result['start']<=e.get('time',0)<=result['finish']]
+    from lab_runtime import match_events
+    records=[e for e in match_events(source,result['id'])
+             if result['start']<=e.get('time',0)<=result['finish']]
     archive.parent.mkdir(parents=True,exist_ok=True)
     with gzip.open(archive,'wt') as stream:
         for e in records:stream.write(json.dumps(e,separators=(',',':'))+'\n')

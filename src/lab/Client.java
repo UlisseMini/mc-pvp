@@ -32,6 +32,7 @@ public final class Client {
     static final BurstClickController burstClicks=new BurstClickController();
     static BurstClickController.Decision burstDecision;
     static long burstObservedAt;
+    static boolean nativeInputPoll;
     static boolean targetReady;
 
     static final class Observation {
@@ -57,7 +58,7 @@ public final class Client {
     public static void frame(Object minecraft) {
         if(!"client".equals(System.getProperty("lab.role")))return;
         mc=minecraft;
-        ReplicationTrace.frame();
+        if(!nativeInputPoll)ReplicationTrace.frame();
         try {
             if(player==null || opponent==null || !targetReady || (Boolean)R.get(opponent,"isDead") || !active())return;
             // Perfect aim uses the current local, interpolated entity, never server state.
@@ -104,6 +105,28 @@ public final class Client {
                 }
                 log(probe);
             }
+            MotionClickController.Decision motionClick=null;
+            double radialMotion=0;boolean localSprint=false,localContactReady=false;
+            if(controls.getProperty("click_mode","fixed").equals("motion-burst")){
+                if(number("reaction_ms",150)!=0)throw new IllegalArgumentException("Motion burst requires zero artificial reaction delay");
+                radialMotion=(R.num(player,"motionX")*dx+R.num(player,"motionZ")*dz)/Math.max(.001,Math.hypot(dx,dz));
+                localSprint=(Boolean)R.call(player,"isSprinting");
+                localContactReady=selected==opponent&&R.num(mc,"leftClickCounter")<=0;
+                motionClick=MotionClickController.decide(new MotionClickController.Input(wall,lastObservedTargetHurt,
+                        number("ping",0),radialMotion,localSprint,nativeInputPoll,localContactReady),MotionClickController.Settings.from(controls));
+                clickGate=motionClick.click();
+                if(nativeInputPoll){
+                    Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","motion_click_plan");plan.put("time",wall);
+                    plan.put("monotonic_ns",System.nanoTime());plan.put("match",match);plan.put("native_tick",ticks);
+                    plan.put("observation_time",wall);plan.put("landed_cue",lastObservedTargetHurt);
+                    plan.put("radial_motion",radialMotion);plan.put("local_sprint",localSprint);
+                    plan.put("local_contact_ready",localContactReady);
+                    plan.put("opening",motionClick.opening());plan.put("attack_window",motionClick.attackWindow());
+                    plan.put("recoil",motionClick.recoil());plan.put("recoil_opportunity",motionClick.recoilOpportunity());
+                    plan.put("reserved",motionClick.reserved());plan.put("estimated_ready_at",motionClick.readyAt());
+                    plan.put("attack_start_at",motionClick.attackStartAt());plan.put("click_gate",clickGate);log(plan);
+                }
+            }
             long now=System.nanoTime();
             if(clickGate&&firstClickEligible==0)firstClickEligible=now;
             long firstDelay=(long)Math.max(0,Math.min(100,number("first_click_delay_ms",0)))*1_000_000L;
@@ -121,9 +144,18 @@ public final class Client {
                 Map<String,Object> issued=new LinkedHashMap<>();
                 issued.put("type","click");issued.put("time",System.currentTimeMillis());issued.put("monotonic_ns",lastClick);
                 issued.put("match",match);issued.put("forward",forward);
+                issued.put("input_poll",nativeInputPoll?"native_tick":"frame");
+                issued.put("reaction_ms",(int)number("reaction_ms",150));
                 if(controls.getProperty("click_mode","fixed").equals("reactive-burst")&&burstDecision!=null){
                     issued.put("burst_opening",burstDecision.opening());issued.put("burst_defensive",burstDecision.defensive());
                     issued.put("burst_attack_window",burstDecision.attackWindow());issued.put("burst_observation_time",burstObservedAt);
+                }
+                if(motionClick!=null){
+                    issued.put("burst_opening",motionClick.opening());issued.put("burst_attack_window",motionClick.attackWindow());
+                    issued.put("burst_recoil",motionClick.recoil());issued.put("burst_observation_time",wall);
+                    issued.put("burst_radial_motion",radialMotion);issued.put("burst_local_sprint",localSprint);
+                    issued.put("burst_local_contact_ready",localContactReady);
+                    issued.put("burst_attack_start_at",motionClick.attackStartAt());
                 }
                 log(issued);
             }
@@ -220,7 +252,9 @@ public final class Client {
             if(R.get(mc,"currentScreen")!=null)R.call(mc,"displayGuiScreen",(Object)null);
             R.call(mc,"setIngameFocus");
             Observation sample=new Observation(now); history.addLast(sample); previous=sample;
-            long cutoff=now-150;
+            long reaction=(long)number("reaction_ms",150);
+            if(reaction<0||reaction>1000)throw new IllegalArgumentException("Invalid reaction delay");
+            long cutoff=now-reaction;
             if(controls.getProperty("kind","").equals("mpcprobe")){
                 // Feed all eligible native ticks before deque compaction. The
                 // visible interpolation inverse needs consecutive samples.
@@ -232,7 +266,7 @@ public final class Client {
             while(history.size()>1 && history.stream().skip(1).findFirst().get().time<=cutoff)history.removeFirst();
             Observation obs=history.peekFirst();
             if(obs.time>cutoff){setKeys(false);clickGate=false;if(controls.getProperty("kind","").equals("mpcprobe"))ModelController.idle(now);return;}
-            // All tactical decisions use only observations at least 150 ms old.
+            // The declared artificial observation delay can be zero in fast policies.
             Observation before=lastConsumed;
             if(before==null || obs.time>before.time){
                 if(obs.hurt>0 && (before==null || obs.hurt>before.hurt))lastObservedHurt=obs.time;
@@ -255,13 +289,13 @@ public final class Client {
             boolean w=true;
             if(kind.equals("standstill"))w=false;
             if(kind.equals("periodic"))w=(now-epoch)%(long)number("period_ms",400)>=(long)number("pause_ms",50);
-            if(kind.equals("hitreset"))w=now-lastObservedTargetHurt>150+number("pause_ms",50);
+            if(kind.equals("hitreset"))w=now-lastObservedTargetHurt>reaction+number("pause_ms",50);
             if(kind.equals("wtap") || kind.equals("tradetap")){
                 // A landed-hit cue arms one reset. No periodic taps and no hidden server feedback.
                 if(lastObservedTargetHurt>handledTapCue)pendingTapCue=lastObservedTargetHurt;
                 if(pendingTapCue>0){
                     boolean traded=lastObservedHurt>=pendingTapCue-number("trade_window_ms",200);
-                    boolean waited=now-pendingTapCue>=150+number("reply_wait_ms",150)+oppPing/2;
+                    boolean waited=now-pendingTapCue>=reaction+number("reply_wait_ms",150)+oppPing/2;
                     if(kind.equals("wtap") || traded || waited){
                         tapUntil=now+(long)number("pause_ms",50);handledTapCue=pendingTapCue;pendingTapCue=0;
                         tapReason=traded?"landed_hit_after_received_hit":waited?"landed_hit_reply_wait_expired":"landed_hit";
@@ -419,6 +453,11 @@ public final class Client {
                 plan.put("estimated_ready_at",burstDecision.estimatedReadyAt());plan.put("attack_start_at",burstDecision.attackStartAt());
                 plan.put("click_gate",clickGate);log(plan);
             }
+            // Zero-delay controls also poll ordinary capped input at the head
+            // of runTick, after packet work and before vanilla input consumption.
+            // Every fast baseline uses this same opportunity; no queued input is
+            // canceled and no attack is called directly.
+            if(reaction==0){nativeInputPoll=true;try{frame(mc);}finally{nativeInputPoll=false;}}
             if(now-logAt>=50){
                 logAt=now;
                 Map<String,Object> entry=new LinkedHashMap<>();

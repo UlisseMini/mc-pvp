@@ -6,6 +6,7 @@ import java.util.Properties;
 public final class MomentumController {
     public static final class Settings {
         public int resetEvery=1, resetDelayMs=0, pauseMs=50, pauseTicks=0;
+        public int reactionMs=150;
         public boolean resetOnIssuedClick=false;
         public boolean adaptiveReset=false, spacing=false, rttAdjustedDelay=false, freshPhase=false, walkReset=false;
         public int openingWaitMs=0, clickIntervalMs=105, freshCorrectionMs=25;
@@ -17,6 +18,7 @@ public final class MomentumController {
 
         public static Settings from(Properties p) {
             Settings s=new Settings();
+            s.reactionMs=(int)value(p,"reaction_ms",150);
             s.resetEvery=(int)value(p,"reset_every",1);s.resetDelayMs=(int)value(p,"reset_delay_ms",0);
             s.pauseMs=(int)value(p,"pause_ms",50);s.adaptiveReset=value(p,"adaptive_reset",0)>0;
             s.pauseTicks=(int)value(p,"pause_ticks",0);s.resetOnIssuedClick=value(p,"reset_on_issued_click",0)>0;
@@ -36,7 +38,7 @@ public final class MomentumController {
             return Double.parseDouble(p.getProperty(key,Double.toString(fallback)));
         }
         void validate() {
-            if(resetEvery<1||resetEvery>8||pauseMs<0||pauseMs>500||pauseTicks<0||pauseTicks>4
+            if(reactionMs<0||reactionMs>1000||resetEvery<1||resetEvery>8||pauseMs<0||pauseMs>500||pauseTicks<0||pauseTicks>4
                     ||(resetOnIssuedClick&&pauseTicks!=1)||resetDelayMs<0||resetDelayMs>500
                     ||incomingGuardMs<150||incomingGuardMs>1500||(strafePeriodMs!=0&&strafePeriodMs<150)
                     ||openingWaitMs<0||openingWaitMs>500||clickIntervalMs<100||clickIntervalMs>200
@@ -73,7 +75,7 @@ public final class MomentumController {
 
     public Decision decide(Input in,Settings s) {
         s.validate();
-        if(in.now-in.observedAt<150||in.landedCue>in.observedAt||in.incomingCue>in.observedAt)
+        if(in.now-in.observedAt<s.reactionMs||in.landedCue>in.observedAt||in.incomingCue>in.observedAt)
             throw new IllegalArgumentException("Momentum decisions require delayed visible observations");
         if(startedAt==Long.MIN_VALUE)startedAt=in.now;
         double own=Math.max(-8,Math.min(8,in.ownToward));
@@ -104,7 +106,7 @@ public final class MomentumController {
                 scheduledCue=handledCue;
                 scheduledAt=s.resetOnIssuedClick
                         ?Math.max(in.now,(long)(handledCue+500-in.ownRtt-s.freshCorrectionMs-s.clickIntervalMs))
-                        :s.freshPhase?freshPhaseReset(in,s):Math.max(in.now,handledCue+150+(long)delay);
+                        :s.freshPhase?freshPhaseReset(in,s):Math.max(in.now,handledCue+s.reactionMs+(long)delay);
             } else skipped=true;
         }
         // Own issued inputs are immediately known; no new world observation is

@@ -85,7 +85,7 @@ if(D.native_overlap){const n=D.native_overlap;const describe=s=>`${s.toUpperCase
 if(D.combat_metrics){const c=D.combat_metrics;const describe=s=>`${s.toUpperCase()}: longest sustained reach-denial combo ${((c[s].sustained_native_combo?.duration_ms||0)/1000).toFixed(2)} s; longest unanswered streak ${c[s].longest_unanswered_streak} hits`;$('combos').textContent=describe('a')+' · '+describe('b')+'. Final hit score is the primary performance metric. Sustained locks require at least three fresh contacts and no accepted return attack; brief both-out-of-range intervals are allowed.';}
 if(D.combat_metrics?.a?.native_denial_contact_sequence){const describe=s=>{const v=D.combat_metrics[s].native_denial_contact_sequence;return `${s.toUpperCase()}: ${(v.duration_ms/1000).toFixed(2)} s denial contact sequence, ${v.fresh_contacts} fresh hits, largest hit gap ${v.max_contact_gap_ms===null?'unavailable':(v.max_contact_gap_ms/1000).toFixed(2)+' s'}`;};$('sequences').textContent=describe('a')+' · '+describe('b')+'. These sequences require continuous measured defender reach denial and no accepted return hit, with no maximum contact-gap cutoff. The strict combo above caps hit gaps at one second.';}
 $('title').textContent=`${M.policy_a} vs ${M.policy_b}`;
-$('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${M.ping_a}/${M.ping_b} ms · 150 ms tactical reaction · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 hits'}`;
+$('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${M.ping_a}/${M.ping_b} ms · ${M.reaction_ms_a??150}/${M.reaction_ms_b??150} ms tactical reaction · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 hits'}`;
 $('aname').textContent=M.policy_a;$('bname').textContent=M.policy_b;$('scrub').max=duration;
 let now=0,playing=false,previousFrame=performance.now();
 function last(items,time){let lo=0,hi=items.length;while(lo<hi){let mid=(lo+hi)>>1;if(items[mid].time<=time)lo=mid+1;else hi=mid;}return items[Math.max(0,lo-1)];}
@@ -96,7 +96,7 @@ function line(x,a,b,c,d,color,width=1){x.strokeStyle=color;x.lineWidth=width;x.b
 function render(){
  const time=start+now, tick=last(T,time),p=[tick.a,tick.b],hit=last(D.hits,time),scores=hit&&hit.time<=time?[hit.hits_a,hit.hits_b]:[0,0];
  const change=last(D.ping_changes||[],time),latency=change&&change.time<=time?change:M;
- $('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${latency.ping_a}/${latency.ping_b} ms · 150 ms tactical reaction · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 hits'}`;
+ $('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${latency.ping_a}/${latency.ping_b} ms · ${M.reaction_ms_a??150}/${M.reaction_ms_b??150} ms tactical reaction · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 hits'}`;
  $('ascore').textContent=`${scores[0]} / 100`;$('bscore').textContent=`${scores[1]} / 100`;
  $('time').textContent=`${(now/1000).toFixed(1)} / ${(duration/1000).toFixed(1)} s`;
  const gap=Math.hypot(p[0].posX-p[1].posX,p[0].posZ-p[1].posZ);$('gap').textContent=`Horizontal gap ${gap.toFixed(2)} m`;

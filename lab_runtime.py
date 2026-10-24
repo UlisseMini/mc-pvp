@@ -85,6 +85,16 @@ def properties(path):
     except FileNotFoundError:return {}
 
 
+def match_events(path,identifier):
+    """Stream one match without JSON-decoding unrelated historical megabytes."""
+    needle=json.dumps(identifier)
+    with path.open() as stream:
+        for line in stream:
+            if needle not in line:continue
+            event=json.loads(line)
+            if event.get('match')==identifier:yield event
+
+
 async def latency_proxy(port,configuration,upstream_port=25566):
     async def connection(reader,writer):
         try:up_reader,up_writer=await asyncio.open_connection('127.0.0.1',upstream_port)

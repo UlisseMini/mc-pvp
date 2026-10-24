@@ -11,13 +11,14 @@ import math
 import statistics
 from pathlib import Path
 from lab import ROOT,RUNTIME
+from lab_runtime import match_events
 
 def analyze(identifier):
     events=[json.loads(line) for line in (RUNTIME/'replays'/f'{identifier}.jsonl').read_text().splitlines()]
     match=next(e['match'] for e in events if e['type']=='start');clients={}
     for side in ('a','b'):
         path=RUNTIME/'bots'/match[side].removeprefix('LabSlot')/'events.jsonl'
-        clients[side]=[e for line in path.read_text().splitlines() if (e:=json.loads(line)).get('match')==identifier and e['type']=='observation']
+        clients[side]=[e for e in match_events(path,identifier) if e['type']=='observation']
     result={'match':identifier,'rtt_a':match['ping_a'],'rtt_b':match['ping_b'],'method':'minimum median squared horizontal position residual, 0–500 ms lag; post-match only'}
     # Closest point to the ordinary expanded player box. This diagnoses geometry;
     # it deliberately does not replace native raycasts, attack cooldown or damage.

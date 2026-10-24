@@ -28,6 +28,8 @@ public final class Referee {
             m.put("id",id);m.put("a",a);m.put("b",b);m.put("policy_a",pa);m.put("policy_b",pb);
             m.put("hits_a",ha);m.put("hits_b",hb);m.put("goal",goal);m.put("ping_a",pingA);m.put("ping_b",pingB);
             m.put("start",start);m.put("finish",finish);m.put("winner",winner);m.put("arena",arena);m.put("request",request);m.put("scenario",scenario);m.put("duration_limit_ms",durationMs);
+            m.put("reaction_ms_a",Integer.parseInt(configA.getProperty("reaction_ms","150")));
+            m.put("reaction_ms_b",Integer.parseInt(configB.getProperty("reaction_ms","150")));
             m.put("arena_surface","bedrock_y3_air_y4_19_radius128_verified_v3");return m;
         }
     }
@@ -232,7 +234,7 @@ public final class Referee {
         preparePlayer(player(b),center+3,4,0,90);
         control(a,pa,b,m,pingA,pingB);control(b,pb,a,m,pingB,pingA);
         Map<String,Object> initial=m.state();initial.put("parameters_a",m.configA);initial.put("parameters_b",m.configB);
-        initial.put("bot_reaction_ms",150);initial.put("bot_click_cap_cps",10);
+        initial.put("bot_reaction_ms",Map.of("a",initial.get("reaction_ms_a"),"b",initial.get("reaction_ms_b")));initial.put("bot_click_cap_cps",10);
         append(m.replay,Map.of("type","start","match",initial));
         message(player(a),"Starting "+m.id+": "+pa+" vs "+pb+". First to 100 hits. /stop to exit.");
         message(player(b),"Starting "+m.id+": "+pa+" vs "+pb+". First to 100 hits.");

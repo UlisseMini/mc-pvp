@@ -61,6 +61,10 @@ shared: this first version is intended for **one human player at a time**.
 | `wtap` | One short W release after a landed-hit cue |
 | `wtap-tick` | Experimental post-hit W release lasting exactly one movement update |
 | `wtap-tick-burst` | Same one-tick W-tap movement; 150 ms defensive click bursts after delayed hurt cues, plus predicted next-hit attempts |
+| `wtap-tick-motion` | Immediate current-motion recoil clicks plus predicted attack windows; planned one-tick W-tap |
+| `wtap-tick-window` | Same movement and attack windows, with optional recoil clicks disabled for comparison |
+| `wtap-tick-fast` / `wtap-fast` | Continuous-click controls with zero observation delay; one-update / 50 ms W releases |
+| `hold-w-fast` | Continuous W/Ctrl/clicking control with zero observation delay |
 | `trade-wtap` | Post-hit reset that prefers to release just after receiving a hit |
 | `hit-reset` | Older confirmed-hit W-tap timing |
 | `periodic-tap` | Fixed-rhythm control experiment; not normal W-tapping |
@@ -90,7 +94,9 @@ shared: this first version is intended for **one human player at a time**.
   positions or aim at removed entity copies left over from teleports.
 - W or release and the normal sprint key. Only the explicitly named Zest
   strafing variants use A/D. No S, jumping or blocking.
-- Tactical observations are at least **150 ms old**. Planned timing is allowed.
+- Legacy policies use **150 ms** tactical observation delay. The `motion`,
+  `window` and `fast` comparison policies use **zero artificial delay**, as
+  requested; each recording declares both sides' settings. Planned timing is allowed.
 - Fixed policies schedule nominal **10 CPS**, with at least 100 ms between input
   clicks. Frame scheduling makes measured CPS slightly lower. Burst is labelled.
 - Every scheduled click enters normal Minecraft input and attack handling,
@@ -130,6 +136,9 @@ python3 compare_wtap.py league
 python3 compare_wtap.py ablation
 python3 compare_wtap.py standstill
 python3 wtap_research.py models
+python3 burst_science.py my-burst-comparison
+python3 burst_summary.py research/my-burst-comparison.json research/my-burst-summary.json
+python3 burst_science.py my-motion-comparison --motion
 ```
 
 The pilot compares the hand-written controllers. The latency pilot includes
@@ -154,6 +163,34 @@ hold-W and the candidate, with four games per pair and oriented RTT condition.
 `opponent_model=wtap`; movement choices, controller weights and physical click
 timing stay the same. `standstill` checks stationary input and native knockback
 against three pursuit policies at 20/100 ms.
+
+`burst_science.py` freezes a 36-game comparison: burst one-tick W-tap versus
+hold-W and continuous-click one-tick W-tap, plus continuous one-tick W-tap
+versus ordinary W-tap and hold-W. Each pairing gets three games at 20/20,
+20/100 and 100/20 ms RTT, with starting sides reversed in the middle repeat.
+Two games run concurrently, with native tick-cadence and input checks on every
+result. Use a fresh output name; `--smoke` runs two 12-second setup checks.
+
+The public `wtap-tick-burst` bot retains the same one-update W release as
+`wtap-tick`. It clicks during acquisition, for 150 ms after a legally delayed
+incoming hurt cue, and from 75 ms before its estimated next fresh-hit window
+until another landed-hit cue arrives. The estimate is visible cue time plus
+500 ms minus its own configured RTT. A 150 ms tactical delay applies to every
+new observation. The physical click limiter persists across quiet intervals;
+all issued clicks retain ordinary Minecraft raycasts, misses and contact drag.
+This is an approximate visible-cue schedule, not exact server immunity access.
+
+The newer `--motion` cohort removes artificial observation delay. Its optional
+recoil clicks require current backward motion, local sprint and an ordinary
+in-range native selection at the input poll. It reserves the next 100 ms click
+slot for an approaching attack window. Every fast control uses the same input
+poll opportunities; all issued clicks still undergo vanilla processing. The
+one-tick and 50 ms W releases remain planned for 150 ms after the visible hit
+cue, preserving the earlier reset placement rather than imposing a reaction
+limit. The 50 ms attack lead compensates for the shorter input queue delay.
+The fixed 18-game design includes window-only ablations, side swaps and both
+orientations of unequal RTT. Native traces must verify that optional recoil
+contacts actually apply the 0.6 multiplier to backward velocity.
 
 `wtap_research.py` checkpoints every completed round and freezes the policies,
 build hash and fixture list for each experiment. Its initial model screen ran
