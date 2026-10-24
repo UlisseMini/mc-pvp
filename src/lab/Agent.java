@@ -31,7 +31,7 @@ public final class Agent implements ClassFileTransformer {
             ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES);logging.accept(out);return out.toByteArray();
         }
         if (name == null || !(name.equals("ave") || name.equals("j") || name.equals("pr")
-                || name.equals("wn") || name.equals("net/minecraft/server/MinecraftServer"))) return null;
+                || name.equals("wn") || name.equals("bcy") || name.equals("net/minecraft/server/MinecraftServer"))) return null;
         try {
             ClassNode node = new ClassNode();
             new ClassReader(bytes).accept(node, 0);
@@ -65,6 +65,13 @@ public final class Agent implements ClassFileTransformer {
                     for (AbstractInsnNode ins : method.instructions.toArray()) if (ins.getOpcode() == Opcodes.RETURN)
                         method.instructions.insertBefore(ins, callThis("lab/Referee", "restoreHealth"));
                     changed = true;
+                } else if(name.equals("bcy")&&method.name.equals("a")&&method.desc.equals("(Lhm;)V")){
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN){
+                        InsnList hook=new InsnList();hook.add(new VarInsnNode(Opcodes.ALOAD,1));
+                        hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","velocityPacket","(Ljava/lang/Object;)V",false));
+                        method.instructions.insertBefore(ins,hook);
+                    }
+                    changed=true;
                 } else if(name.equals("wn")&&method.name.equals("f")&&method.desc.equals("(Lpk;)V")){
                     InsnList before=new InsnList();before.add(new VarInsnNode(Opcodes.ALOAD,0));before.add(new VarInsnNode(Opcodes.ALOAD,1));
                     before.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","attackBefore","(Ljava/lang/Object;Ljava/lang/Object;)V",false));

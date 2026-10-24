@@ -5,6 +5,7 @@ import json
 import subprocess
 import time
 from lab import ROOT, RUNTIME
+from lab_runtime import BOT_SLOTS
 
 
 def cpu_seconds(value):
@@ -24,23 +25,29 @@ def measure(seconds=20):
     rows=subprocess.check_output(['ps','-axo','pid=,ppid=,comm='],text=True)
     pids=[int(p) for p,parent,command in (line.split(None,2) for line in rows.splitlines())
           if int(parent)==manager and command.endswith('/java')]
-    if len(pids)!=7:raise RuntimeError(f'Expected one server and six supervised clients, found {len(pids)}')
-    first=snapshot(pids);start=time.monotonic();wall_start=time.time()*1000;peak_rss=0;parallel=0;human=False;matches=set()
+    if len(pids)!=BOT_SLOTS+1:raise RuntimeError(f'Expected one server and {BOT_SLOTS} supervised clients, found {len(pids)}')
+    def clients():
+        return {i:json.loads((RUNTIME/f'bots/{i}/heartbeat.json').read_text())for i in range(BOT_SLOTS)}
+    first=snapshot(pids);client_first=clients();start=time.monotonic();wall_start=time.time()*1000;peak_rss=0;parallel=0;human=False;matches=set();oldest_heartbeat=0
     while time.monotonic()-start<seconds:
         current=snapshot(pids);peak_rss=max(peak_rss,sum(v['rss_mib'] for v in current.values()))
         state=json.loads((RUNTIME/'status.json').read_text())
         parallel=max(parallel,sum(m['policy_a']!='human' for m in state['matches']))
         human|=any(not p.startswith('LabSlot') for p in state['players'])
         matches.update(m['id'] for m in state['matches'])
+        oldest_heartbeat=max(oldest_heartbeat,max(time.time()*1000-c['time']for c in clients().values()))
         time.sleep(min(1,max(.01,seconds-(time.monotonic()-start))))
-    last=snapshot(pids);elapsed=time.monotonic()-start;gaps=[]
+    last=snapshot(pids);client_last=clients();elapsed=time.monotonic()-start;gaps=[]
     for identifier in matches:
         events=[json.loads(line) for line in (RUNTIME/'replays'/f'{identifier}.jsonl').read_text().splitlines()]
         stamps=[e['time'] for e in events if e['type']=='tick' and e['time']>=wall_start]
         gaps += [b-a for a,b in zip(stamps,stamps[1:])]
     gaps.sort()
-    result={'seconds':elapsed,'jvm_processes':len(pids),'observed_parallel_bot_matches':parallel,
-            'human_present':human,'cpu_percent_of_one_core':sum(last[p]['cpu_seconds']-first[p]['cpu_seconds'] for p in pids)/elapsed*100,
+    rates={str(i):(client_last[i]['native_ticks']-client_first[i]['native_ticks'])*1000/(client_last[i]['time']-client_first[i]['time'])for i in range(BOT_SLOTS)if 'native_ticks'in client_first[i] and client_last[i]['time']>client_first[i]['time']}
+    result={'seconds':elapsed,'jvm_processes':len(pids),'process_scope':'supervised server and bot JVMs; excludes the graphical user client and temporary UX client',
+            'native_client_ticks_per_second':rates,'oldest_sampled_heartbeat_ms':oldest_heartbeat,'observed_parallel_bot_matches':parallel,
+            'human_present':human,'server_view_distance':8,'client_render_distance':6,
+            'cpu_percent_of_one_core':sum(last[p]['cpu_seconds']-first[p]['cpu_seconds'] for p in pids)/elapsed*100,
             'peak_sampled_total_rss_mib':peak_rss,'native_tick_gaps_ms':{
                 'samples':len(gaps),'median':gaps[len(gaps)//2] if gaps else None,
                 'p99':gaps[min(len(gaps)-1,int(len(gaps)*.99))] if gaps else None,'max':max(gaps,default=None)}}

@@ -7,7 +7,33 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 import lab
+from native_windows import overlap
 from lab_runtime import latency_proxy
+
+
+class NativeWindowMetricTest(unittest.TestCase):
+    def test_conditional_time_ratio_uses_attacker_hittable_time(self):
+        a=[{'time':t,'in_range':v} for t,v in [(0,True),(100,True),(200,False),(300,False)]]
+        b=[{'time':t,'in_range':v} for t,v in [(0,False),(100,True),(200,False),(300,False)]]
+        result=overlap(a,b,0,300)
+        self.assertEqual(result['paired_time_ms'],300)
+        self.assertEqual(result['a']['attacker_can_hit_ms'],200)
+        self.assertEqual(result['a']['attacker_can_hit_defender_cannot_ms'],100)
+        self.assertEqual(result['a']['one_sided_fraction_given_attacker_can_hit'],.5)
+
+    def test_missing_client_samples_do_not_count_as_denial(self):
+        a=[{'time':0,'in_range':True},{'time':1000,'in_range':True}]
+        b=[{'time':0,'in_range':False},{'time':1000,'in_range':False}]
+        self.assertEqual(overlap(a,b,0,1000)['paired_time_ms'],150)
+
+    def test_independent_timestamps_are_integrated_by_duration(self):
+        a=[{'time':0,'in_range':True},{'time':120,'in_range':False}]
+        b=[{'time':20,'in_range':False},{'time':50,'in_range':True},{'time':100,'in_range':False}]
+        result=overlap(a,b,0,140)
+        self.assertEqual(result['paired_time_ms'],120)
+        self.assertEqual(result['a']['attacker_can_hit_ms'],100)
+        self.assertEqual(result['a']['attacker_can_hit_defender_cannot_ms'],50)
+        self.assertEqual(result['durations_ms']['neither'],20)
 
 
 class SupplyChainTest(unittest.TestCase):
@@ -48,7 +74,7 @@ class NetworkTest(unittest.IsolatedAsyncioTestCase):
 
 class RealEngineEvidenceTest(unittest.TestCase):
     def test_logged_controls_respect_reaction_delay_and_click_cap(self):
-        samples=clicks=slowdowns=0
+        samples=clicks=slowdowns=strict_clicks=taps=0
         for path in (lab.RUNTIME/'bots').glob('*/events.jsonl'):
             last={}
             for line in path.read_text().splitlines():
@@ -57,14 +83,22 @@ class RealEngineEvidenceTest(unittest.TestCase):
                     self.assertGreaterEqual(event['time']-event['observation_time'],150);samples+=1
                     if 'target_removed' in event:self.assertFalse(event['target_removed'])
                 elif event['type']=='click':
-                    # Wall-clock records have millisecond resolution; limiter uses monotonic nanoseconds.
+                    # Legacy wall-clock logs cannot distinguish logger pauses from input spacing.
+                    # Current runs record the monotonic clock used by the strict limiter.
                     previous=last.get(event['match'])
-                    if previous is not None:self.assertGreaterEqual(event['time']-previous,99)
-                    last[event['match']]=event['time'];clicks+=1
+                    if 'monotonic_ns' in event:
+                        if previous is not None and 'monotonic_ns' in previous:
+                            self.assertGreaterEqual(event['monotonic_ns']-previous['monotonic_ns'],100_000_000)
+                        strict_clicks+=1
+                    last[event['match']]=event;clicks+=1
+                elif event['type']=='wtap':
+                    self.assertGreaterEqual(event['time']-event['cue_time'],150)
+                    self.assertEqual(event['release_until']-event['time'],50);taps+=1
                 elif event['type']=='engine_attack' and event['sprint_before'] and event['target_visible_hurt']>0 and abs(event['vx_before'])>.01:
                     self.assertAlmostEqual(event['vx_after'],event['vx_before']*.6,places=9)
                     self.assertFalse(event['sprint_after']);slowdowns+=1
         self.assertGreater(samples,100);self.assertGreater(clicks,100);self.assertGreater(slowdowns,10)
+        self.assertGreater(strict_clicks,100);self.assertGreater(taps,10)
 
 
 if __name__=='__main__':unittest.main()

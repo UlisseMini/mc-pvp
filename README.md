@@ -17,9 +17,16 @@ An “already running” message means you can join immediately.
 | Command | What it does |
 |---|---|
 | `/bots` | Clickable roster, including saved search candidates |
+| `/bots all` | Include every saved tuning candidate |
 | `/duel hold-w` | Fight the simplest baseline |
 | `/duel predictive` | Fight the hand-written spacing controller |
+| `/duel zest-w 20 100` | Fight W-only Zest: bot RTT 20 ms, your added RTT 100 ms |
+| `/duel zest-strafe` | Fight the version allowed to use normal A/D keys |
 | `/duel burst 120 20` | Add 120 ms RTT to the bot and 20 ms to yourself |
+| `/ping` | Show your duel's current added RTTs |
+| `/ping me 20` | Set your added RTT to 20 ms during the duel |
+| `/ping bot 100` | Set the bot's added RTT to 100 ms during the duel |
+| `/ping 20 100` | Set both: player RTT first, then bot RTT |
 | `/rematch` | Same bot and simulated pings again |
 | `/stop` | End your duel or leave spectator mode; return to the lobby |
 | `/matches` | Clickable list of ongoing matches |
@@ -29,8 +36,8 @@ An “already running” message means you can join immediately.
 
 In spectator mode, fly around normally. Sneak exits a followed bot's camera.
 The action bar shows the current score. Finished matches are saved automatically.
-Spectators cannot interfere with combat. There are six real bot clients; the
-experiment scheduler uses at most four so human challenges have spare slots.
+Spectators cannot interfere with combat. There are eight real bot clients; the
+experiment scheduler uses at most six so human challenges have spare slots.
 
 RTTs are **added**, symmetric network delay. Your own real connection and normal
 Minecraft tick/interpolation delays remain. The human-facing latency setting is
@@ -41,34 +48,52 @@ shared: this first version is intended for **one human player at a time**.
 | Bot | Control idea |
 |---|---|
 | `hold-w` | Hold W and sprint, click continuously |
-| `wtap` | Short scheduled W releases every 400 ms |
-| `hit-reset` | React to a visible hit, briefly release W |
+| `hold-w-probe` | Same pursuit and perfect aim, no clicks; logs native reach opportunities |
+| `wtap` | One short W release after a landed-hit cue |
+| `trade-wtap` | Post-hit reset that prefers to release just after receiving a hit |
+| `hit-reset` | Older confirmed-hit W-tap timing |
+| `periodic-tap` | Fixed-rhythm control experiment; not normal W-tapping |
 | `spacing` | Delayed closing-speed forecast with coasting and hysteresis |
 | `predictive` | Spacing forecast with an explicit ping-dependent lead |
 | `phase-spacing` | Adjust movement around a forecast hit window |
 | `burst` | Spacing with explicit 300 ms click bursts per 500 ms cycle |
+| `zest-w` / `zest-strafe` | Three-contact Zest cycle; selected W-up hit, hit-select entry/recovery |
+| `zest-two-w` / `zest-two-strafe` | Two-contact variation of that cycle |
+| `zest-tune-…` | Exploratory Zest timing candidates; results, not names, determine quality |
 | `evolved-g…` | Saved parameter-search candidates, challengeable immediately |
 | `evolved-champion` | Selected candidate, once a search finishes |
+| `mpc-probe` | Approximate physics/packet beam search, specialized to the non-clicking probe |
+| `mpc-visible` / `mpc-ensemble` | Experimental visible-trajectory reconstruction, with one or several tick-phase hypotheses |
 
 - Normal speed, no potions, no enchantments, flat grass, diamond swords.
 - First to 100 **server-accepted attacks**. Health is restored after real damage
   so a duel can continue; knockback, damage immunity and critical-hit logic run.
 - Perfect aim uses the current **local client view**. It does not read server
   positions or aim at removed entity copies left over from teleports.
-- W or release and the normal sprint key. No strafing, S, jumping or blocking.
+- W or release and the normal sprint key. Only the explicitly named Zest
+  strafing variants use A/D. No S, jumping or blocking.
 - Tactical observations are at least **150 ms old**. Planned timing is allowed.
 - Fixed policies schedule nominal **10 CPS**, with at least 100 ms between input
   clicks. Frame scheduling makes measured CPS slightly lower. Burst is labelled.
 - Every scheduled click enters normal Minecraft input and attack handling,
   including immune-frame attacks, air misses and their native slowdown/cooldown.
+- Zest entry/recovery can explicitly hit-select, waiting for an incoming-hit
+  observation before starting clicks. It does not suppress immune-frame clicks
+  during its ordinary contact cycle.
 - No direct bot movement/attack packets, custom reach, velocity overrides during
   combat, or immunity-based engine optimizations. Teleports/equipment are round setup.
 
-The sprint key is held while W is held, so vanilla can restore sprint after an
-attack even for the baseline. [THEORY.md](THEORY.md) explains the reasoning and
+Baseline policies hold the sprint key while W is held. Some experimental
+policies select normal W and Ctrl independently. A restored client sprint flag alone does
+not guarantee a fresh sprint-start packet after the server cleared sprint on an
+attack. The W release/re-press creates that stop/start transition.
+[THEORY.md](THEORY.md) explains the reasoning and
 why known ping alone is insufficient to specify an exact optimal best response.
 These are initial controllers and a small evolutionary search, with no claim of
 global optimality or equivalence between every 1.7 and 1.8 combat detail.
+The Zest controllers implement an interpretation of the creators' demonstrated
+cycles. [Source notes](experiments/ZEST-NOTES.md) explain what the videos teach,
+why their caption tracks were insufficient, and which timings we must measure.
 
 ## Experiments and recordings
 
@@ -76,20 +101,74 @@ From Terminal in this folder:
 
 ```sh
 python3 experiments.py pilot
+python3 experiments.py latency-pilot
+python3 experiments.py integrity-load
 python3 experiments.py evolve --population 4 --generations 1
+python3 experiments.py evolve-locks --population 4 --generations 1
 python3 experiments.py league --bots hold-w wtap hit-reset predictive --rtts 20,20 20,120
+python3 experiments.py league --bots hold-w zest-w zest-strafe --rtts 0,0 20,100 20,140
 ```
 
-The pilot compares the hand-written controllers. Evolution mutates three spacing
+The pilot compares the hand-written controllers. The latency pilot includes
+zero-ping controls and 20/100 ms asymmetric matches, with starting sides and ping
+assignments swapped. The balanced league command extends that to every chosen
+bot pairing. Evolution mutates three spacing
 parameters, evaluates each against W-tap in both starting roles, saves the best
 candidate, then tests different ping and a different opponent outside selection.
 The random seed fixes parameter generation; process scheduling and game/network
 clock phases still vary. Two games per candidate are an exploratory sample.
 
-The scheduler validates that both clients are alive, ticking, and can see their
-live opponent. Invalid setups and incomplete games fail the experiment rather
+`evolve-locks` instead selects against the non-clicking probe using the
+conditional native one-sided percentage. It searches a small set of controller
+weights and observer timing/velocity corrections. Each candidate gets both
+starting sides at 20/100 ms RTT, followed by fresh repeats and 0/0 and 100/20 ms
+tests for the selected `lock-candidate`. A round-duration penalty discourages
+getting a high ratio by landing hits extremely slowly. Total attack opportunity
+and continuous windows remain visible in the report. Selection games and fresh
+tests are separate; this small search cannot establish an optimal algorithm.
+
+The scheduler validates that both clients are alive, ticking, use the current
+agent build, and see the canonical live opponent. It also checks that the native
+opponent simulation region is loaded and its entity keeps ticking. Invalid setups and incomplete games fail the experiment rather
 than silently awarding wins. See **experiments/RESULTS.md** after a run completes.
-Early setup/debug matches are excluded from that report.
+Early setup/debug matches are excluded from that report. Historical matches
+called the fixed-rhythm control `wtap` incorrectly; these now appear as
+`periodic-tap` in reports and replays, with the original raw logs preserved.
+The first parameter search was against that periodic control, not the corrected
+post-hit W-tap. It did not beat its control opponent.
+Those historical runs also used the earlier click-clock bookkeeping; exact
+input spacing is not established by their wall-clock logs. Current evaluations
+require monotonic input intervals of at least 100 ms and reject violations.
+
+Human duels `m0148` and `m0149` exposed a separate same-ID replacement bug:
+the native entity map held a new opponent copy that was absent from the world's
+ticking list. It remained at spawn while packet goals moved, producing invalid
+attacks against a stale local view. `audit_duels.py` records those as invalid.
+Round setup now separates ordinary server untracking and retracking by 500 ms,
+before combat. A live watchdog requires the exact native entity to be in the
+ticking list and chunk, with advancing ticks. If that fails, keys and queued
+clicks are cleared, and the referee stops an invalid round. No combat positions,
+velocities, hit immunity or reach limits are changed by this recovery.
+
+**Replication qualification:** experiments before `m0121` used low chunk
+distances that could freeze a remote entity even while packets updated its
+position target. Those results are provisional and excluded from qualified
+rankings; `m0066` and `m0101` conclusively contained frozen replication. Current
+settings use server view distance 8 and client render distance 6, with continuous
+target-tick and loaded-region checks. Larger view distance is needed for the
+vanilla client's surrounding-area guard, even in an otherwise empty arena.
+
+The primary combo metric is time that **A can hit B and B cannot hit A**, divided
+by **all time A can hit B**. Each side's own native `getMouseOver` raycast is
+sampled independently and aligned using shared host timestamps. Damage immunity
+does not remove a reach opportunity. `native_windows.py` integrates durations,
+excludes stale sample gaps, and reports paired coverage, total attack opportunity
+and the longest continuous one-sided window. This prevents a 100–0 score against
+the non-clicking probe from being mistaken for a successful combo lock.
+
+The model is a planning approximation. Neither its geometry nor its predicted
+opponent state replaces the two real clients' measurements. Private opponent
+client logs are used only for analysis after a match.
 
 Every match records server trajectories and accepted hits in
 `runtime/replays/<match>.jsonl`, with client input/attack telemetry under
@@ -101,9 +180,16 @@ python3 replay.py m0025
 
 Open the resulting file in **recordings/** in your browser. It includes play,
 pause, speed, scrubbing, overhead/side views, scores and recorded input cadence.
+New recordings also show each client's native reach status and the conditional
+one-sided percentage. Historical recordings carry their qualification limits.
 These are **trajectory analysis replays, not Minecraft video**. All data is
-embedded, with no external resources. Three sample recordings are included,
-including the 20/120 ms spacing-versus-burst match.
+embedded, with no external resources. Sample recordings include historical
+spacing experiments and newer matches with the strict monotonic click cap.
+
+Qualified examples: [W-tap vs hold-W, 100–83](recordings/m0161.html),
+[a reach-edge controller trial](recordings/m0168.html), and
+[a 79% one-sided probe trial](recordings/m0169.html). The latter's fresh zero-ping
+repeats reached 65% and 48%, so it is not a stable combo lock or a proven champion.
 
 ## Setup and checks
 
@@ -126,21 +212,29 @@ checks dependency hashes and refuses to launch if the sandbox checks fail.
 python3 lab.py status
 python3 lab.py match hold-w wtap 20 120
 python3 lab.py stop
-python3 -m unittest -v test_lab
+python3 -m unittest -v test_lab test_model
 python3 lab.py logging-test
 python3 benchmark.py --seconds 20
 ```
 
-`python3 lab.py verify-ux` uses a separate real headless client to test commands;
-start a fresh match first and run it while no human is playing. Logs are in
-`runtime/logs/`. Do not edit the agent while a tournament is running; build and
-restart the lab after Java changes.
+`python3 lab.py verify-ux` uses a separate real headless client and isolated test
+proxy to check commands, live ping changes and rematch ping retention. Start a
+fresh match first. Logs are in
+`runtime/logs/`. Keep the agent build fixed during an experiment. After Java
+changes, run `python3 lab.py build` and wait for completion, then
+`python3 lab.py reload-bots`. This reloads idle bots without disconnecting your
+Minecraft client. Busy bots are skipped; reload them after their duel ends.
 
-The first measured load was two bot matches plus one human duel: seven JVMs used
-about 3.5 GiB RSS and 38% of one CPU core over 20 seconds. Native server tick gaps
-had a 50 ms median, 56 ms p99 and 58 ms maximum. This verifies that load on this
-M2 Max; it does not establish the maximum capacity. Raw measurements are in
-`experiments/performance.json`.
+The current steady sample had **three concurrent bot matches**, eight clients
+plus the server, view distance 8 / render distance 6. The nine supervised JVMs
+used about **6.1 GiB RSS** and **105% of one CPU core** over 15 seconds. Every
+client advanced at approximately 20 native ticks/second. Server tick gaps were
+50 ms median, 55 ms p99 and 56 ms maximum. A separate startup sample included
+one 147 ms gap. The graphical user client and temporary UX client are excluded
+from the process resource totals. This supports the current three-match cap on
+this M2 Max, not a maximum-capacity claim. See
+`experiments/performance-three-matches.json` and
+`experiments/performance-three-matches-steady.json`.
 
 ## Security
 

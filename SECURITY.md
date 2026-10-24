@@ -39,6 +39,9 @@ outside writes, and outbound public networking. Java processes can read the
 project and permitted system paths, and write only under the lab runtime. The
 test confirms that a canary outside those paths cannot be read or written.
 The profile permits only the chosen Java binary to execute child programs.
+The profile file is replaced atomically so parallel JVM launches cannot read a
+temporarily truncated policy. An invalid policy causes sandbox-exec to refuse
+the launch.
 Processes receive a separate home directory and a clean environment without
 inherited account tokens. The match manager is our own Python code.
 
@@ -55,6 +58,20 @@ health after real damage, and count accepted hits. This is a small custom agent,
 so implementation mistakes can affect experiment validity; telemetry checks and
 real client tests are included. There is no proof of exact equivalence to a
 graphically rendered client in every scenario.
+
+Client integrity is checked continuously. A canonical entity ID alone is
+insufficient: the exact opponent object must be in vanilla's loaded/ticking
+list and chunk, and its native tick counter must advance. A failed guard clears
+all bot keys and pending clicks. The referee ends an invalid round, and the
+experiment scheduler excludes it. Round setup refreshes ordinary entity
+tracking before combat to avoid same-ID replacements being removed by a prior
+chunk unload. Per-attack logs include the selected native ray, distance and
+target identity; qualified games reject attacks beyond three local blocks.
+
+For process diagnostics, inspect PIDs, command names and resource counters.
+Avoid full command-line arguments: the user's normal Minecraft launcher may
+include account/session tokens in its JVM arguments. Those arguments do not
+belong in project reports or recordings.
 
 Loopback restricts access to this computer; it does not authenticate other local
 programs. Offline mode is needed for synthetic bot identities. Do not change

@@ -12,25 +12,41 @@ public final class Client {
     static long readAt, connectAt, lastClick, epoch, logAt, ticks, errors;
     static String match = "";
     static boolean connecting, forward, clickGate;
+    static boolean sprintPulse=true,sprintKey;
+    static int strafe;
+    static int zestPhase,zestUnanswered;
+    static long zestCue,zestIncoming,zestRelease,zestResume,zestEntryAt;
+    static boolean zestSelecting,zestOpened;
     static Object mc, player, opponent;
     static final Deque<Observation> history = new ArrayDeque<>();
     static Observation previous;
     static long lastObservedHurt, lastObservedTargetHurt;
+    static long handledTapCue,pendingTapCue,tapUntil;
+    static String tapReason="";
     static double targetSpeed;
     static long scriptStarted;
     static int scriptIndex;
-    static long heartbeatAt,respawnAt;
+    static long heartbeatAt,respawnAt,probeAt;
+    static final TargetWatchdog targetWatchdog=new TargetWatchdog();
+    static boolean targetReady;
 
     static final class Observation {
-        long time; double x,y,z,tx,ty,tz,vx,vz,distance,closing; int hurt,targetHurt; boolean sprint;
+        long time, tick; double x,y,z,tx,ty,tz,vx,vy,vz,distance,closing,ux,uz,tvx,tvz; int hurt,targetHurt; boolean sprint,ground,sentSprint;
         Observation(long time) {
-            this.time=time;
+            this.time=time;this.tick=ticks;
             x=R.num(player,"posX"); y=R.num(player,"posY"); z=R.num(player,"posZ");
             tx=R.num(opponent,"posX"); ty=R.num(opponent,"posY"); tz=R.num(opponent,"posZ");
-            vx=R.num(player,"motionX"); vz=R.num(player,"motionZ");
+            vx=R.num(player,"motionX");vy=R.num(player,"motionY"); vz=R.num(player,"motionZ");
             distance=Math.hypot(tx-x,tz-z); hurt=(int)R.num(player,"hurtTime"); targetHurt=(int)R.num(opponent,"hurtTime");
             sprint=(Boolean)R.call(player,"isSprinting");
-            if(previous!=null && time>previous.time) closing=(previous.distance-distance)/((time-previous.time)/1000.0);
+            sentSprint=(Boolean)R.get(player,"serverSprintState");
+            ground=(Boolean)R.get(player,"onGround");
+            if(previous!=null && time>previous.time){
+                double dt=(time-previous.time)/1000.0;
+                closing=(previous.distance-distance)/dt;
+                ux=(x-previous.x)/dt;uz=(z-previous.z)/dt;
+                tvx=.5*previous.tvx+.5*(tx-previous.tx)/dt;tvz=.5*previous.tvz+.5*(tz-previous.tz)/dt;
+            }
         }
     }
 
@@ -38,7 +54,7 @@ public final class Client {
         if(!"client".equals(System.getProperty("lab.role")))return;
         mc=minecraft;
         try {
-            if(player==null || opponent==null || (Boolean)R.get(opponent,"isDead") || !active())return;
+            if(player==null || opponent==null || !targetReady || (Boolean)R.get(opponent,"isDead") || !active())return;
             // Perfect aim uses the current local, interpolated entity, never server state.
             double dx=R.num(opponent,"posX")-R.num(player,"posX"), dz=R.num(opponent,"posZ")-R.num(player,"posZ");
             double eye=R.num(player,"posY")+((Number)R.call(player,"getEyeHeight")).doubleValue();
@@ -47,12 +63,29 @@ public final class Client {
             float pitch=(float)-Math.toDegrees(Math.atan2(targetEye-eye,Math.hypot(dx,dz)));
             R.set(player,"rotationYaw",yaw); R.set(player,"rotationPitch",pitch);
             Object renderer=R.get(mc,"entityRenderer"); R.call(renderer,"getMouseOver",1.0f);
+            Object ray=R.get(mc,"objectMouseOver"),selected=ray==null?null:R.get(ray,"entityHit");
+            long wall=System.currentTimeMillis();
+            if(wall-probeAt>=50){
+                probeAt=wall;Map<String,Object> probe=new LinkedHashMap<>();
+                probe.put("type","reach_probe");probe.put("time",wall);probe.put("match",match);
+                probe.put("in_range",selected==opponent);probe.put("could_attempt",selected==opponent&&R.num(mc,"leftClickCounter")<=0);
+                probe.put("miss_cooldown",R.num(mc,"leftClickCounter"));probe.put("target_id",R.call(opponent,"getEntityId"));
+                probe.put("raycast_stale",selected!=null&&selected!=opponent&&R.name(selected).equals(controls.getProperty("opponent","")));
+                log(probe);
+            }
             long now=System.nanoTime();
             if(clickGate && now-lastClick>=100_000_000L && R.get(mc,"currentScreen")==null) {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
-                lastClick=now;
-                log(Map.of("type","click","time",System.currentTimeMillis(),"match",match,"forward",forward));
+                // A planned Ctrl pulse ends after the first queued click. Native
+                // sprint persists until its ordinary stop condition/attack; later
+                // clicks do not automatically re-enable it. No hit-result oracle.
+                if(controls.getProperty("sprint_mode","hold").equals("cycle"))sprintPulse=false;
+                // Pace from completed input injection, not from before reflection/GC pauses.
+                // The next input cannot occur until >=100 ms after this completed input.
+                lastClick=System.nanoTime();
+                ModelController.click(System.currentTimeMillis());
+                log(Map.of("type","click","time",System.currentTimeMillis(),"monotonic_ns",lastClick,"match",match,"forward",forward));
             }
         }catch(Throwable e){fail(e);}
     }
@@ -80,15 +113,22 @@ public final class Client {
             if(now-heartbeatAt>1000){
                 heartbeatAt=now;List<String> visible=new ArrayList<>();List<Map<String,Object>> entities=new ArrayList<>();
                 for(Object e:(List<?>)R.get(world,"playerEntities")){
-                    visible.add(R.name(e));entities.add(Map.of("name",R.name(e),"id",R.call(e,"getEntityId"),"dead",R.get(e,"isDead"),"x",R.num(e,"posX"),"y",R.num(e,"posY"),"z",R.num(e,"posZ")));
+                    visible.add(R.name(e));entities.add(Map.of("name",R.name(e),"id",R.call(e,"getEntityId"),"dead",R.get(e,"isDead"),"x",R.num(e,"posX"),"y",R.num(e,"posY"),"z",R.num(e,"posZ"),"canonical",R.call(world,"getEntityByID",(int)R.call(e,"getEntityId"))==e));
                 }
                 Map<String,Object> heartbeat=new LinkedHashMap<>();heartbeat.put("time",now);heartbeat.put("match",controls.getProperty("match",""));heartbeat.put("enabled",active());
                 heartbeat.put("health",R.call(player,"getHealth"));heartbeat.put("alive",R.call(player,"isEntityAlive"));heartbeat.put("dead",R.get(player,"isDead"));
                 heartbeat.put("visible_players",visible);heartbeat.put("x",R.num(player,"posX"));heartbeat.put("y",R.num(player,"posY"));heartbeat.put("z",R.num(player,"posZ"));
                 heartbeat.put("entities",entities);
                 heartbeat.put("selected_target_dead",opponent!=null&&(Boolean)R.get(opponent,"isDead"));
+                if(opponent!=null){heartbeat.put("target_ticks",R.num(opponent,"ticksExisted"));heartbeat.put("target_region_loaded",regionLoaded(world,opponent));}
+                heartbeat.put("agent_sha256",System.getProperty("lab.agent_sha256","unknown"));
+                heartbeat.put("target_ready",targetReady);
+                heartbeat.put("native_ticks",ticks);
                 Object screen=R.get(mc,"currentScreen");heartbeat.put("screen",screen==null?null:screen.getClass().getName());
                 Files.createDirectories(DIR);Files.writeString(DIR.resolve("heartbeat.json"),Json.encode(heartbeat));
+                Properties integrity=new Properties();integrity.setProperty("time",Long.toString(now));
+                integrity.setProperty("match",controls.getProperty("match",""));integrity.setProperty("target_ready",Boolean.toString(targetReady));
+                R.writeProperties(DIR.resolve("view.properties"),integrity);
             }
             if(System.getProperty("lab.test_script")!=null){
                 if(scriptStarted==0)scriptStarted=now;
@@ -100,18 +140,56 @@ public final class Client {
             if(!next.equals(match)){
                 match=next;epoch=Long.parseLong(controls.getProperty("start_at",Long.toString(now)));history.clear();previous=null;lastConsumed=null;lastClick=0;
                 lastObservedHurt=lastObservedTargetHurt=0;
+                handledTapCue=pendingTapCue=tapUntil=0;tapReason="";
+                zestPhase=zestUnanswered=0;zestCue=zestIncoming=zestRelease=zestResume=zestEntryAt=0;
+                zestSelecting=controls.getProperty("entry","select").equals("select");
+                zestOpened=false;
+                sprintPulse=true;
+                ModelController.reset();
+                targetWatchdog.reset();targetReady=false;
             }
             opponent=null;
-            for(Object entity:(List<?>)R.get(world,"playerEntities"))
-                if(!(Boolean)R.get(entity,"isDead") && R.name(entity).equals(controls.getProperty("opponent",""))){opponent=entity;break;}
-            if(!active() || opponent==null){setKeys(false);clickGate=false;return;}
+            for(Object entity:(List<?>)R.get(world,"playerEntities")){
+                if(!R.name(entity).equals(controls.getProperty("opponent","")))continue;
+                // The list can retain replaced copies after spectator/arena
+                // transitions, even copies not yet marked dead. Packets update
+                // the entity-ID map, so resolve the canonical native object.
+                Object live=R.call(world,"getEntityByID",(int)R.call(entity,"getEntityId"));
+                if(live!=null && !(Boolean)R.get(live,"isDead") && R.name(live).equals(controls.getProperty("opponent",""))){opponent=live;break;}
+            }
+            targetReady=opponent!=null&&targetWatchdog.update(opponent,now,
+                (long)R.num(opponent,"ticksExisted"),identityContains(R.get(world,"loadedEntityList"),opponent),
+                (Boolean)R.get(opponent,"addedToChunk"),regionLoaded(world,opponent));
+            if(!active() || !targetReady){
+                setKeys(false);clickGate=false;
+                // Invalid world/setup: also discard an already queued physical
+                // click. This guard never filters ordinary immune-frame clicks.
+                R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"unPressAllKeys");
+                if(opponent!=null&&now-probeAt>=250){
+                    probeAt=now;Map<String,Object> health=new LinkedHashMap<>();
+                    health.put("type","target_guard");health.put("time",now);health.put("match",match);
+                    health.put("target_ticks",R.num(opponent,"ticksExisted"));health.put("target_loaded_identity",identityContains(R.get(world,"loadedEntityList"),opponent));
+                    health.put("target_added_to_chunk",R.get(opponent,"addedToChunk"));health.put("target_region_loaded",regionLoaded(world,opponent));
+                    health.put("target_spawn_queue_identity",identityContains(R.get(world,"entitySpawnQueue"),opponent));
+                    health.put("target_unloaded_identity",identityContains(R.get(world,"unloadedEntityList"),opponent));log(health);
+                }
+                if(controls.getProperty("kind","").equals("mpcprobe"))ModelController.idle(now);return;
+            }
             if(R.get(mc,"currentScreen")!=null)R.call(mc,"displayGuiScreen",(Object)null);
             R.call(mc,"setIngameFocus");
             Observation sample=new Observation(now); history.addLast(sample); previous=sample;
             long cutoff=now-150;
+            if(controls.getProperty("kind","").equals("mpcprobe")){
+                // Feed all eligible native ticks before deque compaction. The
+                // visible interpolation inverse needs consecutive samples.
+                for(Observation eligible:history){
+                    if(eligible.time>cutoff)break;
+                    ModelController.observeEligible(eligible);
+                }
+            }
             while(history.size()>1 && history.stream().skip(1).findFirst().get().time<=cutoff)history.removeFirst();
             Observation obs=history.peekFirst();
-            if(obs.time>cutoff){setKeys(false);clickGate=false;return;}
+            if(obs.time>cutoff){setKeys(false);clickGate=false;if(controls.getProperty("kind","").equals("mpcprobe"))ModelController.idle(now);return;}
             // All tactical decisions use only observations at least 150 ms old.
             Observation before=lastConsumed;
             if(before==null || obs.time>before.time){
@@ -135,6 +213,20 @@ public final class Client {
             boolean w=true;
             if(kind.equals("periodic"))w=(now-epoch)%(long)number("period_ms",400)>=(long)number("pause_ms",50);
             if(kind.equals("hitreset"))w=now-lastObservedTargetHurt>150+number("pause_ms",50);
+            if(kind.equals("wtap") || kind.equals("tradetap")){
+                // A landed-hit cue arms one reset. No periodic taps and no hidden server feedback.
+                if(lastObservedTargetHurt>handledTapCue)pendingTapCue=lastObservedTargetHurt;
+                if(pendingTapCue>0){
+                    boolean traded=lastObservedHurt>=pendingTapCue-number("trade_window_ms",200);
+                    boolean waited=now-pendingTapCue>=150+number("reply_wait_ms",150)+oppPing/2;
+                    if(kind.equals("wtap") || traded || waited){
+                        tapUntil=now+(long)number("pause_ms",50);handledTapCue=pendingTapCue;pendingTapCue=0;
+                        tapReason=traded?"landed_hit_after_received_hit":waited?"landed_hit_reply_wait_expired":"landed_hit";
+                        log(Map.of("type","wtap","time",now,"match",match,"cue_time",handledTapCue,"release_until",tapUntil,"reason",tapReason));
+                    }
+                }
+                w=now>=tapUntil;
+            }
             if(kind.equals("spacing") || kind.equals("predictive") || kind.equals("phase")) {
                 // Friction creates coasting: release before the desired future gap is crossed.
                 double ownToward=(obs.vx*(obs.tx-obs.x)+obs.vz*(obs.tz-obs.z))/Math.max(.001,obs.distance);
@@ -143,8 +235,98 @@ public final class Client {
                 double projected=gap-coast-latencyLead;
                 w=forward?projected>desired-margin:projected>desired+margin;
             }
-            setKeys(w);
+            int lateral=0;
             clickGate=true;
+            if(kind.equals("zest")){
+                // Count delayed, visible hurt animations, never referee counters.
+                boolean received=lastObservedHurt>zestIncoming;
+                boolean landed=lastObservedTargetHurt>zestCue;
+                int chain=Math.max(2,Math.min(3,(int)number("cycle_hits",3)));
+                if(received){
+                    boolean lost=zestUnanswered>=2 && number("recover",1)>0;
+                    zestIncoming=lastObservedHurt;zestUnanswered=0;
+                    if(zestSelecting || lost){
+                        zestSelecting=true;zestEntryAt=now+(long)number("select_delay_ms",0);
+                        zestPhase=0;zestRelease=zestResume=0;
+                        log(Map.of("type","zest_select","time",now,"match",match,"cue_time",zestIncoming,"resume_at",zestEntryAt,"recovery",lost));
+                    }
+                }
+                if(landed){
+                    zestCue=lastObservedTargetHurt;zestUnanswered++;
+                    zestPhase=(zestPhase+1)%chain;
+                    if(zestPhase==chain-1){
+                        // One contact earlier, plan a W-up hit. The visible cue arrives
+                        // after outbound+inbound latency; subtract RTT to predict our
+                        // next local attack opportunity. Execution is preplanned, not
+                        // a sub-150-ms reaction to a new event.
+                        zestRelease=Math.max(now,zestCue+(long)(number("hit_window_ms",500)-ping-number("release_lead_ms",100)));
+                        zestResume=zestRelease+(long)number("release_ms",200);
+                        log(Map.of("type","zest_plan","time",now,"match",match,"cue_time",zestCue,"phase",zestPhase,"release_at",zestRelease,"resume_at",zestResume));
+                    }
+                }
+                if(zestSelecting && zestEntryAt>0 && now>=zestEntryAt)zestSelecting=false;
+                // A non-attacking opponent must not leave an entry-select bot inert.
+                if(zestSelecting && zestEntryAt==0 && now-epoch>number("entry_timeout_ms",2000))zestSelecting=false;
+                clickGate=!zestSelecting;
+                w=!(now>=zestRelease && now<zestResume);
+                if(number("strafe",0)>0){
+                    // Lateral normal keys only, with a direction chosen per hit cycle.
+                    // A/D is confined to the explicitly requested strafing variant.
+                    long cycle=(long)number("strafe_period_ms",1500);
+                    lateral=((now-epoch)/cycle)%2==0?1:-1;
+                    if(number("strafe_during_release_only",0)>0 && w)lateral=0;
+                }
+                // Optional spacing ceiling is a movement policy, not an attack filter.
+                if(number("spacing",0)>0 && !zestSelecting && now-lastObservedHurt>number("spacing_after_ms",750)){
+                    double predicted=obs.distance-Math.max(-8,Math.min(8,obs.closing))*(age+number("spacing_horizon_ms",50)/1000.0);
+                    if(predicted<number("zest_gap",2.7))w=false;
+                }
+                if(number("lock_control",0)>0){
+                    double nx=(obs.tx-obs.x)/Math.max(.001,obs.distance),nz=(obs.tz-obs.z)/Math.max(.001,obs.distance);
+                    double ownAlong=obs.ux*nx+obs.uz*nz,targetAlong=obs.tvx*nx+obs.tvz*nz;
+                    // Predict our visible separation, then estimate the opponent's
+                    // older view of us. Position age includes network and native
+                    // tracking/interpolation, not just the declared RTT.
+                    double viewAge=(ping+oppPing)/2000+number("interpolation_ms",150)/1000.0;
+                    double ourGap=obs.distance+(targetAlong-ownAlong)*(age+number("control_horizon_ms",50)/1000.0);
+                    double theirGap=ourGap+(targetAlong+ownAlong)*viewAge;
+                    double vertical=Math.max(0,Math.max(obs.ty-.1-(obs.y+1.62),(obs.y+1.62)-(obs.ty+1.9)));
+                    double reach=Math.sqrt(Math.max(0,9-vertical*vertical))+.4;
+                    double theirVertical=Math.max(0,Math.max(obs.y-.1-(obs.ty+1.62),(obs.ty+1.62)-(obs.y+1.9)));
+                    double theirReach=Math.sqrt(Math.max(0,9-theirVertical*theirVertical))+.4;
+                    // Coasting matters after release; using instantaneous gap alone
+                    // brakes too late and repeatedly closes the opponent's window.
+                    double friction=obs.ground?.546:.91;
+                    double coastTicks=Math.max(1,Math.min(10,number("release_ms",200)/50));
+                    double coast=Math.max(0,obs.vx*nx+obs.vz*nz)*(1-Math.pow(friction,coastTicks))/(1-friction);
+                    double upper=reach-number("lock_margin",.2);
+                    double lower=theirReach-(targetAlong+ownAlong)*viewAge+number("deny_margin",.1);
+                    double desiredGap=lower+Math.max(0,upper-lower)*number("window_bias",.9);
+                    boolean pursuing=targetAlong>number("chase_speed",.3) && ownAlong>0;
+                    if(pursuing && lower<upper && lastObservedTargetHurt>0 && !zestSelecting){
+                        w &= ourGap-coast>desiredGap+(forward?-number("lock_hysteresis",.06):number("lock_hysteresis",.06));
+                    }
+                    if(number("adaptive_reset",0)>0 && landed && lower>=upper && !zestSelecting){
+                        // When no one-sided interval is predicted, re-establish
+                        // separation with a post-hit sprint reset. In a viable
+                        // pursuit window retain ordinary Zest contacts instead.
+                        zestRelease=now;zestResume=now+(long)number("emergency_tap_ms",50);zestPhase=0;w=false;
+                        log(Map.of("type","zest_plan","time",now,"match",match,"cue_time",zestCue,"phase",0,"release_at",zestRelease,"resume_at",zestResume,"reason","predicted_window_collapsed"));
+                    }
+                    if(number("opening_range",0)>0 && !zestOpened && !zestSelecting){
+                        // Deliberate opening hit selection: do not start a click
+                        // train in empty air. Once started, keep its native misses.
+                        zestOpened=ourGap<=reach-number("opening_margin",.05);clickGate=zestOpened;
+                    }
+                    if(now-logAt>=50)log(Map.of("type","lock_estimate","time",now,"observation_time",obs.time,"match",match,"our_gap",ourGap,"their_gap",theirGap,"target_away_speed",targetAlong,"own_toward_speed",ownAlong,"desired_gap",desiredGap,"pursuing",pursuing));
+                }
+            }
+            setKeys(w,lateral);
+            if(kind.equals("mpcprobe")){
+                ComboModel.Action action=ModelController.decide(obs,now);
+                setKeys(action.forward,0,action.sprintKey);
+            }
+            if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
             // Deliberate burst cadence is a policy choice. No immunity-based click filtering.
             if(controls.getProperty("click_mode","fixed").equals("burst"))
                 clickGate=(now-epoch)%(long)number("burst_period_ms",500)<number("burst_on_ms",300);
@@ -155,12 +337,30 @@ public final class Client {
                 entry.put("x",sample.x);entry.put("y",sample.y);entry.put("z",sample.z);entry.put("target_x",sample.tx);entry.put("target_y",sample.ty);entry.put("target_z",sample.tz);
                 entry.put("vx",sample.vx);entry.put("vz",sample.vz);entry.put("hurt",sample.hurt);entry.put("target_hurt",sample.targetHurt);
                 entry.put("sprint",sample.sprint);entry.put("forward",forward);entry.put("click_gate",clickGate);entry.put("predicted_gap",gap);
+                entry.put("strafe",strafe);entry.put("zest_phase",zestPhase);entry.put("zest_selecting",zestSelecting);
+                entry.put("sprint_key",sprintKey);entry.put("on_ground",sample.ground);
                 entry.put("target_removed",R.get(opponent,"isDead"));
+                entry.put("target_id",R.call(opponent,"getEntityId"));entry.put("target_is_canonical",R.call(world,"getEntityByID",(int)R.call(opponent,"getEntityId"))==opponent);
+                entry.put("target_ticks",R.num(opponent,"ticksExisted"));entry.put("target_region_loaded",regionLoaded(world,opponent));entry.put("target_interpolation_ticks",R.num(opponent,"otherPlayerMPPosRotationIncrements"));
+                entry.put("target_server_x",R.num(opponent,"serverPosX")/32);entry.put("target_server_y",R.num(opponent,"serverPosY")/32);entry.put("target_server_z",R.num(opponent,"serverPosZ")/32);
                 log(entry);
             }
         }catch(Throwable e){fail(e);}
     }
     static Observation lastConsumed;
+    static boolean identityContains(Object collection,Object target){for(Object item:(Iterable<?>)collection)if(item==target)return true;return false;}
+    static boolean regionLoaded(Object world,Object target){
+        int x=(int)Math.floor(R.num(target,"posX")),z=(int)Math.floor(R.num(target,"posZ"));
+        return (Boolean)R.call(world,"isAreaLoaded",x-32,0,z-32,x+32,0,z+32,true);
+    }
+    public static void velocityPacket(Object packet){
+        if(!"client".equals(System.getProperty("lab.role"))||player==null)return;
+        try{
+            Map<String,Object> event=new LinkedHashMap<>();event.put("type","velocity_packet");event.put("time",System.currentTimeMillis());event.put("match",match);
+            event.put("entity_id",R.num(packet,"entityID"));event.put("own_entity",(int)R.num(packet,"entityID")==((Number)R.call(player,"getEntityId")).intValue());
+            event.put("vx",R.num(packet,"motionX")/8000);event.put("vy",R.num(packet,"motionY")/8000);event.put("vz",R.num(packet,"motionZ")/8000);log(event);
+        }catch(Throwable e){fail(e);}
+    }
     static double beforeX,beforeZ;
     static boolean beforeSprint;
     public static void attackBefore(Object self,Object target){
@@ -171,14 +371,35 @@ public final class Client {
         if(!"client".equals(System.getProperty("lab.role")))return;
         Map<String,Object> event=new LinkedHashMap<>();event.put("type","engine_attack");event.put("time",System.currentTimeMillis());event.put("match",match);
         event.put("vx_before",beforeX);event.put("vz_before",beforeZ);event.put("vx_after",R.num(self,"motionX"));event.put("vz_after",R.num(self,"motionZ"));
+        event.put("target_is_canonical",R.call(R.get(mc,"theWorld"),"getEntityByID",(int)R.call(target,"getEntityId"))==target);
+        event.put("target_name",R.name(target));event.put("target_id",R.call(target,"getEntityId"));
+        event.put("target_ticks",R.num(target,"ticksExisted"));event.put("target_ready",targetReady);
+        event.put("target_loaded_identity",identityContains(R.get(R.get(mc,"theWorld"),"loadedEntityList"),target));
+        Object ray=R.get(mc,"objectMouseOver");Object hitVec=ray==null?null:R.get(ray,"hitVec");
+        event.put("ray_selected_target",ray!=null&&R.get(ray,"entityHit")==target);
+        if(hitVec!=null){
+            double dx=R.num(hitVec,"xCoord")-R.num(self,"posX"),dy=R.num(hitVec,"yCoord")-R.num(self,"posY")-((Number)R.call(self,"getEyeHeight")).doubleValue(),dz=R.num(hitVec,"zCoord")-R.num(self,"posZ");
+            event.put("native_raycast_distance",Math.sqrt(dx*dx+dy*dy+dz*dz));
+        }
+        event.put("own_x",R.num(self,"posX"));event.put("own_y",R.num(self,"posY"));event.put("own_z",R.num(self,"posZ"));
+        event.put("target_x",R.num(target,"posX"));event.put("target_y",R.num(target,"posY"));event.put("target_z",R.num(target,"posZ"));
         event.put("sprint_before",beforeSprint);event.put("sprint_after",R.call(self,"isSprinting"));event.put("target_visible_hurt",R.num(target,"hurtTime"));log(event);
     }
     static boolean active(){return Boolean.parseBoolean(controls.getProperty("enabled","false"))&&System.currentTimeMillis()>=Long.parseLong(controls.getProperty("start_at","0"));}
     static double number(String name,double fallback){return Double.parseDouble(controls.getProperty(name,Double.toString(fallback)));}
     static void setKeys(boolean w){
-        forward=w; Object settings=R.get(mc,"gameSettings");
+        setKeys(w,0);
+    }
+    static void setKeys(boolean w,int lateral){
+        if(w&&!forward)sprintPulse=true;
+        String mode=controls.getProperty("sprint_mode","hold");
+        sprintKey=w && (mode.equals("phase")?zestPhase==0:mode.equals("cycle")?sprintPulse:!mode.equals("walk"));
+        setKeys(w,lateral,sprintKey);
+    }
+    static void setKeys(boolean w,int lateral,boolean ctrl){
+        sprintKey=w&&ctrl;forward=w;strafe=lateral; Object settings=R.get(mc,"gameSettings");
         for(String key:List.of("keyBindForward","keyBindSprint","keyBindBack","keyBindLeft","keyBindRight","keyBindJump","keyBindSneak","keyBindUseItem")){
-            Object binding=R.get(settings,key);boolean down=key.equals("keyBindForward")?w:key.equals("keyBindSprint")&&w;
+            Object binding=R.get(settings,key);boolean down=key.equals("keyBindForward")?w:key.equals("keyBindSprint")?sprintKey:key.equals("keyBindLeft")?lateral<0:key.equals("keyBindRight")&&lateral>0;
             R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"setKeyBindState",(int)R.call(binding,"getKeyCode"),down);
         }
     }

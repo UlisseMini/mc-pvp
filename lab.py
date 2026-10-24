@@ -180,13 +180,18 @@ def build():
         jar.writestr('HEADLESSMC-LICENSE', (CACHE / 'HEADLESSMC-LICENSE').read_bytes())
         jar.write(CACHE / 'joined.srg', 'lab/joined.srg')
         jar.write(CACHE / 'mappings.properties', 'lab/mappings.properties')
+    archive=BUILD/'agents';archive.mkdir(exist_ok=True)
+    for artifact in (BUILD/'lab-agent.jar',temporary):
+        if artifact.exists():
+            data=artifact.read_bytes();digest=hashlib.sha256(data).hexdigest();saved=archive/(digest+'.jar')
+            if not saved.exists():saved.write_bytes(data)
     temporary.replace(BUILD/'lab-agent.jar')
     print('Built build/lab-agent.jar without Gradle or annotation processors.')
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', choices=['prepare', 'build','sandbox-test','logging-test','serve','stop','status','match','verify-ux'])
+    parser.add_argument('command', choices=['prepare', 'build','sandbox-test','logging-test','serve','stop','reload-bots','status','match','ping-match','verify-ux'])
     parser.add_argument('extra',nargs='*')
     args = parser.parse_args()
     if args.command in ('prepare','build'):globals()[args.command]()

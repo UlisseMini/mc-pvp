@@ -1,6 +1,7 @@
 """Sandboxed JVM supervision and ordered TCP latency injection. Standard library only."""
 import asyncio
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -12,7 +13,7 @@ import uuid
 
 from lab import ROOT, CACHE, BUILD, RUNTIME, JAVA, build, verify_cache
 
-BOT_SLOTS=6
+BOT_SLOTS=8
 
 
 def clean_environment():
@@ -42,7 +43,14 @@ def sandbox_profile():
 (deny network-outbound (require-not (remote ip "localhost:*")))
 '''.replace('PROJECT',json.dumps(str(ROOT))).replace('WRITABLE',json.dumps(str(RUNTIME)))
     profile=profile.replace('JAVABINARY',json.dumps(str(JAVA)))
-    path=RUNTIME/'sandbox.sb';path.write_text(profile);return path
+    path=RUNTIME/'sandbox.sb'
+    if not path.exists() or path.read_text()!=profile:
+        # Several JVMs start together. Never truncate the profile while an
+        # already launched sandbox-exec process is opening it.
+        temporary=path.with_name('sandbox-'+uuid.uuid4().hex+'.sb')
+        try:temporary.write_text(profile);temporary.replace(path)
+        finally:temporary.unlink(missing_ok=True)
+    return path
 
 
 def sandbox_java(args):
@@ -119,7 +127,7 @@ level-name=world
 level-type=FLAT
 generator-settings=3;minecraft:bedrock,2*minecraft:dirt,minecraft:grass;1;
 max-players=16
-view-distance=3
+view-distance=8
 spawn-protection=0
 spawn-monsters=false
 spawn-animals=false
@@ -136,10 +144,11 @@ max-tick-time=60000
     (RUNTIME/'server/server.properties').write_text(config)
     (RUNTIME/'server/eula.txt').write_text('eula=true\n')
     (RUNTIME/'proxy/human.properties').write_text('rtt_ms=0\n')
+    (RUNTIME/'proxy/observer.properties').write_text('rtt_ms=0\n')
     for i in range(BOT_SLOTS):
         bot=RUNTIME/f'bots/{i}';bot.mkdir(parents=True,exist_ok=True)
         (bot/'control.properties').write_text('enabled=false\n')
-        (bot/'options.txt').write_text('renderDistance:2\nfancyGraphics:false\nparticles:2\nenableVsync:false\nmaxFps:120\nsoundCategory_master:0.0\nshowSubtitles:false\n')
+        (bot/'options.txt').write_text('renderDistance:6\nfancyGraphics:false\nparticles:2\nenableVsync:false\nmaxFps:120\nsoundCategory_master:0.0\nshowSubtitles:false\n')
         (RUNTIME/f'proxy/slot{i}.properties').write_text('rtt_ms=0\n')
     assets=CACHE/'assets';assets.mkdir(exist_ok=True)
 
@@ -155,11 +164,13 @@ async def serve():
     stop=asyncio.Event()
     loop=asyncio.get_running_loop()
     for sig in (signal.SIGINT,signal.SIGTERM):loop.add_signal_handler(sig,stop.set)
-    def launch(role,args,cwd):
+    def launch(role,args,cwd,replace=None):
         log=open(RUNTIME/f'logs/{role}.log','w');logs.append(log)
         environment=clean_environment()
         process=subprocess.Popen(sandbox_java(args),cwd=cwd,stdin=subprocess.PIPE,stdout=log,stderr=subprocess.STDOUT,text=True,env=environment)
-        processes.append(process);return process
+        if replace is None:processes.append(process)
+        else:processes[replace]=process
+        return process
     base=['-Xms128M','-Xmx1024M','-XX:ActiveProcessorCount=2','-Dlab.root='+str(ROOT),'-javaagent:'+str(BUILD/'lab-agent.jar')]
     server=launch('server',[*base,'-Dlab.role=server','-Dlog4j.configurationFile='+str(CACHE/'server-logging.xml'),'-jar',CACHE/'server.jar','nogui'],RUNTIME/'server')
     try:
@@ -172,16 +183,20 @@ async def serve():
             await asyncio.sleep(.5)
         else:raise RuntimeError('Server did not become ready; see runtime/logs/server.log')
         proxies.append(await latency_proxy(25565,RUNTIME/'proxy/human.properties'))
+        proxies.append(await latency_proxy(25569,RUNTIME/'proxy/observer.properties'))
         libraries=json.loads((CACHE/'classpath.json').read_text())
         classpath=os.pathsep.join([str(CACHE/'client.jar'),*libraries])
-        for i in range(BOT_SLOTS):
-            proxies.append(await latency_proxy(25570+i,RUNTIME/f'proxy/slot{i}.properties'))
+        def start_bot(i,replace=None):
             name=f'LabSlot{i}';bot=RUNTIME/f'bots/{i}'
-            launch(f'bot{i}',[*base,'-Dlab.role=client',f'-Dlab.slot={i}',f'-Dlab.port={25570+i}',
+            digest=hashlib.sha256((BUILD/'lab-agent.jar').read_bytes()).hexdigest()
+            launch(f'bot{i}',[*base,'-Dlab.agent_sha256='+digest,'-Dlab.role=client',f'-Dlab.slot={i}',f'-Dlab.port={25570+i}',
                 '-Dlog4j.configurationFile='+str(CACHE/'client-logging.xml'),'-Djoml.nounsafe=true',
                 '-cp',classpath,'net.minecraft.client.main.Main','--version','1.8.9','--gameDir',bot,
                 '--assetsDir',CACHE/'assets','--assetIndex','1.8','--username',name,'--uuid',uuid.uuid3(uuid.NAMESPACE_DNS,name).hex,
-                '--accessToken','0','--userProperties','{}','--userType','legacy','--width','320','--height','240'],bot)
+                '--accessToken','0','--userProperties','{}','--userType','legacy','--width','320','--height','240'],bot,replace)
+        for i in range(BOT_SLOTS):
+            proxies.append(await latency_proxy(25570+i,RUNTIME/f'proxy/slot{i}.properties'))
+            start_bot(i)
         (RUNTIME/'manager.json').write_text(json.dumps({'pid':os.getpid(),'address':'127.0.0.1:25565','version':'1.8.9','started':time.time()}))
         print(f'Server address: 127.0.0.1:25565 (Minecraft Java 1.8.9). Waiting for {BOT_SLOTS} real clients.',flush=True)
         initialized=False
@@ -197,7 +212,19 @@ async def serve():
                 payload=json.loads(request.read_text());request.unlink()
                 command=payload['command']
                 if command=='shutdown':stop.set();break
-                if not command.startswith('lab match '):continue
+                if command=='reload-bots':
+                    state=json.loads((RUNTIME/'status.json').read_text());busy={m[k] for m in state['matches'] for k in ('a','b')}
+                    reloaded=[]
+                    for i in range(BOT_SLOTS):
+                        if f'LabSlot{i}' in busy:continue
+                        (RUNTIME/f'bots/{i}/control.properties').write_text('enabled=false\n')
+                        old=processes[i+1];old.terminate()
+                        try:old.wait(timeout=3)
+                        except subprocess.TimeoutExpired:old.kill();old.wait()
+                        await asyncio.sleep(.4);start_bot(i,i+1);reloaded.append(i)
+                    print('Reloaded idle bot clients '+str(reloaded)+'; active duels keep running.',flush=True)
+                    continue
+                if not command.startswith(('lab match ','lab ping ')):continue
                 if not all(c.isalnum() or c in '-_ ./' for c in command):continue
                 server.stdin.write(command+'\n');server.stdin.flush()
             await asyncio.sleep(.1)
@@ -229,19 +256,35 @@ def verify_ux():
     data=json.loads((RUNTIME/'status.json').read_text())
     if not data['matches']:raise RuntimeError('Start a bot match before verifying spectator controls')
     identifier=max(data['matches'],key=lambda m:m['start'])['id']
-    script=f'1500:/bots|2500:/matches|3500:/watch {identifier} a|6500:/watch {identifier} b|9000:/duel burst 80|14000:/stop|16000:/rematch|21000:/stop'
+    script=f'1500:/bots|2500:/matches|3500:/watch {identifier} a|6500:/watch {identifier} b|9000:/duel trade-wtap 100 20|12000:/ping me 120|14000:/ping bot 40|16000:/ping|18000:/stop|20000:/rematch|23000:/ping|26000:/stop'
     bot=RUNTIME/'bots/observer';bot.mkdir(exist_ok=True);(bot/'control.properties').write_text('enabled=false\n')
-    (bot/'options.txt').write_text('renderDistance:2\nfancyGraphics:false\nparticles:2\nsoundCategory_master:0.0\n')
+    (bot/'options.txt').write_text('renderDistance:6\nfancyGraphics:false\nparticles:2\nsoundCategory_master:0.0\n')
     cp=os.pathsep.join([str(CACHE/'client.jar'),*json.loads((CACHE/'classpath.json').read_text())])
-    args=['-Xmx768M','-XX:ActiveProcessorCount=2','-Dlab.root='+str(ROOT),'-Dlab.role=client','-Dlab.slot=observer','-Dlab.port=25565',
-          '-Dlab.test_script='+script,'-Dlab.test_duration=24000','-Dlog4j.configurationFile='+str(CACHE/'client-logging.xml'),
+    args=['-Xmx768M','-XX:ActiveProcessorCount=2','-Dlab.root='+str(ROOT),'-Dlab.role=client','-Dlab.slot=observer','-Dlab.port=25569',
+          '-Dlab.test_script='+script,'-Dlab.test_duration=29000','-Dlog4j.configurationFile='+str(CACHE/'client-logging.xml'),
           '-javaagent:'+str(BUILD/'lab-agent.jar'),'-cp',cp,'net.minecraft.client.main.Main','--version','1.8.9','--gameDir',str(bot),
           '--assetsDir',str(CACHE/'assets'),'--assetIndex','1.8','--username','LabObserver','--uuid',uuid.uuid4().hex,'--accessToken','0','--userProperties','{}','--userType','legacy']
+    launched=time.time()*1000
     with open(RUNTIME/'logs/observer.log','w')as log:
         result=subprocess.run(sandbox_java(args),cwd=bot,stdout=log,stderr=subprocess.STDOUT,timeout=60,
             env=clean_environment())
     text=(RUNTIME/'logs/observer.log').read_text()
-    checks={'roster':'Choose a bot' in text,'spectate':'Spectating '+identifier in text,'duel':'human vs burst' in text,'stop':'Finished ' in text,
+    results=[json.loads(p.read_text()) for p in (RUNTIME/'results').glob('*.json')]
+    ours=[r for r in results if r['a']=='LabObserver' and r['start']>=launched]
+    native_views=True;native_attacks=[]
+    for match in ours:
+        path=RUNTIME/'bots'/match['b'].removeprefix('LabSlot')/'events.jsonl'
+        events=[e for line in path.read_text().splitlines() if (e:=json.loads(line)).get('match')==match['id']]
+        observed=[e for e in events if e['type']=='observation']
+        native_views &= len(observed)>=3 and max((e['target_ticks'] for e in observed),default=0)-min((e['target_ticks'] for e in observed),default=0)>=3
+        native_attacks.extend(e for e in events if e['type']=='engine_attack')
+    legal_attacks=bool(native_attacks) and all(e.get('target_ready') and e.get('ray_selected_target') and e.get('target_loaded_identity')
+        and e.get('native_raycast_distance',999)<=3.00001 for e in native_attacks)
+    checks={'roster':'Choose a bot' in text,'spectate':'Spectating '+identifier in text,'duel':'human vs trade-wtap' in text,'stop':'Finished ' in text,
+            'live_ping_changes':any(r.get('ping_changes')==2 and r['ping_a']==120 and r['ping_b']==40 for r in ours),
+            'rematch_retains_pings':any(r.get('initial_ping_a')==120 and r.get('initial_ping_b')==40 for r in ours),
+            'native_target_updates_in_every_duel':bool(ours) and native_views,
+            'native_attack_reach_and_live_target':legal_attacks,
             'no_lab_exception':'java.lang.IllegalArgumentException' not in text and 'at lab.' not in text}
     (RUNTIME/'ux-verification.json').write_text(json.dumps({'checks':checks,'exit':result.returncode,'match_watched':identifier},indent=2))
     print(json.dumps(checks,indent=2))
@@ -253,8 +296,12 @@ def run(command,extra):
     elif command=='logging-test':logging_test()
     elif command=='serve':asyncio.run(serve())
     elif command=='stop':send('shutdown')
+    elif command=='reload-bots':send('reload-bots')
     elif command=='status':print((RUNTIME/'status.json').read_text())
     elif command=='verify-ux':verify_ux()
     elif command=='match':
         if len(extra)<2:raise SystemExit('Usage: python3 lab.py match <bot-a> <bot-b> [ping-a] [ping-b]')
         send('lab match '+' '.join(extra));print('Queued match: '+' '.join(extra))
+    elif command=='ping-match':
+        if len(extra)!=3:raise SystemExit('Usage: python3 lab.py ping-match <match> <RTT-a> <RTT-b>')
+        send('lab ping '+' '.join(extra));print('Queued ping change: '+' '.join(extra))
