@@ -9,7 +9,7 @@ public final class Client {
     static final String SLOT = System.getProperty("lab.slot", "0");
     static final Path DIR = R.ROOT.resolve("runtime/bots/" + SLOT);
     static Properties controls = new Properties();
-    static long readAt, connectAt, lastClick, epoch, logAt, ticks, errors;
+    static long readAt, connectAt, lastClick, firstClickEligible, epoch, logAt, ticks, errors;
     static String match = "";
     static boolean connecting, forward, clickGate;
     static boolean sprintPulse=true,sprintKey;
@@ -102,7 +102,9 @@ public final class Client {
                 log(probe);
             }
             long now=System.nanoTime();
-            if(clickGate && now-lastClick>=100_000_000L && R.get(mc,"currentScreen")==null) {
+            if(clickGate&&firstClickEligible==0)firstClickEligible=now;
+            long firstDelay=(long)Math.max(0,Math.min(100,number("first_click_delay_ms",0)))*1_000_000L;
+            if(clickGate && now-firstClickEligible>=firstDelay && now-lastClick>=100_000_000L && R.get(mc,"currentScreen")==null) {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 // A planned Ctrl pulse ends after the first queued click. Native
@@ -166,7 +168,7 @@ public final class Client {
             }
             String next=controls.getProperty("match","");
             if(!next.equals(match)){
-                match=next;epoch=Long.parseLong(controls.getProperty("start_at",Long.toString(now)));history.clear();previous=null;lastConsumed=null;lastClick=0;
+                match=next;epoch=Long.parseLong(controls.getProperty("start_at",Long.toString(now)));history.clear();previous=null;lastConsumed=null;lastClick=firstClickEligible=0;
                 lastObservedHurt=lastObservedTargetHurt=0;
                 handledTapCue=pendingTapCue=tapUntil=0;tapReason="";
                 zestPhase=zestUnanswered=0;zestCue=zestIncoming=zestRelease=zestResume=zestEntryAt=0;
@@ -364,7 +366,8 @@ public final class Client {
                     obs.y,obs.ty,obs.ground,ping,oppPing),MomentumController.Settings.from(controls));
                 setKeys(decision.forward(),decision.lateral(),decision.sprintKey());
                 if(decision.resetStarted())log(Map.of("type","wtap","time",now,"match",match,
-                    "cue_time",decision.cue(),"release_until",decision.releaseUntil(),"reason","momentum_planned_reset"));
+                    "cue_time",decision.cue(),"release_until",decision.releaseUntil(),"reason","momentum_planned_reset",
+                    "pause_ticks",controls.getProperty("pause_ticks","0"),"native_tick",ticks,"last_click_ms",ModelController.lastInjection));
                 if(now-logAt>=50){
                     Map<String,Object> entry=new LinkedHashMap<>();entry.put("type","momentum_plan");entry.put("time",now);
                     entry.put("observation_time",obs.time);entry.put("match",match);entry.put("forward",decision.forward());
@@ -434,6 +437,7 @@ public final class Client {
     public static void attackAfter(Object self,Object target){
         if(!"client".equals(System.getProperty("lab.role")))return;
         Map<String,Object> event=new LinkedHashMap<>();event.put("type","engine_attack");event.put("time",System.currentTimeMillis());event.put("match",match);
+        event.put("monotonic_ns",System.nanoTime());event.put("click_attempt",ScienceTrace.clickId());
         event.put("vx_before",beforeX);event.put("vz_before",beforeZ);event.put("vx_after",R.num(self,"motionX"));event.put("vz_after",R.num(self,"motionZ"));
         event.put("target_is_canonical",R.call(R.get(mc,"theWorld"),"getEntityByID",(int)R.call(target,"getEntityId"))==target);
         event.put("target_name",R.name(target));event.put("target_id",R.call(target,"getEntityId"));

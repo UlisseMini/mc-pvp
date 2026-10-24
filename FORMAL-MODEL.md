@@ -342,6 +342,16 @@ Holding W+Ctrl can restore s during that same living update. If s==sent at
 transmission time, no new START is sent, even though the server cleared its flag
 on the earlier accepted hit. Three sprint values must remain distinct.
 
+Own S1C entity metadata is another transition of the local sprint flag. In the
+packet-linked `m0396` trade at 11,643–11,644 ms, A receives its velocity at
+11,657 ms and then own metadata changes local sprint true→false before its
+11,684 ms contact. That contact retains horizontal motion −.39275 rather than
+applying .6; B's intervening contact does apply .6. See the
+[double-hit evidence](research/double-hit-mechanisms.md) and
+[exact packet links](research/trade-grounding.json). A composed simulator must
+apply metadata in native packet order, before testing the click's sprint flag;
+held Ctrl alone does not specify that flag at click consumption.
+
 A W release ends local sprint. Releasing Ctrl alone does **not** end an existing
 sprint. However, with W held continuously, Ctrl released on a contact tick lets
 that contact's cancellation persist and produce STOP; Ctrl on a following

@@ -85,6 +85,10 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                                              'p95_click_gap_ms':ordered[min(len(ordered)-1,int(.95*len(ordered)))]/1e6 if ordered else None}
                     target_tick=None;target_advanced_at=None
                     for event in events:
+                        if event['type']=='observation' and event.get('y',4)<4-1e-7:
+                            issues.add(f'{side}: player fell below the declared flat arena floor')
+                        if event['type']=='science_move' and any(event[k].get('isCollidedHorizontally',False) for k in ('before','after')):
+                            issues.add(f'{side}: unexpected horizontal block collision in flat arena')
                         if event['type'] in ('momentum_plan','mpc_plan') and event['time']-event['observation_time']<150:
                             issues.add(f'{side}: tactical plan reacted before150ms')
                         if event['type']=='engine_attack' and 'native_raycast_distance' in event:

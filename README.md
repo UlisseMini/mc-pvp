@@ -5,6 +5,8 @@ Java 1.8.9** server and real clients through **basic HeadlessMC**. The game perf
 movement, collision, raycasting, attacks, knockback and damage immunity.
 
 Current research: [physics validation before policy search](research/README.md).
+The [double-hit investigation](research/double-hit-mechanisms.md) records W-tap
+versus hold-W trials and the native timing differences behind their exchanges.
 The [formal model](FORMAL-MODEL.md) states the mechanics, hidden information and
 combo proof conditions; controlled native recordings test those claims. Its
 individual equations are much better checked than its full-fight forecasts.
@@ -57,6 +59,7 @@ shared: this first version is intended for **one human player at a time**.
 | `hold-w-probe` | Same pursuit and perfect aim, no clicks; logs native reach opportunities |
 | `standstill` | Perfect aim and fixed clicks, no movement keys, ordinary knockback |
 | `wtap` | One short W release after a landed-hit cue |
+| `wtap-tick` | Experimental post-hit W release lasting exactly one movement update |
 | `trade-wtap` | Post-hit reset that prefers to release just after receiving a hit |
 | `hit-reset` | Older confirmed-hit W-tap timing |
 | `periodic-tap` | Fixed-rhythm control experiment; not normal W-tapping |
@@ -78,7 +81,8 @@ shared: this first version is intended for **one human player at a time**.
 | `pvp-knows-wtap` | Same candidate parameters, predicting the actual delayed post-hit W-tap policy |
 | `pvp-knows-standstill` | Same candidate parameters, predicting a stationary clicking opponent |
 
-- Normal speed, no potions, no enchantments, flat grass, diamond swords.
+- Normal speed, no potions, no enchantments, flat full-block ground, diamond swords.
+  Arena centers use bedrock with the same slipperiness as grass to prevent holes.
 - First to 100 **server-accepted attacks**. Health is restored after real damage
   so a duel can continue; knockback, damage immunity and critical-hit logic run.
 - Perfect aim uses the current **local client view**. It does not read server

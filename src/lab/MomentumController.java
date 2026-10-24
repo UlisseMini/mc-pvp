@@ -5,7 +5,8 @@ import java.util.Properties;
 /** Small visible-only W/Ctrl controller. It never controls or suppresses clicks. */
 public final class MomentumController {
     public static final class Settings {
-        public int resetEvery=1, resetDelayMs=0, pauseMs=50;
+        public int resetEvery=1, resetDelayMs=0, pauseMs=50, pauseTicks=0;
+        public boolean resetOnIssuedClick=false;
         public boolean adaptiveReset=false, spacing=false, rttAdjustedDelay=false, freshPhase=false, walkReset=false;
         public int openingWaitMs=0, clickIntervalMs=105, freshCorrectionMs=25;
         public double gap=3.10, hysteresis=.06, leadMs=100, targetAwayMin=.5;
@@ -18,6 +19,7 @@ public final class MomentumController {
             Settings s=new Settings();
             s.resetEvery=(int)value(p,"reset_every",1);s.resetDelayMs=(int)value(p,"reset_delay_ms",0);
             s.pauseMs=(int)value(p,"pause_ms",50);s.adaptiveReset=value(p,"adaptive_reset",0)>0;
+            s.pauseTicks=(int)value(p,"pause_ticks",0);s.resetOnIssuedClick=value(p,"reset_on_issued_click",0)>0;
             s.rttAdjustedDelay=value(p,"reset_rtt_adjusted",0)>0;s.freshPhase=value(p,"reset_fresh_phase",0)>0;
             s.walkReset=value(p,"reset_walk",0)>0;
             s.openingWaitMs=(int)value(p,"opening_wait_ms",0);
@@ -34,7 +36,8 @@ public final class MomentumController {
             return Double.parseDouble(p.getProperty(key,Double.toString(fallback)));
         }
         void validate() {
-            if(resetEvery<1||resetEvery>8||pauseMs<0||pauseMs>500||resetDelayMs<0||resetDelayMs>500
+            if(resetEvery<1||resetEvery>8||pauseMs<0||pauseMs>500||pauseTicks<0||pauseTicks>4
+                    ||(resetOnIssuedClick&&pauseTicks!=1)||resetDelayMs<0||resetDelayMs>500
                     ||incomingGuardMs<150||incomingGuardMs>1500||(strafePeriodMs!=0&&strafePeriodMs<150)
                     ||openingWaitMs<0||openingWaitMs>500||clickIntervalMs<100||clickIntervalMs>200
                     ||freshCorrectionMs<0||freshCorrectionMs>50
@@ -59,12 +62,13 @@ public final class MomentumController {
 
     private long handledCue,scheduledCue,scheduledAt=Long.MAX_VALUE,tapUntil;
     private int landedCount;
+    private int releaseTicks;
     private boolean previousForward=true;
     private long startedAt=Long.MIN_VALUE;
     private long lastIssuedAt=Long.MIN_VALUE;
 
     public void reset() {
-        handledCue=scheduledCue=tapUntil=0;scheduledAt=Long.MAX_VALUE;landedCount=0;previousForward=true;startedAt=lastIssuedAt=Long.MIN_VALUE;
+        handledCue=scheduledCue=tapUntil=0;scheduledAt=Long.MAX_VALUE;landedCount=releaseTicks=0;previousForward=true;startedAt=lastIssuedAt=Long.MIN_VALUE;
     }
 
     public Decision decide(Input in,Settings s) {
@@ -98,13 +102,19 @@ public final class MomentumController {
             if(selected&&!(s.adaptiveReset&&comfortable)) {
                 double delay=s.rttAdjustedDelay?Math.max(0,s.resetDelayMs-in.ownRtt):s.resetDelayMs;
                 scheduledCue=handledCue;
-                scheduledAt=s.freshPhase?freshPhaseReset(in,s):Math.max(in.now,handledCue+150+(long)delay);
+                scheduledAt=s.resetOnIssuedClick
+                        ?Math.max(in.now,(long)(handledCue+500-in.ownRtt-s.freshCorrectionMs-s.clickIntervalMs))
+                        :s.freshPhase?freshPhaseReset(in,s):Math.max(in.now,handledCue+150+(long)delay);
             } else skipped=true;
         }
-        if(in.now>=scheduledAt) {
-            tapUntil=in.now+s.pauseMs;scheduledAt=Long.MAX_VALUE;started=true;
+        // Own issued inputs are immediately known; no new world observation is
+        // consulted here. ATTACK happens before living movement and C0B state.
+        boolean clickQueued=in.lastClickMs>lastIssuedAt&&in.lastClickMs<=in.now;
+        if(in.now>=scheduledAt&&(!s.resetOnIssuedClick||clickQueued)) {
+            tapUntil=in.now+s.pauseMs;releaseTicks=s.pauseTicks;scheduledAt=Long.MAX_VALUE;started=true;
         }
-        boolean resetActive=in.now<tapUntil;
+        boolean resetActive=s.pauseTicks>0?releaseTicks>0:in.now<tapUntil;
+        if(releaseTicks>0)releaseTicks--;
         boolean w=(!resetActive||s.walkReset)&&in.now-startedAt>=s.openingWaitMs;
         boolean incomingSettled=in.incomingCue==0||in.now-in.incomingCue>=s.incomingGuardMs;
         if(s.spacing&&pursuing&&incomingSettled&&in.now-in.landedCue<1500) {

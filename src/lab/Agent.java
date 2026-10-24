@@ -42,6 +42,11 @@ public final class Agent implements ClassFileTransformer {
                     method.instructions.insert(callThis("lab/Client", "tick")); changed = true;
                 } else if (name.equals("ave") && method.name.equals("av") && method.desc.equals("()V")) {
                     method.instructions.insert(callThis("lab/Client", "frame")); changed = true;
+                } else if (name.equals("ave") && method.name.equals("aw") && method.desc.equals("()V")) {
+                    method.instructions.insert(callThis("lab/ScienceTrace","clickBefore"));
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)
+                        method.instructions.insertBefore(ins,callThis("lab/ScienceTrace","clickAfter"));
+                    changed=true;
                 } else if (name.equals("net/minecraft/server/MinecraftServer") && method.name.equals("A") && method.desc.equals("()V")) {
                     for (AbstractInsnNode ins : method.instructions.toArray()) if (ins.getOpcode() == Opcodes.RETURN)
                         method.instructions.insertBefore(ins, callThis("lab/Referee", "tick"));

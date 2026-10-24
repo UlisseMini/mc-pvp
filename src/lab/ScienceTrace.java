@@ -4,7 +4,7 @@ import java.util.*;
 
 /** Read-only native transition probes. Data is written to disk, never fed to a policy. */
 public final class ScienceTrace {
-    private static Map<String,Object> movement, interpolation, attack;
+    private static Map<String,Object> movement, interpolation, attack, click;
     private static long sequence;
     static boolean client() {
         return "client".equals(System.getProperty("lab.role")) && Client.active()
@@ -25,6 +25,26 @@ public final class ScienceTrace {
         Map<String,Object> e=new LinkedHashMap<>();e.put("type",type);e.put("time",System.currentTimeMillis());
         e.put("monotonic_ns",System.nanoTime());e.put("sequence",++sequence);e.put("tick",Client.ticks);e.put("match",Client.match);return e;
     }
+    /** Observe actual vanilla click consumption, including native miss cooldown. */
+    public static void clickBefore(Object minecraft){
+        if(!client())return;
+        try{
+            click=event("science_click");click.put("miss_cooldown_before",R.num(minecraft,"leftClickCounter"));
+            click.put("own",state(Client.player));click.put("target",state(Client.opponent));
+            Object ray=R.get(minecraft,"objectMouseOver"),selected=ray==null?null:R.get(ray,"entityHit");
+            click.put("ray_type",ray==null?"null":R.get(ray,"typeOfHit").toString());
+            click.put("selected_target",selected==Client.opponent);
+            Object point=ray==null?null:R.get(ray,"hitVec");
+            if(point!=null)click.put("ray_point",List.of(R.num(point,"xCoord"),R.num(point,"yCoord"),R.num(point,"zCoord")));
+        }catch(Throwable e){click=null;Client.fail(e);}
+    }
+    public static void clickAfter(Object minecraft){
+        if(click==null)return;
+        try{click.put("miss_cooldown_after",R.num(minecraft,"leftClickCounter"));
+            click.put("monotonic_end_ns",System.nanoTime());Client.log(click);click=null;
+        }catch(Throwable e){click=null;Client.fail(e);}
+    }
+    static long clickId(){return click==null?-1:((Number)click.get("sequence")).longValue();}
     public static void movementBefore(Object self,float strafe,float forward) {
         if(!client() || self!=Client.player)return;
         try {
@@ -81,6 +101,7 @@ public final class ScienceTrace {
         try {
             attack=null;Referee.Match m=tracedMatch(self);if(m==null || System.currentTimeMillis()<m.start)return;
             attack=new LinkedHashMap<>();attack.put("type","science_server_attack");attack.put("time",System.currentTimeMillis());
+            attack.put("monotonic_ns",System.nanoTime());
             attack.put("server_tick",Referee.ticks);attack.put("attacker",R.name(self));attack.put("target",R.name(target));
             attack.put("attacker_before",state(self));attack.put("target_before",state(target));
             attack.put("score_before",List.of(m.ha,m.hb));

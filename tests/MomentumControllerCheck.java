@@ -13,6 +13,16 @@ public final class MomentumControllerCheck {
         require(!controller.decide(input(699,500,0,3,2,-2),settings).forward(),"planned release persists");
         require(controller.decide(input(700,500,0,3,2,-2),settings).forward(),"release ends on schedule");
         require(!controller.decide(input(750,500,0,3,2,-2),settings).resetStarted(),"same cue cannot retrigger");
+        controller.reset();settings=new MomentumController.Settings();settings.pauseTicks=1;
+        require(!controller.decide(input(650,500,0,3,2,-2),settings).forward(),"native-tick release begins");
+        require(controller.decide(input(699,500,0,3,2,-2),settings).forward(),"49ms next native tick resumes, unlike wall-clock release");
+        controller.reset();settings=new MomentumController.Settings();settings.pauseTicks=1;settings.resetOnIssuedClick=true;
+        require(controller.decide(input(650,500,0,3,2,-2),settings).forward(),"phase reset waits beyond delayed cue");
+        require(controller.decide(input(850,500,0,3,2,-2),settings).forward(),"pre-window click does not release early");
+        require(controller.decide(new MomentumController.Input(880,730,500,0,840,3,2,-2,.1,4,4,true,0,0),settings).forward(),"no newly queued click means no phase release");
+        require(controller.decide(input(930,500,0,3,2,-2),settings).resetStarted(),"actual issued click gates reset at estimated pre-fresh window");
+        require(controller.decide(input(979,500,0,3,2,-2),settings).forward(),"click-gated release lasts exactly one native tick");
+        controller.reset();settings=new MomentumController.Settings();
         controller.reset();settings.resetDelayMs=100;
         require(controller.decide(input(650,500,0,3,2,-2),settings).forward(),"extra delay retains forward input");
         require(!controller.decide(input(750,500,0,3,2,-2),settings).forward(),"delayed planned reset executes");

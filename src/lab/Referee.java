@@ -15,6 +15,7 @@ public final class Referee {
     static final Map<String,double[]> lastPings=new HashMap<>();
     static final Map<String,String> watching=new HashMap<>();
     static final Map<String,Long> pendingTracking=new LinkedHashMap<>();
+    static final Set<Integer> preparedArenas=new HashSet<>();
     static long ticks, errors;
     static int counter;
 
@@ -26,7 +27,8 @@ public final class Referee {
             Map<String,Object> m=new LinkedHashMap<>();
             m.put("id",id);m.put("a",a);m.put("b",b);m.put("policy_a",pa);m.put("policy_b",pb);
             m.put("hits_a",ha);m.put("hits_b",hb);m.put("goal",goal);m.put("ping_a",pingA);m.put("ping_b",pingB);
-            m.put("start",start);m.put("finish",finish);m.put("winner",winner);m.put("arena",arena);m.put("request",request);m.put("scenario",scenario);m.put("duration_limit_ms",durationMs);return m;
+            m.put("start",start);m.put("finish",finish);m.put("winner",winner);m.put("arena",arena);m.put("request",request);m.put("scenario",scenario);m.put("duration_limit_ms",durationMs);
+            m.put("arena_surface","bedrock_y3_radius128_v1");return m;
         }
     }
 
@@ -56,6 +58,9 @@ public final class Referee {
             for(Match m:new ArrayList<>(matches.values())){
                 Object a=player(m.a),b=player(m.b);
                 if(a==null||b==null){m.winner=a==null?m.b:m.a;finish(m,"disconnect");continue;}
+                if(System.currentTimeMillis()>m.start&&(R.num(a,"posY")<4-1e-7||R.num(b,"posY")<4-1e-7)){
+                    finish(m,"invalid_arena_floor");continue;
+                }
                 R.call(R.call(a,"getFoodStats"),"setFoodLevel",20);R.call(R.call(b,"getFoodStats"),"setFoodLevel",20);
                 if(!m.winner.isEmpty()){finish(m,"100_hits");continue;}
                 if(ticks%10==0&&System.currentTimeMillis()>m.start+2000&&!validBotViews(m)){
@@ -202,6 +207,8 @@ public final class Referee {
         m.configB.putAll(policies.get(pb));
         Set<Integer> used=new HashSet<>();for(Match current:matches.values())used.add(current.arena);
         while(used.contains(m.arena))m.arena++;
+        prepareArena(R.get(player(a),"worldObj"),m.arena);
+        m.start=System.currentTimeMillis()+3000;
         m.replay=DATA.resolve("replays/"+m.id+".jsonl");matches.put(m.id,m);
         configureProxy(a,pingA);configureProxy(b,pingB);
         // At normal speed even a full 180-second pursuit cannot reach another arena.
@@ -216,6 +223,17 @@ public final class Referee {
         message(player(a),"Starting "+m.id+": "+pa+" vs "+pb+". First to 100 hits. /stop to exit.");
         message(player(b),"Starting "+m.id+": "+pa+" vs "+pb+". First to 100 hits.");
         System.out.println("[PvP Lab] START "+Json.encode(m.state()));
+    }
+    static void prepareArena(Object world,int arena){
+        if(preparedArenas.contains(arena))return;
+        int center=4096*(arena+1),radius=128;
+        // Ordinary unbreakable full blocks: same .6 slipperiness as grass/dirt.
+        // Repair old holes before play, without altering movement or combat.
+        for(int x=center-radius;x<center+radius;x+=16)for(int z=-radius;z<radius;z+=16)
+            R.call(world,"getChunkFromChunkCoords",x>>4,z>>4);
+        for(int x=center-radius;x<center+radius;x+=128)for(int z=-radius;z<radius;z+=128)
+            vanilla("fill "+x+" 3 "+z+" "+(x+127)+" 3 "+(z+127)+" minecraft:bedrock");
+        preparedArenas.add(arena);
     }
     static void preparePlayer(Object p,double x,double y,double z,int yaw){
         watching.remove(R.name(p));

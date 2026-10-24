@@ -56,6 +56,11 @@ records the evidence, remaining composition gap and next minimal experiment.
 
 ## Native evidence
 
+- [Why W-tap sometimes doubles hold-W](double-hit-mechanisms.md): full baseline
+  games, isolated reset changes, native click results and landing-phase evidence.
+  The exact packet links in [trade-grounding.json](trade-grounding.json) retain
+  intervening local contact slowdown and sprint metadata, and separate the older
+  arena recordings from the repaired-arena trials.
 - [Initial controlled suite](native-mechanisms-v2.md): 11 scenarios; motion without
   contact, then W-tap against stationary, approaching, non-clicking, delayed-click,
   and ordinary clicking opponents at added RTTs 0/0 and 100/100 ms.
