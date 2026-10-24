@@ -14,7 +14,7 @@ from lab import ROOT,RUNTIME
 
 def analyze(identifier):
     events=[json.loads(line) for line in (RUNTIME/'replays'/f'{identifier}.jsonl').read_text().splitlines()]
-    match=events[0]['match'];clients={}
+    match=next(e['match'] for e in events if e['type']=='start');clients={}
     for side in ('a','b'):
         path=RUNTIME/'bots'/match[side].removeprefix('LabSlot')/'events.jsonl'
         clients[side]=[e for line in path.read_text().splitlines() if (e:=json.loads(line)).get('match')==identifier and e['type']=='observation']

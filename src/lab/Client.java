@@ -54,6 +54,7 @@ public final class Client {
     public static void frame(Object minecraft) {
         if(!"client".equals(System.getProperty("lab.role")))return;
         mc=minecraft;
+        ReplicationTrace.frame();
         try {
             if(player==null || opponent==null || !targetReady || (Boolean)R.get(opponent,"isDead") || !active())return;
             // Perfect aim uses the current local, interpolated entity, never server state.

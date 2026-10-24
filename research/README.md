@@ -46,6 +46,14 @@ We also found a missing fall-damage velocity packet that caused a long rollout t
 diverge after its first few exchanges. Neither error should be fitted away by
 changing a bot's reward weights.
 
+**Current acceptance target: zero differing bits and discrete events.** Earlier
+distance tolerances describe progress only. The new independent travel kernel
+matches all 2,091 fresh transitions in the [exact suite](exact-parity-v2.json),
+including retained bounding boxes, knockback takeoffs and landings. It is a
+conditional component result, not full-duel parity and not yet a replacement for
+the approximate policy model. The [exact-parity report](exact-parity-report.md)
+records the evidence, remaining composition gap and next minimal experiment.
+
 ## Native evidence
 
 - [Initial controlled suite](native-mechanisms-v2.md): 11 scenarios; motion without

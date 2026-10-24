@@ -6,7 +6,7 @@ from experiments import combat_metrics
 
 def diagnostics(identifier):
     raw=[json.loads(l) for l in (RUNTIME/'replays'/f'{identifier}.jsonl').read_text().splitlines()]
-    m=raw[0]['match'];events={}
+    m=next(e['match'] for e in raw if e['type']=='start');events={}
     for s in ('a','b'):
         events[s]=[e for l in (RUNTIME/'bots'/m[s].removeprefix('LabSlot')/'events.jsonl').read_text().splitlines() if (e:=json.loads(l)).get('match')==identifier]
     obs={s:[e for e in events[s] if e['type']=='observation'] for s in ('a','b')}

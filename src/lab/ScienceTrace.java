@@ -14,6 +14,11 @@ public final class ScienceTrace {
         Map<String,Object> s=new LinkedHashMap<>();
         for(String k:List.of("posX","posY","posZ","motionX","motionY","motionZ","rotationYaw","rotationYawHead","prevRotationYawHead","rotationPitch","hurtResistantTime","fallDistance","lastDamage"))s.put(k,R.num(entity,k));
         s.put("ground",R.get(entity,"onGround"));s.put("sprint",R.call(entity,"isSprinting"));
+        Object box=R.call(entity,"getEntityBoundingBox");
+        s.put("box",List.of(R.num(box,"minX"),R.num(box,"minY"),R.num(box,"minZ"),R.num(box,"maxX"),R.num(box,"maxY"),R.num(box,"maxZ")));
+        for(String k:List.of("width","height","stepHeight"))s.put(k,R.num(entity,k));
+        for(String k:List.of("noClip","isInWeb","isCollidedHorizontally","isCollidedVertically","isCollided"))s.put(k,R.get(entity,k));
+        s.put("sneaking",R.call(entity,"isSneaking"));
         return s;
     }
     static Map<String,Object> event(String type) {
@@ -29,11 +34,24 @@ public final class ScienceTrace {
             movement.put("air_acceleration",R.num(self,"jumpMovementFactor"));
             movement.put("water",R.call(self,"isInWater"));movement.put("lava",R.call(self,"isInLava"));
             movement.put("ladder",R.call(self,"isOnLadder"));
+            Object world=R.get(self,"worldObj"),box=R.call(self,"getEntityBoundingBox");
+            int supportY=(int)Math.floor(R.num(box,"minY"))-1;
+            Object support=R.construct("net.minecraft.util.BlockPos",(int)Math.floor(R.num(self,"posX")),supportY,(int)Math.floor(R.num(self,"posZ")));
+            Object block=R.call(R.call(world,"getBlockState",support),"getBlock");
+            movement.put("floor_slipperiness",R.num(block,"slipperiness"));movement.put("support_block_y",supportY);
+            movement.put("floor_top_y",4.0);movement.put("loaded_column",loadedColumn(self));
         } catch(Throwable e){Client.fail(e);}
     }
     public static void movementAfter(Object self) {
         if(!client() || self!=Client.player || movement==null)return;
-        try {movement.put("after",state(self));Client.log(movement);movement=null;}catch(Throwable e){Client.fail(e);}
+        try {movement.put("after",state(self));movement.put("loaded_column_after",loadedColumn(self));Client.log(movement);movement=null;}catch(Throwable e){Client.fail(e);}
+    }
+    static boolean loadedColumn(Object self){
+        // Native gravity branch uses truncating casts here, unlike support lookup.
+        Object pos=R.construct("net.minecraft.util.BlockPos",(int)R.num(self,"posX"),0,(int)R.num(self,"posZ"));
+        Object world=R.get(self,"worldObj");
+        return (Boolean)R.call(world,"isBlockLoaded",pos)
+            && (Boolean)R.call(R.call(world,"getChunkFromBlockCoords",pos),"isLoaded");
     }
     public static void interpolationBefore(Object self) {
         if(!client() || self!=Client.opponent)return;

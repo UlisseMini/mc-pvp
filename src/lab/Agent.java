@@ -31,7 +31,8 @@ public final class Agent implements ClassFileTransformer {
             ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES);logging.accept(out);return out.toByteArray();
         }
         if (name == null || !(name.equals("ave") || name.equals("j") || name.equals("pr")
-                || name.equals("wn") || name.equals("bcy") || name.equals("bex") || name.equals("hm") || name.equals("net/minecraft/server/MinecraftServer"))) return null;
+                || name.equals("wn") || name.equals("bcy") || name.equals("bex") || name.equals("hm")
+                || name.equals("lh") || name.equals("lm") || name.equals("ek") || name.equals("net/minecraft/server/MinecraftServer"))) return null;
         try {
             ClassNode node = new ClassNode();
             new ClassReader(bytes).accept(node, 0);
@@ -97,6 +98,27 @@ public final class Agent implements ClassFileTransformer {
                     }
                     changed=true;
                 }
+                // Read-only replication probes: network receipt and main-thread application
+                // are distinct events. The diagnostics never supply controller inputs.
+                if(name.equals("lh")&&method.name.equals("a")&&method.desc.equals("(Ljava/util/List;)V")){
+                    method.instructions.insert(callBoolean("tracker",0,false));
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)
+                        method.instructions.insertBefore(ins,callBoolean("tracker",0,true));
+                    changed=true;
+                }else if(name.equals("lm")&&method.name.equals("a")&&method.desc.equals("(Lff;)V")){
+                    method.instructions.insert(callPair("lab/ReplicationTrace","send"));changed=true;
+                }else if(name.equals("lm")&&method.name.equals("a")&&java.util.Set.of("(Lip;)V","(Lin;)V","(Lis;)V").contains(method.desc)){
+                    method.instructions.insert(callPair("lab/ReplicationTrace","input"));changed=true;
+                }else if(name.equals("ek")&&method.name.equals("a")&&method.desc.equals("(Lio/netty/channel/ChannelHandlerContext;Lff;)V")){
+                    InsnList hook=new InsnList();hook.add(new VarInsnNode(Opcodes.ALOAD,2));
+                    hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/ReplicationTrace","receive","(Ljava/lang/Object;)V",false));
+                    method.instructions.insert(hook);changed=true;
+                }else if(name.equals("bcy")&&method.name.equals("a")&&java.util.Set.of("(Lgv;)V","(Lhz;)V","(Lhm;)V","(Lgi;)V","(Lhk;)V").contains(method.desc)){
+                    method.instructions.insert(callBoolean("apply",1,false));
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)
+                        method.instructions.insertBefore(ins,callBoolean("apply",1,true));
+                    changed=true;
+                }
             }
             if (!changed) return null;
             // Minecraft 1.8.9 uses Java 6 class files. Preserve legacy verification, avoiding
@@ -122,5 +144,10 @@ public final class Agent implements ClassFileTransformer {
     private static InsnList callPair(String owner,String method) {
         InsnList list=new InsnList();list.add(new VarInsnNode(Opcodes.ALOAD,0));list.add(new VarInsnNode(Opcodes.ALOAD,1));
         list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,owner,method,"(Ljava/lang/Object;Ljava/lang/Object;)V",false));return list;
+    }
+    private static InsnList callBoolean(String method,int local,boolean after){
+        InsnList list=new InsnList();list.add(new VarInsnNode(Opcodes.ALOAD,local));
+        list.add(new InsnNode(after?Opcodes.ICONST_1:Opcodes.ICONST_0));
+        list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/ReplicationTrace",method,"(Ljava/lang/Object;Z)V",false));return list;
     }
 }

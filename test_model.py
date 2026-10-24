@@ -20,6 +20,8 @@ class JavaModelTest(unittest.TestCase):
         result = subprocess.run(
             [str(lab.JAVAC), '-d', str(cls.classes),
              str(lab.ROOT / 'src/lab/ComboModel.java'),
+             str(lab.ROOT / 'src/lab/ExactTravel.java'),
+             str(lab.ROOT / 'tests/ExactTravelCheck.java'),
              str(lab.ROOT / 'src/lab/VisibleTracker.java'),
              str(lab.ROOT / 'src/lab/TargetWatchdog.java'),
              str(lab.ROOT / 'src/lab/MomentumController.java'),
@@ -43,6 +45,12 @@ class JavaModelTest(unittest.TestCase):
 
     def test_model_contracts(self):
         self.run_checks('model')
+
+    def test_exact_travel(self):
+        result = subprocess.run([str(lab.JAVA), '-cp', str(self.classes), 'ExactTravelCheck'],
+                                capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('PASS', result.stdout)
 
     def test_visible_only_observer(self):
         self.run_checks('tracker')

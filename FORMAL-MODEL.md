@@ -545,13 +545,28 @@ validate conditional one-event transitions, then compositions.
 | V6 geometry | Stationary setup grid around axial gap 3.4 and diagonal gap 3.56569, then heights 0, .2, .3, .9, 1.5; use actual permitted aim. | Native selection agrees with slab intersection for the selected ray. Boundary disagreements outside float tolerance identify a ray/aim/occlusion error. |
 | V7 composition | Short fixed two-player scripts with incoming and outgoing hits, no learned actions. Freeze predictions at each decision; log actual click cadence and task/physics timestamps. | Correct transition models compose into correctly timed local views, impulses, fresh hits and upgrades. Diagnose timing vs state error before scoring a strategy. |
 
-For conditional arithmetic tests, compare velocity packets as integer payloads;
-allow at most one encoding unit only where an explicitly approximate floating
-calculation justifies it. For collision-free native float recurrences, initially
-require one-step position error below 1e-4 block, and report every excursion rather
-than silently increasing tolerance. Near ray boundaries use explicit ±1e-4 setup
-offsets. These are proposed acceptance criteria, not blanket passes of the cases
-above.
+**Exact-parity contract (supersedes the pilot tolerances):** a deterministic
+transition must match all in-scope floating-point bit patterns, discrete flags,
+packet types/integer payloads, and hit/miss decisions given identical complete
+pre-state and ordered inputs. Neither 1e-4 nor .25 blocks establishes parity.
+Record all failed or unsupported samples; do not exclude near-reach boundaries
+from an exact-parity claim. Historical tolerance reports remain below as
+diagnostic evidence, not certification.
+
+The independent `ExactTravel` kernel now passes 2,091 fresh native steps in
+`research/exact-parity-v2.json`: position, velocity, retained AABB and collision
+flags, with zero tolerance. The source arithmetic and scope are documented in
+`research/exact-travel-audit.md`. It is not yet integrated into the approximate
+`ComboModel` rollout. Conditional packet application and interpolation checks
+also pass; see `research/exact-parity-v2-replication.json` for their precise scope.
+
+Complete composition must start from full client/server/tracker state, preserve
+absolute coordinates and retained AABBs, and consume an explicitly ordered
+external frame/tick/network schedule. It must generate later positions and
+packet payloads itself; a missing/extra packet or one differing bit fails the
+replay. Recorded schedules are legitimate exogenous replay inputs, whereas later
+observed hits, positions and velocities cannot be injected as corrections.
+Future OS/network scheduling is a separate uncertain input for a live policy.
 
 **Verified pilot coverage:** [`m0358-validation.json`](research/m0358-validation.json)
 reports 312 conditional movement samples, maximum position error
