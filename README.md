@@ -189,13 +189,22 @@ opponent state replaces the two real clients' measurements. Private opponent
 client logs are used only for analysis after a match.
 
 The newer duel model includes both players' contact slowdown, fresh knockback,
-falling critical upgrades, and queued attacks. Early native tests improved from
-losses around 80–100 to wins of 100–75/77 with complete opening sequences.
-The diverse planner's fresh side/ping tests scored 100–77, 100–87 and 100–87.
-These are modest gains over the hold-W baseline, not the requested 100–10/20
-result. They did not produce a sustained reach-denial lock against the clicking
-baseline. See [the actual-score search](experiments/pvp-search.json) for subsequent
-selection games and separately listed fresh tests.
+falling critical upgrades, and queued attacks. The completed two-generation
+actual-score search ran 22 validated native games: two W-tap controls, 16 selection
+games and four fresh tests. The saved `pvp-candidate` scored:
+
+| Added RTT, bot/opponent | Fresh score against clicking hold-W |
+|---|---|
+| 20/100 ms | 100–65 |
+| 100/20 ms | 100–78 |
+| 0/0 ms, both starting sides | 100–77 and 100–95 |
+
+The selected parameters produced short 1.90 s and 1.55 s reach-denial locks in
+selection games. None of the four fresh tests qualified as a sustained lock.
+This does **not** meet the requested 100–10/20 or indefinite-lock target.
+The W-tap controls scored 100–83 and 100–78 at 20/100 ms. Small samples and
+clock-phase variability limit the comparison. See [the full search](experiments/pvp-search.json)
+for parameters, validation, selection games and separate fresh tests.
 
 Every match records server trajectories and accepted hits in
 `runtime/replays/<match>.jsonl`, with client input/attack telemetry under
@@ -214,6 +223,8 @@ embedded, with no external resources. Sample recordings include historical
 spacing experiments and newer matches with the strict monotonic click cap.
 
 Qualified examples: [W-tap vs hold-W, 100–83](recordings/m0161.html),
+[a fresh selected-controller test, 100–65](recordings/m0257.html),
+[a selection game with a short lock, 100–68](recordings/m0241.html),
 [a reach-edge controller trial](recordings/m0168.html), and
 [a 79% one-sided probe trial](recordings/m0169.html). The latter's fresh zero-ping
 repeats reached 65% and 48%, so it is not a stable combo lock or a proven champion.

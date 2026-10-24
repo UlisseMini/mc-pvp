@@ -199,6 +199,16 @@ Each candidate still advances the same approximate event model and produces
 ordinary W/Ctrl inputs; every native physical click continues. A simulated score
 advantage must survive native games before it is treated as an improvement.
 
+Score gains do not establish accurate combo control. In native match `m0232`
+(100–75), post-match alignment found a 90th-percentile current rendered-target
+prediction error of 0.59 m, and latent opponent-body error of 1.51 m. That is
+large compared with a narrow reach-denial interval. The bot had five accepted
+hits in its longest unanswered streak, but no qualified sustained reach-denial
+lock. The private opponent log is used only to measure these errors afterward.
+An observer's corrected one-tick residual also differs from its original 150 ms
+forecast error; near-zero one-tick movement residuals do not prove precise
+prediction across an incoming knockback impulse.
+
 Newly observed outgoing and incoming hurt cues constrain each historical server hit to a tick-wide
 interval after accounting for our network leg. A phase hypothesis chooses a
 compatible hit time, rewinds before conflicting predicted impulses, and replays
