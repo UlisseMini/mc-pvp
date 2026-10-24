@@ -224,7 +224,7 @@ async def serve():
                         await asyncio.sleep(.4);start_bot(i,i+1);reloaded.append(i)
                     print('Reloaded idle bot clients '+str(reloaded)+'; active duels keep running.',flush=True)
                     continue
-                if not command.startswith(('lab match ','lab ping ')):continue
+                if not command.startswith(('lab match ','lab ping ','lab scenario ')):continue
                 if not all(c.isalnum() or c in '-_ ./' for c in command):continue
                 server.stdin.write(command+'\n');server.stdin.flush()
             await asyncio.sleep(.1)

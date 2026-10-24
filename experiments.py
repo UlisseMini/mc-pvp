@@ -24,12 +24,13 @@ def status():
     if time.time()-data['time']/1000>5:raise RuntimeError('Server status is stale; start the lab first')
     return data
 
-async def match(a,b,ping_a=20,ping_b=20):
+async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
     request='exp-'+uuid.uuid4().hex
     for name in (a,b):
         if not re.fullmatch('[a-z0-9_-]{1,64}',name) or not (ROOT/'policies'/f'{name}.properties').is_file():
             raise ValueError('Unknown bot: '+name)
     if any(not math.isfinite(p) or not 0<=p<=500 for p in (ping_a,ping_b)):raise ValueError('RTTs must be 0–500 ms')
+    if duration_ms is not None and (not isinstance(duration_ms,int) or not 1000<=duration_ms<=180000):raise ValueError('Scenario duration must be1000–180000ms')
     parameters={name:properties(ROOT/'policies'/f'{name}.properties') for name in (a,b)}
     expected_build=hashlib.sha256((ROOT/'build/lab-agent.jar').read_bytes()).hexdigest()
     # Preserve spare capacity for the user's challenges: three matches / eight bots.
@@ -49,7 +50,8 @@ async def match(a,b,ping_a=20,ping_b=20):
             reservations={key:created for key,created in reservations.items() if key not in active and time.time()-created<15}
             if len(free)-len(reservations)*2>=3:
                 reservations[request]=time.time();reservation_path.write_text(json.dumps(reservations))
-                send(f'lab match {a} {b} {ping_a} {ping_b} {request}');break
+                command=f'lab match {a} {b} {ping_a} {ping_b} {request}' if duration_ms is None else f'lab scenario {a} {b} {ping_a} {ping_b} {duration_ms} {request}'
+                send(command);break
             reservation_path.write_text(json.dumps(reservations))
         await asyncio.sleep(1)
     print(f'Started {a} vs {b}, RTT {ping_a}/{ping_b}',flush=True)
@@ -112,7 +114,7 @@ async def match(a,b,ping_a=20,ping_b=20):
                                       'click_intervals_checked':len(intervals),'min_click_gap_ns':min(intervals,default=None),'post_hit_resets':resets}
                 if not result['validation']['passed']:
                     raise RuntimeError(f'Invalid setup for {result["id"]}: {result["validation"]}')
-                if result['reason']!='100_hits':
+                if result['reason']!='100_hits' and not (duration_ms is not None and result['reason']=='scenario_completed'):
                     raise RuntimeError(f'{result["id"]} did not reach 100 hits: {result["reason"]}')
                 result['combat_metrics']=combat_metrics(result)
                 print(f'{result["id"]}: {a} {result["hits_a"]}–{result["hits_b"]} {b} ({result["reason"]})',flush=True)

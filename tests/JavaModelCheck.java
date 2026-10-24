@@ -37,6 +37,17 @@ public final class JavaModelCheck {
         near(diagonal.a.x, .098 / Math.sqrt(2), 1e-9, "W follows diagonal rendered target");
         near(diagonal.a.z, diagonal.a.x, 1e-9, "symmetric diagonal motion");
 
+        // Independent native calibration m0360: first W+Ctrl travel reports
+        // ground factor .13000001 while air factor remains .01999999955.
+        var sprintStart = ComboModel.advanceRecorded(state(100,0,false),ComboModel.Action.SPRINT,false,config);
+        near(sprintStart.a.x,.1274,1e-7,"ground sprint acceleration applies on its FIRST tick");
+        var airStart=state(100,0,false);airStart.a.ground=false;airStart.a.y=1;airStart.a.vy=0;
+        airStart=ComboModel.advanceRecorded(airStart,ComboModel.Action.SPRINT,false,config);
+        near(airStart.a.x,.0196,1e-7,"first air sprint tick retains old airborne acceleration");
+        double airX=airStart.a.x,airV=airStart.a.vx;
+        airStart=ComboModel.advanceRecorded(airStart,ComboModel.Action.SPRINT,false,config);
+        near(airStart.a.x-airX-airV,.02548,1e-7,"next air tick uses updated airborne sprint factor");
+
         var start = state(100, 0, false);
         var walk = start;
         for (int i = 0; i < 40; i++) walk = ComboModel.advance(walk, ComboModel.Action.WALK, config);
@@ -86,6 +97,211 @@ public final class JavaModelCheck {
         require(immune.acceptedHits == 0, "immune attack must not become an accepted hit");
         near(immune.a.vx, (.2 * .6 + .1274) * .54600006, 1e-9,
                 "immune client contact still applies local sprint slowdown");
+    }
+
+    private static void optionalNativeHeadYaw() {
+        var config = new ComboModel.Config();
+        require(!config.modelHeadYaw, "head-yaw factor defaults off for an isolated native comparison");
+        config.ownRttMs = config.opponentRttMs = 0;
+        config.modelServerCollisionPush = false;
+        var crossing = state(-.6, 0, false);
+        // A's head was synchronized before the target crossed behind it. This
+        // is initial history, not an outcome injected into subsequent replay.
+        crossing.aHeadLookX = 1; crossing.aHeadLookZ = 0;
+        var ideal = ComboModel.replayNativeEvent(crossing, 0, ComboModel.NativeEventKind.A,
+                ComboModel.Action.RELEASE, true, config);
+        near(ideal.lastOurRay, .2, 1e-9, "disabled factor preserves ideal immediate reversal ray");
+        require(ideal.airMisses == 0, "disabled factor preserves contact on first reversed click");
+
+        config.modelHeadYaw = true;
+        var missed = ComboModel.replayNativeEvent(crossing, 0, ComboModel.NativeEventKind.A,
+                ComboModel.Action.RELEASE, true, config);
+        require(Double.isInfinite(missed.lastOurRay) && missed.airMisses == 1,
+                "old head direction can miss a target only .2m beyond the eye");
+        near(missed.aHeadLookX, -1, 1e-9, "living update synchronizes head after the missed click");
+        require(crossing.aHeadLookX == 1 && crossing.physicalClicks == 0,
+                "head synchronization leaves the replay anchor unchanged");
+        var contact = ComboModel.replayNativeEvent(missed, 100, ComboModel.NativeEventKind.A,
+                ComboModel.Action.RELEASE, true, config);
+        near(contact.lastOurRay, .2, 1e-9, "following click uses the synchronized head");
+        require(contact.physicalClicks == 2 && contact.airMisses == 1,
+                "head lag does not suppress or add physical clicks");
+        var copied = missed.copy();
+        copied.aHeadLookX = 0; copied.aHeadLookZ = 1;
+        copied.bHeadLookX = 0; copied.bHeadLookZ = -1;
+        require(missed.aHeadLookX == -1 && missed.aHeadLookZ == 0
+                        && missed.bHeadLookX != copied.bHeadLookX,
+                "both clients' head directions are independently copied");
+
+        var reverseB = state(.6, 0, false);
+        reverseB.bHeadLookX = 1; reverseB.bHeadLookZ = 0;
+        reverseB = ComboModel.replayNativeEvent(reverseB, 0, ComboModel.NativeEventKind.B,
+                ComboModel.Action.RELEASE, true, config);
+        require(Double.isInfinite(reverseB.lastDefenderRay) && reverseB.defenderAirMisses == 1,
+                "defender ray obeys the same old-head rule");
+        near(reverseB.bHeadLookX, -1, 1e-9, "defender head synchronizes in its own living update");
+
+        var raised = state(2, 0, false);
+        raised.aSeesB.y = raised.aSeesB.goalY = 2;
+        // No head-pitch history exists in vanilla getLook: only yaw is lagged.
+        require(Double.isInfinite(ComboModel.rayDistanceAlong(0, 1.62, 0, 1, 0, 0, 2, 2, 0)),
+                "an old horizontal pitch would miss this raised box");
+        var pitched = ComboModel.replayNativeEvent(raised, 0, ComboModel.NativeEventKind.A,
+                ComboModel.Action.RELEASE, true, config);
+        near(pitched.lastOurRay, ComboModel.rayDistance(0, 0, 0, 2, 2, 0), 1e-9,
+                "head-yaw mode still uses the newly requested pitch immediately");
+        require(pitched.airMisses == 0, "current pitch reaches the raised target on its first tick");
+
+        var serverYaw = state(10, 0, false);
+        serverYaw.aHeadLookX = 0; serverYaw.aHeadLookZ = 1;
+        serverYaw = ComboModel.replayNativeEvent(serverYaw, 0, ComboModel.NativeEventKind.A,
+                ComboModel.Action.SPRINT, false, config);
+        near(serverYaw.a.x, .1274, 1e-7, "travel uses current body aim rather than old head yaw");
+        near(serverYaw.a.z, 0, 1e-9, "head yaw cannot steer movement");
+        serverYaw = ComboModel.replayNativeEvent(serverYaw, 1, ComboModel.NativeEventKind.SERVER,
+                null, false, config);
+        near(serverYaw.serverA.lookX, 1, 1e-9, "movement packet/knockback yaw uses current body aim");
+        near(serverYaw.serverA.lookZ, 0, 1e-9, "old head yaw is not sent as server look");
+
+        near(ComboModel.rayDistanceAlong(0, 1.62, 0, 12, 0, 0, 3.4, 0, 0), 3, 1e-9,
+                "explicit native-look helper normalizes direction magnitude");
+        near(ComboModel.rayDistanceAlong(0, 1.62, 0, -1, 0, 0, 0, 0, 0), 0, 1e-9,
+                "eye inside expanded box has zero distance even while looking away");
+        require(Double.isInfinite(ComboModel.rayDistanceAlong(0, 1.62, 0, 0, 0, 0, 2, 0, 0)),
+                "zero direction outside a box cannot invent an intersection");
+        config.horizonTicks = 2; config.beamWidth = 3; config.beamDiversity = true;
+        ComboModel.choose(crossing, config);
+        require(crossing.aHeadLookX == 1 && crossing.aHeadLookZ == 0,
+                "planner alternatives preserve the head-history anchor");
+    }
+
+    private static ComboModel.State beforeLanding(boolean ours, float fallDistance) {
+        var s = state(100, 0, false);
+        var body = ours ? s.a : s.b;
+        var server = ours ? s.serverA : s.serverB;
+        var motion = ours ? s.serverMotionA : s.serverMotionB;
+        body.y = server.y = motion.y = .1;
+        body.ground = motion.ground = false;
+        body.vy = motion.vy = -.2;
+        body.vx = .6; motion.vx = -.2;
+        if (ours) s.serverFallDistanceA = fallDistance;
+        else s.serverFallDistanceB = fallDistance;
+        return s;
+    }
+
+    private static ComboModel.State landAndProcess(ComboModel.State s, boolean ours, ComboModel.Config c) {
+        s = ComboModel.replayNativeEvent(s, 0, ours ? ComboModel.NativeEventKind.A : ComboModel.NativeEventKind.B,
+                ComboModel.Action.RELEASE, false, c);
+        return ComboModel.replayNativeEvent(s, 0, ComboModel.NativeEventKind.SERVER, null, false, c);
+    }
+
+    private static void optionalNativeFallDamage() {
+        var c = new ComboModel.Config();
+        require(!c.modelFallDamage, "fall factor defaults off for isolated native comparison");
+        c.ownRttMs = c.opponentRttMs = 0; c.modelServerCollisionPush = false;
+        var off = landAndProcess(beforeLanding(false, 3.2f), false, c);
+        require(off.targetFallEvents == 0 && off.targetHurtResistantTicks == 0,
+                "disabled factor preserves prior landing behavior");
+        c.modelFallDamage = true;
+        c.trackerPhase = 1; // First tick does not run ordinary 2-tick position tracking.
+        for (boolean ours : new boolean[]{false, true}) {
+            var seed = beforeLanding(ours, 3.2f);
+            var landed = landAndProcess(seed, ours, c);
+            require((ours ? landed.ownFallEvents : landed.targetFallEvents) == 1
+                            && (ours ? landed.ownHurtResistantTicks : landed.targetHurtResistantTicks) == 19
+                            && (ours ? landed.ownLastDamage : landed.targetLastDamage) == 1,
+                    "ceil(3.2-3) fresh fall damage starts ordinary immunity then decrements once");
+            near(ours ? landed.ownFallDamage : landed.targetFallDamage, 1, 1e-9,
+                    "fall damage is counted separately");
+            require(landed.acceptedHits == 0 && landed.receivedHits == 0
+                            && landed.damageDealt == 0 && landed.damageReceived == 0,
+                    "environmental damage never creates referee PvP score or player damage");
+            var motion = ours ? landed.serverMotionA : landed.serverMotionB;
+            near(motion.vx, -.2 * .91, 1e-9, "fall does not add base knockback or halve server motion");
+            near(motion.vy, -.0784000015258789, 1e-12,
+                    "fall retains current latent server vertical motion");
+            require(!landed.aVelocityChanged && !landed.bVelocityChanged,
+                    "tracker flush clears the flag even off the position-update cadence");
+            double x = ours ? landed.a.x : landed.b.x;
+            var delivered = ComboModel.replayNativeEvent(landed, 1,
+                    ours ? ComboModel.NativeEventKind.A : ComboModel.NativeEventKind.B,
+                    ComboModel.Action.RELEASE, false, c);
+            double encoded = ((int) (motion.vx * 8000)) / 8000.0;
+            near((ours ? delivered.a.x : delivered.b.x) - x, encoded, 1e-9,
+                    "fall S12 overwrites client motion with quantized server motion");
+            require((ours ? seed.ownFallEvents : seed.targetFallEvents) == 0,
+                    "fall counters and queues do not mutate historical snapshots");
+            var visible = ComboModel.replayNativeEvent(delivered, 2, ComboModel.NativeEventKind.A,
+                    ComboModel.Action.RELEASE, false, c);
+            require((ours ? visible.lastPredictedOwnHurtCueMs : visible.lastPredictedHurtCueMs) >= 1,
+                    "fresh fall emits ordinary visible hurt despite no player hit");
+        }
+
+        // Landing's final downward delta must not be added to the damage input.
+        var safe = landAndProcess(beforeLanding(false, 2.95f), false, c);
+        require(safe.targetFallEvents == 0 && safe.serverFallDistanceB == 0,
+                "2.95 accumulated plus .1 landing drop remains damage-free");
+        var threshold = landAndProcess(beforeLanding(false, 3.0f), false, c);
+        require(threshold.targetFallEvents == 0, "exact 3-block accumulated fall does no damage");
+        var rejected = beforeLanding(false, 3.2f);
+        rejected.targetHurtResistantTicks = 15; rejected.targetLastDamage = 8;
+        rejected = landAndProcess(rejected, false, c);
+        require(rejected.targetFallEvents == 0 && rejected.targetLastDamage == 8
+                        && rejected.targetHurtResistantTicks == 14,
+                "ordinary hurt resistance rejects lower fall damage without resetting immunity");
+        var upgrade = beforeLanding(false, 4.2f);
+        upgrade.targetHurtResistantTicks = 15; upgrade.targetLastDamage = 1;
+        upgrade = landAndProcess(upgrade, false, c);
+        require(upgrade.targetFallEvents == 1 && upgrade.targetFallDamage == 1
+                        && upgrade.targetLastDamage == 2 && upgrade.targetHurtResistantTicks == 14,
+                "fall damage upgrade applies only the difference and does not reset immunity");
+        double priorX = upgrade.b.x, priorV = upgrade.b.vx;
+        upgrade = ComboModel.replayNativeEvent(upgrade, 1, ComboModel.NativeEventKind.B,
+                ComboModel.Action.RELEASE, false, c);
+        near(upgrade.b.x - priorX, priorV, 1e-9, "fall upgrade creates no fresh S12 overwrite");
+        upgrade = ComboModel.replayNativeEvent(upgrade, 2, ComboModel.NativeEventKind.A,
+                ComboModel.Action.RELEASE, false, c);
+        require(upgrade.lastPredictedHurtCueMs == Long.MIN_VALUE,
+                "fall upgrade creates no fresh hurt status");
+
+        // Two movement packets share one server task drain: tracker samples the
+        // final latent motion, not the motion at the earlier fall callback.
+        var laterMotion = beforeLanding(false, 3.2f);
+        laterMotion = ComboModel.replayNativeEvent(laterMotion, 0, ComboModel.NativeEventKind.B,
+                ComboModel.Action.RELEASE, false, c);
+        laterMotion = ComboModel.replayNativeEvent(laterMotion, 1, ComboModel.NativeEventKind.B,
+                ComboModel.Action.RELEASE, false, c);
+        laterMotion = ComboModel.replayNativeEvent(laterMotion, 10, ComboModel.NativeEventKind.SERVER,
+                null, false, c);
+        double expected = ((int) (laterMotion.serverMotionB.vx * 8000)) / 8000.0;
+        priorX = laterMotion.b.x;
+        laterMotion = ComboModel.replayNativeEvent(laterMotion, 11, ComboModel.NativeEventKind.B,
+                ComboModel.Action.RELEASE, false, c);
+        near(laterMotion.b.x - priorX, expected, 1e-9,
+                "deferred dirty flush samples motion after all incoming packets");
+        require(expected > -.15, "test distinguishes late flush from immediate -.182 fall velocity");
+
+        var pending = state(3, 0, true);
+        pending.targetHurtResistantTicks = 15; pending.targetLastDamage = 1;
+        pending.bVelocityChanged = true;
+        pending.serverMotionB.vx = -.1; pending.serverMotionB.vy = -.0784;
+        var snapshot = pending.copy();
+        pending = ComboModel.replayNativeEvent(pending, 0, ComboModel.NativeEventKind.A,
+                ComboModel.Action.RELEASE, true, c);
+        pending = ComboModel.replayNativeEvent(pending, 0, ComboModel.NativeEventKind.SERVER,
+                null, false, c);
+        require(pending.acceptedDamageUpgrades == 1 && pending.acceptedFreshHits == 0
+                        && pending.damageDealt == 7 && !pending.bVelocityChanged,
+                "accepted player upgrade can consume an earlier pending fall velocity flag");
+        near(pending.serverMotionB.vx, -.1, 1e-9,
+                "outer player attack restores pre-attack server motion after sending dirty upgrade");
+        priorX = pending.b.x;
+        pending = ComboModel.replayNativeEvent(pending, 1, ComboModel.NativeEventKind.B,
+                ComboModel.Action.RELEASE, false, c);
+        near(pending.b.x - priorX, .4, 1e-9,
+                "dirty sprint upgrade sends old server motion plus sprint bonus, without base KB or duplicate flush");
+        require(snapshot.bVelocityChanged && snapshot.serverMotionB.vx == -.1,
+                "dirty flag and latent motion remain independent in copied histories");
     }
 
     private static void latentServerMotionAndCues() {
@@ -993,6 +1209,8 @@ public final class JavaModelCheck {
         if (group.equals("all") || group.equals("model")) {
             geometryAndMovement();
             inputAndSprintSemantics();
+            optionalNativeHeadYaw();
+            optionalNativeFallDamage();
             latentServerMotionAndCues();
             correctionAndPlanningIsolation();
             confirmedHitReplay();
@@ -1008,7 +1226,7 @@ public final class JavaModelCheck {
             defenderWtapLatencyAndControls();
             defenderWtapHistoryAndCueSemantics();
             standstillDefenderKeepsClicksAndPhysics();
-            System.out.println("PASS model geometry, controls, symmetric combat, critical upgrades, confirmed replay, delayed W-tap/standstill defenders, scoring, diversity and macro/warm rollouts");
+            System.out.println("PASS model geometry, controls, optional native head yaw/fall damage, symmetric combat, critical upgrades, confirmed replay, delayed W-tap/standstill defenders, scoring, diversity and macro/warm rollouts");
         }
         if (group.equals("all") || group.equals("tracker")) {
             visibleInterpolation();

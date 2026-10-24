@@ -80,6 +80,24 @@ public final class Client {
                 probe.put("in_range",selected==opponent);probe.put("could_attempt",selected==opponent&&R.num(mc,"leftClickCounter")<=0);
                 probe.put("miss_cooldown",R.num(mc,"leftClickCounter"));probe.put("target_id",R.call(opponent,"getEntityId"));
                 probe.put("raycast_stale",selected!=null&&selected!=opponent&&R.name(selected).equals(controls.getProperty("opponent","")));
+                if(ScienceTrace.client()){
+                    probe.put("own",ScienceTrace.state(player));probe.put("target",ScienceTrace.state(opponent));
+                    probe.put("eye_height",R.call(player,"getEyeHeight"));
+                    Object eyeVector=R.call(player,"getPositionEyes",1.0f),lookVector=R.call(player,"getLook",1.0f);
+                    probe.put("native_eye",List.of(R.num(eyeVector,"xCoord"),R.num(eyeVector,"yCoord"),R.num(eyeVector,"zCoord")));
+                    probe.put("native_look",List.of(R.num(lookVector,"xCoord"),R.num(lookVector,"yCoord"),R.num(lookVector,"zCoord")));
+                    Object camera=R.call(mc,"getRenderViewEntity");probe.put("camera_is_player",camera==player);
+                    probe.put("target_collidable",R.call(opponent,"canBeCollidedWith"));
+                    double border=((Number)R.call(opponent,"getCollisionBorderSize")).doubleValue();
+                    Object box=R.call(R.call(opponent,"getEntityBoundingBox"),"expand",border,border,border);
+                    probe.put("expanded_box",List.of(R.num(box,"minX"),R.num(box,"minY"),R.num(box,"minZ"),R.num(box,"maxX"),R.num(box,"maxY"),R.num(box,"maxZ")));
+                    Object end=R.call(eyeVector,"addVector",R.num(lookVector,"xCoord")*3,R.num(lookVector,"yCoord")*3,R.num(lookVector,"zCoord")*3);
+                    Object intercept=R.call(box,"calculateIntercept",eyeVector,end);
+                    probe.put("native_box_intercept",intercept!=null);
+                    if(intercept!=null)probe.put("native_box_ray_distance",R.call(eyeVector,"distanceTo",R.get(intercept,"hitVec")));
+                    probe.put("ray_type",ray==null?"null":R.get(ray,"typeOfHit").toString());
+                    probe.put("selected_entity",selected==null?"":R.name(selected));
+                }
                 log(probe);
             }
             long now=System.nanoTime();
@@ -357,6 +375,19 @@ public final class Client {
                 }
             }
             if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
+            if(kind.equals("scripted")){
+                // Open-loop, predeclared ordinary inputs. No state oracle or adaptive click filtering.
+                long elapsed=now-Long.parseLong(controls.getProperty("start_at","0"));
+                boolean sw=false,sc=false;int sa=0;
+                for(String step:controls.getProperty("input_script","0:0:0:0").split("\\|")){
+                    String[] fields=step.split(":");if(fields.length!=4)throw new IllegalArgumentException("input_script: time:W:Ctrl:strafe");
+                    if(elapsed>=Long.parseLong(fields[0])){sw=fields[1].equals("1");sc=fields[2].equals("1");sa=Integer.parseInt(fields[3]);}
+                }
+                if(Math.abs(sa)>1)throw new IllegalArgumentException("Invalid scripted strafe");
+                setKeys(sw,sa,sc);
+            }
+            // A declared opening handicap tests combo acquisition separately from maintenance.
+            if(controls.containsKey("click_start_ms") && now<Long.parseLong(controls.getProperty("start_at","0"))+(long)number("click_start_ms",0))clickGate=false;
             // Deliberate burst cadence is a policy choice. No immunity-based click filtering.
             if(controls.getProperty("click_mode","fixed").equals("burst"))
                 clickGate=(now-epoch)%(long)number("burst_period_ms",500)<number("burst_on_ms",300);
@@ -388,7 +419,9 @@ public final class Client {
         try{
             Map<String,Object> event=new LinkedHashMap<>();event.put("type","velocity_packet");event.put("time",System.currentTimeMillis());event.put("match",match);
             event.put("entity_id",R.num(packet,"entityID"));event.put("own_entity",(int)R.num(packet,"entityID")==((Number)R.call(player,"getEntityId")).intValue());
-            event.put("vx",R.num(packet,"motionX")/8000);event.put("vy",R.num(packet,"motionY")/8000);event.put("vz",R.num(packet,"motionZ")/8000);log(event);
+            event.put("vx",R.num(packet,"motionX")/8000);event.put("vy",R.num(packet,"motionY")/8000);event.put("vz",R.num(packet,"motionZ")/8000);
+            if(ScienceTrace.client() && Boolean.TRUE.equals(event.get("own_entity")))event.put("applied_motion",List.of(R.num(player,"motionX"),R.num(player,"motionY"),R.num(player,"motionZ")));
+            log(event);
         }catch(Throwable e){fail(e);}
     }
     static double beforeX,beforeZ;

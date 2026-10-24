@@ -9,7 +9,8 @@ from lab import ROOT, RUNTIME
 def export(identifier):
     if not identifier.startswith('m') or not identifier[1:].isdigit():
         raise ValueError('Use a match ID such as m0024')
-    events=[json.loads(line) for line in (RUNTIME/'replays'/f'{identifier}.jsonl').read_text().splitlines()]
+    from science import server_events, client_events
+    events=server_events(identifier)
     match=next(e['match'] for e in events if e['type']=='start')
     finish=next((e['result'] for e in events if e['type']=='finish'),None)
     if not finish:raise ValueError('Wait for the match to finish')
@@ -22,9 +23,9 @@ def export(identifier):
     if not ticks:raise ValueError('No native trajectory samples')
     clients={}
     for side in ('a','b'):
-        slot=match[side].removeprefix('LabSlot')
-        path=RUNTIME/'bots'/slot/'events.jsonl'
-        clients[side]=[e for e in map(json.loads,path.read_text().splitlines()) if e.get('match')==identifier] if path.exists() else []
+        # Preserve the lightweight viewer; full scientific diagnostics remain
+        # in the independently archived raw traces.
+        clients[side]=[e for e in client_events(finish,side) if not e['type'].startswith('science_')]
     strict=True;click_count=0
     for side in ('a','b'):
         clicks=[e for e in clients[side] if e['type']=='click'];click_count+=len(clicks)
@@ -40,6 +41,14 @@ def export(identifier):
             if result.get('id')==identifier and 'validation' in result:
                 qualification=result['validation'];metrics=result.get('combat_metrics');break
         if qualification is not None:break
+    if qualification is None:
+        for report in (ROOT/'research').glob('*.json'):
+            document=json.loads(report.read_text())
+            for row in document.get('results',[]):
+                result=row.get('game',{})
+                if result.get('id')==identifier and 'validation' in result:
+                    qualification=result['validation'];metrics=result.get('combat_metrics');break
+            if qualification is not None:break
     data={'match':match,'result':finish,'ticks':ticks,'hits':[e for e in events if e['type']=='hit'],'clients':clients,
           'native_overlap':native,'combat_metrics':metrics,'qualification':qualification,
           'input_clock_verified':bool(strict and click_count),
@@ -76,7 +85,7 @@ if(D.native_overlap){const n=D.native_overlap;const describe=s=>`${s.toUpperCase
 if(D.combat_metrics){const c=D.combat_metrics;const describe=s=>`${s.toUpperCase()}: longest sustained reach-denial combo ${((c[s].sustained_native_combo?.duration_ms||0)/1000).toFixed(2)} s; longest unanswered streak ${c[s].longest_unanswered_streak} hits`;$('combos').textContent=describe('a')+' · '+describe('b')+'. Final hit score is the primary performance metric. Sustained locks require at least three fresh contacts and no accepted return attack; brief both-out-of-range intervals are allowed.';}
 if(D.combat_metrics?.a?.native_denial_contact_sequence){const describe=s=>{const v=D.combat_metrics[s].native_denial_contact_sequence;return `${s.toUpperCase()}: ${(v.duration_ms/1000).toFixed(2)} s denial contact sequence, ${v.fresh_contacts} fresh hits, largest hit gap ${v.max_contact_gap_ms===null?'unavailable':(v.max_contact_gap_ms/1000).toFixed(2)+' s'}`;};$('sequences').textContent=describe('a')+' · '+describe('b')+'. These sequences require continuous measured defender reach denial and no accepted return hit, with no maximum contact-gap cutoff. The strict combo above caps hit gaps at one second.';}
 $('title').textContent=`${M.policy_a} vs ${M.policy_b}`;
-$('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${M.ping_a}/${M.ping_b} ms · 150 ms tactical reaction · first to 100 hits`;
+$('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${M.ping_a}/${M.ping_b} ms · 150 ms tactical reaction · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 hits'}`;
 $('aname').textContent=M.policy_a;$('bname').textContent=M.policy_b;$('scrub').max=duration;
 let now=0,playing=false,previousFrame=performance.now();
 function last(items,time){let lo=0,hi=items.length;while(lo<hi){let mid=(lo+hi)>>1;if(items[mid].time<=time)lo=mid+1;else hi=mid;}return items[Math.max(0,lo-1)];}
@@ -87,7 +96,7 @@ function line(x,a,b,c,d,color,width=1){x.strokeStyle=color;x.lineWidth=width;x.b
 function render(){
  const time=start+now, tick=last(T,time),p=[tick.a,tick.b],hit=last(D.hits,time),scores=hit&&hit.time<=time?[hit.hits_a,hit.hits_b]:[0,0];
  const change=last(D.ping_changes||[],time),latency=change&&change.time<=time?change:M;
- $('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${latency.ping_a}/${latency.ping_b} ms · 150 ms tactical reaction · first to 100 hits`;
+ $('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${latency.ping_a}/${latency.ping_b} ms · 150 ms tactical reaction · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 hits'}`;
  $('ascore').textContent=`${scores[0]} / 100`;$('bscore').textContent=`${scores[1]} / 100`;
  $('time').textContent=`${(now/1000).toFixed(1)} / ${(duration/1000).toFixed(1)} s`;
  const gap=Math.hypot(p[0].posX-p[1].posX,p[0].posZ-p[1].posZ);$('gap').textContent=`Horizontal gap ${gap.toFixed(2)} m`;

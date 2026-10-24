@@ -31,7 +31,7 @@ public final class Agent implements ClassFileTransformer {
             ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES);logging.accept(out);return out.toByteArray();
         }
         if (name == null || !(name.equals("ave") || name.equals("j") || name.equals("pr")
-                || name.equals("wn") || name.equals("bcy") || name.equals("net/minecraft/server/MinecraftServer"))) return null;
+                || name.equals("wn") || name.equals("bcy") || name.equals("bex") || name.equals("hm") || name.equals("net/minecraft/server/MinecraftServer"))) return null;
         try {
             ClassNode node = new ClassNode();
             new ClassReader(bytes).accept(node, 0);
@@ -72,14 +72,28 @@ public final class Agent implements ClassFileTransformer {
                         method.instructions.insertBefore(ins,hook);
                     }
                     changed=true;
+                } else if(name.equals("pr")&&method.name.equals("g")&&method.desc.equals("(FF)V")){
+                    InsnList before=new InsnList();before.add(new VarInsnNode(Opcodes.ALOAD,0));before.add(new VarInsnNode(Opcodes.FLOAD,1));before.add(new VarInsnNode(Opcodes.FLOAD,2));
+                    before.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/ScienceTrace","movementBefore","(Ljava/lang/Object;FF)V",false));method.instructions.insert(before);
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(ins,callThis("lab/ScienceTrace","movementAfter"));
+                    changed=true;
+                } else if(name.equals("bex")&&method.name.equals("m")&&method.desc.equals("()V")){
+                    method.instructions.insert(callThis("lab/ScienceTrace","interpolationBefore"));
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(ins,callThis("lab/ScienceTrace","interpolationAfter"));changed=true;
+                } else if(name.equals("bex")&&method.name.equals("a")&&method.desc.equals("(DDDFFIZ)V")){
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(ins,callThis("lab/ScienceTrace","remoteUpdate"));changed=true;
+                } else if(name.equals("hm")&&method.name.equals("<init>")&&method.desc.equals("(Lpk;)V")){
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN){
+                        InsnList after=callPair("lab/ScienceTrace","velocityCreated");method.instructions.insertBefore(ins,after);
+                    }changed=true;
                 } else if(name.equals("wn")&&method.name.equals("f")&&method.desc.equals("(Lpk;)V")){
                     InsnList before=new InsnList();before.add(new VarInsnNode(Opcodes.ALOAD,0));before.add(new VarInsnNode(Opcodes.ALOAD,1));
                     before.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","attackBefore","(Ljava/lang/Object;Ljava/lang/Object;)V",false));
-                    method.instructions.insert(before);
+                    before.add(callPair("lab/ScienceTrace","attackBefore"));method.instructions.insert(before);
                     for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN){
                         InsnList after=new InsnList();after.add(new VarInsnNode(Opcodes.ALOAD,0));after.add(new VarInsnNode(Opcodes.ALOAD,1));
                         after.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","attackAfter","(Ljava/lang/Object;Ljava/lang/Object;)V",false));
-                        method.instructions.insertBefore(ins,after);
+                        after.add(callPair("lab/ScienceTrace","attackAfter"));method.instructions.insertBefore(ins,after);
                     }
                     changed=true;
                 }
@@ -104,5 +118,9 @@ public final class Agent implements ClassFileTransformer {
         InsnList list = new InsnList(); list.add(new VarInsnNode(Opcodes.ALOAD, 0));
         list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, owner, method, "(Ljava/lang/Object;)V", false));
         return list;
+    }
+    private static InsnList callPair(String owner,String method) {
+        InsnList list=new InsnList();list.add(new VarInsnNode(Opcodes.ALOAD,0));list.add(new VarInsnNode(Opcodes.ALOAD,1));
+        list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,owner,method,"(Ljava/lang/Object;Ljava/lang/Object;)V",false));return list;
     }
 }

@@ -24,6 +24,8 @@ class JavaModelTest(unittest.TestCase):
              str(lab.ROOT / 'src/lab/TargetWatchdog.java'),
              str(lab.ROOT / 'src/lab/MomentumController.java'),
              str(lab.ROOT / 'tests/MomentumControllerCheck.java'),
+             str(lab.ROOT / 'tests/NativeClockReplay.java'),
+             str(lab.ROOT / 'tests/NativeClockReplayCheck.java'),
              str(lab.ROOT / 'tests/TargetWatchdogCheck.java'),
              str(lab.ROOT / 'tests/JavaModelCheck.java')],
             cwd=lab.ROOT, capture_output=True, text=True, timeout=30,
@@ -44,6 +46,12 @@ class JavaModelTest(unittest.TestCase):
 
     def test_visible_only_observer(self):
         self.run_checks('tracker')
+
+    def test_native_clock_replay(self):
+        result = subprocess.run([str(lab.JAVA), '-cp', str(self.classes), 'NativeClockReplayCheck'],
+                                capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('passed', result.stdout.lower())
 
     def test_momentum_and_planner_control_limits(self):
         result = subprocess.run([str(lab.JAVA), '-cp', str(self.classes), 'MomentumControllerCheck'],

@@ -19,14 +19,14 @@ public final class Referee {
     static int counter;
 
     static final class Match {
-        String id,a,b,pa,pb,winner="",request=""; int ha,hb,goal=100,arena,pingChanges; long start,finish; double pingA,pingB,initialPingA,initialPingB;
+        String id,a,b,pa,pb,winner="",request=""; int ha,hb,goal=100,arena,pingChanges; long start,finish,durationMs=180_000; boolean scenario; double pingA,pingB,initialPingA,initialPingB;
         final Properties configA=new Properties(),configB=new Properties();
         Path replay;
         Map<String,Object> state(){
             Map<String,Object> m=new LinkedHashMap<>();
             m.put("id",id);m.put("a",a);m.put("b",b);m.put("policy_a",pa);m.put("policy_b",pb);
             m.put("hits_a",ha);m.put("hits_b",hb);m.put("goal",goal);m.put("ping_a",pingA);m.put("ping_b",pingB);
-            m.put("start",start);m.put("finish",finish);m.put("winner",winner);m.put("arena",arena);m.put("request",request);return m;
+            m.put("start",start);m.put("finish",finish);m.put("winner",winner);m.put("arena",arena);m.put("request",request);m.put("scenario",scenario);m.put("duration_limit_ms",durationMs);return m;
         }
     }
 
@@ -61,7 +61,7 @@ public final class Referee {
                 if(ticks%10==0&&System.currentTimeMillis()>m.start+2000&&!validBotViews(m)){
                     finish(m,"invalid_client_view");continue;
                 }
-                if(System.currentTimeMillis()>m.start+180_000){finish(m,"timeout_draw");continue;}
+                if(System.currentTimeMillis()>m.start+m.durationMs){finish(m,m.scenario?"scenario_completed":"timeout_draw");continue;}
                 Map<String,Object> trace=new LinkedHashMap<>();trace.put("type","tick");trace.put("time",System.currentTimeMillis());
                 trace.put("a",position(a));trace.put("b",position(b));trace.put("hits_a",m.ha);trace.put("hits_b",m.hb);
                 append(m.replay,trace);
@@ -159,6 +159,11 @@ public final class Referee {
                 message(sender,"Added simulated RTT: you "+m.pingA+" ms; bot "+m.pingB+" ms. Each direction is delayed by half. Your real ping is additional.");
             }else if(cmd.equals("stop")){
                 Match m=find(R.name(sender));if(m!=null)finish(m,"stopped");else{vanilla("gamemode 0 "+safeName(sender));teleport(sender,0,4,0);}
+            }else if(cmd.equals("lab")&&args.length==8&&args[1].equals("scenario")){
+                long duration=Long.parseLong(args[6]);if(duration<1000||duration>180_000)throw new IllegalArgumentException("Scenario duration must be1000–180000ms");
+                String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
+                if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}
+                loadPolicies();start(a,b,args[2],args[3],ping(args[4]),ping(args[5]),args[7],duration);
             }else if(cmd.equals("lab")&&args.length>=4&&args[1].equals("match")){
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
                 if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}
@@ -185,9 +190,12 @@ public final class Referee {
         }
     }
     static void start(String a,String b,String pa,String pb,double pingA,double pingB,String request)throws Exception{
+        start(a,b,pa,pb,pingA,pingB,request,0);
+    }
+    static void start(String a,String b,String pa,String pb,double pingA,double pingB,String request,long duration)throws Exception{
         if(a.equals(b)||find(a)!=null||find(b)!=null)throw new IllegalArgumentException("A player cannot be assigned to two matches");
         if(!pa.equals("human")&&!policies.containsKey(pa)||!policies.containsKey(pb))throw new IllegalArgumentException("Unknown bot; use /bots.");
-        Match m=new Match();m.request=request;
+        Match m=new Match();m.request=request;if(duration>0){m.scenario=true;m.durationMs=duration;}
         do{m.id=String.format("m%04d",++counter);}while(Files.exists(DATA.resolve("results/"+m.id+".json"))||Files.exists(DATA.resolve("replays/"+m.id+".jsonl")));
         m.a=a;m.b=b;m.pa=pa;m.pb=pb;m.pingA=m.initialPingA=pingA;m.pingB=m.initialPingB=pingB;m.start=System.currentTimeMillis()+3000;
         if(!pa.equals("human"))m.configA.putAll(policies.get(pa));else m.configA.setProperty("kind","human");

@@ -43,6 +43,9 @@ public final class ComboModel {
         }
     }
 
+    /** Offline diagnostic clocks; equal-time events execute in caller-supplied order. */
+    public enum NativeEventKind { A, B, SERVER }
+
     public static final class Config {
         public double ownRttMs = 20, opponentRttMs = 100;
         /** Phases relative to the attacker tick, each in [0,49] ms. */
@@ -85,6 +88,10 @@ public final class ComboModel {
         public double missPenalty = .4, switchPenalty = .15;
         public double lostPursuitPenalty = 35, terminalGapPenalty = 8;
         public boolean modelDoubleTapSprint = true;
+        /** Isolated native-look factor: frame pitch is current, head yaw syncs during living update. */
+        public boolean modelHeadYaw = false;
+        /** Isolated dry-floor factor: landing damage, immunity and tracker velocityChanged flush. */
+        public boolean modelFallDamage = false;
         /** Dynamic native-inspired server motion; fixed impulse values are fallback only. */
         public boolean dynamicServerImpulses = true, modelServerCollisionPush = true;
 
@@ -115,7 +122,7 @@ public final class ComboModel {
     public static final class Body {
         public double x, y, z, vx, vy, vz;
         public boolean ground = true, sprint;
-        /** Vanilla updates these after travel; retain them across sprint changes. */
+        /** Ground attribute follows sprint immediately; only air factor is cached across travel. */
         public double groundAcceleration = .1, airAcceleration = .02;
         public Body(double x, double y, double vx, double vy, boolean ground, boolean sprint) {
             this(x, y, 0, vx, vy, 0, ground, sprint);
@@ -199,6 +206,11 @@ public final class ComboModel {
         public float targetLastDamage, ownLastDamage;
         /** Server fallDistance follows reported C03 descent, not latent motionY. */
         public float serverFallDistanceA, serverFallDistanceB;
+        /** Non-player damage is separate from the referee's accepted PvP-hit score. */
+        public int ownFallEvents, targetFallEvents;
+        public double ownFallDamage, targetFallDamage;
+        /** Native pending velocityChanged; tracker flush is independent of position cadence. */
+        public boolean aVelocityChanged, bVelocityChanged;
         public long lastPredictedHurtCueMs = Long.MIN_VALUE;
         public long lastPredictedOwnHurtCueMs = Long.MIN_VALUE;
         /** Modeled B-local observation timestamps; never an immediate server-hit oracle. */
@@ -208,6 +220,8 @@ public final class ComboModel {
         public int defenderWtapCount;
         public boolean defenderForward;
         public Body a, b;
+        /** Last horizontal head directions synchronized by each local living update. */
+        public double aHeadLookX, aHeadLookZ, bHeadLookX, bHeadLookZ;
         /** Latent server motion, evolved from our predicted C03 stream, never read live. */
         public Body serverMotionA, serverMotionB;
         public View aSeesB, bSeesA;
@@ -270,6 +284,8 @@ public final class ComboModel {
             serverMotionB = new Body(serverB.x, serverB.y, serverB.z, 0, -.0784, 0, b.ground, b.sprint);
             setLook(serverA, aSeesB.x - a.x, aSeesB.z - a.z);
             setLook(serverB, bSeesA.x - b.x, bSeesA.z - b.z);
+            aHeadLookX = serverA.lookX; aHeadLookZ = serverA.lookZ;
+            bHeadLookX = serverB.lookX; bHeadLookZ = serverB.lookZ;
             aServerSprint = aLastSentSprint = a.sprint;
             bServerSprint = bLastSentSprint = b.sprint;
             defenderForward = b.sprint;
@@ -293,6 +309,9 @@ public final class ComboModel {
             result.targetLastDamage = targetLastDamage; result.ownLastDamage = ownLastDamage;
             result.serverFallDistanceA = serverFallDistanceA;
             result.serverFallDistanceB = serverFallDistanceB;
+            result.ownFallEvents = ownFallEvents; result.targetFallEvents = targetFallEvents;
+            result.ownFallDamage = ownFallDamage; result.targetFallDamage = targetFallDamage;
+            result.aVelocityChanged = aVelocityChanged; result.bVelocityChanged = bVelocityChanged;
             result.lastPredictedHurtCueMs = lastPredictedHurtCueMs;
             result.lastPredictedOwnHurtCueMs = lastPredictedOwnHurtCueMs;
             result.lastPredictedDefenderTargetHurtCueMs = lastPredictedDefenderTargetHurtCueMs;
@@ -301,6 +320,8 @@ public final class ComboModel {
             result.defenderTapUntilMs = defenderTapUntilMs;
             result.defenderWtapCount = defenderWtapCount;
             result.defenderForward = defenderForward;
+            result.aHeadLookX = aHeadLookX; result.aHeadLookZ = aHeadLookZ;
+            result.bHeadLookX = bHeadLookX; result.bHeadLookZ = bHeadLookZ;
             result.aServerSprint = aServerSprint; result.bServerSprint = bServerSprint;
             result.aLastSentSprint = aLastSentSprint; result.bLastSentSprint = bLastSentSprint;
             result.previousForward = previousForward; result.doubleTapTicks = doubleTapTicks;
@@ -749,6 +770,14 @@ public final class ComboModel {
 
     private static String stateBin(State s, Config c) {
         StringBuilder key = new StringBuilder(320);
+        if (c.modelHeadYaw) {
+            quantized(key, s.aHeadLookX, 20); quantized(key, s.aHeadLookZ, 20);
+            quantized(key, s.bHeadLookX, 20); quantized(key, s.bHeadLookZ, 20);
+        }
+        if (c.modelFallDamage) {
+            key.append('/').append(s.aVelocityChanged).append(s.bVelocityChanged);
+            quantized(key, s.serverFallDistanceA, 100); quantized(key, s.serverFallDistanceB, 100);
+        }
         // The arena is translation-invariant in x/z. Retain relative body,
         // client-view and server positions at 0.1m resolution, and each distinct
         // velocity at 0.025 blocks/tick. Vertical coordinates remain floor-based.
@@ -847,16 +876,61 @@ public final class ComboModel {
         return result;
     }
 
+    /**
+     * Offline clock diagnostic: execute exactly one recorded client/server tick,
+     * using the SAME travel, reach, combat and packet queues as ordinary planning.
+     * No other ticks or automatic clicks are inserted. eventTimeMs must be
+     * nondecreasing; equal timestamps preserve the caller's explicit order.
+     * nowMs in the result is the time of this completed event, not the next A tick.
+     * Do not mix this clock convention with advance/choose on the resulting state.
+     *
+     * A/B physicalClickConsumed describes one recorded short press consumed on
+     * that client tick, including misses and immune contacts. It is NOT a native
+     * hit confirmation. B accepts only RELEASE/SPRINT, matching the recorded
+     * hold-W, W-tap and standstill fixtures; WALK would require independent B
+     * double-tap/input history. SERVER requires null action and no click.
+     *
+     * This is not an exact native replay: queues still drain at the corresponding
+     * supplied event, server tracking retains its approximate cadence, and client
+     * aiming is reconstructed from predicted views. End-of-server-tick logging
+     * and a client travel timestamp are proxies for different points within a
+     * tick, not exact network-task/ATTACK dispatch timestamps. The caller must
+     * initialize once, then supply only clocks/inputs, never state corrections or
+     * confirmed hits. Compare all later native state strictly as held-out data.
+     */
+    public static State replayNativeEvent(State state, long eventTimeMs,
+                                         NativeEventKind eventKind, Action recordedAction,
+                                         boolean physicalClickConsumed, Config config) {
+        config.validate();
+        if (eventKind == null || eventTimeMs < state.nowMs)
+            throw new IllegalArgumentException("Native replay requires ordered events and a kind");
+        if (eventKind == NativeEventKind.SERVER) {
+            if (recordedAction != null || physicalClickConsumed)
+                throw new IllegalArgumentException("SERVER events have no action or click");
+        } else if (recordedAction == null
+                || (eventKind == NativeEventKind.B && recordedAction == Action.WALK)) {
+            throw new IllegalArgumentException("Client action required; B supports RELEASE/SPRINT only");
+        }
+        State result = state.copy();
+        result.nowMs = eventTimeMs;
+        switch (eventKind) {
+            case A -> {
+                recordAttackerAction(result, recordedAction, config);
+                attackerTick(result, recordedAction, config, eventTimeMs, physicalClickConsumed);
+            }
+            case B -> defenderTick(result, config, eventTimeMs,
+                    recordedAction, physicalClickConsumed);
+            case SERVER -> serverTick(result, config, eventTimeMs);
+        }
+        return result;
+    }
+
     private static void step(State s, Action action, Config c) {
         step(s, action, c, null);
     }
 
     private static void step(State s, Action action, Config c, Boolean recordedClick) {
-        if (action != s.previousAction) {
-            s.accumulatedReward -= c.switchPenalty;
-            s.actionTicks = 0;
-        }
-        s.previousAction = action; s.actionTicks++;
+        recordAttackerAction(s, action, c);
         attackerTick(s, action, c, s.nowMs, recordedClick);
         long serverTime = s.nowMs + c.serverPhaseMs;
         long defenderTime = s.nowMs + c.opponentPhaseMs;
@@ -870,10 +944,18 @@ public final class ComboModel {
         s.nowMs += TICK_MS;
     }
 
+    private static void recordAttackerAction(State s, Action action, Config c) {
+        if (action != s.previousAction) {
+            s.accumulatedReward -= c.switchPenalty;
+            s.actionTicks = 0;
+        }
+        s.previousAction = action; s.actionTicks++;
+    }
+
     private static void attackerTick(State s, Action action, Config c, long time,
                                      Boolean recordedClick) {
         receiveClient(s, true, time);
-        s.lastOurRay = rayDistance(s.a.x, s.a.y, s.a.z, s.aSeesB.x, s.aSeesB.y, s.aSeesB.z);
+        s.lastOurRay = clientRayDistance(s, true, c);
         double[] look = horizontalUnit(s.aSeesB.x - s.a.x, s.aSeesB.z - s.a.z);
         // Independent short press/releases: native end-of-tick key release clears
         // leftClickCounter. Do not invent a persistent 500 ms air-miss cooldown.
@@ -908,6 +990,14 @@ public final class ComboModel {
         if (action.forward && action.sprintKey) s.a.sprint = true;
         if (!action.forward) s.a.sprint = false;
         s.previousForward = action.forward;
+        // EntityPlayer.updateEntityActionState copies rotationYaw to head yaw
+        // during living update, AFTER this tick's local attack and before travel.
+        // Movement and the subsequently sent server yaw use current body aim.
+        s.aHeadLookX = look[0]; s.aHeadLookZ = look[1];
+        // EntityPlayer overrides getAIMoveSpeed with the current attribute;
+        // sprint modifies that attribute BEFORE this tick's ground travel.
+        // The air factor still comes from the preceding onLivingUpdate.
+        s.a.groundAcceleration = s.a.sprint ? .13 : .1;
         move(s.a, action.forward ? look[0] : 0, action.forward ? look[1] : 0);
         s.aSeesB.step();
         if (s.a.sprint != s.aLastSentSprint) {
@@ -918,11 +1008,17 @@ public final class ComboModel {
     }
 
     private static void defenderTick(State s, Config c, long time) {
+        defenderTick(s, c, time, null, null);
+    }
+
+    /** Null overrides preserve the normal known-policy prediction path. */
+    private static void defenderTick(State s, Config c, long time,
+                                     Action recordedAction, Boolean recordedClick) {
         receiveClient(s, false, time);
-        s.lastDefenderRay = rayDistance(s.b.x, s.b.y, s.b.z, s.bSeesA.x, s.bSeesA.y, s.bSeesA.z);
+        s.lastDefenderRay = clientRayDistance(s, false, c);
         // Paired model opportunities at the same modeled instant. The final
         // metric is always measured from the two real clients' native rays.
-        double ourRayNow = rayDistance(s.a.x,s.a.y,s.a.z,s.aSeesB.x,s.aSeesB.y,s.aSeesB.z);
+        double ourRayNow = clientRayDistance(s, true, c);
         if (ourRayNow <= 3) {
             s.attackerOpportunityTicks++;
             if (s.lastDefenderRay > 3) {
@@ -942,7 +1038,7 @@ public final class ComboModel {
         double penetration = Math.max(0, 3 + c.safetyMargin - s.lastDefenderRay);
         s.accumulatedReward -= c.penetrationPenalty * penetration * penetration;
         boolean active = time >= c.defenderControlAtMs;
-        if (c.defenderWtap) {
+        if (recordedAction == null && c.defenderWtap) {
             // Match Client.kind=wtap: first wait for a locally visible target
             // hurt animation, then wait until that sampled observation is 150ms
             // old. A fresh server hit alone must not cause a movement response.
@@ -959,16 +1055,16 @@ public final class ComboModel {
                 s.defenderWtapCount++;
             }
         }
-        s.defenderForward = active && c.defenderMoves
-                && (!c.defenderWtap || time >= s.defenderTapUntilMs);
+        s.defenderForward = recordedAction != null ? recordedAction.forward
+                : active && c.defenderMoves && (!c.defenderWtap || time >= s.defenderTapUntilMs);
         long nextClick = Math.max(s.nextDefenderPhysicalClickMs,
                 Math.max(c.defenderControlAtMs, c.defenderFirstClickAtMs));
-        if (c.defenderClicks && active && time >= nextClick) {
+        if (recordedClick != null ? recordedClick : c.defenderClicks && active && time >= nextClick) {
             s.defenderPhysicalClicks++;
             // Independent short presses retain their physical phase even when
             // consumption occurs on a later native tick. Air misses do not add
             // an artificial 500ms cooldown; key release clears that counter.
-            long injectionTime = Math.max(nextClick, time - TICK_MS + 1);
+            long injectionTime = recordedClick != null ? time : Math.max(nextClick, time - TICK_MS + 1);
             s.nextDefenderPhysicalClickMs = injectionTime + c.defenderClickIntervalMs;
             if (s.lastDefenderRay <= 3) {
                 enqueue(s, PacketKind.B_ATTACK, time + c.opponentRttMs / 2,
@@ -985,6 +1081,8 @@ public final class ComboModel {
         // With W down, restore LOCAL sprint even after an immune contact; this
         // sends no new START if the last transmitted flag was already true.
         s.b.sprint = s.defenderForward;
+        s.bHeadLookX = look[0]; s.bHeadLookZ = look[1];
+        s.b.groundAcceleration = s.b.sprint ? .13 : .1;
         move(s.b, s.defenderForward ? look[0] : 0, s.defenderForward ? look[1] : 0);
         s.bSeesA.step();
         if (s.b.sprint != s.bLastSentSprint) {
@@ -995,6 +1093,10 @@ public final class ComboModel {
     }
 
     /** Native-inspired movement order, including ground friction on takeoff tick. */
+    /** Offline native transition validation uses the same travel function as planning. */
+    public static Body predictTravel(Body before,double inputX,double inputZ) {
+        Body result=before.copy();move(result,inputX,inputZ);return result;
+    }
     private static void move(Body body, double inputX, double inputZ) {
         if (Math.abs(body.vx) < .005) body.vx = 0;
         if (Math.abs(body.vy) < .005) body.vy = 0;
@@ -1026,8 +1128,8 @@ public final class ComboModel {
         List<Packet> incoming = takeDue(s, 0, time);
         for (Packet packet : incoming) {
             switch (packet.kind) {
-                case A_MOVE -> serverMovement(s, true, packet, c);
-                case B_MOVE -> serverMovement(s, false, packet, c);
+                case A_MOVE -> serverMovement(s, true, packet, c, time);
+                case B_MOVE -> serverMovement(s, false, packet, c, time);
                 case A_SPRINT -> { s.aServerSprint = packet.flag; s.lastServerSprintCommandMs = time; }
                 case B_SPRINT -> s.bServerSprint = packet.flag;
                 case ATTACK -> {
@@ -1069,6 +1171,10 @@ public final class ComboModel {
                 s.trackedBX = bx; s.trackedBY = by; s.trackedBZ = bz;
             }
         }
+        // EntityTrackerEntry checks velocityChanged outside its ordinary
+        // position/update-frequency branch, and also sends to the player itself.
+        flushVelocityChanged(s, true, c, time);
+        flushVelocityChanged(s, false, c, time);
         // EntityPlayerMP.onUpdate decrements once per world/server tick. Its
         // per-C03 onUpdateEntity path explicitly does not decrement this timer.
         // Packets are processed before this update: a fresh 20 becomes 19 here.
@@ -1126,7 +1232,18 @@ public final class ComboModel {
         if (!fresh && damage <= lastDamage) return;
         float appliedDamage = fresh ? damage : damage - lastDamage;
         boolean sprint = fromA ? s.aServerSprint : s.bServerSprint;
+        boolean pendingVelocity = fromA ? s.bVelocityChanged : s.aVelocityChanged;
         double[] impulse = fresh ? knockback(s, fromA, sprint, c) : null;
+        if (!fresh && pendingVelocity) {
+            // An earlier fall in this same server task drain can leave the
+            // victim dirty. Even an accepted damage upgrade then triggers the
+            // outer player's S12/restore branch, without ordinary base KB.
+            Body motion = fromA ? s.serverMotionB : s.serverMotionA;
+            View hitter = fromA ? s.serverA : s.serverB;
+            impulse = new double[]{velocityQuantize(motion.vx + (sprint ? .5 * hitter.lookX : 0)),
+                    velocityQuantize(motion.vy + (sprint ? .1 : 0)),
+                    velocityQuantize(motion.vz + (sprint ? .5 * hitter.lookZ : 0))};
+        }
         if (fromA) {
             s.acceptedHits++;
             s.targetLastDamage = damage;
@@ -1160,31 +1277,28 @@ public final class ComboModel {
                 s.lastReceivedImpulseZ = impulse[2];
             } else s.receivedDamageUpgrades++;
         }
-        if (fresh) {
+        if (impulse != null) {
             // Fresh damage sets velocityChanged and base knockback. The outer
             // player attack sends S12 including any sprint bonus, then restores
             // the victim's pre-hit SERVER motion. Only local client motion changes.
             double victimRtt = fromA ? c.opponentRttMs : c.ownRttMs;
             enqueueHit(s, fromA ? PacketKind.B_VELOCITY : PacketKind.A_VELOCITY, time + victimRtt / 2,
                     impulse[0], impulse[1], impulse[2], time);
-            enqueueHit(s, fromA ? PacketKind.A_HURT_CUE : PacketKind.A_OWN_HURT_CUE,
-                    time + c.ownRttMs / 2, 0, 0, 0, time);
-            if (!fromA && c.defenderWtap)
-                enqueueHit(s, PacketKind.B_TARGET_HURT_CUE,
-                        time + c.opponentRttMs / 2, 0, 0, 0, time);
+            if (fromA) s.bVelocityChanged = false;
+            else s.aVelocityChanged = false;
         } else if (sprint) {
             // Upgrade damage does not set velocityChanged or base knockback.
             // addVelocity still adds sprint bonus to latent SERVER motion, but
             // sets only isAirBorne: no S12 is sent and motion is not restored.
             // Players have sendVelocityUpdates=false in vanilla EntityTracker,
             // so the tracker does not deliver this bonus to the victim either.
-            // External pre-existing velocityChanged causes are outside this lab.
             Body victimMotion = fromA ? s.serverMotionB : s.serverMotionA;
             View hitter = fromA ? s.serverA : s.serverB;
             victimMotion.vx += .5 * hitter.lookX;
             victimMotion.vy += .1;
             victimMotion.vz += .5 * hitter.lookZ;
         }
+        if (fresh) enqueueFreshDamageCues(s, !fromA, c, time, time);
         if (sprint) {
             if (fromA) s.aServerSprint = false;
             else s.bServerSprint = false;
@@ -1199,7 +1313,7 @@ public final class ComboModel {
      * distinct from the client's motion. If that update leaves it grounded and
      * the packet rises into air, vanilla calls jump(), including sprint +0.2.
      */
-    private static void serverMovement(State s, boolean ours, Packet packet, Config c) {
+    private static void serverMovement(State s, boolean ours, Packet packet, Config c, long time) {
         View position = ours ? s.serverA : s.serverB;
         View other = ours ? s.serverB : s.serverA;
         Body motion = ours ? s.serverMotionA : s.serverMotionB;
@@ -1222,14 +1336,71 @@ public final class ComboModel {
         // delta. Its ordinary simulated moveEntity/updateFallState override is
         // empty, so latent server gravity must NOT manufacture a critical.
         float fallDistance = ours ? s.serverFallDistanceA : s.serverFallDistanceB;
-        if (packet.flag) fallDistance = 0;
-        else if (packet.y < position.y) fallDistance = (float) (fallDistance + position.y - packet.y);
+        if (packet.flag) {
+            if (c.modelFallDamage) applyFallDamage(s, ours, fallDistance, c, time);
+            // Native updateFallState uses the prior accumulated distance on
+            // landing. It does NOT add this last grounded packet's negative dy.
+            fallDistance = 0;
+        } else if (packet.y < position.y) fallDistance = (float) (fallDistance + position.y - packet.y);
         if (ours) s.serverFallDistanceA = fallDistance;
         else s.serverFallDistanceB = fallDistance;
         position.x = packet.x; position.y = packet.y; position.z = packet.z;
         position.lookX = lookX; position.lookZ = lookZ;
         motion.x = packet.x; motion.y = packet.y; motion.z = packet.z;
         motion.ground = packet.flag;
+    }
+
+    /** Ordinary dry floor, multiplier 1, no jump boost/flight/enchantment reductions. */
+    private static void applyFallDamage(State s, boolean ours, float distance, Config c, long time) {
+        float damage = (float) Math.ceil(distance - 3.0f);
+        if (damage <= 0) return;
+        int resistant = ours ? s.ownHurtResistantTicks : s.targetHurtResistantTicks;
+        float previousDamage = ours ? s.ownLastDamage : s.targetLastDamage;
+        boolean fresh = resistant <= 10;
+        if (!fresh && damage <= previousDamage) return;
+        float applied = fresh ? damage : damage - previousDamage;
+        if (ours) {
+            s.ownFallEvents++; s.ownFallDamage += applied; s.ownLastDamage = damage;
+            if (fresh) {
+                s.ownHurtResistantTicks = 20;
+                s.ownVulnerableAtMs = s.mirroredOwnVulnerableAtMs = time + 500;
+                s.aVelocityChanged = true;
+            }
+        } else {
+            s.targetFallEvents++; s.targetFallDamage += applied; s.targetLastDamage = damage;
+            if (fresh) {
+                s.targetHurtResistantTicks = 20;
+                s.targetVulnerableAtMs = s.mirroredTargetVulnerableAtMs = time + 500;
+                s.bVelocityChanged = true;
+            }
+        }
+        // Fall has no source entity: attackEntityFrom emits the same fresh hurt
+        // status and sets velocityChanged, but does NOT invoke base knockback.
+        // No outer player attack restores motion here. The tracker will send
+        // whatever latent server velocity exists at its later flush.
+        if (fresh) enqueueFreshDamageCues(s, ours, c, time, Long.MIN_VALUE);
+    }
+
+    private static void enqueueFreshDamageCues(State s, boolean victimIsA, Config c,
+                                               long time, long attackCauseMs) {
+        enqueueHit(s, victimIsA ? PacketKind.A_OWN_HURT_CUE : PacketKind.A_HURT_CUE,
+                time + c.ownRttMs / 2, 0, 0, 0, attackCauseMs);
+        if (victimIsA && c.defenderWtap)
+            enqueueHit(s, PacketKind.B_TARGET_HURT_CUE,
+                    time + c.opponentRttMs / 2, 0, 0, 0, attackCauseMs);
+    }
+
+    private static void flushVelocityChanged(State s, boolean ours, Config c, long time) {
+        if (!(ours ? s.aVelocityChanged : s.bVelocityChanged)) return;
+        Body motion = ours ? s.serverMotionA : s.serverMotionB;
+        enqueue3(s, ours ? PacketKind.A_VELOCITY : PacketKind.B_VELOCITY,
+                time + (ours ? c.ownRttMs : c.opponentRttMs) / 2,
+                velocityQuantize(motion.vx), velocityQuantize(motion.vy), velocityQuantize(motion.vz), false);
+        // Watchers receive this packet too, but their remote motion fields do
+        // not drive the model's interpolation positions. Only the victim's
+        // local velocity overwrite changes the represented trajectory.
+        if (ours) s.aVelocityChanged = false;
+        else s.bVelocityChanged = false;
     }
 
     /** Approximation of applyEntityCollision, evaluated at the simulated server position. */
@@ -1360,13 +1531,30 @@ public final class ComboModel {
         double eyeY = feetY + 1.62;
         double aimY = Math.max(targetFeetY + .15, Math.min(eyeY, targetFeetY + 1.65));
         double dx = targetX - eyeX, dy = aimY - eyeY, dz = targetZ - eyeZ;
+        return rayDistanceAlong(eyeX, eyeY, eyeZ, dx, dy, dz, targetX, targetFeetY, targetZ);
+    }
+
+    /**
+     * Geometric distance along a supplied eye/look ray to the ordinary expanded
+     * player box. eyeY is ACTUAL EYE Y, while targetFeetY is feet Y. Direction
+     * is normalized here, so its magnitude cannot change the returned block
+     * distance. Returns +Infinity for a miss or a zero direction outside the
+     * box; an eye inside/on the box returns zero. This excludes block occlusion,
+     * entity eligibility and competing entities; it does not replace getMouseOver.
+     */
+    public static double rayDistanceAlong(double eyeX, double eyeY, double eyeZ,
+                                          double dx, double dy, double dz,
+                                          double targetX, double targetFeetY, double targetZ) {
+        double[] minima = {targetX - .4, targetFeetY - .1, targetZ - .4};
+        double[] maxima = {targetX + .4, targetFeetY + 1.9, targetZ + .4};
+        if (eyeX >= minima[0] && eyeX <= maxima[0]
+                && eyeY >= minima[1] && eyeY <= maxima[1]
+                && eyeZ >= minima[2] && eyeZ <= maxima[2]) return 0;
         double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (length < 1e-12) return 0;
+        if (length < 1e-12) return Double.POSITIVE_INFINITY;
         dx /= length; dy /= length; dz /= length;
         double near = 0, far = Double.POSITIVE_INFINITY;
         double[] origins = {eyeX, eyeY, eyeZ}, directions = {dx, dy, dz};
-        double[] minima = {targetX - .4, targetFeetY - .1, targetZ - .4};
-        double[] maxima = {targetX + .4, targetFeetY + 1.9, targetZ + .4};
         for (int axis = 0; axis < 3; axis++) {
             if (Math.abs(directions[axis]) < 1e-12) {
                 if (origins[axis] < minima[axis] || origins[axis] > maxima[axis])
@@ -1382,9 +1570,25 @@ public final class ComboModel {
         return far < 0 ? Double.POSITIVE_INFINITY : near;
     }
 
+    private static double clientRayDistance(State s, boolean fromA, Config c) {
+        Body body = fromA ? s.a : s.b;
+        View target = fromA ? s.aSeesB : s.bSeesA;
+        if (!c.modelHeadYaw) return rayDistance(body.x, body.y, body.z, target.x, target.y, target.z);
+        double eyeY = body.y + 1.62;
+        double horizontalGap = Math.hypot(target.x - body.x, target.z - body.z);
+        double verticalAim = Math.max(target.y + .15, Math.min(eyeY, target.y + 1.65)) - eyeY;
+        double pitchLength = Math.hypot(horizontalGap, verticalAim);
+        double cosPitch = pitchLength < 1e-12 ? 1 : horizontalGap / pitchLength;
+        double sinPitch = pitchLength < 1e-12 ? 0 : verticalAim / pitchLength;
+        double headX = fromA ? s.aHeadLookX : s.bHeadLookX;
+        double headZ = fromA ? s.aHeadLookZ : s.bHeadLookZ;
+        return rayDistanceAlong(body.x, eyeY, body.z, headX * cosPitch, sinPitch,
+                headZ * cosPitch, target.x, target.y, target.z);
+    }
+
     private static double rank(Node node, Config config) {
         State s = node.state;
-        double ourRay = rayDistance(s.a.x, s.a.y, s.a.z, s.aSeesB.x, s.aSeesB.y, s.aSeesB.z);
+        double ourRay = clientRayDistance(s, true, config);
         double finiteRay = Double.isFinite(ourRay) ? ourRay : 10;
         double lost = Math.max(0, finiteRay - 3.8);
         double contactGap = Math.max(0, finiteRay - 3.05);

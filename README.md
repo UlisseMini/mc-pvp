@@ -4,6 +4,11 @@ A working local practice server and research ladder using the official **Minecra
 Java 1.8.9** server and real clients through **basic HeadlessMC**. The game performs
 movement, collision, raycasting, attacks, knockback and damage immunity.
 
+Current research: [physics validation before policy search](research/README.md).
+The [formal model](FORMAL-MODEL.md) states the mechanics, hidden information and
+combo proof conditions; controlled native recordings test those claims. Its
+individual equations are much better checked than its full-fight forecasts.
+
 ## Join and play
 
 1. Open Minecraft Java **1.8.9** in your normal launcher.
