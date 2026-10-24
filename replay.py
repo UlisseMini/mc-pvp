@@ -55,6 +55,13 @@ def export(identifier):
           'native_overlap':native,'combat_metrics':metrics,'qualification':qualification,
           'input_clock_verified':bool(strict and click_count),
           'ping_changes':[e for e in events if e['type']=='ping_change']}
+    native_attacks=[e for e in events if e['type']=='science_server_attack']
+    if native_attacks:
+        accepted=[e for e in native_attacks if e['score_before']!=e['score_after']]
+        data['native_hit_counts']={s:{
+            'fresh':sum(e['attacker']==match[s] and e['target_before']['hurtResistantTime']<=10 for e in accepted),
+            'upgrades':sum(e['attacker']==match[s] and e['target_before']['hurtResistantTime']>10 for e in accepted)
+        } for s in ('a','b')}
     output=ROOT/'recordings'/f'{identifier}.html';output.parent.mkdir(exist_ok=True)
     payload=json.dumps(data,separators=(',',':')).replace('<','\\u003c')
     output.write_text(TEMPLATE.replace('__DATA__',payload))
@@ -70,7 +77,7 @@ TEMPLATE=r'''<!doctype html>
 </style>
 <main><div class="tag" id="provenance">PvP Lab · native engine recording</div><h1 id="title"></h1>
 <p id="subtitle"></p><section><div class="card a"><span id="aname"></span><br><strong id="ascore"></strong><div class="mono" id="astate"></div></div><div class="card b"><span id="bname"></span><br><strong id="bscore"></strong><div class="mono" id="bstate"></div></div></section>
-<canvas id="scene" aria-label="Recorded player positions from above and from the side"></canvas>
+<p id="fresh"></p><canvas id="scene" aria-label="Recorded player positions from above and from the side"></canvas>
 <div class="controls"><button id="play">Play</button><select id="speed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select><span id="time" class="mono"></span><span id="gap" class="mono"></span></div>
 <input id="scrub" type="range" min="0" value="0" step="1" aria-label="Match time">
 <canvas id="graph" aria-label="Accepted hits over time; click to seek"></canvas>
@@ -84,8 +91,9 @@ const $=id=>document.getElementById(id), colors=['#75ddc9','#f6b78e'];
 $('provenance').textContent=D.qualification?.passed?'PvP Lab · native engine · input and replication checks passed':D.input_clock_verified?'PvP Lab · preliminary recording · replication unqualified':'PvP Lab · historical preliminary recording · old input clock';
 if(D.qualification?.issues?.length)$('provenance').textContent+=' · '+D.qualification.issues.join('; ');
 if(D.native_overlap){const n=D.native_overlap;const describe=s=>`${s.toUpperCase()}: ${(100*n[s].one_sided_fraction_given_attacker_can_hit).toFixed(1)}% one-sided / ${(n[s].attacker_can_hit_ms/1000).toFixed(1)} s able to hit; longest continuous window ${(n[s].longest_one_sided_window_ms/1000).toFixed(2)} s`;$('opportunities').textContent=describe('a')+' · '+describe('b')+`. Each percentage divides time that only this player could hit by all time this player could hit. Both native client POVs use shared host timestamps. Paired coverage ${(100*n.paired_coverage_fraction).toFixed(1)}%.`;}
-if(D.combat_metrics){const c=D.combat_metrics;const describe=s=>`${s.toUpperCase()}: longest sustained reach-denial combo ${((c[s].sustained_native_combo?.duration_ms||0)/1000).toFixed(2)} s; longest unanswered streak ${c[s].longest_unanswered_streak} hits`;$('combos').textContent=describe('a')+' · '+describe('b')+'. Final hit score is the primary performance metric. Sustained locks require at least three fresh contacts and no accepted return attack; brief both-out-of-range intervals are allowed.';}
+if(D.combat_metrics){const c=D.combat_metrics;const describe=s=>`${s.toUpperCase()}: longest sustained reach-denial combo ${((c[s].sustained_native_combo?.duration_ms||0)/1000).toFixed(2)} s; longest unanswered streak ${c[s].longest_unanswered_streak} hits`;$('combos').textContent=describe('a')+' · '+describe('b')+'. The scoreboard includes accepted damage upgrades. Sustained locks require at least three fresh contacts and no accepted return attack; brief both-out-of-range intervals are allowed.';}
 if(D.combat_metrics?.a?.native_denial_contact_sequence){const describe=s=>{const v=D.combat_metrics[s].native_denial_contact_sequence;return `${s.toUpperCase()}: ${(v.duration_ms/1000).toFixed(2)} s denial contact sequence, ${v.fresh_contacts} fresh hits, largest hit gap ${v.max_contact_gap_ms===null?'unavailable':(v.max_contact_gap_ms/1000).toFixed(2)+' s'}`;};$('sequences').textContent=describe('a')+' · '+describe('b')+'. These sequences require continuous measured defender reach denial and no accepted return hit, with no maximum contact-gap cutoff. The strict combo above caps hit gaps at one second.';}
+if(D.native_hit_counts){const h=D.native_hit_counts;$('fresh').textContent=`Final fresh hits: A ${h.a.fresh} / B ${h.b.fresh}. Within-immunity damage upgrades: A ${h.a.upgrades} / B ${h.b.upgrades}. The scoreboard and graph count both; this is not a first-to-100-fresh race.`;}
 $('title').textContent=`${M.policy_a} vs ${M.policy_b}`;
 $('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${M.ping_a}/${M.ping_b} ms · ${M.reaction_ms_a??150}/${M.reaction_ms_b??150} ms tactical reaction · CPS ceilings ${M.click_cps_a??(M.policy_a==='human'?'human':10)}/${M.click_cps_b??10} · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 accepted attacks'}`;
 $('aname').textContent=M.policy_a;$('bname').textContent=M.policy_b;$('scrub').max=duration;
@@ -98,7 +106,7 @@ function line(x,a,b,c,d,color,width=1){x.strokeStyle=color;x.lineWidth=width;x.b
 function render(){
  const time=start+now, tick=last(T,time),p=[tick.a,tick.b],hit=last(D.hits,time),scores=hit&&hit.time<=time?[hit.hits_a,hit.hits_b]:[0,0];
  const change=last(D.ping_changes||[],time),latency=change&&change.time<=time?change:M;
- $('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${latency.ping_a}/${latency.ping_b} ms · ${M.reaction_ms_a??150}/${M.reaction_ms_b??150} ms tactical reaction · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 hits'}`;
+ $('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${latency.ping_a}/${latency.ping_b} ms · ${M.reaction_ms_a??150}/${M.reaction_ms_b??150} ms tactical reaction · CPS ceilings ${M.click_cps_a??(M.policy_a==='human'?'human':10)}/${M.click_cps_b??10} · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 accepted attacks'}`;
  $('ascore').textContent=`${scores[0]} / 100`;$('bscore').textContent=`${scores[1]} / 100`;
  $('time').textContent=`${(now/1000).toFixed(1)} / ${(duration/1000).toFixed(1)} s`;
  const gap=Math.hypot(p[0].posX-p[1].posX,p[0].posZ-p[1].posZ);$('gap').textContent=`Horizontal gap ${gap.toFixed(2)} m`;

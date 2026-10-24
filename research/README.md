@@ -56,6 +56,13 @@ records the evidence, remaining composition gap and next minimal experiment.
 
 ## Native evidence
 
+- [Higher-CPS W-tap comparison](cps-wtap-results.md): four side-balanced games
+  each at 15, 20, 25 and 30 CPS versus otherwise identical 10 CPS W-tap, plus two
+  equal-policy controls. Measured input rates, fresh hits and within-immunity
+  damage upgrades are reported separately. These explicitly requested policies
+  raise the earlier click ceiling; other profiles retain their own limits.
+  One equal-rate control failed the cadence gate and remains excluded; a separate
+  recovery control passed but showed a large margin even between identical bots.
 - [Burst-clicking experiments](burst-clicking-results.md): zero-delay current-motion
   recoil clicks, continuous one-tick W-tap controls, window-only ablations and an
   optional critical-attempt variant. These newer cohorts explicitly remove the
@@ -89,7 +96,8 @@ records the evidence, remaining composition gap and next minimal experiment.
 
 The original mechanism/parity comparisons use native 1.8.9, ordinary input, at
 most 10 physical CPS, 150 ms tactical delay, normal speed and no potions. The
-newer burst report declares zero-delay exceptions per cohort. Scientific probes only record state;
+newer burst and click-rate reports declare zero-delay exceptions per cohort.
+The click-rate report also declares its higher CPS ceilings. Scientific probes only record state;
 private server/other-client diagnostics never feed the controller. No-click or
 late-click opponents are explicitly declared handicaps. Ordinary clicking runs
 keep clicking through immunity and misses.

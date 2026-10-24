@@ -10,13 +10,21 @@ from pathlib import Path
 
 def summarize(path):
     plan=json.loads(path.read_text())
-    if plan['stage']!='complete' or len(plan['results'])!=len(plan['fixtures']):
-        raise ValueError('The frozen comparison must finish first')
-    groups=collections.defaultdict(list);min_cap_fraction=1;worst_p95=0;worst_gap=0
+    if plan['stage'] not in ('complete','incomplete') or len(plan['results'])!=len(plan['fixtures']):
+        raise ValueError('Every frozen fixture must have a recorded result first')
+    assert collections.Counter(json.dumps(r['fixture'],sort_keys=True) for r in plan['results'])==collections.Counter(json.dumps(f,sort_keys=True) for f in plan['fixtures'])
+    groups=collections.defaultdict(list);excluded=[];min_cap_fraction=1;worst_p95=0;worst_gap=0
     for row in plan['results']:
         f=row['fixture'];game=row['game'];diag=row['diagnostic']
-        assert game['reason']=='100_hits' and game['validation']['passed'] and diag['passed'],game['id']
+        assert game['reason']=='100_hits' and game['validation']['passed'],game['id']
         high,normal=('b','a') if f['reverse'] else ('a','b');sides=(high,normal)
+        if not diag['passed']:
+            excluded.append({'id':game['id'],'fixture':f,'issues':diag['issues'],
+                'fresh':[row['exchanges']['sides'][s]['counts']['fresh'] for s in sides],
+                'accepted':[game['hits_'+s] for s in sides],
+                'server_cadence':diag['server_cadence'],
+                'client_cadence':{s:diag['sides'][s]['travel_cadence'] for s in sides}})
+            continue
         duration=game['duration_seconds'];metrics=[]
         for side in sides:
             count=row['exchanges']['sides'][side]['counts'];d=diag['sides'][side];inputs=row['delivery'][side]
@@ -51,8 +59,10 @@ def summarize(path):
             'mean_forward_drag_contacts_per_second':[statistics.mean(g['sides_higher_then_10'][s]['forward_drag_contacts_per_second']for g in games)for s in (0,1)],
             'mean_backward_drag_contacts_per_second':[statistics.mean(g['sides_higher_then_10'][s]['backward_drag_contacts_per_second']for g in games)for s in (0,1)]})
     return {'source':str(path),'source_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
-        'frame_sleep_ms':plan['frame_sleep_ms'],'groups':result,
-        'quality':{'qualified_full_games':len(plan['results']),'minimum_delivered_fraction_of_ceiling':min_cap_fraction,
+        'frame_sleep_ms':plan['frame_sleep_ms'],'cohort_stage':plan['stage'],
+        'cohort_error':plan.get('error'),'groups':result,'excluded_games':excluded,
+        'quality':{'attempted_full_games':len(plan['results']),
+                   'qualified_full_games':len(plan['results'])-len(excluded),'minimum_delivered_fraction_of_ceiling':min_cap_fraction,
                    'worst_client_movement_p95_ms':worst_p95,'worst_client_movement_gap_ms':worst_gap},
         'interpretation':'Fresh-hit counts are measured at the existing accepted-score stopping point, not first-to-100-fresh wins. Each pair shares its duration. Small counterbalanced samples; no claim of an optimal CPS or transfer to other pings. Contact-drag counts are not net displacement or a causal decomposition.'}
 
@@ -61,6 +71,7 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('input',type=Path);parser.add_argument('output',type=Path)
     args=parser.parse_args();result=summarize(args.input)
     args.output.write_text(json.dumps(result,indent=2)+'\n')
+    for game in result['excluded_games']:print('EXCLUDED',game['id'],game['issues'])
     for group in result['groups']:
         print(group['declared_cps'],'CPS; measured',group['mean_physical_cps'],
               'fresh',group['pooled_fresh'],'leads/ties/trails',group['fresh_leads_ties_trails'],

@@ -9,6 +9,8 @@ The [double-hit investigation](research/double-hit-mechanisms.md) records W-tap
 versus hold-W trials and the native timing differences behind their exchanges.
 The [burst-clicking experiments](research/burst-clicking-results.md) test immediate
 recoil cancellation, continuous one-tick W-tap and critical-aware click scheduling.
+The [click-rate comparison](research/cps-wtap-results.md) isolates 15, 20, 25 and
+30 CPS against otherwise identical 10 CPS one-tick W-tap.
 The [formal model](FORMAL-MODEL.md) states the mechanics, hidden information and
 combo proof conditions; controlled native recordings test those claims. Its
 individual equations are much better checked than its full-fight forecasts.
@@ -99,7 +101,7 @@ shared: this first version is intended for **one human player at a time**.
 - W or release and the normal sprint key. Only the explicitly named Zest
   strafing variants use A/D. No S, jumping or blocking.
 - Legacy policies use **150 ms** tactical observation delay. The `motion`,
-  `critical`, `window` and `fast` comparison policies use **zero artificial delay**, as
+  `critical`, `window`, `fast` and `wtap-cps…` comparison policies use **zero artificial delay**, as
   requested; each recording declares both sides' settings. Planned timing is allowed.
 - Default fixed policies schedule nominal **10 CPS**, with at least 100 ms between
   input clicks. The explicitly requested `wtap-cps15/20/25/30` experiments raise
@@ -147,6 +149,7 @@ python3 burst_summary.py research/my-burst-comparison.json research/my-burst-sum
 python3 burst_science.py my-motion-comparison --motion
 python3 burst_science.py my-critical-comparison --critical
 python3 cps_science.py my-cps-comparison
+python3 cps_summary.py research/my-cps-comparison.json research/my-cps-summary.json
 ```
 
 The pilot compares the hand-written controllers. The latency pilot includes
