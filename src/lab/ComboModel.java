@@ -10,6 +10,7 @@ import java.util.Set;
  * Provisional, three-coordinate forward model for a W-only attacker and a
  * defender that holds W + Ctrl and aims at its local opponent. The defender
  * is a non-clicking probe by default; Config.defenderClicks enables attacks.
+ * Config.defenderWtap additionally mirrors the lab's delayed-cue W-tap policy.
  *
  * This is a planning approximation, NOT a replacement for vanilla evaluation.
  * Its inputs must be estimates obtained from observations at least 150 ms old,
@@ -59,6 +60,11 @@ public final class ComboModel {
         public boolean modelCriticals = true;
         /** Known opponent policy, not a read of its private live controls. */
         public boolean defenderClicks = false;
+        /** False models standstill: no W/Ctrl input, but clicks and physics continue. */
+        public boolean defenderMoves = true;
+        /** Client.kind=wtap: one W/Ctrl release per delayed outgoing fresh-hurt cue. */
+        public boolean defenderWtap = false;
+        public int defenderReactionMs = 150, defenderWtapPauseMs = 50;
         public int defenderClickIntervalMs = 100;
         /** Optional hypothesized physical click phase; never before control starts. */
         public long defenderFirstClickAtMs = Long.MIN_VALUE;
@@ -97,6 +103,8 @@ public final class ComboModel {
                 throw new IllegalArgumentException("Received-hit penalty must be finite and nonnegative");
             if (!Float.isFinite(baseAttackDamage) || baseAttackDamage <= 0)
                 throw new IllegalArgumentException("Base attack damage must be finite and positive");
+            if (defenderReactionMs < 150 || defenderWtapPauseMs < 0)
+                throw new IllegalArgumentException("Defender reaction must be at least 150ms and pause nonnegative");
         }
     }
 
@@ -160,7 +168,7 @@ public final class ComboModel {
 
     private enum PacketKind { A_MOVE, B_MOVE, A_SPRINT, B_SPRINT, ATTACK, B_ATTACK,
         CONFIRMED_HIT, CONFIRMED_B_HIT, A_VIEW, B_VIEW, A_VELOCITY, B_VELOCITY,
-        A_HURT_CUE, A_OWN_HURT_CUE }
+        A_HURT_CUE, A_OWN_HURT_CUE, B_TARGET_HURT_CUE }
 
     /** Immutable predicted packet; queue ownership is confined to one State. */
     private static final class Packet {
@@ -189,6 +197,12 @@ public final class ComboModel {
         public float serverFallDistanceA, serverFallDistanceB;
         public long lastPredictedHurtCueMs = Long.MIN_VALUE;
         public long lastPredictedOwnHurtCueMs = Long.MIN_VALUE;
+        /** Modeled B-local observation timestamps; never an immediate server-hit oracle. */
+        public long lastPredictedDefenderTargetHurtCueMs = Long.MIN_VALUE;
+        public long defenderEligibleTargetHurtCueMs = Long.MIN_VALUE;
+        public long defenderHandledTapCueMs = Long.MIN_VALUE, defenderTapUntilMs = Long.MIN_VALUE;
+        public int defenderWtapCount;
+        public boolean defenderForward;
         public Body a, b;
         /** Latent server motion, evolved from our predicted C03 stream, never read live. */
         public Body serverMotionA, serverMotionB;
@@ -232,6 +246,9 @@ public final class ComboModel {
         // a confirmed event, and repeated historical replay must be idempotent.
         private final ArrayList<Long> confirmedHitTimes = new ArrayList<>();
         private final ArrayList<Long> confirmedReceivedHitTimes = new ArrayList<>();
+        // Fresh-hurt animations already delivered to B and sampled on a B
+        // client tick, but not yet old enough for B's delayed policy input.
+        private final ArrayList<Long> defenderVisibleHurtCues = new ArrayList<>();
 
         /**
          * Exact required initial estimates are deliberately explicit. Views are
@@ -251,6 +268,7 @@ public final class ComboModel {
             setLook(serverB, bSeesA.x - b.x, bSeesA.z - b.z);
             aServerSprint = aLastSentSprint = a.sprint;
             bServerSprint = bLastSentSprint = b.sprint;
+            defenderForward = b.sprint;
             previousForward = a.sprint;
             previousAction = a.sprint ? Action.SPRINT : Action.RELEASE;
             trackedAX = quantize(serverA.x); trackedAY = quantize(serverA.y);
@@ -273,6 +291,12 @@ public final class ComboModel {
             result.serverFallDistanceB = serverFallDistanceB;
             result.lastPredictedHurtCueMs = lastPredictedHurtCueMs;
             result.lastPredictedOwnHurtCueMs = lastPredictedOwnHurtCueMs;
+            result.lastPredictedDefenderTargetHurtCueMs = lastPredictedDefenderTargetHurtCueMs;
+            result.defenderEligibleTargetHurtCueMs = defenderEligibleTargetHurtCueMs;
+            result.defenderHandledTapCueMs = defenderHandledTapCueMs;
+            result.defenderTapUntilMs = defenderTapUntilMs;
+            result.defenderWtapCount = defenderWtapCount;
+            result.defenderForward = defenderForward;
             result.aServerSprint = aServerSprint; result.bServerSprint = bServerSprint;
             result.aLastSentSprint = aLastSentSprint; result.bLastSentSprint = bLastSentSprint;
             result.previousForward = previousForward; result.doubleTapTicks = doubleTapTicks;
@@ -320,6 +344,7 @@ public final class ComboModel {
             result.packets.addAll(packets); // Packet is immutable.
             result.confirmedHitTimes.addAll(confirmedHitTimes);
             result.confirmedReceivedHitTimes.addAll(confirmedReceivedHitTimes);
+            result.defenderVisibleHurtCues.addAll(defenderVisibleHurtCues);
             return result;
         }
 
@@ -767,6 +792,12 @@ public final class ComboModel {
         }
         for (long hit : s.confirmedHitTimes) if (hit >= s.nowMs - 100) key.append("/A").append(hit - s.nowMs);
         for (long hit : s.confirmedReceivedHitTimes) if (hit >= s.nowMs - 100) key.append("/B").append(hit - s.nowMs);
+        if (c.defenderWtap) {
+            key.append("/tap").append(s.defenderForward).append(':').append(s.defenderTapUntilMs)
+                    .append(':').append(s.defenderEligibleTargetHurtCueMs)
+                    .append(':').append(s.defenderHandledTapCueMs);
+            for (long cue : s.defenderVisibleHurtCues) key.append(':').append(cue);
+        }
         return key.toString();
     }
 
@@ -907,6 +938,25 @@ public final class ComboModel {
         double penetration = Math.max(0, 3 + c.safetyMargin - s.lastDefenderRay);
         s.accumulatedReward -= c.penetrationPenalty * penetration * penetration;
         boolean active = time >= c.defenderControlAtMs;
+        if (c.defenderWtap) {
+            // Match Client.kind=wtap: first wait for a locally visible target
+            // hurt animation, then wait until that sampled observation is 150ms
+            // old. A fresh server hit alone must not cause a movement response.
+            for (int i = 0; i < s.defenderVisibleHurtCues.size();) {
+                long cue = s.defenderVisibleHurtCues.get(i);
+                if (time - cue >= c.defenderReactionMs) {
+                    s.defenderEligibleTargetHurtCueMs = Math.max(s.defenderEligibleTargetHurtCueMs, cue);
+                    s.defenderVisibleHurtCues.remove(i);
+                } else i++;
+            }
+            if (active && s.defenderEligibleTargetHurtCueMs > s.defenderHandledTapCueMs) {
+                s.defenderTapUntilMs = time + c.defenderWtapPauseMs;
+                s.defenderHandledTapCueMs = s.defenderEligibleTargetHurtCueMs;
+                s.defenderWtapCount++;
+            }
+        }
+        s.defenderForward = active && c.defenderMoves
+                && (!c.defenderWtap || time >= s.defenderTapUntilMs);
         long nextClick = Math.max(s.nextDefenderPhysicalClickMs,
                 Math.max(c.defenderControlAtMs, c.defenderFirstClickAtMs));
         if (c.defenderClicks && active && time >= nextClick) {
@@ -926,11 +976,12 @@ public final class ComboModel {
                 }
             } else s.defenderAirMisses++;
         }
-        // Native hold-W also holds Ctrl. Restore LOCAL sprint after a contact,
-        // even an immune one. If the last transmitted flag was already true,
-        // this restoration does not send a new server START_SPRINTING command.
-        s.b.sprint = active;
-        move(s.b, active ? look[0] : 0, active ? look[1] : 0);
+        // Native hold-W and wtap both hold Ctrl whenever W is down. A tap
+        // releases W/Ctrl, but never suppresses the physical click above.
+        // With W down, restore LOCAL sprint even after an immune contact; this
+        // sends no new START if the last transmitted flag was already true.
+        s.b.sprint = s.defenderForward;
+        move(s.b, s.defenderForward ? look[0] : 0, s.defenderForward ? look[1] : 0);
         s.bSeesA.step();
         if (s.b.sprint != s.bLastSentSprint) {
             enqueue(s, PacketKind.B_SPRINT, time + c.opponentRttMs / 2, 0, 0, s.b.sprint);
@@ -1114,6 +1165,9 @@ public final class ComboModel {
                     impulse[0], impulse[1], impulse[2], time);
             enqueueHit(s, fromA ? PacketKind.A_HURT_CUE : PacketKind.A_OWN_HURT_CUE,
                     time + c.ownRttMs / 2, 0, 0, 0, time);
+            if (!fromA && c.defenderWtap)
+                enqueueHit(s, PacketKind.B_TARGET_HURT_CUE,
+                        time + c.opponentRttMs / 2, 0, 0, 0, time);
         } else if (sprint) {
             // Upgrade damage does not set velocityChanged or base knockback.
             // addVelocity still adds sprint bonus to latent SERVER motion, but
@@ -1236,6 +1290,13 @@ public final class ComboModel {
                 case B_VELOCITY -> { s.b.vx = packet.x; s.b.vy = packet.y; s.b.vz = packet.z; }
                 case A_HURT_CUE -> s.lastPredictedHurtCueMs = time;
                 case A_OWN_HURT_CUE -> s.lastPredictedOwnHurtCueMs = time;
+                case B_TARGET_HURT_CUE -> {
+                    // Observe after B's network leg and at its own native tick.
+                    // Multiple status packets before one observation produce
+                    // one visible hurt-time rise, matching Client.Observation.
+                    if (s.lastPredictedDefenderTargetHurtCueMs != time) s.defenderVisibleHurtCues.add(time);
+                    s.lastPredictedDefenderTargetHurtCueMs = time;
+                }
                 default -> throw new IllegalStateException("Wrong client packet");
             }
         }
@@ -1244,7 +1305,7 @@ public final class ComboModel {
     private static int destination(PacketKind kind) {
         return switch (kind) {
             case A_VIEW, A_VELOCITY, A_HURT_CUE, A_OWN_HURT_CUE -> 1;
-            case B_VIEW, B_VELOCITY -> 2;
+            case B_VIEW, B_VELOCITY, B_TARGET_HURT_CUE -> 2;
             default -> 0;
         };
     }

@@ -39,7 +39,7 @@ def overlap(a,b,start,finish,max_age_ms=150,include_windows=False):
 
 
 def sustained_combo(windows,contacts,returns,max_gap_ms=1000):
-    """Longest fresh-contact chain during measured reach denial, without returns."""
+    """Fresh-contact chain during measured reach denial; None removes the gap cutoff."""
     best={'duration_ms':0,'fresh_contacts':0,'max_contact_gap_ms':None}
     for window in windows:
         boundaries=[window['start']]+sorted(t for t in returns if window['start']<t<window['end'])+[window['end']]
@@ -47,10 +47,11 @@ def sustained_combo(windows,contacts,returns,max_gap_ms=1000):
             chain=[]
             for t in sorted(contacts):
                 if not left<=t<right:continue
-                if chain and t-chain[-1]>max_gap_ms:chain=[]
+                if chain and max_gap_ms is not None and t-chain[-1]>max_gap_ms:chain=[]
                 chain.append(t)
                 if len(chain)>=3 and t-chain[0]>best['duration_ms']:
                     best={'duration_ms':t-chain[0],'fresh_contacts':len(chain),'start':chain[0],'end':t,
                           'max_contact_gap_ms':max(b-a for a,b in zip(chain,chain[1:]))}
-    best['definition']=f'At least three fresh contacts inside continuous native defender-reach denial; no accepted return attack, contact gaps at most{max_gap_ms}ms. Both-out-of-range intervals may remain inside the lock.'
+    gap_rule=f'contact gaps at most{max_gap_ms}ms' if max_gap_ms is not None else 'no contact-gap cutoff; inspect fresh_contacts and max_contact_gap_ms'
+    best['definition']=f'At least three fresh contacts inside continuous native defender-reach denial; no accepted return attack, {gap_rule}. Both-out-of-range intervals may remain inside the lock.'
     return best

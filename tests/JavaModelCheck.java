@@ -743,6 +743,167 @@ public final class JavaModelCheck {
                 "short horizons and empty warm plans need no complete pause/resume candidate");
     }
 
+    private static void defenderWtapLatencyAndControls() {
+        for (int[] ping : new int[][]{{0, 0}, {20, 100}, {100, 20}}) {
+            var config = clickingConfig();
+            require(!config.defenderWtap, "default defender remains ordinary hold-W");
+            config.ownRttMs = ping[0]; config.opponentRttMs = ping[1];
+            config.defenderWtap = true;
+            config.defenderClickIntervalMs = 100;
+            var current = state(3, 0, false);
+            // First physical B click is consumed at tick10. Its server hit,
+            // B-local visible cue and delayed tactical reaction are DISTINCT.
+            long hit = 25 + 50 * (long)Math.ceil((10 + ping[1] / 2.0 - 25) / 50);
+            long visible = 10 + 50 * (long)Math.ceil((hit + ping[1] / 2.0 - 10) / 50);
+            long release = visible + 150, resume = release + 50;
+            long serverRestart = 25 + 50 * (long)Math.ceil((resume + ping[1] / 2.0 - 25) / 50);
+            for (int tick = 0; tick <= (serverRestart + 50) / 50; tick++) {
+                long defenderTime = current.nowMs + config.opponentPhaseMs;
+                int beforeClicks = current.defenderPhysicalClicks;
+                current = ComboModel.advanceRecorded(current, ComboModel.Action.RELEASE, false, config);
+                if (defenderTime < visible) require(current.lastPredictedDefenderTargetHurtCueMs == Long.MIN_VALUE,
+                        "server hit cannot instantly become B's local visible cue at RTT " + ping[1]);
+                if (defenderTime >= visible) require(current.lastPredictedDefenderTargetHurtCueMs == visible,
+                        "outgoing hurt cue uses B's RTT and B's native observation tick");
+                if (defenderTime < release) require(current.defenderForward && current.defenderWtapCount == 0,
+                        "visible cue must age 150ms before defender movement can react");
+                if (defenderTime == release) {
+                    require(current.defenderWtapCount == 1 && !current.defenderForward
+                                    && !current.b.sprint && !current.bLastSentSprint,
+                            "eligible cue releases W/Ctrl and transmits STOP once");
+                    require(current.defenderHandledTapCueMs == visible && current.defenderTapUntilMs == resume,
+                            "tap records its local cue time and a 50ms wall-clock deadline");
+                    require(current.defenderPhysicalClicks == beforeClicks + 1 && current.receivedHits == 1,
+                            "the physical immune-window click still runs on the W-release tick");
+                }
+                if (defenderTime >= resume) require(current.defenderForward && current.b.sprint
+                                && current.bLastSentSprint && current.defenderWtapCount == 1,
+                        "one 50ms release resumes W/Ctrl without retriggering the same hurt cue");
+                long serverTime = current.nowMs - 50 + config.serverPhaseMs;
+                if (defenderTime >= resume && serverTime < serverRestart)
+                    require(!current.bServerSprint, "local sprint restoration waits for B-to-server START delivery");
+                if (serverTime >= serverRestart)
+                    require(current.bServerSprint, "tap's distinct STOP/START transition rearms server sprint");
+            }
+            require(current.lastPredictedReceivedHitMs == hit,
+                    "delayed W-tap does not manufacture another fresh hit during the first window");
+        }
+    }
+
+    private static void defenderWtapHistoryAndCueSemantics() {
+        var config = clickingConfig();
+        config.defenderClicks = false; // Historical event isolates the cue policy.
+        config.defenderWtap = true;
+        var pending = state(3, 0, false);
+        pending.scheduleConfirmedIncomingHit(25, config);
+        for (int tick = 0; tick < 2; tick++)
+            pending = ComboModel.advanceRecorded(pending, ComboModel.Action.RELEASE, false, config);
+        require(pending.lastPredictedDefenderTargetHurtCueMs == 60 && pending.defenderWtapCount == 0,
+                "copied anchor contains a delivered but not yet eligible defender cue");
+        var early = pending.copy();
+        for (int tick = 0; tick < 3; tick++)
+            early = ComboModel.advanceRecorded(early, ComboModel.Action.RELEASE, false, config);
+        require(early.defenderWtapCount == 1 && !early.defenderForward,
+                "150ms branch consumes its cue at defender tick210");
+        config.defenderReactionMs = 250;
+        var later = pending.copy();
+        for (int tick = 0; tick < 3; tick++)
+            later = ComboModel.advanceRecorded(later, ComboModel.Action.RELEASE, false, config);
+        require(later.defenderWtapCount == 0 && later.defenderForward,
+                "another copy retains its own unconsumed observation history");
+        for (int tick = 0; tick < 2; tick++)
+            later = ComboModel.advanceRecorded(later, ComboModel.Action.RELEASE, false, config);
+        require(later.defenderWtapCount == 1 && later.defenderHandledTapCueMs == 60,
+                "consuming one copy's cue cannot remove it from another copy");
+        require(pending.nowMs == 100 && pending.defenderWtapCount == 0,
+                "history replay never mutates the source snapshot");
+
+        config.defenderReactionMs = 150;
+        for (int pause : new int[]{0, 25, 50, 51}) {
+            config.defenderWtapPauseMs = pause;
+            var quantized = state(3, 0, false);
+            quantized.scheduleConfirmedIncomingHit(25, config);
+            int releasedTicks = 0;
+            for (int tick = 0; tick < 9; tick++) {
+                quantized = ComboModel.advanceRecorded(quantized, ComboModel.Action.RELEASE, false, config);
+                if (!quantized.defenderForward) releasedTicks++;
+            }
+            require(releasedTicks == (int)Math.ceil(pause / 50.0) && quantized.defenderWtapCount == 1,
+                    "pause deadline is sampled on native ticks, including zero/nonmultiples: " + pause);
+        }
+
+        config.defenderWtapPauseMs = 50;
+        var multiple = state(3, 0, false);
+        multiple.scheduleConfirmedIncomingHit(25, config);
+        multiple.scheduleConfirmedIncomingHit(625, config);
+        for (int tick = 0; tick < 20; tick++)
+            multiple = ComboModel.advanceRecorded(multiple, ComboModel.Action.RELEASE, false, config);
+        require(multiple.defenderWtapCount == 2 && multiple.defenderHandledTapCueMs == 660,
+                "each distinct outgoing fresh-hurt cue arms exactly one tap");
+
+        var ownHurtOnly = state(3, 0, false);
+        ownHurtOnly.scheduleConfirmedHit(25, config);
+        for (int tick = 0; tick < 9; tick++)
+            ownHurtOnly = ComboModel.advanceRecorded(ownHurtOnly, ComboModel.Action.RELEASE, false, config);
+        require(ownHurtOnly.defenderWtapCount == 0
+                        && ownHurtOnly.lastPredictedDefenderTargetHurtCueMs == Long.MIN_VALUE,
+                "being hit does not arm the defender's outgoing-hit W-tap policy");
+
+        config.defenderWtap = false;
+        var hold = state(3, 0, false);
+        hold.scheduleConfirmedIncomingHit(25, config);
+        for (int tick = 0; tick < 9; tick++) {
+            hold = ComboModel.advanceRecorded(hold, ComboModel.Action.RELEASE, false, config);
+            require(hold.defenderForward && hold.b.sprint, "disabled W-tap preserves continuous W/Ctrl");
+        }
+        require(hold.defenderWtapCount == 0, "hold-W does not acquire periodic resets");
+
+        config.defenderWtap = config.defenderClicks = true;
+        var upgraded = state(3, 0, false);
+        upgraded.b.y = upgraded.serverB.y = upgraded.serverMotionB.y = 1;
+        upgraded.b.ground = upgraded.serverMotionB.ground = false;
+        upgraded.serverFallDistanceB = .1f;
+        upgraded.ownHurtResistantTicks = 15;
+        upgraded.ownLastDamage = 8;
+        upgraded = ComboModel.advanceRecorded(upgraded, ComboModel.Action.RELEASE, false, config);
+        require(upgraded.receivedDamageUpgrades == 1, "fixture scores an outgoing B critical upgrade");
+        config.defenderClicks = false;
+        for (int tick = 0; tick < 8; tick++)
+            upgraded = ComboModel.advanceRecorded(upgraded, ComboModel.Action.RELEASE, false, config);
+        require(upgraded.defenderWtapCount == 0
+                        && upgraded.lastPredictedDefenderTargetHurtCueMs == Long.MIN_VALUE,
+                "a scored critical upgrade has no fresh animation and cannot trigger W-tap");
+        config.defenderReactionMs = 149;
+        boolean rejected = false;
+        try { config.validate(); } catch (IllegalArgumentException expected) { rejected = true; }
+        require(rejected, "defender tactical reactions cannot bypass the 150ms observation limit");
+    }
+
+    private static void standstillDefenderKeepsClicksAndPhysics() {
+        var config = clickingConfig();
+        require(config.defenderMoves, "defender pursuit is enabled by default");
+        config.defenderMoves = false;
+        var still = new ComboModel.State(0,
+                new ComboModel.Body(0, 0, 0, -.0784, true, false),
+                new ComboModel.Body(3, 0, 0, -.0784, true, false),
+                new ComboModel.View(3, 0), new ComboModel.View(0, 0),
+                new ComboModel.View(0, 0), new ComboModel.View(3, 0));
+        for (int tick = 0; tick < 4; tick++)
+            still = ComboModel.advanceRecorded(still, ComboModel.Action.RELEASE, false, config);
+        near(still.b.x, 3, 1e-9, "standstill defender has no W pursuit acceleration");
+        require(!still.defenderForward && !still.b.sprint && !still.bLastSentSprint && !still.bServerSprint,
+                "standstill defender holds neither movement nor sprint input");
+        require(still.defenderPhysicalClicks == 2 && still.receivedHits == 1 && !still.lastReceivedHitSprint,
+                "standstill defender still clicks at ten CPS and deals an in-range ordinary hit");
+        require(still.lastReceivedImpulseX < -.39 && still.lastReceivedImpulseX > -.41,
+                "standstill outgoing hit has ordinary knockback without sprint bonus");
+        still.scheduleDefenderImpulse(still.nowMs, .4, .3608, 0);
+        still = ComboModel.advanceRecorded(still, ComboModel.Action.RELEASE, false, config);
+        near(still.b.x, 3.4, 1e-9, "normal received knockback still moves the standstill body");
+        require(still.b.y > .35 && !still.b.ground && still.defenderPhysicalClicks == 3,
+                "standstill preserves airborne physics and continues physical clicks during knockback");
+    }
+
     private static void visibleInterpolation() {
         var tracker = new VisibleTracker();
         require(!tracker.update(0, 0, 0, 0, 0).valid, "one sample cannot reveal interpolation");
@@ -844,7 +1005,10 @@ public final class JavaModelCheck {
             incomingCriticalAndConfirmedFresh();
             optionalSearchDiversity();
             completeMacrosAndWarmPlans();
-            System.out.println("PASS model geometry, controls, symmetric combat, critical upgrades, confirmed replay, scoring, diversity and complete macro/warm rollouts");
+            defenderWtapLatencyAndControls();
+            defenderWtapHistoryAndCueSemantics();
+            standstillDefenderKeepsClicksAndPhysics();
+            System.out.println("PASS model geometry, controls, symmetric combat, critical upgrades, confirmed replay, delayed W-tap/standstill defenders, scoring, diversity and macro/warm rollouts");
         }
         if (group.equals("all") || group.equals("tracker")) {
             visibleInterpolation();

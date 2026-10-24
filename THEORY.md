@@ -173,6 +173,14 @@ Those upgrades score without fresh base knockback or a new hurt animation.
 The model still approximates collisions and event phases, so it cannot claim
 an optimal best response.
 
+Optional opponent models also reproduce the actual W-tap controller and a
+stationary clicking control. W-tap receives its own modeled outgoing fresh-hurt
+cue over its network leg, samples that cue locally, waits 150 ms, then releases
+W/Ctrl for 50 ms. Clicks continue during the release. Critical upgrades do not
+arm a new tap. These are simulated consequences of the known policy; the
+candidate receives no private opponent state. The stationary control omits
+movement input while retaining attacks, gravity and knockback.
+
 `VisibleTracker.java` uses only eligible visible positions. If a remote entity
 moves from p to q during one native tick, its interpolation target is
 p + n*(q-p), with n in {1,2,3}. Candidate targets must lie on the world 1/32 grid.

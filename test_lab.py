@@ -50,6 +50,18 @@ class NativeWindowMetricTest(unittest.TestCase):
         self.assertEqual(sustained_combo(windows,contacts,[4000])['duration_ms'],1100)
         self.assertEqual(sustained_combo(windows,[100,650],[])['duration_ms'],0)
 
+    def test_uncapped_sequence_preserves_denial_across_slow_contacts(self):
+        windows=[{'start':0,'end':6000}]
+        contacts=[100,1600,3100,4600]
+        self.assertEqual(sustained_combo(windows,contacts,[])['duration_ms'],0)
+        sequence=sustained_combo(windows,contacts,[],max_gap_ms=None)
+        self.assertEqual(sequence['duration_ms'],4500)
+        self.assertEqual(sequence['fresh_contacts'],4)
+        self.assertEqual(sequence['max_contact_gap_ms'],1500)
+        self.assertEqual(sustained_combo(windows,contacts,[2500],max_gap_ms=None)['duration_ms'],0)
+        split=[{'start':0,'end':2500},{'start':2600,'end':6000}]
+        self.assertEqual(sustained_combo(split,contacts,[],max_gap_ms=None)['duration_ms'],0)
+
 
 class SupplyChainTest(unittest.TestCase):
     def test_modified_locked_artifact_is_rejected_without_network(self):

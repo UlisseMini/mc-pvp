@@ -64,6 +64,11 @@ async def match(a,b,ping_a=20,ping_b=20):
                     path=RUNTIME/'bots'/result[side].removeprefix('LabSlot')/'events.jsonl'
                     events=[e for line in path.read_text().splitlines() if (e:=json.loads(line)).get('match')==result['id']]
                     clicks=[e for e in events if e['type']=='click']
+                    if parameters[result['policy_'+side]].get('kind')=='standstill':
+                        controls=[e for e in events if e['type']=='observation']
+                        if not controls or any(e['forward'] or e.get('strafe',0)!=0 for e in controls):
+                            issues.add(f'{side}: standstill pressed a movement key')
+                        if any(e['forward'] for e in clicks):issues.add(f'{side}: standstill clicked with W down')
                     no_click=parameters[result['policy_'+side]].get('click_mode')=='none'
                     if no_click:
                         if clicks:issues.add(f'{side}: non-clicking probe clicked')
@@ -166,7 +171,9 @@ def combat_metrics(result):
         for side,other in [('a','b'),('b','a')]:
             contacts=[h['time']for h in hits if h['attacker']==result[side]and h.get('target_state',{}).get('hurtResistantTime')==20]
             returns=[h['time']for h in hits if h['attacker']==result[other]]
-            metrics[side]['sustained_native_combo']=sustained_combo(native[side].pop('defender_denial_windows'),contacts,returns)
+            windows=native[side].pop('defender_denial_windows')
+            metrics[side]['sustained_native_combo']=sustained_combo(windows,contacts,returns)
+            metrics[side]['native_denial_contact_sequence']=sustained_combo(windows,contacts,returns,max_gap_ms=None)
         metrics['native_overlap']=native
     return metrics
 
@@ -206,6 +213,16 @@ def record(name,results,metadata=None):
             for side in ('a','b'):
                 v=n[side];ratio=v['one_sided_fraction_given_attacker_can_hit'];percentage=f'{ratio:.1%}'if ratio is not None else '—'
                 lines.append(f'| {r["id"]} | {r["policy_"+side]} | {percentage} | {v["attacker_can_hit_ms"]/1000:.1f} | {r['combat_metrics'][side].get('sustained_native_combo',{}).get('duration_ms',0)/1000:.2f} | {v["longest_one_sided_window_ms"]/1000:.2f} | {n.get("paired_coverage_fraction",n["paired_time_ms"]/(r["finish"]-r["start"])):.1%} | {"passed"if r.get("validation",{}).get("passed")else "provisional"} |')
+    if any(r.get('combat_metrics',{}).get('a',{}).get('native_denial_contact_sequence') for r in results):
+        lines+=['','The following contact sequences retain continuous measured defender reach denial and no accepted return hit, but remove the strict one-second contact-gap cutoff. Inspect both hit count and largest gap; a long retreat alone is not proof of a useful lock.','',
+                '| Match | Attacker | Denial contact sequence (s) | Fresh contacts | Largest contact gap (s) |',
+                '|---|---|---:|---:|---:|']
+        for r in results:
+            for side in ('a','b'):
+                v=r.get('combat_metrics',{}).get(side,{}).get('native_denial_contact_sequence')
+                if not v:continue
+                gap=f'{v["max_contact_gap_ms"]/1000:.2f}' if v['max_contact_gap_ms'] is not None else '—'
+                lines.append(f'| {r["id"]} | {r["policy_"+side]} | {v["duration_ms"]/1000:.2f} | {v["fresh_contacts"]} | {gap} |')
     (OUT/'RESULTS.md').write_text('\n'.join(lines)+'\n')
     return document
 

@@ -56,6 +56,10 @@ public final class ModelController {
         c.oneSidedReward=Client.number("one_sided_reward",0);c.mutualOpportunityPenalty=Client.number("mutual_opportunity_penalty",0);
         c.contactEdgePenalty=Client.number("contact_edge_penalty",0);
         c.defenderClicks=Client.number("defender_clicks",0)>0;
+        c.defenderWtap=Client.controls.getProperty("opponent_model","hold-w").equals("wtap");
+        c.defenderMoves=!Client.controls.getProperty("opponent_model","hold-w").equals("standstill");
+        c.defenderReactionMs=(int)Client.number("opponent_model_reaction_ms",150);
+        c.defenderWtapPauseMs=(int)Client.number("opponent_model_pause_ms",50);
         c.defenderClickIntervalMs=(int)Client.number("defender_click_ms",105);
         c.defenderFirstClickAtMs=Client.epoch+150+(long)Client.number("defender_click_phase_ms",0);
         c.receivedHitPenalty=Client.number("received_hit_penalty",1000);
@@ -194,6 +198,10 @@ public final class ModelController {
         Eligible latest=observations.floorEntry(obs.time).getValue();VisibleTracker.Estimate v=latest.estimate;
         Map<String,Object> entry=new LinkedHashMap<>();entry.put("type","mpc_plan");entry.put("time",now);entry.put("observation_time",obs.time);entry.put("match",Client.match);
         entry.put("observer",Client.controls.getProperty("observer"));entry.put("action",decision.action.name());entry.put("predicted_hits",decision.predictedHits);
+        entry.put("opponent_model",best.config.defenderWtap?"wtap":best.config.defenderMoves?"hold-w":"standstill");
+        entry.put("predicted_opponent_wtaps",decision.predictedEnd.defenderWtapCount-state.defenderWtapCount);
+        entry.put("opponent_model_forward",state.defenderForward);
+        entry.put("opponent_model_tap_until_ms",state.defenderTapUntilMs);
         entry.put("predicted_received_hits",decision.predictedReceivedHits);
         entry.put("plan_source",decision.planSource);entry.put("beam_size",decision.finalBeamSize);
         entry.put("beam_state_bins",decision.distinctStateBins);entry.put("beam_root_actions",decision.rootActionsRetained);

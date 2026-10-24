@@ -219,6 +219,7 @@ public final class Client {
                 gap=obs.distance-Math.max(-8,Math.min(8,obs.closing))*(age+Math.min(.5,untilLocalClick));
             }
             boolean w=true;
+            if(kind.equals("standstill"))w=false;
             if(kind.equals("periodic"))w=(now-epoch)%(long)number("period_ms",400)>=(long)number("pause_ms",50);
             if(kind.equals("hitreset"))w=now-lastObservedTargetHurt>150+number("pause_ms",50);
             if(kind.equals("wtap") || kind.equals("tradetap")){

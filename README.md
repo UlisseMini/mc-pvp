@@ -20,6 +20,7 @@ An “already running” message means you can join immediately.
 | `/bots all` | Include every saved tuning candidate |
 | `/duel hold-w` | Fight the simplest baseline |
 | `/duel predictive` | Fight the hand-written spacing controller |
+| `/duel standstill` | Fight a clicking opponent that presses no movement keys; knockback still moves it |
 | `/duel zest-w 20 100` | Fight W-only Zest: bot RTT 20 ms, your added RTT 100 ms |
 | `/duel zest-strafe` | Fight the version allowed to use normal A/D keys |
 | `/duel burst 120 20` | Add 120 ms RTT to the bot and 20 ms to yourself |
@@ -49,6 +50,7 @@ shared: this first version is intended for **one human player at a time**.
 |---|---|
 | `hold-w` | Hold W and sprint, click continuously |
 | `hold-w-probe` | Same pursuit and perfect aim, no clicks; logs native reach opportunities |
+| `standstill` | Perfect aim and fixed clicks, no movement keys, ordinary knockback |
 | `wtap` | One short W release after a landed-hit cue |
 | `trade-wtap` | Post-hit reset that prefers to release just after receiving a hit |
 | `hit-reset` | Older confirmed-hit W-tap timing |
@@ -68,6 +70,8 @@ shared: this first version is intended for **one human player at a time**.
 | `mpc-diverse` | Longer planning horizon with distinct physical states and first-action alternatives |
 | `mpc-macro` | Also compares complete opening/reset sequences and the shifted previous plan |
 | `pvp-candidate` | Latest saved selection from the actual-score search, once it finishes |
+| `pvp-knows-wtap` | Same candidate parameters, predicting the actual delayed post-hit W-tap policy |
+| `pvp-knows-standstill` | Same candidate parameters, predicting a stationary clicking opponent |
 
 - Normal speed, no potions, no enchantments, flat grass, diamond swords.
 - First to 100 **server-accepted attacks**. Health is restored after real damage
@@ -112,6 +116,9 @@ python3 experiments.py evolve-locks --population 4 --generations 1
 python3 experiments.py evolve-pvp --population 4 --generations 1
 python3 experiments.py league --bots hold-w wtap hit-reset predictive --rtts 20,20 20,120
 python3 experiments.py league --bots hold-w zest-w zest-strafe --rtts 0,0 20,100 20,140
+python3 compare_wtap.py league
+python3 compare_wtap.py ablation
+python3 compare_wtap.py standstill
 ```
 
 The pilot compares the hand-written controllers. The latency pilot includes
@@ -128,6 +135,14 @@ sustained combo duration as a secondary objective. Each candidate plays both
 starting sides at 20/100 ms RTT. W-tap controls and fresh matches at 0/0 and
 100/20 ms test whether the selected candidate improves beyond its selection
 games. A saved candidate is an experiment, not a proven champion.
+
+`compare_wtap.py league` runs the fixed-policy 36-game comparison of W-tap,
+hold-W and the candidate, with four games per pair and oriented RTT condition.
+`ablation` runs exactly three games under each opponent-model assumption, at
+0/0, 20/100 and 100/20 ms candidate/opponent RTT. The known version changes only
+`opponent_model=wtap`; movement choices, controller weights and physical click
+timing stay the same. `standstill` checks stationary input and native knockback
+against three pursuit policies at 20/100 ms.
 
 `evolve-locks` is a diagnostic search against the non-clicking probe using the
 conditional native one-sided percentage. It searches a small set of controller
@@ -175,6 +190,11 @@ defender continuously lacks native reach, with no accepted return attack and
 at most one second between contacts. Both players can briefly be out of range
 inside that span; a long retreat without fresh contacts does not count.
 
+New reports also include a contact sequence inside continuous defender reach
+denial with no maximum hit-gap cutoff. Its fresh-hit count and largest contact
+gap are reported explicitly. This distinguishes a real long denial sequence
+with slower contacts from a zero caused solely by the strict one-second cutoff.
+
 The conditional reach percentage is a diagnostic: time that **A can hit B and
 B cannot hit A**, divided by **all time A can hit B**. Each side's own native
 `getMouseOver` raycast is
@@ -206,6 +226,50 @@ The W-tap controls scored 100–83 and 100–78 at 20/100 ms. Small samples and
 clock-phase variability limit the comparison. See [the full search](experiments/pvp-search.json)
 for parameters, validation, selection games and separate fresh tests.
 
+A subsequent fixed-policy comparison ran 36 games, with four games for each
+pairing and RTT condition and balanced starting sides. Mean scores below are
+oriented as the first-named bot/opponent:
+
+| First bot / opponent | 0/0 ms | 20/100 ms | 100/20 ms |
+|---|---:|---:|---:|
+| W-tap / hold-W | 100–74.5 | 100–85 | 100–80 |
+| Candidate / hold-W | 99.75–85 | 100–77 | 100–68.5 |
+| W-tap / candidate | 100–72.25 | 100–76.75 | 100–80.25 |
+
+W-tap won all 12 head-to-head games against the original candidate. The candidate
+had larger margins against hold-W at the asymmetric pings. These matchups do not
+establish a universal ranking. See [all scores and strict lock durations](experiments/WTAP-COMPARISON.md).
+
+The requested six-game opponent-model test changed only the candidate's
+prediction of the opponent's movement. Scores are candidate–W-tap:
+
+| Candidate / W-tap RTT | Assumes hold-W | Models W-tap |
+|---|---:|---:|
+| 0/0 ms | 78–100 | 79–100 |
+| 20/100 ms | 77–100 | 100–97 |
+| 100/20 ms | 74–100 | 100–91 |
+
+Knowing the W-tap policy helped in the two asymmetric-ping trials and barely
+changed the zero-ping trial. There is only one game per cell, so this is a
+diagnostic result requiring repeats. All six games passed native input, reach
+and replication checks. [Full data and model diagnostics](experiments/wtap-opponent-model.json).
+
+The stationary clicking control was tested at 20/100 ms attacker/opponent RTT:
+
+| Attacker / standstill | Score | Strict lock (gaps ≤1 s) | Denial contact sequence | Fresh hits / largest gap |
+|---|---:|---:|---:|---:|
+| Hold-W | 100–24 | 1.90 s | 1.90 s | 4 / 0.85 s |
+| W-tap | 100–1 | 0 s | 79.90 s | 76 / 1.90 s |
+| Candidate modeling standstill | 100–9 | 5.35 s | 15.40 s | 22 / 1.55 s |
+
+All three passed input, reach and replication checks; the target pressed no
+movement keys and still moved from normal knockback. Each row is one game.
+W-tap's strict zero comes from the one-second hit-gap cutoff. Its 79.90-second
+contact sequence remains inside measured continuous opponent reach denial,
+with no accepted return hit. A finite test against a stationary opponent at
+one ping setting does not establish an indefinite lock against hold-W.
+[Control data and telemetry checks](experiments/standstill-controls.json).
+
 Every match records server trajectories and accepted hits in
 `runtime/replays/<match>.jsonl`, with client input/attack telemetry under
 `runtime/bots/<slot>/events.jsonl`. Export a finished match:
@@ -223,6 +287,10 @@ embedded, with no external resources. Sample recordings include historical
 spacing experiments and newer matches with the strict monotonic click cap.
 
 Qualified examples: [W-tap vs hold-W, 100–83](recordings/m0161.html),
+[W-tap vs the original candidate, 100–73](recordings/m0281.html),
+[candidate modeling W-tap, 100–91](recordings/m0304.html),
+[candidate vs standstill, 100–9](recordings/m0307.html),
+[W-tap vs standstill, 100–1](recordings/m0308.html),
 [a fresh selected-controller test, 100–65](recordings/m0257.html),
 [a selection game with a short lock, 100–68](recordings/m0241.html),
 [a reach-edge controller trial](recordings/m0168.html), and
