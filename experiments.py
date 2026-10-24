@@ -89,8 +89,13 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                             issues.add(f'{side}: player fell below the declared flat arena floor')
                         if event['type']=='science_move' and any(event[k].get('isCollidedHorizontally',False) for k in ('before','after')):
                             issues.add(f'{side}: unexpected horizontal block collision in flat arena')
-                        if event['type'] in ('momentum_plan','mpc_plan') and event['time']-event['observation_time']<150:
+                        if event['type'] in ('momentum_plan','mpc_plan','burst_plan') and event['time']-event['observation_time']<150:
                             issues.add(f'{side}: tactical plan reacted before150ms')
+                        if event['type']=='click' and parameters[result['policy_'+side]].get('click_mode')=='reactive-burst':
+                            if event['time']-event.get('burst_observation_time',event['time'])<150:
+                                issues.add(f'{side}: burst click missing delayed-observation evidence')
+                            if not any(event.get('burst_'+reason) for reason in ('opening','defensive','attack_window')):
+                                issues.add(f'{side}: burst click outside declared windows')
                         if event['type']=='engine_attack' and 'native_raycast_distance' in event:
                             if event['native_raycast_distance']>3.00001:issues.add(f'{side}: native attack exceeded three blocks')
                             if not all(event.get(k) for k in ('target_ready','target_loaded_identity','ray_selected_target')):issues.add(f'{side}: attack used an invalid native view')

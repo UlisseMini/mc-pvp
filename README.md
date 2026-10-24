@@ -60,6 +60,7 @@ shared: this first version is intended for **one human player at a time**.
 | `standstill` | Perfect aim and fixed clicks, no movement keys, ordinary knockback |
 | `wtap` | One short W release after a landed-hit cue |
 | `wtap-tick` | Experimental post-hit W release lasting exactly one movement update |
+| `wtap-tick-burst` | Same one-tick W-tap movement; 150 ms defensive click bursts after delayed hurt cues, plus predicted next-hit attempts |
 | `trade-wtap` | Post-hit reset that prefers to release just after receiving a hit |
 | `hit-reset` | Older confirmed-hit W-tap timing |
 | `periodic-tap` | Fixed-rhythm control experiment; not normal W-tapping |

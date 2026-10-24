@@ -29,6 +29,9 @@ public final class Client {
     static long heartbeatAt,respawnAt,probeAt;
     static final TargetWatchdog targetWatchdog=new TargetWatchdog();
     static final MomentumController momentum=new MomentumController();
+    static final BurstClickController burstClicks=new BurstClickController();
+    static BurstClickController.Decision burstDecision;
+    static long burstObservedAt;
     static boolean targetReady;
 
     static final class Observation {
@@ -115,7 +118,14 @@ public final class Client {
                 // The next input cannot occur until >=100 ms after this completed input.
                 lastClick=System.nanoTime();
                 ModelController.click(System.currentTimeMillis());
-                log(Map.of("type","click","time",System.currentTimeMillis(),"monotonic_ns",lastClick,"match",match,"forward",forward));
+                Map<String,Object> issued=new LinkedHashMap<>();
+                issued.put("type","click");issued.put("time",System.currentTimeMillis());issued.put("monotonic_ns",lastClick);
+                issued.put("match",match);issued.put("forward",forward);
+                if(controls.getProperty("click_mode","fixed").equals("reactive-burst")&&burstDecision!=null){
+                    issued.put("burst_opening",burstDecision.opening());issued.put("burst_defensive",burstDecision.defensive());
+                    issued.put("burst_attack_window",burstDecision.attackWindow());issued.put("burst_observation_time",burstObservedAt);
+                }
+                log(issued);
             }
         }catch(Throwable e){fail(e);}
     }
@@ -177,6 +187,7 @@ public final class Client {
                 sprintPulse=true;
                 ModelController.reset();
                 momentum.reset();
+                burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 targetWatchdog.reset();targetReady=false;
             }
             opponent=null;
@@ -395,6 +406,19 @@ public final class Client {
             // Deliberate burst cadence is a policy choice. No immunity-based click filtering.
             if(controls.getProperty("click_mode","fixed").equals("burst"))
                 clickGate=(now-epoch)%(long)number("burst_period_ms",500)<number("burst_on_ms",300);
+            if(controls.getProperty("click_mode","fixed").equals("reactive-burst")){
+                burstObservedAt=obs.time;
+                burstDecision=burstClicks.decide(new BurstClickController.Input(now,obs.time,lastObservedTargetHurt,lastObservedHurt,ping),
+                        BurstClickController.Settings.from(controls));
+                clickGate &= burstDecision.click();
+                Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","burst_plan");plan.put("time",now);
+                plan.put("monotonic_ns",System.nanoTime());plan.put("match",match);plan.put("native_tick",ticks);
+                plan.put("observation_time",obs.time);plan.put("landed_cue",lastObservedTargetHurt);plan.put("incoming_cue",lastObservedHurt);
+                plan.put("opening",burstDecision.opening());plan.put("defensive",burstDecision.defensive());
+                plan.put("attack_window",burstDecision.attackWindow());plan.put("defensive_until",burstDecision.defensiveUntil());
+                plan.put("estimated_ready_at",burstDecision.estimatedReadyAt());plan.put("attack_start_at",burstDecision.attackStartAt());
+                plan.put("click_gate",clickGate);log(plan);
+            }
             if(now-logAt>=50){
                 logAt=now;
                 Map<String,Object> entry=new LinkedHashMap<>();

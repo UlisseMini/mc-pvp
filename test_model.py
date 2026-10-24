@@ -25,6 +25,8 @@ class JavaModelTest(unittest.TestCase):
              str(lab.ROOT / 'src/lab/VisibleTracker.java'),
              str(lab.ROOT / 'src/lab/TargetWatchdog.java'),
              str(lab.ROOT / 'src/lab/MomentumController.java'),
+             str(lab.ROOT / 'src/lab/BurstClickController.java'),
+             str(lab.ROOT / 'tests/BurstClickControllerCheck.java'),
              str(lab.ROOT / 'tests/MomentumControllerCheck.java'),
              str(lab.ROOT / 'tests/NativeClockReplay.java'),
              str(lab.ROOT / 'tests/NativeClockReplayCheck.java'),
@@ -72,6 +74,12 @@ class JavaModelTest(unittest.TestCase):
                                 capture_output=True, text=True, timeout=10)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn('PASS', result.stdout)
+
+    def test_reactive_burst_uses_delayed_cues_and_preserves_retry_window(self):
+        result=subprocess.run([str(lab.JAVA),'-cp',str(self.classes),'BurstClickControllerCheck'],
+                              capture_output=True,text=True,timeout=10)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('PASS',result.stdout)
 
 
 if __name__ == '__main__':
