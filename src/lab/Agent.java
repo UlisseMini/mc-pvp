@@ -68,9 +68,30 @@ public final class Agent implements ClassFileTransformer {
                     }
                     changed = true;
                 } else if (name.equals("wn") && method.name.equals("d") && method.desc.equals("(Low;F)V")) {
+                    // Observe the actual vanilla blocking reduction, after immunity
+                    // acceptance and before armor. No predicate or damage is replaced.
+                    int originalDamage=method.maxLocals++;
+                    InsnList capture=new InsnList();capture.add(new VarInsnNode(Opcodes.FLOAD,2));
+                    capture.add(new VarInsnNode(Opcodes.FSTORE,originalDamage));method.instructions.insert(capture);
+                    int blockSites=0;
+                    for(AbstractInsnNode ins:method.instructions.toArray()){
+                        if(ins instanceof VarInsnNode store&&store.getOpcode()==Opcodes.FSTORE&&store.var==2
+                                &&ins.getPrevious()!=null&&ins.getPrevious().getOpcode()==Opcodes.FMUL
+                                &&ins.getPrevious().getPrevious() instanceof LdcInsnNode factor&&Float.valueOf(.5f).equals(factor.cst)){
+                            InsnList hook=new InsnList();hook.add(new VarInsnNode(Opcodes.ALOAD,0));hook.add(new VarInsnNode(Opcodes.ALOAD,1));
+                            hook.add(new VarInsnNode(Opcodes.FLOAD,originalDamage));hook.add(new VarInsnNode(Opcodes.FLOAD,2));
+                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Referee","blockedDamage","(Ljava/lang/Object;Ljava/lang/Object;FF)V",false));
+                            method.instructions.insert(ins,hook);blockSites++;
+                        }
+                    }
+                    if(blockSites!=1)throw new IllegalStateException("Expected one pinned vanilla sword-block reduction, found "+blockSites);
                     for (AbstractInsnNode ins : method.instructions.toArray()) if (ins.getOpcode() == Opcodes.RETURN)
                         method.instructions.insertBefore(ins, callThis("lab/Referee", "restoreHealth"));
                     changed = true;
+                } else if(name.equals("bcy")&&method.name.equals("a")&&method.desc.equals("(Lgs;)V")){
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)
+                        method.instructions.insertBefore(ins,callPair("lab/PracticeProbe","sound"));
+                    changed=true;
                 } else if(name.equals("bcy")&&method.name.equals("a")&&method.desc.equals("(Lhm;)V")){
                     for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN){
                         InsnList hook=new InsnList();hook.add(new VarInsnNode(Opcodes.ALOAD,1));

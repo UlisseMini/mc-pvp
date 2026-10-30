@@ -19,7 +19,8 @@ individual equations are much better checked than its full-fight forecasts.
 
 1. Open Minecraft Java **1.8.9** in your normal launcher.
 2. Choose **Multiplayer → Direct Connect** and enter **127.0.0.1:25565**.
-3. Type **`/bots`** and click a bot to fight it. Each duel is first to 100 hits.
+3. Type **`/bots`** and click a bot to fight it. Boxing is first to 100 hits.
+   For full diamond armor and a fight to death, use **`/duel wtap diamond`**.
 
 The server is already set up on this Mac. If it is stopped, double-click
 **Start PvP Lab.command** in this folder and leave its Terminal window open.
@@ -30,6 +31,11 @@ An “already running” message means you can join immediately.
 | `/bots` | Clickable roster, including saved search candidates |
 | `/bots all` | Include every saved tuning candidate |
 | `/duel hold-w` | Fight the simplest baseline |
+| `/duel wtap diamond` | Full unenchanted diamond armor and sword; real health, hunger and regeneration; fight to death |
+| `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
+| `/mode diamond` / `/mode boxing` | Choose the default mode for subsequent `/duel` and roster clicks in this session |
+| `/blocksound test` | Preview the private chime for a successful sword block |
+| `/blocksound on` / `/blocksound off` | Enable or mute that chime; enabled by default |
 | `/duel predictive` | Fight the hand-written spacing controller |
 | `/duel standstill` | Fight a clicking opponent that presses no movement keys; knockback still moves it |
 | `/duel zest-w 20 100` | Fight W-only Zest: bot RTT 20 ms, your added RTT 100 ms |
@@ -39,7 +45,7 @@ An “already running” message means you can join immediately.
 | `/ping me 20` | Set your added RTT to 20 ms during the duel |
 | `/ping bot 100` | Set the bot's added RTT to 100 ms during the duel |
 | `/ping 20 100` | Set both: player RTT first, then bot RTT |
-| `/rematch` | Same bot and simulated pings again |
+| `/rematch` | Same bot, mode and simulated pings again; after a death, click Respawn first |
 | `/stop` | End your duel or leave spectator mode; return to the lobby |
 | `/matches` | Clickable list of ongoing matches |
 | `/watch` | Spectate an ongoing match; click a follow-camera button |
@@ -54,6 +60,25 @@ experiment scheduler uses at most six so human challenges have spare slots.
 RTTs are **added**, symmetric network delay. Your own real connection and normal
 Minecraft tick/interpolation delays remain. The human-facing latency setting is
 shared: this first version is intended for **one human player at a time**.
+
+Successful sword blocks play a short `note.pling` only to the blocking player.
+The server observes the actual vanilla damage-reduction branch, after attack
+acceptance and before armor. Merely holding right-click, an opponent's miss, or
+an attack rejected during immunity produces no chime. Accepted damage upgrades
+can produce a chime when blocking really reduces them. Sound arrives with the
+normal server-to-client network delay; no client mod or resource pack is needed.
+The action bar also counts successful blocks for each player. Use
+`/blocksound test` to check your sound settings.
+
+Diamond mode starts each player at ten hearts, full hunger and normal starting
+saturation, with a fresh unenchanted diamond sword and all four diamond armor
+pieces. Native armor, durability, damage, hunger and natural regeneration run
+normally at Normal difficulty. The round ends on death; inventory is retained
+through respawn and the next duel supplies a fresh kit. Boxing continues to
+restore health and food, with its established first-to-100 scoring. Existing
+bot algorithms and click ceilings apply in both modes.
+The [practice verification notes](experiments/PRACTICE-NOTES.md) include native
+blocking, sound-delivery, death and rematch evidence.
 
 ## Controllers and rules
 
@@ -94,8 +119,9 @@ shared: this first version is intended for **one human player at a time**.
 
 - Normal speed, no potions, no enchantments, flat full-block ground, diamond swords.
   Arena centers use bedrock with the same slipperiness as grass to prevent holes.
-- First to 100 **server-accepted attacks**. Health is restored after real damage
-  so a duel can continue; knockback, damage immunity and critical-hit logic run.
+- Boxing: first to 100 **server-accepted attacks**. Health is restored after real
+  damage so a duel can continue; knockback, damage immunity and critical-hit logic run.
+  Diamond mode instead uses real health and ends on death.
 - Perfect aim uses the current **local client view**. It does not read server
   positions or aim at removed entity copies left over from teleports.
 - W or release and the normal sprint key. Only the explicitly named Zest

@@ -226,6 +226,7 @@ public final class Client {
                 if(scriptIndex<script.length){String[] step=script[scriptIndex].split(":",2);if(now-scriptStarted>=Long.parseLong(step[0])){R.call(player,"sendChatMessage",step[1]);scriptIndex++;}}
                 if(now-scriptStarted>Long.parseLong(System.getProperty("lab.test_duration","20000")))R.call(mc,"shutdown");
             }
+            if(PracticeProbe.input(mc,player,now-scriptStarted))return;
             String next=controls.getProperty("match","");
             if(!next.equals(match)){
                 match=next;epoch=Long.parseLong(controls.getProperty("start_at",Long.toString(now)));history.clear();previous=null;lastConsumed=null;lastClick=firstClickEligible=0;

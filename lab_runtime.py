@@ -144,7 +144,7 @@ spawn-animals=false
 spawn-npcs=false
 generate-structures=false
 gamemode=0
-difficulty=0
+difficulty=2
 pvp=true
 allow-flight=true
 motd=Local PvP Lab - /bots /matches /watch
@@ -220,7 +220,8 @@ async def serve(frame_sleep_ms=10):
             if not initialized:
                 status=json.loads((RUNTIME/'status.json').read_text())
                 if len([p for p in status['players'] if p.startswith('LabSlot')])==BOT_SLOTS:
-                    initialized=True;print('All clients connected. /bots, /duel <bot>, /matches, /watch.',flush=True)
+                    server.stdin.write('gamerule naturalRegeneration true\ngamerule keepInventory true\n');server.stdin.flush()
+                    initialized=True;print('All clients connected. /bots, /duel <bot>, /mode diamond, /blocksound, /matches, /watch.',flush=True)
             for request in sorted((RUNTIME/'manager/inbox').glob('*.json')):
                 payload=json.loads(request.read_text());request.unlink()
                 command=payload['command']
@@ -237,7 +238,7 @@ async def serve(frame_sleep_ms=10):
                         await asyncio.sleep(.4);start_bot(i,i+1);reloaded.append(i)
                     print('Reloaded idle bot clients '+str(reloaded)+'; active duels keep running.',flush=True)
                     continue
-                if not command.startswith(('lab match ','lab ping ','lab scenario ')):continue
+                if not command.startswith(('lab match ','lab diamond ','lab ping ','lab scenario ')):continue
                 if not all(c.isalnum() or c in '-_ ./' for c in command):continue
                 server.stdin.write(command+'\n');server.stdin.flush()
             await asyncio.sleep(.1)

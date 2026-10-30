@@ -87,6 +87,7 @@ TEMPLATE=r'''<!doctype html>
 <script>
 'use strict';
 const D=JSON.parse(document.getElementById('data').textContent),M=D.match,T=D.ticks,start=M.start,end=D.result.finish,duration=end-start;
+const diamond=M.mode==='diamond',rules=diamond?'full diamond · fight to death':M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 accepted attacks';
 const $=id=>document.getElementById(id), colors=['#75ddc9','#f6b78e'];
 $('provenance').textContent=D.qualification?.passed?'PvP Lab · native engine · input and replication checks passed':D.input_clock_verified?'PvP Lab · preliminary recording · replication unqualified':'PvP Lab · historical preliminary recording · old input clock';
 if(D.qualification?.issues?.length)$('provenance').textContent+=' · '+D.qualification.issues.join('; ');
@@ -95,7 +96,7 @@ if(D.combat_metrics){const c=D.combat_metrics;const describe=s=>`${s.toUpperCase
 if(D.combat_metrics?.a?.native_denial_contact_sequence){const describe=s=>{const v=D.combat_metrics[s].native_denial_contact_sequence;return `${s.toUpperCase()}: ${(v.duration_ms/1000).toFixed(2)} s denial contact sequence, ${v.fresh_contacts} fresh hits, largest hit gap ${v.max_contact_gap_ms===null?'unavailable':(v.max_contact_gap_ms/1000).toFixed(2)+' s'}`;};$('sequences').textContent=describe('a')+' · '+describe('b')+'. These sequences require continuous measured defender reach denial and no accepted return hit, with no maximum contact-gap cutoff. The strict combo above caps hit gaps at one second.';}
 if(D.native_hit_counts){const h=D.native_hit_counts;$('fresh').textContent=`Final fresh hits: A ${h.a.fresh} / B ${h.b.fresh}. Within-immunity damage upgrades: A ${h.a.upgrades} / B ${h.b.upgrades}. The scoreboard and graph count both; this is not a first-to-100-fresh race.`;}
 $('title').textContent=`${M.policy_a} vs ${M.policy_b}`;
-$('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${M.ping_a}/${M.ping_b} ms · ${M.reaction_ms_a??150}/${M.reaction_ms_b??150} ms tactical reaction · CPS ceilings ${M.click_cps_a??(M.policy_a==='human'?'human':10)}/${M.click_cps_b??10} · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 accepted attacks'}`;
+$('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${M.ping_a}/${M.ping_b} ms · ${M.reaction_ms_a??150}/${M.reaction_ms_b??150} ms tactical reaction · CPS ceilings ${M.click_cps_a??(M.policy_a==='human'?'human':10)}/${M.click_cps_b??10} · ${rules}`;
 $('aname').textContent=M.policy_a;$('bname').textContent=M.policy_b;$('scrub').max=duration;
 let now=0,playing=false,previousFrame=performance.now();
 function last(items,time){let lo=0,hi=items.length;while(lo<hi){let mid=(lo+hi)>>1;if(items[mid].time<=time)lo=mid+1;else hi=mid;}return items[Math.max(0,lo-1)];}
@@ -106,8 +107,10 @@ function line(x,a,b,c,d,color,width=1){x.strokeStyle=color;x.lineWidth=width;x.b
 function render(){
  const time=start+now, tick=last(T,time),p=[tick.a,tick.b],hit=last(D.hits,time),scores=hit&&hit.time<=time?[hit.hits_a,hit.hits_b]:[0,0];
  const change=last(D.ping_changes||[],time),latency=change&&change.time<=time?change:M;
- $('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${latency.ping_a}/${latency.ping_b} ms · ${M.reaction_ms_a??150}/${M.reaction_ms_b??150} ms tactical reaction · CPS ceilings ${M.click_cps_a??(M.policy_a==='human'?'human':10)}/${M.click_cps_b??10} · ${M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 accepted attacks'}`;
- $('ascore').textContent=`${scores[0]} / 100`;$('bscore').textContent=`${scores[1]} / 100`;
+ $('subtitle').textContent=`${M.id} · Minecraft Java 1.8.9 · RTT ${latency.ping_a}/${latency.ping_b} ms · ${M.reaction_ms_a??150}/${M.reaction_ms_b??150} ms tactical reaction · CPS ceilings ${M.click_cps_a??(M.policy_a==='human'?'human':10)}/${M.click_cps_b??10} · ${rules}`;
+ const health=s=>now>=duration?D.result['health_'+s]:tick['health_'+s];
+ $('ascore').textContent=diamond?`${(Math.max(0,health('a')??20)/2).toFixed(1)} hearts`:`${scores[0]} / 100`;
+ $('bscore').textContent=diamond?`${(Math.max(0,health('b')??20)/2).toFixed(1)} hearts`:`${scores[1]} / 100`;
  $('time').textContent=`${(now/1000).toFixed(1)} / ${(duration/1000).toFixed(1)} s`;
  const gap=Math.hypot(p[0].posX-p[1].posX,p[0].posZ-p[1].posZ);$('gap').textContent=`Horizontal gap ${gap.toFixed(2)} m`;
  for(const [i,s] of ['a','b'].entries()){const o=last(obs[s],time),live=o&&o.time<=time,control=live?(o.forward?'W down':'W released'):M['policy_'+s]==='human'?'Human inputs not logged':'Waiting';$(s+'state').textContent=`${control} · ${p[i].sprint?'server sprinting':'server not sprinting'} · height ${(p[i].posY-4).toFixed(2)} m`;}
