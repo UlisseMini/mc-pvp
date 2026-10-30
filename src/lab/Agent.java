@@ -31,7 +31,7 @@ public final class Agent implements ClassFileTransformer {
             ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES);logging.accept(out);return out.toByteArray();
         }
         if (name == null || !(name.equals("ave") || name.equals("j") || name.equals("pr")
-                || name.equals("wn") || name.equals("bcy") || name.equals("bex") || name.equals("hm")
+                || name.equals("wn") || name.equals("bcy") || name.equals("bex") || name.equals("hm") || name.equals("bfk")
                 || name.equals("lh") || name.equals("lm") || name.equals("ek") || name.equals("net/minecraft/server/MinecraftServer"))) return null;
         try {
             ClassNode node = new ClassNode();
@@ -46,6 +46,19 @@ public final class Agent implements ClassFileTransformer {
                     method.instructions.insert(callThis("lab/ScienceTrace","clickBefore"));
                     for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)
                         method.instructions.insertBefore(ins,callThis("lab/ScienceTrace","clickAfter"));
+                    changed=true;
+                } else if(name.equals("bfk")&&method.name.equals("a")&&method.desc.equals("(F)V")){
+                    // Explicit practice reach: keep native occlusion, target boxes,
+                    // selection, and ordinary attack input. Defaults return 3.0.
+                    int limits=0,rays=0;
+                    for(AbstractInsnNode ins:method.instructions.toArray()){
+                        if(ins instanceof LdcInsnNode value&&Double.valueOf(3.0).equals(value.cst)){
+                            method.instructions.set(ins,new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","attackReach","()D",false));limits++;
+                        }else if(ins instanceof MethodInsnNode call&&call.owner.equals("bda")&&call.name.equals("d")&&call.desc.equals("()F")){
+                            method.instructions.insert(ins,new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","selectionRayLength","(F)F",false));rays++;
+                        }
+                    }
+                    if(limits!=2||rays!=1)throw new IllegalStateException("Pinned native raycast shape changed: "+limits+" limits, "+rays+" rays");
                     changed=true;
                 } else if (name.equals("net/minecraft/server/MinecraftServer") && method.name.equals("A") && method.desc.equals("()V")) {
                     for (AbstractInsnNode ins : method.instructions.toArray()) if (ins.getOpcode() == Opcodes.RETURN)

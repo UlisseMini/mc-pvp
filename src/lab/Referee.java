@@ -13,6 +13,7 @@ public final class Referee {
     static final Set<String> greeted=new HashSet<>();
     static final Map<String,String> lastDuels=new HashMap<>();
     static final Map<String,double[]> lastPings=new HashMap<>();
+    static final Map<String,Properties> lastOverrides=new HashMap<>();
     static final Map<String,String> preferredModes=new HashMap<>(),lastModes=new HashMap<>();
     static final Set<String> mutedBlockSounds=new HashSet<>(),pendingLobby=new HashSet<>();
     static final Map<String,String> watching=new HashMap<>();
@@ -45,6 +46,8 @@ public final class Referee {
             m.put("reaction_ms_b",Integer.parseInt(configB.getProperty("reaction_ms","150")));
             m.put("click_cps_a",pa.equals("human")?null:ClickRate.cps(configA));
             m.put("click_cps_b",pb.equals("human")?null:ClickRate.cps(configB));
+            m.put("attack_reach_a",DuelSettings.reach(configA));m.put("attack_reach_b",DuelSettings.reach(configB));
+            m.put("modified_reach",DuelSettings.reach(configA)!=3||DuelSettings.reach(configB)!=3);
             m.put("armor_protection",boxing()?0:4);m.put("weapon",box()?"wooden_sword":"diamond_sword");
             m.put("arena_surface",box()?"bedrock_1x1_interior_y4_5_barrier_ceiling_y6":"bedrock_y3_air_y4_19_radius128_verified_v3");return m;
         }
@@ -61,6 +64,7 @@ public final class Referee {
             }
             if(policies.isEmpty())loadPolicies();
             List<?> people=players();
+            greeted.retainAll(people.stream().map(R::name).toList());
             if(ticks%20==0)for(Object p:people)fullFood(p);
             for(String name:new ArrayList<>(pendingLobby)){
                 Object p=player(name);
@@ -82,7 +86,9 @@ public final class Referee {
                 if(greeted.add(name)){
                     fullFood(p);
                     if(isBot(name)){vanilla("gamemode 3 "+name);teleport(p,-40-Integer.parseInt(name.substring(7))*6,4,0);disable(name);}
-                    else {teleport(p,0,4,0);message(p,"PvP Lab: /bots; /mode diamond or rod_diamond for health duels; /mode diamond_box for 1x1 blockhitting; /mode boxing for 100 hits. Successful blocks play a chime (/blocksound). /help lab for controls.");}
+                    else {double ping=preferredPing(name);rememberPing(name,ping);configureProxy(name,ping);
+                        teleport(p,0,4,0);message(p,"PvP Lab: /bots; /mode diamond or rod_diamond for health duels; /mode diamond_box for 1x1 blockhitting; /mode boxing for 100 hits. Successful blocks play a chime (/blocksound). /help lab for controls.");
+                        message(p,"§bYour saved added RTT: "+(int)ping+" ms. §7Change it anytime with §b/ping me <ms>§7.");}
                 }
             }
             for(Match m:new ArrayList<>(matches.values())){
@@ -228,7 +234,7 @@ public final class Referee {
                 else if(args.length!=1)throw new IllegalArgumentException("Usage: /blocksound on, off, or test");
                 message(sender,"Successful-block sound: "+(mutedBlockSounds.contains(name)?"OFF":"ON")+". /blocksound test previews it.");
             }else if(cmd.equals("bots")){
-                loadPolicies();message(sender,"Choose a bot with /duel <name>. Mode: "+preferredModes.getOrDefault(R.name(sender),"boxing")+". Optional: /duel <name> [boxing|diamond|diamond_box|rod_diamond] [bot RTT] [your RTT].");
+                loadPolicies();message(sender,"Choose a bot with /duel <name>. Mode: "+preferredModes.getOrDefault(R.name(sender),"boxing")+". Options: reach=3.5 cps=15 ping=100. Your ping is saved; /ping me <ms>.");
                 button(sender,"Switch to boxing","/mode boxing");button(sender,"Switch to full diamond","/mode diamond");
                 button(sender,"Switch to 1x1 diamond box","/mode diamond_box");
                 button(sender,"Switch to rod diamond","/mode rod_diamond");
@@ -258,18 +264,22 @@ public final class Referee {
                 if(!(Boolean)R.call(sender,"isEntityAlive"))throw new IllegalArgumentException("Respawn first, then use /rematch or /duel.");
                 String policy=cmd.equals("rematch")?lastDuels.get(name):(args.length>1?args[1]:null);
                 if(policy==null){message(sender,"Usage: /duel <bot>. Use /bots for the list.");return true;}
-                double[] prior=lastPings.getOrDefault(name,new double[]{0,0});
-                int offset=2;String selectedMode=cmd.equals("rematch")?lastModes.getOrDefault(name,"boxing"):preferredModes.getOrDefault(name,"boxing");
-                if(cmd.equals("duel")&&args.length>2&&MODES.contains(args[2])){selectedMode=mode(args[2]);offset++;}
-                if(cmd.equals("duel")&&args.length>offset+2)throw new IllegalArgumentException("Usage: /duel <bot> [boxing|diamond|diamond_box|rod_diamond] [bot RTT] [your RTT]");
-                double botPing=cmd.equals("rematch")?prior[0]:(args.length>offset?ping(args[offset]):0);
-                double humanPing=cmd.equals("rematch")?prior[1]:(args.length>offset+1?ping(args[offset+1]):0);
+                boolean rematch=cmd.equals("rematch");double[] prior=lastPings.getOrDefault(name,new double[]{0,0});
+                String selectedMode=rematch?lastModes.getOrDefault(name,"boxing"):preferredModes.getOrDefault(name,"boxing");
+                DuelSettings setup=DuelSettings.parse(args,rematch?1:2,selectedMode,rematch?prior[0]:0,preferredPing(name),
+                    rematch?lastOverrides.getOrDefault(name,new Properties()):new Properties());
                 String bot=freeBot(Set.of());if(bot==null){message(sender,"All bot slots are busy. Try again shortly.");return true;}
-                loadPolicies();start(name,bot,"human",policy,humanPing,botPing,"human-"+System.nanoTime(),0,selectedMode);
-                lastDuels.put(name,policy);lastPings.put(name,new double[]{botPing,humanPing});lastModes.put(name,selectedMode);
+                loadPolicies();start(name,bot,"human",policy,setup.humanPing,setup.botPing,"human-"+System.nanoTime(),0,setup.mode,setup.overrides);
+                rememberPing(name,setup.humanPing);lastDuels.put(name,policy);lastPings.put(name,new double[]{setup.botPing,setup.humanPing});
+                lastModes.put(name,setup.mode);lastOverrides.put(name,setup.overrides);
             }else if(cmd.equals("ping")){
-                Match m=find(R.name(sender));
-                if(m==null){message(sender,"Start a duel first. /duel <bot> [bot RTT] [your RTT]. In a duel: /ping me 20; /ping bot 100; /ping 20 100.");return true;}
+                String name=safeName(sender);Match m=find(name);
+                if(m==null){
+                    if(args.length==3&&(args[1].equals("me")||args[1].equals("player"))){
+                        double ping=ping(args[2]);rememberPing(name,ping);configureProxy(name,ping);
+                    }else if(args.length!=1)throw new IllegalArgumentException("In the lobby, use /ping me <ms>. Set a bot's ping in /duel <bot> ping=<ms>.");
+                    message(sender,"§bYour saved added RTT: "+preferredPing(name)+" ms. §7Applies to future matches. /ping me <ms> changes it; /ping me 0 resets it.");return true;
+                }
                 if(!m.pa.equals("human")){message(sender,"Use /lab ping <match> <RTT-a> <RTT-b> for bot matches.");return true;}
                 if(args.length==3 && (args[1].equals("me")||args[1].equals("player")))changePings(m,ping(args[2]),m.pingB);
                 else if(args.length==3 && args[1].equals("bot"))changePings(m,m.pingA,ping(args[2]));
@@ -298,7 +308,7 @@ public final class Referee {
             }else if(cmd.equals("lab")&&args.length>=3&&args[1].equals("goal")){
                 message(sender,"Ladder matches always run to 100 accepted hits.");
             }else{
-                message(sender,"/bots; /mode boxing|diamond|diamond_box|rod_diamond; /duel <bot> [boxing|diamond|diamond_box|rod_diamond] [bot RTT] [your RTT]; /blocksound on|off|test; /ping me <RTT>; /ping bot <RTT>; /rematch; /stop; /matches; /watch [match]. All RTTs in milliseconds.");
+                message(sender,"/bots; /mode boxing|diamond|diamond_box|rod_diamond; "+DuelSettings.USAGE+"; /blocksound on|off|test; /ping me <RTT>; /ping bot <RTT>; /rematch [options]; /stop; /matches; /watch [match]. Reach 1–5 blocks; CPS 1–30; added RTT 0–500 ms. Your ping is saved.");
             }
         }catch(Throwable e){e.printStackTrace();message(sender,"§cLab: "+e.getMessage());}
         return true;
@@ -321,6 +331,9 @@ public final class Referee {
     }
     static String mode(String value){if(!MODES.contains(value))throw new IllegalArgumentException("Mode must be boxing, diamond, diamond_box, or rod_diamond");return value;}
     static void start(String a,String b,String pa,String pb,double pingA,double pingB,String request,long duration,String selectedMode)throws Exception{
+        start(a,b,pa,pb,pingA,pingB,request,duration,selectedMode,new Properties());
+    }
+    static void start(String a,String b,String pa,String pb,double pingA,double pingB,String request,long duration,String selectedMode,Properties overridesB)throws Exception{
         if(a.equals(b)||find(a)!=null||find(b)!=null)throw new IllegalArgumentException("A player cannot be assigned to two matches");
         if(!pa.equals("human")&&!policies.containsKey(pa)||!policies.containsKey(pb))throw new IllegalArgumentException("Unknown bot; use /bots.");
         Match m=new Match();m.mode=mode(selectedMode);m.goal=m.boxing()?100:0;m.request=request;if(duration>0){m.scenario=true;m.durationMs=duration;}
@@ -328,6 +341,8 @@ public final class Referee {
         m.a=a;m.b=b;m.pa=pa;m.pb=pb;m.pingA=m.initialPingA=pingA;m.pingB=m.initialPingB=pingB;m.start=System.currentTimeMillis()+3000;
         if(!pa.equals("human"))m.configA.putAll(policies.get(pa));else m.configA.setProperty("kind","human");
         m.configB.putAll(policies.get(pb));
+        m.configB.putAll(overridesB);
+        ClickRate.cps(m.configA);ClickRate.cps(m.configB);DuelSettings.reach(m.configA);DuelSettings.reach(m.configB);
         Set<Integer> used=new HashSet<>();for(Match current:matches.values())used.add(current.arena);
         while(used.contains(m.arena))m.arena++;
         Object arenaWorld=R.get(player(a),"worldObj");
@@ -353,6 +368,10 @@ public final class Referee {
         String rules=m.boxing()?"Boxing: first to 100 hits.":(m.box()?"Diamond box: 1x1, unbreakable wooden swords":m.rods()?"Rod diamond: diamond swords and fishing rods with PvP knockback":"Diamond: diamond swords")+", Protection IV diamond armor, fight to death. Respawn, then /rematch.";
         message(player(a),"§aStarting "+m.id+": §b"+pa+" §7vs §6"+pb+"§7. "+rules+" §b/stop §7to exit.");
         message(player(b),"§aStarting "+m.id+": §b"+pa+" §7vs §6"+pb+"§7. "+rules);
+        if(pa.equals("human")){
+            message(player(a),"§6Bot setup: §e"+ClickRate.cps(m.configB)+" CPS cap §8| §d"+DuelSettings.reach(m.configB)+" block reach §8| §bRTT: bot "+(int)pingB+", you "+(int)pingA+" ms");
+            if(DuelSettings.reach(m.configB)!=3)message(player(a),"§dModified-reach practice. Your own reach is unchanged.");
+        }
         System.out.println("[PvP Lab] START "+Json.encode(m.state()));
     }
     static void seatPlayers(Match m,Object a,Object b){
@@ -465,15 +484,29 @@ public final class Referee {
     }
     static void control(String who,String policy,String opponent,Match m,double ping,double oppPing){
         if(!isBot(who))return;
-        Properties p=new Properties();p.putAll(policies.get(policy));p.setProperty("enabled","true");p.setProperty("opponent",opponent);
+        Properties p=new Properties();p.putAll(who.equals(m.a)?m.configA:m.configB);p.setProperty("enabled","true");p.setProperty("opponent",opponent);
         p.setProperty("match",m.id);p.setProperty("start_at",Long.toString(m.start));p.setProperty("ping",Double.toString(ping));p.setProperty("opponent_ping",Double.toString(oppPing));
         R.writeProperties(DATA.resolve("bots/"+who.substring(7)+"/control.properties"),p);
     }
     static void disable(String who){if(isBot(who)){Properties p=new Properties();p.setProperty("enabled","false");R.writeProperties(DATA.resolve("bots/"+who.substring(7)+"/control.properties"),p);}}
-    static void configureProxy(String who,double ping){Properties p=new Properties();p.setProperty("rtt_ms",Double.toString(ping));R.writeProperties(DATA.resolve("proxy/"+(isBot(who)?"slot"+who.substring(7):who.equals("LabObserver")?"observer":"human")+".properties"),p);}
+    static Path proxyPath(String who){return DATA.resolve("proxy/"+(isBot(who)?"slot"+who.substring(7):who.equals("LabObserver")?"observer":"human")+".properties");}
+    static Path preferencePath(String name){
+        if(!name.matches("[A-Za-z0-9_]{1,16}"))throw new IllegalArgumentException("Invalid player name");
+        return DATA.resolve("preferences/"+name.toLowerCase(Locale.ROOT)+".properties");
+    }
+    static double preferredPing(String name){
+        Properties saved=R.properties(preferencePath(name));
+        // Migrate the existing single-human proxy setting on the first login.
+        return ping(saved.getProperty("human_ping",R.properties(proxyPath(name)).getProperty("rtt_ms","0")));
+    }
+    static void rememberPing(String name,double ping){
+        Properties saved=R.properties(preferencePath(name));saved.setProperty("human_ping",Double.toString(ping));R.writeProperties(preferencePath(name),saved);
+    }
+    static void configureProxy(String who,double ping){Properties p=new Properties();p.setProperty("rtt_ms",Double.toString(ping));R.writeProperties(proxyPath(who),p);}
     static void changePings(Match m,double a,double b){
         m.pingA=a;m.pingB=b;m.pingChanges++;configureProxy(m.a,a);configureProxy(m.b,b);
         updateBotPing(m.a,a,b);updateBotPing(m.b,b,a);
+        if(m.pa.equals("human")){rememberPing(m.a,a);lastPings.put(m.a,new double[]{b,a});}
         append(m.replay,Map.of("type","ping_change","time",System.currentTimeMillis(),"ping_a",a,"ping_b",b));
     }
     static void updateBotPing(String name,double own,double other){
@@ -496,6 +529,7 @@ public final class Referee {
                 (m.winner.equals(who)?"§aYOU WON":(who.equals(m.a)||who.equals(m.b)?"§cYOU LOST":"§aWinner"))+
                 " §7• §f"+(isBot(m.winner)?(m.winner.equals(m.a)?m.pa:m.pb):m.winner);
             message(p,"§6§lFinished "+m.id+" §r§8["+m.mode+"] §7— "+outcome);
+            if(DuelSettings.reach(m.configA)!=3||DuelSettings.reach(m.configB)!=3)message(p,"§dModified reach: "+DuelSettings.reach(m.configA)+" / "+DuelSettings.reach(m.configB)+" blocks (first / second player).");
             m.sa.summary(p,summaryName(m.a,m.pa,who,"§b"),m.ha,m.ba,m.rods(),(Number)result.get("health_a"));
             m.sb.summary(p,summaryName(m.b,m.pb,who,"§6"),m.hb,m.bb,m.rods(),(Number)result.get("health_b"));
             message(p,"§8Crits and rod contacts are included in hits. Health/damage in hearts.");
@@ -530,7 +564,7 @@ public final class Referee {
     static Object player(String name){for(Object p:players())if(R.name(p).equals(name))return p;return null;}
     static String freeBot(Set<String> excluded){for(Object p:players()){String n=R.name(p);if(isBot(n)&&find(n)==null&&!excluded.contains(n)&&(Boolean)R.call(p,"isEntityAlive"))return n;}return null;}
     static Map<String,Object> position(Object p){Map<String,Object> pos=new LinkedHashMap<>();for(String key:List.of("posX","posY","posZ","motionX","motionY","motionZ","hurtResistantTime"))pos.put(key,R.num(p,key));pos.put("sprint",R.call(p,"isSprinting"));return pos;}
-    static double ping(String s){double p=Double.parseDouble(s);if(!Double.isFinite(p)||p<0||p>500)throw new IllegalArgumentException("Ping must be 0–500 ms.");return p;}
+    static double ping(String s){return DuelSettings.ping(s);}
     static String safeName(Object sender){String n=R.name(sender);if(!n.matches("[A-Za-z0-9_]{1,16}"))throw new IllegalArgumentException("Invalid player name");return n;}
     static void teleport(Object p,double x,double y,double z){R.call(p,"setPositionAndUpdate",x,y,z);settleTeleport(p);}
     static void settleTeleport(Object p){

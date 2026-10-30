@@ -25,13 +25,15 @@ def audit():
         overlap=[q['id'] for q in results if q['id']!=r['id'] and q['start']-3000<r['finish'] and q['finish']>r['start']-3000 and r['b']in(q['a'],q['b'])]
         if overlap:issues.append('Overlapping bot assignment')
         attacks=[e for e in es if e['type']=='engine_attack'];measured=[e for e in attacks if 'native_raycast_distance'in e]
-        legal=all(e['native_raycast_distance']<=3.00001 and e['ray_selected_target'] and e['target_ready'] and e['target_loaded_identity']for e in measured)
+        reach=r.get('attack_reach_b',3.0)
+        legal=all(e['native_raycast_distance']<=reach+.00001 and e['ray_selected_target'] and e['target_ready'] and e['target_loaded_identity']for e in measured)
         if not legal:issues.append('Attack failed native ray/live-target evidence')
         report.append({'match':r['id'],'bot':r['policy_b'],'score_human_bot':[r['hits_a'],r['hits_b']],
+            'configured_attack_reach':reach,'modified_reach':r.get('modified_reach',False),
             'issues':issues,'overlapping_assignments':overlap,'target_tick_min':min(ticking,default=None),'target_tick_max':max(ticking,default=None),
             'engine_attacks':len(attacks),'attacks_with_distance_evidence':len(measured),
             'max_native_raycast_distance':max((e['native_raycast_distance']for e in measured),default=None),
-            'interpretation':'guarded_invalid' if blocked else 'invalid_frozen_target' if frozen else 'qualified_native_attack_evidence' if measured and legal and ticking else 'historical_unqualified'})
+            'interpretation':'guarded_invalid' if blocked else 'invalid_frozen_target' if frozen else 'modified_reach_practice' if r.get('modified_reach') and legal else 'qualified_native_attack_evidence' if measured and legal and ticking else 'historical_unqualified'})
     return {'method':'Client native tick progress, runtime integrity guards, attack ray evidence and recorded match-assignment intervals. Historical missing evidence is not proof of validity.','duels':report}
 
 if __name__=='__main__':

@@ -43,6 +43,7 @@ enabling RCON or opening another network port.
 | `/duel wtap rod_diamond` | Same Protection IV diamond kit, plus a fishing rod in hotbar slot 2 for both players; existing bots keep using their sword |
 | `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full Protection IV diamond armor; successful blocks play your chime |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
+| `/duel wtap rod_diamond reach=3.5 cps=15 ping=100` | Custom practice bot: 3.5-block reach, 15 CPS ceiling, 100 ms added bot RTT; keeps your saved ping |
 | `/mode rod_diamond` / `/mode diamond_box` / `/mode diamond` / `/mode boxing` | Choose the default mode for subsequent `/duel` and roster clicks in this session |
 | `/blocksound test` | Preview the private chime for a successful sword block |
 | `/blocksound on` / `/blocksound off` | Enable or mute that chime; enabled by default |
@@ -51,11 +52,12 @@ enabling RCON or opening another network port.
 | `/duel zest-w 20 100` | Fight W-only Zest: bot RTT 20 ms, your added RTT 100 ms |
 | `/duel zest-strafe` | Fight the version allowed to use normal A/D keys |
 | `/duel burst 120 20` | Add 120 ms RTT to the bot and 20 ms to yourself |
-| `/ping` | Show your duel's current added RTTs |
-| `/ping me 20` | Set your added RTT to 20 ms during the duel |
+| `/ping` | Show current duel RTTs, or your saved ping in the lobby |
+| `/ping me 20` | Set and save your added RTT; works in the lobby or during a duel, and persists across matches/reconnects/restarts |
 | `/ping bot 100` | Set the bot's added RTT to 100 ms during the duel |
 | `/ping 20 100` | Set both: player RTT first, then bot RTT |
-| `/rematch` | Same bot, mode and simulated pings again; after a death, click Respawn first |
+| `/rematch` | Same bot, mode, reach/CPS overrides and bot ping, using your saved player ping; after a death, click Respawn first |
+| `/rematch cps=20` | Repeat the setup while changing only the bot's CPS ceiling |
 | `/stop` | End your duel or leave spectator mode; return to the lobby |
 | `/matches` | Clickable list of ongoing matches |
 | `/watch` | Spectate an ongoing match; click a follow-camera button |
@@ -70,6 +72,24 @@ experiment scheduler uses at most six so human challenges have spare slots.
 RTTs are **added**, symmetric network delay. Your own real connection and normal
 Minecraft tick/interpolation delays remain. The human-facing latency setting is
 shared: this first version is intended for **one human player at a time**.
+
+Optional duel settings are `reach=`, `cps=`, `ping=` (or `botping=`), and
+`myping=`. Reach accepts **1–5 blocks**, CPS accepts **1–30 whole clicks per
+second**, and added ping accepts **0–500 ms RTT**. CPS is the physical-input
+ceiling; a burst policy may choose fewer clicks. Bare `/duel <bot>` uses that
+policy's normal reach/CPS, zero added bot ping, and your saved ping. The older
+numeric syntax remains valid: `/duel wtap diamond 20 100` explicitly sets bot
+RTT to 20 and saves your RTT as 100. `/ping me 0` clears your added delay.
+
+Overrides are copied into this match, never written into the shared policy.
+`/rematch` keeps them; a new `/duel` starts from the selected policy again.
+Custom reach changes the bot client's native target-selection distance while
+keeping its native line-of-sight, target hitboxes and ordinary attack inputs.
+It does not change your client or the server's attack validation. Bots retain
+their existing strategies; planners are not retrained for the changed reach.
+Non-three-block setups are visibly marked **modified-reach practice**, recorded
+with effective settings, and excluded from vanilla ladder qualification. Player
+ping preferences are stored by name in `runtime/preferences/`.
 
 Successful sword blocks play a short `note.pling` only to the blocking player.
 The server observes the actual vanilla damage-reduction branch, after attack

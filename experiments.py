@@ -60,6 +60,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
         for p in (RUNTIME/'results').glob('*.json'):
             result=json.loads(p.read_text())
             if result.get('request')==request:
+                if result.get('modified_reach'):issues.add('Modified-reach practice is excluded from the vanilla ladder')
                 result['parameters']=parameters
                 intervals=[];resets=0;input_metrics={}
                 for side in ('a','b'):

@@ -165,7 +165,7 @@ max-tick-time=60000
 '''
     (RUNTIME/'server/server.properties').write_text(config)
     (RUNTIME/'server/eula.txt').write_text('eula=true\n')
-    (RUNTIME/'proxy/human.properties').write_text('rtt_ms=0\n')
+    if not (RUNTIME/'proxy/human.properties').exists():(RUNTIME/'proxy/human.properties').write_text('rtt_ms=0\n')
     (RUNTIME/'proxy/observer.properties').write_text('rtt_ms=0\n')
     for i in range(BOT_SLOTS):
         bot=RUNTIME/f'bots/{i}';bot.mkdir(parents=True,exist_ok=True)

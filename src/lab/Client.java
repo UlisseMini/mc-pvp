@@ -4,7 +4,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
-/** Policies can only change key bindings, aim, and a capped click schedule. */
+/** Policies drive keys, aim and capped clicks; explicit practice setups can change the native selection reach. */
 public final class Client {
     static final String SLOT = System.getProperty("lab.slot", "0");
     static final Path DIR = R.ROOT.resolve("runtime/bots/" + SLOT);
@@ -84,6 +84,8 @@ public final class Client {
                 probeAt=wall;Map<String,Object> probe=new LinkedHashMap<>();
                 probe.put("type","reach_probe");probe.put("time",wall);probe.put("match",match);
                 probe.put("in_range",selected==opponent);probe.put("could_attempt",selected==opponent&&R.num(mc,"leftClickCounter")<=0);
+                probe.put("attack_reach",attackReach());
+                if(selected==opponent)probe.put("selected_ray_distance",R.call(R.call(player,"getPositionEyes",1.0f),"distanceTo",R.get(ray,"hitVec")));
                 probe.put("miss_cooldown",R.num(mc,"leftClickCounter"));probe.put("target_id",R.call(opponent,"getEntityId"));
                 probe.put("raycast_stale",selected!=null&&selected!=opponent&&R.name(selected).equals(controls.getProperty("opponent","")));
                 if(ScienceTrace.client()){
@@ -97,7 +99,8 @@ public final class Client {
                     double border=((Number)R.call(opponent,"getCollisionBorderSize")).doubleValue();
                     Object box=R.call(R.call(opponent,"getEntityBoundingBox"),"expand",border,border,border);
                     probe.put("expanded_box",List.of(R.num(box,"minX"),R.num(box,"minY"),R.num(box,"minZ"),R.num(box,"maxX"),R.num(box,"maxY"),R.num(box,"maxZ")));
-                    Object end=R.call(eyeVector,"addVector",R.num(lookVector,"xCoord")*3,R.num(lookVector,"yCoord")*3,R.num(lookVector,"zCoord")*3);
+                    double reach=attackReach();
+                    Object end=R.call(eyeVector,"addVector",R.num(lookVector,"xCoord")*reach,R.num(lookVector,"yCoord")*reach,R.num(lookVector,"zCoord")*reach);
                     Object intercept=R.call(box,"calculateIntercept",eyeVector,end);
                     probe.put("native_box_intercept",intercept!=null);
                     if(intercept!=null)probe.put("native_box_ray_distance",R.call(eyeVector,"distanceTo",R.get(intercept,"hitVec")));
@@ -160,6 +163,7 @@ public final class Client {
                 issued.put("input_poll",nativeInputPoll?"native_tick":"frame");
                 issued.put("reaction_ms",(int)number("reaction_ms",150));
                 issued.put("click_cps",ClickRate.cps(controls));
+                issued.put("attack_reach",attackReach());
                 issued.put("minimum_click_interval_ns",ClickRate.intervalNanos(controls));
                 if(controls.getProperty("click_mode","fixed").equals("reactive-burst")&&burstDecision!=null){
                     issued.put("burst_opening",burstDecision.opening());issued.put("burst_defensive",burstDecision.defensive());
@@ -213,6 +217,7 @@ public final class Client {
                 heartbeat.put("agent_sha256",System.getProperty("lab.agent_sha256","unknown"));
                 heartbeat.put("frame_sleep_ms",Integer.getInteger("hmc.lwjgl.update_sleep",10));
                 heartbeat.put("target_ready",targetReady);
+                heartbeat.put("attack_reach",attackReach());heartbeat.put("click_cps",ClickRate.cps(controls));
                 heartbeat.put("native_ticks",ticks);
                 Object screen=R.get(mc,"currentScreen");heartbeat.put("screen",screen==null?null:screen.getClass().getName());
                 Files.createDirectories(DIR);Files.writeString(DIR.resolve("heartbeat.json"),Json.encode(heartbeat));
@@ -520,6 +525,7 @@ public final class Client {
     public static void attackAfter(Object self,Object target){
         if(!"client".equals(System.getProperty("lab.role")))return;
         Map<String,Object> event=new LinkedHashMap<>();event.put("type","engine_attack");event.put("time",System.currentTimeMillis());event.put("match",match);
+        event.put("attack_reach",attackReach());
         event.put("monotonic_ns",System.nanoTime());event.put("click_attempt",ScienceTrace.clickId());
         event.put("vx_before",beforeX);event.put("vz_before",beforeZ);event.put("vx_after",R.num(self,"motionX"));event.put("vz_after",R.num(self,"motionZ"));
         event.put("target_is_canonical",R.call(R.get(mc,"theWorld"),"getEntityByID",(int)R.call(target,"getEntityId"))==target);
@@ -536,6 +542,10 @@ public final class Client {
         event.put("target_x",R.num(target,"posX"));event.put("target_y",R.num(target,"posY"));event.put("target_z",R.num(target,"posZ"));
         event.put("sprint_before",beforeSprint);event.put("sprint_after",R.call(self,"isSprinting"));event.put("target_visible_hurt",R.num(target,"hurtTime"));log(event);
     }
+    public static double attackReach(){
+        return "client".equals(System.getProperty("lab.role"))&&SLOT.matches("[0-9]+")&&active()?DuelSettings.reach(controls):3.0;
+    }
+    public static float selectionRayLength(float vanilla){return (float)Math.max(vanilla,attackReach());}
     static boolean active(){return Boolean.parseBoolean(controls.getProperty("enabled","false"))&&System.currentTimeMillis()>=Long.parseLong(controls.getProperty("start_at","0"));}
     static double number(String name,double fallback){return Double.parseDouble(controls.getProperty(name,Double.toString(fallback)));}
     static void setKeys(boolean w){

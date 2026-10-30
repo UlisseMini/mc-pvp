@@ -52,9 +52,13 @@ opened zero connections. Old Minecraft includes other old libraries; sandboxing 
 loopback-only networking reduce exposure but do not establish absence of bugs.
 The sandbox is defense in depth, not a virtual machine or a security audit.
 
-No upstream performance optimization mod is used. Combat/movement methods are
-left intact; our hooks inject controls, record observations, restore match
-health after real damage, and count accepted hits. This is a small custom agent,
+No upstream performance optimization mod is used. Normal bot setups keep native
+three-block targeting and movement. Our hooks inject controls, record observations,
+restore boxing health after real damage, and count accepted hits. Two explicitly
+requested practice rules are marked in match metadata: rod mode admits zero-damage
+hook contacts into native knockback, and optional bot reach replaces the native
+target-selection distance limits only while that configured bot is active. Human
+reach and shared policy files are unchanged. This is a small custom agent,
 so implementation mistakes can affect experiment validity; telemetry checks and
 real client tests are included. There is no proof of exact equivalence to a
 graphically rendered client in every scenario.
