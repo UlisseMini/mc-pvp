@@ -39,10 +39,11 @@ enabling RCON or opening another network port.
 | `/bots` | Clickable roster, including saved search candidates |
 | `/bots all` | Include every saved tuning candidate |
 | `/duel hold-w` | Fight the simplest baseline |
-| `/duel wtap diamond` | Full Protection IV diamond armor and an unenchanted diamond sword; real health, hunger and regeneration; fight to death |
+| `/duel wtap diamond` | Full Protection IV diamond armor and an unenchanted diamond sword; real health and regeneration; fight to death |
+| `/duel wtap rod_diamond` | Same Protection IV diamond kit, plus a fishing rod in hotbar slot 2 for both players; existing bots keep using their sword |
 | `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full Protection IV diamond armor; successful blocks play your chime |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
-| `/mode diamond_box` / `/mode diamond` / `/mode boxing` | Choose the default mode for subsequent `/duel` and roster clicks in this session |
+| `/mode rod_diamond` / `/mode diamond_box` / `/mode diamond` / `/mode boxing` | Choose the default mode for subsequent `/duel` and roster clicks in this session |
 | `/blocksound test` | Preview the private chime for a successful sword block |
 | `/blocksound on` / `/blocksound off` | Enable or mute that chime; enabled by default |
 | `/duel predictive` | Fight the hand-written spacing controller |
@@ -79,13 +80,26 @@ normal server-to-client network delay; no client mod or resource pack is needed.
 The action bar also counts successful blocks for each player. Use
 `/blocksound test` to check your sound settings.
 
-Diamond mode starts each player at ten hearts, full hunger and normal starting
+Diamond mode starts each player at ten hearts, full hunger and full
 saturation, with a fresh unenchanted diamond sword and all four diamond armor
-pieces enchanted with Protection IV. Native armor, durability, damage, hunger and natural regeneration run
+pieces enchanted with Protection IV. Native armor, durability, damage and natural regeneration run
 normally at Normal difficulty. The round ends on death; inventory is retained
 through respawn and the next duel supplies a fresh kit. Boxing continues to
 restore health and food, with its established first-to-100 scoring. Existing
 bot algorithms and click ceilings apply in both modes.
+All players, including bots, receive full hunger (20), full saturation (20) and
+zero food exhaustion once per second and at round setup. The periodic refresh
+does not reset the native regeneration timer. There is no potion or direct heal
+from this refresh; ordinary 1.8 regeneration provides the health gain.
+`rod_diamond` adds a normal, unenchanted fishing rod in hotbar slot 2 for both
+players. Rod and diamond-sword durability work normally. Current bot policies
+continue using their sword; rod AI is not enabled.
+This mode enables PvP rod knockback: zero-damage rod contacts between the current
+duel opponents bypass `EntityPlayer.attackEntityFrom`'s zero-damage early return.
+The original living-entity code then handles knockback and hurt immunity, with
+zero health damage. Rod flight, hooking and reeling remain native. This deliberate
+exception is restricted to active `rod_diamond` rounds; other modes and the lobby
+retain vanilla's zero-damage rejection. No new server fork or plugin is installed.
 `diamond_box` uses the same health rules and Protection IV kit, with an
 unenchanted, unbreakable wooden sword instead. Both players share a 1×1 interior,
 two blocks tall, with bedrock walls and a transparent barrier ceiling for daylight.
@@ -93,6 +107,23 @@ Ordinary block collision contains knockback; combat movement is not teleported o
 overridden. The enclosure is removed after the round so later flat-ground matches
 can reuse the arena. `/rematch` retains this mode and both ping settings; `/stop`
 returns you to the lobby. All health practice rounds keep the three-minute limit.
+
+At the end of a round, both players and spectators receive each player's total
+accepted hits, native accepted criticals, successfully blocked incoming hits,
+and actual health regenerated. Healing and damage are displayed in hearts.
+The summary also reports effective health damage dealt/taken and the number
+of accepted damage upgrades during immunity. Rod-mode totals include a separately
+identified rod count within accepted hits; rod hits cause no health damage.
+Criticals are a subset of hits. Round/lobby health resets are excluded from healing.
+Damage is measured after blocking, armor, enchantments and absorption, capped by
+the victim's remaining health (overkill is excluded). Boxing's automatic health
+restoration is not counted as regeneration.
+
+Equal hit/crit/block counts need not imply equal damage: Protection enchantments
+randomize their reduction in native 1.8, blocking a critical differs from blocking
+a normal hit, immunity upgrades apply only extra damage, and broken equipment
+can change protection or weapon damage. The actual damage and healing counters
+provide the health balance for normal health duels.
 The [practice verification notes](experiments/PRACTICE-NOTES.md) include native
 blocking, sound-delivery, death and rematch evidence.
 

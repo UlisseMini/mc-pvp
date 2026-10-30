@@ -87,7 +87,7 @@ TEMPLATE=r'''<!doctype html>
 <script>
 'use strict';
 const D=JSON.parse(document.getElementById('data').textContent),M=D.match,T=D.ticks,start=M.start,end=D.result.finish,duration=end-start;
-const diamond=M.mode==='diamond'||M.mode==='diamond_box',rules=diamond?`${M.mode==='diamond_box'?'1×1 box · wooden swords':'full diamond'}${M.armor_protection?' · Protection '+M.armor_protection:''} · fight to death`:M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 accepted attacks';
+const diamond=['diamond','diamond_box','rod_diamond'].includes(M.mode),rules=diamond?`${M.mode==='diamond_box'?'1×1 box · wooden swords':M.mode==='rod_diamond'?'diamond swords + rods':'full diamond'}${M.armor_protection?' · Protection '+M.armor_protection:''} · fight to death`:M.scenario?`timed ${M.duration_limit_ms/1000}s scenario`:'first to 100 accepted attacks';
 const $=id=>document.getElementById(id), colors=['#75ddc9','#f6b78e'];
 $('provenance').textContent=D.qualification?.passed?'PvP Lab · native engine · input and replication checks passed':D.input_clock_verified?'PvP Lab · preliminary recording · replication unqualified':'PvP Lab · historical preliminary recording · old input clock';
 if(D.qualification?.issues?.length)$('provenance').textContent+=' · '+D.qualification.issues.join('; ');
