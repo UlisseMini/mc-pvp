@@ -111,6 +111,12 @@ returns you to the lobby. All health practice rounds keep the three-minute limit
 At the end of a round, both players and spectators receive each player's total
 accepted hits, native accepted criticals, successfully blocked incoming hits,
 and actual health regenerated. Healing and damage are displayed in hearts.
+The colored result panel names the winner and labels both players; your duels
+always list you first, then the bot. Red HP is the final health **before** lobby
+healing, yellow is hits, purple is criticals, aqua is blocks, and green is healing.
+Vanilla command feedback and console-to-operator broadcasts are disabled, so
+setup, kit, teleport and game-mode commands do not flood the chat. Console logs
+and normal chat/help remain available.
 The summary also reports effective health damage dealt/taken and the number
 of accepted damage upgrades during immunity. Rod-mode totals include a separately
 identified rod count within accepted hits; rod hits cause no health damage.

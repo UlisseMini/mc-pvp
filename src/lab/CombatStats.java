@@ -44,10 +44,11 @@ public final class CombatStats {
             Referee.append(m.replay,Map.of("type","critical","time",System.currentTimeMillis(),"attacker",who,"target",victim));
         }catch(Throwable e){if(Referee.errors++<10)e.printStackTrace();}
     }
-    void summary(Object recipient,String name,int hits,int blocks,boolean rods){
-        Referee.message(recipient,name+": "+hits+" hits"+(rods?" ("+rodHits+" rod)":"")+", "+crits+" crits, "+blocks+" blocks, +"+
-            String.format(Locale.ROOT,"%.2f",regenerated/2)+" hearts regenerated.");
-        Referee.message(recipient,String.format(Locale.ROOT,"  Damage: %.2f dealt / %.2f taken; %d hits were immunity damage upgrades.%s",
-            damageDealt/2,damageTaken/2,upgrades,otherDamage>0?String.format(Locale.ROOT," Other-source damage: %.2f hearts.",otherDamage/2):""));
+    void summary(Object recipient,String name,int hits,int blocks,boolean rods,Number health){
+        String hp=health==null?"§7HP: unavailable":String.format(Locale.ROOT,"§cHP: %.2f/10",health.doubleValue()/2);
+        Referee.message(recipient,name+" §8| "+hp+" §8| §eHits: "+hits+(rods?" §7("+rodHits+" rod)":""));
+        Referee.message(recipient,String.format(Locale.ROOT,"  §dCrits: %d §8| §bBlocks: %d §8| §aRegen: +%.2f",crits,blocks,regenerated/2));
+        Referee.message(recipient,String.format(Locale.ROOT,"  §6Damage dealt: %.2f §8| §cTaken: %.2f §8| §7Immunity upgrades: %d%s",
+            damageDealt/2,damageTaken/2,upgrades,otherDamage>0?String.format(Locale.ROOT," §8| §7Other damage: %.2f",otherDamage/2):""));
     }
 }

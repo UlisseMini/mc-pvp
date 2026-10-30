@@ -54,6 +54,11 @@ public final class Referee {
         if(!"server".equals(System.getProperty("lab.role")))return;
         server=instance;ticks++;
         try {
+            if(ticks==1)for(Object world:(Object[])R.get(server,"worldServers"))if(world!=null){
+                Object rules=R.call(world,"getGameRules");
+                R.call(rules,"setOrCreateGameRule","sendCommandFeedback","false");
+                R.call(rules,"setOrCreateGameRule","commandBlockOutput","false");
+            }
             if(policies.isEmpty())loadPolicies();
             List<?> people=players();
             if(ticks%20==0)for(Object p:people)fullFood(p);
@@ -295,7 +300,7 @@ public final class Referee {
             }else{
                 message(sender,"/bots; /mode boxing|diamond|diamond_box|rod_diamond; /duel <bot> [boxing|diamond|diamond_box|rod_diamond] [bot RTT] [your RTT]; /blocksound on|off|test; /ping me <RTT>; /ping bot <RTT>; /rematch; /stop; /matches; /watch [match]. All RTTs in milliseconds.");
             }
-        }catch(Throwable e){e.printStackTrace();message(sender,"Lab: "+e.getMessage());}
+        }catch(Throwable e){e.printStackTrace();message(sender,"§cLab: "+e.getMessage());}
         return true;
     }
 
@@ -346,8 +351,8 @@ public final class Referee {
         initial.put("bot_click_cap_cps",caps);
         append(m.replay,Map.of("type","start","match",initial));
         String rules=m.boxing()?"Boxing: first to 100 hits.":(m.box()?"Diamond box: 1x1, unbreakable wooden swords":m.rods()?"Rod diamond: diamond swords and fishing rods with PvP knockback":"Diamond: diamond swords")+", Protection IV diamond armor, fight to death. Respawn, then /rematch.";
-        message(player(a),"Starting "+m.id+": "+pa+" vs "+pb+". "+rules+" /stop to exit.");
-        message(player(b),"Starting "+m.id+": "+pa+" vs "+pb+". "+rules);
+        message(player(a),"§aStarting "+m.id+": §b"+pa+" §7vs §6"+pb+"§7. "+rules+" §b/stop §7to exit.");
+        message(player(b),"§aStarting "+m.id+": §b"+pa+" §7vs §6"+pb+"§7. "+rules);
         System.out.println("[PvP Lab] START "+Json.encode(m.state()));
     }
     static void seatPlayers(Match m,Object a,Object b){
@@ -487,17 +492,25 @@ public final class Referee {
         Set<String> recipients=new LinkedHashSet<>(List.of(m.a,m.b));
         for(var watcher:watching.entrySet())if(watcher.getValue().equals(m.id))recipients.add(watcher.getKey());
         for(String who:recipients){Object p=player(who);if(p!=null){
-            message(p,"Match stats (healing and damage in hearts; crits are included in hits):");
-            m.sa.summary(p,m.a,m.ha,m.ba,m.rods());m.sb.summary(p,m.b,m.hb,m.bb,m.rods());
+            String outcome=m.winner.isEmpty()?"§e"+reason.replace('_',' '):
+                (m.winner.equals(who)?"§aYOU WON":(who.equals(m.a)||who.equals(m.b)?"§cYOU LOST":"§aWinner"))+
+                " §7• §f"+(isBot(m.winner)?(m.winner.equals(m.a)?m.pa:m.pb):m.winner);
+            message(p,"§6§lFinished "+m.id+" §r§8["+m.mode+"] §7— "+outcome);
+            m.sa.summary(p,summaryName(m.a,m.pa,who,"§b"),m.ha,m.ba,m.rods(),(Number)result.get("health_a"));
+            m.sb.summary(p,summaryName(m.b,m.pb,who,"§6"),m.hb,m.bb,m.rods(),(Number)result.get("health_b"));
+            message(p,"§8Crits and rod contacts are included in hits. Health/damage in hearts.");
+            message(p,((Boolean)R.call(p,"isEntityAlive")?"":"§eRespawn first. ")+"§b/rematch §8| §b/bots");
         }}
         for(String who:List.of(m.a,m.b)){
             disable(who);Object p=player(who);if(p==null)continue;
-            message(p,"Finished "+m.id+" ["+m.mode+"]: "+m.ha+"–"+m.hb+" hits; "+(m.winner.isEmpty()?reason:"winner "+m.winner)+". "+((Boolean)R.call(p,"isEntityAlive")?"":"Respawn, then ")+"/rematch or /bots.");
-            if(reason.equals("invalid_client_view"))message(p,"Stopped: a bot's native opponent view was invalid. This game is not a valid result. /rematch starts fresh.");
+            if(reason.equals("invalid_client_view"))message(p,"§cStopped: a bot's native opponent view was invalid. This game is not a valid result. /rematch starts fresh.");
             if((Boolean)R.call(p,"isEntityAlive"))returnToLobby(p);else pendingLobby.add(who);
         }
         if(m.box())clearBox(m.world,m.arena);
         System.out.println("[PvP Lab] RESULT "+Json.encode(result));
+    }
+    static String summaryName(String name,String policy,String recipient,String color){
+        return color+(name.equals(recipient)?"You ("+name+")":isBot(name)?policy+" (bot)":name);
     }
     static void returnToLobby(Object p){
         String who=safeName(p);R.call(p,"clearItemInUse");R.call(p,"setHealth",20.0f);
@@ -536,7 +549,7 @@ public final class Referee {
         pendingTracking.put(R.name(p),System.currentTimeMillis()+500);
     }
     static void vanilla(String command){R.call(R.call(server,"getCommandManager"),"executeCommand",server,command);}
-    static void message(Object sender,String text){if(sender==null)return;R.call(sender,"addChatMessage",R.construct("net.minecraft.util.ChatComponentText",text));}
+    static void message(Object sender,String text){if(sender==null)return;R.call(sender,"addChatMessage",R.construct("net.minecraft.util.ChatComponentText","§7"+text+"§r"));}
     static void button(Object sender,String label,String command){
         if(!R.cls("net.minecraft.entity.player.EntityPlayerMP").isInstance(sender)){message(sender,label);return;}
         vanilla("tellraw "+safeName(sender)+" "+Json.encode(Map.of("text","[ "+label+" ]","color","aqua","clickEvent",Map.of("action","run_command","value",command))));

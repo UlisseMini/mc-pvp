@@ -143,6 +143,8 @@ server-port=25566
 online-mode=false
 enable-rcon=false
 enable-query=false
+broadcast-console-to-ops=false
+broadcast-rcon-to-ops=false
 level-name=world
 level-type=FLAT
 generator-settings=3;minecraft:bedrock,2*minecraft:dirt,minecraft:grass;1;
@@ -293,7 +295,7 @@ def verify_ux():
     with open(RUNTIME/'logs/observer.log','w')as log:
         result=subprocess.run(sandbox_java(args),cwd=bot,stdout=log,stderr=subprocess.STDOUT,timeout=60,
             env=clean_environment())
-    text=(RUNTIME/'logs/observer.log').read_text()
+    text=re.sub(r'§[0-9a-fk-or]','',(RUNTIME/'logs/observer.log').read_text(),flags=re.I)
     results=[json.loads(p.read_text()) for p in (RUNTIME/'results').glob('*.json')]
     ours=[r for r in results if r['a']=='LabObserver' and r['start']>=launched]
     native_views=True;native_attacks=[]

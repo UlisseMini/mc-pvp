@@ -88,7 +88,7 @@ def run():
         'native_healing_observed':any(e['type']=='heal' and e['amount']>0 for e in all_events),
         'all_players_fed_equally':len(samples)>10 and all(p['food']==20 and 19<=p['saturation']<=20 for s in samples for p in s['players']),
         'block_sound_delivery_unchanged':len(blocks)>0 and len(sounds)==1+sum(e['sound_sent'] for e in blocks),
-        'summary_received_in_chat':log.count('Match stats (healing and damage in hearts; crits are included in hits):')==len(games)>0,
+        'summary_received_in_chat':log.count('Finished ')==len(games)>0 and log.count('Health/damage in hearts.')==len(games),
     }
     for g in games:
         es=events[g['id']]
