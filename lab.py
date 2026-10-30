@@ -191,7 +191,7 @@ def build():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', choices=['prepare', 'build','sandbox-test','logging-test','serve','stop','reload-bots','status','match','ping-match','verify-ux'])
+    parser.add_argument('command', choices=['prepare', 'build','sandbox-test','logging-test','serve','stop','reload-bots','status','match','ping-match','verify-ux','console'])
     parser.add_argument('extra',nargs='*')
     parser.add_argument('--frame-sleep-ms',type=int,default=10,help='Headless display throttle for serve; 1 ms gives finer input scheduling')
     args = parser.parse_args()

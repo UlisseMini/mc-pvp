@@ -4,6 +4,7 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import signal
 import subprocess
@@ -14,6 +15,15 @@ import uuid
 from lab import ROOT, CACHE, BUILD, RUNTIME, JAVA, build, verify_cache
 
 BOT_SLOTS=8
+
+
+def allowed_console_command(command):
+    # Keep the existing local inbox restricted to match controls and the
+    # explicit administration operations needed for this practice server.
+    if not isinstance(command,str) or not command or not all(c.isalnum() or c in '-_ ./' for c in command):
+        return False
+    return command.startswith(('lab match ','lab diamond ','lab ping ','lab scenario ')) or bool(
+        re.fullmatch(r'(?:op|deop) [A-Za-z0-9_]{1,16}|weather clear(?: 1000000)?',command))
 
 
 def clean_environment():
@@ -220,7 +230,9 @@ async def serve(frame_sleep_ms=10):
             if not initialized:
                 status=json.loads((RUNTIME/'status.json').read_text())
                 if len([p for p in status['players'] if p.startswith('LabSlot')])==BOT_SLOTS:
-                    server.stdin.write('gamerule naturalRegeneration true\ngamerule keepInventory true\n');server.stdin.flush()
+                    # 1.8.9 has no doWeatherCycle rule; renew its maximum
+                    # vanilla clear-weather duration on every startup.
+                    server.stdin.write('gamerule naturalRegeneration true\ngamerule keepInventory true\nweather clear 1000000\n');server.stdin.flush()
                     initialized=True;print('All clients connected. /bots, /duel <bot>, /mode diamond, /blocksound, /matches, /watch.',flush=True)
             for request in sorted((RUNTIME/'manager/inbox').glob('*.json')):
                 payload=json.loads(request.read_text());request.unlink()
@@ -238,8 +250,7 @@ async def serve(frame_sleep_ms=10):
                         await asyncio.sleep(.4);start_bot(i,i+1);reloaded.append(i)
                     print('Reloaded idle bot clients '+str(reloaded)+'; active duels keep running.',flush=True)
                     continue
-                if not command.startswith(('lab match ','lab diamond ','lab ping ','lab scenario ')):continue
-                if not all(c.isalnum() or c in '-_ ./' for c in command):continue
+                if not allowed_console_command(command):continue
                 server.stdin.write(command+'\n');server.stdin.flush()
             await asyncio.sleep(.1)
     finally:
@@ -312,6 +323,10 @@ def run(command,extra,frame_sleep_ms=10):
     elif command=='stop':send('shutdown')
     elif command=='reload-bots':send('reload-bots')
     elif command=='status':print((RUNTIME/'status.json').read_text())
+    elif command=='console':
+        text=' '.join(extra)
+        if not allowed_console_command(text):raise SystemExit('Supported: console op <name>, console deop <name>, console weather clear 1000000, or lab match commands')
+        send(text);print('Queued console command: '+text)
     elif command=='verify-ux':verify_ux()
     elif command=='match':
         if len(extra)<2:raise SystemExit('Usage: python3 lab.py match <bot-a> <bot-b> [ping-a] [ping-b]')

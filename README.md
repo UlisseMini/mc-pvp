@@ -26,6 +26,14 @@ The server is already set up on this Mac. If it is stopped, double-click
 **Start PvP Lab.command** in this folder and leave its Terminal window open.
 An “already running” message means you can join immediately.
 
+Local administration from this folder: `python3 lab.py console op Nomophobia`
+grants operator access; `python3 lab.py console deop Nomophobia` removes it.
+`python3 lab.py console weather clear 1000000` clears rain and thunder for
+1,000,000 seconds (about 11.6 days of server uptime). This is renewed at every
+startup; vanilla 1.8.9 does not support the later `doWeatherCycle` gamerule.
+These commands use the server console through the existing local inbox, without
+enabling RCON or opening another network port.
+
 | Command | What it does |
 |---|---|
 | `/bots` | Clickable roster, including saved search candidates |
