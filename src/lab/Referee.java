@@ -24,7 +24,9 @@ public final class Referee {
     static final class Match {
         String id,a,b,pa,pb,winner="",request="",mode="boxing",finishReason="100_hits"; int ha,hb,ba,bb,goal=100,arena,pingChanges; long start,finish,durationMs=180_000; boolean scenario,setupReseated; double pingA,pingB,initialPingA,initialPingB;
         boolean boxing(){return mode.equals("boxing");}
+        boolean box(){return mode.equals("diamond_box");}
         final Properties configA=new Properties(),configB=new Properties();
+        Object world;
         Path replay;
         Map<String,Object> state(){
             Map<String,Object> m=new LinkedHashMap<>();
@@ -36,7 +38,8 @@ public final class Referee {
             m.put("reaction_ms_b",Integer.parseInt(configB.getProperty("reaction_ms","150")));
             m.put("click_cps_a",pa.equals("human")?null:ClickRate.cps(configA));
             m.put("click_cps_b",pb.equals("human")?null:ClickRate.cps(configB));
-            m.put("arena_surface","bedrock_y3_air_y4_19_radius128_verified_v3");return m;
+            m.put("armor_protection",boxing()?0:4);m.put("weapon",box()?"wooden_sword":"diamond_sword");
+            m.put("arena_surface",box()?"bedrock_1x1_interior_y4_5_barrier_ceiling_y6":"bedrock_y3_air_y4_19_radius128_verified_v3");return m;
         }
     }
 
@@ -65,7 +68,7 @@ public final class Referee {
                 String name=R.name(p);
                 if(greeted.add(name)){
                     if(isBot(name)){vanilla("gamemode 3 "+name);teleport(p,-40-Integer.parseInt(name.substring(7))*6,4,0);disable(name);}
-                    else {teleport(p,0,4,0);message(p,"PvP Lab: /bots; /mode diamond for health duels; /mode boxing for 100 hits. Successful blocks play a chime (/blocksound). /help lab for controls.");}
+                    else {teleport(p,0,4,0);message(p,"PvP Lab: /bots; /mode diamond for health duels; /mode diamond_box for 1x1 blockhitting; /mode boxing for 100 hits. Successful blocks play a chime (/blocksound). /help lab for controls.");}
                 }
             }
             for(Match m:new ArrayList<>(matches.values())){
@@ -76,8 +79,7 @@ public final class Referee {
                     // Initial destination chunks may arrive after the teleport,
                     // allowing a client to fall into the floor during countdown.
                     // Re-seat once after terrain delivery, strictly before combat.
-                    double center=4096.0*(m.arena+1);
-                    preparePlayer(a,center-3,4,0,270,m.mode);preparePlayer(b,center+3,4,0,90,m.mode);
+                    seatPlayers(m,a,b);
                     m.setupReseated=true;
                     append(m.replay,Map.of("type","setup_reseat","time",setupNow,"combat_start",m.start));
                 }
@@ -181,9 +183,10 @@ public final class Referee {
                 if(args.length==2){
                     if(find(name)!=null)throw new IllegalArgumentException("Use /stop before changing duel mode.");
                     preferredModes.put(name,mode(args[1]));
-                }else if(args.length!=1)throw new IllegalArgumentException("Usage: /mode boxing or /mode diamond");
+                }else if(args.length!=1)throw new IllegalArgumentException("Usage: /mode boxing, diamond, or diamond_box");
                 message(sender,"Duel mode: "+preferredModes.getOrDefault(name,"boxing")+". Choose a bot with /bots.");
                 button(sender,"Boxing: first to 100 hits","/mode boxing");button(sender,"Diamond: full armor, fight to death","/mode diamond");
+                button(sender,"Diamond box: 1x1, wood swords, Protection IV","/mode diamond_box");
             }else if(cmd.equals("blocksound")){
                 String name=safeName(sender);
                 if(args.length==2&&args[1].equals("off"))mutedBlockSounds.add(name);
@@ -192,8 +195,9 @@ public final class Referee {
                 else if(args.length!=1)throw new IllegalArgumentException("Usage: /blocksound on, off, or test");
                 message(sender,"Successful-block sound: "+(mutedBlockSounds.contains(name)?"OFF":"ON")+". /blocksound test previews it.");
             }else if(cmd.equals("bots")){
-                loadPolicies();message(sender,"Choose a bot with /duel <name>. Mode: "+preferredModes.getOrDefault(R.name(sender),"boxing")+". Optional: /duel <name> [boxing|diamond] [bot RTT] [your RTT].");
+                loadPolicies();message(sender,"Choose a bot with /duel <name>. Mode: "+preferredModes.getOrDefault(R.name(sender),"boxing")+". Optional: /duel <name> [boxing|diamond|diamond_box] [bot RTT] [your RTT].");
                 button(sender,"Switch to boxing","/mode boxing");button(sender,"Switch to full diamond","/mode diamond");
+                button(sender,"Switch to 1x1 diamond box","/mode diamond_box");
                 boolean all=args.length>1&&args[1].equals("all");
                 for(var entry:policies.entrySet()){
                     if(!all && (entry.getKey().matches("zest-(tune|model|long|select|pulse)-[0-9]+") || entry.getKey().startsWith("evolved-g")))continue;
@@ -222,8 +226,8 @@ public final class Referee {
                 if(policy==null){message(sender,"Usage: /duel <bot>. Use /bots for the list.");return true;}
                 double[] prior=lastPings.getOrDefault(name,new double[]{0,0});
                 int offset=2;String selectedMode=cmd.equals("rematch")?lastModes.getOrDefault(name,"boxing"):preferredModes.getOrDefault(name,"boxing");
-                if(cmd.equals("duel")&&args.length>2&&(args[2].equals("boxing")||args[2].equals("diamond"))){selectedMode=mode(args[2]);offset++;}
-                if(cmd.equals("duel")&&args.length>offset+2)throw new IllegalArgumentException("Usage: /duel <bot> [boxing|diamond] [bot RTT] [your RTT]");
+                if(cmd.equals("duel")&&args.length>2&&List.of("boxing","diamond","diamond_box").contains(args[2])){selectedMode=mode(args[2]);offset++;}
+                if(cmd.equals("duel")&&args.length>offset+2)throw new IllegalArgumentException("Usage: /duel <bot> [boxing|diamond|diamond_box] [bot RTT] [your RTT]");
                 double botPing=cmd.equals("rematch")?prior[0]:(args.length>offset?ping(args[offset]):0);
                 double humanPing=cmd.equals("rematch")?prior[1]:(args.length>offset+1?ping(args[offset+1]):0);
                 String bot=freeBot(Set.of());if(bot==null){message(sender,"All bot slots are busy. Try again shortly.");return true;}
@@ -241,10 +245,10 @@ public final class Referee {
                 message(sender,"Added simulated RTT: you "+m.pingA+" ms; bot "+m.pingB+" ms. Each direction is delayed by half. Your real ping is additional.");
             }else if(cmd.equals("stop")){
                 Match m=find(R.name(sender));if(m!=null)finish(m,"stopped");else{vanilla("gamemode 0 "+safeName(sender));teleport(sender,0,4,0);}
-            }else if(cmd.equals("lab")&&args.length>=4&&args[1].equals("diamond")){
+            }else if(cmd.equals("lab")&&args.length>=4&&(args[1].equals("diamond")||args[1].equals("diamond_box"))){
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
                 if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}
-                loadPolicies();start(a,b,args[2],args[3],args.length>4?ping(args[4]):0,args.length>5?ping(args[5]):0,args.length>6?args[6]:"diamond-"+System.nanoTime(),0,"diamond");
+                loadPolicies();start(a,b,args[2],args[3],args.length>4?ping(args[4]):0,args.length>5?ping(args[5]):0,args.length>6?args[6]:args[1]+"-"+System.nanoTime(),0,args[1]);
             }else if(cmd.equals("lab")&&args.length==8&&args[1].equals("scenario")){
                 long duration=Long.parseLong(args[6]);if(duration<1000||duration>180_000)throw new IllegalArgumentException("Scenario duration must be1000–180000ms");
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
@@ -260,7 +264,7 @@ public final class Referee {
             }else if(cmd.equals("lab")&&args.length>=3&&args[1].equals("goal")){
                 message(sender,"Ladder matches always run to 100 accepted hits.");
             }else{
-                message(sender,"/bots; /mode boxing|diamond; /duel <bot> [boxing|diamond] [bot RTT] [your RTT]; /blocksound on|off|test; /ping me <RTT>; /ping bot <RTT>; /rematch; /stop; /matches; /watch [match]. All RTTs in milliseconds.");
+                message(sender,"/bots; /mode boxing|diamond|diamond_box; /duel <bot> [boxing|diamond|diamond_box] [bot RTT] [your RTT]; /blocksound on|off|test; /ping me <RTT>; /ping bot <RTT>; /rematch; /stop; /matches; /watch [match]. All RTTs in milliseconds.");
             }
         }catch(Throwable e){e.printStackTrace();message(sender,"Lab: "+e.getMessage());}
         return true;
@@ -281,7 +285,7 @@ public final class Referee {
     static void start(String a,String b,String pa,String pb,double pingA,double pingB,String request,long duration)throws Exception{
         start(a,b,pa,pb,pingA,pingB,request,duration,"boxing");
     }
-    static String mode(String value){if(!value.equals("boxing")&&!value.equals("diamond"))throw new IllegalArgumentException("Mode must be boxing or diamond");return value;}
+    static String mode(String value){if(!List.of("boxing","diamond","diamond_box").contains(value))throw new IllegalArgumentException("Mode must be boxing, diamond, or diamond_box");return value;}
     static void start(String a,String b,String pa,String pb,double pingA,double pingB,String request,long duration,String selectedMode)throws Exception{
         if(a.equals(b)||find(a)!=null||find(b)!=null)throw new IllegalArgumentException("A player cannot be assigned to two matches");
         if(!pa.equals("human")&&!policies.containsKey(pa)||!policies.containsKey(pb))throw new IllegalArgumentException("Unknown bot; use /bots.");
@@ -293,28 +297,64 @@ public final class Referee {
         Set<Integer> used=new HashSet<>();for(Match current:matches.values())used.add(current.arena);
         while(used.contains(m.arena))m.arena++;
         Object arenaWorld=R.get(player(a),"worldObj");
+        m.world=arenaWorld;
         // Warm all normal slots before the first countdown: arena maintenance
         // must not stall another match's movement or network clocks.
         if(preparedArenas.isEmpty())for(int i=0;i<4;i++)prepareArena(arenaWorld,i);
         prepareArena(arenaWorld,m.arena);
+        if(m.box())prepareBox(arenaWorld,m.arena);
         m.start=System.currentTimeMillis()+3000;
         m.replay=DATA.resolve("replays/"+m.id+".jsonl");matches.put(m.id,m);
         configureProxy(a,pingA);configureProxy(b,pingB);
         // At normal speed even a full 180-second pursuit cannot reach another arena.
-        double center=4096.0*(m.arena+1);
         resetTracking(player(a));resetTracking(player(b));
-        preparePlayer(player(a),center-3,4,0,270,m.mode);
-        preparePlayer(player(b),center+3,4,0,90,m.mode);
+        seatPlayers(m,player(a),player(b));
         control(a,pa,b,m,pingA,pingB);control(b,pb,a,m,pingB,pingA);
         Map<String,Object> initial=m.state();initial.put("parameters_a",m.configA);initial.put("parameters_b",m.configB);
+        initial.put("equipment_a",equipment(player(a)));initial.put("equipment_b",equipment(player(b)));
         initial.put("bot_reaction_ms",Map.of("a",initial.get("reaction_ms_a"),"b",initial.get("reaction_ms_b")));
         Map<String,Object> caps=new LinkedHashMap<>();caps.put("a",initial.get("click_cps_a"));caps.put("b",initial.get("click_cps_b"));
         initial.put("bot_click_cap_cps",caps);
         append(m.replay,Map.of("type","start","match",initial));
-        String rules=m.boxing()?"Boxing: first to 100 hits.":"Diamond: full unenchanted armor and sword, fight to death. Respawn, then /rematch.";
+        String rules=m.boxing()?"Boxing: first to 100 hits.":(m.box()?"Diamond box: 1x1, unbreakable wooden swords":"Diamond: diamond swords")+", Protection IV diamond armor, fight to death. Respawn, then /rematch.";
         message(player(a),"Starting "+m.id+": "+pa+" vs "+pb+". "+rules+" /stop to exit.");
         message(player(b),"Starting "+m.id+": "+pa+" vs "+pb+". "+rules);
         System.out.println("[PvP Lab] START "+Json.encode(m.state()));
+    }
+    static void seatPlayers(Match m,Object a,Object b){
+        double center=4096.0*(m.arena+1);
+        // Two normal 0.6-wide player bodies fit in the same 1x1 cell by
+        // overlapping each other, never the walls. Native collision handles KB.
+        preparePlayer(a,center+(m.box()?.32:-3),4,m.box()?.5:0,270,m.mode);
+        preparePlayer(b,center+(m.box()?.68:3),4,m.box()?.5:0,90,m.mode);
+    }
+    static void prepareBox(Object world,int arena){
+        int center=4096*(arena+1);
+        loadBoxChunks(world,center);
+        vanilla("fill "+(center-1)+" 4 -1 "+(center+1)+" 6 1 minecraft:bedrock");
+        vanilla("fill "+center+" 4 0 "+center+" 5 0 minecraft:air");
+        // A transparent, unbreakable ceiling admits daylight and prevents escape.
+        vanilla("setblock "+center+" 6 0 minecraft:barrier");
+        for(int x=center-1;x<=center+1;x++)for(int y=4;y<=6;y++)for(int z=-1;z<=1;z++){
+            String block=x==center&&z==0?(y==6?"barrier":"air"):"bedrock";
+            Object pos=R.construct("net.minecraft.util.BlockPos",x,y,z);
+            if(R.call(R.call(world,"getBlockState",pos),"getBlock")!=R.get(R.cls("net.minecraft.init.Blocks"),block))
+                throw new IllegalStateException("Box verification failed at "+x+","+y+","+z);
+        }
+    }
+    static void loadBoxChunks(Object world,int center){
+        // Empty arena chunks can unload between /stop and /rematch. /fill also
+        // checks a positive border chunk. Load it before both build and cleanup.
+        for(int x=(center-1)>>4;x<=(center+17)>>4;x++)for(int z=-1;z<=1;z++)
+            R.call(world,"getChunkFromChunkCoords",x,z);
+    }
+    static void clearBox(Object world,int arena){
+        int center=4096*(arena+1);
+        loadBoxChunks(world,center);
+        vanilla("fill "+(center-1)+" 4 -1 "+(center+1)+" 6 1 minecraft:air");
+        for(int x=center-1;x<=center+1;x++)for(int y=4;y<=6;y++)for(int z=-1;z<=1;z++)
+            if(R.call(R.call(world,"getBlockState",R.construct("net.minecraft.util.BlockPos",x,y,z)),"getBlock")!=R.get(R.cls("net.minecraft.init.Blocks"),"air"))
+                throw new IllegalStateException("Box cleanup verification failed");
     }
     static void prepareArena(Object world,int arena){
         if(preparedArenas.contains(arena))return;
@@ -352,17 +392,33 @@ public final class Referee {
         String name=safeName(p);vanilla("gamemode 0 "+name);vanilla("clear "+name);vanilla("effect "+name+" clear");
         R.call(p,"setSpectatingEntity",p);
         R.call(p,"clearItemInUse");R.set(R.get(p,"inventory"),"currentItem",0);
-        vanilla("give "+name+" minecraft:diamond_sword 1 0"+(mode.equals("boxing")?" {Unbreakable:1b}":""));
-        if(mode.equals("diamond")){
+        boolean box=mode.equals("diamond_box");
+        vanilla("give "+name+" minecraft:"+(box?"wooden_sword":"diamond_sword")+" 1 0"+(!mode.equals("diamond")?" {Unbreakable:1b}":""));
+        if(!mode.equals("boxing")){
             String[][] armor={{"head","helmet"},{"chest","chestplate"},{"legs","leggings"},{"feet","boots"}};
-            for(String[] piece:armor)vanilla("replaceitem entity "+name+" slot.armor."+piece[0]+" minecraft:diamond_"+piece[1]);
+            for(String[] piece:armor)vanilla("replaceitem entity "+name+" slot.armor."+piece[0]+" minecraft:diamond_"+piece[1]+" 1 0 {ench:[{id:0s,lvl:4s}]}");
         }
+        Map<String,Object> gear=equipment(p);
+        if(!gear.get("weapon").equals(box?"wooden_sword":"diamond_sword")||
+                !mode.equals("boxing")&&(!gear.get("protection_levels").equals(List.of(4,4,4,4))||!gear.get("armor_points").equals(20)))
+            throw new IllegalStateException("Practice kit verification failed: "+gear);
         vanilla("tp "+name+" "+x+" "+y+" "+z+" "+yaw+" 0");
         settleTeleport(p);
         R.call(p,"setHealth",20.0f);R.call(R.call(p,"getFoodStats"),"setFoodLevel",20);
         Object food=R.call(p,"getFoodStats");R.set(food,"foodSaturationLevel",5.0f);R.set(food,"foodExhaustionLevel",0.0f);R.set(food,"foodTimer",0);
         R.set(p,"motionX",0.0);R.set(p,"motionY",0.0);R.set(p,"motionZ",0.0);
         R.call(R.get(p,"playerNetServerHandler"),"sendPacket",R.construct("net.minecraft.network.play.server.S12PacketEntityVelocity",p));
+    }
+    static Map<String,Object> equipment(Object p){
+        List<Integer> protection=new ArrayList<>();
+        for(Object stack:(Object[])R.get(R.get(p,"inventory"),"armorInventory"))
+            protection.add(stack==null?0:(int)R.call(R.cls("net.minecraft.enchantment.EnchantmentHelper"),"getEnchantmentLevel",0,stack));
+        Object held=R.call(p,"getHeldItem"),item=held==null?null:R.call(held,"getItem");
+        String weapon=item==R.get(R.cls("net.minecraft.init.Items"),"wooden_sword")?"wooden_sword":
+            item==R.get(R.cls("net.minecraft.init.Items"),"diamond_sword")?"diamond_sword":"other";
+        Object tag=held==null?null:R.call(held,"getTagCompound");
+        return Map.of("weapon",weapon,"weapon_unbreakable",tag!=null&&(Boolean)R.call(tag,"getBoolean","Unbreakable"),
+            "armor_points",R.call(p,"getTotalArmorValue"),"protection_levels",protection);
     }
     static void control(String who,String policy,String opponent,Match m,double ping,double oppPing){
         if(!isBot(who))return;
@@ -396,6 +452,7 @@ public final class Referee {
             if(reason.equals("invalid_client_view"))message(p,"Stopped: a bot's native opponent view was invalid. This game is not a valid result. /rematch starts fresh.");
             if((Boolean)R.call(p,"isEntityAlive"))returnToLobby(p);else pendingLobby.add(who);
         }
+        if(m.box())clearBox(m.world,m.arena);
         System.out.println("[PvP Lab] RESULT "+Json.encode(result));
     }
     static void returnToLobby(Object p){

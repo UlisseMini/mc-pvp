@@ -39,9 +39,10 @@ enabling RCON or opening another network port.
 | `/bots` | Clickable roster, including saved search candidates |
 | `/bots all` | Include every saved tuning candidate |
 | `/duel hold-w` | Fight the simplest baseline |
-| `/duel wtap diamond` | Full unenchanted diamond armor and sword; real health, hunger and regeneration; fight to death |
+| `/duel wtap diamond` | Full Protection IV diamond armor and an unenchanted diamond sword; real health, hunger and regeneration; fight to death |
+| `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full Protection IV diamond armor; successful blocks play your chime |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
-| `/mode diamond` / `/mode boxing` | Choose the default mode for subsequent `/duel` and roster clicks in this session |
+| `/mode diamond_box` / `/mode diamond` / `/mode boxing` | Choose the default mode for subsequent `/duel` and roster clicks in this session |
 | `/blocksound test` | Preview the private chime for a successful sword block |
 | `/blocksound on` / `/blocksound off` | Enable or mute that chime; enabled by default |
 | `/duel predictive` | Fight the hand-written spacing controller |
@@ -80,11 +81,18 @@ The action bar also counts successful blocks for each player. Use
 
 Diamond mode starts each player at ten hearts, full hunger and normal starting
 saturation, with a fresh unenchanted diamond sword and all four diamond armor
-pieces. Native armor, durability, damage, hunger and natural regeneration run
+pieces enchanted with Protection IV. Native armor, durability, damage, hunger and natural regeneration run
 normally at Normal difficulty. The round ends on death; inventory is retained
 through respawn and the next duel supplies a fresh kit. Boxing continues to
 restore health and food, with its established first-to-100 scoring. Existing
 bot algorithms and click ceilings apply in both modes.
+`diamond_box` uses the same health rules and Protection IV kit, with an
+unenchanted, unbreakable wooden sword instead. Both players share a 1×1 interior,
+two blocks tall, with bedrock walls and a transparent barrier ceiling for daylight.
+Ordinary block collision contains knockback; combat movement is not teleported or
+overridden. The enclosure is removed after the round so later flat-ground matches
+can reuse the arena. `/rematch` retains this mode and both ping settings; `/stop`
+returns you to the lobby. All health practice rounds keep the three-minute limit.
 The [practice verification notes](experiments/PRACTICE-NOTES.md) include native
 blocking, sound-delivery, death and rematch evidence.
 
@@ -125,7 +133,7 @@ blocking, sound-delivery, death and rematch evidence.
 | `pvp-knows-wtap` | Same candidate parameters, predicting the actual delayed post-hit W-tap policy |
 | `pvp-knows-standstill` | Same candidate parameters, predicting a stationary clicking opponent |
 
-- Normal speed, no potions, no enchantments, flat full-block ground, diamond swords.
+- Boxing research: normal speed, no potions or enchantments, flat full-block ground, diamond swords. Health practice modes use the kits described above.
   Arena centers use bedrock with the same slipperiness as grass to prevent holes.
 - Boxing: first to 100 **server-accepted attacks**. Health is restored after real
   damage so a duel can continue; knockback, damage immunity and critical-hit logic run.

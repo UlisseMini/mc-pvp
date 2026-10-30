@@ -14,7 +14,9 @@ from lab_runtime import sandbox_java, clean_environment
 def run():
     state=json.loads((RUNTIME/'status.json').read_text())
     if time.time()-state['time']/1000>5:raise RuntimeError('Start the lab first')
-    script='1500:/blocksound test|3000:/duel hold-w boxing|9000:/blocksound off|12000:/blocksound on|14500:/stop|15000:/mode diamond|15500:/duel hold-w 20 20|45000:/rematch|58000:/stop'
+    # Protection IV prolongs health duels; allow the first round to end on
+    # native death before testing /rematch. The second round ends with /stop.
+    script='1500:/blocksound test|3000:/duel hold-w boxing|9000:/blocksound off|12000:/blocksound on|14500:/stop|15000:/mode diamond|15500:/duel hold-w 20 20|65000:/rematch|78000:/stop'
     directory=RUNTIME/'bots/observer';directory.mkdir(exist_ok=True)
     (directory/'control.properties').write_text('enabled=false\n')
     (directory/'options.txt').write_text('renderDistance:6\nfancyGraphics:false\nparticles:2\nsoundCategory_master:0.0\n')
@@ -29,14 +31,14 @@ def run():
     launched=time.time()*1000
     cp=os.pathsep.join([str(CACHE/'client.jar'),*json.loads((CACHE/'classpath.json').read_text())])
     args=['-Xmx768M','-XX:ActiveProcessorCount=2','-Dlab.root='+str(ROOT),'-Dlab.role=client','-Dlab.slot=observer','-Dlab.port=25569',
-          '-Dhmc.lwjgl.update_sleep=10','-Dlab.test_script='+script,'-Dlab.test_duration=61000',
+          '-Dhmc.lwjgl.update_sleep=10','-Dlab.test_script='+script,'-Dlab.test_duration=81000',
           '-Dlab.practice_block_windows=5900-9000,10500-14000,19000-22000',
           '-Dlog4j.configurationFile='+str(CACHE/'client-logging.xml'),'-javaagent:'+str(BUILD/'lab-agent.jar'),
           '-cp',cp,'net.minecraft.client.main.Main','--version','1.8.9','--gameDir',str(directory),
           '--assetsDir',str(CACHE/'assets'),'--assetIndex','1.8','--username','LabObserver',
           '--uuid',uuid.uuid3(uuid.NAMESPACE_DNS,'LabObserver').hex,'--accessToken','0','--userProperties','{}','--userType','legacy']
     with (out/'client.log').open('w') as log:
-        process=subprocess.run(sandbox_java(args),cwd=directory,stdout=log,stderr=subprocess.STDOUT,timeout=100,env=clean_environment())
+        process=subprocess.run(sandbox_java(args),cwd=directory,stdout=log,stderr=subprocess.STDOUT,timeout=120,env=clean_environment())
     games=[json.loads(p.read_text()) for p in (RUNTIME/'results').glob('*.json')]
     games=sorted((g for g in games if g['a']=='LabObserver' and g['start']>=launched),key=lambda g:g['start'])
     client=[json.loads(line) for line in trace.read_text().splitlines() if json.loads(line).get('time',0)>=launched]

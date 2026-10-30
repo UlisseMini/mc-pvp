@@ -15,6 +15,14 @@ public final class PracticeApiCheck {
                 methods.add(R.MAP.getProperty("M."+c.getName()+"."+m.getName()+org.objectweb.asm.Type.getMethodDescriptor(m),m.getName()));
         for(String method:java.util.List.of("getHealth","setHealth","isBlocking","getTotalArmorValue","clearItemInUse","getFoodStats","isEntityAlive"))
             if(!methods.contains(method))throw new AssertionError("Dedicated server is missing "+method);
-        System.out.println("PASS dedicated-server food fields and private sound packet");
+        R.call(R.cls("net.minecraft.init.Bootstrap"),"register");
+        Object helmet=R.construct("net.minecraft.item.ItemStack",R.get(R.cls("net.minecraft.init.Items"),"diamond_helmet"));
+        R.call(helmet,"setTagCompound",R.call(R.cls("net.minecraft.nbt.JsonToNBT"),"getTagFromJson","{ench:[{id:0s,lvl:4s}]}"));
+        if((int)R.call(R.cls("net.minecraft.enchantment.EnchantmentHelper"),"getEnchantmentLevel",0,helmet)!=4)
+            throw new AssertionError("Protection IV NBT");
+        Object sword=R.construct("net.minecraft.item.ItemStack",R.get(R.cls("net.minecraft.init.Items"),"wooden_sword"));
+        R.call(sword,"setTagCompound",R.call(R.cls("net.minecraft.nbt.JsonToNBT"),"getTagFromJson","{Unbreakable:1b}"));
+        if(!(Boolean)R.call(R.call(sword,"getTagCompound"),"getBoolean","Unbreakable"))throw new AssertionError("Wood sword durability");
+        System.out.println("PASS dedicated-server food fields, private sound packet, Protection IV and wooden-sword NBT");
     }
 }
