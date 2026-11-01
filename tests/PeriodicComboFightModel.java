@@ -35,11 +35,21 @@ public final class PeriodicComboFightModel {
     }
     static final class Packet implements Cloneable {
         int kind,packetId;boolean ground;double due,ready,x,y,z,vx,vy,vz;boolean flag;long sequence;
+        Long cueDelayNanos;
         public Packet deepCopy(){try{return (Packet)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
         Packet(int k,double d,double x,double y,double vx,double vy,boolean f,long n){kind=k;due=ready=d;this.x=x;this.y=y;this.vx=vx;this.vy=vy;flag=f;sequence=n;packetId=k>=12?0x1a:k==0||k==1?3:k==2||k==9?11:k==3||k==7?2:k==4||k==8?0x12:k==10||k==11?0x1c:0x15;}
     }
     // 0 A movement, 1 B movement, 2 sprint command, 3 attack, 4 B velocity, 5 A view, 6 B view.
     public enum TimingSemantic { OTHER, OWN_HURT, TARGET_HURT, OWN_VELOCITY }
+    /** One immutable generated-packet timing decision. Null optional fields retain
+     * legacy readiness/publication; supplied ready is absolute, cue is drain-relative. */
+    public record PacketTimingPlan(double rawReceiptMs,Double readyMs,Long cueDelayNanos) {
+        public PacketTimingPlan {
+            if(!Double.isFinite(rawReceiptMs)||readyMs!=null&&(!Double.isFinite(readyMs)||readyMs<rawReceiptMs)
+                    ||cueDelayNanos!=null&&cueDelayNanos<0)
+                throw new IllegalArgumentException("Invalid packet timing plan");
+        }
+    }
     static TimingSemantic timingSemantic(int kind){
         return switch(kind){
             case 12,13 -> TimingSemantic.TARGET_HURT;
@@ -57,6 +67,9 @@ public final class PeriodicComboFightModel {
         default double arrival(int route,double generatedSendMs,double nominalHalfRttMs,TimingSemantic semantic){
             return arrival(route,generatedSendMs,nominalHalfRttMs);
         }
+        default PacketTimingPlan plan(int route,double generatedSendMs,double nominalHalfRttMs,TimingSemantic semantic){
+            return new PacketTimingPlan(arrival(route,generatedSendMs,nominalHalfRttMs,semantic),null,null);
+        }
         PacketTiming deepCopy();
     }
     /** Opt-in diagnostic queue eligibility, separate from raw wire receipt.
@@ -70,6 +83,7 @@ public final class PeriodicComboFightModel {
     }
     static final class State implements Cloneable {
         double[] extraLatency={0,0,0,0},nominalHalfRtt={0,0,0,0};PacketTiming packetTiming;PacketReadiness packetReadiness;
+        int plannedReadinessRoutes;
         double[] queueReadyWatermarks={Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY};
         PeriodicComboTransport transport;long tick,seq,combatOrder,lastFreshOrderA,lastFreshOrderB,lastAcceptedOrderA,lastAcceptedOrderB;int serverTicks;Body a,b;View ab,ba;ExactTravel.State serverA,serverB;
         double serverAx,serverAy=4,serverAz,serverBx,serverBy=4,serverBz,trackedAx,trackedAy=4,trackedAz,trackedBx,trackedBy=4,trackedBz;
@@ -100,24 +114,32 @@ public final class PeriodicComboFightModel {
         void add3(int k,double due,double x,double y,double z,double vx,double vy,double vz,boolean f){Packet p=new Packet(k,due,x,y,vx,vy,f,seq++);p.z=z;p.vz=vz;enqueue(p);}
         void enqueue(Packet p){
             int route=PeriodicComboTransport.route(p.kind);
+            Double plannedReady=null;
             if(transport!=null&&packetTiming!=null)throw new IllegalStateException("Cannot combine recorded payload transport and empirical packet timing");
             if(transport!=null)transport.emit(p);
             else if(packetTiming!=null){
                 if(extraLatency[route]!=0)throw new IllegalStateException("Empirical residual replaces extraLatency; configured RTT only");
                 double send=p.due-nominalHalfRtt[route];
-                double arrival=packetTiming.arrival(route,send,nominalHalfRtt[route],timingSemantic(p.kind));
+                TimingSemantic semantic=timingSemantic(p.kind);
+                PacketTimingPlan plan=packetTiming.plan(route,send,nominalHalfRtt[route],semantic);
+                if(plan==null)throw new IllegalStateException("Missing generated packet timing plan");
+                if(plan.cueDelayNanos()!=null&&semantic!=TimingSemantic.OWN_HURT&&semantic!=TimingSemantic.TARGET_HURT)
+                    throw new IllegalStateException("Cue delay is supported only on generated S19");
+                double arrival=plan.rawReceiptMs();
                 if(!Double.isFinite(arrival)||arrival<send)throw new IllegalStateException("Invalid generated packet arrival");
-                p.due=arrival;
+                p.due=arrival;plannedReady=plan.readyMs();p.cueDelayNanos=plan.cueDelayNanos();
             }else p.due+=extraLatency[route];
             // Both recorded transport.emit and empirical timing have now resolved
             // raw receipt. Keep due intact for own PacketObservation.arrivedAt.
             p.ready=p.due;
-            if(packetReadiness!=null){
+            if(plannedReady!=null){plannedReadinessRoutes|=1<<route;p.ready=Math.max(plannedReady,queueReadyWatermarks[route]);}
+            else if(packetReadiness!=null){
                 double eligible=packetReadiness.ready(route,p.packetId,p.due);
                 if(!Double.isFinite(eligible)||eligible<p.due)
                     throw new IllegalStateException("Invalid packet queue readiness: must be finite and at/after wire receipt");
                 p.ready=Math.max(eligible,queueReadyWatermarks[route]);
             }
+            if((plannedReadinessRoutes&(1<<route))!=0)p.ready=Math.max(p.ready,queueReadyWatermarks[route]);
             queueReadyWatermarks[route]=Math.max(queueReadyWatermarks[route],p.ready);
             packets.add(p);
         }

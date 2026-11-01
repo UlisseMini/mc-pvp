@@ -37,6 +37,8 @@ public final class PeriodicComboClock {
         /** Null preserves exact immediate legacy cue/callback behavior. Tape-only.
          * This is publication timing, not a general packet-handler service model. */
         public CuePublicationTiming cuePublicationTiming;
+        /** Tape-only opt-in for immutable per-packet drain-relative cue delays. */
+        public boolean packetCueDelays=false;
         /** Conditional reference-opportunity sensitivity only, NOT a calibrated
          * clock engine. Busy client stages wait; delays of a full tick reject. */
         public boolean causalBackpressure=false;
@@ -117,14 +119,14 @@ public final class PeriodicComboClock {
     public PeriodicComboClock(PeriodicComboFightModel.State state,PeriodicComboFightModel.Config config,Timing timing,Policy a,Policy b,List<Scheduled> schedule){
         this.state=state;this.config=config;this.timing=timing;policies=new Policy[]{a,b};recordedSchedule=schedule!=null;scheduleEnd=schedule==null?Double.POSITIVE_INFINITY:schedule.stream().mapToLong(Scheduled::nanos).max().orElseThrow(()->new IllegalArgumentException("Empty event tape"))/1_000_000.0;config.deferMovementSend=true;state.transport=null;
         Comparator<Event> comparator=Comparator.comparingDouble(Event::time);
-        events=new PriorityQueue<>(timing.causalBackpressure||timing.cuePublicationTiming!=null?comparator.thenComparingInt(e->e.kind>=22?0:1)
+        events=new PriorityQueue<>(timing.causalBackpressure||timing.cuePublicationTiming!=null||timing.packetCueDelays?comparator.thenComparingInt(e->e.kind>=22?0:1)
             .thenComparingDouble(Event::originalTime).thenComparingLong(Event::order):comparator.thenComparingLong(Event::order));
         state.extraLatency=new double[]{timing.uplinkA,timing.uplinkB,timing.downlinkA,timing.downlinkB};
         state.nominalHalfRtt=new double[]{config.ownRtt/2,config.otherRtt/2,config.ownRtt/2,config.otherRtt/2};
         if(timing.inputMode==InputMode.NATIVE_QUEUED&&timing.clickIntervalNanos<50_000_000L)throw new IllegalArgumentException("Physical injection ceiling exceeds20CPS");
         if((timing.explicitPolls||timing.injectionTiming!=null)&&schedule==null)throw new IllegalArgumentException("Explicit polls/injection timing require an event tape");
         if(timing.causalBackpressure&&schedule==null)throw new IllegalArgumentException("Causal backpressure requires an event tape");
-        if(timing.cuePublicationTiming!=null&&schedule==null)throw new IllegalArgumentException("Cue publication timing requires an event tape");
+        if((timing.cuePublicationTiming!=null||timing.packetCueDelays)&&schedule==null)throw new IllegalArgumentException("Cue publication timing requires an event tape");
         if(schedule==null){add(timing.aFramePhase,0);add(timing.bFramePhase,1);add(timing.aTickPhase,2);add(timing.bTickPhase,3);add(timing.serverPhase,8);}
         else{
             if(timing.inputMode!=InputMode.NATIVE_QUEUED)throw new IllegalArgumentException("Explicit event tapes require NATIVE_QUEUED mode");
@@ -192,15 +194,18 @@ public final class PeriodicComboClock {
     }
     private Observation observation(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;return new Observation(now,ticks[a?0:1],b.q,v.x,v.y,v.z,b.sprint,b.headYaw,b.lastContactTime,b.localContacts,v.lastHurtTime,b.lastHurtTime);}
     private void receive(boolean a){
-        if(timing.cuePublicationTiming==null){
-            PeriodicComboFightModel.receive(state,now,a,p->policies[a?0:1].received(packetObservation(a,p,now)));
-            return;
-        }
         int side=a?0:1;LinkedList<Publication> pending=publications.get(side);
         long drainNanos=Math.round(now*1_000_000.0);
         for(PeriodicComboFightModel.Packet p:PeriodicComboFightModel.due(state,now,a?1:2)){
+            if(p.cueDelayNanos!=null&&!timing.packetCueDelays)
+                throw new IllegalStateException("UNSUPPORTED_PACKET_CUE_MODE: stored delay requires explicit opt-in");
             if(p.kind>=12){
-                long publication=timing.cuePublicationTiming.publicationNanos(a?2:3,Math.round(p.due*1_000_000.0),Math.round(p.ready*1_000_000.0),drainNanos);
+                long publication=drainNanos;
+                if(p.cueDelayNanos!=null){
+                    try{publication=Math.addExact(drainNanos,p.cueDelayNanos);}
+                    catch(ArithmeticException e){throw new IllegalStateException("UNSUPPORTED_CUE_TIME: publication overflows",e);}
+                }else if(timing.cuePublicationTiming!=null)
+                    publication=timing.cuePublicationTiming.publicationNanos(a?2:3,Math.round(p.due*1_000_000.0),Math.round(p.ready*1_000_000.0),drainNanos);
                 if(publication<drainNanos)throw new IllegalStateException("UNSUPPORTED_CUE_TIME: publication precedes selected drain");
                 if(publication/1_000_000.0>scheduleEnd)throw new IllegalStateException("UNSUPPORTED_CUE_TIME: publication exceeds tape coverage");
                 if(!pending.isEmpty()&&publication<pending.getLast().nanos)
