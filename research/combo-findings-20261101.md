@@ -3,7 +3,8 @@
 **There is still no native indefinite-combo demonstration or vanilla impossibility
 proof.** The earlier full-reach controllers fail the matched W-tap gate. The new
 parallel, relaxed-scenario effort has a legal own-cue model controller with a
-60-second lock in a declared clock window, now proposed for native testing.
+60-second lock in a declared clock window, but its first native comparison loses
+to plain W-tap. A concrete cue-timing transfer error is now isolated for testing.
 Its wider phase failures remain visible. The baseline rule is mandatory in
 `AGENTS.md` and `combo-research-brief.md`.
 
@@ -227,5 +228,48 @@ hits before return. Their native drag/sprint effects are part of control, not
 wasted clicks. Wider phase tests still fail, and one slightly wider starting
 gap also lets W-tap lock. All sensitivity rows are retained in
 [the legal-controller findings](poc-20261101/legal-controller/findings.md).
-Java 8 compilation and 3,723 decision-parity checks pass. **Native confirmation
-is outstanding**; this is a calibrated model stepping stone, not a broad claim.
+Java 8 compilation and 3,723 decision-parity checks pass. These tests used the
+model's cue timestamps and regular clocks; they did not establish native policy
+realization under sampled cues and tick jitter.
+
+## First native legal-controller comparison: baseline wins
+
+Six serialized matches test the frozen candidate against plain W-tap with the
+same prescribed two-second acquisition policy, six-block start, reach 3/1.4,
+RTT 0/120, vanilla combat, perfect aim and 20 CPS. The opponent begins clicking
+at two seconds. Total duration is 62 seconds, with maintenance scored from two
+to 62 seconds. Native schedules are measured, not artificially identical.
+
+| Metric; repeats 1 / 2 / 3 | Frozen legal candidate | Plain W-tap, same opening |
+|---|---|---|
+| Fresh maintenance hits before first return | 3 / 9 / 8* | 84 / 31 / 87 |
+| Full 60-second maintenance without return | no / no / no* | yes / no / yes |
+| Fresh hits including opening before return | 6 / 13 / 12* | 88 / 35 / 91 |
+| Replay IDs | m1253 / m1256 / m1257 | m1254 / m1255 / m1258 |
+
+The starred candidate run has a 304 ms client stall before its return and fails
+the supplementary timing gate. Keep it as flagged evidence, not a clean repeat.
+The other primary windows have no interval above 100 ms. All six pass native
+reach, click-cap, build and target checks. The candidate does not pass the W-tap
+improvement gate, and its old implementation is stopped.
+
+The first candidate's own cue is stamped when an input tick observes hurtTime.
+Successive native input times map to wall-clock slots 0,0,1,3,4,5,5,7,7,9: two
+movement slots are skipped. Its first maintenance interval therefore coasts for
+eight inputs instead of seven and fails to restore sprint for the next fresh
+hit. W-tap restores sprint and preserves separation. In the successful model,
+the cue was stamped on packet service 43 ms before the first observing input;
+this sampling distinction was missing from the nominal adapter test.
+
+Both native policies also admit a third opening contact in a nominal two-slot
+burst: a frame queues it just before the next tick closes the gate. This shared
+acquisition discrepancy is separate from the candidate-specific skipped slots.
+The next bounded test changes only own-tick slot indexing, with opening admission
+as a separate ablation; it retains the same movement/click tables. No new spacing
+feature is justified before this causal timing diagnosis is tested.
+
+Raw [native results](poc-20261101/native-trial.json), all three archived POVs and
+per-match metadata are retained. See [the prefix diagnosis](poc-20261101/legal-controller/native-m1253-diagnosis.md)
+and [the timing-only proposal](poc-20261101/legal-controller/timing-contract-proposal.md).
+`/replay m1254` shows W-tap's easy reduced-reach lock; it is not the requested
+candidate-over-W-tap POC or evidence about full-reach vanilla feasibility.

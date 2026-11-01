@@ -22,5 +22,6 @@
   "ReplicationTrace",
   "AimController",
   "OrbitController",
-  "CycleController"
+  "CycleController",
+  "FrozenLegalCycleController"
 ]

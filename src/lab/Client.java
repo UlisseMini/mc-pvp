@@ -38,6 +38,7 @@ public final class Client {
     static final MomentumController momentum=new MomentumController();
     static final OrbitController orbit=new OrbitController();
     static final CycleController cycle=new CycleController();
+    static final FrozenLegalCycleController frozenCycle=new FrozenLegalCycleController();
     static final BurstClickController burstClicks=new BurstClickController();
     static BurstClickController.Decision burstDecision;
     static long burstObservedAt;
@@ -190,6 +191,7 @@ public final class Client {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 if(controls.getProperty("kind","").equals("cycle")){cycle.queued(ticks);clickGate=false;}
+                if(controls.getProperty("kind","").equals("frozen-cycle") || System.currentTimeMillis()-epoch<number("frozen_cycle_opening_ms",0))clickGate=frozenCycle.queued();
                 // A planned Ctrl pulse ends after the first queued click. Native
                 // sprint persists until its ordinary stop condition/attack; later
                 // clicks do not automatically re-enable it. No hit-result oracle.
@@ -298,6 +300,7 @@ public final class Client {
                 momentum.reset();
                 orbit.reset();
                 cycle.reset();
+                frozenCycle.reset();
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 criticalClicks.reset();
                 blockhit.reset();blockKey=false;freshHurtStatus=0;
@@ -538,6 +541,17 @@ public final class Client {
                 plan.put("local_range",obs.localRange);plan.put("forward",d.forward);plan.put("click_gate",d.click);
                 plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);plan.put("landed_cue",lastObservedTargetHurt);log(plan);
             }
+            // Matched maintenance baseline: shadow ordinary W-tap above, but
+            // apply the same acquisition inputs until the declared switch.
+            if(kind.equals("frozen-cycle") || now-epoch<number("frozen_cycle_opening_ms",0)){
+                FrozenLegalCycleController.Decision d=frozenCycle.decide(ticks,now-epoch,now,lastObservedTargetHurt);
+                setKeys(d.key!=0,0,d.key==2);clickGate=d.click;
+                Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","frozen_cycle_plan");plan.put("time",now);plan.put("match",match);
+                plan.put("native_tick",ticks);plan.put("observation_time",obs.time);plan.put("landed_cue",lastObservedTargetHurt);
+                plan.put("phase",d.phase);plan.put("contact_phase",d.contactPhase);plan.put("maintenance",d.maintenance);
+                plan.put("key",d.key);plan.put("click_gate",d.click);plan.put("persistent",d.persistent);plan.put("local_range",obs.localRange);
+                plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);log(plan);
+            }
             if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
             if(kind.equals("blockhit")){
                 boolean linear=controls.getProperty("block_model","legacy").equals("linear");
@@ -634,7 +648,7 @@ public final class Client {
         if(!Boolean.parseBoolean(p.getProperty("enabled","false")))return;
         if(!p.getProperty("match","").matches("m[0-9]{4,9}")||!p.getProperty("opponent","").matches("[A-Za-z0-9_]{1,16}"))
             throw new IllegalArgumentException("Enabled bot controls require a valid match and opponent");
-        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","blockhit","scripted").contains(p.getProperty("kind","hold")))
+        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","frozen-cycle","blockhit","scripted").contains(p.getProperty("kind","hold")))
             throw new IllegalArgumentException("Unsupported bot strategy: "+p.getProperty("kind"));
         ClickRate.cps(p);DuelSettings.reach(p);
         AimController.Settings.from(p);
@@ -695,6 +709,7 @@ public final class Client {
     public static void attackAfter(Object self,Object target){
         if(!"client".equals(System.getProperty("lab.role")))return;
         if(controls.getProperty("kind","").equals("cycle")){cycle.contact(ticks);clickGate=false;}
+        if(controls.getProperty("kind","").equals("frozen-cycle") || number("frozen_cycle_opening_ms",0)>0)frozenCycle.contact(ticks);
         Map<String,Object> event=new LinkedHashMap<>();event.put("type","engine_attack");event.put("time",System.currentTimeMillis());event.put("match",match);
         event.put("attack_reach",attackReach());
         event.put("monotonic_ns",System.nanoTime());event.put("click_attempt",ScienceTrace.clickId());
