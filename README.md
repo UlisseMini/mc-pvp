@@ -50,7 +50,7 @@ enabling RCON or opening another network port.
 | `/duel blockhit_timing diamond` | Timed sword-block bot; native controls, 10 CPS ceiling, 3-block reach, zero artificial reaction delay |
 | `/duel wtap rod_diamond` | Same unenchanted diamond armor / wooden sword kit, plus a fishing rod in hotbar slot 2 for both players; existing bots keep using their sword |
 | `/drill near` / `/drill medium` / `/drill far` | Repeated rod-diamond entries vs wtap from 4.5 / 6 / 9 blocks; append another bot name to change opponents |
-| `/drill mixed` | Cycle all three distances; reset five seconds after first sword contact (12-second limit without one); `/stop` exits |
+| `/drill mixed` | Cycle all three distances; reset directly in the arena five seconds after first sword contact (12-second limit without one), with a visible one-second countdown; `/stop` exits |
 | `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full unenchanted diamond armor; successful blocks play your block sound |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
 | `/duel wtap rod_diamond reach=3.5 cps=15 ping=100` | Custom practice bot: 3.5-block reach, 15 CPS ceiling, 100 ms added bot RTT; keeps your saved ping |

@@ -25,13 +25,13 @@ final class RangeIndicators {
     }
     private final Signal yours=new Signal(),theirs=new Signal();
     private String context="";private double previousTime=Double.NaN;private long previousWall;
-    void configure(Properties p){configure(yours,p,"yours","crosshair","55FFFF");configure(theirs,p,"theirs","edge","FF5555");}
+    void configure(Properties p){configure(yours,p,"yours","crosshair","55AAFF");configure(theirs,p,"theirs","crosshair","FF5555");}
     private static void configure(Signal s,Properties p,String side,String fallback,String rgb){
         String key="range."+side+".";
         Style selected=style(p.getProperty(key+"style",fallback));
         s.style=bool(p.getProperty(key+"enabled","true"))?selected:Style.OFF;
         String color=p.getProperty(key+"color",rgb);if(!color.matches("[0-9a-fA-F]{6}"))throw new IllegalArgumentException(key+"color needs six hex digits");s.rgb=Integer.parseInt(color,16);
-        String opacity=p.getProperty(key+"opacity","auto");s.opacity=opacity.equals("auto")?selected==Style.CROSSHAIR?.85:selected==Style.SCREEN?.06:.12:percent(opacity)/100;
+        String opacity=p.getProperty(key+"opacity","auto");s.opacity=opacity.equals("auto")?selected==Style.CROSSHAIR?(side.equals("yours")?.85:.55):selected==Style.SCREEN?.06:.12:percent(opacity)/100;
         s.pulse=bool(p.getProperty(key+"pulse","false"));
     }
     static String styleName(String value){return style(value).name().toLowerCase(Locale.ROOT);}

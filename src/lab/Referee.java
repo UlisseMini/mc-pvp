@@ -34,7 +34,7 @@ public final class Referee {
         final Properties configA=new Properties(),configB=new Properties();
         Object world;
         Path replay;
-        double startGap=6;int drillRound;String drillPreset="";long drillFirstHit;
+        double startGap=6;int drillRound,drillCountdown=-1;String drillPreset="";long drillFirstHit;
         Map<String,Object> state(){
             Map<String,Object> m=new LinkedHashMap<>();
             m.put("id",id);m.put("a",a);m.put("b",b);m.put("policy_a",pa);m.put("policy_b",pb);
@@ -101,8 +101,9 @@ public final class Referee {
                 if(a==null||b==null){m.winner=a==null?m.b:m.a;finish(m,"disconnect");continue;}
                 long setupNow=System.currentTimeMillis();
                 if(m.drillRound>0&&setupNow<m.start)EntryDrills.holdStart(m,a,b);
+                EntryDrills.countdown(m,setupNow);
                 if(setupNow>=m.start){CombatStats.usingItemChanged(a);CombatStats.usingItemChanged(b);}
-                if(!m.setupReseated&&setupNow<m.start&&setupNow>=m.start-1500){
+                if(!m.setupReseated&&setupNow<m.start&&setupNow>=m.start-(m.drillRound>0?500:1500)){
                     // Initial destination chunks may arrive after the teleport,
                     // allowing a client to fall into the floor during countdown.
                     // Re-seat once after terrain delivery, strictly before combat.
@@ -400,6 +401,7 @@ public final class Referee {
         m.configB.putAll(overridesB);
         ClickRate.cps(m.configA);ClickRate.cps(m.configB);DuelSettings.reach(m.configA);DuelSettings.reach(m.configB);
         Set<Integer> used=new HashSet<>();for(Match current:matches.values())used.add(current.arena);
+        if(round>0)m.arena=EntryDrills.arena(a);
         while(used.contains(m.arena))m.arena++;
         Object arenaWorld=R.get(player(a),"worldObj");
         m.world=arenaWorld;
@@ -413,15 +415,25 @@ public final class Referee {
         PovArchives.begin(m);
         configureProxy(a,pingA);configureProxy(b,pingB);
         // At normal speed even a full 180-second pursuit cannot reach another arena.
-        resetTracking(player(a));resetTracking(player(b));
-        seatPlayers(m,player(a),player(b));
+        boolean continuousDrill=EntryDrills.sameArena(m);
+        if(continuousDrill){
+            // These entities already exist in both clients. A normal teleport
+            // keeps them visible; destroying/retracking would create a blank gap.
+            EntryDrills.resetPlayers(m,player(a),player(b));m.setupReseated=true;
+        }else{
+            resetTracking(player(a));resetTracking(player(b));
+            seatPlayers(m,player(a),player(b));
+        }
+        if(round>0){m.start=System.currentTimeMillis()+1000;PovArchives.manifest(m,false);}
         control(a,pa,b,m,pingA,pingB);control(b,pb,a,m,pingB,pingA);
         Map<String,Object> initial=m.state();initial.put("parameters_a",m.configA);initial.put("parameters_b",m.configB);
+        if(round>0)initial.put("drill_reset",continuousDrill?"teleport_heal":"initial_setup");
         initial.put("equipment_a",equipment(player(a)));initial.put("equipment_b",equipment(player(b)));
         initial.put("bot_reaction_ms",Map.of("a",initial.get("reaction_ms_a"),"b",initial.get("reaction_ms_b")));
         Map<String,Object> caps=new LinkedHashMap<>();caps.put("a",initial.get("click_cps_a"));caps.put("b",initial.get("click_cps_b"));
         initial.put("bot_click_cap_cps",caps);
         append(m.replay,Map.of("type","start","match",initial));
+        EntryDrills.countdown(m,System.currentTimeMillis());
         String rules=m.drillRound>0?"Entry drill #"+round+", "+startGap+" block gap. Rod diamond; automatic repeat.":m.boxing()?"Boxing: first to 100 hits.":(m.box()?"Diamond box: 1x1, wooden swords":m.rods()?"Rod diamond: wooden swords and fishing rods with PvP knockback":"Diamond: wooden swords")+", unbreakable swords, unenchanted diamond armor, fight to death. Respawn, then /rematch.";
         message(player(a),"§aStarting "+m.id+": §b"+pa+" §7vs §6"+pb+"§7. "+rules+" §b/stop §7to exit.");
         message(player(b),"§aStarting "+m.id+": §b"+pa+" §7vs §6"+pb+"§7. "+rules);
@@ -516,10 +528,16 @@ public final class Referee {
                 !mode.equals("boxing")&&!gear.get("armor_unbreakable").equals(List.of(true,true,true,true))||
                 mode.equals("rod_diamond")&&(!gear.get("fishing_rod_slot_2").equals(true)||!gear.get("fishing_rod_unbreakable").equals(true)))
             throw new IllegalStateException("Practice kit verification failed: "+gear);
-        vanilla("tp "+name+" "+x+" "+y+" "+z+" "+yaw+" 0");
+        resetRoundPosition(p,x,y,z,yaw);
+    }
+    static void resetRoundPosition(Object p,double x,double y,double z,int yaw){
+        R.call(p,"clearItemInUse");
+        Object hook=R.get(p,"fishEntity");if(hook!=null){R.call(hook,"setDead");R.set(p,"fishEntity",null);}
+        vanilla("tp "+safeName(p)+" "+x+" "+y+" "+z+" "+yaw+" 0");
         settleTeleport(p);
         R.call(p,"setHealth",20.0f);R.call(R.call(p,"getFoodStats"),"setFoodLevel",20);
         fullFood(p);R.set(R.call(p,"getFoodStats"),"foodTimer",0);
+        R.set(p,"fallDistance",0.0f);
         R.set(p,"motionX",0.0);R.set(p,"motionY",0.0);R.set(p,"motionZ",0.0);
         R.call(R.get(p,"playerNetServerHandler"),"sendPacket",R.construct("net.minecraft.network.play.server.S12PacketEntityVelocity",p));
     }
@@ -617,13 +635,14 @@ public final class Referee {
             message(p,((Boolean)R.call(p,"isEntityAlive")?"":"§eRespawn first. ")+"§b/rematch §8| §b/bots §8| §b/replay "+m.id);
             if(!isBot(who))button(p,"Watch server replay "+m.id,"/replay "+m.id);
         }}
+        boolean repeatInArena=EntryDrills.finished(m,reason);
         for(String who:List.of(m.a,m.b)){
             disable(who);Object p=player(who);if(p==null)continue;
             if(reason.equals("invalid_client_view"))message(p,"§cStopped: a bot's native opponent view was invalid. This game is not a valid result. /rematch starts fresh.");
+            if(repeatInArena)continue;
             if((Boolean)R.call(p,"isEntityAlive"))returnToLobby(p);else pendingLobby.add(who);
         }
         if(m.box())clearBox(m.world,m.arena);
-        EntryDrills.finished(m,reason);
         PovArchives.finished(m);
         System.out.println("[PvP Lab] RESULT "+Json.encode(result));
     }

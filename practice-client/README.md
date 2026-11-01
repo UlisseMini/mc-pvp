@@ -32,8 +32,8 @@ with all the same subcommands, for example `/p advantage on`:
 | `/practice opening on` / `off` | Show/hide geometric opening lead (on by default) |
 | `/practice opening large` / `small` | Prominent centered opening HUD, or compact text |
 | `/practice advantage on` / `off` | Both client-view distances and your reach advantage, live and in replay (on by default) |
-| `/p range yours on` / `off` | Indicate when the opponent is within your client-view reach; cyan crosshair brackets by default |
-| `/p range theirs on` / `off` | Indicate when you are within the opponent's client-view reach; soft red screen edges by default |
+| `/p range yours on` / `off` | Indicate when the opponent is within your client-view reach; blue inner crosshair brackets by default |
+| `/p range theirs on` / `off` | Indicate when you are within the opponent's client-view reach; subtle red outer crosshair brackets by default |
 | `/p range both on` / `off` | Enable/disable both range indicators together |
 | `/p range yours crosshair` / `edge` / `screen` | Choose a style and enable it; substitute `theirs` or `both` to change the other indicator(s) |
 | `/p range theirs color FF5555` | Set a six-digit RGB color independently for either side |
@@ -48,7 +48,11 @@ Server commands `/drill near`, `/drill medium`, `/drill far` and `/drill mixed`
 start repeated rod-diamond approaches against wtap, from center-to-center gaps of
 4.5, 6 and 9 blocks. Append another bot name to change opponents. Mixed cycles the
 three distances. Each attempt resets five seconds after the first accepted sword
-hit, or after twelve seconds without one; there is a fresh countdown. `/stop` or
+hit, or after twelve seconds without one. Repeats reset directly in the arena,
+with a visible one-second center-screen countdown (`1.0` → `GO!`), without a lobby
+detour. The same bot and arena are reused when available. Repeats only teleport,
+heal, and clear old rods/momentum: the existing player entities and kits stay
+loaded, so the bot does not disappear and respawn during each countdown. `/stop` or
 `/drill stop` exits. Your saved ping and the bot's previous duel ping are retained.
 During setup only, players are held at their starting positions and pre-cast rods
 are cleared. Once combat starts, normal movement and combat apply.
@@ -78,8 +82,8 @@ regardless of which viewpoint the camera follows. This is a geometric distance
 advantage; modified reach caps are a separate setup parameter.
 
 The two **range indicators** are independent of the numeric HUD, reach fields,
-and each other. Both start enabled: cyan brackets when you can geometrically
-reach them in your view, soft red edges when they can geometrically reach you
+and each other. Both start enabled: blue inner brackets when you can geometrically
+reach them in your view, subtler red outer brackets when they can geometrically reach you
 in theirs. They use logical eye-to-expanded-hitbox distances and each actor's
 actual reach cap (normally 3.0), including height. Aim, walls, immunity and click
 timing are not tested. A signal switches off immediately outside range; visual
@@ -90,7 +94,7 @@ to the recorded human (or A for bot-vs-bot), independent of the selected camera.
 Choose `crosshair`, `edge`, or `screen` for either indicator. When both use edges,
 your signal occupies the top/bottom and theirs the left/right. Crosshair signals
 use separate inner/outer brackets; when both use screen tints, those brackets
-also identify the two signals. Automatic opacity is 85% for brackets, 12% at the
+also identify the two signals. Automatic opacity is 85% for your brackets, 55% for theirs, 12% at the
 outer edge fading inward, and 6% for full-screen tint. Optional entry pulses
 brighten for 180 ms of live/replay time and freeze when replay is paused. Seeking
 or first receiving a view does not manufacture an entry pulse. Commands save

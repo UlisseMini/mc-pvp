@@ -21,6 +21,9 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 public final class ForgeProbe {
     private int ticks,draws,worldDraws,stopAt; private Object bridge;
     private final Set<Double> drillGaps=new HashSet<>();
+    private final Set<String> drillMatches=new LinkedHashSet<>();
+    private boolean drillCountdownSeen,drillGoSeen,drillVisitedLobby;
+    private EntityPlayer drillOpponent;private int drillContinuitySamples;private boolean drillLostOpponent;
     private int openingResults;private String replayMatch;private double pausedTime;private String inventoryBefore;private int poseChecks;private double poseError;
     private Map<?,?> replay()throws Exception{Field f=bridge.getClass().getDeclaredField("capture");f.setAccessible(true);Object c=f.get(bridge);Field r=c.getClass().getDeclaredField("replay");r.setAccessible(true);Object p=r.get(c);Method m=p.getClass().getDeclaredMethod("state");m.setAccessible(true);return (Map<?,?>)m.invoke(p);}
     private void right(int slot){Minecraft mc=Minecraft.func_71410_x();mc.field_71439_g.field_71071_by.field_70461_c=slot;KeyBinding.func_74507_a(mc.field_71474_y.field_74313_G.func_151463_i());}
@@ -125,11 +128,24 @@ public final class ForgeProbe {
             }
             if(ticks==330)mc.field_71439_g.func_71165_d("/drill mixed");
             if(ticks>340&&stopAt==0){
+                if(!drillMatches.isEmpty()&&Math.abs(mc.field_71439_g.field_70165_t)<1000)drillVisitedLobby=true;
+                if(drillOpponent!=null){drillContinuitySamples++;if(mc.field_71441_e.func_73045_a(drillOpponent.func_145782_y())!=drillOpponent||!mc.field_71441_e.field_72996_f.contains(drillOpponent))drillLostOpponent=true;}
+                Field titleField=net.minecraft.client.gui.GuiIngame.class.getDeclaredField("field_175201_x");titleField.setAccessible(true);
+                String title=((String)titleField.get(mc.field_71456_v)).replaceAll("§[0-9A-FK-ORa-fk-or]","");
+                if(title.matches("1\\.0|0\\.[1-9]"))drillCountdownSeen=true;
+                if(title.equals("GO!"))drillGoSeen=true;
                 Map<?,?> state=linked(),v=views();Object drill=state.get("drill");
-                if(drill instanceof Map){Map<?,?> d=(Map<?,?>)drill;double gap=((Number)d.get("gap")).doubleValue();drillGaps.add(gap);
+                if(drill instanceof Map){Map<?,?> d=(Map<?,?>)drill;double gap=((Number)d.get("gap")).doubleValue();drillGaps.add(gap);drillMatches.add(String.valueOf(state.get("match")));
+                    if(drillOpponent==null&&((Number)d.get("round")).intValue()==1&&System.currentTimeMillis()>((Number)state.get("combat_start")).longValue()+1000){
+                        List<?> names=(List<?>)state.get("players");for(Object object:mc.field_71441_e.field_73010_i){EntityPlayer p=(EntityPlayer)object;if(p!=mc.field_71439_g&&names.contains(p.func_70005_c_())){drillOpponent=p;break;}}
+                    }
                     Object o=v.get("opening");if(o instanceof Map&&((Map<?,?>)((Map<?,?>)o).get("last")).size()>0)openingResults++;
                     if(drillGaps.size()==3&&System.currentTimeMillis()-((Number)state.get("combat_start")).longValue()>3000){
                         check(drillGaps.containsAll(Arrays.asList(4.5,6.,9.)),"mixed drill automatically cycles all three starting distances");
+                        check(drillCountdownSeen&&drillGoSeen,"native center-screen drill countdown and GO title both displayed");
+                        check(drillMatches.size()>=3&&!drillVisitedLobby,"three drill rounds reset directly without a client lobby teleport");
+                        check(drillContinuitySamples>100&&!drillLostOpponent,"same native bot entity stays loaded across both drill resets ("+drillContinuitySamples+" observations)");
+                        System.out.println("[PracticeProbe] DRILL_MATCHES "+drillMatches);
                         check(openingResults>0,"paired local reach streams produce opening intervals during drills");
                         check(Boolean.TRUE.equals(v.get("available"))&&world().boxes.size()==6,"independent ghost toggle persists across automatic rounds");
                         System.out.println("[PracticeProbe] DRILL_TIMING "+v.get("timing"));cleanHooks();

@@ -10,7 +10,7 @@ import static practice.core.JsonData.map;
 /** Exercise the installed module ABI and real HUD output, including reload and replay. */
 final class RangeChecks {
     private static int checks;
-    private static final int CYAN=0x55FFFF,RED=0xFF5555;
+    private static final int BLUE=0x55AAFF,RED=0xFF5555;
     private static void check(boolean value,String message){checks++;if(!value)throw new AssertionError(message);}
     private static void event(ReloadHost host,String kind,Map<String,Object> value){host.event(new PracticeEvent(kind,1,System.currentTimeMillis(),System.nanoTime(),value));}
     private static Map<String,Object> live(double own,double other,double reach,boolean available){return map("match","test","your_range",map("distance",own,"reach",3),"bot_range",map("distance",other,"reach",reach),"available",available);}
@@ -30,46 +30,46 @@ final class RangeChecks {
         try(ReloadHost host=new ReloadHost(dir)){
             configure(host,dir,"");
             Frame f=liveFrame(host,3.01,3.01,3,true);check(f.rectangles.isEmpty(),"neither in reach means no tint or brackets");
-            f=liveFrame(host,3,Math.nextUp(3.),3,true);check(has(f,CYAN)&&!has(f,RED),"own exact boundary lights without false opponent entry");
-            f=liveFrame(host,Math.nextUp(3.),3,3,true);check(!has(f,CYAN)&&has(f,RED),"opponent exact boundary and immediate own exit");
-            f=liveFrame(host,2.9,2.9,3,true);check(has(f,CYAN)&&has(f,RED),"both signals visible simultaneously");
+            f=liveFrame(host,3,Math.nextUp(3.),3,true);check(has(f,BLUE)&&!has(f,RED),"own exact boundary lights without false opponent entry");
+            f=liveFrame(host,Math.nextUp(3.),3,3,true);check(!has(f,BLUE)&&has(f,RED),"opponent exact boundary and immediate own exit");
+            f=liveFrame(host,2.9,2.9,3,true);check(has(f,BLUE)&&has(f,RED),"both signals visible simultaneously");
             check(f.rectangles.size()<=256,"HUD stays within native renderer limit");
-            for(Frame.Rectangle r:f.rectangles)check((r.color&0xFFFFFF)!=RED||r.right<400||r.left>400||r.bottom<225||r.top>225,"default danger edges keep center clear");
-            f=liveFrame(host,2.9,2.9,3,false);check(has(f,CYAN)&&!has(f,RED),"missing bot stream hides only danger");
-            f=liveFrame(host,Double.NaN,2.9,3,true);check(!has(f,CYAN)&&has(f,RED),"invalid own distance hides only own signal");
-            f=liveFrame(host,2.9,Double.NaN,3,true);check(has(f,CYAN)&&!has(f,RED),"invalid opponent distance cannot be safe-looking zero");
-            f=liveFrame(host,3.5,3.5,4,true);check(!has(f,CYAN)&&has(f,RED),"modified bot reach uses its actual cap");
+            for(Frame.Rectangle r:f.rectangles)check((r.color&0xFFFFFF)!=RED||r.right<400||r.left>400||r.bottom<225||r.top>225,"default danger brackets keep center clear");
+            f=liveFrame(host,2.9,2.9,3,false);check(has(f,BLUE)&&!has(f,RED),"missing bot stream hides only danger");
+            f=liveFrame(host,Double.NaN,2.9,3,true);check(!has(f,BLUE)&&has(f,RED),"invalid own distance hides only own signal");
+            f=liveFrame(host,2.9,Double.NaN,3,true);check(has(f,BLUE)&&!has(f,RED),"invalid opponent distance cannot be safe-looking zero");
+            f=liveFrame(host,3.5,3.5,4,true);check(!has(f,BLUE)&&has(f,RED),"modified bot reach uses its actual cap");
             Thread.sleep(275);check(render(host).rectangles.isEmpty(),"expired live observations hide both signals");
             configure(host,dir,"metrics.enabled=true\n");
-            command(host,"range","theirs","off");f=liveFrame(host,2.9,2.9,3,true);check(has(f,CYAN)&&!has(f,RED),"independent off");
+            command(host,"range","theirs","off");f=liveFrame(host,2.9,2.9,3,true);check(has(f,BLUE)&&!has(f,RED),"independent off");
             check(settings(dir).getProperty("metrics.enabled").equals("true"),"commands preserve unrelated settings");
             command(host,"range","both","off");check(liveFrame(host,2.9,2.9,3,true).rectangles.isEmpty(),"both disabled");
-            command(host,"range","theirs","on");f=liveFrame(host,2.9,2.9,3,true);check(!has(f,CYAN)&&has(f,RED),"on preserves previous style");
+            command(host,"range","theirs","on");f=liveFrame(host,2.9,2.9,3,true);check(!has(f,BLUE)&&has(f,RED),"on preserves previous style");
             command(host,"range","both","crosshair");f=liveFrame(host,2.9,2.9,3,true);check(f.rectangles.size()==16,"two distinct crosshair bracket sets");
             for(Frame.Rectangle a:f.rectangles)for(Frame.Rectangle b:f.rectangles)if((a.color&0xFFFFFF)!=(b.color&0xFFFFFF))check(a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom,"bracket signals do not overlap");
-            command(host,"range","both","edge");f=liveFrame(host,2.9,2.9,3,true);check(has(f,CYAN)&&has(f,RED)&&f.rectangles.size()<=256,"both edge signals fit renderer budget");
+            command(host,"range","both","edge");f=liveFrame(host,2.9,2.9,3,true);check(has(f,BLUE)&&has(f,RED)&&f.rectangles.size()<=256,"both edge signals fit renderer budget");
             command(host,"range","both","screen");f=liveFrame(host,2.9,2.9,3,true);check(f.rectangles.stream().filter(r->r.left==0&&r.top==0&&r.right==800&&r.bottom==450).count()==2&&f.rectangles.size()==18,"screen tints retain separate brackets when mixed");
-            command(host,"range","yours","color","#00FF00");command(host,"range","yours","opacity","25");f=liveFrame(host,2.9,2.9,3,true);check(alpha(f,0x00FF00)==64&&!has(f,CYAN),"custom color and percentage opacity applied");
+            command(host,"range","yours","color","#00FF00");command(host,"range","yours","opacity","25");f=liveFrame(host,2.9,2.9,3,true);check(alpha(f,0x00FF00)==64&&!has(f,BLUE),"custom color and percentage opacity applied");
             check(host.reload(false),"saved commands survive actual module replacement");f=liveFrame(host,2.9,2.9,3,true);check(alpha(f,0x00FF00)==64&&has(f,RED),"settings and both choices persist after reload");
             check(f.lines.stream().anyMatch(l->l.text.contains("Range yours opacity 25")),"command feedback survives automatic reload");
             byte[] saved=Files.readAllBytes(dir.resolve("settings.properties"));
             for(String[] invalid:new String[][]{{"range","yours","opacity","NaN"},{"range","both","opacity","101"},{"range","theirs","color","BAD"},{"range","both","pulse","bad"}}){command(host,invalid);check(Arrays.equals(saved,Files.readAllBytes(dir.resolve("settings.properties"))),"invalid command does not change settings");check(render(host).lines.stream().anyMatch(l->l.color==0xFF8888),"invalid command gives feedback without disabling module");}
             check(!host.command(new String[]{"unrelated"}),"other commands still handled by bridge");
             configure(host,dir,"");
-            Map<String,Object> state=replay(1000,3.3,3.6);f=replayFrame(host,state);check(has(f,CYAN)&&!has(f,RED),"replay uses each logical POV and human B orientation");
-            state.put("source","a");f=replayFrame(host,state);check(has(f,CYAN)&&!has(f,RED),"camera/source switches do not flip whose signal is whose");
+            Map<String,Object> state=replay(1000,3.3,3.6);f=replayFrame(host,state);check(has(f,BLUE)&&!has(f,RED),"replay uses each logical POV and human B orientation");
+            state.put("source","a");f=replayFrame(host,state);check(has(f,BLUE)&&!has(f,RED),"camera/source switches do not flip whose signal is whose");
             state.put("reach",Arrays.asList(4.,3.));check(has(replayFrame(host,state),RED),"replay honors bot A's custom reach");
-            state.put("views",map("b",map("b",pose(0,4),"a",pose(3.3,4))));f=replayFrame(host,state);check(has(f,CYAN)&&!has(f,RED),"missing replay source only suppresses its signal");
+            state.put("views",map("b",map("b",pose(0,4),"a",pose(3.3,4))));f=replayFrame(host,state);check(has(f,BLUE)&&!has(f,RED),"missing replay source only suppresses its signal");
             state.put("views",map("b",map("b",pose(0,4),"a",pose(3.3,7))));check(replayFrame(host,state).rectangles.isEmpty(),"height matters for true 3D reach");
-            state=replay(1100,3.6,3.3);state.put("availability",map("a",map("role","human"),"b",map("role","bot")));f=replayFrame(host,state);check(has(f,CYAN)&&!has(f,RED),"normal human A orientation also works");
+            state=replay(1100,3.6,3.3);state.put("availability",map("a",map("role","human"),"b",map("role","bot")));f=replayFrame(host,state);check(has(f,BLUE)&&!has(f,RED),"normal human A orientation also works");
             configure(host,dir,"range.yours.pulse=true\nrange.yours.opacity=30\nrange.theirs.enabled=false\n");
-            int steady=alpha(replayFrame(host,replay(1000,3.3,3.6)),CYAN);check(steady==77,"initial in-range observation does not invent an entry pulse");
-            replayFrame(host,replay(1010,3.6,3.6));int pulse=alpha(replayFrame(host,replay(1020,3.3,3.6)),CYAN);check(pulse>steady,"actual outside-to-inside entry pulses");
-            check(alpha(replayFrame(host,replay(1020,3.3,3.6)),CYAN)==pulse,"paused replay freezes pulse on replay clock");
-            check(alpha(replayFrame(host,replay(1220,3.3,3.6)),CYAN)==steady,"entry pulse settles to steady indication");
-            check(!has(replayFrame(host,replay(1230,3.6,3.6)),CYAN),"exit never leaves misleading fading indicator");
-            replayFrame(host,replay(1240,3.3,3.6));check(alpha(replayFrame(host,replay(1100,3.3,3.6)),CYAN)==steady,"rewind clears pulse history");
-            replayFrame(host,replay(1110,3.6,3.6));check(alpha(replayFrame(host,replay(5000,3.3,3.6)),CYAN)==steady,"seek forward does not fake a range-entry event");
+            int steady=alpha(replayFrame(host,replay(1000,3.3,3.6)),BLUE);check(steady==77,"initial in-range observation does not invent an entry pulse");
+            replayFrame(host,replay(1010,3.6,3.6));int pulse=alpha(replayFrame(host,replay(1020,3.3,3.6)),BLUE);check(pulse>steady,"actual outside-to-inside entry pulses");
+            check(alpha(replayFrame(host,replay(1020,3.3,3.6)),BLUE)==pulse,"paused replay freezes pulse on replay clock");
+            check(alpha(replayFrame(host,replay(1220,3.3,3.6)),BLUE)==steady,"entry pulse settles to steady indication");
+            check(!has(replayFrame(host,replay(1230,3.6,3.6)),BLUE),"exit never leaves misleading fading indicator");
+            replayFrame(host,replay(1240,3.3,3.6));check(alpha(replayFrame(host,replay(1100,3.3,3.6)),BLUE)==steady,"rewind clears pulse history");
+            replayFrame(host,replay(1110,3.6,3.6));check(alpha(replayFrame(host,replay(5000,3.3,3.6)),BLUE)==steady,"seek forward does not fake a range-entry event");
             event(host,"replay_frame",map("active",false));check(liveFrame(host,3.5,3.5,3,true).rectangles.isEmpty(),"leaving replay restores live thresholds");
             liveFrame(host,2.9,2.9,3,true);host.tick(new Snapshot(0,0,1,false,false,false,null,null,Collections.emptyList()));check(render(host).rectangles.isEmpty(),"disconnect removes all indicators");
         }finally{try(java.util.stream.Stream<Path> paths=Files.walk(dir)){paths.sorted(Comparator.reverseOrder()).forEach(p->{try{Files.delete(p);}catch(IOException e){throw new UncheckedIOException(e);}});}}
