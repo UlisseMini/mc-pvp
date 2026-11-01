@@ -29,6 +29,16 @@ reload live; client commands start with `/practice`.
 3. Type **`/bots`** and click a bot to fight it. Boxing is first to 100 hits.
    For full diamond armor and a fight to death, use **`/duel wtap diamond`**.
 
+Sumo uses a **provisional 10-block-wide circular platform**, with spawns 6 blocks
+apart. This approximates the [size described by Hypixel players](https://hypixel.net/threads/pvp-vs-gamesense.5158839/page-2);
+we have not verified exact current MMC/Hypixel map dimensions or that they match.
+The platform is built from native solid blocks with normal friction. Falling
+half a block below its surface loses; both falling in the same server tick is
+a draw. Health is restored after native punch damage, preserving knockback and
+hit immunity. The duel times out after two minutes. Recordings include the
+platform geometry, and server replays rebuild it. No third-party plugin or map
+is installed for this mode.
+
 The server is already set up on this Mac. If it is stopped, double-click
 **Start PvP Lab.command** in this folder and leave its Terminal window open.
 An “already running” message means you can join immediately.
@@ -45,16 +55,17 @@ enabling RCON or opening another network port.
 |---|---|
 | `/bots` | Clickable roster, including saved search candidates |
 | `/bots all` | Include every saved tuning candidate |
+| `/duel wtap sumo` | Bare fists, no armor, full health; knock the bot off the circular platform. Ping/CPS/reach overrides and replays work as usual |
 | `/duel hold-w` | Fight the simplest baseline |
 | `/duel wtap diamond` | Full unenchanted diamond armor and an unbreakable wooden sword; real health and regeneration; fight to death |
 | `/duel blockhit_timing diamond` | Timed sword-block bot; native controls, 10 CPS ceiling, 3-block reach, zero artificial reaction delay |
 | `/duel wtap rod_diamond` | Same unenchanted diamond armor / wooden sword kit, plus a fishing rod in hotbar slot 2 for both players; existing bots keep using their sword |
 | `/drill near` / `/drill medium` / `/drill far` | Repeated rod-diamond entries vs wtap from 4.5 / 6 / 9 blocks; append another bot name to change opponents |
-| `/drill mixed` | Cycle all three distances; reset directly in the arena five seconds after first sword contact (12-second limit without one), with a visible one-second countdown; `/stop` exits |
+| `/drill mixed` | Cycle all three distances; reset directly in the arena five seconds after first sword contact (12-second limit without one), with a visible two-second countdown; `/stop` exits |
 | `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full unenchanted diamond armor; successful blocks play your block sound |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
 | `/duel wtap rod_diamond reach=3.5 cps=15 ping=100` | Custom practice bot: 3.5-block reach, 15 CPS ceiling, 100 ms added bot RTT; keeps your saved ping |
-| `/mode rod_diamond` / `/mode diamond_box` / `/mode diamond` / `/mode boxing` | Choose the default mode for subsequent `/duel` and roster clicks in this session |
+| `/mode rod_diamond` / `/mode diamond_box` / `/mode diamond` / `/mode boxing` / `/mode sumo` | Choose the default mode for subsequent `/duel` and roster clicks in this session |
 | `/blocksound test` | Preview the quiet metallic block clang |
 | `/blocksound on` / `/blocksound off` | Enable or mute the block sound; enabled by default |
 | `/blocktiming on` / `/blocktiming off` | Enable or hide brief colored timing feedback above the hotbar; enabled by default |

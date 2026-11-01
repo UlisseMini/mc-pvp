@@ -29,7 +29,7 @@ public final class RodRuleCheck {
         expect(false,b,new Source(hook,other),"outside attacker");
         expect(false,b,new Source(hook,null),"ownerless hook");
         expect(false,b,new Source(a,a),"non-hook damage source");
-        for(String mode:java.util.List.of("boxing","diamond","diamond_box")){
+        for(String mode:java.util.List.of("boxing","diamond","diamond_box","sumo")){
             m.mode=mode;expect(false,b,fromA,"mode "+mode);
         }
         m.mode="rod_diamond";m.start=System.currentTimeMillis()+60_000;

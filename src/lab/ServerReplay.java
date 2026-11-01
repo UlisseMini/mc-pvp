@@ -55,13 +55,14 @@ public final class ServerReplay {
         close(who,false);Referee.watching.remove(who);
         int arena=-2;while(inUse(arena))arena--;
         Object world=R.get(viewer,"worldObj");
-        prepareStage(world,data,4096.0*(arena+1));Referee.clearBox(world,arena);
+        prepareStage(world,data,4096.0*(arena+1));Referee.clearBox(world,arena);SumoArena.clear(world,arena);
+        if("sumo".equals(data.result.get("mode")))SumoArena.build(world,arena);
         if("diamond_box".equals(data.result.get("mode")))Referee.prepareBox(world,arena);
         Session s=new Session(who,data,arena,System.currentTimeMillis());sessions.put(who,s);
         for(int i=0;i<2;i++)s.actors[i]=actor(viewer,data.label(i==0?"a":"b"),UUID.randomUUID());
         ReplayToolbar.equip(viewer,s);R.call(viewer,"setSpectatingEntity",viewer);Referee.configureProxy(who,0);
         Map<String,Object> first=data.frame(0),a=ReplayData.map(first.get("a")),b=ReplayData.map(first.get("b"));
-        Referee.teleport(viewer,s.center-data.originalCenter+(ReplayData.number(a,"posX",data.originalCenter)+ReplayData.number(b,"posX",data.originalCenter))/2,9,
+        Referee.teleport(viewer,s.center-data.originalCenter+(ReplayData.number(a,"posX",data.originalCenter)+ReplayData.number(b,"posX",data.originalCenter))/2,"sumo".equals(data.result.get("mode"))?SumoArena.TOP_Y+5:9,
             (ReplayData.number(a,"posZ",0)+ReplayData.number(b,"posZ",0))/2+6);
         Referee.message(viewer,"§6Replay "+match+" §7— "+data.label("a")+" vs "+data.label("b")+". §fViewpoint: server. §7Use the compass to switch recorded views.");
         for(String side:List.of("a","b"))Referee.message(viewer,"§7"+data.label(side)+" POV: "+(data.pov.available(side)?data.pov.quality.get(side):"not recorded"));
@@ -243,13 +244,13 @@ public final class ServerReplay {
         if(spawn){
             listPacket(viewer,actor,"ADD_PLAYER");send(viewer,R.construct("net.minecraft.network.play.server.S0CPacketSpawnPlayer",actor));
             String[] armor={"diamond_boots","diamond_leggings","diamond_chestplate","diamond_helmet"};
-            boolean equipped=!"boxing".equals(s.data.result.get("mode"));
+            boolean equipped=!Set.of("boxing","sumo").contains(s.data.result.get("mode"));
             for(int slot=1;slot<=4;slot++)send(viewer,R.construct("net.minecraft.network.play.server.S04PacketEntityEquipment",id(actor),slot,equipped?namedItem(armor[slot-1]):null));
         }
         send(viewer,R.construct("net.minecraft.network.play.server.S18PacketEntityTeleport",actor));
         send(viewer,R.construct("net.minecraft.network.play.server.S19PacketEntityHeadLook",actor,(byte)(R.num(actor,"rotationYawHead")*256/360)));
         send(viewer,R.construct("net.minecraft.network.play.server.S1CPacketEntityMetadata",id(actor),R.call(actor,"getDataWatcher"),true));
-        int held=(int)ReplayData.number(p,"held_item_id",namedItemId("boxing".equals(s.data.result.get("mode"))?"diamond_sword":"wooden_sword"));
+        int held=(int)ReplayData.number(p,"held_item_id","sumo".equals(s.data.result.get("mode"))?0:namedItemId("boxing".equals(s.data.result.get("mode"))?"diamond_sword":"wooden_sword"));
         if(spawn||s.held[side]!=held){send(viewer,R.construct("net.minecraft.network.play.server.S04PacketEntityEquipment",id(actor),0,item(held)));s.held[side]=held;}
         int swing=(int)ReplayData.number(p,"swingProgressInt",-1);
         if(!spawn&&!s.clock.paused()&&ReplayData.flag(p,"isSwingInProgress")&&(s.swing[side]<0||swing<s.swing[side]))send(viewer,R.construct("net.minecraft.network.play.server.S0BPacketAnimation",actor,0));
@@ -291,7 +292,7 @@ public final class ServerReplay {
                 if(type.equals("hit")){
                     if(!ReplayData.flag(e,"rod"))send(viewer,R.construct("net.minecraft.network.play.server.S0BPacketAnimation",a,0));
                     send(viewer,R.construct("net.minecraft.network.play.server.S19PacketEntityStatus",b,(byte)2));
-                    s.lastEvent=s.data.label(attacker==0?"a":"b")+(ReplayData.flag(e,"rod")?" rod contact":ReplayData.flag(e,"damage_upgrade")?" damage upgrade":" sword hit");s.eventUntil=now+700;
+                    s.lastEvent=s.data.label(attacker==0?"a":"b")+(ReplayData.flag(e,"rod")?" rod contact":ReplayData.flag(e,"damage_upgrade")?" damage upgrade":"sumo".equals(s.data.result.get("mode"))?" punch":" sword hit");s.eventUntil=now+700;
                 }else if(type.equals("critical"))send(viewer,R.construct("net.minecraft.network.play.server.S0BPacketAnimation",b,4));
                 else if(type.equals("rod_trick")){s.lastEvent="Rod trick: "+s.data.label(attacker==0?"a":"b");s.eventUntil=now+1000;}
                 else if(type.equals("blocked_damage")){s.lastEvent=s.data.label(victim==0?"a":"b")+" blocked damage";s.eventUntil=now+700;}

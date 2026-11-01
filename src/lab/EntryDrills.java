@@ -4,6 +4,7 @@ import java.util.*;
 
 /** Repeated ordinary rod-diamond approaches with controlled setup, never mid-fight movement edits. */
 public final class EntryDrills {
+    static final long COUNTDOWN_MS=2000;
     static final Map<String,Session> sessions=new HashMap<>();
     static final class Session {
         String name,preset,bot,slot;int rounds,arena;double botPing;
@@ -27,7 +28,7 @@ public final class EntryDrills {
         if(Referee.find(name)!=null)throw new IllegalArgumentException("Use /stop to finish your current duel first.");
         if(!(Boolean)R.call(sender,"isEntityAlive"))throw new IllegalArgumentException("Respawn first.");
         Session s=new Session(name,args[1],bot,Referee.lastPings.getOrDefault(name,new double[]{0,0})[0]);sessions.put(name,s);
-        Referee.message(sender,"§bDrills enabled: "+s.preset+" vs "+s.bot+". Reset five seconds after the first sword hit, then a one-second countdown. /stop exits.");
+        Referee.message(sender,"§bDrills enabled: "+s.preset+" vs "+s.bot+". Reset five seconds after the first sword hit, then a two-second countdown. /stop exits.");
     }
     static void cancel(String name){if(sessions.remove(name)!=null&&Referee.player(name)!=null)Referee.vanilla("title "+name+" clear");}
     static int arena(String name){Session s=sessions.get(name);return s==null?0:s.arena;}
@@ -61,27 +62,27 @@ public final class EntryDrills {
         return keep;
     }
     static void countdown(Referee.Match m,long now){
-        if(m.drillRound==0)return;
-        int tenths=(int)Math.max(0,Math.min(10,(m.start-now+99)/100));
+        if(m.drillRound==0&&!m.sumo())return;
+        int tenths=(int)Math.max(0,Math.min(COUNTDOWN_MS/100,(m.start-now+99)/100));
         if(tenths==m.drillCountdown)return;
         boolean first=m.drillCountdown<0;m.drillCountdown=tenths;
         for(String who:List.of(m.a,m.b)){
             if(Referee.isBot(who)||Referee.player(who)==null)continue;
             if(first||tenths==0){
                 Referee.vanilla("title "+who+" times 0 "+(tenths==0?8:6)+" "+(tenths==0?4:0));
-                Referee.vanilla("title "+who+" subtitle "+Json.encode(Map.of("text",tenths==0?"":"Round "+m.drillRound+" · "+m.startGap+" blocks","color","gray")));
+                Referee.vanilla("title "+who+" subtitle "+Json.encode(Map.of("text",tenths==0?"":m.sumo()?"Sumo · knock your opponent off":"Round "+m.drillRound+" · "+m.startGap+" blocks","color","gray")));
             }
             Referee.vanilla("title "+who+" title "+Json.encode(Map.of("text",tenths==0?"GO!":String.format(Locale.ROOT,"%.1f",tenths/10.0),"color",tenths==0?"green":"yellow","bold",true)));
         }
         Referee.append(m.replay,Map.of("type","drill_countdown","time",now,"combat_start",m.start,"tenths",tenths));
     }
     static void holdStart(Referee.Match m,Object a,Object b){
-        double center=4096.0*(m.arena+1);
+        double center=4096.0*(m.arena+1),y=m.sumo()?SumoArena.TOP_Y:4;
         for(int side=0;side<2;side++){
             Object p=side==0?a:b;double x=center+(side==0?-1:1)*m.startGap/2;
             Object hook=R.get(p,"fishEntity");if(hook!=null){R.call(hook,"setDead");R.set(p,"fishEntity",null);}
-            if(Math.abs(R.num(p,"posX")-x)>.02||Math.abs(R.num(p,"posY")-4)>.02||Math.abs(R.num(p,"posZ"))>.02){
-                Referee.teleport(p,x,4,0);R.set(p,"motionX",0.0);R.set(p,"motionY",0.0);R.set(p,"motionZ",0.0);
+            if(Math.abs(R.num(p,"posX")-x)>.02||Math.abs(R.num(p,"posY")-y)>.02||Math.abs(R.num(p,"posZ"))>.02){
+                Referee.teleport(p,x,y,0);R.set(p,"motionX",0.0);R.set(p,"motionY",0.0);R.set(p,"motionZ",0.0);
             }
         }
     }

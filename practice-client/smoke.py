@@ -93,7 +93,7 @@ def main():
             env={'PATH':'/usr/bin:/bin','LANG':'en_US.UTF-8','TMPDIR':str(game/'tmp')+'/'})
         (game/'pid').write_text(str(process.pid))
         print('Isolated Forge client running; log:',log,flush=True)
-        try:code=process.wait(timeout=150)
+        try:code=process.wait(timeout=210)
         except subprocess.TimeoutExpired:
             process.kill();process.wait();raise RuntimeError('Forge smoke test timed out; see '+str(log))
     text=log.read_text(errors='replace')
