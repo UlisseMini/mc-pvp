@@ -110,9 +110,24 @@ six-draw spread is1,1,1/1,119,1 versusWT1,1,1/1,2,1, with no actualUNKNOWNs or
 resource stops. All five failures are early entries; robust qualification fails.
 The witness has12eligible Bclicks with nearest-box range<3 but selected-ray
 misses (minimum ray margin .000756); do not call it an aim-independent lock.
-Next diagnose inherited entry timing versus available control authority, not
-another legal feature or native controller promotion. Search access includes
-full current state/future host calendar; actual future jitter key stays hidden.
+The entry deadline audit shows post4s ordinary movement cannot reach B's rendered
+view before the fatal m1395 click; no equivalent exclusion holds for m1396.
+A bounded two-case earlier-control test now forks both H2 and primed W-tap at
+3.5s, keeps B quiet until4s, and scores only4–64s. Same profile120/120 and seed4000:
+m1395 gets79 versusWT2, m1396 gets51 versusWT2, but0/2 full minutes. Each arm
+excludes one extra pre4s fresh/strong hit; no actual UNKNOWN/resource stops.
+Eight scoring and37 legacy checks pass, both passive early continuations recover
+the old complete4s state/history, and all1199 decisions of the old119-hit witness
+remain exact. These two diagnoses do not replace the original six-draw spread.
+The79-hit failure is a definite maintenance closure: sampled S12 preparation
+misses a movement opportunity, then B contacts0.770ms before first displacement,
+ray2.660 and A vulnerable. Earlier safe three-particle forecasts miss that draw.
+No counterfactual delay removal was tested. Next investigate spatial safety
+through possible pre-movement opponent clicks; do not promote a legal/native
+controller or claim robust maintenance yet. Search access includes full current
+state/future host calendar; actual future jitter key stays hidden. See the
+`oracle-early-entry` and `witness-mechanism/early-failure-note.md` reports in the
+Hypixel inference folder. Both current agents' experiments are finished.
 Native component replay passes the first8s of both profile fixtures exactly;
 this is recorded-clock parity, not generalized timing or Hypixel identity.
 
