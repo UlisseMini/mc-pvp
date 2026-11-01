@@ -40,19 +40,19 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ### Latest priority: native schedule calibration, then robustness
 
-Current checkpoint: exact receipt→enqueue boundary errors are proven in fresh
-m1395. Two explicitly oracle-conditioned readiness interventions remove the
-first replica/body mismatches and reproduce its19-hit failure in the same
-accepting drain; native-source W-tap remains2. Later body/input mismatches remain,
-and counterfactual same-seed W-tap lacks a sampled source stage. This is causal
-evidence, NOT calibration acceptance. Legacy recorded-timing replay still passes
-24683 events/9243 states bit-exact. Next frozen test is a whole-donor monotone
-receipt→enqueue field with central/lower/upper sensitivities, preserving paired
-calendars and exposing different drain selections. Do not independently sample
-wall preparation costs: observed174ms pauses can already be represented by
-calendar gaps. See [current findings](combo-native-schedules-20261101.md) and
-[field plan](poc-20261101/native-schedules/adapter/queue-readiness-field-plan.md).
-No controller changes or new prospective native matches until the gate passes.
+Current checkpoint: whole-donor receipt→enqueue fields fix early native queue
+chronology; two one-leg oracle arrival interventions isolate a separate C02
+source-clock error (loop start versus actual send call). m1391 now reproduces
+native26 and m1395 native19 at the same accepting drains; native-source W-tap
+remains1/2. Counterfactual source-stage gaps remain unknown, and full trajectory
+validation is underway. This is NOT calibration acceptance or controller tuning.
+Next: generalize the proven attack-source timing correction, and separately
+represent S19 cue publication inside its handler (386µs already flips one
+admission). Preserve paired calendars, whole-recording timing correlation and
+complete-state W-tap forks. Do not sample wall preparation costs independently:
+observed174ms pauses can already be represented in calendar gaps. See
+[current findings](combo-native-schedules-20261101.md). No new prospective native
+matches until the calibration gate passes; two reserved pairs remain unused.
 
 User requests that evaluation clocks use native-recorded packet jitter, client
 tick gaps, task-drain timing and opening variation, rather than the ideal

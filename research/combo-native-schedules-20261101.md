@@ -5,7 +5,55 @@ controller remains frozen while we replace that evaluation with measured timing
 opportunities and validate both it and plain W-tap. A physics replay with recorded
 inputs and packet timings is a different claim from predicting a new fight.
 
-## Latest: a proven queue-boundary error, not yet calibrated
+## Current: queue eligibility and attack-dispatch errors isolated
+
+The whole-recording receipt→enqueue field now fixes every body/view comparison
+through3.6 s in the fresh candidate recording. Native packet timestamps are
+matched at their recorded integer-nanosecond precision; an earlier floating-point
+lookup alias is fixed, with v1 artifacts retained. This field stays paired with
+its own recording's clocks, so a shared host pause is not independently added a
+second time. It remains conditional on observed workload, not a calibrated
+new-schedule generator.
+
+Two remaining errors come from **starting attack transport at the wrong stage**.
+The model generates C02 at the unconditional click-loop opportunity, while the
+latency lookup was indexed by the later native send call. That both omits local
+work and selects the preceding timing sample. In m1395 a5.052 ms receipt error
+reverses attack/movement order within one server drain, changing knockback. In
+m1391 a3.239 ms error puts an attack one drain early, while the target is immune.
+
+A frozen diagnostic changes just that one raw arrival in each recording:
+
+| Native calendar;60 s target after4 s quiet opening | Candidate with central queue field | Candidate plus one arrival correction | Matched complete-state W-tap | Native arm |
+|---|---|---|---|---|
+|m1391|16; unknown at10.695 s|26; return at14.344 s|1; unknown at4.544 s in both|Candidate26|
+|m1392|0; unknown at4.242 s|unchanged|1; return at5.191 s|W-tap1|
+|m1395|19; return at11.591 s|19; same return drain|0; unknown at4.243 s in both|Candidate19|
+|m1396|0; unknown at4.191 s|unchanged|2; return at5.893 s|W-tap2, retained timing flag|
+
+Each selected correction applies exactly once; no extra route-FIFO clamp is
+introduced. Unknown prefixes are not completed losses. The return times use
+drain start; native attack code executes a fraction of a millisecond later.
+**This is causal diagnosis, not a predictive pass:** corrected timestamps come
+from the native outcome being explained, and counterfactual arms still encounter
+unmeasured source stages. The repaired candidate traces now match all compared body/view/key/range
+rows to1e−12 through their first returns (m1395:232A/228B movement rows;
+m1391 through14.318 s); m1395 admissions and consumptions also match exactly.
+This remains conditional trajectory repair. The next change must correct the general send-clock basis, not retain per-match patches.
+A separate within-handler S19 cue-publication error is also proven:386 µs changes
+one admission predicate in m1391. It will be modeled independently of control.
+
+No controller tuning or prospective native trials have resumed. A simple opening
+snapshot still does not separate prior successes from failures; later failures
+after19/26 hits show that maintenance timing also needs explaining. Complete-state
+opening×future-schedule swaps remain pending, after same-donor chronology passes.
+
+Evidence: [queue-field audit](poc-20261101/native-schedules/queue-field-diagnostic/findings-v2.md),
+[packet-order mechanism](poc-20261101/native-schedules/queue-field-diagnostic/kb-order-findings.md),
+[development timing audit](poc-20261101/native-schedules/queue-field-development-diagnostic/findings.md),
+[one-leg intervention results](poc-20261101/native-schedules/evaluation/queue-field-arrival-oracle-v1/cases.jsonl).
+
+## Previous checkpoint: a proven queue-boundary error
 
 The controller is still frozen. New server task hooks are deployed, and a fresh
 paired recording exposed a specific remaining scheduling mistake: **a received
