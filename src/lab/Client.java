@@ -40,6 +40,7 @@ public final class Client {
     static final CycleController cycle=new CycleController();
     static final FrozenLegalCycleController frozenCycle=new FrozenLegalCycleController();
     static final TickIndexedLegalCycleController tickCycle=new TickIndexedLegalCycleController(true,false);
+    static StrongRelaxationPolicy strongGap=new StrongRelaxationPolicy();
     static final BurstClickController burstClicks=new BurstClickController();
     static BurstClickController.Decision burstDecision;
     static long burstObservedAt;
@@ -53,15 +54,17 @@ public final class Client {
     static long blockTapQueued;
     static boolean blockKey;
     static long freshHurtStatus;
+    static long freshTargetHurtStatus;
     static final AimController aim=new AimController();
     static Object aimTarget;
     static long aimLogAt;
 
     static final class Observation {
-        long time, tick, freshHurtCue; double x,y,z,tx,ty,tz,vx,vy,vz,distance,localRange,closing,ux,uz,tvx,tvz; int hurt,targetHurt; boolean sprint,ground,sentSprint;
+        long time, tick, freshHurtCue, targetFreshHurtCue; double x,y,z,tx,ty,tz,vx,vy,vz,distance,localRange,closing,ux,uz,tvx,tvz; int hurt,targetHurt; boolean sprint,ground,sentSprint;
         Observation(long time) {
             this.time=time;this.tick=ticks;
             freshHurtCue=freshHurtStatus;
+            targetFreshHurtCue=freshTargetHurtStatus;
             x=R.num(player,"posX"); y=R.num(player,"posY"); z=R.num(player,"posZ");
             tx=R.num(opponent,"posX"); ty=R.num(opponent,"posY"); tz=R.num(opponent,"posZ");
             vx=R.num(player,"motionX");vy=R.num(player,"motionY"); vz=R.num(player,"motionZ");
@@ -304,6 +307,7 @@ public final class Client {
                 cycle.reset();
                 frozenCycle.reset();
                 tickCycle.reset();
+                strongGap=new StrongRelaxationPolicy();freshTargetHurtStatus=0;
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 criticalClicks.reset();
                 blockhit.reset();blockKey=false;freshHurtStatus=0;
@@ -359,7 +363,9 @@ public final class Client {
             Observation before=lastConsumed;
             if(before==null || obs.time>before.time){
                 if(obs.hurt>0 && (before==null || obs.hurt>before.hurt))lastObservedHurt=obs.time;
-                if(obs.targetHurt>0 && (before==null || obs.targetHurt>before.targetHurt))lastObservedTargetHurt=obs.time;
+                if(controls.getProperty("target_hurt_cue","sampled").equals("status")){
+                    if(obs.targetFreshHurtCue>lastObservedTargetHurt)lastObservedTargetHurt=obs.targetFreshHurtCue;
+                }else if(obs.targetHurt>0 && (before==null || obs.targetHurt>before.targetHurt))lastObservedTargetHurt=obs.time;
                 lastConsumed=obs;
             }
             String kind=controls.getProperty("kind","hold");
@@ -564,6 +570,17 @@ public final class Client {
                 plan.put("key",d.key);plan.put("click_gate",d.click);plan.put("persistent",d.persistent);plan.put("local_range",obs.localRange);
                 plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);log(plan);
             }
+            if(kind.equals("gap-strafe") || now-epoch<number("gap_opening_ms",0)){
+                StrongRelaxationPolicy.Control d=strongGap.step(obs.localRange);
+                // Native positive moveStrafe means Left; our key helper uses
+                // negative lateral for Left and positive lateral for Right.
+                int side=d.strafe>0?-1:d.strafe<0?1:0;
+                setKeys(d.key!=0,side,d.key==2);clickGate=d.click;
+                Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","gap_strafe_plan");plan.put("time",now);plan.put("match",match);
+                plan.put("native_tick",ticks);plan.put("observation_time",obs.time);plan.put("local_range",obs.localRange);
+                plan.put("key",d.key);plan.put("native_strafe",d.strafe);plan.put("lateral_key",side);plan.put("click_gate",d.click);
+                plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);log(plan);
+            }
             if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
             if(kind.equals("blockhit")){
                 boolean linear=controls.getProperty("block_model","legacy").equals("linear");
@@ -660,7 +677,7 @@ public final class Client {
         if(!Boolean.parseBoolean(p.getProperty("enabled","false")))return;
         if(!p.getProperty("match","").matches("m[0-9]{4,9}")||!p.getProperty("opponent","").matches("[A-Za-z0-9_]{1,16}"))
             throw new IllegalArgumentException("Enabled bot controls require a valid match and opponent");
-        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","frozen-cycle","tick-cycle","blockhit","scripted").contains(p.getProperty("kind","hold")))
+        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","frozen-cycle","tick-cycle","gap-strafe","blockhit","scripted").contains(p.getProperty("kind","hold")))
             throw new IllegalArgumentException("Unsupported bot strategy: "+p.getProperty("kind"));
         ClickRate.cps(p);DuelSettings.reach(p);
         AimController.Settings.from(p);
@@ -692,6 +709,9 @@ public final class Client {
         try{
             if(((Number)R.call(packet,"getOpCode")).intValue()!=2)return;
             Object entity=R.call(packet,"getEntity",R.get(mc,"theWorld"));
+            if(entity==opponent){freshTargetHurtStatus=System.currentTimeMillis();
+                log(Compat.map("type","fresh_target_hurt_status","time",freshTargetHurtStatus,"match",match));
+            }
             if(entity==player){freshHurtStatus=System.currentTimeMillis();
                 log(Compat.map("type","fresh_hurt_status","time",freshHurtStatus,"match",match));
                 if(Boolean.parseBoolean(controls.getProperty("block_adapt","false"))){

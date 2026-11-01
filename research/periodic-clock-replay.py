@@ -121,10 +121,18 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
         report_seeds.extend([len(prior)-last_move-1,q['x'],q['y'],q['z'],look['yaw'],look['pitch']])
         starts={e['client_tick']:e for e in raw if e['type']=='tick_start'}
         ends={e['client_tick']:e for e in raw if e['type']=='tick_end'}
+        # Recorded ordinary control decisions, not observed sprint state: W
+        # without Ctrl is key1 and must not silently replay as W+Ctrl (key2).
+        # Historical fixtures only exposed W+Ctrl/coast; newer policy traces
+        # provide the actual key for every input tick, including acquisition.
+        explicit_keys={e['native_tick']:e['key'] for e in es
+                       if e['type'] in ('gap_strafe_plan','frozen_cycle_plan','tick_cycle_plan')}
         for move in moves[side]:
             if not 0<=clock(move)<seconds*1000:continue
             tick=move['tick'];q=move['before']
-            key=2 if move['forward'] else 0
+            key=explicit_keys.get(tick,2 if move['forward'] else 0)
+            if bool(key)!=bool(move['forward']):
+                raise ValueError(('Recorded control/movement disagreement',side,tick,key,move['forward']))
             clicks=[e for e in es if e['type']=='science_click' and e['tick']==tick]
             interp=[e for e in es if e['type']=='science_interpolation' and e['tick']==tick]
             input_t=min([clock(move)]+[clock(e)for e in interp])-0.001
@@ -155,7 +163,11 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
         elif e['type']=='tick':rows.append((clock(e),'SERVER_OBSERVE'if exact_clocks else'SERVER',[],e))
     network=[]
     if transport_trace:
-        network,applies=network_schedule(mid,data,game,offset,t0,seconds);rows.extend(applies)
+        network,applies=network_schedule(mid,data,game,offset,t0,seconds)
+        # Pending packets can arrive after the requested cutoff. Replaying
+        # those handlers would generate new packets outside the captured send
+        # horizon, falsely reporting NETWORK_EXTRA at the truncated tail.
+        rows.extend(row for row in applies if row[0]<seconds*1000)
     rows.sort(key=lambda r:r[0])
     lines=['\t'.join(map(str,['INIT',ax,bx,game['ping_a'],game['ping_b'],game['attack_reach_b'],tracker,*report_seeds,*initial_damage,*teleport_ages,*combat]))]
     lines=['\t'.join(map(lambda x:'NaN'if isinstance(x,float)and x!=x else str(x),['NETWORK',*r]))for r in network]+lines

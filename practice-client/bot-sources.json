@@ -24,5 +24,6 @@
   "OrbitController",
   "CycleController",
   "FrozenLegalCycleController",
-  "TickIndexedLegalCycleController"
+  "TickIndexedLegalCycleController",
+  "StrongRelaxationPolicy"
 ]
