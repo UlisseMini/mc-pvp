@@ -702,8 +702,10 @@ repeats reached 65% and 48%, so it is not a stable combo lock or a proven champi
 ## Setup and checks
 
 This implementation targets macOS and uses the existing Homebrew Java 17 and
-Python installations. No Forge, Fabric, Mineflayer, npm or pip install is needed.
-For a fresh copy on a similarly configured Mac:
+Python installations. Legacy bots need no Forge installation. The shared Forge
+backend additionally uses the official launcher's existing Java 8 runtime and
+hash-locked Forge 1.8.9 libraries; it never copies account stores or human mods.
+No npm or pip install is needed. For the legacy backend on a similarly configured Mac:
 
 ```sh
 python3 lab.py prepare
@@ -711,6 +713,21 @@ python3 lab.py build
 python3 lab.py sandbox-test
 python3 lab.py serve
 ```
+
+To launch shared-mod bots explicitly after building the practice bridge:
+
+```sh
+python3 practice-client/build.py
+python3 lab.py serve --bot-backend forge
+```
+
+The public join address stays `127.0.0.1:25565`. One bridge/module artifact pair
+serves both humans and bots; trusted launch configuration enables bot controls.
+`python3 lab.py stop` followed by `python3 lab.py serve --bot-backend legacy`
+rolls back without deleting recordings, policies or the server world. Until the
+migration acceptance run is complete, startup still defaults to legacy.
+See [the migration operations guide](research/forge-bot-migration-operations.md)
+for isolated/mixed launches, security checks and restart boundaries.
 
 `prepare` downloads hash-locked dependencies without executing upstream builds.
 The Java agent compiles locally with annotation processing disabled. `serve`
@@ -733,7 +750,7 @@ changes, run `python3 lab.py build` and wait for completion, then
 `python3 lab.py reload-bots`. This reloads idle bots without disconnecting your
 Minecraft client. Busy bots are skipped; reload them after their duel ends.
 
-The current steady sample had **three concurrent bot matches**, eight clients
+The previous **legacy-backend** steady sample had **three concurrent bot matches**, eight clients
 plus the server, view distance 8 / render distance 6. The nine supervised JVMs
 used about **6.1 GiB RSS** and **105% of one CPU core** over 15 seconds. Every
 client advanced at approximately 20 native ticks/second. Server tick gaps were

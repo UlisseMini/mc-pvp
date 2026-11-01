@@ -49,7 +49,7 @@ start repeated rod-diamond approaches against wtap, from center-to-center gaps o
 4.5, 6 and 9 blocks. Append another bot name to change opponents. Mixed cycles the
 three distances. Each attempt resets five seconds after the first accepted sword
 hit, or after twelve seconds without one. Repeats reset directly in the arena,
-with a visible two-second center-screen countdown (`1.0` → `GO!`), without a lobby
+with a visible two-second center-screen countdown (`2.0` → `GO!`), without a lobby
 detour. The same bot and arena are reused when available. Repeats only teleport,
 heal, and clear old rods/momentum: the existing player entities and kits stay
 loaded, so the bot does not disappear and respawn during each countdown. `/stop` or
@@ -358,3 +358,27 @@ three-source archives with zero writer drops. See
 [the verification report](../experiments/replay-views-20261031/verification.json).
 This checks native render callbacks and coordinates in HeadlessMC, not a pixel
 screenshot or exact reconstruction of first-person hands/particles.
+
+## Shared headless bot mode
+
+The same `practice-bridge.jar` and `practice-module.jar` run in the human game and
+HeadlessMC Forge bots. Ordinary launches always stay in human mode: they never
+load a slot's controls, run autonomous aim/movement, or override native reach.
+Only the lab launcher supplies the explicit bot role, isolated directory and
+slot identity. ToggleSprint yields control to the bot input controller in that
+role. No extra bot mod or third-party gameplay plugin is loaded.
+
+The shared bridge captures packets, inputs, logical/render poses and the direct
+local view stream. Policies read only their own ordinary client state; the
+three-POV diagnostic stream is recording/display data, never a policy oracle.
+Archives label the backend/role and record the bridge and actually loaded module
+hashes. Bot-local match routing starts capture before delayed gameplay packets
+arrive. `runtime/pov/<match>/manifest.json` remains the replay index.
+
+Module/HUD/config edits still hot-reload. Changing native hooks, this bridge's
+API, or compiled bot controllers requires restarting the affected Minecraft
+process. `python3 lab.py reload-bots` replaces idle bot JVMs; it does not restart
+the human game or server. Server instrumentation changes require a lab restart.
+See `research/forge-bot-migration-spec.md` and the migration evidence for launch,
+validation and rollback details. Legacy bots remain available with
+`python3 lab.py serve --bot-backend legacy`.
