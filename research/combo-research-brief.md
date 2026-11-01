@@ -75,9 +75,17 @@ evaluation. The four-arm screen is complete: v2/objective/K9 each2/4 locks,
 horizon2s3/4, W-tap0/4. Objective-only regresses m1396 and is rejected; K9 adds
 cost without rescue. The exploratory selection rule was explicitly adapted after
 H2 outcomes, before K9 inspection; preserve that provenance. Frozen H2 then
-passes8/8 new tuning draws, versus v2's7/8 and W-tap0/8. It is now evaluating
-reserved seeds3000–3019 on m1397–m1400, unchanged16/20 gate in each calendar and
-futility stop, with UNKNOWN retained. No legal parameter/native promotion yet.
+passes8/8 new tuning draws, versus v2's7/8 and W-tap0/8. Its reserved test is now
+finished at the frozen futility stop:38 strict locks in50 evaluated draws,
+versus W-tap0/50. In total42/50 run the full minute without return (141–145 fresh);
+four of those miss only the800ms gap guard by1.5–5.1ms. Two physical failures
+are immediate inherited m1400 entries, and six paths are cue-service UNKNOWN.
+Keep all six in the denominator and all30 unrun draws explicit. No later H2
+maintenance return was observed, but the16/20-per-calendar gate did not pass.
+The next validation target is native handler/drain completion and FIFO timing,
+not another controller feature: cue assignment precedes main-thread completion,
+so merely deferring to cue time is not a validated repair. Preserve this frozen
+result; no legal parameter/native promotion yet.
 The separate frozen-law72-setting sweep has0/288 minute locks versus W-tap0/288;
 75 acquisitions are UNKNOWN, with another10 candidate /4 W-tap continuations
 unsupported. Existing lock8 is still the best fully supported four-draw profile,

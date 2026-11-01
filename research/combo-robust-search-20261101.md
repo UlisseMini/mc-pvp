@@ -1,10 +1,11 @@
 # Robust search on calibrated native clocks
 
-Latest: extending the oracle's forecast from1s to2s passes all8 fresh
-confirmation draws, versus7/8 for the1s oracle and0/8 for matched W-tap.
-The longer forecast is frozen for reserved qualification on four other calendars
-and new seeds3000–3019. That test is in progress; no legal-controller or native
-promotion follows from these tuning results alone.
+Latest: the frozen two-second oracle finishes **42 of 50 evaluated minute-long
+trials without a return**, versus **0 of 50 for matched W-tap**. It does not pass
+the stricter qualification gate: 38 qualify, four have a gap just over 800 ms,
+six stop at unsupported timing, and two fail immediately from the inherited
+opening. No legal-controller or native promotion follows. This is privileged
+model evidence, not a deployable bot. The complete reserved result is below.
 
 The first oracle passed all four development minute tests but failed the reserved
 robustness test. It achieved4 locks in23 evaluated draws;3 draws were UNKNOWN.
@@ -147,6 +148,53 @@ rescues a second distinct failure without a confirmation regression. This is
 enough to proceed with its frozen reserved test, not to claim80% reliability.
 The [recorded admission decision](poc-20261101/robust-search/confirmation-decision.json)
 keeps the configuration and untouched evaluation seeds explicit.
+
+## Two-second forecast: completed reserved test
+
+The frozen H2 test stopped after 50 of 80 planned draws, as prescribed when five
+nonqualifying outcomes on m1399 made 16/20 impossible there. Already-running
+draws finished; 30 unrun draws are not observed failures. No resource limit was
+exhausted. Every evaluated draw retains identical-state W-tap and old feedback.
+The initial 12 serial outcomes were preserved exactly when orchestration changed
+to four bounded offline workers; timing tapes and search settings did not change.
+
+| Calendar | Evaluated | H2 strict locks | H2 full minute, zero return | Plain W-tap full minute, zero return | H2 completed fresh range | Plain W-tap fresh range | H2 UNKNOWN |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| m1397 | 13 | 11/13 | 11/13 | 0/13 | 143–145 | 2 | 2 |
+| m1398 | 13 | 12/13 | 13/13 | 0/13 | 141–144 | 1 | 0 |
+| m1399 | 12 | 7/12 | 10/12 | 0/12 | 143–144 | 2 | 2 |
+| m1400 | 12 | 8/12 | 8/12 | 0/12 | 0–145 | 0–5 | 2 |
+| Total | 50 | 38/50 | 42/50 | 0/50 | 0–145 | 0–5 | 6 |
+
+Fresh ranges exclude UNKNOWN prefixes; the qualification denominator includes
+them. All 42 completed zero-return trials have 141–145 fresh hits. Four miss
+only the unchanged 800 ms maximum-gap criterion: 801.534, 805.119, 801.534 and
+802.714 ms. These are sustained productive zero-return runs, not accepted-return
+failures. The pooled 42/50 is descriptive, not a substitute for the prespecified
+per-calendar gate or a claim about independent native matches.
+
+The two physical failures are m1400 seeds 3000/3005: H2, old feedback and W-tap
+each take the same return at 4195.976 ms, with respectively zero/one fresh hit.
+The first entry has an exact inherited-position/immunity obstruction, audited
+below; the second is not claimed to share every causal detail without replay.
+No evaluated H2 path takes a later maintenance return. That is encouraging but
+does not resolve the six incomplete paths or establish reliable acquisition.
+
+The six UNKNOWNs are all `CUE_SERVICE_OVERLAP`. Native code confirms that a
+handler occupies the main thread beyond the internal hurt-cue timestamp. The
+current adapter has no complete handler/drain busy interval and rejects these
+overlaps. Simply delaying an input until the cue would release the thread too
+early. The next step is recorded-data validation of service completion and FIFO
+ordering, before changing the model or controller. See the
+[coverage audit](poc-20261101/robust-search/oracle/cue-service-coverage-audit.md).
+The original UNKNOWNs and strict gate remain unchanged.
+
+Evidence: [per-draw results](poc-20261101/robust-search/results/oracle-reserved-horizon-parallel/cases.jsonl),
+[outcome summary](poc-20261101/robust-search/results/oracle-reserved-horizon-parallel/outcome-summary.json),
+[stopping record](poc-20261101/robust-search/results/oracle-reserved-horizon-parallel/termination.json),
+and [serial-to-parallel integrity rules](poc-20261101/robust-search/resume-parallel.md).
+
+## Why longer forecasts helped on the tuning cases
 
 On the rescued m1395seed11, H2 changes inputs about201ms earlier than H1.
 The first14 fresh-hit timestamps are identical; H2 then delays the15th by52.5ms
