@@ -43,6 +43,9 @@ public final class Client {
     static InputWordController inputWord;
     static InputWordController.Decision inputWordDecision;
     static StrongRelaxationPolicy strongGap=new StrongRelaxationPolicy();
+    static HurtWindowCoastController hurtWindowCoast=new HurtWindowCoastController();
+    static double handledTargetHurtMs=Double.NaN;
+    static boolean hurtWindowActive;
     static final BurstClickController burstClicks=new BurstClickController();
     static BurstClickController.Decision burstDecision;
     static long burstObservedAt;
@@ -196,7 +199,7 @@ public final class Client {
             // inspect immunity, accepted hits or any server-only state.
             boolean contactClicks=controls.getProperty("click_mode","fixed").equals("contact");
             boolean wordPermits=inputWord==null||inputWordDecision==null||!inputWordDecision.active||inputWord.allowInjection(ticks,nativeInputPoll);
-            if(clickGate && wordPermits && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
+            if(clickGate && wordPermits && (!hurtWindowActive||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),(int)number("hurt_window_ticks",8))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 if(controls.getProperty("kind","").equals("cycle")){cycle.queued(ticks);clickGate=false;}
@@ -317,6 +320,7 @@ public final class Client {
                 inputWordDecision=null;inputWord=null;
                 if(controls.containsKey("input_word"))inputWord=new InputWordController(R.ROOT.resolve(controls.getProperty("input_word")));
                 strongGap=new StrongRelaxationPolicy();freshTargetHurtStatus=0;
+                hurtWindowCoast=new HurtWindowCoastController();handledTargetHurtMs=Double.NaN;hurtWindowActive=false;
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 criticalClicks.reset();
                 blockhit.reset();blockKey=false;freshHurtStatus=0;
@@ -600,6 +604,20 @@ public final class Client {
                 plan.put("key",key);plan.put("native_strafe",d.strafe);plan.put("lateral_key",side);plan.put("click_gate",d.click);
                 plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);log(plan);
             }
+            // Candidate and W-tap share the same physical four-second opening.
+            // W-tap's ordinary cue history keeps advancing above this override.
+            hurtWindowActive=kind.equals("hurt-window-coast")||now-epoch<number("hurt_window_opening_ms",0);
+            if(hurtWindowActive){
+                double inputMs=System.nanoTime()/1_000_000.0;
+                HurtWindowCoastController.Decision d=hurtWindowCoast.input(ticks,inputMs,obs.localRange,handledTargetHurtMs);
+                int side=d.strafe>0?-1:d.strafe<0?1:0;
+                setKeys(d.key!=0,side,d.key==2);clickGate=d.click;
+                Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","hurt_window_coast_plan");plan.put("time",now);plan.put("match",match);
+                plan.put("native_tick",ticks);plan.put("monotonic_ms",inputMs);plan.put("local_range",obs.localRange);
+                plan.put("key",d.key);plan.put("native_strafe",d.strafe);plan.put("pulse_started",d.pulseStarted);
+                plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);
+                plan.put("handled_target_cue_ms",Double.isFinite(handledTargetHurtMs)?handledTargetHurtMs:null);log(plan);
+            }
             if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
             // Saved ordinary own-tick inputs, including a common acquisition for
             // W-tap. The reference's cue history above continues to advance.
@@ -729,7 +747,7 @@ public final class Client {
         if(!Boolean.parseBoolean(p.getProperty("enabled","false")))return;
         if(!p.getProperty("match","").matches("m[0-9]{4,9}")||!p.getProperty("opponent","").matches("[A-Za-z0-9_]{1,16}"))
             throw new IllegalArgumentException("Enabled bot controls require a valid match and opponent");
-        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","frozen-cycle","tick-cycle","gap-strafe","blockhit","scripted","input-word").contains(p.getProperty("kind","hold")))
+        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","frozen-cycle","tick-cycle","gap-strafe","hurt-window-coast","blockhit","scripted","input-word").contains(p.getProperty("kind","hold")))
             throw new IllegalArgumentException("Unsupported bot strategy: "+p.getProperty("kind"));
         ClickRate.cps(p);DuelSettings.reach(p);
         AimController.Settings.from(p);
@@ -765,6 +783,7 @@ public final class Client {
             if(((Number)R.call(packet,"getOpCode")).intValue()!=2)return;
             Object entity=R.call(packet,"getEntity",R.get(mc,"theWorld"));
             if(entity==opponent){freshTargetHurtStatus=System.currentTimeMillis();
+                handledTargetHurtMs=System.nanoTime()/1_000_000.0;
                 log(Compat.map("type","fresh_target_hurt_status","time",freshTargetHurtStatus,"match",match));
             }
             if(entity==player){freshHurtStatus=System.currentTimeMillis();

@@ -26,5 +26,6 @@
   "FrozenLegalCycleController",
   "TickIndexedLegalCycleController",
   "InputWordController",
-  "StrongRelaxationPolicy"
+  "StrongRelaxationPolicy",
+  "HurtWindowCoastController"
 ]

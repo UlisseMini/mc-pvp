@@ -62,7 +62,7 @@ public final class Referee {
             m.put("modified_reach",DuelSettings.reach(configA)!=3||DuelSettings.reach(configB)!=3);
             if(sumo())m.put("sumo_arena",SumoArena.geometry());
             m.put("armor_protection",0);m.put("weapon",sumo()?"fist":boxing()?"diamond_sword":"wooden_sword");
-            m.put("arena_surface",sumo()?"raised_circular_sumo_platform":box()?"bedrock_1x1_interior_y4_5_barrier_ceiling_y6":"bedrock_y3_air_y4_19_radius128_verified_v3");return m;
+            m.put("arena_surface",sumo()?"raised_circular_sumo_platform":box()?"bedrock_1x1_interior_y4_5_barrier_ceiling_y6":"bedrock_y3_air_y4_19_radius256_verified_v4");return m;
         }
     }
 
@@ -522,7 +522,7 @@ public final class Referee {
     }
     static void prepareArena(Object world,int arena){
         if(preparedArenas.contains(arena))return;
-        int center=4096*(arena+1),radius=128;
+        int center=4096*(arena+1),radius=256;
         // Ordinary unbreakable full blocks: same .6 slipperiness as grass/dirt.
         // Repair old holes before play, without altering movement or combat.
         // Vanilla /fill checks one extra chunk at the positive X/Z boundary
@@ -548,7 +548,7 @@ public final class Referee {
                     throw new IllegalStateException("Arena air verification failed at "+x+","+y+","+z);
             }
         }
-        System.out.println("[PvP Lab] Verified 65536 bedrock floor blocks and 1048576 air blocks in arena "+arena);
+        System.out.println("[PvP Lab] Verified 262144 bedrock floor blocks and 4194304 air blocks in arena "+arena);
         preparedArenas.add(arena);
     }
     static void preparePlayer(Object p,double x,double y,double z,int yaw,String mode){
