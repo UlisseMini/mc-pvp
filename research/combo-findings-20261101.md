@@ -1,11 +1,13 @@
 # Combo research — findings, November 1
 
-**There is still no native indefinite-combo demonstration or vanilla impossibility
-proof.** The earlier full-reach controllers fail the matched W-tap gate. The new
-parallel, relaxed-scenario effort has a legal own-cue model controller with a
-60-second lock in a declared clock window, but its first native comparison loses
-to plain W-tap. A concrete cue-timing transfer error is now isolated for testing.
-Its wider phase failures remain visible. The baseline rule is mandatory in
+**There are now two clean native 60-second combo demonstrations: 527 and 535
+fresh hits without any return.** They use a simple own-distance feedback
+controller, both reaches 3.0, RTTs 0/120 ms, zero vertical knockback and a two-tick
+fresh-hit window. Matched plain W-tap breaks after a few hits. A third candidate
+run fails during acquisition and has timing flags. A later eight-second-opening
+trial fails cleanly after129 maintenance hits, so the lock is not yet robust
+to native timing variation. This is a strongly modified profile, not vanilla or an infinity proof.
+The temporal-word branches are stopped. The baseline rule is mandatory in
 `AGENTS.md` and `combo-research-brief.md`.
 
 ## The comparison that now governs the work
@@ -186,8 +188,8 @@ Per-duel experimental settings are available:
 
 `kb_horizontal`, `kb_vertical` and `hit_ticks` apply equally to both players;
 defaults are 1, 1 and 10. Multipliers scale final fresh melee velocity before
-S12 quantization. They are not asserted to be Hypixel's constants, and no tweak
-has yet earned a robust native combo-maintenance claim.
+S12 quantization. They are not asserted to be Hypixel's constants. The strongly
+relaxed profile below has finite native demonstrations, with robustness limits.
 
 The earlier provisional model's 1,000-contact result remains rejected. It omitted
 coupled mechanics and failed native transfer. The current model/search evidence
@@ -304,3 +306,197 @@ This temporal-word branch is stopped. It has not earned another strategy feature
 or a vanilla-feasibility conclusion. The next approach derives a feedback law in
 a deliberately stronger relaxation, so its response depends on actual visible
 spacing instead of assuming the nominal acquisition trajectory.
+
+## Strong relaxation: a model lock with a large baseline advantage
+
+Both reaches are 3.0, RTTs are 0/120 ms, horizontal KB is vanilla, vertical KB is
+zero, and fresh hits can occur every two ticks (100 ms instead of vanilla's
+500 ms). Both sides have perfect aim, zero reaction delay and a 20 CPS ceiling.
+The hold-W opponent gets a declared four-second no-click acquisition handicap.
+The following 60-second maintenance scores exclude those free opening hits.
+Candidate and baselines fork the same full model state at four seconds, with
+W-tap's own hurt history shadowed during acquisition.
+
+| Model clock phases: opponent/server | Own-gap feedback fresh hits before return | Plain W-tap baseline | Hold-W control | Candidate full 60 s without return |
+|---|---:|---:|---:|---|
+| 10/25 ms | 600 | 5 | 6 | yes |
+| 25/5 ms | 600 | 6 | 597 | yes |
+| 40/40 ms | 600 | 10 | 8 | yes |
+
+The controller holds W without Ctrl and alternates short A/D pulses to reduce
+radial pursuit speed when its own displayed target gets too close. It uses no
+server state, opponent POV or stored hit sequence. All 600 hits are normal hits;
+every first fresh window is used. The defender's minimum own-POV distance is
+over 4.09 blocks, while our maximum is below 2.78. Hold-W also survives one phase,
+so it remains a meaningful extra control.
+
+The mechanism is speed matching: rapid normal KB makes the defender retreat
+at about 0.198 blocks/tick. Our walking speed can be adjusted between about
+0.153 and 0.216 blocks/tick using diagonal input. Own-gap feedback selects the
+appropriate mixture. W-tap instead changes sprint/hit strength and loses that
+equilibrium. These are nominal model findings; the native checks below separately
+test the actual profile, pacing and finite maintenance. See [the frozen policy and derivation](poc-20261101/continuation/strong-relaxation.md).
+
+The first native candidate, m1265, takes a return 145 ms after the opponent's
+four-second wake-up. Its own controls match the frozen policy, but the initial
+engagement collapses into body overlap. Maximum diagonal braking subsequently
+recovers spacing too slowly: own displayed distance is only 1.59 at four seconds,
+versus the model seed's approximately 2.5. Recorded native admission is also
+slower than the nominal 20 Hz clock. The failed run has acquisition timing flags
+and is retained rather than treated as a clean repeat.
+
+The new profile's five-second recorded-input coupled replay completes all 1,796
+events, with zero bit mismatches, zero error on 108 nearest-distance checks and
+74 selected-ray checks, including the first return. An older vanilla fixture
+still passes all 1,765 events. Two adapter corrections were needed: use recorded
+W-without-Ctrl keys rather than assuming every W press holds Ctrl, and stop
+packet-handler events at the requested replay cutoff. No physics correction
+was needed. This validates the recorded transitions, not future OS scheduling.
+
+One attempted baseline, m1266, received vanilla combat because separate manager
+commands were dequeued by random filename order. It is excluded from the matched
+comparison and retained as a setup failure. The runner now awaits server profile
+acknowledgement before starting and checks the match's recorded profile.
+
+## Native feedback POC: two clean 60-second locks
+
+These independent native repeats use the identical declared settings and common
+four-second acquisition policy above. Plain W-tap is tested with its existing
+sampled hurt-animation cue and, separately, every own S19 hit-status cue (the
+model's baseline). Both release W for 50 ms after a cue. The primary window is
+strictly [4,64) seconds; free opening hits and the late finish callback are excluded.
+
+| Native metric; repeats 1 / 2 / 3 | Own-gap feedback | Plain W-tap baseline | Plain W-tap, S19 cue |
+|---|---|---|---|
+| Fresh hits before first accepted return | 2* / 527 / 535 | 7 / 5 / 7* | 1 / 2 / 5 |
+| Entire 60 s without a return | no* / yes / yes | no / no / no* | no / no / no |
+| Replay IDs | m1265 / m1270 / m1272 | m1274 / m1268 / m1273 | m1267 / m1269 / m1271 |
+
+An asterisk marks a >100 ms client/server interval during acquisition or the
+primary prefix: m1265 has defender stalls; m1273 has a 107 ms server interval.
+All successful candidate runs have clean full-match clocks. Some failed baseline
+runs have later stalls after their first return; those remain recorded but do not
+cause the already-observed primary failure. m1266 is the excluded wrong-profile
+setup attempt, replaced by m1274.
+
+The opponents genuinely try to hit back. In both successes, their own nearest
+distance exceeds 3.0 at every one of 1,200 native attack opportunities, including
+ticks with no consumed click. Their 1,167/1,165 actual clicks all miss. Minimum
+actionable defender distances are 3.093/3.232 blocks. Our own movement/update
+geometry stays in reach throughout maintenance. There are no loaded-ground or
+target-guard failures, even over more than 219 blocks of travel.
+
+Late spacing plateaus rather than drifting toward failure. Fresh timing is not
+perfect: real capped click/packet timing sometimes produces three-tick gaps,
+and once a four-tick gap. We report those missed windows; they are not disguised
+as later cooldowns. One success has three sub-3 geometric transients inside an
+entity-update loop, each approximately 0.16 ms with no input/frame opportunity;
+the other has none. Actionable reach denial and this stricter intermediate-state
+diagnostic are kept separate.
+
+Initial overlap alone does not explain failure: a successful run also overlaps
+during acquisition, but recovers more separation before wake-up. The next frozen
+test changes only the common no-click opening from four to eight seconds. Its
+first repeat gives129 fresh maintenance hits before a clean return at22.194s
+absolute (14.194s after wake), versus matched sampled-cue W-tap4 and S19 W-tap2.
+Thus a longer opening does not eliminate maintenance failure. The completed spread is below; gains and controls stayed unchanged.
+
+Watch **`/replay m1272`** for the cleanest current demonstration. Full measurements
+and the finite-horizon qualifications are in [the native audit](poc-20261101/legal-controller/native-m1270-findings.md)
+and [the trial results](poc-20261101/strong-native-trial.json). No claim about
+vanilla impossibility follows from these experiments.
+
+
+## Clean failure identifies a packet-phase limit
+
+m1275 is the first eight-second-opening candidate trial. No client/server
+interval exceeds100ms anywhere in the match. Its initial failure mechanism is
+not a lost fresh hit or changed KB magnitude: the final pre-escape fresh contacts
+still occur every two server ticks and emit normal horizontal velocity near.4.
+
+At21.149s, a velocity packet is applied just before the defender's21.151s move
+while its ground flag is false. Zero vertical velocity preserves an air-friction
+move. Its next two displacements are approximately.3745/.3153 blocks instead
+of the usual.2726/.1233. The event repeats about200ms later. Our bot removes all
+strafe and reaches its maximum walking pursuit speed, but cannot catch that
+burst. Our displayed distance passes3; the resulting nine-tick fresh-hit gap
+lets the opponent run back and return a hit.
+
+The two successful full-minute runs contain no such airborne-flag/zero-vy move
+during maintenance. The failed run contains18 before its return; earlier ones
+recover, while the close pair precedes escape. This comparison identifies a
+concrete mechanism to test, not a universal sufficiency proof. A controlled
+packet-service perturbation in the same kernel is the next causal check.
+
+The successful held-out m1272 first10s recorded-input replay also passes:
+3,696/3,696 event rows, zero compared state-bit mismatches, zero error on310
+nearest-distance and186 selected-ray checks. Those checks validate the plant
+under supplied clocks; the nominal20Hz click adapter is being extended to
+represent physical click admission separately from native queued consumption.
+
+
+The same explanation transfers to a held-out failed native run, m1280:114 fresh
+maintenance hits before return, versus matched W-tap1 and status-W-tap7. All
+clocks are clean. Two air-flag velocity bursts201ms apart produce the same
+approximately.375/.315 displacements; own range then reaches3.291, followed
+by another nine-tick fresh-hit hole. Its frozen input-policy reconstruction has
+zero mismatches. This is stronger than an explanation fitted only to m1275.
+
+
+## Completed eight-second-opening native controls
+
+Same full-reach0/120ms, h1/v0/hit2 profile,20CPS and fixed60s maintenance window
+as the previous native POC, except the common acquisition now lasts8s. Three
+independent repeats per policy; the three main policies ran in rotated order.
+The additional hold-W controls ran afterward, not retrospectively interleaved.
+
+| Strict8..68s metric; repeats1/2/3 | Own-gap controller | Plain W-tap baseline | Plain W-tap S19 cue | Hold-W+Ctrl control |
+|---|---|---|---|---|
+| Fresh before first accepted return |129 /114 /40*|4 /1 /8|2 /7 /4|5 /5* /1|
+| Whole60s without return |no /no /no*|no /no /no|no /no /no|no /no* /no|
+| Replay IDs |m1275 /m1280 /m1282|m1276 /m1278 /m1283|m1277 /m1279 /m1281|m1284 /m1285 /m1286|
+
+The starred runs have an opponent acquisition interval above100ms:308.6ms in
+m1282 and104.3ms in m1285. All other acquisition/primary prefixes pass this
+supplementary gate. m1283 has a115ms own interval later, after its first return;
+its primary outcome is clean, with the later full-match flag retained.
+
+The candidate still beats both W-tap references substantially on the prescribed
+primary task, but none of these three repeats sustains the full minute. Longer
+acquisition is not a robustness solution. The four-second-opening successes are
+finite witnesses, not evidence that this feedback law always maintains a lock.
+
+The hold-W control later finds250- and454-fresh unanswered chains in m1285 and
+m1286 respectively, after its initial failure. This is valuable evidence that
+other states can enter long-lived motion modes; it is not a substitute for its
+primary5/1 scores or a reason to hide the simple control. These later chains
+have not yet received the full actionable-reach audit used for m1270/m1272.
+
+All12 rows, timing measurements and actual profiles are preserved in
+[the complete trial](poc-20261101/strong-native-trial-opening8s.json). Server
+defaults were restored to vanilla after the batch.
+
+
+## Failure mechanism passes the recorded and component checks
+
+The complete m1275 prefix through its first return,22.3s, executes8,233/8,233
+recorded-schedule event rows with zero compared state-bit mismatches. All710
+nearest-distance and420 selected-ray checks have zero numerical error. The
+coupled kernel generates later states and packet contents; recorded inputs and
+actual processing clocks are supplied. No physics correction was required.
+
+A separate three-move component check initializes from each of the two native
+pre-packet states. Its ordinary branch matches266 state-field comparisons plus
+six acceleration checks exactly. Applying the same S12 just after the first
+movement instead reduces predicted three-move travel by.330028 and.330027
+blocks. This verifies the local ordering mechanism; it does not claim that the
+counterfactual saves the full fight. See [the component evidence](poc-20261101/legal-controller/native-m1275-component.md)
+and [the full-prefix report](poc-20261101/m1275-coupled-replay-22s.json).
+
+The canonical clock now also has an explicit queued-input mode: physical
+admission is capped; native consumption may drain several queued presses in
+one tick. Its60 adapter assertions and legacy clock/fork/metric regressions
+pass, including14,972 fork comparisons. Original DIRECT-mode results are
+unchanged. Admission-call duration and held-out native admission/queue parity
+remain unvalidated; this extension alone does not establish future-timing
+prediction accuracy.
