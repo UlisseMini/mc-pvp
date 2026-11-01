@@ -101,6 +101,10 @@ enabling RCON or opening another network port.
 | `/watch` | Spectate an ongoing match; click a follow-camera button |
 | `/watch m0025 a` | Follow player A in that match, while it is active |
 | `/lab match hold-w wtap 20 120` | Start a bot match with those RTTs |
+| `/help` or `/?` | Full, paged practice command reference; click a topic or use `/help all` |
+| `/help settings` | All per-duel bot options and their limits |
+| `/lab match wtap hold-w 20 20 cps=20` | Bot match with the same 20-CPS ceiling for both |
+| `/lab match wtap wtap 20 20 cps=20 b.aimdelay=150 b.aimnoise=2` | Same W-tap policy, with imperfect tracking only on bot B |
 
 In spectator mode, fly around normally. Sneak exits a followed bot's camera.
 The action bar shows the current score. Finished matches are saved automatically.
@@ -155,13 +159,30 @@ RTTs are **added**, symmetric network delay. Your own real connection and normal
 Minecraft tick/interpolation delays remain. The human-facing latency setting is
 shared: this first version is intended for **one human player at a time**.
 
-Optional duel settings are `reach=`, `cps=`, `ping=` (or `botping=`), and
+Optional duel settings include `reach=`, `cps=`, `ping=` (or `botping=`), and
 `myping=`. Reach accepts **1–5 blocks**, CPS accepts **1–30 whole clicks per
 second**, and added ping accepts **0–500 ms RTT**. CPS is the physical-input
 ceiling; a burst policy may choose fewer clicks. Bare `/duel <bot>` uses that
 policy's normal reach/CPS, zero added bot ping, and your saved ping. The older
 numeric syntax remains valid: `/duel wtap diamond 20 100` explicitly sets bot
 RTT to 20 and saves your RTT as 100. `/ping me 0` clears your added delay.
+
+Tracking is configurable on existing bots: `aimdelay=150` uses a target view
+150 ms old (0–500 ms), `aimnoise=2` adds smoothly varying angular error
+(0–10 degrees), and `aimrate=360` limits turning to 360 degrees/second
+(30–1440, or 0 for unlimited). Defaults are zero delay/noise and unlimited
+turning. `tapdelay=150` sets the observation/reaction delay for W-tap cues
+(0–1000 ms; the ordinary W-tap default is 150). For example:
+`/duel wtap boxing cps=20 aimdelay=150 aimnoise=2 aimrate=360 tapdelay=150`.
+These are controllable tracking approximations, not a calibrated model of a
+particular human. Raycasts use the resulting look, so an aim error can miss.
+
+Bot-match commands accept the same options except `myping=`. Unprefixed options
+apply to both bots; `a.` and `b.` prefixes override one side. For example,
+`/lab match wtap hold-w 20 80 cps=20 b.aimdelay=150 b.aimnoise=2`.
+Shared options are applied before side-specific options regardless of order.
+The same syntax works with `/lab diamond`, `/lab rod_diamond`, `/lab diamond_box`
+and `/lab sumo`. `/help settings` and `/help matches` list the full syntax.
 
 Overrides are copied into this match, never written into the shared policy.
 `/rematch` keeps them; a new `/duel` starts from the selected policy again.
@@ -172,6 +193,24 @@ their existing strategies; planners are not retrained for the changed reach.
 Non-three-block setups are visibly marked **modified-reach practice**, recorded
 with effective settings, and excluded from vanilla ladder qualification. Player
 ping preferences are stored by name in `runtime/preferences/`.
+
+The controlled algorithm-search harness is `tournament_search.py`. `screen NAME`
+prepares a frozen, equal-20-CPS cohort; `run NAME` runs/resumes it, and
+`summary NAME` shows accepted results. `prepare NAME --bots ... --opponent ...
+--rtts 20,20 20,100 100,20 --stage confirmation` creates an independent cohort
+after screening. Policies, native build, analysis source, starting sides and
+fixture order are recorded before the first round. At most two matches run at
+once. SIGINT/SIGTERM finish the current batch and save its evidence. A timing
+failure pauses the cohort and remains explicitly excluded; it is not silently
+replaced. The order seed does not make native JVM clocks deterministic.
+
+Search reports include fresh contacts, damage upgrades, unanswered runs and
+both clients' recorded views. `combo_survival.py` separates actual raycast
+failure from geometric eye-to-expanded-hitbox reach denial. With imperfect aim,
+an opponent looking the wrong way is not evidence of a geometric combo lock.
+Terminal no-reply runs are marked censored, and finite matches cannot establish
+an infinite combo. Final competitive controllers may use their own client
+observations and declared latency, never the other client's private live view.
 
 After a match, each player's **damage taken per hit** is their actual health
 lost to the opponent divided by accepted melee hits received, displayed in

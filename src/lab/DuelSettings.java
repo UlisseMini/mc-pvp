@@ -4,7 +4,7 @@ import java.util.*;
 
 /** Per-duel overrides. Parsing never changes a shared policy or player preference. */
 public final class DuelSettings {
-    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [reach=3.0] [cps=10] [ping=100] [myping=80]";
+    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [reach=3.0] [cps=20] [ping=100] [myping=80] [aimdelay=150] [aimnoise=2] [aimrate=360] [tapdelay=150]";
     public final String mode;
     public final double botPing,humanPing;
     public final Properties overrides;
@@ -25,16 +25,25 @@ public final class DuelSettings {
             if(key.equals("botping"))key="ping";
             if(!seen.add(key))throw new IllegalArgumentException("Duplicate setting: "+key);
             switch(key){
-                case "ping" -> botPing=ping(value);
-                case "myping" -> humanPing=ping(value);
-                case "reach" -> overrides.setProperty("attack_reach",Double.toString(reach(value)));
-                case "cps" -> {
+                case "ping": botPing=ping(value);break;
+                case "myping": humanPing=ping(value);break;
+                case "reach": overrides.setProperty("attack_reach",Double.toString(reach(value)));break;
+                case "cps": {
                     int cps;
                     try{cps=Integer.parseInt(value);}catch(NumberFormatException e){throw new IllegalArgumentException("CPS must be a whole number from 1 to 30");}
                     if(cps<1||cps>30)throw new IllegalArgumentException("CPS must be 1 through 30");
                     overrides.setProperty("click_cps",Integer.toString(cps));
+                    break;
                 }
-                default -> throw new IllegalArgumentException("Unknown setting '"+key+"'. Use reach=, cps=, ping=, or myping=.");
+                case "aimdelay": overrides.setProperty("aim_delay_ms",Double.toString(bounded(value,0,500,"Aim delay (ms)")));break;
+                case "aimnoise": overrides.setProperty("aim_noise_deg",Double.toString(bounded(value,0,10,"Aim noise (degrees)")));break;
+                case "aimrate": {
+                    double rate=bounded(value,0,1440,"Aim turn rate (degrees/second)");
+                    if(rate!=0&&rate<30)throw new IllegalArgumentException("Aim rate must be 0 (unlimited), or 30–1440 degrees/second");
+                    overrides.setProperty("aim_turn_rate_dps",Double.toString(rate));break;
+                }
+                case "tapdelay": overrides.setProperty("reaction_ms",Double.toString(bounded(value,0,1000,"W-tap observation delay (ms)")));break;
+                default: throw new IllegalArgumentException("Unknown setting '"+key+"'. Use /help settings for all options.");
             }
         }
         return new DuelSettings(mode,botPing,humanPing,overrides);
