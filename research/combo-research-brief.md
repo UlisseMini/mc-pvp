@@ -62,10 +62,18 @@ retained startup-cost program), not the two future seeds. The same seventh
 impulse lands before/after a drain and opposite sides of landing; bad prefix
 loses six contacts. W-tap's Ctrl pursuit recovers contact at ray2.973391 where
 candidate misses at3.002790, delivering the next fresh hit57.45ms earlier.
-Test only a maintenance own-ray>3.0 Ctrl overlay on existing W-held decisions;
-preserve coast/strafe/gating/queues and compare old law+W-tap from identical
-full states. Stop if it does not recover the contact, causes worse overshoot,
-or loses the better prefix. No broad controller sweep. See
+The maintenance own-ray>3.0 Ctrl overlay test is now complete. It preserves
+19/19 and improves1/1 to5/3 versus matched WT1/1/2/2 in the four crossover cells.
+The frozen eight-calendar seeds0–3 screen gives5 improved,27 unchanged,0 worse,
+0 unknown,0 full60s locks; WT/acquisition result fields remain exact throughout.
+Four of those gains (m1400) add a hit in the same drain as the return with zero
+survival extension. Only m1395seed3 extends survival, by1.789s. m1398's unchanged
+failure has own ray2.113 and key0 coast; the out-of-range recovery never fires.
+Do not promote this model-only law as a robust solution. Later sprint hits can
+cause outward misses and a return before the next attack reaches the server;
+understand that pursuit/strength tradeoff before adding another feature. No
+native variant run or live controller change. Full table and evidence are in
+[recovery screen](poc-20261101/native-schedules/recovery-screen/findings.md). See
 [current findings](combo-native-schedules-20261101.md).
 
 User requests that evaluation clocks use native-recorded packet jitter, client

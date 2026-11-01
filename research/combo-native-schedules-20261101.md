@@ -5,6 +5,9 @@ controller fail. The frozen replacement now predicts failures in four fresh
 native tests, including the opponent clicking after receiving knockback but
 before moving. This supports a narrow controller experiment, not a claim that
 we have calibrated every timing distribution or achieved a reliable lock.
+After that check, one recovery rule improved 5 of 32 model cases, with 27 unchanged
+and no primary-score regressions. None sustained 60s. The live bot is unchanged.
+Four gains add a hit without delaying the return; only one extends survival.
 
 ## Current: fresh validation, with the controller still unchanged
 
@@ -112,12 +115,36 @@ W-tap shows this state is recoverable: its Ctrl pursuit makes a contact at
 hit arrives57.45ms earlier and the defender moves before its dangerous click.
 W-tap still fails later; this diagnoses a useful behavior, not a lock.
 
-The next tightly scoped model test adds Ctrl pursuit only while the candidate's
-own aimed ray is outside3.0 and its existing law holds W. Coasting, strafe,
-click timing and queued inputs remain unchanged. It must beat both the old law
-and W-tap from the same complete state without wrecking the better opening.
-No live controller has been changed. See the
+The subsequent tightly scoped model test adds Ctrl pursuit only while the
+candidate's own finite aimed ray is outside3.0 and its existing law holds W.
+Coasting, strafe, click timing and queued inputs remain unchanged. It preserves
+both19-hit cells and improves the two1-hit cells to5 and3, versus W-tap2.
+The intended missed contact is recovered; later stronger hits can push the
+opponent too far away. See the
 [causal opening audit](poc-20261101/native-schedules/acquisition-tail/opening-findings.md).
+
+## Recovery helps locally, but does not solve maintenance
+
+We then froze that one law across all eight recorded calendars and seeds0–3,
+with the old candidate and complete-state W-tap comparisons retained. It
+improves 5/32 cases, ties 27/32, loses none, and sustains 60s in **zero** cases.
+All 32 acquisition summaries and W-tap result records remain exactly unchanged.
+Only m1395 seed3 survives longer, by1.789s. All four m1400 gains add a hit in
+the same drain as the already-in-flight return, with no increase in lock duration.
+
+| Affected model calendar; seeds0–3 | Old candidate | Ctrl recovery | Matched W-tap |
+|---|---|---|---|
+|m1395|19,19,19,1|19,19,19,3|1,1,1,2|
+|m1400|5,5,5,5|6,6,6,6|2,5,5,2|
+
+This is a limited recovery result, not a reason to call the lock robust or
+deploy it as the solution. The full 32-case table, including all unchanged
+cases, is in the [screen findings](poc-20261101/native-schedules/recovery-screen/findings.md).
+The new law has no native validation. More pursuit alone can recover a contact
+and then create too much knockback for the next fresh window; further changes
+need to address that measured tradeoff, not add more unrelated features.
+It also leaves m1398's immediate knockback-before-movement return untouched:
+the candidate is already close and coasting, so the recovery trigger never fires.
 
 ## Remaining limits
 
