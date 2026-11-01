@@ -546,10 +546,10 @@ public final class JavaModelCheck {
         near(probe.b.vx, (-.2 - .1274) * .54600006, 1e-9, "default probe has no attack slowdown");
         require(probe.receivedHits == 0 && probe.defenderPhysicalClicks == 0,
                 "disabled defender attacks preserve probe behavior");
-        config.defenderClickIntervalMs = 99;
+        config.defenderClickIntervalMs = 49;
         boolean rejected = false;
         try { config.validate(); } catch (IllegalArgumentException expected) { rejected = true; }
-        require(rejected, "defender policy cannot exceed ten physical CPS");
+        require(rejected, "tick-level model cannot exceed twenty physical CPS");
     }
 
     private static void incomingKnockbackAndIndependentImmunity() {

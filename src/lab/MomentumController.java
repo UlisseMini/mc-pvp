@@ -41,7 +41,7 @@ public final class MomentumController {
             if(reactionMs<0||reactionMs>1000||resetEvery<1||resetEvery>8||pauseMs<0||pauseMs>500||pauseTicks<0||pauseTicks>4
                     ||(resetOnIssuedClick&&pauseTicks!=1)||resetDelayMs<0||resetDelayMs>500
                     ||incomingGuardMs<150||incomingGuardMs>1500||(strafePeriodMs!=0&&strafePeriodMs<150)
-                    ||openingWaitMs<0||openingWaitMs>500||clickIntervalMs<100||clickIntervalMs>200
+                    ||openingWaitMs<0||openingWaitMs>500||clickIntervalMs<50||clickIntervalMs>200
                     ||freshCorrectionMs<0||freshCorrectionMs>50
                     ||!Double.isFinite(gap)||gap<2||gap>3.4||!Double.isFinite(hysteresis)||hysteresis<0
                     ||!Double.isFinite(leadMs)||leadMs<50||leadMs>300

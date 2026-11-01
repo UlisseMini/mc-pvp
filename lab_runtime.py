@@ -20,10 +20,10 @@ BOT_SLOTS=8
 def allowed_console_command(command):
     # Keep the existing local inbox restricted to match controls and the
     # explicit administration operations needed for this practice server.
-    if not isinstance(command,str) or not command or not all(c.isalnum() or c in '-_ ./' for c in command):
+    if not isinstance(command,str) or not command or not all(c.isalnum() or c in '-_ ./=?' for c in command):
         return False
     return command.startswith(('lab match ','lab diamond ','lab diamond_box ','lab rod_diamond ','lab sumo ','lab ping ','lab scenario ')) or bool(
-        re.fullmatch(r'(?:op|deop) [A-Za-z0-9_]{1,16}|weather clear(?: 1000000)?',command))
+        re.fullmatch(r'(?:op|deop) [A-Za-z0-9_]{1,16}|weather clear(?: 1000000)?|(?:help|\?|lab help)(?: (?:[1-6]|lab|all|play|settings|matches|replay|views|client))?',command))
 
 
 def clean_environment():
@@ -327,7 +327,7 @@ def run(command,extra,frame_sleep_ms=10):
     elif command=='status':print((RUNTIME/'status.json').read_text())
     elif command=='console':
         text=' '.join(extra)
-        if not allowed_console_command(text):raise SystemExit('Supported: console op <name>, console deop <name>, console weather clear 1000000, or lab match commands')
+        if not allowed_console_command(text):raise SystemExit('Supported: console help [topic], console op/deop <name>, console weather clear 1000000, or lab match commands')
         send(text);print('Queued console command: '+text)
     elif command=='verify-ux':verify_ux()
     elif command=='match':
