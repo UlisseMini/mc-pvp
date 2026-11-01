@@ -3,12 +3,13 @@
 import argparse,bisect,json,math,statistics
 from lab import ROOT,RUNTIME
 from experiments import combat_metrics
+from lab_runtime import match_events
 
 def diagnostics(identifier):
     raw=[json.loads(l) for l in (RUNTIME/'replays'/f'{identifier}.jsonl').read_text().splitlines()]
     m=next(e['match'] for e in raw if e['type']=='start');events={}
     for s in ('a','b'):
-        events[s]=[e for l in (RUNTIME/'bots'/m[s].removeprefix('LabSlot')/'events.jsonl').read_text().splitlines() if (e:=json.loads(l)).get('match')==identifier]
+        events[s]=list(match_events(RUNTIME/'bots'/m[s].removeprefix('LabSlot')/'events.jsonl',identifier))
     obs={s:[e for e in events[s] if e['type']=='observation'] for s in ('a','b')}
     model_side=next((side for side in ('a','b') if any(e['type']=='mpc_plan' for e in events[side])), 'a')
     opponent_side='b' if model_side=='a' else 'a'

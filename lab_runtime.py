@@ -96,13 +96,9 @@ def properties(path):
 
 
 def match_events(path,identifier):
-    """Stream one match without JSON-decoding unrelated historical megabytes."""
-    needle=json.dumps(identifier)
-    with path.open() as stream:
-        for line in stream:
-            if needle not in line:continue
-            event=json.loads(line)
-            if event.get('match')==identifier:yield event
+    """Stream one match, including verified compressed history after rotation."""
+    from event_logs import iter_events
+    yield from iter_events(path, identifier)
 
 
 async def latency_proxy(port,configuration,upstream_port=25566):
@@ -326,7 +322,7 @@ def verify_ux():
     native_views=True;native_attacks=[]
     for match in ours:
         path=RUNTIME/'bots'/match['b'].removeprefix('LabSlot')/'events.jsonl'
-        events=[e for line in path.read_text().splitlines() if (e:=json.loads(line)).get('match')==match['id']]
+        events=list(match_events(path,match['id']))
         observed=[e for e in events if e['type']=='observation']
         native_views &= len(observed)>=3 and max((e['target_ticks'] for e in observed),default=0)-min((e['target_ticks'] for e in observed),default=0)>=3
         native_attacks.extend(e for e in events if e['type']=='engine_attack')

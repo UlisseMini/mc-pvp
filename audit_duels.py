@@ -3,6 +3,7 @@
 import collections,json,math
 from pathlib import Path
 from lab import ROOT,RUNTIME
+from event_logs import iter_events
 
 
 def audit():
@@ -10,8 +11,7 @@ def audit():
     wanted={r['id'] for r in results if r['policy_a']=='human'}
     by_match=collections.defaultdict(list)
     for path in (RUNTIME/'bots').glob('[0-9]*/events.jsonl'):
-        for line in path.read_text().splitlines():
-            e=json.loads(line)
+        for e in iter_events(path):
             if e.get('match') in wanted and e['type'] in ('observation','engine_attack','target_guard','click'):by_match[e['match']].append(e)
     report=[]
     for r in sorted((r for r in results if r['id']in wanted),key=lambda r:r['start']):

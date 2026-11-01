@@ -8,6 +8,7 @@ import statistics
 import time
 
 from experiments import OUT, ROOT, RUNTIME, batch, league, properties, record
+from lab_runtime import match_events
 
 RTTS = [(0, 0), (20, 100), (100, 20)]
 PAIRS = [('wtap', 'hold-w'), ('pvp-candidate', 'hold-w'), ('wtap', 'pvp-candidate')]
@@ -99,8 +100,7 @@ async def knowledge_ablation():
         bot = 'pvp-knows-wtap' if 'pvp-knows-wtap' in (result['policy_a'], result['policy_b']) else 'pvp-candidate'
         own = perspective(result, bot)
         events_path = RUNTIME / 'bots' / result[own['side']].removeprefix('LabSlot') / 'events.jsonl'
-        plans = [e for line in events_path.read_text().splitlines()
-                 if (e := json.loads(line)).get('match') == result['id'] and e['type'] == 'mpc_plan']
+        plans = [e for e in match_events(events_path,result['id']) if e['type'] == 'mpc_plan']
         expected = 'wtap' if bot == 'pvp-knows-wtap' else 'hold-w'
         assert plans and all(p['opponent_model'] == expected for p in plans)
         diagnostics[result['id']] = {'plans': len(plans), 'opponent_model': expected,
@@ -130,8 +130,7 @@ async def standstill_controls():
     checks = {}
     for r in results:
         path = RUNTIME / 'bots' / r['b'].removeprefix('LabSlot') / 'events.jsonl'
-        observations = [e for line in path.read_text().splitlines()
-                        if (e := json.loads(line)).get('match') == r['id'] and e['type'] == 'observation']
+        observations = [e for e in match_events(path,r['id']) if e['type'] == 'observation']
         assert observations and all(not e['forward'] and e.get('strafe', 0) == 0 for e in observations)
         span = max(e['x'] for e in observations) - min(e['x'] for e in observations)
         assert span > .1, 'Stationary controls must still allow ordinary knockback movement'
