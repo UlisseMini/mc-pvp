@@ -5,6 +5,64 @@ controller remains frozen while we replace that evaluation with measured timing
 opportunities and validate both it and plain W-tap. A physics replay with recorded
 inputs and packet timings is a different claim from predicting a new fight.
 
+## Fresh native check and the first wrong prediction
+
+Read-only input hooks are now deployed to the Forge bots. Two fresh64s matches,
+with the same4s silent-opponent opening, produced **26 fresh hits before return
+for lock8 (m1391)** and **1 for plain W-tap (m1392)**. Both timing checks passed.
+These are prefix scores, not total match scores or a claim of indefinite locking.
+
+| Captured calendar | Frozen model candidate | Complete-fork model W-tap | Direct native label |
+|---|---:|---:|---|
+| m1391 |24, then unsupported timing overlap|2|candidate26, return14345ms|
+| m1392 |6|1|W-tap1, return5192ms|
+
+Only the actually played arm on a calendar has a direct native trajectory label.
+The other arm is a model counterfactual. The24 prefix is **unknown beyond its
+cutoff**, not a predicted24-hit loss. Even its earlier movement eventually differs.
+
+The new clocks reproduce both openings'9/8 fresh hits and all320 movement rows
+through4s within1e-12. In m1391 both bodies continue to agree until9165.55ms.
+The first mismatch is now explained, rather than attributed to chaotic physics:
+
+* The model creates a position update at tracker start9093.975ms. Its timing
+  function is indexed by native **wire-send** times, which occur later.
+* The previous wire sample, at9045.192ms, had19.562ms delay. Holding that value
+  forward incorrectly predicts receipt at9113.537ms.
+* The corresponding native packet was encoded at9094.141ms and received at
+  9094.882ms: only0.741ms later. The0.166ms difference between tracker start and
+  wire send selects an entirely different delay sample.
+* Consequently the model misses an interpolation update, changes the defender's
+  aim by about0.10 degrees, and first changes horizontal movement by less than
+  0.00005 blocks. By11s, feedback has amplified the discrepancy into a different
+  W-release decision. That is why a nearly exact prefix is insufficient.
+
+There is a separate cue-timestamp mismatch. Native hurt notifications become
+available inside the client task drain, after diagnostic logging, not at its
+start. A0.386ms difference changes one m1391 admission decision just after4s,
+although that extra immune contact does not immediately alter movement. The
+W-tap source's final return currently agrees to about1ms, but that alone does
+not certify the whole pipeline.
+
+## Call-duration sampling check
+
+An individual click-injection duration must not be held constant until the next
+historical admission. I tested a frozen alternative: sample individual measured
+call costs, retaining spikes, with20 seeds on each calibration calendar. This
+also exposes a limitation of keeping all future client stages fixed:
+
+| Calendar | Candidate resolved /20 | W-tap resolved /20 | Resolved primary scores candidate / W-tap |
+|---|---:|---:|---|
+|m1391|0|7|unknown /2|
+|m1392|4|4|6 /1|
+
+Every other run is explicitly unknown because a generated synchronous call
+overlaps a later fixed stage;16 runs already fail this condition in acquisition.
+No overlaps were clipped, resampled, removed or called wins. This independent
+cost distribution also discards measured source dependence and temporal
+clustering, so it is a failed scheduling sensitivity test, not a calibrated
+performance distribution. It provides no reason to optimize the controller.
+
 ## What the first calendar test says
 
 The first evaluator keeps each whole recording's correlated client/server clocks
@@ -71,14 +129,15 @@ a few matching position/velocity values.
 
 ## Next gate
 
-Read-only native hooks will record every actual input polling opportunity,
-including deferred/empty polls, the exact wall-clock value used by W-tap and the
-opening switch, and the unconditional native attack-loop opportunity. Admission
-completion overhead must also be represented because the limiter measures from
-completion. The old input/cap/control behavior stays unchanged.
+The input hooks now record every actual polling opportunity, including
+deferred/empty polls, the original wall-clock value used by W-tap/opening, and
+the unconditional native attack loop. The next correction aligns timing samples
+with the stage that actually generates each packet. Server queue/enqueue/service
+markers are also being added because the old archive cannot identify individual
+server task execution costs exactly. No controller or combat behavior changes.
 
-Then collect fresh serialized paired recordings, check opening contact chronology
-and both POV geometries, and evaluate reserved schedules before tuning. Preserve
+Check contact chronology and both POV geometries, then evaluate reserved fresh
+serialized pairs before tuning. The two planned reserved pairs remain unused. Preserve
 failed/unsupported evaluations and timing-quality flags. Matching only a broad
 min/max score range is not acceptance.
 
