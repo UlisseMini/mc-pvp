@@ -23,8 +23,18 @@ public final class PeriodicComboClock {
     }
     /** Native A/D are +/-.98f. In NATIVE_QUEUED, click holds an admission gate until updated. */
     public record Control(int key,float strafe,boolean click) {}
+    public enum ReceivedKind { TARGET_POSITION, TARGET_LOOK, TARGET_HURT, OWN_HURT, OWN_VELOCITY, OWN_SPRINT }
+    /** Immutable data available from this client's own incoming packets, delivered
+     * only after local handling. arrivedAt is a local network receipt timestamp,
+     * NOT a server send time. Position goals are this client's decoded/interpolated
+     * endpoint; absent numeric payloads are NaN. No global packet sequence, server
+     * tick, remote velocity, or remote-client state is exposed. */
+    public record PacketObservation(double arrivedAt,double handledAt,int packetId,ReceivedKind kind,
+                                    double goalX,double goalY,double goalZ,boolean groundFlag,
+                                    double vx,double vy,double vz,boolean sprintFlag) {}
     public interface Policy {
         Control input(Observation observation);
+        default void received(PacketObservation packet){}
         /** Own-observation admission permission, consulted only after gate/cap eligibility.
          * A deferral leaves the physical cap timestamp, gate and admitted FIFO unchanged. */
         default boolean allowInjection(Observation own,String source){return true;}
@@ -94,6 +104,20 @@ public final class PeriodicComboClock {
     public int missCounter(boolean fromA){return clickQueues[fromA?0:1].missCounter;}
     private void add(double time,int kind){events.add(new Event(time,kind,order++));}
     private Observation observation(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;return new Observation(now,ticks[a?0:1],b.q,v.x,v.y,v.z,b.sprint,b.headYaw,b.lastContactTime,b.localContacts,v.lastHurtTime,b.lastHurtTime);}
+    private void receive(boolean a){
+        PeriodicComboFightModel.receive(state,now,a,p->{
+            ReceivedKind kind;double x=Double.NaN,y=Double.NaN,z=Double.NaN,vx=Double.NaN,vy=Double.NaN,vz=Double.NaN;boolean ground=false,sprint=false;
+            if(p.kind==5||p.kind==6){
+                kind=p.packetId==0x16?ReceivedKind.TARGET_LOOK:ReceivedKind.TARGET_POSITION;
+                PeriodicComboFightModel.View v=a?state.ab:state.ba;x=v.gx;y=v.gy;z=v.gz;ground=p.ground;
+            }else if(p.kind==4||p.kind==8){kind=ReceivedKind.OWN_VELOCITY;vx=p.vx;vy=p.vy;vz=p.vz;}
+            else if(p.kind==10||p.kind==11){kind=ReceivedKind.OWN_SPRINT;sprint=p.flag;}
+            else if(p.kind==12||p.kind==13)kind=ReceivedKind.TARGET_HURT;
+            else if(p.kind==14||p.kind==15)kind=ReceivedKind.OWN_HURT;
+            else throw new AssertionError("Unexpected own incoming packet kind "+p.kind);
+            policies[a?0:1].received(new PacketObservation(p.due,now,p.packetId,kind,x,y,z,ground,vx,vy,vz,sprint));
+        });
+    }
     private void aim(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;double dx=v.x-b.q.x(),dz=v.z-b.q.z(),eye=b.q.y()+PeriodicComboFightModel.EYE;double targetY=Math.max(v.y+.15,Math.min(v.y+1.65,eye));b.yaw=(float)Math.toDegrees(Math.atan2(-dx,dz));b.pitch=(float)-Math.toDegrees(Math.atan2(targetY-eye,Math.hypot(dx,dz)));selectionReady[a?0:1]=true;}
     private void poll(boolean a,String source){
         int side=a?0:1;ClickQueue q=clickQueues[side];long ns=Math.round(now*1_000_000.0);
@@ -128,8 +152,8 @@ public final class PeriodicComboClock {
         if(!Double.isFinite(end)||end>scheduleEnd)throw new IllegalArgumentException("Requested time exceeds supplied event-tape coverage");
         while(!events.isEmpty()&&events.peek().time<=end){Event e=events.remove();now=e.time;int k=e.kind;boolean a=(k&1)==0;int side=a?0:1;String name;
             if(k<2){
-                if(timing.inputMode==InputMode.NATIVE_QUEUED){aim(a);poll(a,"frame");if(!recordedSchedule){PeriodicComboFightModel.receive(state,now,a);selectionReady[side]=false;}}
-                else{if(timing.aimBeforeFrameDrain)aim(a);PeriodicComboFightModel.receive(state,now,a);if(!timing.aimBeforeFrameDrain)aim(a);}
+                if(timing.inputMode==InputMode.NATIVE_QUEUED){aim(a);poll(a,"frame");if(!recordedSchedule){receive(a);selectionReady[side]=false;}}
+                else{if(timing.aimBeforeFrameDrain)aim(a);receive(a);if(!timing.aimBeforeFrameDrain)aim(a);}
                 if(!recordedSchedule)add(now+timing.framePeriod,k);name="FRAME"+(a?"A":"B");
             }
             else if(k<4){
@@ -159,7 +183,7 @@ public final class PeriodicComboClock {
             else if(k==11){PeriodicComboFightModel.serverEnd(state);name="SERVER_END";}
             else if(k<14){(a?state.ab:state.ba).step();selectionReady[side]=false;name="INTERP"+(a?"A":"B");}
             else if(k<16){consume(a);name="INPUT"+(a?"A":"B");}
-            else{PeriodicComboFightModel.receive(state,now,a);selectionReady[side]=false;name="CLIENT_DRAIN"+(a?"A":"B");}
+            else{receive(a);selectionReady[side]=false;name="CLIENT_DRAIN"+(a?"A":"B");}
             checkpoint(name);
         }
         now=end;

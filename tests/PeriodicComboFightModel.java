@@ -118,7 +118,10 @@ public final class PeriodicComboFightModel {
         s.lowerOffset=Math.max(s.lowerOffset,.6-(s.b.q.x()-s.a.q.x()));
     }
     static List<Packet> due(State s,double time,int destination){ArrayList<Packet> out=new ArrayList<>();for(Iterator<Packet> it=s.packets.iterator();it.hasNext();){Packet p=it.next();int dst=p.kind<4||p.kind==7||p.kind==9?0:p.kind==5||p.kind==8||p.kind==10||p.kind==12||p.kind==14?1:2;if(dst==destination&&p.due<=time){out.add(p);it.remove();}}out.sort(Comparator.comparingDouble((Packet p)->p.due).thenComparingLong(p->p.sequence));return out;}
-    static void receive(State s,double time,boolean a){for(Packet p:due(s,time,a?1:2)){if(p.kind>=12){if(p.kind==12)s.ab.lastHurtTime=time;else if(p.kind==13)s.ba.lastHurtTime=time;else if(p.kind==14)s.a.lastHurtTime=time;else s.b.lastHurtTime=time;}else if(p.kind==4)s.b.velocity(p.vx,p.vy,p.vz);else if(p.kind==8)s.a.velocity(p.vx,p.vy,p.vz);else if(p.kind==10||p.kind==11)(a?s.a:s.b).sprint=p.flag;else {View v=a?s.ab:s.ba;if(p.flag&&Math.abs(p.x-v.x)<.03125&&Math.abs(p.y-v.y)<.015625&&Math.abs(p.z-v.z)<.03125)v.receive(v.x,v.y,v.z);else v.receive(p.x,p.y,p.z);}audit(s);}}
+    static void receive(State s,double time,boolean a){receive(s,time,a,null);}
+    /** Observer runs after this client's normal packet application. The clock adapter
+     * sanitizes the packet into own-received data before exposing it to a policy. */
+    static void receive(State s,double time,boolean a,java.util.function.Consumer<Packet> received){for(Packet p:due(s,time,a?1:2)){if(p.kind>=12){if(p.kind==12)s.ab.lastHurtTime=time;else if(p.kind==13)s.ba.lastHurtTime=time;else if(p.kind==14)s.a.lastHurtTime=time;else s.b.lastHurtTime=time;}else if(p.kind==4)s.b.velocity(p.vx,p.vy,p.vz);else if(p.kind==8)s.a.velocity(p.vx,p.vy,p.vz);else if(p.kind==10||p.kind==11)(a?s.a:s.b).sprint=p.flag;else {View v=a?s.ab:s.ba;if(p.flag&&Math.abs(p.x-v.x)<.03125&&Math.abs(p.y-v.y)<.015625&&Math.abs(p.z-v.z)<.03125)v.receive(v.x,v.y,v.z);else v.receive(p.x,p.y,p.z);}audit(s);if(received!=null)received.accept(p);}}
     static void serverMoveB(State s,Packet p){serverMove(s,p,false);}
     static void serverMoveA(State s,Packet p){serverMove(s,p,true);}
     static void serverMove(State s,Packet p,boolean fromA){serverMove(s,p,fromA,null,0);}
