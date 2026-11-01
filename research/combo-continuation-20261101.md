@@ -13,19 +13,22 @@ constants. Reach is3 for both players and added RTTs are0/120ms unless stated.
 ## Native comparisons
 
 Every new comparison uses the same20CPS ceiling, perfect own-client aim, zero
-reaction delay, four-second common acquisition, and60-second maintenance window.
+reaction delay and four-second common acquisition. The maintenance horizon is
+shown per row and is identical for candidate and baseline.
 The hold-W opponent sprints throughout and starts clicking at4s. Both candidate
 and reference use the same frozen gap law during acquisition; the reference then
 switches to plain W-tap with its cue history already established. Three separate
 pairs per profile alternate order. Counts exclude free opening hits and stop at
 the first accepted return, including damage upgrades as returns.
 
-| Fresh interval / horizontal / vertical | Candidate fresh before return | Plain W-tap | Candidate full60s locks |
-|---|---|---|---|
-|2 /1 /0, earlier anchor|2* /527 /535|1 /2 /5|2 of3|
-|4 /1 /0, m1300–m1305|1 /1 /0|0 /0 /0|0 of3|
-|6 /1 /1, m1306–m1311|6 /12 /7|3 /3 /1|0 of3|
-|6 /1.1 /1.1, m1312–m1317|9 /7 /4|1 /2 /2|0 of3|
+| Fresh interval / horizontal / vertical | Maintenance horizon | Candidate fresh before return | Plain W-tap | Full horizon, candidate / W-tap |
+|---|---|---|---|---|
+|2 /1 /0, earlier anchor|60s|2* /527 /535|1 /2 /5|2 of3 /0 of3|
+|4 /1 /0, m1300–m1305|60s|1 /1 /0|0 /0 /0|0 of3 /0 of3|
+|6 /1 /1, m1306–m1311|60s|6 /12 /7|3 /3 /1|0 of3 /0 of3|
+|6 /1.1 /1.1, m1312–m1317|60s|9 /7 /4|1 /2 /2|0 of3 /0 of3|
+|8 /1 /1, m1318–m1323|20s screen|0 /0 /0|0 /0 /0|0 of3 /0 of3|
+|10 /1 /1, m1324–m1329|20s screen|0 /1 /0|1 /1 /1|0 of3 /0 of3|
 
 The anchor's star denotes a timing-flagged acquisition; the two successful minute
 runs were clean. All new primary windows above have clean measured timing.
@@ -35,6 +38,9 @@ the recorder's disk-space guard engaged. Original data remains intact; completed
 replays were transparently compressed and byte-verified to restore recording space.
 All primary windows in the+10% KB batch are clean too; its final W-tap run has a
 later whole-match timing flag, after the scored first return. The row is retained.
+The eight- and ten-tick screens have clean full-match timing and complete three-POV
+recordings. Every first return is
+observed within the shorter horizon; no shortened run is claimed as a60s lock.
 
 The closest tested native regime that **improves across all three repeats** is
 currently six ticks with ordinary vanilla KB. It still returns after a few seconds;
@@ -74,6 +80,11 @@ Server height at attack time does not identify this boundary reliably: the
 important state is grounded/airborne at the victim's first movement after its
 delayed S12 velocity packet. This motivates one controlled delayed-click test,
 not a general claim that sprint hits are bad.
+
+At eight and ten ticks with vanilla KB, the prescribed four-second opening has
+already lost separation. The first return lands89–102ms after the defender starts
+clicking. The controller ties or loses to W-tap, so this branch is stopped. These
+are failed entries; they say nothing decisive about a better established cycle.
 
 ## Exact model comparisons, separate from native evidence
 
