@@ -9,7 +9,7 @@ from network_pipeline_audit import archive,wire as pipeline_wire,pair_payloads,s
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 JAVA=Path('/opt/homebrew/opt/openjdk@17/bin/java')
-SOURCES=['src/lab/ExactTravel.java','src/lab/Json.java','tests/PeriodicComboFightModel.java','tests/PeriodicComboReplay.java','tests/PeriodicComboTransport.java']
+SOURCES=['src/lab/ExactTravel.java','src/lab/Json.java','src/lab/CombatProfile.java','tests/PeriodicComboFightModel.java','tests/PeriodicComboReplay.java','tests/PeriodicComboTransport.java']
 
 def wire(events,direction,player=None):
     rows=pipeline_wire(events,direction,player)
@@ -125,7 +125,7 @@ def network_schedule(mid,data,game,offset,t0,seconds):
 
 def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
     game=json.loads((ROOT/'runtime/results'/f'{mid}.json').read_text());t0=game['start']
-    profile=game.get('combat_profile',{});combat=[profile.get('kb_horizontal',1.),profile.get('kb_vertical',1.),profile.get('fresh_hit_ticks',10)]
+    profile=game.get('combat_profile',{});combat=[profile.get('kb_horizontal',1.),profile.get('kb_vertical',1.),profile.get('fresh_hit_ticks',10),profile.get('sprint_vertical',.1)]
     data={side:load(mid,side)for side in ('a','b','server')}
     offsets=[e['monotonic_ns']/1e6-e['time'] for es in data.values()for e in es if 'monotonic_ns'in e and 'time'in e]
     offset=statistics.median(offsets)
@@ -216,7 +216,7 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
     for t,k,args,e in rows:
         lines.append('\t'.join(map(str,[t,k,*args])))
         if not k.startswith('FRAME'):expected.append((t,k,e))
-    cmd=[str(JAVA),f'-Dperiodic.frame_drain={str(frame_drain).lower()}','-cp',classes,'PeriodicComboReplay']
+    cmd=[str(JAVA),'-Xmx256m',f'-Dperiodic.frame_drain={str(frame_drain).lower()}','-cp',classes,'PeriodicComboReplay']
     p=subprocess.run(cmd,input='\n'.join(lines)+'\n',capture_output=True,text=True)
     predictions=list(csv.DictReader(io.StringIO(p.stdout),delimiter='\t'));assert len(predictions)<=len(expected)
     replay_failure=p.stderr.strip()if p.returncode else None
@@ -273,14 +273,16 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
             'completed_event_rows':len(predictions),'requested_event_rows':len(expected),'unexecuted_event_rows':len(expected)-len(predictions),'last_compared_ms':scored[-1]['t_ms']if scored else None,'summary':summary,'rows':scored}
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('matches',nargs='*',default=['m1187']);ap.add_argument('--frames',action='store_true');ap.add_argument('--transport-trace',action='store_true');ap.add_argument('--seconds',type=float,default=4);a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('matches',nargs='*',default=['m1187']);ap.add_argument('--frames',action='store_true');ap.add_argument('--transport-trace',action='store_true');ap.add_argument('--seconds',type=float,default=4);ap.add_argument('--output',type=Path,help='Separate evidence destination; default preserves the historical naming convention');a=ap.parse_args()
     source_hashes={s:hashlib.sha256((ROOT/s).read_bytes()).hexdigest()for s in SOURCES}
     with tempfile.TemporaryDirectory(prefix='periodic-replay-')as temp:
         subprocess.run([str(JAVA.with_name('javac')),'-proc:none','-d',temp,*[str(ROOT/s)for s in SOURCES]],capture_output=True,check=True)
         reports=[run(mid,temp,a.frames,a.seconds,a.transport_trace)for mid in a.matches]
     output={'sources':source_hashes,'reports':reports}
     name='research/periodic-clock-replay'+('-frames'if a.frames else '')+('-transport'if a.transport_trace else '')+'-'+ '-'.join(a.matches)+'.json'
-    (ROOT/name).write_text(json.dumps(output,indent=2)+'\n')
+    destination=a.output if a.output is not None else ROOT/name
+    destination.parent.mkdir(parents=True,exist_ok=True)
+    destination.write_text(json.dumps(output,indent=2)+'\n')
     for d in reports:
         if d['replay_failure']:print(d['match'],d['replay_failure'].splitlines()[0])
         print(d['match'],[(k,round(v['first_error_over_001']['t_ms'],3)if v['first_error_over_001']else None,round(v['max_component_error'],4))for k,v in d['summary'].items()])
