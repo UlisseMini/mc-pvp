@@ -38,6 +38,25 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Overnight mandate (2026-11-01)
 
+### Latest priority: native schedule calibration, then robustness
+
+User requests that evaluation clocks use native-recorded packet jitter, client
+tick gaps, task-drain timing and opening variation, rather than the ideal
+periodic schedules that falsely predicted reliable750-hit locks. Freeze the
+controller until both candidate and paired W-tap native outcomes are represented
+by the model distribution. Broad min/max overlap alone is insufficient; check
+frequencies, failure mechanisms and held-out/fresh data. Separate network receipt
+from task handling. Preserve correlated event order and generate gameplay inputs
+and packets autonomously; recorded click counts/positions are not evaluation
+inputs. See [the frozen plan](poc-20261101/native-schedules/preplan.md).
+
+Also compare the three earlier150-hit successes with both new failed openings.
+Test whether established locks withstand bad subsequent schedules, preserving
+full state/queues when separating acquisition from maintenance. A deliberate
+own-observation acquisition routine may be sufficient, but correlation in five
+matches is not proof. Only after calibration may controller changes be tested,
+including the opponent's click after S12 arrival but before movement.
+
 ### Current evidence after the strength/timing pass
 
 Latest follow-up: [lock8 robustness and boundary](combo-lock8-robustness-20261101.md).
