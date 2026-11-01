@@ -189,6 +189,42 @@ they still cannot reveal B's exact future tick phase. Report uncertainty and
 incorrect confident predictions, then test any resulting controller on fresh
 native data with the same W-tap gate. Further fixed-word patches are stopped.
 
+That passive audit is now complete. It uses only the querying bot's received
+position endpoints, hurt cues and input history; the other POVs are consulted
+after predictions, for labels. On recordings held out from estimator fitting,
+the corrected observer confidently classifies6 of23 candidate fresh launches
+and3 of12 W-tap launches, all correctly grounded. It makes no confident airborne
+prediction, and cannot distinguish the critical fifth/sixth transitions. These
+recordings were previously examined for combat outcomes; they are not unseen
+scientific test data. Six successes with abstention on most launches do not
+establish a usable timing controller.
+
+Requiring different XYZ endpoints to come from different movement samples
+removes an impossible inference, but the retained sample/application timing
+interval is still seven ticks wide. The source-age envelope is an unvalidated
+operational assumption; a separate packet-age audit is next. See the preserved
+[V1](poc-20261101/anneal/mechanism/passive-landing-observer-findings.md) and
+[V2](poc-20261101/anneal/mechanism/passive-landing-observer-v2-findings.md).
+
+We also isolated entry from maintenance without changing physics or the input
+word: both model arms run the same original word through4s while B does not
+click, then the candidate continues and the reference becomes primed W-tap.
+All free opening hits are excluded from the4–14s score. Complete state and
+pending queues are identical within each pair; three physical phases are used.
+
+| Shared admission cap; vanilla physics, RTT0/120 | Word fresh before return, three phases | Plain W-tap | Word /W-tap zero10s |
+|---|---|---|---|
+|50ms|17 /0 /0|2 /0 /0|1 of3 /0 of3|
+|51ms|17 /0 /0|2 /1 /1|1 of3 /0 of3|
+
+The alternate phases already enter unsafe geometry. No return or attack is
+queued at handoff, so this is not a scoring artifact from a pre-opening hit.
+In the favorable phase, B's last opening reach opportunity was at710ms; extending
+the handicap from900ms to4s did not repair its acquisition. This branch fails
+the spread gate and receives no native trial. The result is a failure of this
+fixed acquisition recipe, not of maintained vanilla combos in general.
+Details: [quiet-four-second diagnostic](poc-20261101/anneal/continuation/word-quiet4-acquisition-findings.md).
+
 ## Native continuation ladder
 
 Every new comparison uses the same20CPS ceiling, perfect own-client aim, zero
@@ -404,6 +440,26 @@ on the ground; "air means normal, ground means sprint" is too crude. This
 relaxes attacker reach and input feasibility, so it proves no playable combo.
 The missing obligation is keeping both POV distances legal through the outward
 burst and the slow return leg using ordinary movement and sprint commands.
+
+A bounded coupled-input test now exercises that obligation. From the complete
+physical4250ms state, it searches ordinary W release/W/W+Ctrl and click gating
+for actual alternating N/S fresh hits500ms apart. It realizes N-air, S-air,
+N-ground, S-ground, then returns. The original900–10900ms score is10 versus
+W-tap3; the same-state4250–10900ms score is4 versus W-tap2. Neither is a lock.
+This is one nominal phase and a restricted six-action search, not evidence of
+general superiority or infeasibility for strafing/different timing.
+
+After the third normal launch, B's reach distance falls from4.832 to2.713 blocks
+before the next strong packet can move it. The cached ray is2.741 at contact:
+about0.259 blocks inside reach. During that leg, A advances1.239 blocks, but B's
+delayed view of A advances2.039 as earlier movement catches up. B's contact at
+5860ms is already queued when the strong launch starts moving it at5910ms;
+the return registers at5925ms. The search's final rejection therefore discovers
+an earlier commitment, not a new barrier at its last step. Increasing only that
+normal pulse's horizontal component by10% adds about0.139 blocks by contact,
+insufficient to close this selected path's deficit. Whole-profile changes would
+also change earlier motion and remain untested by that local calculation.
+See the [coupled NS diagnostic](poc-20261101/anneal/mechanism/ns-coupled-stage2-findings.md).
 
 These are causal tests, not a vanilla infeasibility proof. No bounded search has
 covered all allowed inputs, phases, acquisition states or pings.
