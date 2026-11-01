@@ -170,7 +170,7 @@ public final class ForgeProbe {
                 inventoryBefore=mc.field_71439_g.field_71071_by.func_70442_a(new net.minecraft.nbt.NBTTagList()).toString();mc.field_71439_g.func_71165_d("/replay "+replayMatch);
             }
             if(stopAt>0){int t=ticks-stopAt;
-                if(t==160){check(Boolean.TRUE.equals(replay().get("active")),"replay stream active");check(mc.field_71439_g.field_71075_bZ.field_75101_c&&mc.field_71439_g.field_71075_bZ.field_75100_b,"hotbar replay permits invulnerable free flight");right(0);}
+                if(t==160){check(Boolean.TRUE.equals(replay().get("active")),"replay stream active");check(mc.field_71439_g.field_71075_bZ.field_75101_c&&mc.field_71439_g.field_71075_bZ.field_75102_a,"hotbar replay permits invulnerable free flight");right(0);}
                 if(t==175){check(Boolean.TRUE.equals(replay().get("paused")),"clock item pauses replay");pausedTime=((Number)replay().get("time_ms")).doubleValue();right(2);}
                 if(t==190){check(Math.abs(((Number)replay().get("time_ms")).doubleValue()-Math.min(pausedTime+5000,((Number)replay().get("duration_ms")).doubleValue()))<100,"forward item seeks five seconds, clamped at recording end");left(1);}
                 if(t==205){check(Math.abs(((Number)replay().get("time_ms")).doubleValue()-Math.max(0,Math.min(pausedTime+5000,((Number)replay().get("duration_ms")).doubleValue())-1000))<100,"rewind item left click seeks one second");mc.field_71439_g.func_71165_d("/replay seek 2");mc.field_71439_g.func_71165_d("/replay pov human");}

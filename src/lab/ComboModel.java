@@ -616,7 +616,7 @@ public final class ComboModel {
         public final int finalBeamSize, distinctStateBins, rootActionsRetained;
         private Decision(Node best, State initial, Config config, List<Node> finalBeam) {
             action = best.plan[0];
-            plan = Compat.list(best.plan.clone());
+            plan = java.util.Collections.unmodifiableList(java.util.Arrays.asList(best.plan.clone()));
             planSource = best.planSource;
             score = rank(best, config) - initial.accumulatedReward;
             predictedHits = best.state.acceptedHits - initial.acceptedHits;

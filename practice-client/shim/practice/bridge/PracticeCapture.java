@@ -22,6 +22,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     static final String CHANNEL="PvpLab|v1";
     private final ReloadHost host;
     private final Path directory;
+    private final String bridgeSha256=bridgeHash();
     private final AtomicLong sequence=new AtomicLong(),packetSequence=new AtomicLong(),eventDrops=new AtomicLong();
     private final Map<Object,Long> packetIds=Collections.synchronizedMap(new WeakHashMap<>());
     private final Set<Channel> clients=Collections.newSetFromMap(new ConcurrentHashMap<Channel,Boolean>());
@@ -180,8 +181,16 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         if(!archive.match().equals(id))archive.begin(id,side+"-client",metadata(mine));
     }
     private Map<String,Object> metadata(String player){return map("player",player,"session",session,"role",BotRuntime.role(),"backend",BotRuntime.enabled()?"forge":"human-forge","pose_hz",60,
-        "minecraft","1.8.9","forge","11.15.1.2318","bridge_sha256",System.getProperty("practice.bridge_sha256","unreported"),
-        "module_sha256",System.getProperty("practice.module_sha256","unreported"),"initial",GameObservations.state(Minecraft.func_71410_x(),true),"full_session_capture",log==null?null:log.path.toString());}
+        "minecraft","1.8.9","forge","11.15.1.2318","bridge_sha256",bridgeSha256,
+        "module_sha256",host.moduleSha256(),"initial",GameObservations.state(Minecraft.func_71410_x(),true),"full_session_capture",log==null?null:log.path.toString());}
+    private static String bridgeHash(){
+        try{
+            Path path=Paths.get(PracticeCapture.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            if(!Files.isRegularFile(path))return "unreported";
+            byte[] digest=java.security.MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path));
+            StringBuilder hex=new StringBuilder();for(byte b:digest)hex.append(String.format("%02x",b&255));return hex.toString();
+        }catch(Exception e){return "unreported";}
+    }
     String status(){return (log==null?"Capture off (localhost only)":log.status())+" | observer errors "+ObserverHooks.errors+" | link "+(lastServer==0?"waiting":System.currentTimeMillis()-lastServer+" ms old")+" | "+match;}
     void emit(String type,Map<String,Object> data,boolean deliver){
         long seq=sequence.incrementAndGet(),ms=System.currentTimeMillis(),ns=System.nanoTime();record(type,seq,ms,ns,data);

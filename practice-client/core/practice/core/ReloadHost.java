@@ -10,7 +10,7 @@ import java.util.*;
 /** Local module replacement. No server, downloads or remotely supplied code. */
 public final class ReloadHost implements AutoCloseable {
     private final Path directory;
-    private String fingerprint="",status="Not loaded";
+    private String fingerprint="",status="Not loaded",moduleSha256="unreported";
     private PracticeExtension active;
     private URLClassLoader loader;
     private Path copy;
@@ -19,6 +19,7 @@ public final class ReloadHost implements AutoCloseable {
 
     public ReloadHost(Path directory){this.directory=directory;}
     public String status(){return status;}
+    public String moduleSha256(){return moduleSha256;}
     public void services(PracticeServices services){this.services=services;}
     private byte[] readBounded(Path p,int max) throws IOException {
         if(Files.size(p)>max)throw new IOException(p.getFileName()+" is too large");
@@ -41,6 +42,7 @@ public final class ReloadHost implements AutoCloseable {
             candidate.configure(props,directory);
             dispose(active,loader,copy);
             active=candidate;loader=candidateLoader;copy=candidateCopy;faulted=false;
+            StringBuilder hex=new StringBuilder();for(byte b:MessageDigest.getInstance("SHA-256").digest(jar))hex.append(String.format("%02x",b&255));moduleSha256=hex.toString();
             status="Loaded local module "+next.substring(0,8);return true;
         } catch(Exception|LinkageError error) {
             dispose(candidate,candidateLoader,candidateCopy);
