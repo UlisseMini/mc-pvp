@@ -76,7 +76,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
                 for side in ('a','b'):
                     path=RUNTIME/'bots'/result[side].removeprefix('LabSlot')/'events.jsonl'
                     events=list(match_events(path,result['id']))
-                    reaction=int(parameters[result['policy_'+side]].get('reaction_ms',150))
+                    reaction=int(float(parameters[result['policy_'+side]].get('reaction_ms',150)))
                     click_cps=int(parameters[result['policy_'+side]].get('click_cps',10))
                     if not 1<=click_cps<=30:raise ValueError('Invalid declared click rate')
                     minimum_interval=(1_000_000_000+click_cps-1)//click_cps

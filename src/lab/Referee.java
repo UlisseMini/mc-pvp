@@ -49,8 +49,8 @@ public final class Referee {
             m.put("rod_knockback",rods()?"native_zero_damage_contacts_between_duel_opponents":"vanilla_zero_damage_rejection");
             if(drillRound>0)m.put("drill",Map.of("round",drillRound,"preset",drillPreset,"gap",startGap,"first_hit_ms",drillFirstHit));
             m.put("start",start);m.put("finish",finish);m.put("winner",winner);m.put("arena",arena);m.put("request",request);m.put("scenario",scenario);m.put("duration_limit_ms",durationMs);
-            m.put("reaction_ms_a",Integer.parseInt(configA.getProperty("reaction_ms","150")));
-            m.put("reaction_ms_b",Integer.parseInt(configB.getProperty("reaction_ms","150")));
+            m.put("reaction_ms_a",(int)Double.parseDouble(configA.getProperty("reaction_ms","150")));
+            m.put("reaction_ms_b",(int)Double.parseDouble(configB.getProperty("reaction_ms","150")));
             m.put("click_cps_a",pa.equals("human")?null:ClickRate.cps(configA));
             m.put("click_cps_b",pb.equals("human")?null:ClickRate.cps(configB));
             m.put("attack_reach_a",DuelSettings.reach(configA));m.put("attack_reach_b",DuelSettings.reach(configB));
@@ -264,12 +264,14 @@ public final class Referee {
         String[] args=text.trim().split("\\s+");if(args.length==0)return false;
         String cmd=args[0].toLowerCase(Locale.ROOT);
         if(cmd.equals("stop")&&!R.cls("net.minecraft.entity.player.EntityPlayerMP").isInstance(sender))return false;
-        boolean ours=List.of("bots","duel","drill","mode","blocksound","blocktiming","ping","matches","watch","replay","stop","rematch","lab").contains(cmd)||(cmd.equals("help")&&args.length>1&&args[1].equals("lab"));
+        boolean ours=List.of("bots","duel","drill","mode","blocksound","blocktiming","ping","matches","watch","replay","stop","rematch","lab","help","?").contains(cmd);
         if(!ours)return false;
         try{
             if(server==null){message(sender,"Lab is still starting.");return true;}
             if(List.of("duel","rematch","watch","replay").contains(cmd)&&find(R.name(sender))==null)EntryDrills.cancel(R.name(sender));
-            if(cmd.equals("drill")){
+            if(cmd.equals("help")||cmd.equals("?")){
+                LabHelp.show(sender,args.length>1?args[1].toLowerCase(Locale.ROOT):"1");
+            }else if(cmd.equals("drill")){
                 EntryDrills.command(sender,args);
             }else if(cmd.equals("replay")){
                 ServerReplay.command(sender,args);
@@ -362,7 +364,8 @@ public final class Referee {
             }else if(cmd.equals("lab")&&args.length>=4&&MODES.contains(args[1])&&!args[1].equals("boxing")){
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
                 if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}
-                loadPolicies();start(a,b,args[2],args[3],args.length>4?ping(args[4]):0,args.length>5?ping(args[5]):0,args.length>6?args[6]:args[1]+"-"+System.nanoTime(),0,args[1]);
+                BotMatchSettings setup=BotMatchSettings.parse(args,4,args[1]+"-"+System.nanoTime());
+                loadPolicies();start(a,b,args[2],args[3],setup.pingA,setup.pingB,setup.request,0,args[1],setup.a,setup.b,6,0,"");
             }else if(cmd.equals("lab")&&args.length==8&&args[1].equals("scenario")){
                 long duration=Long.parseLong(args[6]);if(duration<1000||duration>180_000)throw new IllegalArgumentException("Scenario duration must be1000–180000ms");
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
@@ -371,14 +374,15 @@ public final class Referee {
             }else if(cmd.equals("lab")&&args.length>=4&&args[1].equals("match")){
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
                 if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}
-                loadPolicies();start(a,b,args[2],args[3],args.length>4?ping(args[4]):0,args.length>5?ping(args[5]):0,args.length>6?args[6]:"manual-"+System.nanoTime());
+                BotMatchSettings setup=BotMatchSettings.parse(args,4,"manual-"+System.nanoTime());
+                loadPolicies();start(a,b,args[2],args[3],setup.pingA,setup.pingB,setup.request,0,"boxing",setup.a,setup.b,6,0,"");
             }else if(cmd.equals("lab")&&args.length==5&&args[1].equals("ping")){
                 Match m=matches.get(args[2]);if(m==null)throw new IllegalArgumentException("Unknown active match");
                 changePings(m,ping(args[3]),ping(args[4]));message(sender,"Updated "+m.id+" added RTT to "+m.pingA+"/"+m.pingB+" ms.");
             }else if(cmd.equals("lab")&&args.length>=3&&args[1].equals("goal")){
                 message(sender,"Ladder matches always run to 100 accepted hits.");
             }else{
-                message(sender,"/bots; /mode boxing|diamond|diamond_box|rod_diamond|sumo; "+DuelSettings.USAGE+"; /blocksound on|off|test; /ping me <RTT>; /ping bot <RTT>; /rematch [options]; /stop; /matches; /watch [match]; /replay [match]; /replay list. Reach 1–5 blocks; CPS 1–30; added RTT 0–500 ms. Your ping is saved.");
+                LabHelp.show(sender,args.length>2&&args[1].equals("help")?args[2]:"1");
             }
         }catch(Throwable e){e.printStackTrace();message(sender,"§cLab: "+e.getMessage());}
         return true;
@@ -407,6 +411,9 @@ public final class Referee {
         start(a,b,pa,pb,pingA,pingB,request,duration,selectedMode,overridesB,6,0,"");
     }
     static void start(String a,String b,String pa,String pb,double pingA,double pingB,String request,long duration,String selectedMode,Properties overridesB,double startGap,int round,String preset)throws Exception{
+        start(a,b,pa,pb,pingA,pingB,request,duration,selectedMode,new Properties(),overridesB,startGap,round,preset);
+    }
+    static void start(String a,String b,String pa,String pb,double pingA,double pingB,String request,long duration,String selectedMode,Properties overridesA,Properties overridesB,double startGap,int round,String preset)throws Exception{
         if(a.equals(b)||find(a)!=null||find(b)!=null)throw new IllegalArgumentException("A player cannot be assigned to two matches");
         if(!pa.equals("human")&&!policies.containsKey(pa)||!policies.containsKey(pb))throw new IllegalArgumentException("Unknown bot; use /bots.");
         Match m=new Match();m.mode=mode(selectedMode);m.goal=m.boxing()?100:0;m.request=request;if(duration>0){m.scenario=true;m.durationMs=duration;}
@@ -415,6 +422,7 @@ public final class Referee {
         do{m.id=String.format("m%04d",++counter);}while(Files.exists(DATA.resolve("results/"+m.id+".json"))||Files.exists(DATA.resolve("replays/"+m.id+".jsonl")));
         m.a=a;m.b=b;m.pa=pa;m.pb=pb;m.pingA=m.initialPingA=pingA;m.pingB=m.initialPingB=pingB;m.start=System.currentTimeMillis()+3000;
         if(!pa.equals("human"))m.configA.putAll(policies.get(pa));else m.configA.setProperty("kind","human");
+        if(!pa.equals("human"))m.configA.putAll(overridesA);
         m.configB.putAll(policies.get(pb));
         m.configB.putAll(overridesB);
         ClickRate.cps(m.configA);ClickRate.cps(m.configB);DuelSettings.reach(m.configA);DuelSettings.reach(m.configB);
@@ -458,6 +466,7 @@ public final class Referee {
         message(player(b),"§aStarting "+m.id+": §b"+pa+" §7vs §6"+pb+"§7. "+rules);
         if(pa.equals("human")){
             message(player(a),"§6Bot setup: §e"+ClickRate.cps(m.configB)+" CPS cap §8| §d"+DuelSettings.reach(m.configB)+" block reach §8| §bRTT: bot "+(int)pingB+", you "+(int)pingA+" ms");
+            message(player(a),"§7Bot aim: "+m.configB.getProperty("aim_delay_ms","0")+" ms delay, "+m.configB.getProperty("aim_noise_deg","0")+"° noise, "+m.configB.getProperty("aim_turn_rate_dps","0")+"°/s cap (0=unlimited). W-tap delay: "+m.configB.getProperty("reaction_ms","150")+" ms.");
             if(DuelSettings.reach(m.configB)!=3)message(player(a),"§dModified-reach practice. Your own reach is unchanged.");
         }
         System.out.println("[PvP Lab] START "+Json.encode(m.state()));
