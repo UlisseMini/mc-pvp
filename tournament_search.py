@@ -21,6 +21,7 @@ from lab_runtime import properties
 from burst_science import diagnostic
 from parity import archive
 from combo_survival import analyze as combo_analysis
+from runtime_provenance import cohort_provenance
 
 OUT = ROOT / 'experiments'
 
@@ -101,7 +102,8 @@ def prepare(name, candidates, opponent, rtts, repeats=1, seed=20261101, concurre
                     candidates=candidates, opponent=opponent, rtts=rtts, repeats_per_side=repeats,
                     concurrency=concurrency, fixture_order_seed=seed, policies=frozen, duration_ms=duration_ms,
                     agent_sha256=sha(ROOT / 'build/lab-agent.jar'),
-                    sources={p: sha(ROOT / p) for p in ['tournament_search.py', 'experiments.py', 'burst_science.py', 'combo_survival.py', 'native_windows.py']},
+                    runtime_provenance=cohort_provenance(),
+                    sources={p: sha(ROOT / p) for p in ['tournament_search.py', 'experiments.py', 'runtime_provenance.py', 'burst_science.py', 'combo_survival.py', 'native_windows.py']},
                     frame_sleep_ms=json.loads((ROOT / 'runtime/manager.json').read_text()).get('frame_sleep_ms'),
                     primary_metric=('First-to-100' if duration_ms is None else 'Fixed-duration scenario')+' accepted native sword-hit margin; fresh hits and upgrades separate. Opening handicap hits excluded from post-wake diagnostics.',
                     quality_gate='Existing native input/reach/replication checks plus server/client movement p95<=80ms, max<=250ms, <=1% intervals>100ms.',
@@ -150,6 +152,8 @@ async def run(path):
     def frozen():
         if sha(ROOT / 'build/lab-agent.jar') != document['agent_sha256']:
             raise RuntimeError('Build changed; create a new cohort')
+        if 'runtime_provenance' in document and cohort_provenance()!=document['runtime_provenance']:
+            raise RuntimeError('Runtime backend or artifact changed; create a new cohort')
         for source, digest in document['sources'].items():
             if sha(ROOT / source) != digest:
                 raise RuntimeError('Analysis/scheduler source changed: ' + source)
@@ -182,6 +186,11 @@ async def run(path):
         archive(game)
         quality = diagnostic(game)
         combo = combo_analysis(game)
+        try:
+            frozen()
+        except RuntimeError as error:
+            quality['issues'].append(str(error))
+            quality['passed'] = False
         for side in ('a', 'b'):
             if game['client_frame_sleep_ms'].get(side) != document['frame_sleep_ms']:
                 quality['issues'].append(side + ': frame sleep differs from frozen setting')

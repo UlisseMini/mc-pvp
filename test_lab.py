@@ -109,13 +109,15 @@ class RealEngineEvidenceTest(unittest.TestCase):
             game=json.loads(result.read_text())
             for side in ('a','b'):
                 if side in game:
-                    delays[game['id'],game[side]]=int(game.get('parameters_'+side,{}).get(
-                        'reaction_ms',game.get('reaction_ms_'+side,150)))
+                    delays[game['id'],game[side]]=int(float(game.get('parameters_'+side,{}).get(
+                        'reaction_ms',game.get('reaction_ms_'+side,150))))
                     rates[game['id'],game[side]]=int(game.get('parameters_'+side,{}).get('click_cps',10))
         for path in (lab.RUNTIME/'bots').glob('*/events.jsonl'):
             last={}
             player='LabSlot'+path.parent.name if path.parent.name.isdigit() else path.parent.name
-            for line in path.read_text().splitlines():
+            # Historical traces can be gigabytes; audit incrementally rather
+            # than materializing the entire file and a second line list.
+            for line in path.open():
                 event=json.loads(line)
                 # Validate the completed-match snapshot above. Live trials can
                 # append zero-delay inputs while this historical audit runs;
