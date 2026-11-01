@@ -44,7 +44,7 @@ def run():
     events={g['id']:[json.loads(line) for line in (RUNTIME/'replays'/(g['id']+'.jsonl')).read_text().splitlines()] for g in games}
     traces=[e for es in events.values() for e in es]
     client=[json.loads(line) for line in (directory/'practice.jsonl').read_text().splitlines() if json.loads(line).get('time',0)>=launched]
-    sounds=[e for e in client if e['type']=='practice_sound' and e['sound']=='note.pling']
+    sounds=[e for e in client if e['type']=='practice_sound' and e['sound']=='random.anvil_land']
     blocks=[e for e in traces if e['type']=='blocked_damage' and e['target']=='LabObserver']
     boxes=[g for g in games if g['mode']=='diamond_box']
     starts=[e['match'] for e in traces if e['type']=='start']
@@ -60,9 +60,9 @@ def run():
         'four_modes_in_order':[g['mode'] for g in games]==['diamond_box','diamond_box','diamond','boxing'],
         'all_rounds_stop_normally':len(games)==4 and all(g['reason']=='stopped' for g in games),
         'box_rematch_retains_pings':len(boxes)==2 and all(g['initial_ping_a']==20 and g['initial_ping_b']==20 for g in boxes),
-        'real_protection_iv_all_four_pieces':len(starts)==4 and all(m['equipment_'+s]['protection_levels']==([0]*4 if m['mode']=='boxing' else [4]*4) for m in starts for s in ('a','b')),
-        'correct_native_weapons':len(starts)==4 and all(m['equipment_'+s]['weapon']==('wooden_sword' if m['mode']=='diamond_box' else 'diamond_sword') for m in starts for s in ('a','b')),
-        'box_wood_swords_unbreakable':len(boxes)==2 and all(m['equipment_'+s]['weapon_unbreakable'] for m in starts if m['mode']=='diamond_box' for s in ('a','b')),
+        'armor_has_no_protection_enchant':len(starts)==4 and all(m['equipment_'+s]['protection_levels']==[0]*4 for m in starts for s in ('a','b')),
+        'correct_native_weapons':len(starts)==4 and all(m['equipment_'+s]['weapon']==('diamond_sword' if m['mode']=='boxing' else 'wooden_sword') for m in starts for s in ('a','b')),
+        'native_unbreakable_items':len(starts)==4 and all(m['equipment_'+s]['weapon_unbreakable'] and m['equipment_'+s]['armor_unbreakable']==([False]*4 if m['mode']=='boxing' else [True]*4) for m in starts for s in ('a','b')),
         'both_players_confined_by_native_collision':len(box_ticks)>100 and all(in_box(g,e[s]) for g,e in box_ticks for s in ('a','b')),
         'native_box_hits_and_health_loss':len(box_hits)>=10 and any(e['health_after']<19 for e in box_hits),
         'box_block_reduces_wood_sword_damage':sum(e['damage_before_block']==5 and e['damage_after_block']==3 for g in boxes for e in events[g['id']] if e['type']=='blocked_damage')>=3,

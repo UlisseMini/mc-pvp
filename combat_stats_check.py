@@ -78,7 +78,7 @@ def run():
         'rod_rematch_and_box':[g['mode'] for g in games]==['rod_diamond','rod_diamond','diamond_box'],
         'normal_round_outcomes':len(games)==3 and all(g['reason'] in ('death','stopped') for g in games),
         'both_players_receive_rods':len(starts)==3 and all(m['equipment_'+s]['fishing_rod_slot_2']==(m['mode']=='rod_diamond') for m in starts for s in ('a','b')),
-        'protection_iv_preserved':len(starts)==3 and all(m['equipment_'+s]['protection_levels']==[4]*4 for m in starts for s in ('a','b')),
+        'unenchanted_diamond_wood_kit':len(starts)==3 and all(m['armor_protection']==0 and m['equipment_'+s]['protection_levels']==[0]*4 and m['equipment_'+s]['armor_points']==20 and m['equipment_'+s]['weapon']=='wooden_sword' and m['equipment_'+s]['weapon_unbreakable'] and m['equipment_'+s]['armor_unbreakable']==[True]*4 and m['equipment_'+s]['fishing_rod_unbreakable']==(m['mode']=='rod_diamond') for m in starts for s in ('a','b')),
         'native_rods_selected_and_cast':any(e.get('rod_input') and e.get('selected_slot')==1 and e.get('has_fish_hook') for e in client),
         'rod_contacts_in_both_rounds':len(games)==3 and all(any(e['type']=='hit' and e['rod'] for e in events[g['id']]) for g in games[:2]),
         'rod_rule_scoped_to_mode':len(games)==3 and all((g['rod_knockback']=='native_zero_damage_contacts_between_duel_opponents')==(g['mode']=='rod_diamond') for g in games),
@@ -112,7 +112,7 @@ def run():
                 pair=(e['attacker'],e['target']);loss=pending.pop(pair,0);was_blocked=pair in blocked;blocked.discard(pair)
                 if not e['rod']:
                     melee[e['hits_a']+e['hits_b']]={'attacker':e['attacker'],'target':e['target'],'health_loss':loss,
-                        'blocked':was_blocked,'critical':e['damage']==(7.5 if g['mode']=='diamond_box' else 12)}
+                        'blocked':was_blocked,'critical':e['damage']==7.5}
         observed=[e for e in es if e['type']=='melee_damage']
         checks[g['id']+'_per_attack_damage_attribution']=(len(observed)==len(melee) and len({e['hit_index'] for e in observed})==len(melee) and all(
             e['hit_index'] in melee and all(e[k]==v if k!='health_loss' else abs(e[k]-v)<1e-6 for k,v in melee[e['hit_index']].items()) for e in observed))
@@ -125,7 +125,7 @@ def run():
             name=g[side];stats=g['stats_'+side];hits=[e for e in es if e['type']=='hit' and e['attacker']==name]
             healed=sum(e['amount'] for e in es if e['type']=='heal' and e['player']==name)
             checks[g['id']+'_'+side+'_health_balance']=abs(20+stats['regenerated']-stats['damage_taken']-g['health_'+side])<.0001
-            checks[g['id']+'_'+side+'_native_crit_damage_matches']=stats['crits']==sum(e['damage']==(7.5 if g['mode']=='diamond_box' else 12) for e in hits)
+            checks[g['id']+'_'+side+'_native_crit_damage_matches']=stats['crits']==sum(e['damage']==7.5 for e in hits)
             checks[g['id']+'_'+side+'_counters_match_events']=(g['hits_'+side]==len(hits) and stats['rod_hits']==sum(e['rod'] for e in hits)
                 and stats['damage_upgrades']==sum(e['damage_upgrade'] for e in hits) and abs(stats['regenerated']-healed)<.0001
                 and g['blocks_'+side]==sum(e['type']=='blocked_damage' and e['target']==name for e in es))
@@ -146,7 +146,7 @@ def run():
             breakdown=stats['damage_breakdown']
             normal_hits=sum(e['blocking_saved_normal_hits'] for e in observed if e['target']==name and e['blocked'])
             checks[g['id']+'_'+side+'_normal_hit_equivalence']=(abs(breakdown['blocking_saved_normal_hits']-normal_hits)<1e-6 and all(
-                e['noncrit_raw_damage']==(5 if g['mode']=='diamond_box' else 8) and e['normal_hit_damage']>0 and
+                e['noncrit_raw_damage']==5 and e['protection_roll']==0 and e['normal_hit_damage']==1.0 and
                 abs(e['blocking_saved_normal_hits']-e['blocking_saved']/e['normal_hit_damage'])<1e-6 for e in observed if e['target']==name))
             saved=breakdown['blocking_saved']['damage'];taken_damage=breakdown['blocked_taken']['damage']+breakdown['unblocked_taken']['damage']
             damage_percent=100*saved/(taken_damage+saved) if taken_damage+saved else None

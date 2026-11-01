@@ -51,7 +51,7 @@ public final class Referee {
             m.put("click_cps_b",pb.equals("human")?null:ClickRate.cps(configB));
             m.put("attack_reach_a",DuelSettings.reach(configA));m.put("attack_reach_b",DuelSettings.reach(configB));
             m.put("modified_reach",DuelSettings.reach(configA)!=3||DuelSettings.reach(configB)!=3);
-            m.put("armor_protection",boxing()?0:4);m.put("weapon",box()?"wooden_sword":"diamond_sword");
+            m.put("armor_protection",0);m.put("weapon",boxing()?"diamond_sword":"wooden_sword");
             m.put("arena_surface",box()?"bedrock_1x1_interior_y4_5_barrier_ceiling_y6":"bedrock_y3_air_y4_19_radius128_verified_v3");return m;
         }
     }
@@ -249,8 +249,8 @@ public final class Referee {
                 }else if(args.length!=1)throw new IllegalArgumentException("Usage: /mode boxing, diamond, diamond_box, or rod_diamond");
                 message(sender,"Duel mode: "+preferredModes.getOrDefault(name,"boxing")+". Choose a bot with /bots.");
                 button(sender,"Boxing: first to 100 hits","/mode boxing");button(sender,"Diamond: full armor, fight to death","/mode diamond");
-                button(sender,"Diamond box: 1x1, wood swords, Protection IV","/mode diamond_box");
-                button(sender,"Rod diamond: diamond swords and fishing rods","/mode rod_diamond");
+                button(sender,"Diamond box: 1x1, wood swords, unenchanted armor","/mode diamond_box");
+                button(sender,"Rod diamond: wood swords and fishing rods","/mode rod_diamond");
             }else if(cmd.equals("blocksound")){
                 String name=safeName(sender);
                 if(args.length==2&&args[1].equals("off"))mutedBlockSounds.add(name);
@@ -396,7 +396,7 @@ public final class Referee {
         Map<String,Object> caps=new LinkedHashMap<>();caps.put("a",initial.get("click_cps_a"));caps.put("b",initial.get("click_cps_b"));
         initial.put("bot_click_cap_cps",caps);
         append(m.replay,Map.of("type","start","match",initial));
-        String rules=m.boxing()?"Boxing: first to 100 hits.":(m.box()?"Diamond box: 1x1, unbreakable wooden swords":m.rods()?"Rod diamond: diamond swords and fishing rods with PvP knockback":"Diamond: diamond swords")+", Protection IV diamond armor, fight to death. Respawn, then /rematch.";
+        String rules=m.boxing()?"Boxing: first to 100 hits.":(m.box()?"Diamond box: 1x1, wooden swords":m.rods()?"Rod diamond: wooden swords and fishing rods with PvP knockback":"Diamond: wooden swords")+", unbreakable swords, unenchanted diamond armor, fight to death. Respawn, then /rematch.";
         message(player(a),"§aStarting "+m.id+": §b"+pa+" §7vs §6"+pb+"§7. "+rules+" §b/stop §7to exit.");
         message(player(b),"§aStarting "+m.id+": §b"+pa+" §7vs §6"+pb+"§7. "+rules);
         if(pa.equals("human")){
@@ -476,17 +476,19 @@ public final class Referee {
         String name=safeName(p);vanilla("gamemode 0 "+name);vanilla("clear "+name);vanilla("effect "+name+" clear");
         R.call(p,"setSpectatingEntity",p);
         R.call(p,"clearItemInUse");R.set(R.get(p,"inventory"),"currentItem",0);
-        boolean box=mode.equals("diamond_box");
-        vanilla("give "+name+" minecraft:"+(box?"wooden_sword":"diamond_sword")+" 1 0"+(mode.equals("boxing")||box?" {Unbreakable:1b}":""));
-        if(mode.equals("rod_diamond"))vanilla("replaceitem entity "+name+" slot.hotbar.1 minecraft:fishing_rod 1 0");
+        String weapon=mode.equals("boxing")?"diamond_sword":"wooden_sword";
+        vanilla("give "+name+" minecraft:"+weapon+" 1 0 {Unbreakable:1b}");
+        if(mode.equals("rod_diamond"))vanilla("replaceitem entity "+name+" slot.hotbar.1 minecraft:fishing_rod 1 0 {Unbreakable:1b}");
         if(!mode.equals("boxing")){
             String[][] armor={{"head","helmet"},{"chest","chestplate"},{"legs","leggings"},{"feet","boots"}};
-            for(String[] piece:armor)vanilla("replaceitem entity "+name+" slot.armor."+piece[0]+" minecraft:diamond_"+piece[1]+" 1 0 {ench:[{id:0s,lvl:4s}]}");
+            for(String[] piece:armor)vanilla("replaceitem entity "+name+" slot.armor."+piece[0]+" minecraft:diamond_"+piece[1]+" 1 0 {Unbreakable:1b}");
         }
         Map<String,Object> gear=equipment(p);
-        if(!gear.get("weapon").equals(box?"wooden_sword":"diamond_sword")||
-                !mode.equals("boxing")&&(!gear.get("protection_levels").equals(List.of(4,4,4,4))||!gear.get("armor_points").equals(20))||
-                mode.equals("rod_diamond")&&!gear.get("fishing_rod_slot_2").equals(true))
+        if(!gear.get("weapon").equals(weapon)||!gear.get("weapon_unbreakable").equals(true)||
+                !gear.get("protection_levels").equals(List.of(0,0,0,0))||
+                !gear.get("armor_points").equals(mode.equals("boxing")?0:20)||
+                !mode.equals("boxing")&&!gear.get("armor_unbreakable").equals(List.of(true,true,true,true))||
+                mode.equals("rod_diamond")&&(!gear.get("fishing_rod_slot_2").equals(true)||!gear.get("fishing_rod_unbreakable").equals(true)))
             throw new IllegalStateException("Practice kit verification failed: "+gear);
         vanilla("tp "+name+" "+x+" "+y+" "+z+" "+yaw+" 0");
         settleTeleport(p);
@@ -497,16 +499,23 @@ public final class Referee {
     }
     static Map<String,Object> equipment(Object p){
         List<Integer> protection=new ArrayList<>();
-        for(Object stack:(Object[])R.get(R.get(p,"inventory"),"armorInventory"))
+        List<Boolean> armorUnbreakable=new ArrayList<>();
+        for(Object stack:(Object[])R.get(R.get(p,"inventory"),"armorInventory")){
             protection.add(stack==null?0:(int)R.call(R.cls("net.minecraft.enchantment.EnchantmentHelper"),"getEnchantmentLevel",0,stack));
+            armorUnbreakable.add(unbreakable(stack));
+        }
         Object held=R.call(p,"getHeldItem"),item=held==null?null:R.call(held,"getItem");
         String weapon=item==R.get(R.cls("net.minecraft.init.Items"),"wooden_sword")?"wooden_sword":
             item==R.get(R.cls("net.minecraft.init.Items"),"diamond_sword")?"diamond_sword":"other";
-        Object tag=held==null?null:R.call(held,"getTagCompound");
         Object second=((Object[])R.get(R.get(p,"inventory"),"mainInventory"))[1];
         boolean rod=second!=null&&R.call(second,"getItem")==R.get(R.cls("net.minecraft.init.Items"),"fishing_rod");
-        return Map.of("weapon",weapon,"weapon_unbreakable",tag!=null&&(Boolean)R.call(tag,"getBoolean","Unbreakable"),
-            "armor_points",R.call(p,"getTotalArmorValue"),"protection_levels",protection,"fishing_rod_slot_2",rod);
+        return Map.of("weapon",weapon,"weapon_unbreakable",unbreakable(held),
+            "armor_points",R.call(p,"getTotalArmorValue"),"protection_levels",protection,"armor_unbreakable",armorUnbreakable,
+            "fishing_rod_slot_2",rod,"fishing_rod_unbreakable",rod&&unbreakable(second));
+    }
+    static boolean unbreakable(Object stack){
+        Object tag=stack==null?null:R.call(stack,"getTagCompound");
+        return tag!=null&&(Boolean)R.call(tag,"getBoolean","Unbreakable");
     }
     static void fullFood(Object p){
         Object food=R.call(p,"getFoodStats");R.call(food,"setFoodLevel",20);

@@ -41,10 +41,10 @@ enabling RCON or opening another network port.
 | `/bots` | Clickable roster, including saved search candidates |
 | `/bots all` | Include every saved tuning candidate |
 | `/duel hold-w` | Fight the simplest baseline |
-| `/duel wtap diamond` | Full Protection IV diamond armor and an unenchanted diamond sword; real health and regeneration; fight to death |
+| `/duel wtap diamond` | Full unenchanted diamond armor and an unbreakable wooden sword; real health and regeneration; fight to death |
 | `/duel blockhit_timing diamond` | Timed sword-block bot; native controls, 10 CPS ceiling, 3-block reach, zero artificial reaction delay |
-| `/duel wtap rod_diamond` | Same Protection IV diamond kit, plus a fishing rod in hotbar slot 2 for both players; existing bots keep using their sword |
-| `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full Protection IV diamond armor; successful blocks play your block sound |
+| `/duel wtap rod_diamond` | Same unenchanted diamond armor / wooden sword kit, plus a fishing rod in hotbar slot 2 for both players; existing bots keep using their sword |
+| `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full unenchanted diamond armor; successful blocks play your block sound |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
 | `/duel wtap rod_diamond reach=3.5 cps=15 ping=100` | Custom practice bot: 3.5-block reach, 15 CPS ceiling, 100 ms added bot RTT; keeps your saved ping |
 | `/mode rod_diamond` / `/mode diamond_box` / `/mode diamond` / `/mode boxing` | Choose the default mode for subsequent `/duel` and roster clicks in this session |
@@ -97,8 +97,8 @@ ping preferences are stored by name in `runtime/preferences/`.
 
 After a match, each player's **damage taken per hit** is their actual health
 lost to the opponent divided by accepted melee hits received, displayed in
-hearts. This includes the actual effects of crits, blocks, armor, Protection IV
-and partial immunity damage upgrades. Zero-damage rod contacts and environmental
+hearts. This includes the actual effects of crits, blocks, armor and partial
+immunity damage upgrades (plus enchantments if manually equipped). Zero-damage rod contacts and environmental
 damage are excluded; regeneration is not subtracted. Lethal damage counts only
 the HP actually lost, and no melee hits received is shown as `N/A`.
 
@@ -116,8 +116,9 @@ divide the actual HP saved by a full, unblocked, noncritical hit from that
 attacker's weapon, with the same armor, Resistance and Protection roll; then sum
 those fractions. This handles wood/diamond swords, partial armor, criticals and
 immunity upgrades. The reference is a full mitigated hit before absorption and
-remaining-HP caps; the saved HP numerator keeps those caps. Protection varies
-between hits, so a single fixed hearts-per-hit divisor would be misleading.
+remaining-HP caps; the saved HP numerator keeps those caps. Current practice
+kits have no Protection enchantments. The same calculation also supports older
+recordings and manually equipped enchanted armor, whose Protection varies per hit.
 
 **Damage blocked %**, shown after hit block %, is saved HP divided by (actual
 melee HP lost + saved HP). It excludes rods, environmental damage and healing.
@@ -175,8 +176,12 @@ lasts one second, retains your block ratio and HP, then restores the normal bar.
 Use `/blocktiming off` to keep the normal stats bar throughout combat.
 
 Diamond mode starts each player at ten hearts, full hunger and full
-saturation, with a fresh unenchanted diamond sword and all four diamond armor
-pieces enchanted with Protection IV. Native armor, durability, damage and natural regeneration run
+saturation, with an unenchanted, unbreakable wooden sword and all four diamond
+armor pieces without enchantments. A full normal hit against this intact armor
+deals 0.50 hearts; a full crit deals 0.75, before blocking. Removing Protection
+removes its random damage reduction. Wooden swords are the weakest native swords;
+fights can be shorter than the old Protection IV setup. Every supplied sword, armor piece and rod has the native `Unbreakable:1b` item
+property; damage and natural regeneration run
 normally at Normal difficulty. The round ends on death; inventory is retained
 through respawn and the next duel supplies a fresh kit. Boxing continues to
 restore health and food, with its established first-to-100 scoring. Existing
@@ -186,7 +191,7 @@ zero food exhaustion once per second and at round setup. The periodic refresh
 does not reset the native regeneration timer. There is no potion or direct heal
 from this refresh; ordinary 1.8 regeneration provides the health gain.
 `rod_diamond` adds a normal, unenchanted fishing rod in hotbar slot 2 for both
-players. Rod and diamond-sword durability work normally. Current bot policies
+players. Rods, armor and swords all have the native unbreakable item property. Current bot policies
 continue using their sword; rod AI is not enabled.
 This mode enables PvP rod knockback: zero-damage rod contacts between the current
 duel opponents bypass `EntityPlayer.attackEntityFrom`'s zero-damage early return.
@@ -194,8 +199,8 @@ The original living-entity code then handles knockback and hurt immunity, with
 zero health damage. Rod flight, hooking and reeling remain native. This deliberate
 exception is restricted to active `rod_diamond` rounds; other modes and the lobby
 retain vanilla's zero-damage rejection. No new server fork or plugin is installed.
-`diamond_box` uses the same health rules and Protection IV kit, with an
-unenchanted, unbreakable wooden sword instead. Both players share a 1×1 interior,
+`diamond_box` uses the same health rules and unenchanted diamond armor /
+unbreakable wooden sword kit. Both players share a 1×1 interior,
 two blocks tall, with bedrock walls and a transparent barrier ceiling for daylight.
 Ordinary block collision contains knockback; combat movement is not teleported or
 overridden. The enclosure is removed after the round so later flat-ground matches
@@ -212,17 +217,22 @@ Vanilla command feedback and console-to-operator broadcasts are disabled, so
 setup, kit, teleport and game-mode commands do not flood the chat. Console logs
 and normal chat/help remain available.
 The summary also reports effective health damage dealt/taken and the number
-of accepted damage upgrades during immunity. Rod-mode totals include a separately
-identified rod count within accepted hits; rod hits cause no health damage.
-Criticals are a subset of hits. Round/lobby health resets are excluded from healing.
+of accepted damage upgrades during immunity. Rod contacts are separate from
+the headline damage-dealing hits and cause no health damage. A stronger attack
+during immunity applies only the increase over the previous raw damage: a normal
+wooden-sword hit (5) followed by a critical (7.5) applies only 2.5 before mitigation.
+That accepted critical upgrade counts as one crit and one damaging hit. A rod (0)
+followed by a sword is also an immunity upgrade but still applies full sword damage.
+Criticals are a subset of accepted hits. Round/lobby health resets are excluded from healing.
 Damage is measured after blocking, armor, enchantments and absorption, capped by
 the victim's remaining health (overkill is excluded). Boxing's automatic health
 restoration is not counted as regeneration.
 
-Equal hit/crit/block counts need not imply equal damage: Protection enchantments
-randomize their reduction in native 1.8, blocking a critical differs from blocking
-a normal hit, immunity upgrades apply only extra damage, and broken equipment
-can change protection or weapon damage. The actual damage and healing counters
+Equal hit/crit/block counts need not imply equal damage: blocking a critical
+differs from blocking a normal hit, immunity upgrades apply only extra damage,
+rod-in-hand melee attacks are weaker than sword hits. Older enchanted kits also
+had random Protection reduction; current kits remove that randomness and keep
+all equipment unbreakable. The actual damage and healing counters
 provide the health balance for normal health duels.
 The [practice verification notes](experiments/PRACTICE-NOTES.md) include native
 blocking, sound-delivery, death and rematch evidence.

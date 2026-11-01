@@ -14,7 +14,7 @@ from lab_runtime import sandbox_java, clean_environment
 def run():
     state=json.loads((RUNTIME/'status.json').read_text())
     if time.time()-state['time']/1000>5:raise RuntimeError('Start the lab first')
-    # Protection IV prolongs health duels; allow the first round to end on
+    # Weak swords prolong health duels; allow the first round to end on
     # native death before testing /rematch. The second round ends with /stop.
     script='1500:/blocksound test|3000:/duel hold-w boxing|9000:/blocksound off|12000:/blocksound on|14500:/stop|15000:/mode diamond|15500:/duel hold-w 20 20|65000:/rematch|78000:/stop'
     directory=RUNTIME/'bots/observer';directory.mkdir(exist_ok=True)
