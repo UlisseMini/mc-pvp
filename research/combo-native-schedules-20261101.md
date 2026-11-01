@@ -5,7 +5,45 @@ controller remains frozen while we replace that evaluation with measured timing
 opportunities and validate both it and plain W-tap. A physics replay with recorded
 inputs and packet timings is a different claim from predicting a new fight.
 
-## Current: queue eligibility and attack-dispatch errors isolated
+## Current: native failure reconstruction passes; distribution calibration does not
+
+Both candidate failures now regenerate their own inputs correctly under captured
+timing. Movement, views, key/range observations, click admissions/consumptions
+and all35/27 launch vectors agree through the first return. The strict semantic
+adapter also preserves separate hurt/velocity packet arrivals rather than one
+stage average. W-tap source recordings still end at1/2 fresh hits, in the same
+accepting server drains as native. Unknown counterfactual tails remain unknown.
+The six older conditional physics replays remain unchanged across24,683 events.
+
+The frozen20-seed timing ensembles tell a narrower story:
+
+| Native calendar / played arm | Candidate before attack-loop correction | Candidate after correction | Matched W-tap, both ensembles | Direct native label |
+|---|---|---|---|---|
+|m1391 / candidate|26×1,32×1,69×17,87×1|26×20|3×20|Candidate26|
+|m1392 / W-tap|6×19,93×1|unchanged|1×20|W-tap1|
+|m1395 / candidate|1×16,4×1,19×3|unchanged|1×4,2×16|Candidate19|
+|m1396 / W-tap|4×20|unchanged|2×20|W-tap2, timing flag retained|
+
+All rows use the same64s target/4s quiet opening,150/0RTT,H1.1/V1/hit8,
+3/3reach,20CPS, complete-state W-tap fork and primary metric. These are160
+model cases on four recorded calendars, not160 native fights. The attack-loop
+fix explains the development candidate, but most samples on the separate
+candidate validation calendar still fail much earlier than native. Occasional
+coverage of19 is not a calibration pass.
+
+The next hypothesis samples each generated forward hit's notification,
+knockback receipt, enqueue preparation and own cue service **jointly** from
+one measured development tuple. Raw/prep support is complete for the needed
+forward triplet; unmeasured cue precision uses declared interval sensitivities,
+not invented exact timestamps. Stochastic packet-level coverage is promising
+but not yet tested as a full-fight predictor. Controller optimization remains
+paused at this gate; no new controller feature or native trial has been added.
+
+Evidence: [ensemble comparison](poc-20261101/native-schedules/ensemble-queue-loop-audit/findings.md),
+[semantic native audit](poc-20261101/native-schedules/semantic-diagnostic/native-audit/findings.md),
+[joint timing hypothesis](poc-20261101/native-schedules/stage-field-validation/distribution/findings.md).
+
+## Previous: queue eligibility and attack-dispatch errors isolated
 
 The whole-recording receipt→enqueue field now fixes every body/view comparison
 through3.6 s in the fresh candidate recording. Native packet timestamps are
