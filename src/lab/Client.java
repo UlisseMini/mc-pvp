@@ -570,6 +570,11 @@ public final class Client {
                 plan.put("key",d.key);plan.put("click_gate",d.click);plan.put("persistent",d.persistent);plan.put("local_range",obs.localRange);
                 plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);log(plan);
             }
+            // Common acquisition for matched maintenance tests. W-tap's own
+            // cue history above keeps advancing while these inputs are held.
+            if(now-epoch<number("hold_opening_ms",0)){
+                setKeys(true,0,true);clickGate=true;
+            }
             if(kind.equals("gap-strafe") || now-epoch<number("gap_opening_ms",0)){
                 StrongRelaxationPolicy.Control d=strongGap.step(obs.localRange);
                 // Native positive moveStrafe means Left; our key helper uses
