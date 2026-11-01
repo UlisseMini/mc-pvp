@@ -616,7 +616,7 @@ public final class ComboModel {
         public final int finalBeamSize, distinctStateBins, rootActionsRetained;
         private Decision(Node best, State initial, Config config, List<Node> finalBeam) {
             action = best.plan[0];
-            plan = List.of(best.plan.clone());
+            plan = Compat.list(best.plan.clone());
             planSource = best.planSource;
             score = rank(best, config) - initial.accumulatedReward;
             predictedHits = best.state.acceptedHits - initial.acceptedHits;
@@ -810,17 +810,17 @@ public final class ComboModel {
             key.append('|').append(packet.kind.ordinal()).append(':')
                     .append(Math.round((packet.dueMs - s.nowMs) * 2)).append(':').append(packet.flag);
             switch (packet.kind) {
-                case A_MOVE, B_MOVE, A_VIEW, B_VIEW -> {
+                case A_MOVE:case B_MOVE:case A_VIEW:case B_VIEW: {
                     positionBin(key, packet.x, packet.y, packet.z, s.a);
                     if (Double.isFinite(packet.lookX)) {
                         quantized(key, packet.lookX, 20); quantized(key, packet.lookZ, 20);
                     }
-                }
-                case A_VELOCITY, B_VELOCITY -> {
+                } break;
+                case A_VELOCITY:case B_VELOCITY: {
                     quantized(key, packet.x, 40); quantized(key, packet.y, 40); quantized(key, packet.z, 40);
-                }
-                case ATTACK, B_ATTACK -> quantized(key, packet.x, 10);
-                default -> { }
+                } break;
+                case ATTACK:case B_ATTACK: quantized(key, packet.x, 10); break;
+                default: { } break;
             }
         }
         for (long hit : s.confirmedHitTimes) if (hit >= s.nowMs - 100) key.append("/A").append(hit - s.nowMs);
@@ -914,13 +914,13 @@ public final class ComboModel {
         State result = state.copy();
         result.nowMs = eventTimeMs;
         switch (eventKind) {
-            case A -> {
+            case A: {
                 recordAttackerAction(result, recordedAction, config);
                 attackerTick(result, recordedAction, config, eventTimeMs, physicalClickConsumed);
-            }
-            case B -> defenderTick(result, config, eventTimeMs,
-                    recordedAction, physicalClickConsumed);
-            case SERVER -> serverTick(result, config, eventTimeMs);
+            } break;
+            case B: defenderTick(result, config, eventTimeMs,
+                    recordedAction, physicalClickConsumed); break;
+            case SERVER: serverTick(result, config, eventTimeMs); break;
         }
         return result;
     }
@@ -1128,18 +1128,18 @@ public final class ComboModel {
         List<Packet> incoming = takeDue(s, 0, time);
         for (Packet packet : incoming) {
             switch (packet.kind) {
-                case A_MOVE -> serverMovement(s, true, packet, c, time);
-                case B_MOVE -> serverMovement(s, false, packet, c, time);
-                case A_SPRINT -> { s.aServerSprint = packet.flag; s.lastServerSprintCommandMs = time; }
-                case B_SPRINT -> s.bServerSprint = packet.flag;
-                case ATTACK -> {
+                case A_MOVE: serverMovement(s, true, packet, c, time); break;
+                case B_MOVE: serverMovement(s, false, packet, c, time); break;
+                case A_SPRINT: { s.aServerSprint = packet.flag; s.lastServerSprintCommandMs = time; } break;
+                case B_SPRINT: s.bServerSprint = packet.flag; break;
+                case ATTACK: {
                     if (nearConfirmedHit(s, time, true)) break;
                     double dx = s.serverB.x - s.serverA.x, dy = s.serverB.y - s.serverA.y;
                     double dz = s.serverB.z - s.serverA.z;
                     if (dx * dx + dy * dy + dz * dz >= 36) break;
                     acceptHit(s, c, time, packet.x, true, false);
-                }
-                case B_ATTACK -> {
+                } break;
+                case B_ATTACK: {
                     if (nearConfirmedHit(s, time, false)) break;
                     double dx = s.serverA.x - s.serverB.x, dy = s.serverA.y - s.serverB.y;
                     double dz = s.serverA.z - s.serverB.z;
@@ -1149,9 +1149,10 @@ public final class ComboModel {
                 // A visible hurt animation proves a FRESH hit, not a damage
                 // upgrade. Its reconstructed critical condition still determines
                 // lastDamage, which controls subsequent ordinary attack attempts.
-                case CONFIRMED_HIT -> acceptHit(s, c, time, Double.NaN, true, true);
-                case CONFIRMED_B_HIT -> acceptHit(s, c, time, Double.NaN, false, true);
-                default -> throw new IllegalStateException("Wrong server packet");
+                break;
+                case CONFIRMED_HIT: acceptHit(s, c, time, Double.NaN, true, true); break;
+                case CONFIRMED_B_HIT: acceptHit(s, c, time, Double.NaN, false, true); break;
+                default: throw new IllegalStateException("Wrong server packet");
             }
         }
         if ((s.serverTicks & 1) == (c.trackerPhase & 1)) {
@@ -1459,30 +1460,30 @@ public final class ComboModel {
     private static void receiveClient(State s, boolean attacker, long time) {
         for (Packet packet : takeDue(s, attacker ? 1 : 2, time)) {
             switch (packet.kind) {
-                case A_VIEW -> s.aSeesB.receive(packet.x, packet.y, packet.z);
-                case B_VIEW -> s.bSeesA.receive(packet.x, packet.y, packet.z);
-                case A_VELOCITY -> { s.a.vx = packet.x; s.a.vy = packet.y; s.a.vz = packet.z; }
-                case B_VELOCITY -> { s.b.vx = packet.x; s.b.vy = packet.y; s.b.vz = packet.z; }
-                case A_HURT_CUE -> s.lastPredictedHurtCueMs = time;
-                case A_OWN_HURT_CUE -> s.lastPredictedOwnHurtCueMs = time;
-                case B_TARGET_HURT_CUE -> {
+                case A_VIEW: s.aSeesB.receive(packet.x, packet.y, packet.z); break;
+                case B_VIEW: s.bSeesA.receive(packet.x, packet.y, packet.z); break;
+                case A_VELOCITY: { s.a.vx = packet.x; s.a.vy = packet.y; s.a.vz = packet.z; } break;
+                case B_VELOCITY: { s.b.vx = packet.x; s.b.vy = packet.y; s.b.vz = packet.z; } break;
+                case A_HURT_CUE: s.lastPredictedHurtCueMs = time; break;
+                case A_OWN_HURT_CUE: s.lastPredictedOwnHurtCueMs = time; break;
+                case B_TARGET_HURT_CUE: {
                     // Observe after B's network leg and at its own native tick.
                     // Multiple status packets before one observation produce
                     // one visible hurt-time rise, matching Client.Observation.
                     if (s.lastPredictedDefenderTargetHurtCueMs != time) s.defenderVisibleHurtCues.add(time);
                     s.lastPredictedDefenderTargetHurtCueMs = time;
-                }
-                default -> throw new IllegalStateException("Wrong client packet");
+                } break;
+                default: throw new IllegalStateException("Wrong client packet");
             }
         }
     }
 
     private static int destination(PacketKind kind) {
-        return switch (kind) {
-            case A_VIEW, A_VELOCITY, A_HURT_CUE, A_OWN_HURT_CUE -> 1;
-            case B_VIEW, B_VELOCITY, B_TARGET_HURT_CUE -> 2;
-            default -> 0;
-        };
+        switch (kind) {
+            case A_VIEW:case A_VELOCITY:case A_HURT_CUE:case A_OWN_HURT_CUE: return 1;
+            case B_VIEW:case B_VELOCITY:case B_TARGET_HURT_CUE: return 2;
+            default: return 0;
+        }
     }
 
     private static List<Packet> takeDue(State s, int destination, double time) {

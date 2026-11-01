@@ -13,7 +13,7 @@ public final class DuelSettings {
     }
     public static DuelSettings parse(String[] args,int offset,String mode,double botPing,double humanPing,Properties inherited){
         Properties overrides=new Properties();overrides.putAll(inherited);
-        if(args.length>offset&&List.of("boxing","diamond","diamond_box","rod_diamond","sumo").contains(args[offset]))mode=args[offset++];
+        if(args.length>offset&&Compat.list("boxing","diamond","diamond_box","rod_diamond","sumo").contains(args[offset]))mode=args[offset++];
         Set<String> seen=new HashSet<>();int positional=0;
         for(int i=offset;i<args.length;i++){
             String[] pair=args[i].split("=",-1);String key,value;

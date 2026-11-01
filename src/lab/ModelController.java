@@ -8,7 +8,7 @@ public final class ModelController {
     static final TreeMap<Long,Eligible> observations=new TreeMap<>();
     static final ArrayList<Particle> particles=new ArrayList<>();
     static final VisibleTracker tracker=new VisibleTracker();
-    static List<ComboModel.Action> previousPlan=List.of();
+    static List<ComboModel.Action> previousPlan=Compat.list();
     static double originX,originZ;
     static long lastInjection,lastIssued,lastEligibleTick=-1,lastHurtCue,lastIncomingCue;
     static Client.Observation previousEligible;
@@ -31,7 +31,7 @@ public final class ModelController {
         Particle(int server,int opponent,int tracking){config.serverPhaseMs=server;config.opponentPhaseMs=opponent;config.trackerPhase=tracking;}
     }
     static void reset(){
-        inputs.clear();observations.clear();particles.clear();tracker.reset();previousEligible=null;previousPlan=List.of();
+        inputs.clear();observations.clear();particles.clear();tracker.reset();previousEligible=null;previousPlan=Compat.list();
         lastInjection=lastIssued=lastHurtCue=lastIncomingCue=0;lastEligibleTick=-1;LegacyModelController.reset();
     }
     static void click(long time){lastInjection=time;LegacyModelController.click(time);}
@@ -96,7 +96,7 @@ public final class ModelController {
     static ComboModel.State replay(Particle p,ComboModel.State state,long until){
         for(long hit:p.confirmed.values())if(hit>=state.nowMs)state.scheduleConfirmedHit(hit,p.config);
         for(long hit:p.confirmedIncoming.values())if(hit>=state.nowMs)state.scheduleConfirmedIncomingHit(hit,p.config);
-        for(var issued:new ArrayList<>(inputs.subMap(state.nowMs,true,until,false).entrySet())){
+        for(Map.Entry<Long,Issued> issued:new ArrayList<>(inputs.subMap(state.nowMs,true,until,false).entrySet())){
             state.nowMs=issued.getKey();
             Eligible e=observations.get(state.nowMs);if(e!=null)assimilate(state,e,p.config);
             p.snapshots.put(state.nowMs,state.copy());
@@ -123,7 +123,7 @@ public final class ModelController {
         if(v.goalChanged&&v.highConfidence()&&v.timingEstablished&&Double.isFinite(source)){
             Map.Entry<Long,ComboModel.State> sourceAnchor=null;double best=Double.POSITIVE_INFINITY;
             // B in State(T) is after its previous tick at T-50+phase.
-            for(var entry:p.snapshots.headMap(o.time,true).entrySet()){
+            for(Map.Entry<Long,ComboModel.State> entry:p.snapshots.headMap(o.time,true).entrySet()){
                 double error=Math.abs(entry.getKey()-50+p.config.opponentPhaseMs-source);
                 if(error<best){best=error;sourceAnchor=entry;}
             }
@@ -164,7 +164,7 @@ public final class ModelController {
                 if(candidate>=lower&&candidate<=upper&&Math.abs(candidate-(lower+upper)/2)<error){hit=candidate;error=Math.abs(candidate-(lower+upper)/2);}
             }
         }
-        ledger.put(cue,hit);var rewind=p.snapshots.lowerEntry(hit-100);
+        ledger.put(cue,hit);Map.Entry<Long,ComboModel.State> rewind=p.snapshots.lowerEntry(hit-100);
         if(rewind!=null){state=rewind.getValue().copy();p.snapshots.tailMap(state.nowMs,true).clear();state=replay(p,state,observedAt);}
         return state;
     }
@@ -182,7 +182,7 @@ public final class ModelController {
             for(Eligible e:new ArrayList<>(observations.tailMap(p.processed,false).values())){
                 if(e.obs.time>obs.time)break;
                 if(!p.snapshots.isEmpty()){
-                    var anchor=p.snapshots.floorEntry(e.obs.time);
+                    Map.Entry<Long,ComboModel.State> anchor=p.snapshots.floorEntry(e.obs.time);
                     if(anchor!=null&&!p.snapshots.containsKey(e.obs.time))p.snapshots.put(e.obs.time,replay(p,anchor.getValue().copy(),e.obs.time));
                 }
                 update(p,e);
@@ -195,7 +195,7 @@ public final class ModelController {
         ArrayList<Particle> ranked=new ArrayList<>(particles);ranked.sort(Comparator.comparingDouble(p->p.loss));
         Particle best=ranked.get(0);ComboModel.State state=best.current;
         ComboModel.Decision decision=best.config.macroSeeds
-            ?ComboModel.choose(state,best.config,previousPlan.isEmpty()?List.of():previousPlan.subList(1,previousPlan.size()))
+            ?ComboModel.choose(state,best.config,previousPlan.isEmpty()?Compat.list():previousPlan.subList(1,previousPlan.size()))
             :ComboModel.choose(state,best.config);
         previousPlan=decision.plan;
         Eligible latest=observations.floorEntry(obs.time).getValue();VisibleTracker.Estimate v=latest.estimate;
@@ -223,8 +223,8 @@ public final class ModelController {
         entry.put("predicted_target_vx",state.b.vx);entry.put("predicted_target_vy",state.b.vy);entry.put("predicted_target_vz",state.b.vz);
         entry.put("predicted_target_view_x",state.aSeesB.x);entry.put("predicted_target_view_y",state.aSeesB.y);entry.put("predicted_target_view_z",state.aSeesB.z);
         entry.put("predicted_defender_view_x",state.bSeesA.x);entry.put("predicted_defender_view_y",state.bSeesA.y);entry.put("predicted_defender_view_z",state.bSeesA.z);
-        entry.put("phase_hypotheses",ranked.subList(0,Math.min(3,ranked.size())).stream().map(p->Map.of("server",p.config.serverPhaseMs,"opponent",p.config.opponentPhaseMs,"tracker",p.config.trackerPhase,"loss",p.loss)).toList());
-        entry.put("pending_packets",state.pendingPacketCount());entry.put("plan",decision.plan.stream().map(Enum::name).toList());Client.log(entry);
+        entry.put("phase_hypotheses",ranked.subList(0,Math.min(3,ranked.size())).stream().map(p->Compat.map("server",p.config.serverPhaseMs,"opponent",p.config.opponentPhaseMs,"tracker",p.config.trackerPhase,"loss",p.loss)).collect(java.util.stream.Collectors.toList()));
+        entry.put("pending_packets",state.pendingPacketCount());entry.put("plan",decision.plan.stream().map(Enum::name).collect(java.util.stream.Collectors.toList()));Client.log(entry);
         inputs.put(now,new Issued(decision.action,lastInjection>lastIssued));lastIssued=now;
         inputs.headMap(now-3000,false).clear();observations.headMap(now-3000,false).clear();
         return decision.action;
