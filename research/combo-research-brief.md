@@ -4,6 +4,38 @@ This is the working brief for future sessions. The latest clarification below
 supersedes the earlier continuous-own-reach interpretation. Keep historical
 measurements and their original definitions; do not silently relabel them.
 
+## HARD RULE: plain W-tap is the mandatory baseline
+
+ALWAYS compare against plain W-tap under identical settings in both the model
+and native Minecraft. Every results table gets a W-tap column. Match reach,
+both RTTs, KB/hurt-time profile, CPS cap, reaction/aim, duration, initial state,
+opening handicap and metric. Include several seeds/tick phases or native repeats
+and show spread. Hold-W is an additional control, never a substitute for W-tap.
+Historical unmatched results remain explicitly unqualified until backfilled.
+
+The restricted task and primary gate is maximum fresh hits in a fixed time
+without getting hit. For a fixed start and horizon, count fresh hits before the
+first accepted return (including an accepted damage upgrade as a return), and
+report whether the entire horizon had zero returns. Also report the longest
+unanswered fresh-hit run, but do not substitute a lucky later run for success
+from the prescribed start. Preserve strict own-POV reach/readiness/denial metrics
+as additional diagnostics, scored identically for candidate and baseline.
+
+If the controller/search does not clearly beat plain W-tap on this task across
+the tested spread, STOP ADDING CONTROLLER FEATURES. Diagnose what W-tap gets
+right and what the candidate gets wrong: inputs/contact drag, sprint state,
+spacing, launch/height phase and packet timing. A more elaborate controller or
+one favorable sample is not progress. Resume development from a concrete causal
+diagnosis grounded in matched baseline evidence, not another blind variation.
+
+For oracle maintenance tests, fork candidate and baselines from the same complete
+state, including queued packets and immunity. Prime baseline observation history
+during acquisition so switching at the seed does not invent a new hurt cue.
+Report whole-fight acquisition separately. A baseline must not receive stricter
+or looser scoring than the oracle. The historical `combo-wtap20` policy defaults
+to150ms reaction; explicitly label it and include a zero-delay plain W-tap
+reference for zero-delay research controllers rather than silently changing it.
+
 ## Overnight mandate (2026-11-01)
 
 Continue autonomously without questions while the user sleeps. Focus exclusively
@@ -15,6 +47,13 @@ that our understanding is incomplete, not proof that human Hypixel combos cannot
 exist. Read the actual Zest teaching and distinguish verified behavior from
 unverified Hypixel constants. Finding a tweak that enables a cycle identifies a
 sufficient mechanism, not necessarily Hypixel's actual implementation.
+
+The user's final overnight clarification explicitly treats a small-tweak demo
+plus strong evidence against vanilla as a good outcome. Do not force vanilla
+indefinitely after a validated model identifies a concrete obstruction. Quantify
+the scope of that obstruction, seek the smallest enabling KB/hit-delay change,
+expose it as an optional duel setting, and record a native demo. A failed bounded
+search still does not constitute a universal impossibility proof.
 
 Build a small coupled 1D model around ExactTravel; validate movement, server
 motion, damage immunity, knockback, sprint transitions and client replicas against
@@ -68,6 +107,15 @@ movement and replica histories, not “ping increases the KB constant.”
 The user further clarified that Zest may be Hypixel-specific. Vanilla is the
 primary target; do not spend effort reproducing its recipe exactly. Use the
 mechanism hints to derive and test vanilla controls from the validated model.
+
+Latest search correction: both initial oracle drivers fixed strafe at zero.
+Expand their ordinary-key branches to A/neutral/D before drawing conclusions
+from full-reach failures. Then run a small, explicit factorial grid over
+horizontal KB, vertical KB, fresh-hit ticks and opponent RTT. Map finite
+maintenance witnesses and the unresolved region; distinguish failed acquisition
+from failed maintenance search. A heuristic no-witness cell is not an
+infeasibility certificate. Preserve a known successful trajectory as a search
+regression so beam pruning cannot silently erase the positive control.
 
 Keep acquisition (hit-selection, winning a trade, favorable first contact)
 separate from maintaining an established lock. Hold-W remains the primary target;
