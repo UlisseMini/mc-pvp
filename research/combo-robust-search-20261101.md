@@ -159,6 +159,42 @@ The rejected objective instead rewards wider spacing after only two forecast
 completions, sacrificing a third available hit and then losing contact; see the
 [regression audit](poc-20261101/robust-search/oracle/objective-m1396-seed10-review/findings.md).
 
+Exact replay of the second rescue (m1395seed14) reproduces every hit and input
+timestamp: H1 gets111 before return, H2 gets150 with zero returns, and matched
+W-tap gets2. The terminal H1 fresh hit has a strong horizontal packet near0.965
+blocks/tick but only0.109375 vertical impulse. H2's corresponding normal hit has
+horizontal impulse near0.415 and vertical0.36075. Both first movements are
+airborne; their flight phases differ. H1 pushes the opponent beyond its own
+reach, misses the next fresh contacts, then gets caught as the opponent closes.
+H2 keeps the next hit in range. At the eventual H1 return contact, H1's opponent
+ray is2.828; H2's opponent nearest is4.493 while H2's own ray is2.729.
+
+An earlier H2 contact consumed local sprint and multiplied horizontal velocity
+by exactly0.6 without adding a fresh sprint hit. This is why fresh-hit strength
+counts alone are insufficient: immune-frame contacts still change the attacker.
+The paths had already diverged, so this is a traced mechanism, not a causal
+single-key ablation or a newly fitted rule. The
+[full replay audit](poc-20261101/robust-search/oracle/horizon-m1395-seed14-review/findings.md)
+includes own observations and queued-press obligations.
+
+## An inherited opening can already deny recovery
+
+One reserved entry, m1400seed3000, gives0 fresh for H2, old feedback and W-tap,
+all with the same return at4195.975625ms. Its exact replay finds no opponent
+attack queued at the4s fork. Instead, pre-fork own position reports determine
+the opponent's later visible geometry. Even optimistically forwarding the first
+post-fork movement cannot translate that view before4186.950ms, while the fatal
+opponent click consumes at4186.119ms. The opponent is still immune to a new
+equal-damage fresh hit, preventing a fresh knockback intervention beforehand.
+
+This is a scoped timing obstruction for the ordinary grounded, equal-damage
+action family and frozen packet/service paths. It is not a proof covering
+changed acquisition, jumps/crit upgrades, every scheduling branch or all vanilla
+controllers. The zero remains in the qualification denominator. It illustrates
+why an inherited opening failure must be distinguished from failure to maintain
+an already established lock. See the
+[entry audit](poc-20261101/robust-search/oracle/entry-m1400-seed3000-review/findings.md).
+
 All observed UNKNOWNs so far concern unsupported client-handler overlap, not
 missing packet-delay samples or accepted returns. Two examples have a client
 HEAD111/204 microseconds before a queued cue publication finishes. Others have
