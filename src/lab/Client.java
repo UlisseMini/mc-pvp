@@ -55,7 +55,7 @@ public final class Client {
     static long aimLogAt;
 
     static final class Observation {
-        long time, tick, freshHurtCue; double x,y,z,tx,ty,tz,vx,vy,vz,distance,closing,ux,uz,tvx,tvz; int hurt,targetHurt; boolean sprint,ground,sentSprint;
+        long time, tick, freshHurtCue; double x,y,z,tx,ty,tz,vx,vy,vz,distance,localRange,closing,ux,uz,tvx,tvz; int hurt,targetHurt; boolean sprint,ground,sentSprint;
         Observation(long time) {
             this.time=time;this.tick=ticks;
             freshHurtCue=freshHurtStatus;
@@ -63,6 +63,13 @@ public final class Client {
             tx=R.num(opponent,"posX"); ty=R.num(opponent,"posY"); tz=R.num(opponent,"posZ");
             vx=R.num(player,"motionX");vy=R.num(player,"motionY"); vz=R.num(player,"motionZ");
             distance=Math.hypot(tx-x,tz-z); hurt=(int)R.num(player,"hurtTime"); targetHurt=(int)R.num(opponent,"hurtTime");
+            Object box=R.call(opponent,"getEntityBoundingBox");
+            double border=((Number)R.call(opponent,"getCollisionBorderSize")).doubleValue();
+            double eye=y+((Number)R.call(player,"getEyeHeight")).doubleValue();
+            double nearX=Math.max(0,Math.max(R.num(box,"minX")-border-x,x-R.num(box,"maxX")-border));
+            double nearY=Math.max(0,Math.max(R.num(box,"minY")-border-eye,eye-R.num(box,"maxY")-border));
+            double nearZ=Math.max(0,Math.max(R.num(box,"minZ")-border-z,z-R.num(box,"maxZ")-border));
+            localRange=Math.sqrt(nearX*nearX+nearY*nearY+nearZ*nearZ);
             sprint=(Boolean)R.call(player,"isSprinting");
             sentSprint=(Boolean)R.get(player,"serverSprintState");
             ground=(Boolean)R.get(player,"onGround");
@@ -501,13 +508,19 @@ public final class Client {
                 }
             }
             if(kind.equals("orbit")){
-                OrbitController.Decision decision=orbit.decide(now,lastObservedTargetHurt,lastObservedHurt,OrbitController.Settings.from(controls));
+                OrbitController.Settings orbitSettings=OrbitController.Settings.from(controls);
+                double nx=(obs.tx-obs.x)/Math.max(.001,obs.distance),nz=(obs.tz-obs.z)/Math.max(.001,obs.distance);
+                OrbitController.Decision decision=orbit.decide(now,lastObservedTargetHurt,lastObservedHurt,obs.localRange,
+                    obs.vx*nx+obs.vz*nz,obs.tvx*nx+obs.tvz*nz,obs.ground,obs.sprint,orbitSettings);
                 setKeys(decision.forward,0,decision.sprintKey);
                 if(decision.resetStarted)log(Compat.map("type","wtap","time",now,"match",match,
-                    "cue_time",lastObservedTargetHurt,"release_until",now+50,"reason","orbit_acquisition","pause_ticks",1,"native_tick",ticks));
+                    "cue_time",lastObservedTargetHurt,"release_until",now+50,"reason",decision.maintenance?"orbit_repair":"orbit_acquisition","pause_ticks",1,"native_tick",ticks));
                 Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","orbit_plan");plan.put("time",now);plan.put("match",match);
                 plan.put("observation_time",obs.time);plan.put("landed_cue",lastObservedTargetHurt);plan.put("incoming_cue",lastObservedHurt);
-                plan.put("mode",decision.maintenance?"normal_maintenance":"acquire");plan.put("unanswered_cues",decision.unanswered);
+                plan.put("mode",decision.maintenance?"maintenance":"acquire");plan.put("unanswered_cues",decision.unanswered);
+                plan.put("opening_wait",decision.openingWait);plan.put("local_range",obs.localRange);plan.put("repair_every",orbitSettings.repairEvery);
+                plan.put("projected_range",Double.isFinite(decision.projectedRange)?decision.projectedRange:null);
+                plan.put("spacing_range",orbitSettings.spacingRange);
                 plan.put("forward",decision.forward);plan.put("sprint_key",decision.sprintKey);plan.put("local_sprint",obs.sprint);
                 plan.put("sent_sprint",obs.sentSprint);plan.put("scheduled_reset_at",decision.scheduledResetAt);log(plan);
             }

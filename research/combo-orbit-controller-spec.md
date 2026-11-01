@@ -9,6 +9,59 @@ were performed in preparing this note.
 
 ## Main hypothesis
 
+### Native diagnostic update, 2026-11-01
+
+The first six 30-second native scenarios against W-tap with attacks disabled
+for its first 2,000 ms all passed the declared timing/input gates. Both sides
+had the same 20 CPS ceiling, perfect local aim and three-block reach. These
+are mechanism tests, not first-to-100 victories or evidence of an indefinite
+lock. The complete frozen cohort is
+`experiments/orbit-wake-mechanism-20261101.json`; the native input-to-server
+linkage audit is `research/orbit-native-mechanism-20261101.json`.
+
+| Intervention | Native matches | Candidate-first accepted scores |
+| --- | --- | --- |
+| Acquisition W-taps only | m1141, m1146 | 49–50, 44–41 |
+| Enter normal mode after two cues, continuous clicks | m1142, m1143 | 60–74, 49–47 |
+| Same entry, selective clicks | m1140, m1145 | 42–41, 44–47 |
+
+In m1140 the first two fresh hits were sprint hits at 563 and 1,061 ms. The
+next fresh hit was normal at 2,067 ms; the opponent replied at 2,115 ms, only
+115 ms after its attack enable time. All six linkage audits had zero matching
+errors. Each maintenance variant delivered only one or two fresh normal hits
+during its requested maintenance periods. Normal mode was executed, but did
+not establish a sustained lock.
+
+Two independent problems motivate the next controls. First, releasing Ctrl
+after a local contact also makes the pursuer walk. Native local sprint and
+server sprint are different states: holding W+Ctrl can restore local sprint
+after contact without sending another START, even though an accepted server
+attack cleared server sprint. `orbit_maintenance_ctrl=1` tests pursuit with
+Ctrl held; actual server hit classification must still be checked offline.
+
+Second, acquisition was too deep: m1140's first hit had only 2.179 blocks of
+true center separation. Later the second airborne sprint hit opened a large
+gap, and the target landed before the next contact. An initial wait followed
+by W+Ctrl at a declared **local nearest-box distance** (3.6 or 3.9 blocks)
+tests a different opening geometry without a deliberately normal standing
+opening hit. `orbit_repair_every=2` tests one W reset after even-numbered
+outgoing cues, aiming for sprint/normal alternating contacts. Cues remain
+imperfect observations; server logs determine what actually occurred.
+
+This alternating hypothesis comes from a short, approximate cycle using
+measured impulses: about 2.543 blocks of target displacement over ten moves
+after the first grounded sprint launch, then 1.311 after an airborne normal
+launch. Continuous local sprint contacts give about 3.789 blocks of pursuer
+movement over twenty moves. Their near balance nominates an experiment; it
+does not certify a periodic orbit. Server vertical motion, actual contact
+times, landing and view delay can change these quantities.
+
+The approximate whole-duel model has not produced a sustained lock in the
+screened variants, including entry after one cue and Ctrl-held maintenance.
+Its exact travel component tests do not establish full-duel accuracy. Native
+tests must check the proposed contact cycle, and a failed screen is not a
+proof of impossibility.
+
 Separate acquisition from maintenance. Sprint knockback can acquire height and
 spacing, but repeating the strongest hit at every fresh window need not preserve
 either. Test mostly normal hits during maintenance, using sprint hits only as a
