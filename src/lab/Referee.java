@@ -21,6 +21,7 @@ public final class Referee {
     static final Map<String,String> watching=new HashMap<>();
     static final Map<String,Long> pendingTracking=new LinkedHashMap<>();
     static final Set<Integer> preparedArenas=new HashSet<>();
+    static final Set<Integer> preparedLongArenas=new HashSet<>();
     static final List<String> MODES=List.of("boxing","diamond","diamond_box","rod_diamond","sumo");
     static long ticks, errors;
     static int counter;
@@ -64,7 +65,7 @@ public final class Referee {
             m.put("modified_reach",DuelSettings.reach(configA)!=3||DuelSettings.reach(configB)!=3);
             if(sumo())m.put("sumo_arena",SumoArena.geometry());
             m.put("armor_protection",0);m.put("weapon",sumo()?"fist":boxing()?"diamond_sword":"wooden_sword");
-            m.put("arena_surface",sumo()?"raised_circular_sumo_platform":box()?"bedrock_1x1_interior_y4_5_barrier_ceiling_y6":"bedrock_y3_air_y4_19_radius256_verified_v4");return m;
+            m.put("arena_surface",sumo()?"raised_circular_sumo_platform":box()?"bedrock_1x1_interior_y4_5_barrier_ceiling_y6":preparedLongArenas.contains(arena)?"bedrock_y3_air_y4_19_half_x1024_z512_verified_v5":"bedrock_y3_air_y4_19_radius256_verified_v4");return m;
         }
     }
 
@@ -316,7 +317,7 @@ public final class Referee {
                 boolean all=args.length>1&&args[1].equals("all");
                 for(var entry:policies.entrySet()){
                     if(!all && (entry.getKey().matches("zest-(tune|model|long|select|pulse)-[0-9]+") || entry.getKey().startsWith("evolved-g")))continue;
-                    button(sender,entry.getKey()+" — "+entry.getValue().getProperty("description",entry.getValue().getProperty("kind")),"/duel "+entry.getKey());
+                    button(sender,entry.getKey()+" — "+entry.getValue().getProperty("description",entry.getValue().getProperty("kind")),"/duel "+entry.getKey()+(entry.getKey().startsWith("lock8")?" preset=lock8":""));
                 }
                 if(!all)button(sender,"Show every search candidate","/bots all");
             }else if(cmd.equals("matches")){
@@ -328,6 +329,7 @@ public final class Referee {
                 if(find(R.name(sender))!=null){message(sender,"Use /stop before spectating.");return true;}
                 ServerReplay.close(safeName(sender),false);
                 vanilla("gamemode 3 "+safeName(sender));
+                R.call(sender,"setSpectatingEntity",sender);
                 Object a=player(m.a),b=player(m.b);
                 teleport(sender,(R.num(a,"posX")+R.num(b,"posX"))/2,m.sumo()?SumoArena.TOP_Y+6:10,(R.num(a,"posZ")+R.num(b,"posZ"))/2+5);
                 watching.put(safeName(sender),m.id);
@@ -342,12 +344,14 @@ public final class Referee {
                 if(policy==null){message(sender,"Usage: /duel <bot>. Use /bots for the list.");return true;}
                 boolean rematch=cmd.equals("rematch");double[] prior=lastPings.getOrDefault(name,new double[]{0,0});
                 String selectedMode=rematch?lastModes.getOrDefault(name,"boxing"):preferredModes.getOrDefault(name,"boxing");
-                DuelSettings setup=DuelSettings.parse(args,rematch?1:2,selectedMode,rematch?prior[0]:0,preferredPing(name),
+                boolean presetRematch=rematch&&lastOverrides.getOrDefault(name,new Properties()).containsKey(PracticePresets.LABEL);
+                DuelSettings setup=DuelSettings.parse(args,rematch?1:2,selectedMode,rematch?prior[0]:0,presetRematch?prior[1]:preferredPing(name),
                     rematch?lastOverrides.getOrDefault(name,new Properties()):new Properties());
                 String bot=freeBot(Set.of());if(bot==null){message(sender,"All bot slots are busy. Try again shortly.");return true;}
                 loadPolicies();ServerReplay.close(name,false);watching.remove(name);
                 start(name,bot,"human",policy,setup.humanPing,setup.botPing,"human-"+System.nanoTime(),0,setup.mode,setup.overrides);
-                rememberPing(name,setup.humanPing);lastDuels.put(name,policy);lastPings.put(name,new double[]{setup.botPing,setup.humanPing});
+                if(setup.humanPingExplicit)rememberPing(name,setup.humanPing);
+                lastDuels.put(name,policy);lastPings.put(name,new double[]{setup.botPing,setup.humanPing});
                 lastModes.put(name,setup.mode);lastOverrides.put(name,setup.overrides);
             }else if(cmd.equals("ping")){
                 String name=safeName(sender);Match m=find(name);
@@ -371,6 +375,13 @@ public final class Referee {
                 Match m=find(R.name(sender));if(m!=null)finish(m,"stopped");else{vanilla("gamemode 0 "+safeName(sender));teleport(sender,0,4,0);}
             }else if(cmd.equals("lab")&&args.length>=2&&args[1].equals("combat")){
                 CombatTuning.command(sender,args);
+            }else if(cmd.equals("lab")&&args.length==3&&args[1].equals("prepare")&&args[2].equals("long")){
+                if(!matches.isEmpty())throw new IllegalArgumentException("Arena preparation requires no active matches.");
+                String bot=freeBot(Set.of());if(bot==null)throw new IllegalArgumentException("Wait for a bot to connect first.");
+                Object world=R.get(player(bot),"worldObj");
+                for(int i=0;i<4;i++)prepareArena(world,i);
+                prepareLongArena(world,0);
+                message(sender,"Long arena0 ready: verified flat bedrock, half-length1024, half-width512.");
             }else if(cmd.equals("lab")&&args.length>=2&&args[1].equals("demo")){
                 if(args.length!=3)throw new IllegalArgumentException("Usage: /lab demo lock8 — 4s setup, then a 60s lock demonstration");
                 String preset=PracticePresets.normalize(args[2]);
@@ -391,7 +402,7 @@ public final class Referee {
                 BotMatchSettings setup=BotMatchSettings.parse(args,4,args[1]+"-"+System.nanoTime());
                 loadPolicies();start(a,b,args[2],args[3],setup.pingA,setup.pingB,setup.request,0,args[1],setup.a,setup.b,6,0,"");
             }else if(cmd.equals("lab")&&args.length==8&&args[1].equals("scenario")){
-                long duration=Long.parseLong(args[6]);if(duration<1000||duration>180_000)throw new IllegalArgumentException("Scenario duration must be1000–180000ms");
+                long duration=Long.parseLong(args[6]);if(duration<1000||duration>304_000)throw new IllegalArgumentException("Scenario duration must be1000–304000ms");
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
                 if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}
                 loadPolicies();start(a,b,args[2],args[3],ping(args[4]),ping(args[5]),args[7],duration);
@@ -461,6 +472,7 @@ public final class Referee {
         // must not stall another match's movement or network clocks.
         if(preparedArenas.isEmpty())for(int i=0;i<4;i++)prepareArena(arenaWorld,i);
         prepareArena(arenaWorld,m.arena);
+        if(duration>64_000)prepareLongArena(arenaWorld,m.arena);
         if(m.box())prepareBox(arenaWorld,m.arena);
         if(m.sumo())SumoArena.build(arenaWorld,m.arena);
         m.start=System.currentTimeMillis()+3000;
@@ -538,23 +550,31 @@ public final class Referee {
     }
     static void prepareArena(Object world,int arena){
         if(preparedArenas.contains(arena))return;
-        int center=4096*(arena+1),radius=256;
+        prepareFloor(world,arena,256,256);preparedArenas.add(arena);
+    }
+    static void prepareLongArena(Object world,int arena){
+        if(preparedLongArenas.contains(arena))return;
+        if(!matches.isEmpty())throw new IllegalArgumentException("Prepare the long arena while all matches are idle: /lab prepare long");
+        prepareFloor(world,arena,1024,512);preparedLongArenas.add(arena);
+    }
+    static void prepareFloor(Object world,int arena,int halfX,int halfZ){
+        int center=4096*(arena+1);
         // Ordinary unbreakable full blocks: same .6 slipperiness as grass/dirt.
         // Repair old holes before play, without altering movement or combat.
         // Vanilla /fill checks one extra chunk at the positive X/Z boundary
         // (its loop ends at max+16). Load that border before issuing each fill.
-        for(int x=center-radius;x<=center+radius;x+=16)for(int z=-radius;z<=radius;z+=16)
+        for(int x=center-halfX;x<=center+halfX;x+=16)for(int z=-halfZ;z<=halfZ;z+=16)
             R.call(world,"getChunkFromChunkCoords",x>>4,z>>4);
-        for(int x=center-radius;x<center+radius;x+=128)for(int z=-radius;z<radius;z+=128)
+        for(int x=center-halfX;x<center+halfX;x+=128)for(int z=-halfZ;z<halfZ;z+=128)
             vanilla("fill "+x+" 3 "+z+" "+(x+127)+" 3 "+(z+127)+" minecraft:bedrock");
         // Old test/player blocks above the floor also invalidate flat-ground
         // comparisons. Each ordinary fill stays within vanilla's 32768 cap.
-        for(int x=center-radius;x<center+radius;x+=64)for(int z=-radius;z<radius;z+=64)
+        for(int x=center-halfX;x<center+halfX;x+=64)for(int z=-halfZ;z<halfZ;z+=64)
             for(int y=4;y<20;y+=8)
                 vanilla("fill "+x+" "+y+" "+z+" "+(x+63)+" "+(y+7)+" "+(z+63)+" minecraft:air");
         Object bedrock=R.get(R.cls("net.minecraft.init.Blocks"),"bedrock");
         Object air=R.get(R.cls("net.minecraft.init.Blocks"),"air");
-        for(int x=center-radius;x<center+radius;x++)for(int z=-radius;z<radius;z++){
+        for(int x=center-halfX;x<center+halfX;x++)for(int z=-halfZ;z<halfZ;z++){
             Object pos=R.construct("net.minecraft.util.BlockPos",x,3,z);
             if(R.call(R.call(world,"getBlockState",pos),"getBlock")!=bedrock)
                 throw new IllegalStateException("Arena floor verification failed at "+x+",3,"+z);
@@ -564,8 +584,7 @@ public final class Referee {
                     throw new IllegalStateException("Arena air verification failed at "+x+","+y+","+z);
             }
         }
-        System.out.println("[PvP Lab] Verified 262144 bedrock floor blocks and 4194304 air blocks in arena "+arena);
-        preparedArenas.add(arena);
+        System.out.println("[PvP Lab] Verified "+(4L*halfX*halfZ)+" bedrock floor blocks and "+(64L*halfX*halfZ)+" air blocks in arena "+arena);
     }
     static void preparePlayer(Object p,double x,double y,double z,int yaw,String mode){
         watching.remove(R.name(p));
@@ -725,7 +744,7 @@ public final class Referee {
     static void returnToLobby(Object p){
         String who=safeName(p);R.call(p,"clearItemInUse");R.call(p,"setHealth",20.0f);
         fullFood(p);
-        if(isBot(who)){vanilla("gamemode 3 "+who);teleport(p,-40-Integer.parseInt(who.substring(7))*6,4,0);}else{vanilla("gamemode 0 "+who);teleport(p,0,4,0);}
+        if(isBot(who)){vanilla("gamemode 3 "+who);teleport(p,-40-Integer.parseInt(who.substring(7))*6,4,0);}else{configureProxy(who,preferredPing(who));vanilla("gamemode 0 "+who);teleport(p,0,4,0);}
     }
     static Match find(String name){for(Match m:matches.values())if(m.a.equals(name)||m.b.equals(name))return m;return null;}
     static boolean validBotViews(Match m){

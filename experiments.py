@@ -35,7 +35,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing',*,reach_c
         if not re.fullmatch('[a-z0-9_-]{1,64}',name) or not (ROOT/'policies'/f'{name}.properties').is_file():
             raise ValueError('Unknown bot: '+name)
     if any(not math.isfinite(p) or not 0<=p<=500 for p in (ping_a,ping_b)):raise ValueError('RTTs must be 0–500 ms')
-    if duration_ms is not None and (not isinstance(duration_ms,int) or not 1000<=duration_ms<=180000):raise ValueError('Scenario duration must be1000–180000ms')
+    if duration_ms is not None and (not isinstance(duration_ms,int) or not 1000<=duration_ms<=304000):raise ValueError('Scenario duration must be1000–304000ms')
     if mode not in ('boxing','diamond','diamond_box','rod_diamond'):raise ValueError('Unknown combat mode')
     if mode!='boxing' and duration_ms is not None:raise ValueError('Timed scenarios currently use boxing; health duels run to death or timeout')
     parameters={name:properties(ROOT/'policies'/f'{name}.properties') for name in (a,b)}
@@ -69,7 +69,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing',*,reach_c
             reservation_path.write_text(json.dumps(reservations))
         await asyncio.sleep(1)
     print(f'Started {a} vs {b}, RTT {ping_a}/{ping_b}',flush=True)
-    deadline=time.monotonic()+220;issues=set();checks=0;client_builds={};client_frame_sleep={};runtime_identities={}
+    deadline=time.monotonic()+max(220,(duration_ms or 0)/1000+90);issues=set();checks=0;client_builds={};client_frame_sleep={};runtime_identities={}
     while time.monotonic()<deadline:
         for p in (RUNTIME/'results').glob('*.json'):
             if p.name in existing_results:continue

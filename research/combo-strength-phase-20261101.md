@@ -34,7 +34,8 @@ controller's 150 fresh hits are all normal, not sprint hits.
   Replace `lock8` with `lock8-wtap` for the matched baseline (same4s acquisition).
 - Explicit options override preset defaults, regardless of token order, e.g.
   `/duel lock8 boxing preset=lock8 ping=60 myping=60`. `/rematch` preserves them.
-  A new preset does not change shared policies or server combat defaults.
+  A new preset does not change shared policies or server combat defaults. Its implicit
+  human RTT does not overwrite your saved lobby preference; explicit myping does.
 
 `/help settings` and `/help matches` include these commands. The aliases preserve
 exactly the tested controller, W-tap and opponent inputs. This preset names the

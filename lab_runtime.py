@@ -22,7 +22,7 @@ def allowed_console_command(command):
     # explicit administration operations needed for this practice server.
     if not isinstance(command,str) or not command or not all(c.isalnum() or c in '-_ ./=?' for c in command):
         return False
-    return command=='lab combat' or command.startswith(('lab combat ','lab demo ','lab match ','lab diamond ','lab diamond_box ','lab rod_diamond ','lab sumo ','lab ping ','lab scenario ')) or bool(
+    return command in ('lab combat','lab prepare long') or command.startswith(('lab combat ','lab demo ','lab match ','lab diamond ','lab diamond_box ','lab rod_diamond ','lab sumo ','lab ping ','lab scenario ')) or bool(
         re.fullmatch(r'(?:op|deop) [A-Za-z0-9_]{1,16}|weather clear(?: 1000000)?|(?:help|\?|lab help)(?: (?:[1-6]|lab|all|play|settings|matches|replay|views|client))?',command))
 
 
@@ -202,7 +202,7 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
         else:processes[replace]=process
         return process
     base=['-Xms128M','-Xmx1024M','-XX:ActiveProcessorCount=2','-Dlab.root='+str(ROOT),'-javaagent:'+str(BUILD/'lab-agent.jar')]
-    server=launch('server',[*base,'-Dlab.role=server','-Dlog4j.configurationFile='+str(CACHE/'server-logging.xml'),'-jar',CACHE/'server.jar','nogui'],RUNTIME/'server')
+    server=launch('server',[*base,'-Xmx2048M','-Dlab.role=server','-Dlog4j.configurationFile='+str(CACHE/'server-logging.xml'),'-jar',CACHE/'server.jar','nogui'],RUNTIME/'server')
     try:
         print('Starting the sandboxed real Minecraft server...',flush=True)
         deadline=time.time()+150

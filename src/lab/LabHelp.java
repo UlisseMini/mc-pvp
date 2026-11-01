@@ -40,7 +40,7 @@ public final class LabHelp {
          "/matches — clickable active matches; /watch [match-id] [a|b]",
          "/lab ping <match-id> <RTT-a> <RTT-b> — change active added RTT",
          "/lab scenario <bot-a> <bot-b> <RTT-a> <RTT-b> <duration-ms> <request-id>",
-         "Scenarios: 1000–180000ms. Normal boxing always ends at 100 accepted hits.",
+         "/lab prepare long — prewarm long arena while no match is active. Scenarios: 1000–304000ms. Normal boxing always ends at 100 accepted hits.",
          "/lab combat [vanilla | kb_horizontal=1 kb_vertical=1 hit_ticks=10] — next bot scenarios only",
          "Bot matches also accept an optional request-id after both positional RTTs."},
         {"/replay [match-id] — latest own match, or a specific recording",
