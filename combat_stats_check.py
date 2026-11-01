@@ -8,6 +8,7 @@ import re
 import subprocess
 import time
 import uuid
+from decimal import Decimal, ROUND_HALF_UP
 
 from lab import ROOT, CACHE, BUILD, RUNTIME
 from lab_runtime import sandbox_java, clean_environment
@@ -26,7 +27,7 @@ def run():
     (directory/'options.txt').write_text('renderDistance:6\nfancyGraphics:false\nparticles:2\nsoundCategory_master:0.0\n')
     identifier='combat-stats-'+time.strftime('%Y%m%d-%H%M%S')+'-'+uuid.uuid4().hex[:6]
     out=ROOT/'experiments'/identifier;out.mkdir()
-    sources=('src/lab/Agent.java','src/lab/Referee.java','src/lab/CombatStats.java','src/lab/DamageBreakdown.java','src/lab/DamageBenefits.java','src/lab/BlockTiming.java','src/lab/BlockAccuracy.java','src/lab/PracticeProbe.java','combat_stats_check.py')
+    sources=('src/lab/Agent.java','src/lab/Referee.java','src/lab/CombatStats.java','src/lab/RodTricks.java','src/lab/DamageBreakdown.java','src/lab/DamageBenefits.java','src/lab/BlockTiming.java','src/lab/BlockAccuracy.java','src/lab/PracticeProbe.java','combat_stats_check.py')
     frozen={f:hashlib.sha256((ROOT/f).read_bytes()).hexdigest() for f in sources}
     agent_hash=hashlib.sha256((BUILD/'lab-agent.jar').read_bytes()).hexdigest()
     launched=time.time()*1000
@@ -50,7 +51,8 @@ def run():
             while process.poll() is None and time.time()<deadline:
                 s=json.loads((RUNTIME/'status.json').read_text())
                 if any(m['a']=='LabObserver' and s['time']>=m['start']+1000 for m in s['matches']):
-                    samples.append({'time':s['time'],'players':[{k:p[k] for k in ('name','food','saturation')} for p in s['player_details']]})
+                    participants={m[k] for m in s['matches'] if s['time']>=m['start']+1000 for k in ('a','b')}
+                    samples.append({'time':s['time'],'players':[{k:p[k] for k in ('name','food','saturation')} for p in s['player_details'] if p['name'] in participants]})
                 time.sleep(.5)
             if process.poll() is None:raise TimeoutError('Native statistics probe exceeded deadline')
         finally:
@@ -114,6 +116,19 @@ def run():
                     melee[e['hits_a']+e['hits_b']]={'attacker':e['attacker'],'target':e['target'],'health_loss':loss,
                         'blocked':was_blocked,'critical':e['damage']==7.5}
         observed=[e for e in es if e['type']=='melee_damage']
+        contacts={e['hit_index']:e for e in es if e['type']=='hit'}
+        damage={e['hit_index']:e for e in observed}
+        tricks=[e for e in es if e['type']=='rod_trick']
+        for e in tricks:
+            rod=contacts[e['rod_hit_index']];upgrade=damage[e['upgrade_hit_index']];fresh=damage[e['fresh_hit_index']]
+            checks[g['id']+'_rod_trick_'+str(e['fresh_hit_index'])]=(
+                rod['rod'] and rod['attacker']==upgrade['attacker']==fresh['attacker']==e['attacker'] and
+                rod['target']==upgrade['target']==fresh['target']==e['target'] and
+                e['rod_hit_index']<e['upgrade_hit_index']<e['fresh_hit_index'] and
+                upgrade['sword'] and fresh['sword'] and upgrade['health_loss']>0 and fresh['health_loss']>0 and
+                upgrade['immune_before'] and upgrade['previous_damage']==0 and not fresh['immune_before'] and
+                0<=fresh['victim_tick']-upgrade['victim_tick']<=5)
+        checks[g['id']+'_rod_tricks_not_duplicated']=len({e['rod_hit_index'] for e in tricks})==len(tricks)
         checks[g['id']+'_per_attack_damage_attribution']=(len(observed)==len(melee) and len({e['hit_index'] for e in observed})==len(melee) and all(
             e['hit_index'] in melee and all(e[k]==v if k!='health_loss' else abs(e[k]-v)<1e-6 for k,v in melee[e['hit_index']].items()) for e in observed))
         expected_benefits=[]
@@ -123,6 +138,7 @@ def run():
             abs(e['critical_extra']-(max(0,e['health_loss']-e['without_crit_health_loss']) if e['critical'] else 0))<1e-6 for e in observed)
         for side in ('a','b'):
             name=g[side];stats=g['stats_'+side];hits=[e for e in es if e['type']=='hit' and e['attacker']==name]
+            checks[g['id']+'_'+side+'_rod_tricks_match_events']=stats['rod_tricks']==sum(e['attacker']==name for e in tricks)
             healed=sum(e['amount'] for e in es if e['type']=='heal' and e['player']==name)
             checks[g['id']+'_'+side+'_health_balance']=abs(20+stats['regenerated']-stats['damage_taken']-g['health_'+side])<.0001
             checks[g['id']+'_'+side+'_native_crit_damage_matches']=stats['crits']==sum(e['damage']==7.5 for e in hits)
@@ -135,7 +151,9 @@ def run():
             average=actual_loss/len(incoming) if incoming else None
             checks[g['id']+'_'+side+'_damage_per_hit_matches_native_events']=(stats['melee_hits_taken']==len(incoming) and
                 (stats['damage_taken_per_hit'] is None if average is None else abs(stats['damage_taken_per_hit']-average)<.000001))
-            expected_per_hit.append('N/A (no melee hits)' if average is None else f'{average/2:.2f} hearts ({len(incoming)} melee hits)')
+            # Java Formatter rounds decimal ties up (Python's float formatting can round .575 down).
+            shown_average=None if average is None else Decimal(str(average/2)).quantize(Decimal('.01'),rounding=ROUND_HALF_UP)
+            expected_per_hit.append('N/A (no melee hits)' if average is None else f'{shown_average} hearts ({len(incoming)} melee hits)')
             for key,label,direction,flag,flag_value in (
                 ('blocked_taken','Taken on blocks','target','blocked',True),('unblocked_taken','Taken unblocked','target','blocked',False),
                 ('critical_dealt','Dealt by crits','attacker','critical',True),('normal_dealt','Dealt by normal hits','attacker','critical',False)):
@@ -178,6 +196,8 @@ def run():
         # The native logger wraps chat in an XML CDATA element; only compare the message.
         received=[value.split(']]>',1)[0] for value in re.findall(r'Damage taken per hit: ([^\r\n]*)',summary)]
         checks[g['id']+'_both_damage_per_hit_chat_values']=received==expected_per_hit
+        shown_tricks=[int(x) for x in re.findall(r'Rod tricks: (\d+)',summary)]
+        checks[g['id']+'_rod_trick_chat_values']=shown_tricks==([g['stats_a']['rod_tricks'],g['stats_b']['rod_tricks']] if g['fishing_rods'] else [])
         received_benefits=[value.split(']]>',1)[0] for value in re.findall(r'((?:Blocking saved|Extra crit damage|Per block|Per crit): [^\r\n]*)',summary)]
         checks[g['id']+'_both_benefit_chat_values']=received_benefits==expected_benefits
     report={'checks':checks,'passed':all(checks.values()),'games':games,'script':script,'source_sha256':frozen,'agent_sha256':agent_hash,

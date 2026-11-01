@@ -49,6 +49,8 @@ public final class DamageBreakdown {
         final Object attacker,target;
         final Referee.Match match;
         final String who,victim;
+        final boolean sword;
+        final long victimTick;
         boolean accepted,blocked,critical;
         double healthLoss;
         float hp,absorption,applied,rawNoncrit,critBase,previousDamage;
@@ -57,6 +59,9 @@ public final class DamageBreakdown {
         int hitIndex;
         Attack(Object attacker,Object target,Referee.Match match){
             this.attacker=attacker;this.target=target;this.match=match;who=R.name(attacker);victim=R.name(target);
+            Object held=R.call(attacker,"getHeldItem");
+            sword=held!=null&&R.cls("net.minecraft.item.ItemSword").isInstance(R.call(held,"getItem"));
+            victimTick=(long)R.num(target,"ticksExisted");
             previousDamage=(float)R.num(target,"lastDamage");immune=CombatStats.attackImmune(target);
         }
     }
@@ -129,7 +134,14 @@ public final class DamageBreakdown {
             event.put("applied_damage",a.applied);event.put("noncrit_raw_damage",a.rawNoncrit);event.put("previous_damage",a.previousDamage);event.put("immune_before",a.immune);
             event.put("block_applied",a.blockApplied);event.put("armor_points",a.armor);event.put("resistance_amplifier",a.resistance);event.put("protection_roll",a.protection);
             event.put("health_before",a.hp);event.put("absorption_before",a.absorption);
+            event.put("sword",a.sword);event.put("victim_tick",a.victimTick);
             Referee.append(a.match.replay,event);
+            if(a.match.rods()){
+                int[] trick=a.match.stats(a.who).rodTricks.melee(a.victimTick,a.hitIndex,a.immune,a.previousDamage,a.sword,a.healthLoss);
+                if(trick!=null)Referee.append(a.match.replay,Map.of("type","rod_trick","time",System.currentTimeMillis(),
+                    "attacker",a.who,"target",a.victim,"rod_hit_index",trick[0],"upgrade_hit_index",trick[1],
+                    "fresh_hit_index",trick[2],"followup_limit_ticks",RodTricks.FOLLOWUP_TICKS));
+            }
             long now=System.currentTimeMillis();
             a.match.stats(a.victim).blockTiming.hit(a.blocked,now);
             Referee.timingFeedback(a.match,a.victim,now);

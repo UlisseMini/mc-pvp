@@ -63,6 +63,14 @@ enabling RCON or opening another network port.
 | `/rematch` | Same bot, mode, reach/CPS overrides and bot ping, using your saved player ping; after a death, click Respawn first |
 | `/rematch cps=20` | Repeat the setup while changing only the bot's CPS ceiling |
 | `/stop` | End your duel or leave spectator mode; return to the lobby |
+| `/replay` | Watch your latest completed match using the server recording |
+| `/replay m0930` | Watch a specific recorded match |
+| `/replay list` | Click to watch one of your ten latest matches (`list all` includes bot matches) |
+| `/replay pause` / `/replay play` | Pause/resume; play restarts after the recording ends |
+| `/replay seek 12.5` | Jump to 12.5 seconds after the match started |
+| `/replay speed 0.5` | Slow motion; supported speeds are 0.25–2x |
+| `/replay a` / `/replay b` / `/replay free` | Follow either recorded fighter or fly freely |
+| `/replay stop` | Remove the replay actors and return to the lobby (`/stop` also works) |
 | `/matches` | Clickable list of ongoing matches |
 | `/watch` | Spectate an ongoing match; click a follow-camera button |
 | `/watch m0025 a` | Follow player A in that match, while it is active |
@@ -72,6 +80,25 @@ In spectator mode, fly around normally. Sneak exits a followed bot's camera.
 The action bar shows the current score. Finished matches are saved automatically.
 Spectators cannot interfere with combat. There are eight real bot clients; the
 experiment scheduler uses at most six so human challenges have spare slots.
+
+Finished-match chat includes a clickable **Watch server replay** button. Replay
+actors are private packet-only copies in a separate viewing area: they consume
+no bot slots, run no combat, and cannot affect another match. Starting a duel or
+watching a live match removes your replay; `/stop` exits it. Completed recordings
+remain available across server restarts. Pause, seek, speed and follow controls
+operate independently for each viewer.
+
+This is a playback of **recorded server positions and accepted combat events**,
+not a rerun of bot decisions or either player's original screen. Your live client
+predicts your movement and sees delayed/interpolated opponent movement; those
+views differ from the server's. The spectator client also performs its ordinary
+packet quantization/interpolation during playback. New recordings include server
+look direction, held item, blocking/sneaking, swing state, rod flight and final
+health. Older recordings still play, but look direction/equipment are approximated
+and missing rod flight/block poses cannot be recovered; the viewer labels this.
+The flat arena/box is recreated for viewing, rather than recording all world
+changes. A client-side Replay Mod recording remains the way to preserve what
+your original client saw.
 
 RTTs are **added**, symmetric network delay. Your own real connection and normal
 Minecraft tick/interpolation delays remain. The human-facing latency setting is
@@ -129,6 +156,18 @@ The result panel's headline **Hits** now counts only accepted melee attacks that
 actually removed HP. **Rod contacts** are listed separately and never added to
 that headline. Saved replays retain the original accepted-contact `hits_a/b`
 counters for research and add `damage_hits_a/b` for the new headline.
+
+**Rod tricks**, shown for both players in rod-mode results, counts completed
+rod → damaging sword upgrade → fresh damaging sword-hit sequences. The fresh
+hit must follow the first sword upgrade within five victim ticks (250 ms at
+20 TPS). A rod contact alone, a sword arriving after the rod's immunity window,
+or a normal sword hit upgraded to a crit does not count. Further crit upgrades
+do not extend the deadline; each rod setup counts at most once. A new rod,
+non-sword contact, zero-HP-damage contact or environmental damage interrupts an
+unfinished sequence. Opposing hits during a trade do not interrupt it. Saved
+results expose `stats_a/b.rod_tricks`; `rod_trick` replay events identify all
+three accepted hit IDs. This is a timing-based statistic, not a claim that the
+rod caused an extra hit that would otherwise have been impossible.
 
 **Block %** is blocked incoming melee hits / all incoming melee hits. Blocking
 30 of 40 hits shows `75.0% (30/40 incoming hits)`. Each accepted critical upgrade

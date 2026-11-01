@@ -121,7 +121,7 @@ public final class Referee {
                 }
                 if(System.currentTimeMillis()>m.start+m.durationMs){finish(m,m.scenario?"scenario_completed":"timeout_draw");continue;}
                 Map<String,Object> trace=new LinkedHashMap<>();trace.put("type","tick");trace.put("time",System.currentTimeMillis());
-                trace.put("a",position(a));trace.put("b",position(b));trace.put("hits_a",m.ha);trace.put("hits_b",m.hb);
+                trace.put("a",replayPosition(a));trace.put("b",replayPosition(b));trace.put("hits_a",m.ha);trace.put("hits_b",m.hb);
                 trace.put("health_a",R.call(a,"getHealth"));trace.put("health_b",R.call(b,"getHealth"));
                 append(m.replay,trace);
                 if(ticks%10==0){
@@ -137,10 +137,12 @@ public final class Referee {
                         overlay(player(watcher.getKey()),score+" §8| §bBlocks: §f"+ba+" dmg "+m.sa.damageBlockedText()+" §7vs §f"+bb+" dmg "+m.sb.damageBlockedText()+ping);
                 }
             }
+            ServerReplay.tick();
             if(ticks%10==0){
                 Map<String,Object> status=new LinkedHashMap<>();status.put("version","1.8.9");status.put("time",System.currentTimeMillis());
                 status.put("players",people.stream().map(R::name).toList());status.put("policies",new ArrayList<>(policies.keySet()));
                 status.put("matches",matches.values().stream().map(Match::state).toList());
+                status.put("replays",ServerReplay.state());
                 List<Map<String,Object>> details=new ArrayList<>();
                 for(Object p:people){Map<String,Object> detail=position(p);detail.put("name",R.name(p));detail.put("health",R.call(p,"getHealth"));detail.put("alive",R.call(p,"isEntityAlive"));
                     detail.put("armor_points",R.call(p,"getTotalArmorValue"));detail.put("food",R.call(R.call(p,"getFoodStats"),"getFoodLevel"));
@@ -218,6 +220,7 @@ public final class Referee {
             Object direct=R.call(source,"getSourceOfDamage");
             boolean rod=direct!=null&&R.cls("net.minecraft.entity.projectile.EntityFishHook").isInstance(direct);
             CombatStats stats=m.stats(who);if(rod)stats.rodHits++;if(immuneBefore)stats.upgrades++;
+            if(rod)stats.rodTricks.rod(m.ha+m.hb);
             if(!rod)DamageBreakdown.accepted(target,source,m.ha+m.hb);
             Map<String,Object> hit=new LinkedHashMap<>();hit.put("type","hit");hit.put("time",System.currentTimeMillis());
             hit.put("attacker",who);hit.put("target",victim);hit.put("damage",damage);hit.put("hits_a",m.ha);hit.put("hits_b",m.hb);
@@ -226,6 +229,7 @@ public final class Referee {
             hit.put("attacker_sprint",R.call(attacker,"isSprinting"));hit.put("attacker_state",position(attacker));hit.put("target_state",position(target));
             hit.put("health_after",R.call(target,"getHealth"));hit.put("blocking",R.call(target,"isBlocking"));
             hit.put("rod",rod);hit.put("damage_upgrade",immuneBefore);
+            hit.put("hit_index",m.ha+m.hb);hit.put("server_tick",ticks);
             append(m.replay,hit);
             if(m.boxing()){if(m.ha>=m.goal)m.winner=m.a;else if(m.hb>=m.goal)m.winner=m.b;}
             else if(((Number)R.call(target,"getHealth")).floatValue()<=0){m.winner=who;m.finishReason="death";}
@@ -237,11 +241,13 @@ public final class Referee {
         String[] args=text.trim().split("\\s+");if(args.length==0)return false;
         String cmd=args[0].toLowerCase(Locale.ROOT);
         if(cmd.equals("stop")&&!R.cls("net.minecraft.entity.player.EntityPlayerMP").isInstance(sender))return false;
-        boolean ours=List.of("bots","duel","mode","blocksound","blocktiming","ping","matches","watch","stop","rematch","lab").contains(cmd)||(cmd.equals("help")&&args.length>1&&args[1].equals("lab"));
+        boolean ours=List.of("bots","duel","mode","blocksound","blocktiming","ping","matches","watch","replay","stop","rematch","lab").contains(cmd)||(cmd.equals("help")&&args.length>1&&args[1].equals("lab"));
         if(!ours)return false;
         try{
             if(server==null){message(sender,"Lab is still starting.");return true;}
-            if(cmd.equals("mode")){
+            if(cmd.equals("replay")){
+                ServerReplay.command(sender,args);
+            }else if(cmd.equals("mode")){
                 String name=safeName(sender);
                 if(args.length==2){
                     if(find(name)!=null)throw new IllegalArgumentException("Use /stop before changing duel mode.");
@@ -282,6 +288,7 @@ public final class Referee {
                 Match m=args.length>1?matches.get(args[1]):matches.values().stream().findFirst().orElse(null);
                 if(m==null){message(sender,"No such active match. Use /matches.");return true;}
                 if(find(R.name(sender))!=null){message(sender,"Use /stop before spectating.");return true;}
+                ServerReplay.close(safeName(sender),false);
                 vanilla("gamemode 3 "+safeName(sender));
                 Object a=player(m.a),b=player(m.b);
                 teleport(sender,(R.num(a,"posX")+R.num(b,"posX"))/2,10,(R.num(a,"posZ")+R.num(b,"posZ"))/2+5);
@@ -300,7 +307,8 @@ public final class Referee {
                 DuelSettings setup=DuelSettings.parse(args,rematch?1:2,selectedMode,rematch?prior[0]:0,preferredPing(name),
                     rematch?lastOverrides.getOrDefault(name,new Properties()):new Properties());
                 String bot=freeBot(Set.of());if(bot==null){message(sender,"All bot slots are busy. Try again shortly.");return true;}
-                loadPolicies();start(name,bot,"human",policy,setup.humanPing,setup.botPing,"human-"+System.nanoTime(),0,setup.mode,setup.overrides);
+                loadPolicies();ServerReplay.close(name,false);watching.remove(name);
+                start(name,bot,"human",policy,setup.humanPing,setup.botPing,"human-"+System.nanoTime(),0,setup.mode,setup.overrides);
                 rememberPing(name,setup.humanPing);lastDuels.put(name,policy);lastPings.put(name,new double[]{setup.botPing,setup.humanPing});
                 lastModes.put(name,setup.mode);lastOverrides.put(name,setup.overrides);
             }else if(cmd.equals("ping")){
@@ -319,6 +327,8 @@ public final class Referee {
                 lastPings.put(safeName(sender),new double[]{m.pingB,m.pingA});
                 message(sender,"Added simulated RTT: you "+m.pingA+" ms; bot "+m.pingB+" ms. Each direction is delayed by half. Your real ping is additional.");
             }else if(cmd.equals("stop")){
+                if(ServerReplay.close(safeName(sender),true))return true;
+                watching.remove(safeName(sender));R.call(sender,"setSpectatingEntity",sender);
                 Match m=find(R.name(sender));if(m!=null)finish(m,"stopped");else{vanilla("gamemode 0 "+safeName(sender));teleport(sender,0,4,0);}
             }else if(cmd.equals("lab")&&args.length>=4&&MODES.contains(args[1])&&!args[1].equals("boxing")){
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
@@ -339,7 +349,7 @@ public final class Referee {
             }else if(cmd.equals("lab")&&args.length>=3&&args[1].equals("goal")){
                 message(sender,"Ladder matches always run to 100 accepted hits.");
             }else{
-                message(sender,"/bots; /mode boxing|diamond|diamond_box|rod_diamond; "+DuelSettings.USAGE+"; /blocksound on|off|test; /ping me <RTT>; /ping bot <RTT>; /rematch [options]; /stop; /matches; /watch [match]. Reach 1–5 blocks; CPS 1–30; added RTT 0–500 ms. Your ping is saved.");
+                message(sender,"/bots; /mode boxing|diamond|diamond_box|rod_diamond; "+DuelSettings.USAGE+"; /blocksound on|off|test; /ping me <RTT>; /ping bot <RTT>; /rematch [options]; /stop; /matches; /watch [match]; /replay [match]; /replay list. Reach 1–5 blocks; CPS 1–30; added RTT 0–500 ms. Your ping is saved.");
             }
         }catch(Throwable e){e.printStackTrace();message(sender,"§cLab: "+e.getMessage());}
         return true;
@@ -556,6 +566,9 @@ public final class Referee {
     }
     static void finish(Match m,String reason){
         m.finish=System.currentTimeMillis();Map<String,Object> result=m.state();result.put("reason",reason);
+        Object finalA=player(m.a),finalB=player(m.b);
+        if(finalA!=null&&finalB!=null)append(m.replay,Map.of("type","tick","time",m.finish,"a",replayPosition(finalA),"b",replayPosition(finalB),
+            "hits_a",m.ha,"hits_b",m.hb,"health_a",R.call(finalA,"getHealth"),"health_b",R.call(finalB,"getHealth")));
         for(String side:List.of("a","b")){Object p=player(side.equals("a")?m.a:m.b);result.put("health_"+side,p==null?null:R.call(p,"getHealth"));}
         result.put("initial_ping_a",m.initialPingA);result.put("initial_ping_b",m.initialPingB);result.put("ping_changes",m.pingChanges);
         result.put("parameters_a",m.configA);result.put("parameters_b",m.configB);
@@ -575,7 +588,8 @@ public final class Referee {
             message(p,"§8Crits are included in hits. Rod contacts are separate. Health/damage in hearts.");
             message(p,"§8Per-hit damage uses actual HP lost to melee, including crits/blocks; excludes rods and other damage.");
             message(p,"§8Hits count HP loss; rod contacts are separate. Saved/extra damage keeps the same armor and Protection roll.");
-            message(p,((Boolean)R.call(p,"isEntityAlive")?"":"§eRespawn first. ")+"§b/rematch §8| §b/bots");
+            message(p,((Boolean)R.call(p,"isEntityAlive")?"":"§eRespawn first. ")+"§b/rematch §8| §b/bots §8| §b/replay "+m.id);
+            if(!isBot(who))button(p,"Watch server replay "+m.id,"/replay "+m.id);
         }}
         for(String who:List.of(m.a,m.b)){
             disable(who);Object p=player(who);if(p==null)continue;
@@ -606,6 +620,16 @@ public final class Referee {
     static Object player(String name){for(Object p:players())if(R.name(p).equals(name))return p;return null;}
     static String freeBot(Set<String> excluded){for(Object p:players()){String n=R.name(p);if(isBot(n)&&find(n)==null&&!excluded.contains(n)&&(Boolean)R.call(p,"isEntityAlive"))return n;}return null;}
     static Map<String,Object> position(Object p){Map<String,Object> pos=new LinkedHashMap<>();for(String key:List.of("posX","posY","posZ","motionX","motionY","motionZ","hurtResistantTime"))pos.put(key,R.num(p,key));pos.put("sprint",R.call(p,"isSprinting"));return pos;}
+    static Map<String,Object> replayPosition(Object p){
+        Map<String,Object> pos=position(p);
+        for(String key:List.of("rotationYaw","rotationPitch","rotationYawHead","swingProgressInt"))pos.put(key,R.num(p,key));
+        pos.put("onGround",R.get(p,"onGround"));pos.put("isSwingInProgress",R.get(p,"isSwingInProgress"));
+        pos.put("blocking",R.call(p,"isBlocking"));pos.put("sneaking",R.call(p,"isSneaking"));
+        Object held=R.call(p,"getHeldItem");pos.put("held_item_id",held==null?0:R.call(R.cls("net.minecraft.item.Item"),"getIdFromItem",R.call(held,"getItem")));
+        Object hook=R.get(p,"fishEntity");
+        if(hook!=null)pos.put("fish_hook",Map.of("id",R.call(hook,"getEntityId"),"x",R.num(hook,"posX"),"y",R.num(hook,"posY"),"z",R.num(hook,"posZ")));
+        return pos;
+    }
     static double ping(String s){return DuelSettings.ping(s);}
     static String safeName(Object sender){String n=R.name(sender);if(!n.matches("[A-Za-z0-9_]{1,16}"))throw new IllegalArgumentException("Invalid player name");return n;}
     static void teleport(Object p,double x,double y,double z){R.call(p,"setPositionAndUpdate",x,y,z);settleTeleport(p);}

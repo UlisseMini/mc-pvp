@@ -37,6 +37,10 @@ class JavaModelTest(unittest.TestCase):
              str(lab.ROOT / 'tests/NativeClockReplay.java'),
              str(lab.ROOT / 'tests/NativeClockReplayCheck.java'),
              str(lab.ROOT / 'tests/TargetWatchdogCheck.java'),
+             str(lab.ROOT / 'src/lab/RodTricks.java'),
+             str(lab.ROOT / 'tests/RodTricksCheck.java'),
+             str(lab.ROOT / 'src/lab/ReplayTimeline.java'),
+             str(lab.ROOT / 'tests/ReplayTimelineCheck.java'),
              str(lab.ROOT / 'tests/JavaModelCheck.java')],
             cwd=lab.ROOT, capture_output=True, text=True, timeout=30,
         )
@@ -53,6 +57,18 @@ class JavaModelTest(unittest.TestCase):
 
     def test_model_contracts(self):
         self.run_checks('model')
+
+    def test_rod_trick_sequence(self):
+        result=subprocess.run([str(lab.JAVA),'-cp',str(self.classes),'lab.RodTricksCheck'],
+                              capture_output=True,text=True,timeout=10)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('PASS',result.stdout)
+
+    def test_replay_timeline(self):
+        result=subprocess.run([str(lab.JAVA),'-cp',str(self.classes),'lab.ReplayTimelineCheck'],
+                              capture_output=True,text=True,timeout=10)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('PASS',result.stdout)
 
     def test_exact_travel(self):
         result = subprocess.run([str(lab.JAVA), '-cp', str(self.classes), 'ExactTravelCheck'],

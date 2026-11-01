@@ -9,6 +9,7 @@ public final class CombatStats {
     final DamageBreakdown breakdown=new DamageBreakdown();
     final BlockAccuracy blockAccuracy=new BlockAccuracy();
     final BlockTiming blockTiming=new BlockTiming();
+    final RodTricks rodTricks=new RodTricks();
     Map<String,Object> state(int meleeHitsTaken){
         return state(meleeHitsTaken,System.currentTimeMillis(),0);
     }
@@ -18,6 +19,8 @@ public final class CombatStats {
         state.put("melee_hits_taken",meleeHitsTaken);state.put("damage_taken_per_hit",damageTakenPerHit(meleeHitsTaken));
         state.put("block_percent",blockPercent(meleeHitsTaken));
         state.put("damage_blocked_percent",damageBlockedPercent());
+        state.put("rod_tricks",rodTricks.completed);
+        state.put("rod_trick_followup_ticks",RodTricks.FOLLOWUP_TICKS);
         long blockedMs=blockAccuracy.totalMillis(now);
         state.put("blocking_time_ms",blockedMs);state.put("blocking_uptime_percent",duration>0?100.0*blockedMs/duration:null);
         state.put("blocking_saved_per_second",blockedMs>0?breakdown.blockingSaved.damage*1000/blockedMs:null);
@@ -83,7 +86,12 @@ public final class CombatStats {
             DamageBreakdown.healthLost(target,source,lost);
             String victim=R.name(target);Object attacker=R.call(source,"getEntity");String who=attacker==null?"":R.name(attacker);
             m.stats(victim).damageTaken+=lost;
-            if(!who.equals(victim)&&m.stats(who)!=null)m.stats(who).damageDealt+=lost;else m.stats(victim).otherDamage+=lost;
+            if(!who.equals(victim)&&m.stats(who)!=null)m.stats(who).damageDealt+=lost;
+            else {
+                m.stats(victim).otherDamage+=lost;
+                // Environmental damage interrupts the opponent's pending rod sequence.
+                m.stats(victim.equals(m.a)?m.b:m.a).rodTricks.clear();
+            }
             Referee.append(m.replay,Map.of("type","health_damage","time",System.currentTimeMillis(),"attacker",who,"target",victim,
                 "amount",lost,"health_before",before,"health_after",R.call(target,"getHealth"),"source",R.call(source,"getDamageType")));
         }catch(Throwable e){if(Referee.errors++<10)e.printStackTrace();}
@@ -102,6 +110,7 @@ public final class CombatStats {
     void summary(Object recipient,String name,int hits,int blocks,boolean rods,Number health,int meleeHitsTaken,long now,long duration){
         String hp=health==null?"§7HP: unavailable":String.format(Locale.ROOT,"§cHP: %.2f/10",health.doubleValue()/2);
         Referee.message(recipient,name+" §8| "+hp+" §8| §eHits: "+breakdown.damageHitsLanded+(rods?" §8| §7Rod contacts: "+rodHits:""));
+        if(rods)Referee.message(recipient,"  §6Rod tricks: §f"+rodTricks.completed);
         Referee.message(recipient,String.format(Locale.ROOT,"  §dCrits: %d §8| §bBlocks: %d §8| §aRegen: +%.2f",crits,blocks,regenerated/2));
         Referee.message(recipient,blockPercentText(meleeHitsTaken));
         long blockedMs=blockAccuracy.totalMillis(now);

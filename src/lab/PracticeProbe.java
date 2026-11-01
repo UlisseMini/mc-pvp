@@ -64,7 +64,7 @@ public final class PracticeProbe {
         e.put("selected_slot",R.get(R.get(player,"inventory"),"currentItem"));
         Object hook=R.get(player,"fishEntity");e.put("has_fish_hook",hook!=null);
         if(hook!=null)e.put("fish_hook_position",List.of(R.num(hook,"posX"),R.num(hook,"posY"),R.num(hook,"posZ")));
-        Referee.append(Client.DIR.resolve("practice.jsonl"),e);return true;
+        Referee.append(Client.DIR.resolve("practice.jsonl"),e);ReplayProbe.sample(minecraft,elapsed);return true;
     }
     public static void sound(Object handler,Object packet){
         if(!enabled())return;
