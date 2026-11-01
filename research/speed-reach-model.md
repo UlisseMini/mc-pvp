@@ -187,3 +187,52 @@ Scores are accepted native hits, including damage upgrades; these short runs are
 The most portable conclusion is the formula with **separate view ages**, not a universal numeric coefficient. Use 0.15 as a local steady-motion planning estimate. For a sharp W-tap, reversal or knockback, use recent displacement/history; for different heights use the actual ray/box geometry; for the first accepted hit include click phase and outbound processing. No data in this study establishes one coefficient for every server fork/client combination.
 
 Replays: [walk toward standstill, no attacks](../recordings/m0810.html), [W-tap vs standstill, 20–0](../recordings/m0885.html), [W-tap vs walking W-tap, 24–15](../recordings/m0888.html). These are native-data visualizations, not rendered Minecraft video.
+
+## Retrospective first-hitter audit
+
+The original report measured reach-difference error, **not first-hitter accuracy**.
+After the user asked for that distinction, a separate audit applied the frozen
+models to all 36 attacking openings (30 dedicated first-hit tests plus six longer
+fights). The other 52 trials did not attack. All 36 attacking openings used zero
+added ping. Neither model was refitted; its original 12 fitting matches were
+non-attacking and are disjoint from these 36 matches.
+
+The newly chosen scoring rule is to take the sign of predicted reach advantage
+at the first available local-separation sample at or below five blocks. Stored
+samples begin at +150 ms. This uses both players' recent **local movement** from
+the logs, not their rendered opponent positions or future attacks. Every call
+was 289–545 ms before the first accepted hit. An edge within 1e-9 blocks is no
+prediction, rather than a forced tie-break. The server's accepted-hit event order
+defines the actual first hitter, including contacts recorded in the same
+millisecond. This is an offline retrospective audit of a reach-edge proxy, not a
+new prospective test, a prediction from nominal speeds alone, or a model of
+exact click/attack timing.
+
+| Opening matchup (dedicated and longer trials combined) | Trials | Refined model correct | Wrong | No predicted edge |
+|---|---:|---:|---:|---:|
+| Walking vs stationary | 6 | 6 | 0 | 0 |
+| Sprinting W-tap vs stationary | 8 | 8 | 0 | 0 |
+| Sprinting W-tap vs walking W-tap | 8 | 7 | 0 | 1 |
+| Walking vs walking | 6 | 3 | 3 | 0 |
+| Sprinting vs sprinting | 6 | 2 | 0 | 4 |
+| W-tap vs hold-W | 2 | 0 | 0 | 2 |
+| **Total** | **36** | **26** | **3** | **7** |
+
+At this same checkpoint the original instantaneous-speed model got 21 correct,
+eight wrong and seven no-edge calls. The refined history model got 26/36 correct
+(72.2% of all trials), or 26/29 (89.7%) among the trials where it named a side;
+coverage was 29/36 (80.6%). Reporting only the latter accuracy would hide its
+seven unresolved openings.
+
+The dedicated first-hit subset was 22 correct, three wrong and five no-edge out
+of 30. The six longer-fight openings contributed four correct and two no-edge.
+Stationary opponents were 14/14 correct. With both players moving, the result
+was 12/22 correct, three wrong and seven no-edge, so the overall accuracy should
+not be interpreted as robust prediction in the harder moving-opponent cases.
+These are first-hitter identities, not millisecond timing-error measurements.
+There is no first-hit accuracy result for the non-attacking added-ping trials.
+
+Run `python3 reach_first_hit_audit.py` to reproduce the audit. The
+[per-match predictions, outcomes and counts](speed-reach-first-hit-audit.json)
+retain the frozen fit, input hashes, checkpoint distances and prediction lead
+times. No fresh Minecraft matches or changes to the running server were needed.
