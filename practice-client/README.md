@@ -30,7 +30,8 @@ Client commands work without server permissions:
 | `/practice ping` | Record a clock/round-trip probe |
 | `/practice opening on` / `off` | Show/hide geometric opening lead (on by default) |
 | `/practice opening large` / `small` | Prominent centered opening HUD, or compact text |
-| `/practice reach on` / `off` | Overlay your reach in cyan and the bot's client reach in amber |
+| `/practice advantage on` / `off` | Both client-view distances and your reach advantage, live and in replay (on by default) |
+| `/practice reach on` / `off` | Smooth translucent reach fields: cyan for your client, amber for the bot |
 | `/practice ghost bot on` / `off` | Faint amber silhouette at the bot's own client-rendered position |
 | `/practice ghost me on` / `off` | Faint pink silhouette where the bot's client renders you |
 | `/practice debug on` / `off` | Show direct-stream delivery age, draw age, clock RTT and recent latency statistics |
@@ -54,12 +55,74 @@ the last eight approaches and rearms after both views remain outside for 200 ms.
 A one-sided opening shows a growing lower bound. Missing samples invalidate a
 crossing rather than producing a precise-looking answer.
 
-Reach circles are three perpendicular cross sections of a 3D reach sphere, with
-the observed target hitbox and shortest-distance line. They use logical entity
-positions; ghost silhouettes use the source client's interpolated render position.
-Ghosts are simple translucent player-shaped guides, not copied skins/animations.
-Both ghosts are independent of the reach and opening toggles. Unavailable or stale
-bot data hides its overlays; there is **no delay label on the normal HUD**.
+**Reach advantage = d1 − d2**, where d1 is the distance from the opponent's eyes to
+its local representation of you, and d2 is the distance from your eyes to your
+local representation of the opponent. Positive favors you. Both are the shortest
+3D eye-to-expanded-hitbox distance using each client's logical hit-test state,
+including the native collision border. The ideal-aim boundary is 3.0 blocks;
+aim, obstructions, click timing and immunity still decide whether an attack works.
+With equal height and matching settled views the difference is zero. Vanilla's
+position quantization can leave a small residual even when both stop moving;
+height/pose differences can also make the two distances asymmetric. We display
+the measurements, rather than subtracting an arbitrary stationary baseline.
+The replay readout stays oriented to the recorded human (or A for bot-vs-bot),
+regardless of which viewpoint the camera follows. This is a geometric distance
+advantage; modified reach caps are a separate setup parameter.
+
+Reach fields are filled translucent spheres with a soft inner boundary and no
+rings, spokes, target boxes or diagnostic lines. They follow frame-interpolated
+render positions. These fields and ghosts are visual references; their cross-view
+intersection is **not** a valid hit test. Numeric distances use logical positions
+and are never smoothed across tick transitions. Ghosts are simple translucent
+player-shaped guides, not copied skins. Both ghosts are independent of the reach,
+advantage and opening toggles. Unavailable or stale bot data hides its overlays;
+there is no delay label on the normal HUD.
+
+## Multi-view replay and shared archives
+
+`/replay` opens your latest completed match. Select hotbar items with 1–9 or the
+scroll wheel, then click. Slots are play/pause, rewind, forward, speed, viewpoint,
+camera, ghosts, combos and exit. Left/right seek 1/5 seconds; speed clicks decrease/
+increase the multiplier; combo clicks select previous/next. Right-click the ghost
+item or use `/replay menu` for the native settings screen. Exit is right-click only.
+
+The menu switches server/A-client/B-client POVs and independently toggles both
+actors as seen by each client (four ghosts), plus two optional server ghosts.
+`/replay pov human`, `/replay pov bot`, `/replay pov server` work from chat, as do
+`/replay ghost human-self on`, `human-opponent`, `bot-self`, `bot-opponent`,
+`/replay ghost human on` (both), and `/replay ghost off`.
+The selected POV chooses the recorded positions; camera follow/free is separate.
+Reach fields and the numeric advantage use the same observation and drawing
+functions as live play. Clients with no recorded data are explicitly unavailable;
+older 5 Hz recordings are labeled. Playback interpolates visual poses between
+samples, and sample-and-holds logical hit-test positions. It is a state replay,
+not pixel-identical video or a simulation rerun. World/lighting, skin, particles,
+first-person hands and all animation details are not reconstructed exactly.
+
+The installer sets a trusted local `archive.directory` to the lab's `runtime/pov`.
+Every new duel gets `runtime/pov/<match>/manifest.json`, per-client compressed
+`*-poses.jsonl.gz` indexes (up to 60 Hz, actual times preserved), and separate full
+`*-events.jsonl.gz` streams. The human stream includes raw PLAY packet bytes,
+application/input/tick/render observations; bot streams include raw PLAY bytes,
+poses and available decision/physics probes. The server stores raw PLAY packets
+per participant plus its existing authoritative tick/combat replay. Initial pose
+and equipment snapshots and ordinary equipment packets supplement the recording.
+No login/authentication packets are captured. Files are local and available to
+both server and client; no server-supplied paths or executable downloads are used.
+`/practice capture off` stops the human archives too. Bot/server capture remains
+owned by the lab. Each writer has bounded queues, disk-space and size limits;
+footers expose drops/caps/completion, and the inspector exposes packet omissions.
+Missing source/segment/footer is not a complete recording.
+
+```sh
+python3 pov_archive.py m1033 --full
+python3 pov_archive.py m1033 --export a > /tmp/human-poses.jsonl
+python3 pov_archive.py m1033 --export b --events > /tmp/bot-events.jsonl
+```
+
+The bridge's `replay_frame` event exposes all available views, clock, labels,
+ghost selection and computed reach advantage on every render. This keeps future
+analysis displays independent of whether observations come from live or replay.
 
 Settings are in `config/pvp-practice/settings.properties` inside the Minecraft
 game directory. Changes reload about once per second while Minecraft is running;
@@ -190,10 +253,12 @@ After changing the code in `module/`, rebuild just the reloadable module:
 python3 practice-client/build.py --module-only --install
 ```
 
-Minecraft picks it up automatically. The API accepts immutable snapshots and
+Minecraft picks up module-only updates automatically. Full bridge installations stage a
+`practice-module-next.jar`, activated at the next client start, so an older running
+bridge never loads a module that requires the new API. The API accepts immutable snapshots and
 events and returns HUD text, rectangles/history bars, an optional edge flash,
 and whether to hold ordinary Sprint input. Modules can maintain state, calculate
-feedback, draw per frame (including bounded world-space lines/translucent boxes), add `/practice` subcommands, play local sounds and send
+feedback, draw per frame (including bounded world-space lines, translucent boxes and filled spheres), add `/practice` subcommands, play local sounds and send
 markers/clock probes. They also receive chat/action-bar and linked server events.
 Modules do not register their own Forge listeners.
 
@@ -238,7 +303,9 @@ live reload and native observer hooks. It starts a short boxing duel against
 wtap with 80 ms bot RTT, checks that server/human/bot views arrive together,
 checks the direct stream and both world overlays, then cycles all three entry
 distances and verifies that `/stop` prevents another round. It logs measured
-delivery/draw timing. Test files go under
+delivery/draw timing. It then replays that match, switches all POVs, draws all four
+ghosts and both fields, and tests native hotbar pause/seek/menu/exit and survival
+restoration. Test files go under
 `runtime/practice-forge-smoke`; a macOS process sandbox restricts filesystem
 access and networking to localhost. The smoke test's own Forge probe and
 HeadlessMC agent are **not installed** in the user's client.
@@ -252,3 +319,10 @@ classloader enables replacement and releases the old module on successful
 reload; malformed replacement code is never made active if loading/configuration
 fails. Running code errors release the mod's sprint input and disable the module
 until a successful reload.
+
+The multi-view integration run passed 43 native checks with OptiFine, including
+1,280 paused-frame actor/pose comparisons with zero positional error and complete
+three-source archives with zero writer drops. See
+[the verification report](../experiments/replay-views-20261031/verification.json).
+This checks native render callbacks and coordinates in HeadlessMC, not a pixel
+screenshot or exact reconstruction of first-person hands/particles.

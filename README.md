@@ -73,6 +73,10 @@ enabling RCON or opening another network port.
 | `/replay` | Watch your latest completed match using the server recording |
 | `/replay m0930` | Watch a specific recorded match |
 | `/replay list` | Click to watch one of your ten latest matches (`list all` includes bot matches) |
+| `/replay menu` | Open native replay settings (with the practice mod); hotbar items handle playback without chat |
+| `/replay pov human` / `bot` / `server` | Switch the actual recorded viewpoint; `a`/`b` also accepted |
+| `/replay ghost human-self on` | Toggle any individual client ghost: human-self, human-opponent, bot-self, bot-opponent; `ghost off` clears them |
+| `/practice advantage on` | Show both client-view reach distances and `d1 − d2` advantage, live and during replay |
 | `/replay controls` | Show the clickable rewind/forward, pause/play, speed and camera controls again |
 | `/replay combos` | Show clickable timestamps for every 3+ hit combo (20 per page; use `combos 2` for page 2) |
 | `/replay pause` / `/replay play` | Pause/resume; play restarts after the recording ends |
@@ -97,12 +101,17 @@ actors are private packet-only copies in a separate viewing area: they consume
 no bot slots, run no combat, and cannot affect another match. Starting a duel or
 watching a live match removes your replay; `/stop` exits it. Completed recordings
 remain available across server restarts. Pause, seek, speed and follow controls
-operate independently for each viewer. Open chat (T) to click the controls shown
+operate independently for each viewer. Replay equips nine hotbar tools for playback,
+seeking, speed, POV, camera, ghosts, combos and exit. Scroll/1–9 selects; left/right
+click uses the item. Right-click the ghost item for a native settings menu. You
+can also open chat (T) to click the controls shown
 when a replay starts. **Custom...** fills in the speed command for you to type a
 number; **Go to...** fills in the seek command. Rewind/forward preserve your
 camera and pause state and stop at the recording's boundaries. You can pause
 and jump in small increments to inspect a hit. Playback changes the timing of
-recorded positions/events; normal client animations still run at client speed.
+recorded positions/events. The updated Forge bridge interpolates saved poses
+per frame and drives recorded swing/limb/hurt values when available; it does not
+reconstruct every particle, skin or first-person animation.
 
 Starting a replay also lists its **combos** in chat, for example
 `Nomophobia comboed wtap: 4 hits`. Click a row to start watching 0.75 seconds
@@ -115,11 +124,15 @@ no extra time-gap cutoff. `/replay combos` reopens the list, with clickable
 previous/next pages for long matches. Links identify their match so an old chat
 entry cannot accidentally jump to a different replay's timestamp.
 
-This is a playback of **recorded server positions and accepted combat events**,
-not a rerun of bot decisions or either player's original screen. Your live client
+This is playback of **recorded server/client states and accepted combat events**,
+not a rerun of bot decisions or pixel-exact video. New matches archive each
+client's timed poses and full packet/event stream under `runtime/pov/<match>/`;
+see [the client replay/archive documentation](practice-client/README.md#multi-view-replay-and-shared-archives).
+Older client views are available only if they were recorded. Your live client
 predicts your movement and sees delayed/interpolated opponent movement; those
-views differ from the server's. The spectator client also performs its ordinary
-packet quantization/interpolation during playback. New recordings include server
+views differ from the server's. Without the practice bridge the spectator uses
+ordinary packet quantization/interpolation; with it, private actors follow the
+saved visual poses per render frame. New recordings include server
 look direction, held item, blocking/sneaking, swing state, rod flight and final
 health. Older recordings still play, but look direction/equipment are approximated
 and missing rod flight/block poses cannot be recovered; the viewer labels this.

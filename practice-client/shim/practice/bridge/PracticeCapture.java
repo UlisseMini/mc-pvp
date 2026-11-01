@@ -40,13 +40,19 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     private volatile Map<String,Object> lastState=Collections.emptyMap();
     private final Gson gson=new Gson();
     private final PracticeViews views=new PracticeViews();
+    final ReplayPresentation replay=new ReplayPresentation();
     private long lastViewRecord;
     private Map<String,Object> lastViews=Collections.emptyMap();
+    private Map<String,Object> lastReplayFrame=Collections.emptyMap();
+    Map<String,Object> replayFrame(){return lastReplayFrame;}
+    private final MatchArchive archive=new MatchArchive();
+    private long lastPose;
     private static final class Raw {Channel channel;byte[] bytes;long ms,ns;Raw(Channel c,byte[] b){channel=c;bytes=b;ms=System.currentTimeMillis();ns=System.nanoTime();}}
     PracticeCapture(ReloadHost host,Path directory){this.host=host;this.directory=directory;}
     void settings(Properties p){
         boolean next=Boolean.parseBoolean(p.getProperty("capture.enabled","true"));
         frames=Boolean.parseBoolean(p.getProperty("capture.frames","true"));coordination=Boolean.parseBoolean(p.getProperty("link.enabled","true"));
+        String archivePath=p.getProperty("archive.directory","").trim();archive.root(!next||archivePath.isEmpty()?null:Paths.get(archivePath));replay.root(archivePath.isEmpty()?null:Paths.get(archivePath));
         if(recording&&!next&&log!=null){emit("capture_stopped",map("reason","user"),false);finishLog();}recording=next;
     }
     private static boolean loopback(Channel c){return c.remoteAddress() instanceof InetSocketAddress && ((InetSocketAddress)c.remoteAddress()).getAddress().isLoopbackAddress();}
@@ -64,7 +70,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         if(active!=c){finishLog();active=c;session=System.currentTimeMillis()+"-"+UUID.randomUUID().toString();match="";lastServer=0;lastState=Collections.emptyMap();lastHello=0;lastTelemetry=0;started=false;}
         if(recording&&log==null){
             log=new CaptureLog(directory.resolve("captures").resolve(session+"-"+System.nanoTime()+".jsonl.gz"),256L*1024*1024,128);
-            emit("capture_start",map("schema",2,"minecraft","1.8.9","protocol",47,"bridge","0.3.0","module_status",host.status(),"clock","unix_ms_shared_host; monotonic_ns_process_local",
+            emit("capture_start",map("schema",2,"minecraft","1.8.9","protocol",47,"bridge","0.4.0","module_status",host.status(),"clock","unix_ms_shared_host; monotonic_ns_process_local",
                 "packet_bytes","uncompressed PLAY packet id + body, base64","login_recorded",false,
                 "started_mid_connection",started,"render_sampling_hz",60,"segment_limit_bytes",256L*1024*1024,"max_segments",128),false);
         }
@@ -109,7 +115,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     }
     void inputEvent(String kind,Map<String,Object> fields){if(active!=null)emit(kind,fields,true);}
     void tick(long tick,boolean after){
-        this.tick=tick;if(active==null){views.close();lastViews=Collections.emptyMap();return;}
+        this.tick=tick;if(active==null){views.close();archive.end();replay.clear();lastViews=Collections.emptyMap();return;}
         Minecraft mc=Minecraft.func_71410_x();if(mc.field_71439_g==null)return;
         emit(after?"tick_end":"tick_start",GameObservations.state(mc,true),true);
         if(!after){
@@ -122,6 +128,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
             if(coordination&&lastServer>0&&now-lastTelemetry>=200){lastTelemetry=now;sendRaw(map("type","telemetry","version",1,"session",session,"match",match,"client_ms",now,"client_tick",tick,"view",GameObservations.telemetry(mc,lastState.get("players"))));}
         }
     }
+    void replayRender(){Map<String,Object> data=replay.render(Minecraft.func_71410_x());lastReplayFrame=data;host.event(new PracticeEvent("replay_frame",sequence.incrementAndGet(),System.currentTimeMillis(),System.nanoTime(),data));}
     void render(float partial){
         if(active==null||!frames)return;long now=System.nanoTime();if(now-lastFrame<16666666)return;lastFrame=now;
         Map<String,Object> view=GameObservations.state(Minecraft.func_71410_x(),true);view.put("partial_ticks",partial);emit("render_view",view,true);
@@ -131,6 +138,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     void viewFrame(float partial){
         Map<String,Object> data=views.update(Minecraft.func_71410_x(),active!=null&&coordination?lastState:Collections.emptyMap(),partial);
         lastViews=data;
+        if(active!=null&&!archive.match().isEmpty()&&System.nanoTime()-lastPose>=16666666){lastPose=System.nanoTime();Map<String,Object> v=GameObservations.replayView(Minecraft.func_71410_x(),lastState.get("players"),partial);archive.pose(System.currentTimeMillis(),lastPose,v);}
         long seq=sequence.incrementAndGet(),ms=System.currentTimeMillis(),ns=System.nanoTime();
         // Deliver directly on the render thread, not through the next 20Hz tick.
         host.event(new PracticeEvent("practice_views",seq,ms,ns,data));
@@ -142,12 +150,13 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         if(deliver)enqueue(new PracticeEvent(type,seq,ms,ns,data));
     }
     private void record(String type,long seq,long ms,long ns,Map<String,Object> data){
-        CaptureLog l=log;if(l!=null)l.offer(JsonData.encode(map("type",type,"sequence",seq,"time_ms",ms,"monotonic_ns",ns,"client_tick",tick,"session",session,"match",match,"thread",Thread.currentThread().getName(),"data",data)));
+        String line=JsonData.encode(map("type",type,"sequence",seq,"time_ms",ms,"monotonic_ns",ns,"client_tick",tick,"session",session,"match",match,"thread",Thread.currentThread().getName(),"data",data));
+        CaptureLog l=log;if(l!=null)l.offer(line);archive.event(line);
     }
     private void enqueue(PracticeEvent e){if(!events.offer(e))eventDrops.incrementAndGet();}
     public void marker(String label){if(label==null)return;String s=label.substring(0,Math.min(120,label.length()));emit("marker",map("label",s),true);send("marker",s);}
     public boolean send(String type,String value){
-        if(!type.equals("marker")&&!type.equals("ping"))return false;
+        if(!type.equals("marker")&&!type.equals("ping")&&!type.equals("replay_control"))return false;
         if(value==null||value.length()>120)return false;
         return sendRaw(map("type",type,"version",1,"session",session,"value",value,"client_ms",System.currentTimeMillis()));
     }
@@ -163,10 +172,17 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
             Map<String,Object> data=gson.fromJson(json,Map.class);
             if(data==null||!(data.get("version") instanceof Number)||((Number)data.get("version")).intValue()!=1)return;
             String type=String.valueOf(data.get("type"));
-            if(!Arrays.asList("welcome","state","pong","marker_ack").contains(type))return;
+            if(!Arrays.asList("welcome","state","pong","marker_ack","replay_view","replay_menu").contains(type))return;
+            if(type.equals("replay_view")){replay.receive(data);return;}
+            if(type.equals("replay_menu")){Minecraft.func_71410_x().func_147108_a(new ReplayMenu(this));return;}
             lastServer=System.currentTimeMillis();Object id=data.get("match");if(id instanceof String)match=(String)id;
             PracticeEvent event=new PracticeEvent("link_"+type,sequence.incrementAndGet(),lastServer,System.nanoTime(),data);
-            if(type.equals("state"))lastState=event.data;record(event.type,event.sequence,event.timeMillis,event.timeNanos,event.data);enqueue(event);
+            if(type.equals("state")){
+                lastState=event.data;Object players=data.get("players");Minecraft mc=Minecraft.func_71410_x();
+                if(!match.isEmpty()&&players instanceof List&&mc.field_71439_g!=null){int side=((List<?>)players).indexOf(mc.field_71439_g.func_70005_c_());
+                    if(side>=0&&side<2&&!match.equals(archive.match())){archive.begin(match,(side==0?"a":"b")+"-client",map("player",mc.field_71439_g.func_70005_c_(),"session",session,"role","human","pose_hz",60,"initial",GameObservations.state(mc,true),"full_session_capture",log==null?null:log.path.toString()));}
+                }else archive.end();
+            }record(event.type,event.sequence,event.timeMillis,event.timeNanos,event.data);enqueue(event);
         }catch(RuntimeException ignored){emit("link_rejected",map("reason","invalid_data"),true);}
     }
     static boolean boundedJson(String s){
@@ -179,6 +195,6 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         Minecraft mc=Minecraft.func_71410_x();if(mc.field_71439_g==null||id==null||!id.matches("[a-z0-9_.:]{1,80}")||!Float.isFinite(volume)||!Float.isFinite(pitch))return;
         mc.field_71439_g.func_85030_a(id,Math.min(1,Math.max(0,volume)),Math.min(2,Math.max(.5f,pitch)));
     }
-    synchronized void close(){views.close();finishLog();long deadline=System.currentTimeMillis()+2000;
+    synchronized void close(){views.close();archive.close();finishLog();long deadline=System.currentTimeMillis()+2000;
         for(CaptureLog l:finishing)try{l.awaitClosed(Math.max(1,deadline-System.currentTimeMillis()));}catch(InterruptedException e){Thread.currentThread().interrupt();break;}}
 }

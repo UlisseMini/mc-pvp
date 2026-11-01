@@ -59,7 +59,7 @@ def main():
         with zipfile.ZipFile(ROOT/'.cache/mcp-names.zip') as names:
             field_names='\n'.join(r['searge']+'='+r['name'] for r in csv.DictReader(io.StringIO(names.read('fields.csv').decode())))
         manifest='Manifest-Version: 1.0\nFMLCorePlugin: practice.bridge.PracticeLoadingPlugin\nFMLCorePluginContainsFMLMod: true\n\n'
-        jar(BUILD/'practice-bridge.jar',shim,[{'modid':'practicebridge','name':'PvP Practice Bridge','description':'Local, reloadable practice HUD and telemetry.','version':'0.3.0','mcversion':'1.8.9','authorList':['PvP Lab']}],{'META-INF/MANIFEST.MF':manifest,'practice/field-names.properties':field_names})
+        jar(BUILD/'practice-bridge.jar',shim,[{'modid':'practicebridge','name':'PvP Practice Bridge','description':'Local, reloadable practice HUD and telemetry.','version':'0.4.0','mcversion':'1.8.9','authorList':['PvP Lab']}],{'META-INF/MANIFEST.MF':manifest,'practice/field-names.properties':field_names})
     tests=BUILD/'tests';compile_to(tests,sorted((SRC/'tests').rglob('*.java')),os.pathsep.join(map(str,[api,core,module])))
     run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.Check',BUILD/'practice-module.jar'])
     if args.install:
@@ -69,9 +69,13 @@ def main():
                 backup.mkdir(parents=True,exist_ok=True);shutil.copy2(old,backup/old.name)
             install(BUILD/'practice-bridge.jar',args.game_dir/'mods/practice-bridge.jar')
             for old in (args.game_dir/'mods').glob('practice-bridge-*.jar'):old.unlink()
-        install(BUILD/'practice-module.jar',args.game_dir/'config/pvp-practice/practice-module.jar')
+        module_name='practice-module.jar' if args.module_only or not (args.game_dir/'config/pvp-practice/practice-module.jar').exists() else 'practice-module-next.jar'
+        install(BUILD/'practice-module.jar',args.game_dir/'config/pvp-practice'/module_name)
+        if module_name.endswith('-next.jar'):print('Module staged for next Minecraft start; the currently running module remains active.')
         cfg=args.game_dir/'config/pvp-practice/settings.properties'
         if not cfg.exists():install(SRC/'settings.properties',cfg)
+        if 'archive.directory=' not in cfg.read_text():
+            with cfg.open('a') as f:f.write('\narchive.directory='+str(ROOT/'runtime/pov')+'\n')
         print('Installed into',args.game_dir)
     print('Built and tested:',BUILD)
 

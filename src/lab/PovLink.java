@@ -42,13 +42,14 @@ public final class PovLink {
                 try{data=(Map<String,Object>)R.call(R.construct("com.google.gson.Gson"),"fromJson",incoming.json,Map.class);}catch(RuntimeException e){continue;}
                 if(data==null||!(data.get("version") instanceof Number version)||version.intValue()!=1)continue;
                 String type=String.valueOf(data.get("type"));
-                if(!Set.of("hello","telemetry","marker","ping").contains(type))continue;
+                if(!Set.of("hello","telemetry","marker","ping","replay_control").contains(type))continue;
                 peer.seen=now;
                 String session=String.valueOf(data.getOrDefault("session",""));if(session.length()>100)continue;
                 if(!session.equals(peer.session)){peer.view=Map.of();peer.clientMs=0;peer.received=0;}peer.session=session;
                 long sent=data.get("client_ms") instanceof Number n?n.longValue():0;
                 Referee.Match m=Referee.find(name);String match=m==null?"":m.id;
-                if(type.equals("hello")||type.equals("ping")){
+                if(type.equals("replay_control")){String action=String.valueOf(data.getOrDefault("value",""));if(action.length()<120&&action.matches("[a-zA-Z0-9_.:+ -]+")&&ServerReplay.sessions.containsKey(name))try{ServerReplay.command(player,("replay "+action).split(" +"));}catch(Exception e){Referee.message(player,"§c"+e.getMessage());}}
+                else if(type.equals("hello")||type.equals("ping")){
                     if(Referee.isBot(name)&&data.get("fast_view") instanceof Map fast)peer.fast=fast;
                     Map<String,Object> reply=new LinkedHashMap<>();reply.put("type",type.equals("hello")?"welcome":"pong");reply.put("version",1);
                     reply.put("match",match);reply.put("client_send_ms",sent);reply.put("server_receive_ms",incoming.received);reply.put("server_send_ms",System.currentTimeMillis());
@@ -98,7 +99,7 @@ public final class PovLink {
         Map<String,Object> out=ScienceTrace.state(player);out.put("id",R.call(player,"getEntityId"));out.put("name",R.name(player));
         out.put("health",R.call(player,"getHealth"));out.put("blocking",R.call(player,"isBlocking"));out.put("hurt_time",R.num(player,"hurtTime"));return out;
     }
-    private static void send(Object player,Map<String,Object> data){
+    static void send(Object player,Map<String,Object> data){
         byte[] bytes=Json.encode(data).getBytes(StandardCharsets.UTF_8);if(bytes.length>30000){dropped++;return;}
         Object buffer=R.construct("net.minecraft.network.PacketBuffer",R.call(R.cls("io.netty.buffer.Unpooled"),"wrappedBuffer",bytes));
         R.call(R.get(player,"playerNetServerHandler"),"sendPacket",R.construct("net.minecraft.network.play.server.S3FPacketCustomPayload",CHANNEL,buffer));

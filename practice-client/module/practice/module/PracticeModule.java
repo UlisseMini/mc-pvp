@@ -20,13 +20,14 @@ public final class PracticeModule implements PracticeExtension {
     private long linkReceived;
     private final PracticeOverlay overlays=new PracticeOverlay();
     private Frame base=Frame.empty();
-    public void event(PracticeEvent e){if(e.type.equals("link_state")){linked=e.data;linkReceived=e.timeMillis;}if(e.type.equals("practice_views"))overlays.views=e.data;}
-    public Frame render(float partial,int width,int height){return overlays.hud(base,width,height);}
-    public WorldFrame world(float partial){return overlays.world();}
+    private final ReplayOverlay replay=new ReplayOverlay();
+    public void event(PracticeEvent e){if(e.type.equals("replay_frame"))replay.state=e.data;if(e.type.equals("link_state")){linked=e.data;linkReceived=e.timeMillis;}if(e.type.equals("practice_views"))overlays.views=e.data;}
+    public Frame render(float partial,int width,int height){return replay.active()?replay.hud(base,width,height):overlays.hud(base,width,height);}
+    public WorldFrame world(float partial){return replay.active()?replay.world():overlays.world();}
 
     public void configure(Properties p,Path directory) {
         this.directory=directory;
-        overlays.configure(p);
+        overlays.configure(p);replay.configure(p);
         enabled=bool(p,"sprint.enabled",true);sprint=bool(p,"sprint.startEnabled",true);
         potions=bool(p,"potions.enabled",true);metrics=bool(p,"metrics.enabled",false);
         record=bool(p,"record.enabled",false);hurtFlash=bool(p,"feedback.hurtFlash",false);

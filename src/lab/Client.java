@@ -70,6 +70,7 @@ public final class Client {
         if(!nativeInputPoll)ReplicationTrace.frame();
         try {
             FastPov.frame();
+            BotArchive.frame();
             if(player==null || opponent==null || !targetReady || (Boolean)R.get(opponent,"isDead") || !active())return;
             // Perfect aim uses the current local, interpolated entity, never server state.
             double dx=R.num(opponent,"posX")-R.num(player,"posX"), dz=R.num(opponent,"posZ")-R.num(player,"posZ");
@@ -205,6 +206,7 @@ public final class Client {
             if(now-readAt>100){controls=R.properties(DIR.resolve("control.properties"));readAt=now;}
             player=R.get(mc,"thePlayer"); Object world=R.get(mc,"theWorld");
             FastPov.tick();
+            BotArchive.tick();
             if(player!=null&&world!=null)PovLink.clientTick();
             if(player==null || world==null){
                 if(!connecting && ticks>30){
@@ -654,7 +656,7 @@ public final class Client {
         }
     }
     static void log(Map<String,?> entry){
-        try{Files.createDirectories(DIR);Files.writeString(DIR.resolve("events.jsonl"),Json.encode(entry)+"\n",StandardOpenOption.CREATE,StandardOpenOption.APPEND);}
+        try{String encoded=Json.encode(entry);BotArchive.archive.event(encoded);Files.createDirectories(DIR);Files.writeString(DIR.resolve("events.jsonl"),encoded+"\n",StandardOpenOption.CREATE,StandardOpenOption.APPEND);}
         catch(IOException e){throw new RuntimeException(e);}
     }
     static void fail(Throwable e){

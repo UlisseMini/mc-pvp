@@ -32,12 +32,22 @@ public final class Agent implements ClassFileTransformer {
         }
         if (name == null || !(name.equals("ave") || name.equals("j") || name.equals("pr")
                 || name.equals("wn") || name.equals("bcy") || name.equals("bex") || name.equals("hm") || name.equals("bfk")
-                || name.equals("lh") || name.equals("lm") || name.equals("ek") || name.equals("net/minecraft/server/MinecraftServer"))) return null;
+                || name.equals("en") || name.equals("eo") || name.equals("lh") || name.equals("lm") || name.equals("ek") || name.equals("net/minecraft/server/MinecraftServer"))) return null;
         try {
             ClassNode node = new ClassNode();
             new ClassReader(bytes).accept(node, 0);
             boolean changed = false;
             for (MethodNode method : node.methods) {
+                if(name.equals("en")&&method.name.equals("decode")&&method.desc.equals("(Lio/netty/channel/ChannelHandlerContext;Lio/netty/buffer/ByteBuf;Ljava/util/List;)V")){
+                    method.instructions.insert(objects("lab/ArchiveWire","before",1,2));
+                    for(AbstractInsnNode i:method.instructions.toArray())if(i.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(i,objects("lab/ArchiveWire","after",3));changed=true;
+                }else if(name.equals("eo")&&method.desc.equals("(Lio/netty/channel/ChannelHandlerContext;Lff;Lio/netty/buffer/ByteBuf;)V")){
+                    for(AbstractInsnNode i:method.instructions.toArray())if(i.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(i,objects("lab/ArchiveWire","out",1,2,3));changed=true;
+                }
+                if(name.equals("lm")&&method.name.equals("a")&&java.util.Set.of("(Lja;)V","(Liy;)V","(Lir;)V","(Lin;)V","(Lik;)V").contains(method.desc)){
+                    InsnList gate=new InsnList();LabelNode normal=new LabelNode();gate.add(new VarInsnNode(Opcodes.ALOAD,0));gate.add(new VarInsnNode(Opcodes.ALOAD,1));
+                    gate.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/ReplayToolbar","intercept","(Ljava/lang/Object;Ljava/lang/Object;)Z",false));gate.add(new JumpInsnNode(Opcodes.IFEQ,normal));gate.add(new InsnNode(Opcodes.RETURN));gate.add(normal);method.instructions.insert(gate);changed=true;
+                }
                 if (name.equals("ave") && method.name.equals("s") && method.desc.equals("()V")) {
                     method.instructions.insert(callThis("lab/Client", "tick")); changed = true;
                 } else if (name.equals("ave") && method.name.equals("av") && method.desc.equals("()V")) {
@@ -282,6 +292,7 @@ public final class Agent implements ClassFileTransformer {
             return null;
         }
     }
+    private static InsnList objects(String owner,String name,int... locals){InsnList out=new InsnList();String desc="(";for(int n:locals){out.add(new VarInsnNode(Opcodes.ALOAD,n));desc+="Ljava/lang/Object;";}out.add(new MethodInsnNode(Opcodes.INVOKESTATIC,owner,name,desc+")V",false));return out;}
     private static InsnList callThis(String owner, String method) {
         InsnList list = new InsnList(); list.add(new VarInsnNode(Opcodes.ALOAD, 0));
         list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, owner, method, "(Ljava/lang/Object;)V", false));

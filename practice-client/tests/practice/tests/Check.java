@@ -17,6 +17,7 @@ public final class Check {
     }
     private static void config(Path dir,String text)throws IOException{Files.write(dir.resolve("settings.properties"),text.getBytes("UTF-8"));}
     public static void main(String[] args)throws Exception {
+        ReplayChecks.run(Paths.get(args[0]));
         Path dir=Files.createTempDirectory("practice-check-");
         Files.copy(Paths.get(args[0]),dir.resolve("practice-module.jar"));config(dir,"");
         try(ReloadHost host=new ReloadHost(dir)){

@@ -16,6 +16,7 @@ final class ReplayData {
     final long start,duration;
     final double originalCenter;
     final boolean posesRecorded;
+    final PovReplayData pov;
     @SuppressWarnings("unchecked") static Map<String,Object> map(Object value){return value instanceof Map?(Map<String,Object>)value:Map.of();}
     static double number(Map<String,Object> m,String key,double fallback){Object v=m.get(key);return v instanceof Number?((Number)v).doubleValue():fallback;}
     static String string(Map<String,Object> m,String key,String fallback){Object v=m.get(key);return v instanceof String?(String)v:fallback;}
@@ -50,6 +51,7 @@ final class ReplayData {
         if(!Files.isRegularFile(path)){path=R.ROOT.resolve("research/traces/"+id+"-server.jsonl.gz");gzip=true;}
         if(!Files.isRegularFile(path))throw new IllegalArgumentException("The result exists, but its server recording is missing.");
         if(Files.size(path)>64*1024*1024)throw new IllegalArgumentException("Recording is too large for interactive playback.");
+        List<Map<String,Object>> legacy=new ArrayList<>();
         try(InputStream raw=Files.newInputStream(path);InputStream in=gzip?new GZIPInputStream(raw):raw;
             BufferedReader reader=new BufferedReader(new InputStreamReader(in,java.nio.charset.StandardCharsets.UTF_8))){
             long bytes=0;String line;
@@ -57,6 +59,7 @@ final class ReplayData {
                 bytes+=line.length();if(bytes>128*1024*1024)throw new IllegalArgumentException("Recording exceeds playback limit.");
                 Map<String,Object> e=parse(line);String type=string(e,"type","");
                 if(type.equals("start")){setup=map(e.get("match"));continue;}
+                if(type.equals("pov_client")){legacy.add(e);continue;}
                 long time=(long)number(e,"time",0);if(time<start)continue;
                 if(type.equals("tick"))frames.add(e);
                 else if(Set.of("hit","critical","blocked_damage","rod_trick","melee_damage").contains(type)){
@@ -80,6 +83,7 @@ final class ReplayData {
         frames.sort(Comparator.comparingDouble(f->number(f,"time",0)));events.sort(Comparator.comparingDouble(e->number(e,"time",0)));
         for(Map<String,Object> f:frames)times.add((long)number(f,"time",start)-start);
         posesRecorded=map(frames.get(0).get("a")).containsKey("rotationYaw");
+        pov=new PovReplayData(this,legacy);
     }
     Map<String,Object> frame(long ms){return frames.get(ReplayTimeline.floor(times,ms));}
     String label(String side){String policy=string(result,"policy_"+side,side);return policy.equals("human")?string(result,side,side):policy;}

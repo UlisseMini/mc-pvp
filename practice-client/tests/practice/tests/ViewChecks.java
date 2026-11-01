@@ -40,17 +40,24 @@ final class ViewChecks {
         }
         // Drawing settings are independent and the module contains real world geometry.
         Files.write(directory.resolve("settings.properties"),"ghost.bot.enabled=true\nghost.me.enabled=false\nreach.enabled=false\ndebug.enabled=true\n".getBytes("UTF-8"));
-        Map<String,Object> entity=JsonData.map("pos",Arrays.asList(0.,4.,0.),"render",Arrays.asList(0.,4.,0.),"eye_height",1.62,"yaw",0,"box",Arrays.asList(-.3,4.,-.3,.3,5.8,.3),"border",.1);
+        Map<String,Object> entity=JsonData.map("pos",Arrays.asList(0.,4.,0.),"render",Arrays.asList(.25,3.9,0.),"eye_height",1.62,"yaw",0,"box",Arrays.asList(-.3,4.,-.3,.3,5.8,.3),"border",.1);
         Map<String,Object> data=JsonData.map("available",true,"own",entity,"target",entity,"bot_self",entity,"bot_sees_you",entity,"bot_range",JsonData.map("reach",3),"opening",w.state());
         try(ReloadHost host=new ReloadHost(directory)){
             check(host.reload(true),"view module loads");host.event(new PracticeEvent("practice_views",1,1,1,data));
-            WorldFrame scene=host.world(0);check(scene.boxes.size()==6&&scene.lines.isEmpty(),"one independent ghost, no reach overlay");
+            WorldFrame scene=host.world(0);check(scene.boxes.size()==6&&scene.lines.isEmpty()&&scene.spheres.isEmpty(),"one independent ghost, no reach overlay");
             Frame hud=host.render(0,800,600);check(hud.lines.stream().anyMatch(l->l.centered&&l.scale==2&&l.text.startsWith("Opening")),"prominent opening HUD");
             check(hud.lines.stream().anyMatch(l->l.text.startsWith("Sample -> receive")),"optional debug delivery HUD");
             Files.write(directory.resolve("settings.properties"),"ghost.me.enabled=true\nreach.enabled=true\n".getBytes("UTF-8"));host.reload(true);host.event(new PracticeEvent("practice_views",2,1,1,data));
-            scene=host.world(0);check(scene.boxes.size()==6&&scene.lines.size()>288,"other ghost plus both 3D reach overlays");
+            scene=host.world(0);check(scene.boxes.size()==6&&scene.lines.isEmpty()&&scene.spheres.size()==2,"other ghost plus both filled reach fields, with no outlines or rays");
+            check(Math.abs(scene.spheres.get(0).x-.25)<1e-9&&Math.abs(scene.spheres.get(0).y-5.52)<1e-9&&scene.spheres.get(0).radius==3,"reach field follows render interpolation at eye height");
+            check(scene.spheres.get(1).x==.25,"bot field uses its own client's interpolated position");
+            entity.put("render",Arrays.asList(.75,3.95,0.));host.event(new PracticeEvent("practice_views",3,1,1,data));
+            check(host.world(0).spheres.get(0).x==.75&&((Number)((List<?>)entity.get("pos")).get(0)).doubleValue()==0,"between-tick rendering moves without modifying logical state");
+            entity.remove("render");host.event(new PracticeEvent("practice_views",4,1,1,data));
+            check(host.world(0).spheres.get(0).x==0,"older pose archives fall back to logical position when render pose is absent");
+            entity.put("render",Arrays.asList(.75,3.95,0.));
             check(host.render(0,800,600).lines.stream().noneMatch(l->l.text.contains("Sample ->")),"normal HUD has no delay label");
-            data.put("available",false);host.event(new PracticeEvent("practice_views",3,1,1,data));check(host.world(0).boxes.isEmpty(),"stale bot views hide both ghosts");
+            data.put("available",false);host.event(new PracticeEvent("practice_views",5,1,1,data));check(host.world(0).boxes.isEmpty()&&host.world(0).spheres.size()==1,"stale bot views hide both ghosts and bot field");
         }
         System.out.println("View checks passed: reach, opening intervals, stream, overlays, stale-data handling");
     }

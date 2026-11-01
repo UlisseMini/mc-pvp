@@ -47,6 +47,7 @@ final class PracticeViews implements AutoCloseable {
         if(available){
             Map<String,Object> self=entity(sample,0),seen=entity(sample,18);push(draw,sample.ageMs(ns));
             if(now-statsAt>=250){statsAt=now;statistics=map("delivery",stats(delivery),"draw",stats(draw));}
+            out.put("reach_advantage",ReachAdvantage.compare(own,opponent,self,seen));
             out.put("bot_self",self);out.put("bot_sees_you",seen);out.put("bot_range",map("reach",botReach,"distance",distance(self,seen)));
             out.put("timing",map("delivery_ms",sample.deliveryMs(),"draw_ms",sample.ageMs(ns),"clock_rtt_ms",sample.rttNanos/1e6,
                 "simulation_tick_age_ms",(ns+sample.offsetNanos-sample.tickNanos)/1e6,"statistics",statistics,"dropped",reader.dropped()));

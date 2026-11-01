@@ -6,8 +6,8 @@ import java.util.*;
 /** Reloadable overlay presentation. Geometry and diagnostic data do not control the player. */
 final class PracticeOverlay {
     Map<String,Object> views=Collections.emptyMap();
-    private boolean opening,large,reach,botGhost,myGhost,debug;
-    void configure(Properties p){opening=flag(p,"opening.enabled",true);large=flag(p,"opening.large",true);reach=flag(p,"reach.enabled",false);botGhost=flag(p,"ghost.bot.enabled",false);myGhost=flag(p,"ghost.me.enabled",false);debug=flag(p,"debug.enabled",false);}
+    private boolean opening,large,reach,botGhost,myGhost,debug,advantage;
+    void configure(Properties p){advantage=flag(p,"advantage.enabled",true);opening=flag(p,"opening.enabled",true);large=flag(p,"opening.large",true);reach=flag(p,"reach.enabled",false);botGhost=flag(p,"ghost.bot.enabled",false);myGhost=flag(p,"ghost.me.enabled",false);debug=flag(p,"debug.enabled",false);}
     private static boolean flag(Properties p,String k,boolean fallback){return Boolean.parseBoolean(p.getProperty(k,String.valueOf(fallback)));}
     @SuppressWarnings("unchecked") private static Map<String,Object> obj(Map<String,Object> m,String key){Object o=m.get(key);return o instanceof Map?(Map<String,Object>)o:Collections.emptyMap();}
     private static double num(Map<String,Object> m,String key){Object v=m.get(key);return v instanceof Number?((Number)v).doubleValue():0;}
@@ -27,6 +27,7 @@ final class PracticeOverlay {
                 lines.add(new Frame.Line(text.toString(),0,y+(large?35:25),0xAAAAAA,false,1,true));
             }
         }
+        if(advantage)AdvantageHud.append(lines,available?obj(views,"reach_advantage"):Collections.emptyMap(),height,"Your");
         int y=height-64;
         if(reach){lines.add(new Frame.Line(fmt("Cyan: your reach %.2f / 3.00",num(obj(views,"your_range"),"distance")),6,y,0x55FFFF,false));y+=11;
             Map<String,Object> r=obj(views,"bot_range");lines.add(new Frame.Line(available?fmt("Amber: bot reach %.2f / %.2f",num(r,"distance"),num(r,"reach")):"Bot view unavailable",6,y,0xFFCC66,false));y+=11;}
@@ -44,28 +45,18 @@ final class PracticeOverlay {
     }
     @SuppressWarnings("unchecked") private static Map<String,Object> cast(Object o){return (Map<String,Object>)o;}
     WorldFrame world(){
-        List<WorldFrame.Line> lines=new ArrayList<>();List<WorldFrame.Box> boxes=new ArrayList<>();if(views.isEmpty())return new WorldFrame(lines,boxes);
+        List<WorldFrame.Line> lines=new ArrayList<>();List<WorldFrame.Box> boxes=new ArrayList<>();List<WorldFrame.Sphere> spheres=new ArrayList<>();if(views.isEmpty())return new WorldFrame(lines,boxes,spheres);
         boolean available=Boolean.TRUE.equals(views.get("available"));
-        if(reach&&!obj(views,"own").isEmpty()){sphere(lines,obj(views,"own"),3,0x7055FFFF);target(lines,obj(views,"own"),obj(views,"target"),0xAA55FFFF);}
+        if(reach&&!obj(views,"own").isEmpty())ReachDrawing.append(spheres,obj(views,"own"),3,0x1855FFFF);
         if(available){
-            if(reach){sphere(lines,obj(views,"bot_self"),num(obj(views,"bot_range"),"reach"),0x70FFCC66);target(lines,obj(views,"bot_self"),obj(views,"bot_sees_you"),0xAAFFCC66);}
+            if(reach)ReachDrawing.append(spheres,obj(views,"bot_self"),num(obj(views,"bot_range"),"reach"),0x20FFCC66);
             if(botGhost)ghost(boxes,obj(views,"bot_self"),0x25FFBB44);
             if(myGhost)ghost(boxes,obj(views,"bot_sees_you"),0x25FF66DD);
         }
-        return new WorldFrame(lines,boxes);
+        return new WorldFrame(lines,boxes,spheres);
     }
-    private static double[] eye(Map<String,Object> e){double[] p=vec(e,"pos");p[1]+=num(e,"eye_height");return p;}
-    private static void sphere(List<WorldFrame.Line> out,Map<String,Object> e,double r,int c){
-        double[] p=eye(e);for(int plane=0;plane<3;plane++)for(int i=0;i<48;i++){
-            double a=i*Math.PI/24,b=(i+1)*Math.PI/24;double[] s=p.clone(),t=p.clone();int u=plane,v=(plane+1)%3;s[u]+=r*Math.cos(a);s[v]+=r*Math.sin(a);t[u]+=r*Math.cos(b);t[v]+=r*Math.sin(b);out.add(new WorldFrame.Line(s[0],s[1],s[2],t[0],t[1],t[2],c));}
-    }
-    private static void target(List<WorldFrame.Line> out,Map<String,Object> source,Map<String,Object> target,int c){
-        double[] p=eye(source),b=vec(target,"box");double border=num(target,"border");for(int i=0;i<3;i++){b[i]-=border;b[i+3]+=border;}
-        out.add(new WorldFrame.Line(p[0],p[1],p[2],Math.max(b[0],Math.min(b[3],p[0])),Math.max(b[1],Math.min(b[4],p[1])),Math.max(b[2],Math.min(b[5],p[2])),c));
-        for(int axis=0;axis<3;axis++)for(int k=0;k<4;k++){double[] a=new double[3],d=new double[3];for(int j=0;j<3;j++){a[j]=b[j];if(j!=axis){int bit=j<axis?j:j-1;a[j]=b[j+(((k>>bit)&1)*3)];}d[j]=a[j];}d[axis]=b[axis+3];out.add(new WorldFrame.Line(a[0],a[1],a[2],d[0],d[1],d[2],c));}
-    }
-    private static void ghost(List<WorldFrame.Box> out,Map<String,Object> e,int color){
-        double[] p=vec(e,"render");double yaw=-num(e,"yaw"),lower=Boolean.TRUE.equals(e.get("sneaking"))?.15:0;
+    static void ghost(List<WorldFrame.Box> out,Map<String,Object> e,int color){
+        double[] p=vec(e,e.get("render") instanceof List?"render":"pos");double yaw=-num(e,"yaw"),lower=Boolean.TRUE.equals(e.get("sneaking"))?.15:0;
         part(out,p,0,1.55-lower,0,.45,.45,.45,yaw,color);part(out,p,0,1.0-lower,0,.5,.65,.25,yaw,color);
         part(out,p,-.36,1.0-lower,0,.22,.65,.25,yaw,color);part(out,p,.36,1.0-lower,0,.22,.65,.25,yaw,color);
         part(out,p,-.13,.35,0,.23,.7,.25,yaw,color);part(out,p,.13,.35,0,.23,.7,.25,yaw,color);

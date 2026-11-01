@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.*;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Item;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.*;
 
@@ -34,13 +35,14 @@ final class GameObservations {
             "motion",Arrays.asList(e.field_70159_w,e.field_70181_x,e.field_70179_y),
             "yaw",e.field_70177_z,"pitch",e.field_70125_A,"ground",e.field_70122_E,
             "sprinting",e.func_70051_ag(),"sneaking",e.func_70093_af(),"age",e.field_70173_aa);
+        out.put("border",e.func_70111_Y());
         AxisAlignedBB box=e.func_174813_aQ();
         out.put("box",Arrays.asList(box.field_72340_a,box.field_72338_b,box.field_72339_c,box.field_72336_d,box.field_72337_e,box.field_72334_f));
         for(String name:new String[]{"fallDistance","width","height","stepHeight","isCollidedHorizontally","isCollidedVertically","isInWeb",
             "hurtTime","hurtResistantTime","maxHurtResistantTime","lastDamage","swingProgress","prevSwingProgress","swingProgressInt",
             "serverPosX","serverPosY","serverPosZ","otherPlayerMPPosRotationIncrements","otherPlayerMPX","otherPlayerMPY","otherPlayerMPZ",
             "otherPlayerMPYaw","otherPlayerMPPitch","rotationYawHead","prevRotationYawHead","renderYawOffset","prevRenderYawOffset",
-            "jumpTicks","jumpMovementFactor","sprintingTicksLeft","serverSprintState","isAirBorne","noClip"}){
+            "jumpTicks","jumpMovementFactor","sprintingTicksLeft","serverSprintState","isAirBorne","noClip","isSwingInProgress","limbSwing","limbSwingAmount","prevLimbSwingAmount"}){
             Object v=field(e,name);if(v instanceof Number||v instanceof Boolean)out.put(name,v);
         }
         if(e instanceof EntityLivingBase){EntityLivingBase l=(EntityLivingBase)e;out.put("health",l.func_110143_aJ());out.put("eye_height",l.func_70047_e());}
@@ -48,6 +50,8 @@ final class GameObservations {
             EntityPlayer p=(EntityPlayer)e;out.put("uuid",p.func_110124_au().toString());out.put("name",p.func_70005_c_());
             out.put("blocking",p.func_70632_aY());out.put("using_item",p.func_71039_bw());out.put("use_ticks",p.func_71052_bv());
             out.put("held",item(p.func_70694_bm()));out.put("slot",p.field_71071_by.field_70461_c);
+            out.put("held_item_id",p.func_70694_bm()==null?0:Item.func_150891_b(p.func_70694_bm().func_77973_b()));
+            Object hook=field(p,"fishEntity");if(hook instanceof Entity){Entity h=(Entity)hook;out.put("fish_hook",map("id",h.func_145782_y(),"x",h.field_70165_t,"y",h.field_70163_u,"z",h.field_70161_v));}
             out.put("food",p.func_71024_bL().func_75116_a());out.put("saturation",p.func_71024_bL().func_75115_e());
             out.put("armor_points",p.func_70658_aO());
             List<Object> armor=new ArrayList<>();for(ItemStack stack:p.field_71071_by.field_70460_b)armor.add(item(stack));out.put("armor",armor);
@@ -86,5 +90,15 @@ final class GameObservations {
             if(p!=mc.field_71439_g&&((List<?>)names).contains(p.func_70005_c_())){out.put("opponent",entity(p));break;}
         }
         out.put("sample_end_ms",System.currentTimeMillis());out.put("sample_end_ns",System.nanoTime());return out;
+    }
+    static Map<String,Object> replayView(Minecraft mc,Object names,float partial){
+        Map<String,Object> out=telemetry(mc,names);out.put("partial_ticks",partial);
+        if(mc.field_71439_g!=null)renderPose(out.get("self"),mc.field_71439_g,partial);
+        if(names instanceof List&&mc.field_71441_e!=null)for(Object o:mc.field_71441_e.field_73010_i){EntityPlayer p=(EntityPlayer)o;if(p!=mc.field_71439_g&&((List<?>)names).contains(p.func_70005_c_())){renderPose(out.get("opponent"),p,partial);break;}}
+        return out;
+    }
+    @SuppressWarnings("unchecked") private static void renderPose(Object value,Entity e,float t){if(!(value instanceof Map))return;Map<String,Object> m=(Map<String,Object>)value;
+        m.put("render",Arrays.asList(e.field_70142_S+(e.field_70165_t-e.field_70142_S)*t,e.field_70137_T+(e.field_70163_u-e.field_70137_T)*t,e.field_70136_U+(e.field_70161_v-e.field_70136_U)*t));
+        m.put("render_yaw",e.field_70126_B+(e.field_70177_z-e.field_70126_B)*t);m.put("render_pitch",e.field_70127_C+(e.field_70125_A-e.field_70127_C)*t);
     }
 }

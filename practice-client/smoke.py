@@ -61,6 +61,7 @@ def main():
     shutil.copyfile(work/'probe.jar',game/'mods/probe.jar')
     shutil.copyfile(BUILD/'practice-module.jar',game/'config/pvp-practice/practice-module.jar')
     shutil.copyfile(SRC/'settings.properties',game/'config/pvp-practice/settings.properties')
+    with (game/'config/pvp-practice/settings.properties').open('a') as f:f.write('\narchive.directory='+str(ROOT/'runtime/pov')+'\n')
     (game/'config/splash.properties').write_text('enabled=false\n')
     (game/'options.txt').write_text('renderDistance:2\nmaxFps:30\nsoundCategory_master:0.0\n')
     forge=json.loads(next((mc/'versions/1.8.9-forge1.8.9-11.15.1.2318-1.8.9').glob('*.json')).read_text())
@@ -77,7 +78,7 @@ def main():
     java=mc/'runtime/jre-legacy/mac-os/jre-legacy/jre.bundle/Contents/Home/bin/java'
     profile=sandbox_profile().read_text().replace(json.dumps(str(JAVA)),json.dumps(str(java)))
     profile=profile.replace('(subpath '+json.dumps(str(ROOT))+')','(subpath '+json.dumps(str(ROOT))+') '+ ' '.join('(subpath '+json.dumps(str(mc/d))+')' for d in ['libraries','runtime','assets']))
-    profile=profile.replace('(subpath '+json.dumps(str(ROOT/'runtime'))+')','(subpath '+json.dumps(str(game))+')')
+    profile=profile.replace('(subpath '+json.dumps(str(ROOT/'runtime'))+')','(subpath '+json.dumps(str(game))+') (subpath '+json.dumps(str(ROOT/'runtime/pov'))+')')
     (game/'sandbox.sb').write_text(profile)
     args=['/usr/bin/sandbox-exec','-f',str(game/'sandbox.sb'),str(java),'-Xmx768M','-XX:-UsePerfData',
           '-Duser.home='+str(game/'home'),'-Djava.io.tmpdir='+str(game/'tmp'),'-Djava.net.preferIPv4Stack=true','-Dhmc.lwjgl.update_sleep=1',

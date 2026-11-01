@@ -6,7 +6,7 @@ import java.util.*;
 public final class ServerReplay {
     static final Map<String,Session> sessions=new LinkedHashMap<>();
     static final Set<String> floorChunks=new HashSet<>();
-    static final String USAGE="/replay [match-id] | controls | combos [page] | list [all] | pause | play | back/forward [seconds] | seek <seconds or +/-seconds> | speed <positive multiplier> | a | b | free | stop";
+    static final String USAGE="/replay [match-id] | menu | pov server/human/bot | ghost <view/self/opponent> on/off | combos [page] | pause/play | back/forward [seconds] | seek <seconds> | speed <factor> | camera a/b/free | stop";
     static final class Session {
         final String viewer;
         final ReplayData data;
@@ -18,7 +18,8 @@ public final class ServerReplay {
         final double center;
         final long readyAt;
         int eventIndex;
-        String camera="free",lastEvent="";
+        String camera="free",source="server",lastEvent="";final Set<String> ghosts=new LinkedHashSet<>();
+        int ghostPreset,savedSlot;Object savedInventory;long lastToolbar;boolean viewMissing;
         long eventUntil;
         boolean spawned,ended,startPlaying=true;
         Session(String viewer,ReplayData data,int arena,long now){
@@ -58,11 +59,13 @@ public final class ServerReplay {
         if("diamond_box".equals(data.result.get("mode")))Referee.prepareBox(world,arena);
         Session s=new Session(who,data,arena,System.currentTimeMillis());sessions.put(who,s);
         for(int i=0;i<2;i++)s.actors[i]=actor(viewer,data.label(i==0?"a":"b"),UUID.randomUUID());
-        Referee.vanilla("gamemode 3 "+who);R.call(viewer,"setSpectatingEntity",viewer);
+        ReplayToolbar.equip(viewer,s);R.call(viewer,"setSpectatingEntity",viewer);Referee.configureProxy(who,0);
         Map<String,Object> first=data.frame(0),a=ReplayData.map(first.get("a")),b=ReplayData.map(first.get("b"));
         Referee.teleport(viewer,s.center-data.originalCenter+(ReplayData.number(a,"posX",data.originalCenter)+ReplayData.number(b,"posX",data.originalCenter))/2,9,
             (ReplayData.number(a,"posZ",0)+ReplayData.number(b,"posZ",0))/2+6);
-        Referee.message(viewer,"§6Server replay "+match+" §7— "+data.label("a")+" vs "+data.label("b")+". Recorded server positions/events; not either client's original POV.");
+        Referee.message(viewer,"§6Replay "+match+" §7— "+data.label("a")+" vs "+data.label("b")+". §fViewpoint: server. §7Use the compass to switch recorded views.");
+        for(String side:List.of("a","b"))Referee.message(viewer,"§7"+data.label(side)+" POV: "+(data.pov.available(side)?data.pov.quality.get(side):"not recorded"));
+        for(String warning:data.pov.warnings)Referee.message(viewer,"§e"+warning);
         if(!data.posesRecorded)Referee.message(viewer,"§7Older recording: look direction/equipment are approximated; rod flight and precise block poses were not recorded.");
         controls(viewer);
         combos(viewer,s,1);
@@ -86,10 +89,11 @@ public final class ServerReplay {
         }
     }
     static void controls(Object p){
-        Referee.message(p,"§6Replay controls §7— open chat (T) and click. /replay controls shows these again.");
+        Referee.message(p,"§6Replay controls §7— use the hotbar, or /replay menu. Chat shortcuts:");
         controlRow(p,"Time",new String[][]{{"-5s","back 5"},{"-1s","back 1"},{"Pause","pause"},{"Play","play"},{"+1s","forward 1"},{"+5s","forward 5"},{"Go to...","seek ","suggest_command"}});
         controlRow(p,"Speed",new String[][]{{"0.1x","speed 0.1"},{"0.25x","speed 0.25"},{"0.5x","speed 0.5"},{"1x","speed 1"},{"2x","speed 2"},{"Custom...","speed ","suggest_command"}});
         controlRow(p,"View",new String[][]{{"Follow A","a"},{"Follow B","b"},{"Fly freely","free"},{"Combos","combos"},{"Exit replay","stop"}});
+        controlRow(p,"POV",new String[][]{{"Server","pov server"},{"Human","pov human"},{"Bot","pov bot"},{"Ghost settings","menu"}});
         Referee.message(p,"§7Any positive speed works. Seek: 12.5 = timestamp; -5 / +5 = relative seconds.");
     }
     static void controlRow(Object p,String label,String[][] buttons){
@@ -157,6 +161,14 @@ public final class ServerReplay {
         if(action.equals("pause")&&args.length==2){s.startPlaying=false;s.clock.pause(true,now);}
         else if(action.equals("play")&&args.length==2){s.startPlaying=true;if(s.clock.position()>=s.data.duration)seek(s,0,false,now);s.clock.pause(false,now);}
         else if(action.equals("controls")&&args.length==2)controls(viewer);
+        else if(action.equals("menu")&&args.length==2){if(PovLink.subscribed(who))PovLink.send(viewer,Map.of("type","replay_menu","version",1));else{controls(viewer);ghostMenu(viewer,s);}}
+        else if(action.equals("control")&&args.length==4&&Set.of("left","right").contains(args[3])){ReplayToolbar.use(viewer,s,Integer.parseInt(args[2]),args[3].equals("right"));}
+        else if(action.equals("pov")&&args.length==3){
+            String source=s.data.pov.source(args[2]);if(!s.data.pov.available(source))throw new IllegalArgumentException("That client POV was not recorded. Server POV is still available.");
+            s.source=source;s.camera=source.equals("server")?"free":source;Arrays.fill(s.held,-1);if(s.spawned)camera(viewer,s);
+            Referee.message(viewer,"§bViewpoint: "+(source.equals("server")?"server":s.data.label(source)+" client")+". §7Camera item switches follow/free.");
+        }
+        else if(action.equals("ghost")){ghostCommand(viewer,s,args);}
         else if(action.equals("combos")&&(args.length==2||args.length==3))combos(viewer,s,args.length==3?Integer.parseInt(args[2]):1);
         else if(action.equals("combo")&&args.length==4){
             if(!s.data.id.equals(args[2]))throw new IllegalArgumentException("That combo belongs to "+args[2]+". Open that replay first; /replay combos shows this replay's combos.");
@@ -172,6 +184,7 @@ public final class ServerReplay {
             double seconds=args.length==3?Double.parseDouble(args[2]):5;
             if(!Double.isFinite(seconds)||seconds<0)throw new IllegalArgumentException("Use /replay "+action+" [seconds], with a nonnegative number (default: 5).");
             seek(s,action.equals("back")?-seconds:seconds,true,now);
+        }else if(action.equals("camera")&&args.length==3&&Set.of("a","b","free").contains(args[2])){s.camera=args[2];if(s.spawned)camera(viewer,s);
         }else if(Set.of("a","b","free").contains(action)&&args.length==2){
             s.camera=action;if(s.spawned)camera(viewer,s);
         }else throw new IllegalArgumentException(USAGE);
@@ -180,6 +193,39 @@ public final class ServerReplay {
         s.clock.seekSeconds(seconds,relative,now);s.eventIndex=0;s.ended=false;s.lastEvent="";
         while(s.eventIndex<s.data.events.size()&&ReplayData.number(s.data.events.get(s.eventIndex),"time",0)<=s.data.start+s.clock.position())s.eventIndex++;
         Arrays.fill(s.swing,-1);
+    }
+    static void ghostMenu(Object viewer,Session s){
+        for(String source:List.of("server","a","b"))if(s.data.pov.available(source))for(String side:List.of("a","b")){
+            String key=source+":"+side;Referee.button(viewer,(s.ghosts.contains(key)?"[ON] ":"[off] ")+s.data.label(side)+" as seen by "+(source.equals("server")?"server":s.data.label(source)),"/replay ghost "+key+" "+(s.ghosts.contains(key)?"off":"on"));}
+    }
+    static void ghostCommand(Object viewer,Session s,String[] args){
+        if(args.length==3&&args[2].equals("preset")){
+            s.ghosts.clear();s.ghostPreset=(s.ghostPreset+1)%4;
+            for(String source:List.of("a","b"))if(s.data.pov.available(source)&&(s.ghostPreset==3||s.ghostPreset==(source.equals("a")?1:2)))for(String side:List.of("a","b"))s.ghosts.add(source+":"+side);
+            Referee.message(viewer,"§bGhosts: "+(s.ghostPreset==0?"off":s.ghostPreset==3?"all client views":s.data.label(s.ghostPreset==1?"a":"b")+" view"));return;
+        }
+        if(args.length==3&&args[2].equals("off")){s.ghosts.clear();return;}
+        if(args.length!=4||!Set.of("on","off").contains(args[3]))throw new IllegalArgumentException("/replay ghost human|bot|human-self|human-opponent|bot-self|bot-opponent on/off; or /replay ghost off");
+        String spec=args[2];List<String> keys=new ArrayList<>();
+        if(spec.matches("(server|a|b):[ab]"))keys.add(spec);
+        else{String[] parts=spec.split("-");String source=s.data.pov.source(parts[0]);if(parts.length==1){keys.add(source+":a");keys.add(source+":b");}
+            else if(parts.length==2&&Set.of("self","opponent").contains(parts[1])&&!source.equals("server"))keys.add(source+":"+(parts[1].equals("self")?source:source.equals("a")?"b":"a"));
+            else throw new IllegalArgumentException("Use a view name, or human-self / human-opponent / bot-self / bot-opponent.");}
+        for(String key:keys){if(!s.data.pov.available(key.split(":")[0]))throw new IllegalArgumentException("That client POV was not recorded.");if(args[3].equals("on"))s.ghosts.add(key);else s.ghosts.remove(key);}
+    }
+    static void sendView(Object viewer,Session s,long now,long ms){
+        if(!PovLink.subscribed(s.viewer))return;
+        Map<String,Object> views=new LinkedHashMap<>(),next=new LinkedHashMap<>();
+        for(String source:List.of("server","a","b"))if(s.data.pov.available(source)){
+            views.put(source,compactFrame(s.data.pov.at(source,ms)));next.put(source,compactFrame(s.data.pov.at(source,Math.min(s.data.duration,ms+(s.clock.paused()?0:50*s.clock.speed())))));}
+        Map<String,Object> data=new LinkedHashMap<>();data.put("type","replay_view");data.put("version",1);data.put("active",true);data.put("match",s.data.id);data.put("start_ms",s.data.start);data.put("server_ms",now);data.put("time_ms",ms);data.put("duration_ms",s.data.duration);
+        data.put("paused",s.clock.paused());data.put("speed",s.clock.speed());data.put("source",s.source);data.put("camera",s.camera);data.put("ghosts",new ArrayList<>(s.ghosts));data.put("views",views);data.put("next",next);data.put("view_missing",s.viewMissing);
+        data.put("offset_x",s.center-s.data.originalCenter);data.put("actor_ids",Arrays.stream(s.actors).map(ServerReplay::id).toList());data.put("availability",s.data.pov.info());data.put("labels",List.of(s.data.label("a"),s.data.label("b")));
+        data.put("reach",List.of(ReplayData.number(s.data.result,"attack_reach_a",3),ReplayData.number(s.data.result,"attack_reach_b",3)));PovLink.send(viewer,data);
+    }
+    static Map<String,Object> compactFrame(Map<String,Object> frame){if(frame.isEmpty())return Map.of();Map<String,Object> out=new LinkedHashMap<>();
+        for(String side:List.of("a","b")){Map<String,Object> p=ReplayData.map(frame.get(side)),v=new LinkedHashMap<>();
+            for(String k:List.of("posX","posY","posZ","logicalX","logicalY","logicalZ","rotationYaw","rotationPitch","rotationYawHead","renderYawOffset","swingProgress","swingProgressInt","isSwingInProgress","hurtTime","limbSwing","limbSwingAmount","eye_height","box","border","sneaking","blocking","held_item_id","health"))if(p.containsKey(k))v.put(k,p.get(k));out.put(side,v);}return out;
     }
     static void camera(Object viewer,Session s){R.call(viewer,"setSpectatingEntity",s.camera.equals("free")?viewer:s.actors[s.camera.equals("a")?0:1]);}
     static void pose(Session s,Object viewer,int side,Map<String,Object> frame,boolean spawn){
@@ -232,9 +278,12 @@ public final class ServerReplay {
             if(now<s.readyAt)continue;
             boolean spawn=!s.spawned;
             if(spawn){s.clock.seek(s.clock.position(),now);s.clock.pause(!s.startPlaying,now);}
-            long ms=s.clock.advance(now);Map<String,Object> frame=s.data.frame(ms);
+            long ms=s.clock.advance(now);Map<String,Object> serverFrame=s.data.frame(ms),frame=s.data.pov.at(s.source,ms);s.viewMissing=frame.isEmpty();
+            if(frame.isEmpty()){if(spawn)frame=serverFrame;else{sendView(viewer,s,now,ms);Referee.overlay(viewer,"§eReplay: this viewpoint has no recorded sample at this time. §7Switch POV or seek forward.");continue;}}
+            frame=new LinkedHashMap<>(frame);frame.put("health_a",serverFrame.get("health_a"));frame.put("health_b",serverFrame.get("health_b"));
             for(int i=0;i<2;i++)pose(s,viewer,i,frame,spawn);
             if(spawn){s.spawned=true;camera(viewer,s);}
+            sendView(viewer,s,now,ms);
             while(s.eventIndex<s.data.events.size()&&ReplayData.number(s.data.events.get(s.eventIndex),"time",0)<=s.data.start+ms){
                 Map<String,Object> e=s.data.events.get(s.eventIndex++);String type=ReplayData.string(e,"type","");
                 int attacker=Objects.equals(e.get("attacker"),s.data.result.get("a"))?0:1;
@@ -248,7 +297,7 @@ public final class ServerReplay {
                 else if(type.equals("blocked_damage")){s.lastEvent=s.data.label(victim==0?"a":"b")+" blocked damage";s.eventUntil=now+700;}
             }
             if(Referee.ticks%2==0)Referee.overlay(viewer,String.format(Locale.ROOT,"§6Replay %s §f%.2f/%.2fs §7%s%s §8| §b%s %.1f♥ §7vs §6%s %.1f♥%s",
-                s.data.id,ms/1000.0,s.data.duration/1000.0,s.clock.speedLabel(),s.clock.paused()?" PAUSED":"",s.data.label("a"),ReplayData.number(frame,"health_a",20)/2,
+                s.data.id+" ["+s.source+" POV]",ms/1000.0,s.data.duration/1000.0,s.clock.speedLabel(),s.clock.paused()?" PAUSED":"",s.data.label("a"),ReplayData.number(frame,"health_a",20)/2,
                 s.data.label("b"),ReplayData.number(frame,"health_b",20)/2,now<s.eventUntil?" §8| §e"+s.lastEvent:""));
             if(ms>=s.data.duration&&!s.ended){s.ended=true;Referee.message(viewer,"§6Replay finished. §7/replay play to restart; /replay seek <seconds> to review; /stop to leave.");}
         }catch(Throwable e){e.printStackTrace();Object viewer=Referee.player(s.viewer);close(s.viewer,true);if(viewer!=null)Referee.message(viewer,"§cReplay stopped: "+e.getMessage());}
@@ -259,15 +308,16 @@ public final class ServerReplay {
             R.call(viewer,"setSpectatingEntity",viewer);
             for(Object actor:s.actors)if(actor!=null){send(viewer,R.construct("net.minecraft.network.play.server.S13PacketDestroyEntities",new int[]{id(actor)}));listPacket(viewer,actor,"REMOVE_PLAYER");}
             for(Object hook:s.hooks)if(hook!=null)send(viewer,R.construct("net.minecraft.network.play.server.S13PacketDestroyEntities",new int[]{id(hook)}));
+            ReplayToolbar.restore(viewer,s);Referee.configureProxy(who,Referee.preferredPing(who));if(PovLink.subscribed(who))PovLink.send(viewer,Map.of("type","replay_view","version",1,"active",false));
             if(lobby)Referee.returnToLobby(viewer);
         }
         return true;
     }
     static List<Map<String,Object>> state(){
         List<Map<String,Object>> out=new ArrayList<>();
-        for(Session s:sessions.values())out.add(Map.of("viewer",s.viewer,"match",s.data.id,"time_ms",s.clock.position(),"duration_ms",s.data.duration,
+        for(Session s:sessions.values()){Map<String,Object> row=new LinkedHashMap<>(Map.of("viewer",s.viewer,"match",s.data.id,"time_ms",s.clock.position(),"duration_ms",s.data.duration,
             "paused",s.clock.paused(),"speed",s.clock.speed(),"camera",s.camera,"spawned",s.spawned,
-            "actor_ids",Arrays.stream(s.actors).filter(Objects::nonNull).map(ServerReplay::id).toList(),"center_x",s.center));
+            "actor_ids",Arrays.stream(s.actors).filter(Objects::nonNull).map(ServerReplay::id).toList(),"center_x",s.center));row.put("source",s.source);row.put("ghosts",new ArrayList<>(s.ghosts));row.put("availability",s.data.pov.info());out.add(row);}
         return out;
     }
 }

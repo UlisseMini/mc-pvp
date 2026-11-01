@@ -410,6 +410,7 @@ public final class Referee {
         if(m.box())prepareBox(arenaWorld,m.arena);
         m.start=System.currentTimeMillis()+3000;
         m.replay=DATA.resolve("replays/"+m.id+".jsonl");matches.put(m.id,m);
+        PovArchives.begin(m);
         configureProxy(a,pingA);configureProxy(b,pingB);
         // At normal speed even a full 180-second pursuit cannot reach another arena.
         resetTracking(player(a));resetTracking(player(b));
@@ -555,6 +556,7 @@ public final class Referee {
             config.setProperty("fast_view","1");
         }
         Properties p=new Properties();p.putAll(who.equals(m.a)?m.configA:m.configB);p.setProperty("enabled","true");p.setProperty("opponent",opponent);
+        p.setProperty("archive_side",who.equals(m.a)?"a":"b");
         p.setProperty("match",m.id);p.setProperty("start_at",Long.toString(m.start));p.setProperty("ping",Double.toString(ping));p.setProperty("opponent_ping",Double.toString(oppPing));
         R.writeProperties(DATA.resolve("bots/"+who.substring(7)+"/control.properties"),p);
     }
@@ -622,6 +624,7 @@ public final class Referee {
         }
         if(m.box())clearBox(m.world,m.arena);
         EntryDrills.finished(m,reason);
+        PovArchives.finished(m);
         System.out.println("[PvP Lab] RESULT "+Json.encode(result));
     }
     static String summaryName(String name,String policy,String recipient,String color){
@@ -646,8 +649,9 @@ public final class Referee {
     static String freeBot(Set<String> excluded){for(Object p:players()){String n=R.name(p);if(isBot(n)&&find(n)==null&&!excluded.contains(n)&&(Boolean)R.call(p,"isEntityAlive"))return n;}return null;}
     static Map<String,Object> position(Object p){Map<String,Object> pos=new LinkedHashMap<>();for(String key:List.of("posX","posY","posZ","motionX","motionY","motionZ","hurtResistantTime"))pos.put(key,R.num(p,key));pos.put("sprint",R.call(p,"isSprinting"));return pos;}
     static Map<String,Object> replayPosition(Object p){
-        Map<String,Object> pos=position(p);
-        for(String key:List.of("rotationYaw","rotationPitch","rotationYawHead","swingProgressInt"))pos.put(key,R.num(p,key));
+        Map<String,Object> pos=ScienceTrace.state(p);
+        pos.put("eye_height",R.call(p,"getEyeHeight"));pos.put("border",R.call(p,"getCollisionBorderSize"));pos.put("health",R.call(p,"getHealth"));
+        for(String key:List.of("rotationYaw","rotationPitch","rotationYawHead","swingProgressInt","swingProgress","limbSwing","limbSwingAmount","renderYawOffset","hurtTime"))pos.put(key,R.num(p,key));
         pos.put("onGround",R.get(p,"onGround"));pos.put("isSwingInProgress",R.get(p,"isSwingInProgress"));
         pos.put("blocking",R.call(p,"isBlocking"));pos.put("sneaking",R.call(p,"isSneaking"));
         Object held=R.call(p,"getHeldItem");pos.put("held_item_id",held==null?0:R.call(R.cls("net.minecraft.item.Item"),"getIdFromItem",R.call(held,"getItem")));
