@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Small reproducible Java 8 build; no Gradle, upstream scripts or processors."""
 from pathlib import Path
-import argparse, hashlib, json, os, shutil, subprocess, sys, urllib.request, zipfile
+import argparse, hashlib, json, os, shutil, subprocess, sys, urllib.request, zipfile, csv, io, time
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
@@ -15,7 +15,7 @@ def compile_to(dest, sources, cp):
     if dest.exists():shutil.rmtree(dest)
     dest.mkdir(parents=True)
     run([JAVAC,'--release','8','-proc:none','-encoding','UTF-8','-cp',cp,'-d',dest,*sources])
-def jar(dest, directory, metadata=None):
+def jar(dest, directory, metadata=None, extras=None):
     with zipfile.ZipFile(dest.with_suffix('.tmp'),'w',zipfile.ZIP_DEFLATED) as z:
         for p in sorted(directory.rglob('*.class')):
             info=zipfile.ZipInfo(str(p.relative_to(directory)),(2026,1,1,0,0,0));info.compress_type=zipfile.ZIP_DEFLATED
@@ -23,6 +23,8 @@ def jar(dest, directory, metadata=None):
         if metadata:
             info=zipfile.ZipInfo('mcmod.info',(2026,1,1,0,0,0));info.compress_type=zipfile.ZIP_DEFLATED
             z.writestr(info,json.dumps(metadata))
+        for name,data in (extras or {}).items():
+            info=zipfile.ZipInfo(name,(2026,1,1,0,0,0));info.compress_type=zipfile.ZIP_DEFLATED;z.writestr(info,data)
     dest.with_suffix('.tmp').replace(dest)
 def install(src,dest):
     dest.parent.mkdir(parents=True,exist_ok=True)
@@ -50,15 +52,23 @@ def main():
         tool=BUILD/'tools';compile_to(tool,[SRC/'tools/Remap.java'],cp)
         run([JAVA,'-cp',os.pathsep.join([str(tool),cp]),'Remap',ROOT/'.cache/joined.srg',BUILD/'compile-api.jar',ROOT/'.cache/client.jar',CACHE/'forge.jar'])
         libs=json.loads((ROOT/'.cache/classpath.json').read_text())
-        cp=os.pathsep.join([str(api),str(core),str(BUILD/'compile-api.jar'),*libs])
+        cp=os.pathsep.join([str(api),str(core),str(BUILD/'compile-api.jar'),str(ROOT/'.cache/asm.jar'),str(ROOT/'.cache/asm-tree.jar'),str(CACHE/'launchwrapper.jar'),*libs])
         shim=BUILD/'shim';compile_to(shim,sorted((SRC/'shim').rglob('*.java')),cp)
         for folder in (api,core):
             shutil.copytree(folder,shim,dirs_exist_ok=True)
-        jar(BUILD/'practice-bridge-0.1.0.jar',shim,[{'modid':'practicebridge','name':'PvP Practice Bridge','description':'Local, reloadable practice HUD and telemetry.','version':'0.1.0','mcversion':'1.8.9','authorList':['PvP Lab']}])
+        with zipfile.ZipFile(ROOT/'.cache/mcp-names.zip') as names:
+            field_names='\n'.join(r['searge']+'='+r['name'] for r in csv.DictReader(io.StringIO(names.read('fields.csv').decode())))
+        manifest='Manifest-Version: 1.0\nFMLCorePlugin: practice.bridge.PracticeLoadingPlugin\nFMLCorePluginContainsFMLMod: true\n\n'
+        jar(BUILD/'practice-bridge.jar',shim,[{'modid':'practicebridge','name':'PvP Practice Bridge','description':'Local, reloadable practice HUD and telemetry.','version':'0.2.0','mcversion':'1.8.9','authorList':['PvP Lab']}],{'META-INF/MANIFEST.MF':manifest,'practice/field-names.properties':field_names})
     tests=BUILD/'tests';compile_to(tests,sorted((SRC/'tests').rglob('*.java')),os.pathsep.join(map(str,[api,core,module])))
     run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.Check',BUILD/'practice-module.jar'])
     if args.install:
-        if not args.module_only:install(BUILD/'practice-bridge-0.1.0.jar',args.game_dir/'mods/practice-bridge-0.1.0.jar')
+        if not args.module_only:
+            backup=args.game_dir/'settings-backups'/('practice-bridge-'+str(time.time_ns()))
+            for old in (args.game_dir/'mods').glob('practice-bridge*.jar'):
+                backup.mkdir(parents=True,exist_ok=True);shutil.copy2(old,backup/old.name)
+            install(BUILD/'practice-bridge.jar',args.game_dir/'mods/practice-bridge.jar')
+            for old in (args.game_dir/'mods').glob('practice-bridge-*.jar'):old.unlink()
         install(BUILD/'practice-module.jar',args.game_dir/'config/pvp-practice/practice-module.jar')
         cfg=args.game_dir/'config/pvp-practice/settings.properties'
         if not cfg.exists():install(SRC/'settings.properties',cfg)

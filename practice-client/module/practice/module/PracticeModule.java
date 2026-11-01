@@ -16,6 +16,9 @@ public final class PracticeModule implements PracticeExtension {
     private long blockedTicks,playingTicks;
     private int previousHurt;
     private long flashUntil;
+    private Map<String,Object> linked=Collections.emptyMap();
+    private long linkReceived;
+    public void event(PracticeEvent e){if(e.type.equals("link_state")){linked=e.data;linkReceived=e.timeMillis;}}
 
     public void configure(Properties p,Path directory) {
         this.directory=directory;
@@ -56,6 +59,8 @@ public final class PracticeModule implements PracticeExtension {
                     lines.add(new Frame.Line(String.format(Locale.ROOT,"Target: %.2f m/s | gap %.2f m | height %+.2f",s.target.speed(),separation,s.target.y-s.self.y),6,y,0xFFFFFF,false));y+=11;
                 }
                 lines.add(new Frame.Line(String.format(Locale.ROOT,"Blocking: %.1f%% of observed ticks",100.0*blockedTicks/playingTicks),6,y,0x55FFFF,false));
+                if(linkReceived>0){y+=11;Object clients=linked.get("clients");int views=clients instanceof Map?((Map<?,?>)clients).size():0;
+                    lines.add(new Frame.Line("Practice link: server + "+views+" client views | "+Math.max(0,s.timeMillis-linkReceived)+" ms old",6,y,0xAAAAAA,false));}
             }
             if(record)write(s);
         }

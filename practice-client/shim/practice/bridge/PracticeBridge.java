@@ -24,10 +24,11 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
 /** Forge-only adapter. SRG names intentionally match the production 1.8.9 API. */
-@Mod(modid="practicebridge",name="PvP Practice Bridge",version="0.1.0",
+@Mod(modid="practicebridge",name="PvP Practice Bridge",version="0.2.0",
      clientSideOnly=true,acceptedMinecraftVersions="[1.8.9]",acceptableRemoteVersions="*")
 public final class PracticeBridge {
     private ReloadHost host;
+    private PracticeCapture capture;
     private Path directory;
     private Frame frame=Frame.empty();
     private long ticks;
@@ -36,8 +37,9 @@ public final class PracticeBridge {
 
     @Mod.EventHandler public void preInit(FMLPreInitializationEvent event) throws IOException {
         directory=event.getModConfigurationDirectory().toPath().resolve("pvp-practice");
-        Files.createDirectories(directory);host=new ReloadHost(directory);host.reload(true);
-        Runtime.getRuntime().addShutdownHook(new Thread(()->host.close(),"practice-close"));
+        Files.createDirectories(directory);host=new ReloadHost(directory);
+        capture=new PracticeCapture(host,directory);host.services(capture);ObserverHooks.sink=capture;settings();host.reload(true);
+        Runtime.getRuntime().addShutdownHook(new Thread(()->{host.close();capture.close();},"practice-close"));
     }
     @Mod.EventHandler public void init(FMLInitializationEvent event) {
         FMLCommonHandler.instance().bus().register(this);
@@ -47,11 +49,14 @@ public final class PracticeBridge {
     }
     @SubscribeEvent public void key(InputEvent.KeyInputEvent event) {
         Minecraft mc=Minecraft.func_71410_x();
+        // Do not log text typed into chat or menus.
+        if(mc.field_71462_r==null)capture.inputEvent("key",practice.core.JsonData.map("key",Keyboard.getEventKey(),"down",Keyboard.getEventKeyState(),"repeat",Keyboard.isRepeatEvent(),"event_ns",Keyboard.getEventNanoseconds()));
         if(mc.field_71462_r==null && Keyboard.getEventKeyState() && !Keyboard.isRepeatEvent()
             && Keyboard.getEventKey()==mc.field_71474_y.field_151444_V.func_151463_i())sprintPressed=true;
     }
     @SubscribeEvent public void mouse(InputEvent.MouseInputEvent event) {
         Minecraft mc=Minecraft.func_71410_x();
+        if(mc.field_71462_r==null)capture.inputEvent("mouse",practice.core.JsonData.map("button",Mouse.getEventButton(),"down",Mouse.getEventButtonState(),"dx",Mouse.getEventDX(),"dy",Mouse.getEventDY(),"wheel",Mouse.getEventDWheel(),"event_ns",Mouse.getEventNanoseconds()));
         if(mc.field_71462_r==null && Mouse.getEventButtonState()
             && Mouse.getEventButton()-100==mc.field_71474_y.field_151444_V.func_151463_i())sprintPressed=true;
     }
@@ -61,9 +66,10 @@ public final class PracticeBridge {
         return false;
     }
     @SubscribeEvent public void tick(TickEvent.ClientTickEvent event) {
-        if(event.phase!=TickEvent.Phase.START)return;
+        if(event.phase!=TickEvent.Phase.START){capture.tick(ticks,true);return;}
         Minecraft mc=Minecraft.func_71410_x();ticks++;
-        if(ticks%20==0)host.reload(false);
+        if(ticks%20==0){settings();host.reload(false);}
+        capture.tick(ticks,false);
         boolean playing=mc.field_71439_g!=null && mc.field_71441_e!=null;
         List<String> effects=new ArrayList<>();EntityPlayer target=null;
         if(playing){
@@ -97,7 +103,7 @@ public final class PracticeBridge {
         // item-use, collision and sprint-reset rules; no setSprinting or motion writes.
         if(key!=0)KeyBinding.func_74510_a(key,playing&&mc.field_71462_r==null&&(frame.holdSprint||physical(key)));
         String status=host.status();
-        if(!status.equals(lastStatus)){System.out.println("[PracticeBridge] "+status);lastStatus=status;}
+        if(!status.equals(lastStatus)){System.out.println("[PracticeBridge] "+status);capture.inputEvent("module_status",practice.core.JsonData.map("status",status));lastStatus=status;}
     }
     private static Snapshot.Player player(EntityPlayer p) {
         return new Snapshot.Player(p.func_145782_y(),p.field_70165_t,p.field_70163_u,p.field_70161_v,
@@ -106,24 +112,29 @@ public final class PracticeBridge {
             p.field_70122_E,p.func_70632_aY(),p.func_70051_ag());
     }
     @SubscribeEvent public void chat(ClientChatReceivedEvent event){host.chat(event.message.func_150260_c(),event.type);}
+    @SubscribeEvent public void renderTick(TickEvent.RenderTickEvent event){if(event.phase==TickEvent.Phase.END)capture.render(event.renderTickTime);}
     @SubscribeEvent public void overlay(RenderGameOverlayEvent.Post event) {
         if(event.type!=RenderGameOverlayEvent.ElementType.ALL)return;
         Minecraft mc=Minecraft.func_71410_x();
         if(mc.field_71439_g==null||mc.field_71474_y.field_74319_N)return;
         int width=event.resolution.func_78326_a(),height=event.resolution.func_78328_b();
+        Frame rendered=host.render(event.partialTicks,width,height);Frame display=rendered==null?frame:rendered;
+        int shapes=0;for(Frame.Rectangle r:display.rectangles){if(++shapes>256)break;
+            Gui.func_73734_a(Math.max(0,Math.min(width,r.left)),Math.max(0,Math.min(height,r.top)),Math.max(0,Math.min(width,r.right)),Math.max(0,Math.min(height,r.bottom)),r.color);}
         int count=0;
-        for(Frame.Line line:frame.lines){
+        for(Frame.Line line:display.lines){
             if(++count>40)break;
             String text=line.text==null?"":line.text.substring(0,Math.min(256,line.text.length()));
             int x=line.right?width-line.x-mc.field_71466_p.func_78256_a(text):line.x;
             mc.field_71466_p.func_175063_a(text,Math.max(0,Math.min(width-1,x)),Math.max(0,Math.min(height-10,line.y)),line.color);
         }
-        int edge=Math.min(30,Math.max(0,frame.edgeWidth));
-        if((frame.edgeColor>>>24)!=0 && edge>0){
-            Gui.func_73734_a(0,0,width,edge,frame.edgeColor);Gui.func_73734_a(0,height-edge,width,height,frame.edgeColor);
-            Gui.func_73734_a(0,edge,edge,height-edge,frame.edgeColor);Gui.func_73734_a(width-edge,edge,width,height-edge,frame.edgeColor);
+        int edge=Math.min(30,Math.max(0,display.edgeWidth));
+        if((display.edgeColor>>>24)!=0 && edge>0){
+            Gui.func_73734_a(0,0,width,edge,display.edgeColor);Gui.func_73734_a(0,height-edge,width,height,display.edgeColor);
+            Gui.func_73734_a(0,edge,edge,height-edge,display.edgeColor);Gui.func_73734_a(width-edge,edge,width,height-edge,display.edgeColor);
         }
     }
+    private void settings(){try{Properties p=new Properties();try(InputStream in=Files.newInputStream(directory.resolve("settings.properties"))){p.load(in);}capture.settings(p);}catch(IOException ignored){}}
     private void say(String text){
         Minecraft mc=Minecraft.func_71410_x();if(mc.field_71439_g!=null)mc.field_71439_g.func_145747_a(new ChatComponentText("\u00a7b[Practice] \u00a7f"+text));
     }
@@ -133,20 +144,22 @@ public final class PracticeBridge {
         props.setProperty(key,value);Path tmp=Files.createTempFile(directory,"settings-",".tmp");
         try(OutputStream out=Files.newOutputStream(tmp)){props.store(out,"PvP Practice: reloads automatically");}
         Files.move(tmp,config,StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
-        host.reload(true);say(host.status());
+        settings();host.reload(true);say(host.status());
     }
     private final class Command extends CommandBase {
         public String func_71517_b(){return "practice";}
-        public String func_71518_a(ICommandSender sender){return "/practice reload | status | metrics/potions/record/sprint on/off";}
+        public String func_71518_a(ICommandSender sender){return "/practice reload | status | capture/link/metrics/potions/record/sprint on/off | mark <text> | ping";}
         public int func_82362_a(){return 0;}
         public boolean func_71519_b(ICommandSender sender){return true;}
         public void func_71515_b(ICommandSender sender,String[] args) {
             try {
-                if(args.length==1 && args[0].equals("reload")){host.reload(true);say(host.status());}
-                else if(args.length==1 && args[0].equals("status"))say(host.status()+" | "+directory);
-                else if(args.length==2 && Arrays.asList("metrics","potions","record","sprint").contains(args[0])
+                if(args.length==1 && args[0].equals("reload")){settings();host.reload(true);say(host.status());}
+                else if(args.length==1 && args[0].equals("status")){say(host.status()+" | "+directory);say(capture.status());}
+                else if(args.length>=2 && args[0].equals("mark")){capture.marker(String.join(" ",Arrays.copyOfRange(args,1,args.length)));say("Marker recorded.");}
+                else if(args.length==1 && args[0].equals("ping")){say(capture.send("ping","manual")?"Clock probe sent.":"No local practice connection.");}
+                else if(args.length==2 && Arrays.asList("metrics","potions","record","sprint","capture","link").contains(args[0])
                     && Arrays.asList("on","off").contains(args[1]))set(args[0]+".enabled",String.valueOf(args[1].equals("on")));
-                else say(func_71518_a(sender));
+                else if(!host.command(args))say(func_71518_a(sender));
             }catch(Exception e){say("Could not update settings: "+e.getMessage());}
         }
     }

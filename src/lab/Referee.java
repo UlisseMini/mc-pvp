@@ -138,6 +138,7 @@ public final class Referee {
                 }
             }
             ServerReplay.tick();
+            PovLink.serverTick();
             if(ticks%10==0){
                 Map<String,Object> status=new LinkedHashMap<>();status.put("version","1.8.9");status.put("time",System.currentTimeMillis());
                 status.put("players",people.stream().map(R::name).toList());status.put("policies",new ArrayList<>(policies.keySet()));
@@ -534,6 +535,10 @@ public final class Referee {
     }
     static void control(String who,String policy,String opponent,Match m,double ping,double oppPing){
         if(!isBot(who))return;
+        if(!isBot(opponent)&&PovLink.subscribed(opponent)){
+            Properties config=who.equals(m.a)?m.configA:m.configB;
+            config.setProperty("science_trace","1");config.setProperty("science_network_trace","1");
+        }
         Properties p=new Properties();p.putAll(who.equals(m.a)?m.configA:m.configB);p.setProperty("enabled","true");p.setProperty("opponent",opponent);
         p.setProperty("match",m.id);p.setProperty("start_at",Long.toString(m.start));p.setProperty("ping",Double.toString(ping));p.setProperty("opponent_ping",Double.toString(oppPing));
         R.writeProperties(DATA.resolve("bots/"+who.substring(7)+"/control.properties"),p);

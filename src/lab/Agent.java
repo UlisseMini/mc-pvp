@@ -251,6 +251,8 @@ public final class Agent implements ClassFileTransformer {
                     changed=true;
                 }else if(name.equals("lm")&&method.name.equals("a")&&method.desc.equals("(Lff;)V")){
                     method.instructions.insert(callPair("lab/ReplicationTrace","send"));changed=true;
+                }else if(name.equals("lm")&&method.name.equals("a")&&method.desc.equals("(Lim;)V")){
+                    method.instructions.insert(callPair("lab/PovLink","receive"));changed=true;
                 }else if(name.equals("lm")&&method.name.equals("a")&&java.util.Set.of("(Lip;)V","(Lin;)V","(Lis;)V").contains(method.desc)){
                     method.instructions.insert(callPair("lab/ReplicationTrace","input"));changed=true;
                 }else if(name.equals("ek")&&method.name.equals("a")&&method.desc.equals("(Lio/netty/channel/ChannelHandlerContext;Lff;)V")){

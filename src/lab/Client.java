@@ -203,6 +203,7 @@ public final class Client {
             long now=System.currentTimeMillis();
             if(now-readAt>100){controls=R.properties(DIR.resolve("control.properties"));readAt=now;}
             player=R.get(mc,"thePlayer"); Object world=R.get(mc,"theWorld");
+            if(player!=null&&world!=null)PovLink.clientTick();
             if(player==null || world==null){
                 if(!connecting && ticks>30){
                     connecting=true;connectAt=now;

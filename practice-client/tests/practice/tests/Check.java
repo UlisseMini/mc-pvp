@@ -6,6 +6,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.jar.*;
 import java.io.*;
+import java.util.zip.GZIPInputStream;
 
 public final class Check {
     private static int checks;
@@ -74,6 +75,24 @@ public final class Check {
             check(host.reload(false),"changed bytecode loaded without JVM restart");
             check(host.tick(snapshot(2,false,false,true)).lines.get(0).text.equals("[SPRINTING (TOGGLED)]"),"new code executed in same process");
         }
+        Map<String,Object> data=new HashMap<>();List<Object> positions=new ArrayList<>();positions.add(1);data.put("pos",positions);
+        PracticeEvent immutable=new PracticeEvent("test",1,2,3,data);positions.add(2);data.put("extra",true);
+        check(((List<?>)immutable.data.get("pos")).size()==1&&!immutable.data.containsKey("extra"),"events copy nested mutable data");
+        boolean rejected=false;try{immutable.data.put("bad",true);}catch(UnsupportedOperationException e){rejected=true;}check(rejected,"module event map is immutable");
+        check(JsonData.encode("\u0001\n\"\\").equals("\"\\u0001\\n\\\"\\\\\""),"JSON escapes all control characters");
+        CaptureLog capture=new CaptureLog(dir.resolve("good.jsonl.gz"),10000);
+        capture.offer(JsonData.encode(JsonData.map("type","test","value",1)));capture.close();check(capture.awaitClosed(5000),"async writer drains on close");
+        String content;
+        try(Scanner scanner=new Scanner(new GZIPInputStream(Files.newInputStream(capture.path)),"UTF-8")){content=scanner.useDelimiter("\\A").next();}
+        check(content.contains("\"type\":\"test\"")&&content.contains("\"writer_complete\":true"),"compressed capture has records and final integrity marker");
+        CaptureLog capped=new CaptureLog(dir.resolve("capped.jsonl.gz"),5);capped.offer("{\"too_large\":true}");capped.close();capped.awaitClosed(5000);
+        try(Scanner scanner=new Scanner(new GZIPInputStream(Files.newInputStream(capped.path)),"UTF-8")){content=scanner.useDelimiter("\\A").next();}
+        check(content.contains("\"size_capped\":true")&&content.contains("\"writer_complete\":false"),"size cap is explicit, never silently complete");
+        CaptureLog rotating=new CaptureLog(dir.resolve("rotating.jsonl.gz"),20,3);rotating.offer("{\"n\":1}");rotating.offer("{\"n\":2}");rotating.offer("{\"n\":3}");rotating.close();rotating.awaitClosed(5000);
+        try(Scanner scanner=new Scanner(new GZIPInputStream(Files.newInputStream(rotating.path)),"UTF-8")){content=scanner.useDelimiter("\\A").next();}
+        check(content.contains("rotating-part2.jsonl.gz")&&content.contains("\"writer_complete\":true"),"rotation links a complete first segment");
+        try(Scanner scanner=new Scanner(new GZIPInputStream(Files.newInputStream(dir.resolve("rotating-part2.jsonl.gz"))),"UTF-8")){content=scanner.useDelimiter("\\A").next();}
+        check(content.contains("\"n\":3")&&content.contains("\"writer_complete\":true")&&rotating.dropped()==0,"boundary record is retained in the next compressed segment");
         try(java.util.stream.Stream<Path> paths=Files.walk(dir)){paths.sorted(Comparator.reverseOrder()).forEach(p->{try{Files.delete(p);}catch(IOException e){throw new UncheckedIOException(e);}});}
         System.out.println("Practice checks passed: "+checks);
     }

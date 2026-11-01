@@ -3,12 +3,13 @@
 
 Requires the normal launcher to have installed Forge 1.8.9 and Java 8.
 Connects the synthetic PracticeCheck account to the local practice server.
-Does not start a duel or touch the user's account/settings.
+Starts a short synthetic boxing duel; does not touch the user's account/settings.
 """
 from build import *
 from lab_runtime import sandbox_profile
 
 def main():
+    parser=argparse.ArgumentParser();parser.add_argument('--optifine',action='store_true');args=parser.parse_args()
     verify_cache()
     mc=Path.home()/'Library/Application Support/minecraft'
     work=BUILD/'smoke';work.mkdir(exist_ok=True)
@@ -50,7 +51,13 @@ def main():
     jar(work/'probe.jar',work/'probe-classes')
     game=ROOT/'runtime/practice-forge-smoke';game.mkdir(exist_ok=True)
     for d in ['mods','config/pvp-practice','tmp','home']:(game/d).mkdir(parents=True,exist_ok=True)
-    shutil.copyfile(BUILD/'practice-bridge-0.1.0.jar',game/'mods/practice-bridge.jar')
+    optifine=game/'mods/OptiFine_1.8.9_HD_U_L5.jar'
+    if args.optifine:
+        source=mc/'mods'/optifine.name
+        if hashlib.sha256(source.read_bytes()).hexdigest()!='b442bf55e4c703c55f5f48055d79c07eb853fcb76fa88f85587e911af4f2b084':raise RuntimeError('OptiFine does not match the verified official download')
+        shutil.copyfile(source,optifine)
+    else:optifine.unlink(missing_ok=True)
+    shutil.copyfile(BUILD/'practice-bridge.jar',game/'mods/practice-bridge.jar')
     shutil.copyfile(work/'probe.jar',game/'mods/probe.jar')
     shutil.copyfile(BUILD/'practice-module.jar',game/'config/pvp-practice/practice-module.jar')
     shutil.copyfile(SRC/'settings.properties',game/'config/pvp-practice/settings.properties')
@@ -89,7 +96,7 @@ def main():
         except subprocess.TimeoutExpired:
             process.kill();process.wait();raise RuntimeError('Forge smoke test timed out; see '+str(log))
     text=log.read_text(errors='replace')
-    if code or '[PracticeProbe] ALL CHECKS PASSED' not in text:
+    if code or '[PracticeProbe] ALL CHECKS PASSED' not in text or '[PracticeProbe] FAILED' in text:
         print(text[-12000:]);raise RuntimeError('Forge smoke test failed: '+str(code))
     print('\n'.join(line for line in text.splitlines() if '[PracticeProbe]' in line or '[PracticeBridge]' in line))
 

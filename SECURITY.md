@@ -52,7 +52,7 @@ opened zero connections. Old Minecraft includes other old libraries; sandboxing 
 loopback-only networking reduce exposure but do not establish absence of bugs.
 The sandbox is defense in depth, not a virtual machine or a security audit.
 
-No upstream performance optimization mod is used. Normal bot setups keep native
+No upstream performance optimization mod is used by the bots. Normal bot setups keep native
 three-block targeting and movement. Our hooks inject controls, record observations,
 restore boxing health after real damage, and count accepted hits. Two explicitly
 requested practice rules are marked in match metadata: rod mode admits zero-damage
@@ -81,6 +81,30 @@ Loopback restricts access to this computer; it does not authenticate other local
 programs. Offline mode is needed for synthetic bot identities. Do not change
 the binding or expose these old binaries to a public network. One shared
 human latency proxy is intended for a single human player in this version.
+
+## Optional human Forge client
+
+The separately installed practice bridge uses pinned official Forge 1.8.9 and
+LaunchWrapper dependencies. Its own core hooks copy PLAY packet bytes and expose
+input/view observations to one fixed local reloadable module. The diagnostic
+channel uses the existing loopback Minecraft connection, bounded messages and
+queues, connection-derived identity and a small data-only protocol. It does not
+allow remote commands, executable updates or remote module selection. No new
+network listener is opened. Bot policies do not consume other clients' views.
+
+Detailed localhost captures include PLAY chat and player names/UUIDs, but exclude
+login/authentication traffic and account/session objects. Files stay local, rotate
+at fixed limits and explicitly mark drops/caps. The human's ordinary launcher and
+local modules have normal Java permissions; they are not covered by the bot
+process sandbox. The separate Forge smoke client is sandboxed and uses only a
+synthetic identity. See `practice-client/README.md` for recording controls.
+
+OptiFine L5 is optional in the human client. The installed file's SHA-256 is
+`b442bf55e4c703c55f5f48055d79c07eb853fcb76fa88f85587e911af4f2b084`; it was
+matched byte-for-byte to the official optifine.net download and its VirusTotal
+report showed 0/64 detections at review. That establishes provenance and the
+observed scan result, not proof that any Java mod is harmless. OptiFine has its
+own network features (such as cape textures), independent of the practice link.
 
 ## Sources
 

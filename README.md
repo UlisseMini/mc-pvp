@@ -20,8 +20,9 @@ individual equations are much better checked than its full-fight forecasts.
 ## Join and play
 
 Optional Forge 1.8.9 client: [our practice mod](practice-client/README.md)
-provides ToggleSprint, a potion HUD, and local live reload for future practice
-displays/recordings. Its client commands start with `/practice`.
+provides ToggleSprint, a potion HUD, automatic localhost packet/input/view
+recording, and a link joining the human, bot and server views. Practice modules
+reload live; client commands start with `/practice`.
 
 1. Open Minecraft Java **1.8.9** in your normal launcher.
 2. Choose **Multiplayer → Direct Connect** and enter **127.0.0.1:25565**.

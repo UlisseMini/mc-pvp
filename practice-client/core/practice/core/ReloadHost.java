@@ -15,9 +15,11 @@ public final class ReloadHost implements AutoCloseable {
     private URLClassLoader loader;
     private Path copy;
     private boolean faulted;
+    private PracticeServices services;
 
     public ReloadHost(Path directory){this.directory=directory;}
     public String status(){return status;}
+    public void services(PracticeServices services){this.services=services;}
     private byte[] readBounded(Path p,int max) throws IOException {
         if(Files.size(p)>max)throw new IOException(p.getFileName()+" is too large");
         byte[] data=Files.readAllBytes(p);if(data.length>max)throw new IOException("File grew while reading");return data;
@@ -35,6 +37,7 @@ public final class ReloadHost implements AutoCloseable {
             candidateCopy=Files.createTempFile(cache,"module-",".jar");Files.write(candidateCopy,jar);
             candidateLoader=new URLClassLoader(new URL[]{candidateCopy.toUri().toURL()},PracticeExtension.class.getClassLoader());
             candidate=(PracticeExtension)Class.forName("practice.module.PracticeModule",true,candidateLoader).getDeclaredConstructor().newInstance();
+            if(services!=null)candidate.services(services);
             candidate.configure(props,directory);
             dispose(active,loader,copy);
             active=candidate;loader=candidateLoader;copy=candidateCopy;faulted=false;
@@ -52,6 +55,18 @@ public final class ReloadHost implements AutoCloseable {
     public void chat(String text,int type){
         if(active==null||faulted)return;
         try{active.chat(text,type);}catch(Exception|LinkageError e){faulted=true;status="Module chat error: "+e.getClass().getSimpleName();}
+    }
+    public void event(PracticeEvent event){
+        if(active==null||faulted)return;
+        try{active.event(event);}catch(Exception|LinkageError e){faulted=true;status="Module event error: "+e;}
+    }
+    public Frame render(float partial,int width,int height){
+        if(active==null||faulted)return null;
+        try{return active.render(partial,width,height);}catch(Exception|LinkageError e){faulted=true;status="Module render error: "+e;return null;}
+    }
+    public boolean command(String[] args){
+        if(active==null||faulted)return false;
+        try{return active.command(args);}catch(Exception|LinkageError e){faulted=true;status="Module command error: "+e;return false;}
     }
     private static void dispose(PracticeExtension mod,URLClassLoader loader,Path copy) {
         try{if(mod!=null)mod.close();}catch(Exception ignored){}

@@ -6,9 +6,19 @@ public final class Frame {
     public final boolean holdSprint;
     public final List<Line> lines;
     public final int edgeColor,edgeWidth;
+    public final List<Rectangle> rectangles;
     public Frame(boolean holdSprint,List<Line> lines,int edgeColor,int edgeWidth) {
+        this(holdSprint,lines,edgeColor,edgeWidth,Collections.emptyList());
+    }
+    public Frame(boolean holdSprint,List<Line> lines,int edgeColor,int edgeWidth,List<Rectangle> rectangles) {
         this.holdSprint=holdSprint;this.lines=Collections.unmodifiableList(new ArrayList<>(lines));
         this.edgeColor=edgeColor;this.edgeWidth=edgeWidth;
+        this.rectangles=Collections.unmodifiableList(new ArrayList<>(rectangles));
+    }
+    /** GUI-scaled pixels; enough for timing bars, plots and history indicators. */
+    public static final class Rectangle {
+        public final int left,top,right,bottom,color;
+        public Rectangle(int left,int top,int right,int bottom,int color){this.left=left;this.top=top;this.right=right;this.bottom=bottom;this.color=color;}
     }
     public static Frame empty(){return new Frame(false,Collections.emptyList(),0,0);}
     public static final class Line {
