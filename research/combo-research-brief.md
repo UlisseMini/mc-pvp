@@ -38,7 +38,34 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Overnight mandate (2026-11-01)
 
+### Current evidence after the strength/timing pass
+
+See [combo-strength-phase-20261101.md](combo-strength-phase-20261101.md).
+A legal own-hurt-cued spacing controller now maintains60s natively at own/B
+RTT150/0,H1.1,V1,hit8:150/150/150 fresh versus W-tap2/2/2. Last two repeats are
+fully timing-clean; first retains one108ms tick flag. Both use the same4s silent
+opponent opening, whose free hits are excluded. Native3.0 reach and20CPS cap.
+The successful controller uses normal hits; learning phase was unnecessary in
+its causal ablation. The prepared S/N branch works mechanically but performs
+poorly because its protocol adds50–100ms and unnecessary W-off movement.
+The final432-setting,three-phase grid contains no9/10-tick success; this is NOT
+an infeasibility proof. Keep the8-tick native witness as the new continuation
+anchor. Acquisition without a handicap and broader ping robustness remain open.
+No extra native/offline job is queued; server combat defaults restored1/1/10.
+
 ### Latest direction: legal-controller settings search before native trials
+
+Next mechanism pass: add deliberate normal-versus-sprint hit selection on top
+of the frozen spacing feedback, verifying actual delivered strength rather than
+assuming Ctrl means a sprint hit. Use own received landing/height cues and
+spacing; do not read the victim's true state. Separately estimate processing
+phase from this client's incoming packet timing and test phase-aware click
+admission. Distinguish observable server phase, opponent movement phase, and
+which timing components ordinary inputs can actually change. A delayed click
+still passes through the native input queue and cannot move an admitted attack
+backwards in time. Keep the same settings/phase sweep and matched W-tap gate.
+Only combine individually justified changes; a nominal wall-clock phase change
+is not evidence that actual C02 consumption/service phase moved.
 
 Search the coupled model first across near-vanilla settings, including BOTH
 players' RTTs (initial values0/60/120/150ms), horizontal KB within±10%, vertical

@@ -1,5 +1,12 @@
 # Moving the combo demonstration toward vanilla
 
+**Update:** the subsequent timing/strength pass has a repeated native60s
+maintenance lock at H1.1/V1/hit8, RTT150/0:150/150/150 versus matched W-tap2/2/2,
+with two clean trials and one retained timing flag. See
+[the current findings](combo-strength-phase-20261101.md), including the4s setup
+handicap, full grid, native reach checks and limits. The narrative below is the
+previous pass, preserved under its original results.
+
 Work in progress, November 1. **No near-vanilla native60-second lock yet.**
 The two-tick/zero-vertical demonstration remains only an anchor. We tested the
 continuation ladder, then a model-derived vanilla input sequence and two

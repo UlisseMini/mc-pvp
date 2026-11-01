@@ -126,7 +126,7 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
         # Historical fixtures only exposed W+Ctrl/coast; newer policy traces
         # provide the actual key for every input tick, including acquisition.
         explicit_keys={e['native_tick']:e['key'] for e in es
-                       if e['type'] in ('gap_strafe_plan','frozen_cycle_plan','tick_cycle_plan')}
+                       if e['type'] in ('gap_strafe_plan','frozen_cycle_plan','tick_cycle_plan','hurt_window_coast_plan')}
         for move in moves[side]:
             if not 0<=clock(move)<seconds*1000:continue
             tick=move['tick'];q=move['before']
