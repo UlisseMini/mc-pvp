@@ -513,6 +513,7 @@ public final class Client {
                 OrbitController.Decision decision=orbit.decide(now,lastObservedTargetHurt,lastObservedHurt,obs.localRange,
                     obs.vx*nx+obs.vz*nz,obs.tvx*nx+obs.tvz*nz,obs.ground,obs.sprint,orbitSettings);
                 setKeys(decision.forward,0,decision.sprintKey);
+                clickGate=decision.click;
                 if(decision.resetStarted)log(Compat.map("type","wtap","time",now,"match",match,
                     "cue_time",lastObservedTargetHurt,"release_until",now+50,"reason",decision.maintenance?"orbit_repair":"orbit_acquisition","pause_ticks",1,"native_tick",ticks));
                 Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","orbit_plan");plan.put("time",now);plan.put("match",match);
@@ -521,6 +522,7 @@ public final class Client {
                 plan.put("opening_wait",decision.openingWait);plan.put("local_range",obs.localRange);plan.put("repair_every",orbitSettings.repairEvery);
                 plan.put("projected_range",Double.isFinite(decision.projectedRange)?decision.projectedRange:null);
                 plan.put("spacing_range",orbitSettings.spacingRange);
+                plan.put("click_gate",decision.click);plan.put("min_contact_ms",orbitSettings.minContactMs);
                 plan.put("forward",decision.forward);plan.put("sprint_key",decision.sprintKey);plan.put("local_sprint",obs.sprint);
                 plan.put("sent_sprint",obs.sentSprint);plan.put("scheduled_reset_at",decision.scheduledResetAt);log(plan);
             }

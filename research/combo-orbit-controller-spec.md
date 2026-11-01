@@ -4,10 +4,138 @@ This is a proposed experiment, not an established infinite-combo solution. It
 uses normal W/Ctrl and capped physical clicks, perfect local-view aim, no
 jumping or strafing, zero artificial reaction delay, and no opponent-client or
 server state during control. Both sides have a 20 CPS ceiling. Native three-POV
-logs are available only for diagnosis afterward. No runtime changes or matches
-were performed in preparing this note.
+logs are available only for diagnosis afterward. Implementation and native
+diagnostics below have not yet established a sustainable full-reach lock.
+
+The current objective and all user hints are recorded in
+`research/combo-research-brief.md`. Own reach is required at the next **native
+fresh-damage window**, not throughout immunity. Earlier stronger continuous-own
+metrics are retained as secondary diagnostics, not the primary success rule.
 
 ## Main hypothesis
+
+### Capability curriculum, 2026-11-01
+
+The user's methodological correction supersedes the variant screen below.
+The unfinished `orbit-forge-cycle-20261101` cohort is stopped, with completed
+and timing-excluded rounds preserved. Do not resume it as an algorithm search.
+
+The first capability is **maintenance**, using a native-reach candidate and a
+reduced-reach hold-W opponent. All other mechanics remain native: vanilla
+knockback, both players' real local collision boxes and view delays, 20 CPS
+ceilings, ordinary input handling, and no jumps or strafes. Use a six-block
+resting start with the existing setup countdown, one serial match, and 20/20 ms
+added RTT. JVM phases are recorded rather than claimed to be deterministic.
+
+The controller receives only its own native observations. All three POVs are
+used afterward to check the proposed mechanism and the actual failure cycle.
+An opponent client's reach observation must never become a live feedback input.
+
+`combo_curriculum.py` runs one declared test and freezes policy, code and
+runtime identities. It cannot rank a grid or automatically promote a winner.
+Its reduced-reach allowance is separate from the competitive tournament guard,
+which still rejects non-3.0 reach. A passing maintenance probe requires, from
+the **predeclared third fresh hit**, at least 20 seconds and 20 fresh contacts,
+no accepted reply (including upgrades), contact gaps no longer than 1 second,
+own reach at every native readiness/send-time bracket, and the candidate
+continuously outside the target's own reach, with no >100 ms geometry-data gap. An
+early good streak followed by failure or standing out of range cannot pass.
+The initial three probes used a weaker defender-denial-only criterion. The
+user then clarified that own reach is required at readiness, not during the
+entire immunity period. The stronger retrospective audit is
+`research/curriculum-strict-audit-20261101.json`; the current primary analysis
+is `research/fresh-window-audit-20261101.json`. All three probes still fail a
+sustained lock, so these corrections do not promote or erase a result.
+This is finite sampled evidence, not proof of infinite or continuous denial.
+
+Stages:
+
+1. Establish a repeatable reduced-reach cycle. Start at 2.5; if acquisition
+   itself fails, reduce only defender reach far enough to isolate maintenance.
+2. Confirm the same settings on both arena sides and longer runs; inspect
+   contact-to-contact separation, height and actual sprint classification.
+3. Increase defender reach only after the preceding stage passes. At the first
+   failure, preserve its clock/packet/input history and identify which boundary
+   was crossed; change one mechanism justified by that boundary.
+4. At native 3.0 reach, separate entering the cycle from maintaining it. Then
+   vary initial geometry and RTT, and finally test a straight-running W-tapper.
+5. Strategic jumping is an explicitly separate later control axis. Human rod
+   combos can demonstrate feasible spacing trajectories but cannot establish
+   sword-only acquisition or indefinite maintenance by themselves.
+
+Initial evidence: `m1167`, defender reach2.5, scored57–69 and failed. With only
+defender reach reduced to1.5, `m1170` scored40–1 but still failed: its reply
+arrived11.436s after start. These are capability failures despite the latter's
+large winning margin. Both passed native input/clock checks. The fixed controller
+aimed at2.75 local nearest-box distance and reset after each visible outgoing cue.
+
+The next targeted intervention is `orbit_min_contact_ms=700`: after a visible
+outgoing hurt cue, wait700ms before issuing more physical clicks. This tests a
+slower, predominantly grounded launch cycle, rather than hitting at every legal
+window. Its spatial predictor must remove the native .6 contact-drag assumption
+when no click is requested. Issued clicks remain untouched by the native engine.
+The delay is an intentionally conservative first rung, not a fitted optimal
+vanilla solution. Historical human footage shows that a small airborne launch
+is recoverable with suitable spacing, so it is not an automatic failure proof.
+
+The700ms intervention (`m1172`) scored37–72 and failed. It kept its target
+inside local reach after the third fresh hit, but the defender could also reach
+it in440/522 samples. The input/packet trace identifies a concrete coupling:
+after the2243ms sprint hit, the spatial controller started sprint at2740ms,
+then stopped sprint at2843ms to coast. The next attack arrived3040ms while the
+player was still coasting, producing an ordinary .4 horizontal launch rather
+than the intended .9 sprint launch. A W reset is not stored sprint readiness;
+movement at the eventual attack matters. No claim that this was a successful
+grounded sprint cycle is justified.
+
+Under the stricter definition, `m1170`'s impressive40–1 score also contains no
+three-fresh-hit continuous one-sided window. Its target was outside the
+candidate's local reach in257/537 post-entry samples. The longest sampled
+one-sided window was1141ms. Do not call this an indefinite-combo stepping stone
+merely because the score was large.
+
+Before another controller trial, compute conditional single-launch movement
+envelopes using a recorded opponent trajectory and the verified exact travel
+kernel. This asks whether the candidate has enough headroom and acceleration
+to satisfy the upper reach boundary at all, then checks the lower boundary.
+The fixed-trajectory counterfactual ends at the next opponent-affecting event;
+it cannot prove full-fight feasibility or impossibility.
+
+### Distance and momentum state
+
+For aligned players on flat ground, let positive x point from A toward B,
+and let `B_A` mean B's rendered position on A's client. Ignoring the common
+horizontal hitbox border, the measured horizontal reach advantage is exactly
+
+```
+d_B - d_A = (x_B - B_A) + (x_A - A_B).
+```
+
+At approximately constant velocities and effective view ages tau,
+`d_B-d_A ≈ v_B*tau_BA + v_A*tau_AB`. A advancing and B moving backward from
+its own facing direction make both terms positive. This is a displacement-over-
+view-lag statement, not an intrinsic extra reach or a universal .5-block bonus.
+For real observations, shortest eye-to-expanded-box distance also includes a
+height correction; packet timing and interpolation vary the effective ages.
+
+The controller's objective is a viable region in **distance, velocity and
+remaining immunity**, not
+one constant target distance or maximum knockback. A strong launch can violate
+the upper boundary by pushing B beyond3; too little launch or over-pursuit can
+violate the lower boundary on B's screen. Native click drag, acceleration and
+sprint packet state constrain which corrections are actually available. The
+readiness-based band is primary; progress and fresh hits prevent a stationary
+or no-attack solution from being counted as success. A brief upper-bound
+excursion during immunity is allowed if the next native damage window is met.
+
+`fresh_window_analysis.py` brackets readiness using native target immunity
+snapshots rather than nominal500ms or the policy's click gate. It maps the
+bracket to a local input interval using the full observed contact-to-server
+delay envelope and reports unknown/mixed geometry honestly. Its initial
+milestone also requires the next hit within two nominal ticks of the bracket,
+so an arbitrary700ms gate cannot redefine an inconvenient damage window.
+The per-window evidence is preserved even when this conservative certificate
+fails. Input-to-server counterfactual arrival remains uncertain.
 
 ### Native diagnostic update, 2026-11-01
 

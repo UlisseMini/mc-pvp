@@ -1,8 +1,16 @@
 import unittest
 from combo_survival import episodes, geometric_distance
+from native_windows import overlap
 
 
 class ComboCheck(unittest.TestCase):
+    def test_strict_window_splits_when_both_leave_range(self):
+        a=[{'time':t,'in_range':v} for t,v in [(0,True),(50,False),(100,True)]]
+        b=[{'time':t,'in_range':False} for t in (0,50,100)]
+        result=overlap(a,b,0,150,include_windows=True)
+        self.assertEqual(result['a']['longest_defender_denied_ms'],150)
+        self.assertEqual(result['a']['one_sided_windows'],[{'start':0,'end':50},{'start':100,'end':150}])
+
     def test_distance_ignores_aim(self):
         p = {'native_eye': [0, 1.62, 0], 'expanded_box': [3, 0, -.4, 3.8, 1.9, .4], 'in_range': False}
         self.assertEqual(geometric_distance(p), 3)

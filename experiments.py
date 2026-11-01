@@ -25,7 +25,7 @@ def status():
     if time.time()-data['time']/1000>5:raise RuntimeError('Server status is stale; start the lab first')
     return data
 
-async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
+async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing',*,reach_curriculum=False):
     request='exp-'+uuid.uuid4().hex
     # This UUID cannot occur in an already completed match. Avoid decoding the
     # entire historical ladder on every poll: with concurrent short trials that
@@ -39,6 +39,10 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
     if mode not in ('boxing','diamond','diamond_box','rod_diamond'):raise ValueError('Unknown combat mode')
     if mode!='boxing' and duration_ms is not None:raise ValueError('Timed scenarios currently use boxing; health duels run to death or timeout')
     parameters={name:properties(ROOT/'policies'/f'{name}.properties') for name in (a,b)}
+    if reach_curriculum:
+        reaches=[float(parameters[name].get('attack_reach',3)) for name in (a,b)]
+        if mode!='boxing' or duration_ms is None or max(reaches)!=3 or min(reaches)<1 or min(reaches)>3:
+            raise ValueError('Reach curriculum requires a timed boxing scenario, one native-reach bot, and only reduced reach')
     expected_build=artifact_hashes()
     # Preserve spare capacity for the user's challenges: three matches / eight bots.
     while True:
@@ -71,7 +75,8 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
             if p.name in existing_results:continue
             result=json.loads(p.read_text())
             if result.get('request')==request:
-                if result.get('modified_reach'):issues.add('Modified-reach practice is excluded from the vanilla ladder')
+                if result.get('modified_reach') and not reach_curriculum:issues.add('Modified-reach practice is excluded from the vanilla ladder')
+                result['evaluation_scope']='reduced-reach curriculum; excluded from vanilla ladder' if reach_curriculum else 'native-reach evaluation'
                 result['parameters']=parameters
                 intervals=[];resets=0;input_metrics={}
                 for side in ('a','b'):
@@ -126,6 +131,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
                                 critical_cues.add(cue)
                         if event['type']=='engine_attack' and 'native_raycast_distance' in event:
                             if event['native_raycast_distance']>3.00001:issues.add(f'{side}: native attack exceeded three blocks')
+                            if event['native_raycast_distance']>float(parameters[result['policy_'+side]].get('attack_reach',3))+.00001:issues.add(f'{side}: native attack exceeded declared reach')
                             if not all(event.get(k) for k in ('target_ready','target_loaded_identity','ray_selected_target')):issues.add(f'{side}: attack used an invalid native view')
                             if event.get('target_name')!=result['b' if side=='a' else 'a']:issues.add(f'{side}: attacked outside assigned duel')
                         if event.get('target_is_canonical') is False or event.get('raycast_stale') is True:issues.add(f'{side}: stale native entity')

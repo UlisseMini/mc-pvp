@@ -70,6 +70,10 @@ def analyze(game):
         lock = sustained_combo(windows, contacts, returns)
         lock['definition'] = 'At least 3 fresh contacts during continuous geometric defender-reach denial, <=1000ms between contacts, no accepted sword return. Aim misses alone do not count.'
         metrics[side]['geometric_lock'] = lock
+        strict_windows = geometry[side].pop('one_sided_windows')
+        strict = sustained_combo(strict_windows, contacts, returns)
+        strict['definition'] = 'At least 3 fresh contacts during one uninterrupted sampled interval with attacker inside own reach AND defender outside own reach. No both-out-of-range gaps; no accepted return.'
+        metrics[side]['continuous_one_sided_lock'] = strict
         policy = game.get('parameters_' + other, game.get('parameters', {}).get(game.get('policy_' + other), {}))
         wake = game['start'] + float(policy.get('click_start_ms', 0))
         after = [h for h in hits if h['time'] >= wake and not h.get('rod')]

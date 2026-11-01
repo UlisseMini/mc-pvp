@@ -48,6 +48,14 @@ public final class OrbitControllerCheck {
         check(!d.forward&&Math.abs(d.projectedRange-2.71)<1e-9,"close range coasts and retains immune-contact drag");
         d=c.decide(1100,1000,0,3.2,.04,2,true,false,s);
         check(d.forward,"outward moving target resumes approach");
+        ctrl.setProperty("orbit_min_contact_ms","700");
+        s=OrbitController.Settings.from(ctrl);c.reset();
+        check(c.decide(900,0,0,3.2,0,0,true,false,s).click,"opening may click before any cue");
+        d=c.decide(1000,1000,0,2.8,.15,0,true,true,s);
+        check(!d.click&&!d.forward&&Math.abs(d.projectedRange-2.65)<1e-9,"quiet cycle coasts without invented contact drag");
+        check(!c.decide(1699,1000,0,s).click,"guard remains closed before declared cue age");
+        check(c.decide(1700,1000,0,s).click,"guard opens exactly at declared cue age");
+        check(!c.decide(1750,1750,0,s).click,"next visible fresh cue starts a new interval");
         Properties p=new Properties();p.setProperty("click_cps","20");
         MotionClickController.Input i=new MotionClickController.Input(1325,1000,0,-.2,true,true,true);
         check(MotionClickController.decide(i,MotionClickController.Settings.from(p)).recoil(),"20CPS has a free recoil slot125ms before start");

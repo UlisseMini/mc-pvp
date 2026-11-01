@@ -4,7 +4,7 @@ def overlap(a,b,start,finish,max_age_ms=150,include_windows=False):
     events=sorted([(e['time'],0,bool(e['in_range'])) for e in a]+[(e['time'],1,bool(e['in_range'])) for e in b])
     latest=[None,None];values=[False,False];durations={'a_only':0,'b_only':0,'both':0,'neither':0}
     longest={'a_only':0,'b_only':0};active=None;run=0;previous_end=None
-    denied=[[],[]]
+    denied=[[],[]];one_sided=[[],[]]
     for index,(time,side,value) in enumerate(events):
         latest[side]=time;values[side]=value
         if any(t is None for t in latest):continue
@@ -15,6 +15,10 @@ def overlap(a,b,start,finish,max_age_ms=150,include_windows=False):
         dt=right-left;durations[key]+=dt
         for attacker in (0,1):
             if values[1-attacker]:continue
+            if values[attacker]:
+                strict=one_sided[attacker]
+                if strict and strict[-1]['end']==left:strict[-1]['end']=right
+                else:strict.append({'start':left,'end':right})
             windows=denied[attacker]
             if windows and windows[-1]['end']==left:
                 windows[-1]['end']=right;windows[-1]['attacker_can_hit_ms']+=dt if values[attacker]else 0
@@ -34,7 +38,9 @@ def overlap(a,b,start,finish,max_age_ms=150,include_windows=False):
                       'longest_one_sided_window_ms':longest[side+'_only']}
         windows=denied[0 if side=='a'else 1]
         result[side]['longest_defender_denied_ms']=max((w['end']-w['start']for w in windows),default=0)
-        if include_windows:result[side]['defender_denial_windows']=windows
+        if include_windows:
+            result[side]['defender_denial_windows']=windows
+            result[side]['one_sided_windows']=one_sided[0 if side=='a'else 1]
     return result
 
 
