@@ -6,11 +6,12 @@ import java.util.*;
 public final class ServerReplay {
     static final Map<String,Session> sessions=new LinkedHashMap<>();
     static final Set<String> floorChunks=new HashSet<>();
-    static final String USAGE="/replay [match-id] | controls | list [all] | pause | play | back/forward [seconds] | seek <seconds or +/-seconds> | speed <positive multiplier> | a | b | free | stop";
+    static final String USAGE="/replay [match-id] | controls | combos [page] | list [all] | pause | play | back/forward [seconds] | seek <seconds or +/-seconds> | speed <positive multiplier> | a | b | free | stop";
     static final class Session {
         final String viewer;
         final ReplayData data;
         final ReplayTimeline clock;
+        final List<ReplayCombos.Combo> combos;
         final Object[] actors=new Object[2],hooks=new Object[2];
         final int[] hookRecordedId={-1,-1},held={-1,-1},swing={-1,-1};
         final int arena;
@@ -22,6 +23,7 @@ public final class ServerReplay {
         boolean spawned,ended,startPlaying=true;
         Session(String viewer,ReplayData data,int arena,long now){
             this.viewer=viewer;this.data=data;this.arena=arena;center=4096.0*(arena+1);
+            combos=ReplayCombos.find(data.events,ReplayData.string(data.result,"a","a"),ReplayData.string(data.result,"b","b"),data.start,"boxing".equals(data.result.get("mode")));
             readyAt=now+2000;clock=new ReplayTimeline(data.duration,readyAt);clock.pause(true,readyAt);
         }
     }
@@ -63,6 +65,7 @@ public final class ServerReplay {
         Referee.message(viewer,"§6Server replay "+match+" §7— "+data.label("a")+" vs "+data.label("b")+". Recorded server positions/events; not either client's original POV.");
         if(!data.posesRecorded)Referee.message(viewer,"§7Older recording: look direction/equipment are approximated; rod flight and precise block poses were not recorded.");
         controls(viewer);
+        combos(viewer,s,1);
     }
     static boolean inUse(int arena){for(Session s:sessions.values())if(s.arena==arena)return true;return false;}
     static void prepareStage(Object world,ReplayData data,double center){
@@ -86,7 +89,7 @@ public final class ServerReplay {
         Referee.message(p,"§6Replay controls §7— open chat (T) and click. /replay controls shows these again.");
         controlRow(p,"Time",new String[][]{{"-5s","back 5"},{"-1s","back 1"},{"Pause","pause"},{"Play","play"},{"+1s","forward 1"},{"+5s","forward 5"},{"Go to...","seek ","suggest_command"}});
         controlRow(p,"Speed",new String[][]{{"0.1x","speed 0.1"},{"0.25x","speed 0.25"},{"0.5x","speed 0.5"},{"1x","speed 1"},{"2x","speed 2"},{"Custom...","speed ","suggest_command"}});
-        controlRow(p,"View",new String[][]{{"Follow A","a"},{"Follow B","b"},{"Fly freely","free"},{"Exit replay","stop"}});
+        controlRow(p,"View",new String[][]{{"Follow A","a"},{"Follow B","b"},{"Fly freely","free"},{"Combos","combos"},{"Exit replay","stop"}});
         Referee.message(p,"§7Any positive speed works. Seek: 12.5 = timestamp; -5 / +5 = relative seconds.");
     }
     static void controlRow(Object p,String label,String[][] buttons){
@@ -97,6 +100,34 @@ public final class ServerReplay {
                 "hoverEvent",Map.of("action","show_text","value",action.equals("suggest_command")?"Type a number after "+command:command)));
         }
         Referee.vanilla("tellraw "+Referee.safeName(p)+" "+Json.encode(Map.of("text",label+": ","color","gray","extra",extra)));
+    }
+    static void combos(Object viewer,Session s,int page){
+        int pages=Math.max(1,(s.combos.size()+ReplayCombos.PAGE_SIZE-1)/ReplayCombos.PAGE_SIZE);
+        if(page<1||page>pages)throw new IllegalArgumentException("Use /replay combos <page> between 1 and "+pages+".");
+        if(s.combos.isEmpty()){
+            Referee.message(viewer,"§6Combos §7— no runs of 3+ unanswered melee hits in this replay.");return;
+        }
+        int from=(page-1)*ReplayCombos.PAGE_SIZE,to=Math.min(s.combos.size(),from+ReplayCombos.PAGE_SIZE);
+        Referee.message(viewer,"§6Combos "+(from+1)+"–"+to+" of "+s.combos.size()+" §7— click to watch, with a 0.75s lead-in. /replay combos shows this again.");
+        Referee.message(viewer,"§8Three or more unanswered melee hits; rod contacts ignored. "+("boxing".equals(s.data.result.get("mode"))?"Boxing uses accepted hits.":"HP-damage hits when recorded; otherwise accepted hits."));
+        for(int i=from;i<to;i++){
+            ReplayCombos.Combo c=s.combos.get(i);String side=c.side==0?"a":"b",other=c.side==0?"b":"a";
+            String hover="Watch "+s.data.label(side)+" land "+c.hits+" unanswered melee hits ("+ReplayCombos.timestamp(c.firstMs)+"–"+
+                ReplayCombos.timestamp(c.lastMs)+"). Starts at "+ReplayCombos.timestamp(c.seekMs())+"; keeps your replay speed.";
+            Map<String,Object> row=Map.of("text","["+(i+1)+"] "+ReplayCombos.timestamp(c.firstMs)+" ","color","gray",
+                "clickEvent",Map.of("action","run_command","value","/replay combo "+s.data.id+" "+(i+1)),
+                "hoverEvent",Map.of("action","show_text","value",hover),
+                "extra",List.of(Map.of("text",s.data.label(side),"color",c.side==0?"aqua":"gold"),
+                    Map.of("text"," comboed ","color","gray"),Map.of("text",s.data.label(other),"color",c.side==0?"gold":"aqua"),
+                    Map.of("text",": ","color","gray"),Map.of("text",c.hits+" hits","color","yellow","bold",true)));
+            Referee.vanilla("tellraw "+Referee.safeName(viewer)+" "+Json.encode(row));
+        }
+        if(pages>1){
+            List<String[]> buttons=new ArrayList<>();
+            if(page>1)buttons.add(new String[]{"Previous","combos "+(page-1)});
+            if(page<pages)buttons.add(new String[]{"Next","combos "+(page+1)});
+            controlRow(viewer,"Combo page "+page+"/"+pages,buttons.toArray(String[][]::new));
+        }
     }
     public static void command(Object viewer,String[] args)throws Exception {
         String who=Referee.safeName(viewer);
@@ -126,6 +157,14 @@ public final class ServerReplay {
         if(action.equals("pause")&&args.length==2){s.startPlaying=false;s.clock.pause(true,now);}
         else if(action.equals("play")&&args.length==2){s.startPlaying=true;if(s.clock.position()>=s.data.duration)seek(s,0,false,now);s.clock.pause(false,now);}
         else if(action.equals("controls")&&args.length==2)controls(viewer);
+        else if(action.equals("combos")&&(args.length==2||args.length==3))combos(viewer,s,args.length==3?Integer.parseInt(args[2]):1);
+        else if(action.equals("combo")&&args.length==4){
+            if(!s.data.id.equals(args[2]))throw new IllegalArgumentException("That combo belongs to "+args[2]+". Open that replay first; /replay combos shows this replay's combos.");
+            int index=Integer.parseInt(args[3]);
+            if(index<1||index>s.combos.size())throw new IllegalArgumentException("Unknown combo. Use /replay combos.");
+            seek(s,s.combos.get(index-1).seekMs()/1000.0,false,now);s.startPlaying=true;
+            if(s.spawned)s.clock.pause(false,now);
+        }
         else if(action.equals("speed")&&args.length==3)s.clock.speed(Double.parseDouble(args[2]),now);
         else if(action.equals("seek")&&args.length==3){
             seek(s,Double.parseDouble(args[2]),args[2].startsWith("+")||args[2].startsWith("-"),now);

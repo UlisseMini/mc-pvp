@@ -21,7 +21,7 @@ individual equations are much better checked than its full-fight forecasts.
 
 Optional Forge 1.8.9 client: [our practice mod](practice-client/README.md)
 provides ToggleSprint, a potion HUD, automatic localhost packet/input/view
-recording, and a link joining the human, bot and server views. Practice modules
+recording, opening-lead feedback, reach/ghost overlays, and a link joining the human, bot and server views. Practice modules
 reload live; client commands start with `/practice`.
 
 1. Open Minecraft Java **1.8.9** in your normal launcher.
@@ -49,6 +49,8 @@ enabling RCON or opening another network port.
 | `/duel wtap diamond` | Full unenchanted diamond armor and an unbreakable wooden sword; real health and regeneration; fight to death |
 | `/duel blockhit_timing diamond` | Timed sword-block bot; native controls, 10 CPS ceiling, 3-block reach, zero artificial reaction delay |
 | `/duel wtap rod_diamond` | Same unenchanted diamond armor / wooden sword kit, plus a fishing rod in hotbar slot 2 for both players; existing bots keep using their sword |
+| `/drill near` / `/drill medium` / `/drill far` | Repeated rod-diamond entries vs wtap from 4.5 / 6 / 9 blocks; append another bot name to change opponents |
+| `/drill mixed` | Cycle all three distances; reset five seconds after first sword contact (12-second limit without one); `/stop` exits |
 | `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full unenchanted diamond armor; successful blocks play your block sound |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
 | `/duel wtap rod_diamond reach=3.5 cps=15 ping=100` | Custom practice bot: 3.5-block reach, 15 CPS ceiling, 100 ms added bot RTT; keeps your saved ping |
@@ -72,6 +74,7 @@ enabling RCON or opening another network port.
 | `/replay m0930` | Watch a specific recorded match |
 | `/replay list` | Click to watch one of your ten latest matches (`list all` includes bot matches) |
 | `/replay controls` | Show the clickable rewind/forward, pause/play, speed and camera controls again |
+| `/replay combos` | Show clickable timestamps for every 3+ hit combo (20 per page; use `combos 2` for page 2) |
 | `/replay pause` / `/replay play` | Pause/resume; play restarts after the recording ends |
 | `/replay seek 12.5` | Jump to 12.5 seconds after the match started |
 | `/replay back` / `/replay forward` | Jump back/forward 5 seconds; add a number for a different amount, e.g. `back 0.05` |
@@ -100,6 +103,17 @@ number; **Go to...** fills in the seek command. Rewind/forward preserve your
 camera and pause state and stop at the recording's boundaries. You can pause
 and jump in small increments to inspect a hit. Playback changes the timing of
 recorded positions/events; normal client animations still run at client speed.
+
+Starting a replay also lists its **combos** in chat, for example
+`Nomophobia comboed wtap: 4 hits`. Click a row to start watching 0.75 seconds
+before its first hit, keeping your current playback speed and camera. Each row
+is a maximal run of at least three unanswered melee hits; one opposing melee
+hit ends that run. Zero-damage rod contacts are ignored. In health modes,
+recorded HP-damage hits count (including damaging immunity upgrades); boxing
+and older recordings without HP-loss details use accepted melee hits. There is
+no extra time-gap cutoff. `/replay combos` reopens the list, with clickable
+previous/next pages for long matches. Links identify their match so an old chat
+entry cannot accidentally jump to a different replay's timestamp.
 
 This is a playback of **recorded server positions and accepted combat events**,
 not a rerun of bot decisions or either player's original screen. Your live client

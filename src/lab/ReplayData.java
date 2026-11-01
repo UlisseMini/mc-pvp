@@ -59,7 +59,7 @@ final class ReplayData {
                 if(type.equals("start")){setup=map(e.get("match"));continue;}
                 long time=(long)number(e,"time",0);if(time<start)continue;
                 if(type.equals("tick"))frames.add(e);
-                else if(Set.of("hit","critical","blocked_damage","rod_trick").contains(type)){
+                else if(Set.of("hit","critical","blocked_damage","rod_trick","melee_damage").contains(type)){
                     events.add(e);
                     if(type.equals("hit")&&!frames.isEmpty()){
                         Map<String,Object> f=new LinkedHashMap<>(frames.get(frames.size()-1));f.put("time",time);
