@@ -20,5 +20,6 @@
   "DuelSettings",
   "ScienceTrace",
   "ReplicationTrace",
-  "AimController"
+  "AimController",
+  "OrbitController"
 ]

@@ -36,6 +36,7 @@ public final class Client {
     static long heartbeatAt,respawnAt,probeAt;
     static final TargetWatchdog targetWatchdog=new TargetWatchdog();
     static final MomentumController momentum=new MomentumController();
+    static final OrbitController orbit=new OrbitController();
     static final BurstClickController burstClicks=new BurstClickController();
     static BurstClickController.Decision burstDecision;
     static long burstObservedAt;
@@ -138,7 +139,8 @@ public final class Client {
             }
             MotionClickController.Decision motionClick=null;
             double radialMotion=0;boolean localSprint=false,localContactReady=false,criticalOpportunity=false,localCritical=false;
-            if(controls.getProperty("click_mode","fixed").equals("motion-burst")){
+            if(controls.getProperty("click_mode","fixed").equals("motion-burst") ||
+                    controls.getProperty("kind","").equals("orbit")&&orbit.maintaining()&&number("orbit_selective",0)>0){
                 if(number("reaction_ms",150)!=0)throw new IllegalArgumentException("Motion burst requires zero artificial reaction delay");
                 radialMotion=(R.num(player,"motionX")*dx+R.num(player,"motionZ")*dz)/Math.max(.001,Math.hypot(dx,dz));
                 localSprint=(Boolean)R.call(player,"isSprinting");
@@ -284,6 +286,7 @@ public final class Client {
                 sprintPulse=true;
                 ModelController.reset();
                 momentum.reset();
+                orbit.reset();
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 criticalClicks.reset();
                 blockhit.reset();blockKey=false;freshHurtStatus=0;
@@ -496,6 +499,17 @@ public final class Client {
                     entry.put("desired_gap",decision.desiredGap());entry.put("window_lower",decision.lower());entry.put("window_upper",decision.upper());log(entry);
                 }
             }
+            if(kind.equals("orbit")){
+                OrbitController.Decision decision=orbit.decide(now,lastObservedTargetHurt,lastObservedHurt,OrbitController.Settings.from(controls));
+                setKeys(decision.forward,0,decision.sprintKey);
+                if(decision.resetStarted)log(Compat.map("type","wtap","time",now,"match",match,
+                    "cue_time",lastObservedTargetHurt,"release_until",now+50,"reason","orbit_acquisition","pause_ticks",1,"native_tick",ticks));
+                Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","orbit_plan");plan.put("time",now);plan.put("match",match);
+                plan.put("observation_time",obs.time);plan.put("landed_cue",lastObservedTargetHurt);plan.put("incoming_cue",lastObservedHurt);
+                plan.put("mode",decision.maintenance?"normal_maintenance":"acquire");plan.put("unanswered_cues",decision.unanswered);
+                plan.put("forward",decision.forward);plan.put("sprint_key",decision.sprintKey);plan.put("local_sprint",obs.sprint);
+                plan.put("sent_sprint",obs.sentSprint);plan.put("scheduled_reset_at",decision.scheduledResetAt);log(plan);
+            }
             if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
             if(kind.equals("blockhit")){
                 boolean linear=controls.getProperty("block_model","legacy").equals("linear");
@@ -592,7 +606,7 @@ public final class Client {
         if(!Boolean.parseBoolean(p.getProperty("enabled","false")))return;
         if(!p.getProperty("match","").matches("m[0-9]{4,9}")||!p.getProperty("opponent","").matches("[A-Za-z0-9_]{1,16}"))
             throw new IllegalArgumentException("Enabled bot controls require a valid match and opponent");
-        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","blockhit","scripted").contains(p.getProperty("kind","hold")))
+        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","blockhit","scripted").contains(p.getProperty("kind","hold")))
             throw new IllegalArgumentException("Unsupported bot strategy: "+p.getProperty("kind"));
         ClickRate.cps(p);DuelSettings.reach(p);
         AimController.Settings.from(p);

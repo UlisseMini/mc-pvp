@@ -5,17 +5,21 @@ import java.util.Properties;
 /** Instantaneous local-motion click scheduling. No server immunity input. */
 public final class MotionClickController {
     public static final class Settings {
-        private final int windowLeadMs; private final boolean recoilClicks;
+        private final int windowLeadMs; private final boolean recoilClicks; private final double intervalMs;
         public Settings(int windowLeadMs, boolean recoilClicks){
+            this(windowLeadMs,recoilClicks,100);
+        }
+        public Settings(int windowLeadMs, boolean recoilClicks,double intervalMs){
             if(windowLeadMs<0||windowLeadMs>150)throw new IllegalArgumentException("Invalid attack lead");
-        this.windowLeadMs=windowLeadMs; this.recoilClicks=recoilClicks;}
+            if(!Double.isFinite(intervalMs)||intervalMs<1000.0/30||intervalMs>1000)throw new IllegalArgumentException("Invalid physical interval");
+        this.windowLeadMs=windowLeadMs; this.recoilClicks=recoilClicks;this.intervalMs=intervalMs;}
         public int windowLeadMs(){return windowLeadMs;} public boolean recoilClicks(){return recoilClicks;}
-        @Override public boolean equals(Object o){if(!(o instanceof Settings))return false;Settings that=(Settings)o;return java.util.Objects.equals(windowLeadMs, that.windowLeadMs) && java.util.Objects.equals(recoilClicks, that.recoilClicks);} @Override public int hashCode(){return java.util.Objects.hash(windowLeadMs,recoilClicks);}
+        @Override public boolean equals(Object o){if(!(o instanceof Settings))return false;Settings that=(Settings)o;return windowLeadMs==that.windowLeadMs&&recoilClicks==that.recoilClicks&&Double.compare(intervalMs,that.intervalMs)==0;} @Override public int hashCode(){return java.util.Objects.hash(windowLeadMs,recoilClicks,intervalMs);}
 
 
         public static Settings from(Properties p) {
             return new Settings(Integer.parseInt(p.getProperty("burst_window_lead_ms","50")),
-                    !p.getProperty("burst_recoil","1").equals("0"));
+                    !p.getProperty("burst_recoil","1").equals("0"),ClickRate.intervalNanos(p)/1e6);
         }
     }
     public static final class Input {
@@ -41,7 +45,7 @@ public final class MotionClickController {
         // Optional recoil cancellation must not occupy the physical click slot
         // needed at the next attack window. It is evaluated at native input
         // polling, not queued a frame earlier using a stale velocity sign.
-        boolean reserved=!opening&&!attack&&in.now+100>=start;
+        boolean reserved=!opening&&!attack&&in.now+s.intervalMs>=start;
         boolean recoil=s.recoilClicks&&in.nativeInputPoll&&in.localContactReady&&opportunity&&!opening&&!attack&&!reserved;
         return new Decision(opening||attack||recoil,opening,attack,recoil,opportunity,reserved,ready,start);
     }

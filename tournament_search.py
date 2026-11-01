@@ -73,7 +73,7 @@ def summarize(document):
     return groups
 
 
-def prepare(name, candidates, opponent, rtts, repeats=1, seed=20261101, concurrency=2, stage='screen'):
+def prepare(name, candidates, opponent, rtts, repeats=1, seed=20261101, concurrency=2, stage='screen', duration_ms=None):
     if not re.fullmatch('[a-z0-9-]{1,60}', name):
         raise ValueError('Use a short lowercase cohort name')
     path = OUT / (name + '.json')
@@ -81,6 +81,8 @@ def prepare(name, candidates, opponent, rtts, repeats=1, seed=20261101, concurre
         raise ValueError('Cohort already exists; run it to resume or use a new name')
     if not 1 <= concurrency <= 2 or not 1 <= repeats <= 20 or not candidates:
         raise ValueError('Use 1–2 parallel matches, 1–20 repeats, and at least one candidate')
+    if duration_ms is not None and not 1000 <= duration_ms <= 180000:
+        raise ValueError('Scenario duration must be 1000–180000ms')
     if any(not 0 <= v <= 500 for pair in rtts for v in pair) or any(len(pair) != 2 for pair in rtts):
         raise ValueError('RTTs must be pairs in 0–500ms')
     frozen = {}
@@ -97,11 +99,11 @@ def prepare(name, candidates, opponent, rtts, repeats=1, seed=20261101, concurre
         raise ValueError('Equal-ceiling leagues only; do not conflate CPS with algorithm gains')
     document = dict(name=name, created=time.time(), state='prepared', stage=stage,
                     candidates=candidates, opponent=opponent, rtts=rtts, repeats_per_side=repeats,
-                    concurrency=concurrency, fixture_order_seed=seed, policies=frozen,
+                    concurrency=concurrency, fixture_order_seed=seed, policies=frozen, duration_ms=duration_ms,
                     agent_sha256=sha(ROOT / 'build/lab-agent.jar'),
                     sources={p: sha(ROOT / p) for p in ['tournament_search.py', 'experiments.py', 'burst_science.py', 'combo_survival.py', 'native_windows.py']},
                     frame_sleep_ms=json.loads((ROOT / 'runtime/manager.json').read_text()).get('frame_sleep_ms'),
-                    primary_metric='First-to-100 accepted native sword-hit margin; fresh hits and upgrades separate.',
+                    primary_metric=('First-to-100' if duration_ms is None else 'Fixed-duration scenario')+' accepted native sword-hit margin; fresh hits and upgrades separate. Opening handicap hits excluded from post-wake diagnostics.',
                     quality_gate='Existing native input/reach/replication checks plus server/client movement p95<=80ms, max<=250ms, <=1% intervals>100ms.',
                     selection='Rank screening only; freeze selected settings before independent confirmation. Never select on one match.',
                     limits='Order seed does not seed JVM clocks. These rounds are independent, not paired deterministic counterfactuals. No server/opponent-private state drives policies.',
@@ -110,7 +112,7 @@ def prepare(name, candidates, opponent, rtts, repeats=1, seed=20261101, concurre
     return path
 
 
-def initial_policies(cps=20, aim_delay=150, aim_noise=2, aim_rate=360, tap_delay=150):
+def initial_policies(cps=20, aim_delay=0, aim_noise=0, aim_rate=0, tap_delay=150):
     """Small hypothesis screen with explicit control/ablation relationships."""
     trace = {'science_trace': 1, 'science_network_trace': 1, 'click_cps': cps, 'attack_reach': 3.0}
     if not 1 <= cps <= 30 or not 0 <= aim_delay <= 500 or not 0 <= aim_noise <= 10 or not (aim_rate == 0 or 30 <= aim_rate <= 1440) or not 0 <= tap_delay <= 1000:
@@ -176,7 +178,7 @@ async def run(path):
         pa, pb = f['rtt']
         if f['reverse']:
             a, b, pa, pb = b, a, pb, pa
-        game = await match(a, b, pa, pb)
+        game = await match(a, b, pa, pb, duration_ms=document.get('duration_ms'))
         archive(game)
         quality = diagnostic(game)
         combo = combo_analysis(game)
@@ -231,9 +233,9 @@ def main():
     p = sub.add_parser('screen')
     p.add_argument('name')
     p.add_argument('--cps', type=int, default=20)
-    p.add_argument('--aim-delay', type=float, default=150)
-    p.add_argument('--aim-noise', type=float, default=2)
-    p.add_argument('--aim-rate', type=float, default=360)
+    p.add_argument('--aim-delay', type=float, default=0)
+    p.add_argument('--aim-noise', type=float, default=0)
+    p.add_argument('--aim-rate', type=float, default=0)
     p.add_argument('--tap-delay', type=float, default=150)
     p = sub.add_parser('prepare')
     p.add_argument('name'); p.add_argument('--bots', nargs='+', required=True)
@@ -242,14 +244,15 @@ def main():
     p.add_argument('--repeats', type=int, default=1)
     p.add_argument('--seed', type=int, default=20261102)
     p.add_argument('--parallel', type=int, default=2)
-    p.add_argument('--stage', choices=['screen', 'confirmation', 'ablation'], default='confirmation')
+    p.add_argument('--stage', choices=['screen', 'confirmation', 'ablation', 'mechanism'], default='confirmation')
+    p.add_argument('--duration-ms', type=int)
     for name in ('run', 'summary'):
         p = sub.add_parser(name); p.add_argument('name')
     args = parser.parse_args()
     if args.command == 'screen':
         print(prepare(args.name, initial_policies(args.cps, args.aim_delay, args.aim_noise, args.aim_rate, args.tap_delay), 'search-wtap', [[20, 20]]))
     elif args.command == 'prepare':
-        print(prepare(args.name, args.bots, args.opponent, [list(map(int, p.split(','))) for p in args.rtts], args.repeats, args.seed, args.parallel, args.stage))
+        print(prepare(args.name, args.bots, args.opponent, [list(map(int, p.split(','))) for p in args.rtts], args.repeats, args.seed, args.parallel, args.stage, args.duration_ms))
     elif args.command == 'run':
         asyncio.run(run(OUT / (args.name + '.json')))
     else:

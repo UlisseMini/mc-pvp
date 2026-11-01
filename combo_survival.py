@@ -70,5 +70,21 @@ def analyze(game):
         lock = sustained_combo(windows, contacts, returns)
         lock['definition'] = 'At least 3 fresh contacts during continuous geometric defender-reach denial, <=1000ms between contacts, no accepted sword return. Aim misses alone do not count.'
         metrics[side]['geometric_lock'] = lock
+        policy = game.get('parameters_' + other, game.get('parameters', {}).get(game.get('policy_' + other), {}))
+        wake = game['start'] + float(policy.get('click_start_ms', 0))
+        after = [h for h in hits if h['time'] >= wake and not h.get('rod')]
+        ours = [h for h in after if h['attacker'] == game[side]]
+        theirs = [h for h in after if h['attacker'] == game[other]]
+        runs = episodes(after, game[side], game['finish'])
+        first_return = next((h['time'] for h in theirs), None)
+        metrics[side]['after_opponent_wake'] = {
+            'wake_ms_after_start': wake - game['start'],
+            'accepted_hits': [len(ours), len(theirs)],
+            'fresh_hits': [sum(not h.get('damage_upgrade', False) for h in stream) for stream in (ours, theirs)],
+            'longest_fresh_run': max((r['fresh_hits'] for r in runs), default=0),
+            'fresh_hits_before_first_return': sum(not h.get('damage_upgrade', False) and (first_return is None or h['time'] < first_return) for h in ours),
+            'first_return_ms_after_wake': first_return - wake if first_return is not None else None,
+            'no_return_at_end_censored': first_return is None,
+            'note': 'Declared attack-enable time; native input polling may enable up to one tick later. Pre-wake free hits excluded.'}
     return {'sides': metrics, 'geometric_overlap': geometry,
             'caution': 'Diagnostic associations, not causal explanations. Sampling may miss sub-tick opportunities. In-range aim-miss counts are sample-weighted, not a count of failed physical clicks. No infinite-combo claim from finite/censored runs.'}

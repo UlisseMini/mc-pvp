@@ -103,7 +103,7 @@ public final class ComboModel {
                     || opponentPhaseMs < 0 || opponentPhaseMs >= TICK_MS)
                 throw new IllegalArgumentException("Tick phases must be 0..49 ms");
             if (horizonTicks < 1 || horizonTicks > 60 || beamWidth < 1 || beamWidth > 256
-                    || minimumActionTicks < 1 || clickIntervalMs < 100 || defenderClickIntervalMs < 100
+                    || minimumActionTicks < 1 || clickIntervalMs < 50 || defenderClickIntervalMs < 50
                     || freshHitIntervalMs < 500)
                 throw new IllegalArgumentException("Invalid search or click limits");
             if (!Double.isFinite(contactEdgePenalty) || contactEdgePenalty < 0)
