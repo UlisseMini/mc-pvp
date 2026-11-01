@@ -22,6 +22,9 @@ public final class PeriodicComboClock {
         public boolean explicitPolls=false;
         /** Null preserves historical instantaneous injection. Non-null requires a tape. */
         public InjectionTiming injectionTiming;
+        /** Conditional reference-opportunity sensitivity only, NOT a calibrated
+         * clock engine. Busy client stages wait; delays of a full tick reject. */
+        public boolean causalBackpressure=false;
         public boolean aRemoteBeforeMove=true,bRemoteBeforeMove=false,aimBeforeFrameDrain=true;
     }
     public record Observation(double time,long tick,ExactTravel.State own,double targetX,double targetY,double targetZ,
@@ -61,7 +64,9 @@ public final class PeriodicComboClock {
     public enum Kind { FRAME_ENTRY, CLIENT_DRAIN, TICK_HEAD, CONSUME, MOVE, INTERP, FLUSH,
                        SERVER_DRAIN, SERVER_ENTITY, SERVER_TRACK, SERVER_END, POLL_FRAME, POLL_NATIVE }
     public record Scheduled(long nanos,long sequence,Kind kind,boolean fromA) {}
-    private record Event(double time,int kind,long order) {}
+    private record Event(double time,int kind,long order,double originalTime) {}
+    public record HeadTiming(long tick,double originalTime,double actualTime,long sequence) {}
+    public record BackpressureStats(long deferredStages,long deferralAttempts,double maxDelayMillis,Map<Kind,Long> stageCounts) {}
     private record Press(long id,long admittedNanos) {}
     private record Injection(Press press,String source,long completedNanos) {}
     private static final class ClickQueue {
@@ -75,21 +80,29 @@ public final class PeriodicComboClock {
     private final Policy[] policies;
     private final boolean recordedSchedule;
     private final double scheduleEnd;
-    private final PriorityQueue<Event> events=new PriorityQueue<>(Comparator.comparingDouble(Event::time).thenComparingLong(Event::order));
+    private final PriorityQueue<Event> events;
     private final long[] ticks=new long[2];private final Control[] controls=new Control[2];private final double[] lastClick={-1e100,-1e100};
     private final ClickQueue[] clickQueues={new ClickQueue(),new ClickQueue()};
     private final Injection[] injections=new Injection[2];
     private final boolean[] selectionReady=new boolean[2];
+    private final HeadTiming[] headTimings=new HeadTiming[2];
+    private final long[][] deferredCounts=new long[2][Kind.values().length];
+    private final long[] deferredStages=new long[2],deferralAttempts=new long[2];
+    private final double[] maxDeferral=new double[2];
     private long order;private double now;private Audit audit;private ClickAudit clickAudit;
     public PeriodicComboClock(PeriodicComboFightModel.State state,PeriodicComboFightModel.Config config,Timing timing,Policy a,Policy b){this(state,config,timing,a,b,null);}
     /** Own observations/policies generate inputs; the tape supplies event opportunities/order only.
      * Queued mode models zero-delay, short press/release, no GUI/block/use, flat-arena clicks. */
     public PeriodicComboClock(PeriodicComboFightModel.State state,PeriodicComboFightModel.Config config,Timing timing,Policy a,Policy b,List<Scheduled> schedule){
         this.state=state;this.config=config;this.timing=timing;policies=new Policy[]{a,b};recordedSchedule=schedule!=null;scheduleEnd=schedule==null?Double.POSITIVE_INFINITY:schedule.stream().mapToLong(Scheduled::nanos).max().orElseThrow(()->new IllegalArgumentException("Empty event tape"))/1_000_000.0;config.deferMovementSend=true;state.transport=null;
+        Comparator<Event> comparator=Comparator.comparingDouble(Event::time);
+        events=new PriorityQueue<>(timing.causalBackpressure?comparator.thenComparingInt(e->e.kind>=22?0:1)
+            .thenComparingDouble(Event::originalTime).thenComparingLong(Event::order):comparator.thenComparingLong(Event::order));
         state.extraLatency=new double[]{timing.uplinkA,timing.uplinkB,timing.downlinkA,timing.downlinkB};
         state.nominalHalfRtt=new double[]{config.ownRtt/2,config.otherRtt/2,config.ownRtt/2,config.otherRtt/2};
         if(timing.inputMode==InputMode.NATIVE_QUEUED&&timing.clickIntervalNanos<50_000_000L)throw new IllegalArgumentException("Physical injection ceiling exceeds20CPS");
         if((timing.explicitPolls||timing.injectionTiming!=null)&&schedule==null)throw new IllegalArgumentException("Explicit polls/injection timing require an event tape");
+        if(timing.causalBackpressure&&schedule==null)throw new IllegalArgumentException("Causal backpressure requires an event tape");
         if(schedule==null){add(timing.aFramePhase,0);add(timing.bFramePhase,1);add(timing.aTickPhase,2);add(timing.bTickPhase,3);add(timing.serverPhase,8);}
         else{
             if(timing.inputMode!=InputMode.NATIVE_QUEUED)throw new IllegalArgumentException("Explicit event tapes require NATIVE_QUEUED mode");
@@ -97,16 +110,20 @@ public final class PeriodicComboClock {
             for(Scheduled e:List.copyOf(schedule)){
                 if(e.nanos<0||!sequences.add(e.sequence))throw new IllegalArgumentException("Tape requires nonnegative times and unique sequence values");
                 if((e.kind==Kind.POLL_FRAME||e.kind==Kind.POLL_NATIVE)&&!timing.explicitPolls)throw new IllegalArgumentException("POLL tape events require explicitPolls");
-                events.add(new Event(e.nanos/1_000_000.0,kind(e),e.sequence));
+                events.add(new Event(e.nanos/1_000_000.0,kind(e),e.sequence,e.nanos/1_000_000.0));
             }
         }
     }
     private static int kind(Scheduled e){int side=e.fromA?0:1;return switch(e.kind){case FRAME_ENTRY->side;case TICK_HEAD->2+side;case MOVE->4+side;case FLUSH->6+side;case SERVER_DRAIN->8;case SERVER_ENTITY->9;case SERVER_TRACK->10;case SERVER_END->11;case INTERP->12+side;case CONSUME->14+side;case CLIENT_DRAIN->16+side;case POLL_FRAME->18+side;case POLL_NATIVE->20+side;};}
     private PeriodicComboClock(PeriodicComboClock source,Policy a,Policy b){
         state=source.state.deepCopy();config=source.config.deepCopy();timing=source.timing.deepCopy();policies=new Policy[]{Objects.requireNonNull(a),Objects.requireNonNull(b)};recordedSchedule=source.recordedSchedule;scheduleEnd=source.scheduleEnd;
+        events=new PriorityQueue<>(source.events.comparator());
         events.addAll(source.events);System.arraycopy(source.ticks,0,ticks,0,2);System.arraycopy(source.controls,0,controls,0,2);System.arraycopy(source.lastClick,0,lastClick,0,2);
         System.arraycopy(source.selectionReady,0,selectionReady,0,2);clickQueues[0]=source.clickQueues[0].copy();clickQueues[1]=source.clickQueues[1].copy();order=source.order;now=source.now;
         System.arraycopy(source.injections,0,injections,0,2);
+        System.arraycopy(source.headTimings,0,headTimings,0,2);
+        for(int side=0;side<2;side++)System.arraycopy(source.deferredCounts[side],0,deferredCounts[side],0,deferredCounts[side].length);
+        System.arraycopy(source.deferredStages,0,deferredStages,0,2);System.arraycopy(source.deferralAttempts,0,deferralAttempts,0,2);System.arraycopy(source.maxDeferral,0,maxDeferral,0,2);
     }
     /** Policies must be fresh or immutable. All packet/input queues and scheduler state are copied;
      * audits are detached. An already admitted input survives a later gate/key change. */
@@ -116,7 +133,29 @@ public final class PeriodicComboClock {
     public double time(){return now;}
     public int queuedClicks(boolean fromA){return clickQueues[fromA?0:1].presses.size();}
     public int missCounter(boolean fromA){return clickQueues[fromA?0:1].missCounter;}
-    private void add(double time,int kind){events.add(new Event(time,kind,order++));}
+    /** Set before this side's Policy.input callback; original time retains the
+     * donor calendar's head/wall-label mapping when actual execution is delayed. */
+    public HeadTiming headTiming(boolean fromA){return headTimings[fromA?0:1];}
+    public BackpressureStats backpressureStats(boolean fromA){
+        int side=fromA?0:1;Map<Kind,Long> counts=new EnumMap<>(Kind.class);
+        for(Kind kind:Kind.values())if(deferredCounts[side][kind.ordinal()]!=0)counts.put(kind,deferredCounts[side][kind.ordinal()]);
+        return new BackpressureStats(deferredStages[side],deferralAttempts[side],maxDeferral[side],Map.copyOf(counts));
+    }
+    private void add(double time,int kind){events.add(new Event(time,kind,order++,time));}
+    private static Kind clientKind(int k){return switch(k/2){
+        case 0->Kind.FRAME_ENTRY;case 1->Kind.TICK_HEAD;case 2->Kind.MOVE;case 3->Kind.FLUSH;
+        case 6->Kind.INTERP;case 7->Kind.CONSUME;case 8->Kind.CLIENT_DRAIN;case 9->Kind.POLL_FRAME;case 10->Kind.POLL_NATIVE;
+        default->throw new AssertionError("Not a client stage: "+k);
+    };}
+    private void defer(Event e,int side){
+        long completion=injections[side].completedNanos,reference=Math.round(e.originalTime*1_000_000.0);
+        long delay=Math.subtractExact(completion,reference);
+        if(delay>=50_000_000L)throw new IllegalStateException("UNSUPPORTED_BACKPRESSURE_DELAY: >=50ms from original client opportunity; timer/catch-up counts unknown");
+        if(delay<0||completion/1_000_000.0<e.time)throw new AssertionError("Backpressure cannot advance a stage");
+        if(e.time==e.originalTime){deferredStages[side]++;deferredCounts[side][clientKind(e.kind).ordinal()]++;}
+        deferralAttempts[side]++;maxDeferral[side]=Math.max(maxDeferral[side],delay/1_000_000.0);
+        events.add(new Event(completion/1_000_000.0,e.kind,e.order,e.originalTime));
+    }
     private Observation observation(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;return new Observation(now,ticks[a?0:1],b.q,v.x,v.y,v.z,b.sprint,b.headYaw,b.lastContactTime,b.localContacts,v.lastHurtTime,b.lastHurtTime);}
     private void receive(boolean a){
         PeriodicComboFightModel.receive(state,now,a,p->{
@@ -147,7 +186,7 @@ public final class PeriodicComboClock {
         else{
             // A synchronous native call blocks this client. Other actor/server events may run.
             // Completion is effective before a new same-nanosecond opportunity.
-            events.add(new Event(completed/1_000_000.0,22+side,Long.MIN_VALUE+order++));
+            events.add(new Event(completed/1_000_000.0,22+side,Long.MIN_VALUE+order++,completed/1_000_000.0));
             clickEvent(a,"INJECTION_START",source,press,true,false);
         }
     }
@@ -180,13 +219,17 @@ public final class PeriodicComboClock {
         if(end<now)throw new IllegalArgumentException("Cannot run a clock backwards");
         if(!Double.isFinite(end)||end>scheduleEnd)throw new IllegalArgumentException("Requested time exceeds supplied event-tape coverage");
         while(!events.isEmpty()&&events.peek().time<=end){Event e=events.remove();now=e.time;int k=e.kind;boolean a=(k&1)==0;int side=a?0:1;String name;
-            if((k<8||k>=12&&k<22)&&injections[side]!=null)throw new IllegalStateException("UNSUPPORTED_INJECTION_OVERLAP: same-client event before synchronous injection completion");
+            if((k<8||k>=12&&k<22)&&injections[side]!=null){
+                if(!timing.causalBackpressure)throw new IllegalStateException("UNSUPPORTED_INJECTION_OVERLAP: same-client event before synchronous injection completion");
+                defer(e,side);continue;
+            }
             if(k<2){
                 if(timing.inputMode==InputMode.NATIVE_QUEUED){aim(a);if(!timing.explicitPolls)poll(a,"frame");if(!recordedSchedule){receive(a);selectionReady[side]=false;}}
                 else{if(timing.aimBeforeFrameDrain)aim(a);receive(a);if(!timing.aimBeforeFrameDrain)aim(a);}
                 if(!recordedSchedule)add(now+timing.framePeriod,k);name="FRAME"+(a?"A":"B");
             }
             else if(k<4){
+                headTimings[side]=new HeadTiming(ticks[side],e.originalTime,now,e.order);
                 Control control=policies[side].input(observation(a));controls[side]=control;
                 if(timing.inputMode==InputMode.NATIVE_QUEUED){
                     ClickQueue q=clickQueues[side];if(q.missCounter>0)q.missCounter--;q.gate=control.click;
