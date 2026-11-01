@@ -38,6 +38,35 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Current follow-up: broaden inference and build legal control
 
+Latest next step: close the oracle-to-legal gap by replaying the 79/51-hit
+witnesses and comparing oracle, plain W-tap and legal decisions in the **same
+physical states and observed histories**. Identify own-observable predictors of
+the consequential interventions before adding rules. Distinguish arbitrary
+search tie-breaks from useful actions, action agreement from closed-loop control,
+and hindsight labels from legal runtime inputs. Keep the nine-tick inference
+open: test each resulting controller against matched W-tap at BOTH hit9 and
+hit10, with calibrated schedules and explicit UNKNOWNs. The user will collect
+the proposed60-hit data manually when a partner is available; do not wait for it
+to perform offline combo work.
+
+Decision-distillation checkpoint: exact action-tape replay matches1300 physical
+HEAD snapshots/all score fields. Same-state single-action probes find19/48 legal
+replacements worse than the privileged oracle suffix; scalar range/height/cue
+associations are insufficient and enumeration ties matter. The isolated
+angular-preservation law adds no improvement. A legal nine-own-feature reference
+feedback table (no server/other-client/future-clock/runtime reference timestamps)
+recovers79/51 source scores. Combined-reference diagnostic hit9 gets73/4/4/15
+versusWT2/2/1/2; hit10 gets0/0/1/0 versusWT1/1/1/0. Actual-input-copy ablation
+does not improve it; retain original. Frozen confirmation on new7000/7001 draws:
+hit9 m1395=17/10 vsWT2/2, m1396=15/15 vsWT2/2, m1397=1/1 vsWT2/2,
+m1398=two shared acquisitionUNKNOWNs. Hit10 loses1/ties7; no minute-locks or
+native promotion. H2 at the exact failed m1397seed7000hit9 entry gets38 versus
+legal1/WT2; at m1395seed7000hit10 it gets0 versuslegal0/WT1. A remaining
+legal decision/history/coverage gap is established, not an unobservability proof.
+Do not tune generic rules or claim robust lock from73. Next compare the38-hit
+rescue's actions and own history against the failed legal path. Full artifacts:
+`research/hypixel-inference-20261101/oracle-distillation/findings.md`.
+
 The user requests three concrete next steps after the provisional preset:
 
 1. Expand knockback inference beyond four stationary launches to all 297
