@@ -6,10 +6,12 @@ import java.util.*;
 public final class CombatStats {
     int crits,rodHits,upgrades;
     double regenerated,damageDealt,damageTaken,otherDamage;
+    final DamageBreakdown breakdown=new DamageBreakdown();
     Map<String,Object> state(int meleeHitsTaken){
         Map<String,Object> state=new LinkedHashMap<>(Map.of("crits",crits,"rod_hits",rodHits,"damage_upgrades",upgrades,
             "regenerated",regenerated,"damage_dealt",damageDealt,"damage_taken",damageTaken,"other_damage",otherDamage));
-        state.put("melee_hits_taken",meleeHitsTaken);state.put("damage_taken_per_hit",damageTakenPerHit(meleeHitsTaken));return state;
+        state.put("melee_hits_taken",meleeHitsTaken);state.put("damage_taken_per_hit",damageTakenPerHit(meleeHitsTaken));
+        state.put("damage_breakdown",breakdown.state());return state;
     }
     /** Actual opponent health loss, including native crit/block/armor effects and partial immunity upgrades.
      * Rod contacts have zero damage and are excluded by the caller's incoming melee count. */
@@ -38,6 +40,7 @@ public final class CombatStats {
         try{
             Referee.Match m=match(target);if(m==null||!m.winner.isEmpty())return;
             double lost=Math.max(0,before-((Number)R.call(target,"getHealth")).doubleValue());if(lost==0)return;
+            DamageBreakdown.healthLost(target,source,lost);
             String victim=R.name(target);Object attacker=R.call(source,"getEntity");String who=attacker==null?"":R.name(attacker);
             m.stats(victim).damageTaken+=lost;
             if(!who.equals(victim)&&m.stats(who)!=null)m.stats(who).damageDealt+=lost;else m.stats(victim).otherDamage+=lost;
@@ -52,15 +55,17 @@ public final class CombatStats {
             // The accepted-hit observer already sets winner on a lethal hit.
             if(m.stats(victim)==null||who.equals(victim)||!m.winner.isEmpty()&&!m.winner.equals(who))return;
             m.stats(who).crits++;
+            DamageBreakdown.critical(attacker,target);
             Referee.append(m.replay,Map.of("type","critical","time",System.currentTimeMillis(),"attacker",who,"target",victim));
         }catch(Throwable e){if(Referee.errors++<10)e.printStackTrace();}
     }
     void summary(Object recipient,String name,int hits,int blocks,boolean rods,Number health,int meleeHitsTaken){
         String hp=health==null?"§7HP: unavailable":String.format(Locale.ROOT,"§cHP: %.2f/10",health.doubleValue()/2);
-        Referee.message(recipient,name+" §8| "+hp+" §8| §eHits: "+hits+(rods?" §7("+rodHits+" rod)":""));
+        Referee.message(recipient,name+" §8| "+hp+" §8| §eHits: "+breakdown.damageHitsLanded+(rods?" §8| §7Rod contacts: "+rodHits:""));
         Referee.message(recipient,String.format(Locale.ROOT,"  §dCrits: %d §8| §bBlocks: %d §8| §aRegen: +%.2f",crits,blocks,regenerated/2));
         Referee.message(recipient,String.format(Locale.ROOT,"  §6Damage dealt: %.2f §8| §cTaken: %.2f §8| §7Immunity upgrades: %d%s",
             damageDealt/2,damageTaken/2,upgrades,otherDamage>0?String.format(Locale.ROOT," §8| §7Other damage: %.2f",otherDamage/2):""));
         Referee.message(recipient,damageTakenPerHitText(meleeHitsTaken));
+        for(String line:breakdown.lines())Referee.message(recipient,line);
     }
 }

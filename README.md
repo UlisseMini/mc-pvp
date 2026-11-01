@@ -98,6 +98,20 @@ and partial immunity damage upgrades. Zero-damage rod contacts and environmental
 damage are excluded; regeneration is not subtracted. Lethal damage counts only
 the HP actually lost, and no melee hits received is shown as `N/A`.
 
+Results also show **Blocking saved** and **Extra crit damage**, in hearts.
+These compare that single hit with blocking or its critical multiplier removed,
+keeping the same pre-hit immunity state, armor, Resistance and actual Protection
+roll. Absorption and remaining HP cap both alternatives. They do not predict
+how the rest of the fight would have changed. Averages are shown per successful
+block/crit and across all damage-dealing melee hits received/landed; empty
+denominators show `N/A`. A blocked critical can contribute to both metrics, so
+the two benefits are not an additive decomposition of total damage.
+
+The result panel's headline **Hits** now counts only accepted melee attacks that
+actually removed HP. **Rod contacts** are listed separately and never added to
+that headline. Saved replays retain the original accepted-contact `hits_a/b`
+counters for research and add `damage_hits_a/b` for the new headline.
+
 Successful sword blocks play a short `note.pling` only to the blocking player.
 The server observes the actual vanilla damage-reduction branch, after attack
 acceptance and before armor. Merely holding right-click, an opponent's miss, or

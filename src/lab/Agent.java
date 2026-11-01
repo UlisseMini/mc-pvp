@@ -86,6 +86,21 @@ public final class Agent implements ClassFileTransformer {
                         method.instructions.insertBefore(ins, hook);
                     }
                     changed = true;
+                } else if(name.equals("pr")&&(method.name.equals("b")||method.name.equals("c"))&&method.desc.equals("(Low;F)F")){
+                    int observed=0;
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins instanceof MethodInsnNode call){
+                        String observer=null;
+                        if(method.name.equals("b")&&call.owner.equals("pr")&&call.name.equals("br")&&call.desc.equals("()I"))observer="armor";
+                        if(method.name.equals("c")&&call.owner.equals("pf")&&call.name.equals("c")&&call.desc.equals("()I"))observer="resistance";
+                        if(method.name.equals("c")&&call.owner.equals("ack")&&call.name.equals("a")&&call.desc.equals("([Lzx;Low;)I"))observer="protection";
+                        if(observer!=null){
+                            InsnList hook=new InsnList();hook.add(new InsnNode(Opcodes.DUP));hook.add(new VarInsnNode(Opcodes.ALOAD,0));hook.add(new VarInsnNode(Opcodes.ALOAD,1));
+                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/DamageBreakdown",observer,"(ILjava/lang/Object;Ljava/lang/Object;)V",false));
+                            method.instructions.insert(ins,hook);observed++;
+                        }
+                    }
+                    if(observed!=(method.name.equals("b")?1:2))throw new IllegalStateException("Pinned damage modifier observations changed");
+                    changed=true;
                 } else if (name.equals("wn") && method.name.equals("a") && method.desc.equals("(Low;F)Z")) {
                     // PvP rod mode only: let zero-damage hook contacts reach the
                     // original living-entity hit/knockback/immunity machinery.
@@ -113,7 +128,10 @@ public final class Agent implements ClassFileTransformer {
                     InsnList capture=new InsnList();capture.add(new VarInsnNode(Opcodes.FLOAD,2));
                     capture.add(new VarInsnNode(Opcodes.FSTORE,originalDamage));
                     capture.add(new VarInsnNode(Opcodes.ALOAD,0));capture.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL,"pr","bn","()F",false));
-                    capture.add(new VarInsnNode(Opcodes.FSTORE,healthBefore));method.instructions.insert(capture);
+                    capture.add(new VarInsnNode(Opcodes.FSTORE,healthBefore));
+                    capture.add(new VarInsnNode(Opcodes.ALOAD,0));capture.add(new VarInsnNode(Opcodes.ALOAD,1));capture.add(new VarInsnNode(Opcodes.FLOAD,2));
+                    capture.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/DamageBreakdown","damageStart","(Ljava/lang/Object;Ljava/lang/Object;F)V",false));
+                    method.instructions.insert(capture);
                     int blockSites=0;
                     for(AbstractInsnNode ins:method.instructions.toArray()){
                         if(ins instanceof VarInsnNode store&&store.getOpcode()==Opcodes.FSTORE&&store.var==2
@@ -170,6 +188,21 @@ public final class Agent implements ClassFileTransformer {
                         InsnList after=callPair("lab/ScienceTrace","velocityCreated");method.instructions.insertBefore(ins,after);
                     }changed=true;
                 } else if(name.equals("wn")&&method.name.equals("f")&&method.desc.equals("(Lpk;)V")){
+                    int damageContext=method.maxLocals++;
+                    int critBaseSites=0,plannedSites=0;
+                    for(AbstractInsnNode ins:method.instructions.toArray()){
+                        if(ins instanceof LdcInsnNode value&&Float.valueOf(1.5f).equals(value.cst)){
+                            InsnList hook=new InsnList();hook.add(new VarInsnNode(Opcodes.ALOAD,0));hook.add(new VarInsnNode(Opcodes.ALOAD,1));hook.add(new VarInsnNode(Opcodes.FLOAD,2));
+                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/DamageBreakdown","critBase","(Ljava/lang/Object;Ljava/lang/Object;F)V",false));
+                            method.instructions.insertBefore(ins,hook);critBaseSites++;
+                        }
+                        if(ins instanceof MethodInsnNode call&&call.owner.equals("pk")&&call.name.equals("a")&&call.desc.equals("(Low;F)Z")){
+                            InsnList hook=new InsnList();hook.add(new VarInsnNode(Opcodes.ALOAD,0));hook.add(new VarInsnNode(Opcodes.ALOAD,1));hook.add(new VarInsnNode(Opcodes.FLOAD,2));hook.add(new VarInsnNode(Opcodes.FLOAD,4));
+                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/DamageBreakdown","planned","(Ljava/lang/Object;Ljava/lang/Object;FF)V",false));
+                            method.instructions.insertBefore(ins,hook);plannedSites++;
+                        }
+                    }
+                    if(critBaseSites!=1||plannedSites!=1)throw new IllegalStateException("Pinned critical damage sites changed");
                     int criticalSites=0;
                     for(AbstractInsnNode ins:method.instructions.toArray())if(ins instanceof MethodInsnNode call&&
                             call.owner.equals("wn")&&call.name.equals("b")&&call.desc.equals("(Lpk;)V")){
@@ -181,12 +214,18 @@ public final class Agent implements ClassFileTransformer {
                     }
                     if(criticalSites!=1)throw new IllegalStateException("Expected one native accepted-critical callback, found "+criticalSites);
                     InsnList before=new InsnList();before.add(new VarInsnNode(Opcodes.ALOAD,0));before.add(new VarInsnNode(Opcodes.ALOAD,1));
+                    before.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/DamageBreakdown","begin","(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",false));
+                    before.add(new VarInsnNode(Opcodes.ASTORE,damageContext));
+                    before.add(new VarInsnNode(Opcodes.ALOAD,0));before.add(new VarInsnNode(Opcodes.ALOAD,1));
                     before.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","attackBefore","(Ljava/lang/Object;Ljava/lang/Object;)V",false));
                     before.add(callPair("lab/ScienceTrace","attackBefore"));method.instructions.insert(before);
                     for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN){
                         InsnList after=new InsnList();after.add(new VarInsnNode(Opcodes.ALOAD,0));after.add(new VarInsnNode(Opcodes.ALOAD,1));
                         after.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","attackAfter","(Ljava/lang/Object;Ljava/lang/Object;)V",false));
                         after.add(callPair("lab/ScienceTrace","attackAfter"));method.instructions.insertBefore(ins,after);
+                        InsnList damageEnd=new InsnList();damageEnd.add(new VarInsnNode(Opcodes.ALOAD,damageContext));
+                        damageEnd.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/DamageBreakdown","end","(Ljava/lang/Object;)V",false));
+                        method.instructions.insertBefore(ins,damageEnd);
                     }
                     changed=true;
                 }

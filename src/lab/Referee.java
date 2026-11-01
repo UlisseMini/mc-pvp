@@ -37,6 +37,7 @@ public final class Referee {
             Map<String,Object> m=new LinkedHashMap<>();
             m.put("id",id);m.put("a",a);m.put("b",b);m.put("policy_a",pa);m.put("policy_b",pb);
             m.put("hits_a",ha);m.put("hits_b",hb);m.put("goal",goal);m.put("ping_a",pingA);m.put("ping_b",pingB);
+            m.put("damage_hits_a",sa.breakdown.damageHitsLanded);m.put("damage_hits_b",sb.breakdown.damageHitsLanded);
             m.put("mode",mode);m.put("blocks_a",ba);m.put("blocks_b",bb);
             m.put("stats_a",sa.state(hb-sb.rodHits));m.put("stats_b",sb.state(ha-sa.rodHits));
             m.put("food_policy","full_food_saturation_every_20_ticks");m.put("fishing_rods",rods());
@@ -162,6 +163,7 @@ public final class Referee {
     }
     /** Called only when vanilla executed its (damage+1)/2 sword-block branch. */
     public static void blockedDamage(Object target,Object source,float before,float after){
+        if("server".equals(System.getProperty("lab.role")))DamageBreakdown.blockApplied(target,source);
         if(server==null||!"server".equals(System.getProperty("lab.role"))||!(after<before))return;
         try{
             Object attacker=R.call(source,"getEntity");if(attacker==null)return;
@@ -169,6 +171,7 @@ public final class Referee {
             if(m==null||System.currentTimeMillis()<m.start||!m.winner.isEmpty()||
                     !(who.equals(m.a)&&victim.equals(m.b)||who.equals(m.b)&&victim.equals(m.a)))return;
             if(victim.equals(m.a))m.ba++;else m.bb++;
+            DamageBreakdown.blocked(target,source);
             boolean sounded=!isBot(victim)&&!mutedBlockSounds.contains(victim);
             if(sounded)blockSound(target);
             Map<String,Object> event=new LinkedHashMap<>();event.put("type","blocked_damage");event.put("time",System.currentTimeMillis());
@@ -194,6 +197,7 @@ public final class Referee {
             Object direct=R.call(source,"getSourceOfDamage");
             boolean rod=direct!=null&&R.cls("net.minecraft.entity.projectile.EntityFishHook").isInstance(direct);
             CombatStats stats=m.stats(who);if(rod)stats.rodHits++;if(immuneBefore)stats.upgrades++;
+            if(!rod)DamageBreakdown.accepted(target,source,m.ha+m.hb);
             Map<String,Object> hit=new LinkedHashMap<>();hit.put("type","hit");hit.put("time",System.currentTimeMillis());
             hit.put("attacker",who);hit.put("target",victim);hit.put("damage",damage);hit.put("hits_a",m.ha);hit.put("hits_b",m.hb);
             // This hook runs inside attackEntityFrom's return, before the outer
@@ -532,8 +536,9 @@ public final class Referee {
             if(DuelSettings.reach(m.configA)!=3||DuelSettings.reach(m.configB)!=3)message(p,"§dModified reach: "+DuelSettings.reach(m.configA)+" / "+DuelSettings.reach(m.configB)+" blocks (first / second player).");
             m.sa.summary(p,summaryName(m.a,m.pa,who,"§b"),m.ha,m.ba,m.rods(),(Number)result.get("health_a"),m.hb-m.sb.rodHits);
             m.sb.summary(p,summaryName(m.b,m.pb,who,"§6"),m.hb,m.bb,m.rods(),(Number)result.get("health_b"),m.ha-m.sa.rodHits);
-            message(p,"§8Crits and rod contacts are included in hits. Health/damage in hearts.");
+            message(p,"§8Crits are included in hits. Rod contacts are separate. Health/damage in hearts.");
             message(p,"§8Per-hit damage uses actual HP lost to melee, including crits/blocks; excludes rods and other damage.");
+            message(p,"§8Hits count HP loss; rod contacts are separate. Saved/extra damage keeps the same armor and Protection roll.");
             message(p,((Boolean)R.call(p,"isEntityAlive")?"":"§eRespawn first. ")+"§b/rematch §8| §b/bots");
         }}
         for(String who:List.of(m.a,m.b)){

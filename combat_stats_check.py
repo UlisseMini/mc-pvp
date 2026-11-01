@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Native input verification of rods, jumping criticals, healing and match summaries."""
 import hashlib
+from collections import defaultdict
 import json
 import os
 import re
@@ -25,7 +26,7 @@ def run():
     (directory/'options.txt').write_text('renderDistance:6\nfancyGraphics:false\nparticles:2\nsoundCategory_master:0.0\n')
     identifier='combat-stats-'+time.strftime('%Y%m%d-%H%M%S')+'-'+uuid.uuid4().hex[:6]
     out=ROOT/'experiments'/identifier;out.mkdir()
-    sources=('src/lab/Agent.java','src/lab/Referee.java','src/lab/CombatStats.java','src/lab/PracticeProbe.java','combat_stats_check.py')
+    sources=('src/lab/Agent.java','src/lab/Referee.java','src/lab/CombatStats.java','src/lab/DamageBreakdown.java','src/lab/DamageBenefits.java','src/lab/PracticeProbe.java','combat_stats_check.py')
     frozen={f:hashlib.sha256((ROOT/f).read_bytes()).hexdigest() for f in sources}
     agent_hash=hashlib.sha256((BUILD/'lab-agent.jar').read_bytes()).hexdigest()
     launched=time.time()*1000
@@ -96,6 +97,24 @@ def run():
         es=events[g['id']]
         summary=plain.split('Finished '+g['id']+' ',1)[-1].split('Finished ',1)[0]
         expected_per_hit=[]
+        # Reconstruct each accepted contact from independent native health/block events.
+        pending=defaultdict(float);blocked=set();melee={}
+        for e in es:
+            if e['type']=='health_damage':pending[(e['attacker'],e['target'])]+=e['amount']
+            elif e['type']=='blocked_damage':blocked.add((e['attacker'],e['target']))
+            elif e['type']=='hit':
+                pair=(e['attacker'],e['target']);loss=pending.pop(pair,0);was_blocked=pair in blocked;blocked.discard(pair)
+                if not e['rod']:
+                    melee[e['hits_a']+e['hits_b']]={'attacker':e['attacker'],'target':e['target'],'health_loss':loss,
+                        'blocked':was_blocked,'critical':e['damage']==(7.5 if g['mode']=='diamond_box' else 12)}
+        observed=[e for e in es if e['type']=='melee_damage']
+        checks[g['id']+'_per_attack_damage_attribution']=(len(observed)==len(melee) and len({e['hit_index'] for e in observed})==len(melee) and all(
+            e['hit_index'] in melee and all(e[k]==v if k!='health_loss' else abs(e[k]-v)<1e-6 for k,v in melee[e['hit_index']].items()) for e in observed))
+        expected_benefits=[]
+        checks[g['id']+'_shadow_damage_matches_native_hp']=bool(observed) and all(abs(e['predicted_health_loss']-e['health_loss'])<1e-6 for e in observed)
+        checks[g['id']+'_benefit_difference_and_scope']=bool(observed) and all(
+            abs(e['blocking_saved']-(max(0,e['without_block_health_loss']-e['health_loss']) if e['blocked'] else 0))<1e-6 and
+            abs(e['critical_extra']-(max(0,e['health_loss']-e['without_crit_health_loss']) if e['critical'] else 0))<1e-6 for e in observed)
         for side in ('a','b'):
             name=g[side];stats=g['stats_'+side];hits=[e for e in es if e['type']=='hit' and e['attacker']==name]
             healed=sum(e['amount'] for e in es if e['type']=='heal' and e['player']==name)
@@ -111,9 +130,40 @@ def run():
             checks[g['id']+'_'+side+'_damage_per_hit_matches_native_events']=(stats['melee_hits_taken']==len(incoming) and
                 (stats['damage_taken_per_hit'] is None if average is None else abs(stats['damage_taken_per_hit']-average)<.000001))
             expected_per_hit.append('N/A (no melee hits)' if average is None else f'{average/2:.2f} hearts ({len(incoming)} melee hits)')
+            for key,label,direction,flag,flag_value in (
+                ('blocked_taken','Taken on blocks','target','blocked',True),('unblocked_taken','Taken unblocked','target','blocked',False),
+                ('critical_dealt','Dealt by crits','attacker','critical',True),('normal_dealt','Dealt by normal hits','attacker','critical',False)):
+                cohort=[e for e in melee.values() if e[direction]==name and e[flag]==flag_value]
+                damage=sum(e['health_loss'] for e in cohort);count=len(cohort);group=stats['damage_breakdown'][key]
+                checks[g['id']+'_'+side+'_'+key]=(group['hits']==count and abs(group['damage']-damage)<1e-6 and
+                    (group['damage_per_hit'] is None if not count else abs(group['damage_per_hit']-damage/count)<1e-6))
+            breakdown=stats['damage_breakdown']
+            checks[g['id']+'_'+side+'_group_totals_reconcile']=(
+                abs(breakdown['blocked_taken']['damage']+breakdown['unblocked_taken']['damage']-(stats['damage_taken']-stats['other_damage']))<1e-6 and
+                abs(breakdown['critical_dealt']['damage']+breakdown['normal_dealt']['damage']-stats['damage_dealt'])<1e-6 and
+                breakdown['blocked_taken']['hits']==g['blocks_'+side] and breakdown['critical_dealt']['hits']==stats['crits'])
+            landed=sum(e['attacker']==name and e['health_loss']>0 for e in observed)
+            taken=sum(e['target']==name and e['health_loss']>0 for e in observed)
+            checks[g['id']+'_'+side+'_damage_only_headline']=(g['damage_hits_'+side]==landed and
+                breakdown['damage_hits_landed']==landed and breakdown['damage_hits_taken']==taken)
+            label=('You (LabObserver)' if side=='a' else g['policy_b']+' (bot)')
+            header=next((line for line in summary.splitlines() if label+' ' in line),'')
+            checks[g['id']+'_'+side+'_headline_chat_excludes_rods']=f'Hits: {landed}' in header and (not g['fishing_rods'] or f'Rod contacts: {stats["rod_hits"]}' in header)
+            for group_key,field,direction,flag,total_count,per_all_key,title,per_label,all_label in (
+                ('blocking_saved','blocking_saved','target','blocked',taken,'blocking_saved_per_received_hit','Blocking saved','Per block','Per received hit'),
+                ('critical_extra','critical_extra','attacker','critical',landed,'critical_extra_per_landed_hit','Extra crit damage','Per crit','Per landed hit')):
+                cohort=[e for e in observed if e[direction]==name and e[flag]];total=sum(e[field] for e in cohort);count=len(cohort)
+                group=breakdown[group_key]
+                checks[g['id']+'_'+side+'_'+group_key]=(group['hits']==count and abs(group['damage']-total)<1e-6 and
+                    (group['damage_per_hit'] is None if count==0 else abs(group['damage_per_hit']-total/count)<1e-6) and
+                    (breakdown[per_all_key] is None if total_count==0 else abs(breakdown[per_all_key]-total/total_count)<1e-6))
+                per=f'{total/count/2:.3f}' if count else 'N/A';overall=f'{total/total_count/2:.3f}' if total_count else 'N/A'
+                expected_benefits.extend([f'{title}: {total/2:.2f} hearts',f'{per_label}: {per} | {all_label}: {overall}'])
         # The native logger wraps chat in an XML CDATA element; only compare the message.
         received=[value.split(']]>',1)[0] for value in re.findall(r'Damage taken per hit: ([^\r\n]*)',summary)]
         checks[g['id']+'_both_damage_per_hit_chat_values']=received==expected_per_hit
+        received_benefits=[value.split(']]>',1)[0] for value in re.findall(r'((?:Blocking saved|Extra crit damage|Per block|Per crit): [^\r\n]*)',summary)]
+        checks[g['id']+'_both_benefit_chat_values']=received_benefits==expected_benefits
     report={'checks':checks,'passed':all(checks.values()),'games':games,'script':script,'source_sha256':frozen,'agent_sha256':agent_hash,
             'rod_contacts':len(rods),'criticals':len(crits),'blocks':len(blocks),'chimes':len(sounds),'food_samples':len(samples)}
     (out/'food-samples.json').write_text(json.dumps(samples,indent=2)+'\n')
