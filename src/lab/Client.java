@@ -192,6 +192,7 @@ public final class Client {
                 }
             }
             long now=System.nanoTime();
+            long pollPreviousCompleted=lastClick;boolean pollGate=clickGate,pollAdmitted=false;
             if(clickGate&&firstClickEligible==0)firstClickEligible=now;
             long firstDelay=(long)Math.max(0,Math.min(100,number("first_click_delay_ms",0)))*1_000_000L;
             // Contact-clicking is a normal input policy: begin the capped
@@ -213,6 +214,7 @@ public final class Client {
                 // Pace from completed input injection, not from before reflection/GC pauses.
                 // No catch-up inputs: wait the full declared interval after completion.
                 lastClick=System.nanoTime();
+                pollAdmitted=true;
                 if(criticalOpportunity)criticalClicks.injected(lastObservedTargetHurt);
                 ModelController.click(System.currentTimeMillis());
                 Map<String,Object> issued=new LinkedHashMap<>();
@@ -240,6 +242,7 @@ public final class Client {
                 }
                 log(issued);
             }
+            ReplicationTrace.capPoll(now,pollPreviousCompleted,nativeInputPoll,pollGate,pollAdmitted,pollAdmitted?lastClick:-1);
         }catch(Throwable e){fail(e);}
     }
 
@@ -248,6 +251,7 @@ public final class Client {
         mc=minecraft; ticks++;
         try {
             long now=System.currentTimeMillis();
+            long decisionHeadNanos=System.nanoTime();
             if(now-readAt>100){
                 Properties nextControls=R.properties(DIR.resolve("control.properties"));
                 validateControls(nextControls);controls=nextControls;readAt=now;
@@ -391,6 +395,7 @@ public final class Client {
             double horizon=age+number("horizon_ms",80)/1000.0;
             double gap=obs.distance-Math.max(-8,Math.min(8,obs.closing))*horizon;
             double desired=number("gap",2.9), margin=number("margin",.10);
+            ReplicationTrace.inputHead(now,decisionHeadNanos,System.nanoTime());
             if(kind.equals("phase")){
                 // Predict next ordinary equal-damage hit window from delayed visible cues.
                 // This changes movement only. All nominal clicks still reach the engine.

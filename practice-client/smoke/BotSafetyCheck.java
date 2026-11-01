@@ -12,7 +12,7 @@ public final class BotSafetyCheck {
     public static void main(String[] args)throws Exception{
         System.clearProperty("practice.role");System.clearProperty("lab.root");
         System.setProperty("lab.role","client");System.setProperty("lab.slot","0");
-        BotHooks.tick(null);BotHooks.frame(null);BotHooks.movement(null,1,1);
+        BotHooks.tick(null);BotHooks.frame(null);BotHooks.movement(null,1,1);BotHooks.attackLoop();
         require(BotHooks.reach()==3&&BotHooks.ray(4.5f)==4.5f,"human role ignores stale bot startup properties");
         require(!BotRuntime.enabled(),"human does not create a controller");
         Map<String,String> classes=new LinkedHashMap<>();

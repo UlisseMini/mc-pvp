@@ -8,6 +8,7 @@ import lab.ScienceTrace;
 public final class BotHooks {
     public static void tick(Object mc){if(BotRuntime.enabled())Client.tick(mc);}
     public static void frame(Object mc){if(BotRuntime.enabled())Client.frame(mc);}
+    public static void attackLoop(){if(BotRuntime.enabled())ReplicationTrace.attackLoop();}
     public static double reach(){return BotRuntime.enabled()?Client.attackReach():3.0;}
     public static float ray(float original){return BotRuntime.enabled()?Client.selectionRayLength(original):original;}
     public static void click(Object mc,boolean after){if(BotRuntime.enabled()){if(after)ScienceTrace.clickAfter(mc);else{Client.inputWordConsumed(mc);ScienceTrace.clickBefore(mc);}}}

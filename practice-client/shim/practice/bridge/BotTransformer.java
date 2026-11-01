@@ -16,7 +16,9 @@ final class BotTransformer {
         ClassNode node=new ClassNode();new ClassReader(bytes).accept(node,0);int hooks=0;
         for(MethodNode m:node.methods){
             if(minecraft&&m.desc.equals("()V")){
-                if(named(m,"func_71407_l","runTick","s")){m.instructions.insert(call("tick",0));hooks++;}
+                if(named(m,"func_71407_l","runTick","s")){
+                    hookAttackLoop(m,node.name);m.instructions.insert(call("tick",0));hooks+=2;
+                }
                 if(named(m,"func_71411_J","runGameLoop","av")){m.instructions.insert(call("frame",0));hooks++;}
                 if(named(m,"func_147116_af","clickMouse","aw")){pair(m,"click",0);hooks++;}
             }
@@ -43,12 +45,45 @@ final class BotTransformer {
                 for(AbstractInsnNode ins:m.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)m.instructions.insertBefore(ins,call("remote",0));hooks++;
             }
         }
-        int expected=minecraft?3:renderer?1:player?2:living?1:2;
+        int expected=minecraft?4:renderer?1:player?2:living?1:2;
         if(hooks!=expected)throw new IllegalStateException("Native bot hooks missing in "+type+": "+hooks+" / "+expected);
         ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS);node.accept(out);
         System.out.println("[PracticeBridge] Native bot hooks: "+type+" ("+hooks+")");return out.toByteArray();
     }
     private static boolean named(MethodNode m,String srg,String mcp,String obf){return m.name.equals(srg)||m.name.equals(mcp)||m.name.equals(obf);}
+    private static AbstractInsnNode codeBefore(AbstractInsnNode ins){do{ins=ins.getPrevious();}while(ins!=null&&ins.getOpcode()<0);return ins;}
+    private static AbstractInsnNode codeAfter(AbstractInsnNode ins){do{ins=ins.getNext();}while(ins!=null&&ins.getOpcode()<0);return ins;}
+    /** Pinned while(keyBindAttack.isPressed()) clickMouse() loop. The native
+     * condition and backedge remain intact; the observer never reads pressTime. */
+    private static void hookAttackLoop(MethodNode method,String owner){
+        int found=0;
+        for(AbstractInsnNode ins:method.instructions.toArray())if(ins instanceof MethodInsnNode){
+            MethodInsnNode click=(MethodInsnNode)ins;
+            if(!click.owner.equals(owner)||!click.desc.equals("()V")||
+                    !(click.name.equals("func_147116_af")||click.name.equals("clickMouse")||click.name.equals("aw")))continue;
+            AbstractInsnNode load=codeBefore(ins),condition=load==null?null:codeBefore(load),backedge=codeAfter(ins);
+            if(load==null||load.getOpcode()!=Opcodes.ALOAD||((VarInsnNode)load).var!=0
+                    ||!(condition instanceof JumpInsnNode)||condition.getOpcode()!=Opcodes.IFEQ
+                    ||!(backedge instanceof JumpInsnNode)||backedge.getOpcode()!=Opcodes.GOTO)
+                throw new IllegalStateException("Pinned attack loop branch changed");
+            AbstractInsnNode pressed=codeBefore(condition),field=pressed==null?null:codeBefore(pressed);
+            if(!(pressed instanceof MethodInsnNode)||!((MethodInsnNode)pressed).desc.equals("()Z")
+                    ||!(((MethodInsnNode)pressed).name.equals("func_151468_f")||((MethodInsnNode)pressed).name.equals("isPressed")||((MethodInsnNode)pressed).name.equals("f"))
+                    ||!(field instanceof FieldInsnNode)||field.getOpcode()!=Opcodes.GETFIELD
+                    ||!(((FieldInsnNode)field).name.equals("field_74312_F")||((FieldInsnNode)field).name.equals("keyBindAttack")||((FieldInsnNode)field).name.equals("ai")))
+                throw new IllegalStateException("Pinned attack KeyBinding condition changed");
+            LabelNode header=((JumpInsnNode)backedge).label;
+            boolean reachesCondition=false;
+            for(AbstractInsnNode cursor=header;cursor!=null&&cursor!=ins;cursor=cursor.getNext())if(cursor==pressed)reachesCondition=true;
+            if(!reachesCondition)throw new IllegalStateException("Pinned attack loop backedge changed");
+            // Keep the existing label/line/stack-map frame at the loop entry.
+            // Inserting before its FrameNode would move the frame past the hook.
+            AbstractInsnNode first=header;while(first!=null&&first.getOpcode()<0)first=first.getNext();
+            if(first==null)throw new IllegalStateException("Missing attack loop body");
+            method.instructions.insertBefore(first,call("attackLoop"));found++;
+        }
+        if(found!=1)throw new IllegalStateException("Pinned attack loop count changed: "+found);
+    }
     private static InsnList call(String name,int... locals){return call(name,false,false,locals);}
     private static InsnList call(String name,boolean flag,boolean after,int... locals){
         InsnList out=new InsnList();String desc="(";

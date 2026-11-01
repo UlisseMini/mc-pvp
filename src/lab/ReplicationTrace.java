@@ -12,6 +12,47 @@ public final class ReplicationTrace {
     private static final Map<Object,Long> packetIds=Collections.synchronizedMap(new WeakHashMap<>());
     private static final AtomicLong nextPacket=new AtomicLong(), sequence=new AtomicLong(), dropped=new AtomicLong();
     private static volatile long frames;
+    private static String lastLoopMatch="";
+    private static long lastLoopTick=Long.MIN_VALUE;
+
+    private static boolean timingEnabled(){
+        return ScienceTrace.client()&&Client.controls.getProperty("science_network_trace","0").equals("1");
+    }
+    /** Recorded after setup/guard work, but its timestamps are the original
+     * native tick entry reads. Wall now remains the value used by W-tap/opening. */
+    public static void inputHead(long wallNow,long monotonicNanos,long decisionNanos){
+        try{if(!timingEnabled())return;
+            Map<String,Object> e=event("native_input_head");e.put("emitted_monotonic_ns",e.get("monotonic_ns"));
+            e.put("time",wallNow);e.put("wall_now_ms",wallNow);e.put("monotonic_ns",monotonicNanos);
+            e.put("decision_ns",decisionNanos);
+            e.put("match",Client.match);e.put("native_tick",Client.ticks);Client.log(e);
+        }catch(Throwable e){dropped.incrementAndGet();}
+    }
+    /** This emits only after the original admission branch. Poll/completion
+     * timestamps are the existing cap reads, never replacement clock samples. */
+    public static void capPoll(long pollNanos,long previousCompleted,boolean nativePoll,boolean gate,boolean admitted,long completion){
+        try{if(!timingEnabled())return;
+            Map<String,Object> e=event("native_cap_poll");e.put("emitted_monotonic_ns",e.get("monotonic_ns"));
+            // Keep the envelope's wall/mono pair consistent for generic clock
+            // calibration; the earlier actual opportunity is explicitly poll_ns.
+            e.put("poll_ns",pollNanos);e.put("match",Client.match);e.put("native_tick",Client.ticks);
+            e.put("source",nativePoll?"native_tick":"frame");e.put("previous_completed_ns",previousCompleted);
+            e.put("minimum_interval_ns",ClickRate.intervalNanos(Client.controls));e.put("gate_at_poll",gate);
+            e.put("admitted",admitted);e.put("completion_ns",completion);
+            e.put("poll_to_completion_ns",admitted?completion-pollNanos:-1);Client.log(e);
+        }catch(Throwable e){dropped.incrementAndGet();}
+    }
+    static boolean firstAttackLoop(String match,long tick){
+        if(match.equals(lastLoopMatch)&&tick==lastLoopTick)return false;
+        lastLoopMatch=match;lastLoopTick=tick;return true;
+    }
+    /** The hook executes at the native loop condition, including its empty
+     * false check. Repeated conditions in one press loop produce one marker. */
+    public static void attackLoop(){
+        try{if(!timingEnabled()||!firstAttackLoop(Client.match,Client.ticks))return;
+            Map<String,Object> e=event("native_attack_loop");e.put("match",Client.match);e.put("native_tick",Client.ticks);Client.log(e);
+        }catch(Throwable e){dropped.incrementAndGet();}
+    }
 
     private static synchronized long packetId(Object packet){
         return packetIds.computeIfAbsent(packet,key->nextPacket.incrementAndGet());
