@@ -71,6 +71,9 @@ def main():
             for old in (args.game_dir/'mods').glob('practice-bridge-*.jar'):old.unlink()
         module_name='practice-module.jar' if args.module_only or not (args.game_dir/'config/pvp-practice/practice-module.jar').exists() else 'practice-module-next.jar'
         install(BUILD/'practice-module.jar',args.game_dir/'config/pvp-practice'/module_name)
+        # A compatible hot update must not revert to an older staged module on restart.
+        pending=args.game_dir/'config/pvp-practice/practice-module-next.jar'
+        if args.module_only and pending.exists():install(BUILD/'practice-module.jar',pending)
         if module_name.endswith('-next.jar'):print('Module staged for next Minecraft start; the currently running module remains active.')
         cfg=args.game_dir/'config/pvp-practice/settings.properties'
         if not cfg.exists():install(SRC/'settings.properties',cfg)

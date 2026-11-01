@@ -21,13 +21,18 @@ public final class PracticeModule implements PracticeExtension {
     private final PracticeOverlay overlays=new PracticeOverlay();
     private Frame base=Frame.empty();
     private final ReplayOverlay replay=new ReplayOverlay();
-    public void event(PracticeEvent e){if(e.type.equals("replay_frame"))replay.state=e.data;if(e.type.equals("link_state")){linked=e.data;linkReceived=e.timeMillis;}if(e.type.equals("practice_views"))overlays.views=e.data;}
-    public Frame render(float partial,int width,int height){return replay.active()?replay.hud(base,width,height):overlays.hud(base,width,height);}
+    private final RangeIndicators ranges=new RangeIndicators();
+    private final RangeCommands rangeCommands=new RangeCommands();
+    private long liveReceived;
+    public void event(PracticeEvent e){if(e.type.equals("replay_frame"))replay.state=e.data;if(e.type.equals("link_state")){linked=e.data;linkReceived=e.timeMillis;}if(e.type.equals("practice_views")){overlays.views=e.data;liveReceived=System.nanoTime();}}
+    public Frame render(float partial,int width,int height){Frame hud=replay.active()?replay.hud(base,width,height):overlays.hud(base,width,height);return rangeCommands.feedback(ranges.render(hud,width,height,overlays.views,replay.state,liveReceived));}
     public WorldFrame world(float partial){return replay.active()?replay.world():overlays.world();}
+    public boolean command(String[] args){return rangeCommands.handle(args,ranges);}
 
     public void configure(Properties p,Path directory) {
         this.directory=directory;
         overlays.configure(p);replay.configure(p);
+        ranges.configure(p);rangeCommands.configure(p,directory);
         enabled=bool(p,"sprint.enabled",true);sprint=bool(p,"sprint.startEnabled",true);
         potions=bool(p,"potions.enabled",true);metrics=bool(p,"metrics.enabled",false);
         record=bool(p,"record.enabled",false);hurtFlash=bool(p,"feedback.hurtFlash",false);
@@ -50,7 +55,7 @@ public final class PracticeModule implements PracticeExtension {
     public Frame tick(Snapshot s) throws IOException {
         if(s.sprintPressed && s.playing && !s.screenOpen)sprint=!sprint;
         List<Frame.Line> lines=new ArrayList<>();
-        if(!s.playing){close();previousHurt=0;blockedTicks=playingTicks=0;overlays.views=Collections.emptyMap();return base=Frame.empty();}
+        if(!s.playing){close();previousHurt=0;blockedTicks=playingTicks=0;overlays.views=Collections.emptyMap();replay.state=Collections.emptyMap();return base=Frame.empty();}
         if(enabled && sprint)lines.add(new Frame.Line(label,inset,top,color,true));
         if(potions){int y=potionY;for(String effect:s.effects){lines.add(new Frame.Line(effect,inset,y,0xFFFFFF,true));y+=11;}}
         if(s.self!=null){

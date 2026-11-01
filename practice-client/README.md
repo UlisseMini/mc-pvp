@@ -32,6 +32,13 @@ with all the same subcommands, for example `/p advantage on`:
 | `/practice opening on` / `off` | Show/hide geometric opening lead (on by default) |
 | `/practice opening large` / `small` | Prominent centered opening HUD, or compact text |
 | `/practice advantage on` / `off` | Both client-view distances and your reach advantage, live and in replay (on by default) |
+| `/p range yours on` / `off` | Indicate when the opponent is within your client-view reach; cyan crosshair brackets by default |
+| `/p range theirs on` / `off` | Indicate when you are within the opponent's client-view reach; soft red screen edges by default |
+| `/p range both on` / `off` | Enable/disable both range indicators together |
+| `/p range yours crosshair` / `edge` / `screen` | Choose a style and enable it; substitute `theirs` or `both` to change the other indicator(s) |
+| `/p range theirs color FF5555` | Set a six-digit RGB color independently for either side |
+| `/p range theirs opacity 12` | Set opacity from 0–100 percent; `auto` restores the style's default |
+| `/p range theirs pulse on` / `off` | Optional brief brightness pulse when entering range; off by default |
 | `/practice reach on` / `off` | Smooth translucent reach fields: cyan for your client, amber for the bot |
 | `/practice ghost bot on` / `off` | Faint amber silhouette at the bot's own client-rendered position |
 | `/practice ghost me on` / `off` | Faint pink silhouette where the bot's client renders you |
@@ -69,6 +76,26 @@ the measurements, rather than subtracting an arbitrary stationary baseline.
 The replay readout stays oriented to the recorded human (or A for bot-vs-bot),
 regardless of which viewpoint the camera follows. This is a geometric distance
 advantage; modified reach caps are a separate setup parameter.
+
+The two **range indicators** are independent of the numeric HUD, reach fields,
+and each other. Both start enabled: cyan brackets when you can geometrically
+reach them in your view, soft red edges when they can geometrically reach you
+in theirs. They use logical eye-to-expanded-hitbox distances and each actor's
+actual reach cap (normally 3.0), including height. Aim, walls, immunity and click
+timing are not tested. A signal switches off immediately outside range; visual
+fading never extends the threshold. Missing/stale opponent data hides its signal
+without hiding yours. The same calculations work during replay, always oriented
+to the recorded human (or A for bot-vs-bot), independent of the selected camera.
+
+Choose `crosshair`, `edge`, or `screen` for either indicator. When both use edges,
+your signal occupies the top/bottom and theirs the left/right. Crosshair signals
+use separate inner/outer brackets; when both use screen tints, those brackets
+also identify the two signals. Automatic opacity is 85% for brackets, 12% at the
+outer edge fading inward, and 6% for full-screen tint. Optional entry pulses
+brighten for 180 ms of live/replay time and freeze when replay is paused. Seeking
+or first receiving a view does not manufacture an entry pulse. Commands save
+your choices, show brief HUD feedback, and take effect without restarting.
+`/p range` shows usage. All these commands also work under `/practice range`.
 
 Reach fields are filled translucent spheres with a soft inner boundary and no
 rings, spokes, target boxes or diagnostic lines. They follow frame-interpolated
