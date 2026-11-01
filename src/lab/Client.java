@@ -530,8 +530,9 @@ public final class Client {
                 plan.put("sent_sprint",obs.sentSprint);plan.put("scheduled_reset_at",decision.scheduledResetAt);log(plan);
             }
             if(kind.equals("cycle")){
-                CycleController.Decision d=cycle.decide(ticks,obs.localRange,CycleController.Settings.from(controls));
-                setKeys(d.forward,0,d.sprint);clickGate=d.click;
+                CycleController.Settings settings=CycleController.Settings.from(controls);
+                CycleController.Decision d=cycle.decide(ticks,obs.localRange,settings,now,lastObservedTargetHurt,ping);
+                setKeys(d.forward,d.anchored?settings.strafe:0,d.sprint);clickGate=d.click;
                 Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","cycle_plan");plan.put("time",now);plan.put("match",match);
                 plan.put("native_tick",ticks);plan.put("phase",d.phase);plan.put("coast_ticks",d.coastTicks);plan.put("anchored",d.anchored);
                 plan.put("local_range",obs.localRange);plan.put("forward",d.forward);plan.put("click_gate",d.click);
