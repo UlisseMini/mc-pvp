@@ -5,6 +5,13 @@ The two-tick/zero-vertical demonstration remains only an anchor. We tested the
 continuation ladder, then a model-derived vanilla input sequence and two
 mechanically motivated corrections, always with matched W-tap.
 
+The latest work is model-first: five frozen legal policy variants were screened
+over432 near-vanilla settings and three phases, with identical-state W-tap pairs.
+One conditional-coast arm achieves148 fresh hits over60s versus W-tap2; its other
+phases get5 and32. Earlier braking improves the spread to29 /17 /38 versus
+2 /2 /2, but loses that single full-minute success. No controller/setting passes
+the all-phase native gate, so no new native trial was run. Details follow below.
+
 The latest small-tweak native result uses ordinary ten-tick immunity with only
 5% less vertical knockback: **5 /10 /1 fresh hits before return versus W-tap
 3 /3 /2**, all timing-clean. The10-hit run is `/replay m1351`; it returns at6088ms.
@@ -23,7 +30,132 @@ The desired neighborhood is fresh damage every9–10 ticks, horizontal and verti
 knockback multipliers0.9–1.1. Those are the requested bounds, not claimed Hypixel
 constants. Reach is3 for both players and added RTTs are0/120ms unless stated.
 
-## Latest input-timing checks (model only)
+## Legal-controller settings search (latest, model only)
+
+The first settings-first sweep varies BOTH RTTs over0/60/120/150ms, horizontal
+and vertical KB over0.9/1/1.1, and fresh windows8/9/10. Three frozen legal
+policies (own-range A/D feedback, the same law with two-tick coast pulses, and
+hold-W+Ctrl) each face primed W-tap from identical complete acquired states,
+including all packets and admitted inputs. There are432 settings and3,888
+paired phase cells. The intended maintenance horizon is60 seconds; an arm
+stops at its first accepted return once that primary score is determined.
+
+**Those three frozen policies found no full-minute lock.** This is not3,888 proofs of failure:
+74 acquisition pairs are unsupported, and another16 candidate arms encounter
+an unsupported degenerate-separation case during maintenance. Those90 arms
+remain unknown. The3,814 successful acquisitions pass complete fork parity.
+Of the supported gap/coast acquisitions,1,171/1,283 already put B's ray within
+reach at the four-second handoff. Consequently most cells test recovery from
+poor acquisition, not maintenance from a clean lock. This limitation prevents
+interpreting the empty success region as a physical feasibility boundary.
+
+| Frozen controller; own/opponent RTT; H/V/window | Fresh before return, three phases | Plain W-tap, identical seeds | Candidate60s successes |
+|---|---|---|---|
+| Coast;150/0ms;1.1/1/8 |20 /5 /17|2 /2 /2|0 of3|
+| Coast;60/120ms;1.1/0.9/8 |5 /5 /5|3 /3 /3|0 of3|
+
+These are the only original controller/settings groups beating W-tap in all three
+phases. Neither qualifies for native promotion. Nine- and ten-tick settings
+produce no consistent improvement across the tested phase spread. The
+predeclared native gate also requires continuing fresh hits (maximum gap no
+greater than twice the configured fresh window), so merely surviving by
+escaping cannot qualify. It is scored on both arms and does not replace the
+primary metric. Source/configuration hashes and all unsupported cells are kept
+in [the sweep artifacts](poc-20261101/anneal/continuation/near-settings/plan.md).
+
+A causal input change does better: after starting a coast, remain released for
+at least two inputs and until the existing2.55-block spacing target is restored.
+The old controller resumed after exactly two inputs, even while still too close.
+No gain, target, click behavior or sprint rule changes. Repeating the complete
+432-setting/three-phase grid with this frozen law gives:
+
+| Conditional coast resume; own/opponent RTT; H/V/window | Fresh before return, three phases | Plain W-tap, identical seeds | Candidate60s successes |
+|---|---|---|---|
+|150/0ms;1.1/1/8 |148 /5 /32|2 /2 /2|1 of3|
+|60/120ms;1.1/0.9/8 |9 /5 /9|3 /3 /3|0 of3|
+
+The148-hit arm has zero accepted returns, zero opponent input-ray opportunities,
+zero missed first-eligible fresh windows, and at most450ms between fresh hits.
+All148 are normal hits; no sprint bonus was silently introduced. Its vertical
+motion remains bounded (height0–1.547 blocks). Opponent nearest-box distance
+does reach2.941 despite zero sampled input-ray opportunities: this is a timed
+zero-return result, not proof of geometric denial at every instant. The complete
+new grid has one successful arm,1,280 accepted-return prefixes and15 unknown
+arms. **No setting passes all three phases, so none qualifies for native.**
+
+Removing only the old eight-input restriction on starting another coast leaves
+the primary scores unchanged. In the worst conditional-resume phase the last
+coast starts5700ms and never resumes before return5905ms. B clicks5875ms using
+an A position report already emitted5700.3ms. The next problem is therefore
+earlier braking, not a later release or sprint reset. At5450ms, the legal own
+range was2.69383 and own radial velocity0.11141 blocks/tick. Subtracting the
+grounded coasting distance, `max(v_radial,0)/(1−0.6f*0.91f)`, gives2.44844:
+already below the unchanged2.55 target,250ms before the actual coast begins.
+This is a known-own-motion warning, not a prediction of B's future flight.
+
+A predeclared2×2 comparison separates that earlier onset from removing the
+eight-input guard. All arms keep conditional resume and the original complete
+seeds; ordinary double-tap sprint remains enabled in Minecraft.
+
+| Own/opponent RTT; H/V/window | Original onset, guard8 | Original onset, no guard | Stopping-distance onset, guard8 | Stopping-distance onset, no guard | Plain W-tap |
+|---|---|---|---|---|---|
+|150/0ms;1.1/1/8|148 /5 /32|148 /5 /32|29 /17 /38|3 /2 /4|2 /2 /2|
+|60/120ms;1.1/0.9/8|9 /5 /9|9 /5 /9|9 /9 /9|2 /5 /4|3 /3 /3|
+
+Earlier guarded braking improves the worst phases without introducing sprint
+hits. Unguarded repeated presses instead trigger actual auto-sprint and can
+create700–1300ms fresh gaps. The guarded variant is a tradeoff, not a universal
+upgrade: its canonical148 falls to29, including one missed fresh window. Its
+minimum phase result improves from5 to17, and every phase still clearly beats
+W-tap. That baseline-grounded reason was declared before expanding it to the
+same432-setting grid; it did not satisfy the earlier, stricter internal proposal
+of being no worse than the old controller in every phase.
+
+The final grid contains1,281 accepted-return candidate prefixes and15 unknown
+arms, with no full-minute success. Thus neither settings nor that physically
+motivated onset change supplies an all-phase native candidate. Across the three
+full grids there are6,480 paired cells, not6,480 independent acquired states.
+The two best settings above start separated in all three phases; the widespread
+bad-opening caveat still applies to the rest of the grid.
+
+The supported conclusion concerns this control family. Its successful prefixes
+use only normal hits, while the105-hit oracle word uses84 grounded sprint
+launches,13 airborne normal launches and8 airborne sprint launches. Accidental
+auto-sprint and the failed landing-wait experiment do not test deliberate mixed
+strength control under the improved spacing law. Existing traces show why that
+axis matters: a normal grounded launch loses much more horizontal motion in its
+first movement than a sprint launch or an airborne normal launch. They do not
+prove that every normal-only9–10-tick strategy is impossible. The next focused
+causal comparison is intentional single-contact S/N scheduling with spacing and
+queue handling frozen, verifying actual strengths before judging combo scores.
+The [full sweep findings](poc-20261101/anneal/continuation/near-settings/findings.md)
+and [causal input audit](poc-20261101/anneal/continuation/near-settings/causal-findings.md)
+include all spreads, unknowns and reproducible frozen artifacts.
+
+The105-hit sequence needs a different interpretation: its runtime is legal,
+but its offline search could inspect exact opponent/server state, both views,
+queues and a deterministic future schedule, then discard losing futures.
+A legal feedback bot has delayed evidence, not that calendar. Landing can
+reset vertical phase, but cannot reset spacing, old positions still travelling
+through the network, or already-issued opponent attacks. The new bounded
+LAND-THEN-S experiment tests this distinction directly. It does reproduce a
+grounded vertical reset in27 acquisition guards, and24 subsequent grounded
+sprint launches have the same0.46075 vertical packet. But every supported
+four-second handoff has already lost spacing: candidate0 in21 resolved pairs,
+versus W-tap1 in15 and0 in6; six pairs remain unknown.
+
+That experiment also exposes an observation mistake: waiting for the rendered
+player to approach the floor within1e-6 adds1.42–1.55 seconds of interpolation
+settling. The client's interpolation destination reports the floor much earlier.
+Even then, these trajectories leave only67.5–97.5ms before the next opponent
+input opportunity at0/0 RTT, less than the current two-movement sprint preparation
+plus packet service. An already prepared attack might fit; that has not been
+tested. This rejects this waiting/preparation recipe, not physical state forcing.
+See [the oracle information audit](poc-20261101/anneal/astra-boundary/oracle105-information-and-forcing.md),
+[matched reset tests](poc-20261101/anneal/mechanism/land-then-s-findings.md),
+and [the observation timing audit](poc-20261101/anneal/mechanism/land-then-s-goal-audit-findings.md).
+
+## Earlier input-timing checks (model only)
 
 The long vanilla sequence depends on **when the ordinary click is consumed**,
 not just which input ticks leave the click gate open. At the shared51ms admission

@@ -38,6 +38,32 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Overnight mandate (2026-11-01)
 
+### Latest direction: legal-controller settings search before native trials
+
+Search the coupled model first across near-vanilla settings, including BOTH
+players' RTTs (initial values0/60/120/150ms), horizontal KB within±10%, vertical
+KB within the same near-vanilla neighborhood, and fresh windows8–10 ticks.
+The searched policy must use only its own client's observations and declared
+settings; an oracle trajectory is not a qualifying legal feedback controller.
+Require sustained fresh hits and zero accepted returns for60s across several
+physical tick phases, with plain W-tap from identical complete states. Report
+fresh gaps/readiness as well as scores so merely running away is not called a
+combo lock. Keep acquisition separate and all free opening hits excluded.
+Only the best one or two settings that pass the model qualification go native;
+coordinate their compute/timing gates as before. Community ping claims motivate
+the grid; they are not verified Hypixel constants.
+
+Audit precisely which hidden information the105-hit vanilla oracle used:
+victim state, latent server motion, future event ordering and in-flight views.
+Distinguish that offline search access from the saved word's legal but brittle
+runtime inputs. Investigate whether ordinary, own-observation-cued inputs can
+FORCE a reproducible landing/flight state rather than estimate it precisely.
+A proposed reset must preserve reach/denial and work against an active hold-W
+opponent; an oracle state edit or newly disabled opponent is not maintenance.
+Freeze simple laws before the settings sweep and diagnose failures against
+W-tap before adding features. No RL/ML. The deliverable remains the closest
+near-vanilla native lock and a mechanistic account of its breaking boundary.
+
 ### Current priority: continue the anchor toward vanilla
 
 The user explicitly rejects zero vertical KB plus two-tick fresh damage as the
@@ -56,16 +82,17 @@ of one controller is not a universal boundary. Model candidates remain proposals
 until native repeated pairs confirm them with clean timing. Do not substitute
 another far-from-vanilla POC or more tuning at hit2 for this continuation result.
 
-### Latest parallel POC direction
+### Earlier parallel POC direction (superseded by the near-vanilla target)
 
-The user now prioritizes a legal own-observation controller that sustains a long
+The earlier POC stage prioritized a legal own-observation controller that sustains a long
 native lock against hold-W in **any declared scenario**, massively outperforming
 matched plain W-tap, before walking settings back toward vanilla. Run distinct
 GPT6.1Sol approaches: simplified analytic existence model, exact-kernel
 relaxation/continuation, witness-to-legal feedback, and justified richer-input
 search at a failure boundary. Astra continues the seven-hit vertical-cycle
-analysis. This supersedes any interpretation that small/vanilla settings must be
-solved first. All baseline and validation gates remain mandatory.
+analysis. That stage allowed easier settings first. The later continuation and
+settings-first instructions above now take priority. All baseline and validation
+gates remain mandatory.
 
 Offline work may run in parallel with isolated owned files. Serialize native
 research matches and coordinate CPU load so clocks remain meaningful. The
