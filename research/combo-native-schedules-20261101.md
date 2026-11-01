@@ -60,6 +60,20 @@ The separate cue diagnostic will use measured own cue timestamps, with no
 controller change. A correlated stage-field proposal will first face masked
 native packet/drain tests before any new fight generation.
 
+The separate measured-cue diagnostic now removes all three extra m1391 immune
+consumes:170A/200B consumes and all completed admission slots match native.
+m1395 remains exact at150A/146B consumes. Both candidate prefixes retain exact
+compared bodies, views and key/range decisions through their first returns.
+This uses conditional own-A cue publication labels; it is not a sampled timing
+model. See [cue diagnostic](poc-20261101/native-schedules/cue-diagnostic/findings.md).
+
+The proposed time-only stage interpolation failed its independent masking check:
+roughly10–16% of packets select the wrong client drain. Separating generated
+OWN_HURT, TARGET_HURT and OWN_VELOCITY represents all480 observed DRAIN
+packets exactly, but held-out missing stages still do not predict the right drain.
+That supports a narrow semantic timing interface, not a calibrated generator.
+See [semantic validation](poc-20261101/native-schedules/stage-field-validation/semantic/findings.md).
+
 No controller tuning or prospective native trials have resumed. A simple opening
 snapshot still does not separate prior successes from failures; later failures
 after19/26 hits show that maintenance timing also needs explaining. Complete-state
