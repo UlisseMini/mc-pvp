@@ -39,8 +39,14 @@ public final class PeriodicComboFightModel {
         Packet(int k,double d,double x,double y,double vx,double vy,boolean f,long n){kind=k;due=d;this.x=x;this.y=y;this.vx=vx;this.vy=vy;flag=f;sequence=n;packetId=k>=12?0x1a:k==0||k==1?3:k==2||k==9?11:k==3||k==7?2:k==4||k==8?0x12:k==10||k==11?0x1c:0x15;}
     }
     // 0 A movement, 1 B movement, 2 sprint command, 3 attack, 4 B velocity, 5 A view, 6 B view.
+    /** Payload-blind exogenous timing for generated packets. Returns network receipt,
+     * not main-thread application; scheduled drains still determine task service. */
+    public interface PacketTiming {
+        double arrival(int route,double generatedSendMs,double nominalHalfRttMs);
+        PacketTiming deepCopy();
+    }
     static final class State implements Cloneable {
-        double[] extraLatency={0,0,0,0};PeriodicComboTransport transport;long tick,seq,combatOrder,lastFreshOrderA,lastFreshOrderB,lastAcceptedOrderA,lastAcceptedOrderB;int serverTicks;Body a,b;View ab,ba;ExactTravel.State serverA,serverB;
+        double[] extraLatency={0,0,0,0},nominalHalfRtt={0,0,0,0};PacketTiming packetTiming;PeriodicComboTransport transport;long tick,seq,combatOrder,lastFreshOrderA,lastFreshOrderB,lastAcceptedOrderA,lastAcceptedOrderB;int serverTicks;Body a,b;View ab,ba;ExactTravel.State serverA,serverB;
         double serverAx,serverAy=4,serverAz,serverBx,serverBy=4,serverBz,trackedAx,trackedAy=4,trackedAz,trackedBx,trackedBy=4,trackedBz;
         boolean trackedGroundA=true,trackedGroundB=true;double sentAx,sentAy=4,sentAz,sentBx,sentBy=4,sentBz;
         int teleportAgeA,teleportAgeB;int trackedYawA=-64,trackedYawB=64,trackedPitchA,trackedPitchB;double serverPitchA,serverPitchB;
@@ -57,17 +63,29 @@ public final class PeriodicComboFightModel {
 
         /** Copies every scalar through Object.clone; mutable descendants are independently owned. */
         public State deepCopy(){
-            try{State copy=(State)super.clone();copy.extraLatency=extraLatency.clone();
+            try{State copy=(State)super.clone();copy.extraLatency=extraLatency.clone();copy.nominalHalfRtt=nominalHalfRtt.clone();
                 copy.a=a.deepCopy();copy.b=b.deepCopy();copy.ab=ab.deepCopy();copy.ba=ba.deepCopy();
                 copy.packets=copyPackets(packets);copy.outboundA=copyPackets(outboundA);copy.outboundB=copyPackets(outboundB);
-                copy.transport=transport==null?null:transport.deepCopy();return copy;
+                copy.transport=transport==null?null:transport.deepCopy();copy.packetTiming=packetTiming==null?null:packetTiming.deepCopy();return copy;
             }catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}
         }
         private static ArrayList<Packet> copyPackets(List<Packet> source){ArrayList<Packet> result=new ArrayList<>(source.size());for(Packet p:source)result.add(p.deepCopy());return result;}
 
         void add(int k,double due,double x,double y,double vx,double vy,boolean f){Packet p=new Packet(k,due,x,y,vx,vy,f,seq++);enqueue(p);}
         void add3(int k,double due,double x,double y,double z,double vx,double vy,double vz,boolean f){Packet p=new Packet(k,due,x,y,vx,vy,f,seq++);p.z=z;p.vz=vz;enqueue(p);}
-        void enqueue(Packet p){if(transport!=null)transport.emit(p);else p.due+=extraLatency[PeriodicComboTransport.route(p.kind)];packets.add(p);}
+        void enqueue(Packet p){
+            int route=PeriodicComboTransport.route(p.kind);
+            if(transport!=null&&packetTiming!=null)throw new IllegalStateException("Cannot combine recorded payload transport and empirical packet timing");
+            if(transport!=null)transport.emit(p);
+            else if(packetTiming!=null){
+                if(extraLatency[route]!=0)throw new IllegalStateException("Empirical residual replaces extraLatency; configured RTT only");
+                double send=p.due-nominalHalfRtt[route];
+                double arrival=packetTiming.arrival(route,send,nominalHalfRtt[route]);
+                if(!Double.isFinite(arrival)||arrival<send)throw new IllegalStateException("Invalid generated packet arrival");
+                p.due=arrival;
+            }else p.due+=extraLatency[route];
+            packets.add(p);
+        }
     }
     static final class Config implements Cloneable {
         public Config deepCopy(){try{return (Config)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}

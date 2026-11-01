@@ -77,6 +77,7 @@ public final class PeriodicComboClock {
     public PeriodicComboClock(PeriodicComboFightModel.State state,PeriodicComboFightModel.Config config,Timing timing,Policy a,Policy b,List<Scheduled> schedule){
         this.state=state;this.config=config;this.timing=timing;policies=new Policy[]{a,b};recordedSchedule=schedule!=null;scheduleEnd=schedule==null?Double.POSITIVE_INFINITY:schedule.stream().mapToLong(Scheduled::nanos).max().orElseThrow(()->new IllegalArgumentException("Empty event tape"))/1_000_000.0;config.deferMovementSend=true;state.transport=null;
         state.extraLatency=new double[]{timing.uplinkA,timing.uplinkB,timing.downlinkA,timing.downlinkB};
+        state.nominalHalfRtt=new double[]{config.ownRtt/2,config.otherRtt/2,config.ownRtt/2,config.otherRtt/2};
         if(timing.inputMode==InputMode.NATIVE_QUEUED&&timing.clickIntervalNanos<50_000_000L)throw new IllegalArgumentException("Physical injection ceiling exceeds20CPS");
         if(schedule==null){add(timing.aFramePhase,0);add(timing.bFramePhase,1);add(timing.aTickPhase,2);add(timing.bTickPhase,3);add(timing.serverPhase,8);}
         else{
@@ -183,7 +184,10 @@ public final class PeriodicComboClock {
             else if(k==11){PeriodicComboFightModel.serverEnd(state);name="SERVER_END";}
             else if(k<14){(a?state.ab:state.ba).step();selectionReady[side]=false;name="INTERP"+(a?"A":"B");}
             else if(k<16){consume(a);name="INPUT"+(a?"A":"B");}
-            else{receive(a);selectionReady[side]=false;name="CLIENT_DRAIN"+(a?"A":"B");}
+            // Supported packets change velocity/sprint/cues or interpolation goals,
+            // never current own/replica geometry. A cached selection survives this
+            // drain (including S12 before consume); MOVE/INTERP still invalidate it.
+            else{receive(a);name="CLIENT_DRAIN"+(a?"A":"B");}
             checkpoint(name);
         }
         now=end;
