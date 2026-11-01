@@ -39,10 +39,24 @@ public final class PeriodicComboFightModel {
         Packet(int k,double d,double x,double y,double vx,double vy,boolean f,long n){kind=k;due=ready=d;this.x=x;this.y=y;this.vx=vx;this.vy=vy;flag=f;sequence=n;packetId=k>=12?0x1a:k==0||k==1?3:k==2||k==9?11:k==3||k==7?2:k==4||k==8?0x12:k==10||k==11?0x1c:0x15;}
     }
     // 0 A movement, 1 B movement, 2 sprint command, 3 attack, 4 B velocity, 5 A view, 6 B view.
-    /** Payload-blind exogenous timing for generated packets. Returns network receipt,
+    public enum TimingSemantic { OTHER, OWN_HURT, TARGET_HURT, OWN_VELOCITY }
+    static TimingSemantic timingSemantic(int kind){
+        return switch(kind){
+            case 12,13 -> TimingSemantic.TARGET_HURT;
+            case 14,15 -> TimingSemantic.OWN_HURT;
+            case 4,8 -> TimingSemantic.OWN_VELOCITY;
+            default -> TimingSemantic.OTHER;
+        };
+    }
+    /** Exogenous timing for generated packets. Returns network receipt,
      * not main-thread application; scheduled drains still determine task service. */
     public interface PacketTiming {
         double arrival(int route,double generatedSendMs,double nominalHalfRttMs);
+        /** Optional generated semantic context; legacy implementations retain their
+         * exact old behavior. No payload or historical packet identity is exposed. */
+        default double arrival(int route,double generatedSendMs,double nominalHalfRttMs,TimingSemantic semantic){
+            return arrival(route,generatedSendMs,nominalHalfRttMs);
+        }
         PacketTiming deepCopy();
     }
     /** Opt-in diagnostic queue eligibility, separate from raw wire receipt.
@@ -91,7 +105,7 @@ public final class PeriodicComboFightModel {
             else if(packetTiming!=null){
                 if(extraLatency[route]!=0)throw new IllegalStateException("Empirical residual replaces extraLatency; configured RTT only");
                 double send=p.due-nominalHalfRtt[route];
-                double arrival=packetTiming.arrival(route,send,nominalHalfRtt[route]);
+                double arrival=packetTiming.arrival(route,send,nominalHalfRtt[route],timingSemantic(p.kind));
                 if(!Double.isFinite(arrival)||arrival<send)throw new IllegalStateException("Invalid generated packet arrival");
                 p.due=arrival;
             }else p.due+=extraLatency[route];
