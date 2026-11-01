@@ -37,6 +37,7 @@ public final class Client {
     static final TargetWatchdog targetWatchdog=new TargetWatchdog();
     static final MomentumController momentum=new MomentumController();
     static final OrbitController orbit=new OrbitController();
+    static final CycleController cycle=new CycleController();
     static final BurstClickController burstClicks=new BurstClickController();
     static BurstClickController.Decision burstDecision;
     static long burstObservedAt;
@@ -185,9 +186,10 @@ public final class Client {
             // cadence when the native ray selects the opponent. It does not
             // inspect immunity, accepted hits or any server-only state.
             boolean contactClicks=controls.getProperty("click_mode","fixed").equals("contact");
-            if(clickGate && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
+            if(clickGate && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
+                if(controls.getProperty("kind","").equals("cycle")){cycle.queued(ticks);clickGate=false;}
                 // A planned Ctrl pulse ends after the first queued click. Native
                 // sprint persists until its ordinary stop condition/attack; later
                 // clicks do not automatically re-enable it. No hit-result oracle.
@@ -295,6 +297,7 @@ public final class Client {
                 ModelController.reset();
                 momentum.reset();
                 orbit.reset();
+                cycle.reset();
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 criticalClicks.reset();
                 blockhit.reset();blockKey=false;freshHurtStatus=0;
@@ -526,6 +529,14 @@ public final class Client {
                 plan.put("forward",decision.forward);plan.put("sprint_key",decision.sprintKey);plan.put("local_sprint",obs.sprint);
                 plan.put("sent_sprint",obs.sentSprint);plan.put("scheduled_reset_at",decision.scheduledResetAt);log(plan);
             }
+            if(kind.equals("cycle")){
+                CycleController.Decision d=cycle.decide(ticks,obs.localRange,CycleController.Settings.from(controls));
+                setKeys(d.forward,0,d.sprint);clickGate=d.click;
+                Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","cycle_plan");plan.put("time",now);plan.put("match",match);
+                plan.put("native_tick",ticks);plan.put("phase",d.phase);plan.put("coast_ticks",d.coastTicks);plan.put("anchored",d.anchored);
+                plan.put("local_range",obs.localRange);plan.put("forward",d.forward);plan.put("click_gate",d.click);
+                plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);plan.put("landed_cue",lastObservedTargetHurt);log(plan);
+            }
             if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
             if(kind.equals("blockhit")){
                 boolean linear=controls.getProperty("block_model","legacy").equals("linear");
@@ -622,10 +633,11 @@ public final class Client {
         if(!Boolean.parseBoolean(p.getProperty("enabled","false")))return;
         if(!p.getProperty("match","").matches("m[0-9]{4,9}")||!p.getProperty("opponent","").matches("[A-Za-z0-9_]{1,16}"))
             throw new IllegalArgumentException("Enabled bot controls require a valid match and opponent");
-        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","blockhit","scripted").contains(p.getProperty("kind","hold")))
+        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","blockhit","scripted").contains(p.getProperty("kind","hold")))
             throw new IllegalArgumentException("Unsupported bot strategy: "+p.getProperty("kind"));
         ClickRate.cps(p);DuelSettings.reach(p);
         AimController.Settings.from(p);
+        if(p.getProperty("kind","").equals("cycle"))CycleController.Settings.from(p);
         double reaction=Double.parseDouble(p.getProperty("reaction_ms","150"));
         if(!Double.isFinite(reaction)||reaction<0||reaction>1000)throw new IllegalArgumentException("Invalid reaction delay");
         Long.parseLong(p.getProperty("start_at","0"));
@@ -681,6 +693,7 @@ public final class Client {
     }
     public static void attackAfter(Object self,Object target){
         if(!"client".equals(System.getProperty("lab.role")))return;
+        if(controls.getProperty("kind","").equals("cycle")){cycle.contact(ticks);clickGate=false;}
         Map<String,Object> event=new LinkedHashMap<>();event.put("type","engine_attack");event.put("time",System.currentTimeMillis());event.put("match",match);
         event.put("attack_reach",attackReach());
         event.put("monotonic_ns",System.nanoTime());event.put("click_attempt",ScienceTrace.clickId());

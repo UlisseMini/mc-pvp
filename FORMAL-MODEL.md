@@ -5,6 +5,21 @@ The reference is Mojang's pinned **1.8.9 binaries**, not recollection, a simplif
 simulator, or results from another server. `ComboModel` is an approximation to
 this specification; it is not its definition.
 
+**Current combo-research scope (2026-11-01):** equal20CPS ceilings, optional
+selective clicking, zero imposed human reaction delay, and W/Ctrl/A/D are allowed.
+Use the latest [research brief](research/combo-research-brief.md) for the success
+criterion: own reach at each native fresh-damage window while denying return
+opportunities. The older1000ms contact-gap diagnostic below remains a historical
+metric, not a substitute for readiness. Establish acquisition and maintenance
+separately. Validate the full pipeline at zero added RTT before delayed variants;
+then prioritize vanilla combat with90–140ms opponent RTT before combat tweaks.
+
+The new research rollout is being checked against the mechanics specified here.
+Missing own-sprint metadata, cached airborne acceleration and off-cadence tracker
+updates in that implementation are implementation defects, not newly discovered
+native rules. Do not trust its earlier periodic-search output until held-out
+composition errors are below the candidate's margins.
+
 **Validation status:** the transitions identified below as **code-checked** were
 checked against the local official bytecode and MCP name mappings. Native
 evidence includes 23 controlled scenarios and the archived traces linked in
@@ -80,6 +95,23 @@ For the lab latency proxy, modeled one-way legs are RTT_i/2 plus the measured
 transport/dispatch residual. Do not assume arbitrary Internet RTT implies equal
 upload/download delays. Preserve per-connection packet order; order between
 connections is an observed event, not a universal A-before-B rule.
+
+For exact scheduled replay, distinguish **wire arrival**, **task enqueue**,
+**task-drain start/end**, and **entity update**. Native queue monitors serialize
+enqueue with a drain. A packet queued before a drain can execute there; a Netty
+thread blocked on the held queue monitor enqueues after it and waits for a later
+drain. The client drains per frame, which can contain zero, one, or several
+catch-up physics ticks. A frame-entry marker or server end-tick snapshot does not
+locate that drain boundary. A velocity task overwrites motion when it executes;
+position changes on later movement. S12 generation is inside the accepted native
+attack, independently of ordinary tracker position cadence.
+
+Recorded clocks/transport durations may serve as exogenous inputs for a
+composition test, provided generated packet/state contents are predicted and
+never corrected from later observations. This is distinct from predicting an
+unseen operating-system schedule. Report each scope separately and stress cycle
+margins over the measured phase/jitter range. Zero configured RTT removes the
+proxy's artificial sleep, not socket/decoding/task-wait time.
 
 **Native causal order, code-checked:**
 

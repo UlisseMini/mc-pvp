@@ -9,6 +9,8 @@ public final class ObserverHooks {
         void wireOut(Object context,Object packet,Object buffer);
         void apply(Object packet,boolean after);
         void input(String kind,boolean after);
+        void clock(String phase);
+        void queued();
     }
     public static volatile Sink sink;
     public static volatile long errors;
@@ -18,4 +20,6 @@ public final class ObserverHooks {
     public static void wireOut(Object c,Object p,Object b){try{if(sink!=null)sink.wireOut(c,p,b);}catch(Exception|LinkageError e){errors++;}}
     public static void apply(Object p,boolean a){try{if(sink!=null)sink.apply(p,a);}catch(Exception|LinkageError e){errors++;}}
     public static void input(String k,boolean a){try{if(sink!=null)sink.input(k,a);}catch(Exception|LinkageError e){errors++;}}
+    public static void clock(String phase){try{if(sink!=null)sink.clock(phase);}catch(Exception|LinkageError e){errors++;}}
+    public static void queued(){try{if(sink!=null)sink.queued();}catch(Exception|LinkageError e){errors++;}}
 }

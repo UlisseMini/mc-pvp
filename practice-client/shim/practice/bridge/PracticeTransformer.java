@@ -45,6 +45,24 @@ public final class PracticeTransformer implements IClassTransformer {
                     m.instructions.insert(flag("apply",1,false));
                     for(AbstractInsnNode i:m.instructions.toArray())if(i.getOpcode()==Opcodes.RETURN)m.instructions.insertBefore(i,flag("apply",1,true));hooks++;
                 }
+            }else if(minecraft&&m.desc.equals("(Ljava/util/concurrent/Callable;)Lcom/google/common/util/concurrent/ListenableFuture;")){
+                int adds=0;
+                for(AbstractInsnNode i:m.instructions.toArray())if(i instanceof MethodInsnNode){
+                    MethodInsnNode c=(MethodInsnNode)i;
+                    if(c.owner.equals("java/util/Queue")&&c.name.equals("add")&&c.desc.equals("(Ljava/lang/Object;)Z")){
+                        m.instructions.insert(i,call("queued"));adds++;
+                    }
+                }
+                if(adds!=1)throw new IllegalStateException("Practice task enqueue hook changed: "+adds);
+                hooks++;
+            }else if(minecraft&&m.desc.equals("()V")&&(m.name.equals("func_71411_J")||m.name.equals("runGameLoop")||m.name.equals("av"))){
+                int locks=0,unlocks=0;
+                for(AbstractInsnNode i:m.instructions.toArray()){
+                    if(i.getOpcode()==Opcodes.MONITORENTER){m.instructions.insert(i,clock("start"));locks++;}
+                    if(i.getOpcode()==Opcodes.MONITOREXIT){m.instructions.insertBefore(i,clock("end"));unlocks++;}
+                }
+                if(locks!=1||unlocks!=2)throw new IllegalStateException("Practice task drain hook changed: "+locks+","+unlocks);
+                hooks++;
             }else if(minecraft&&m.desc.equals("()V")){
                 String kind=m.name.equals("func_147116_af")||m.name.equals("clickMouse")||m.name.equals("aw")?"attack_click":
                     m.name.equals("func_147121_ag")||m.name.equals("rightClickMouse")||m.name.equals("ax")?"use_click":null;
@@ -70,5 +88,9 @@ public final class PracticeTransformer implements IClassTransformer {
     private static InsnList input(String kind,boolean after){
         InsnList out=new InsnList();out.add(new LdcInsnNode(kind));out.add(new InsnNode(after?Opcodes.ICONST_1:Opcodes.ICONST_0));
         out.add(new MethodInsnNode(Opcodes.INVOKESTATIC,HOOK,"input","(Ljava/lang/String;Z)V",false));return out;
+    }
+    private static InsnList clock(String phase){
+        InsnList out=new InsnList();out.add(new LdcInsnNode(phase));
+        out.add(new MethodInsnNode(Opcodes.INVOKESTATIC,HOOK,"clock","(Ljava/lang/String;)V",false));return out;
     }
 }

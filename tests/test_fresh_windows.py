@@ -18,5 +18,17 @@ class FreshWindowsCheck(unittest.TestCase):
         self.assertEqual(reach_window([self.probe(500,2)],450,550)['classification'],'unknown')
         self.assertEqual(reach_window([self.probe(400,2),self.probe(650,2)],450,660)['classification'],'unknown')
 
+    def test_modified_immunity_uses_declared_threshold(self):
+        ticks=[dict(time=t,b={'hurtResistantTime':h}) for t,h in [(100,16),(410,9),(457,8)]]
+        self.assertEqual(ready_bracket(ticks,100,500,'b',8),[410,457])
+
+    def test_timed_scenario_can_classify_more_than_100_hits(self):
+        from trade_return_windows import attack_kind
+        e=dict(score_before=[120,0],score_after=[121,0],target_before={'hurtResistantTime':9,'maxHurtResistantTime':18})
+        self.assertEqual(attack_kind(e,{'scenario':True}),'fresh')
+        self.assertEqual(attack_kind(e,{'scenario':False}),'after_winning_score')
+        e['target_before']['hurtResistantTime']=10
+        self.assertEqual(attack_kind(e,{'scenario':True}),'upgrade')
+
 
 if __name__=='__main__':unittest.main()

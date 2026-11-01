@@ -14,6 +14,82 @@ from parity import bits
 from science import OUT, client_events, server_events
 
 
+def accumulated_view(result,side):
+    """Seed one remote replica once, then consume raw packets and tick events.
+
+    A validation adapter, not a second fight model. The incoming packet contents,
+    native application schedule and local eye positions remain observed inputs.
+    Unlike the one-step checks below, no later remote position is used to repair
+    the state. Report reach error at every click/probe, including readiness probes.
+    """
+    from research.network_pipeline_audit import archive,wire,summary
+    from combo_survival import geometric_distance
+    events=archive(result['id'],side);other='b' if side=='a' else 'a'
+    seed=next(e for e in events if e['type']=='tick_start' and e['time_ms']>=result['start']
+              and any(x.get('name')==result[other] for x in e['data']['entities']))
+    entity=next(x for x in seed['data']['entities'] if x.get('name')==result[other])
+    position=list(entity['pos']);box=list(entity['box'])
+    encoded=[entity['serverPos'+a] for a in 'XYZ']
+    goal=[entity['otherPlayerMP'+a] for a in 'XYZ']
+    steps=entity['otherPlayerMPPosRotationIncrements']
+    packets={p['packet_id']:p['packet'] for p in wire(events,'in')}
+    counts=collections.Counter();errors=collections.defaultdict(list);first=[]
+    # These are observed server readiness states, not predicted counterfactual
+    # send deadlines. The full fight validator must predict immunity itself.
+    ticks=sorted((e for e in server_events(result['id']) if e['type']=='tick'),key=lambda e:e['time'])
+    ti=0;fresh=result.get('combat_profile',{}).get('fresh_hit_ticks',10)
+    def compare(kind,predicted,native,event):
+        differences=[abs(p-n) for p,n in zip(predicted,native)]
+        errors[kind].append(max(differences));counts[kind]+=1
+        if any(bits(p)!=bits(n) for p,n in zip(predicted,native)):
+            counts[kind+'_not_bit_exact']+=1
+            if len(first)<5:first.append(dict(kind=kind,ms=event.get('time_ms',event.get('time'))-result['start'],predicted=predicted,native=native))
+    def distance(eye,b):return math.sqrt(sum(max(b[i]-eye[i],0,eye[i]-b[i+3])**2 for i in range(3)))
+    for e in events:
+        if not e.get('monotonic_ns'):
+            if e['type']=='reach_probe':counts['unordered_probes_not_scored']+=1
+            continue
+        if e.get('monotonic_ns',0)<=seed['monotonic_ns']:continue
+        t=e.get('time_ms',e.get('time',0))
+        if t>result['finish']:continue
+        while ti+1<len(ticks) and ticks[ti+1]['time']<=t:ti+=1
+        observed_ready=bool(ticks and ticks[ti]['time']<=t and ticks[ti][other]['hurtResistantTime']<=fresh)
+        typ=e['type']
+        if typ=='packet_handler_enter' and e['data']['main_thread']:
+            p=packets.get(e['data']['packet_id'],{})
+            if p.get('entity_id')!=entity['id'] or p.get('id') not in (0x14,0x15,0x16,0x17,0x18):continue
+            if p['id']==0x18:encoded=[v*32 for v in p['position']]
+            elif 'delta' in p:encoded=[v+d*32 for v,d in zip(encoded,p['delta'])]
+            goal=[v/32 for v in encoded]
+            if p['id']==0x18 and all(abs(x-y)<bound for x,y,bound in zip(position,goal,(.03125,.015625,.03125))):goal=list(position)
+            steps=3;counts['packets']+=1
+        elif typ=='science_interpolation':
+            compare('position_before',position,[e['before']['pos'+a] for a in 'XYZ'],e)
+            if steps>0:
+                position=[p+(g-p)/steps for p,g in zip(position,goal)];steps-=1
+                half=e['before']['width']/2;h=e['before']['height'];x,y,z=position
+                box=[x-half,y,z-half,x+half,y+h,z+half]
+            compare('position_after',position,[e['after']['pos'+a] for a in 'XYZ'],e)
+            compare('box_after',box,e['after']['box'],e)
+        elif typ=='science_click':
+            eye=[e['own']['posX'],e['own']['posY']+1.6200000047683716,e['own']['posZ']]
+            border=0.10000000149011612
+            expand=lambda b:[v+(-border if i<3 else border) for i,v in enumerate(b)]
+            compare('click_reach',[distance(eye,expand(box))],[distance(eye,expand(e['target']['box']))],e)
+            if observed_ready:compare('observed_ready_click_reach',[distance(eye,expand(box))],[distance(eye,expand(e['target']['box']))],e)
+        elif typ=='reach_probe' and geometric_distance(e) is not None:
+            border=e.get('collision_border',.10000000149011612)
+            predicted=[v+(-border if i<3 else border) for i,v in enumerate(box)]
+            compare('probe_reach',[distance(e['native_eye'],predicted)],[geometric_distance(e)],e)
+            if observed_ready:
+                compare('observed_ready_probe_reach',[distance(e['native_eye'],predicted)],[geometric_distance(e)],e)
+    return dict(match=result['id'],side=side,seed_ms=seed['time_ms']-result['start'],counts=dict(counts),
+                absolute_error_blocks={k:summary(v) for k,v in errors.items()},first_mismatches=first,
+                passed=bool(counts['packets'] and counts['position_after']) and not any(k.endswith('_not_bit_exact') for k in counts),
+                click_reach_covered=bool(counts['click_reach']),
+                scope='One remote replica seeded once; observed raw packet payloads, handler/tick schedule and native local eye are inputs. No later remote-state resets. Not full fight prediction.')
+
+
 def stats(values):
     values=sorted(values)
     return {'n':len(values),**({'min':values[0],'median':statistics.median(values),'p95':values[min(len(values)-1,int(.95*len(values)))],'max':values[-1]} if values else {})}

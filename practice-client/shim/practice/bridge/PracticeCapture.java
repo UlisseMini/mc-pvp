@@ -28,6 +28,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     private final Set<Channel> clients=Collections.newSetFromMap(new ConcurrentHashMap<Channel,Boolean>());
     private final ArrayBlockingQueue<PracticeEvent> events=new ArrayBlockingQueue<>(2048);
     private final ThreadLocal<Raw> pending=new ThreadLocal<>();
+    private final ThreadLocal<Object> schedulingPacket=new ThreadLocal<>();
     private volatile CaptureLog log;
     private final Queue<CaptureLog> finishing=new ConcurrentLinkedQueue<>();
     private volatile Channel active;
@@ -109,6 +110,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     public void apply(Object packet,boolean after){
         if(active==null||!(packet instanceof Packet)||EnumConnectionState.func_150752_a((Packet)packet)!=EnumConnectionState.PLAY)return;
         Minecraft mc=Minecraft.func_71410_x();boolean main=mc.func_152345_ab();
+        if(!main){if(after)schedulingPacket.remove();else schedulingPacket.set(packet);}
         if(main)BotHooks.apply(packet,after);
         emit(after?"packet_handler_return":"packet_handler_enter",map("packet_id",packetId(packet),"kind",packet.getClass().getSimpleName(),"main_thread",main),true);
         if(!after&&main&&packet instanceof S3FPacketCustomPayload){
@@ -118,6 +120,15 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     }
     public void input(String kind,boolean after){
         if(active!=null)emit(kind+(after?"_after":"_before"),GameObservations.state(Minecraft.func_71410_x(),false),true);
+    }
+    public void clock(String phase){
+        if(active!=null&&!archive.match().isEmpty())emit("client_task_drain",map("phase",phase),false);
+    }
+    /** Called just after queue.add, before releasing the scheduled-task lock. */
+    public void queued(){
+        Object packet=schedulingPacket.get();schedulingPacket.remove();
+        if(packet!=null&&active!=null&&!archive.match().isEmpty())
+            emit("packet_task_enqueued",map("packet_id",packetId(packet),"kind",packet.getClass().getSimpleName()),false);
     }
     void inputEvent(String kind,Map<String,Object> fields){if(active!=null)emit(kind,fields,true);}
     void tick(long tick,boolean after){

@@ -25,14 +25,15 @@ def box_distance(click):
     return math.sqrt(sum(max(box[i]-border-eye[i], eye[i]-box[i+3]-border, 0)**2 for i in range(3)))
 
 
-def attack_kind(event):
+def attack_kind(event,game=None):
     if event is None:
         return 'server_rejected_before_attack'
-    if max(event['score_before']) >= 100:
+    if not (game or {}).get('scenario') and max(event['score_before']) >= 100:
         return 'after_winning_score'
     if event['score_before'] == event['score_after']:
         return 'immune'
-    return 'fresh' if event['target_before']['hurtResistantTime'] <= 10 else 'upgrade'
+    threshold=event['target_before'].get('maxHurtResistantTime',(game or {}).get('combat_profile',{}).get('max_hurt_resistant_ticks',20))/2
+    return 'fresh' if event['target_before']['hurtResistantTime'] <= threshold else 'upgrade'
 
 
 def link_clicks(raw, native, game, side):
@@ -80,7 +81,7 @@ def link_clicks(raw, native, game, side):
         elif linked is None:
             kind = 'unmatched_contact'
         else:
-            kind = attack_kind(event)
+            kind = attack_kind(event,game)
         row = {'sequence': click['sequence'], 'native_tick': click['tick'],
                'injection_ms': None if injection is None else injection['time']-t0,
                'injection_monotonic_ns':None if injection is None else injection['monotonic_ns'],

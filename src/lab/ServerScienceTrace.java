@@ -5,7 +5,7 @@ import java.util.*;
 /** Server-only half of passive science probes. */
 public final class ServerScienceTrace {
     private static Map<String,Object> attack;
-    static Map<String,Object> state(Object e){return ScienceTrace.state(e);}
+    static Map<String,Object> state(Object e){Map<String,Object> s=ScienceTrace.state(e);s.put("maxHurtResistantTime",R.num(e,"maxHurtResistantTime"));return s;}
     static Referee.Match tracedMatch(Object player) {
         if(!"server".equals(System.getProperty("lab.role")) || Referee.server==null)return null;
         Referee.Match m=Referee.find(R.name(player));

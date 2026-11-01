@@ -7,6 +7,32 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class ServerReplicationTrace {
     private static final AtomicLong sequence=new AtomicLong();
     private static Object currentTracker;
+    private static final List<Map<String,Object>> clockEvents=new ArrayList<>();
+    private static final List<Referee.Match> clockMatches=new ArrayList<>();
+    private static int clockWorld;
+
+    /** Timestamp queue lock boundaries without file I/O while the job lock is held. */
+    public static void clock(Object server,String phase){
+        if(!"server".equals(System.getProperty("lab.role")))return;
+        try{
+            if(phase.equals("tick_start")){
+                clockEvents.clear();clockMatches.clear();clockWorld=-1;
+                for(Referee.Match m:Referee.matches.values())if(m.configA.getProperty("science_network_trace","0").equals("1")
+                    ||m.configB.getProperty("science_network_trace","0").equals("1"))clockMatches.add(m);
+            }
+            if(clockMatches.isEmpty())return;
+            if(phase.equals("world_tick_start"))clockWorld++;
+            Map<String,Object> e=event("replication_server_clock");
+            e.put("server_tick",Referee.ticks);e.put("phase",phase);e.put("world_ordinal",clockWorld);
+            clockEvents.add(e);
+            if(phase.equals("tick_end")){
+                for(Referee.Match m:clockMatches)for(Map<String,Object> entry:clockEvents){
+                    Map<String,Object> copy=new LinkedHashMap<>(entry);copy.put("match",m.id);Referee.append(m.replay,copy);
+                }
+                clockEvents.clear();clockMatches.clear();
+            }
+        }catch(Throwable e){if(Referee.errors++<10)e.printStackTrace();}
+    }
     private static Map<String,Object> event(String type){
         Map<String,Object> e=new LinkedHashMap<>();e.put("type",type);e.put("time",System.currentTimeMillis());
         e.put("monotonic_ns",System.nanoTime());e.put("sequence",sequence.incrementAndGet());

@@ -4,7 +4,8 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
-/** Runs on the real server thread. Rod mode admits hook hits into native combat; no velocity edits or immunity resets. */
+/** Real server referee. Ordinary duels keep their combat rules; timed bot research
+ * scenarios may freeze an explicitly recorded CombatProfile. */
 public final class Referee {
     static Object server;
     static final Path DATA=R.ROOT.resolve("runtime");
@@ -27,6 +28,7 @@ public final class Referee {
     static final class Match {
         String id,a,b,pa,pb,winner="",request="",mode="boxing",finishReason="100_hits"; int ha,hb,ba,bb,goal=100,arena,pingChanges; long start,finish,durationMs=180_000; boolean scenario,setupReseated; double pingA,pingB,initialPingA,initialPingB;
         boolean boxing(){return mode.equals("boxing");}
+        CombatProfile combat=CombatProfile.VANILLA;
         boolean sumo(){return mode.equals("sumo");}
         boolean box(){return mode.equals("diamond_box");}
         boolean rods(){return mode.equals("rod_diamond");}
@@ -45,6 +47,7 @@ public final class Referee {
             m.put("hits_a",ha);m.put("hits_b",hb);m.put("goal",goal);m.put("ping_a",pingA);m.put("ping_b",pingB);
             m.put("damage_hits_a",sa.breakdown.damageHitsLanded);m.put("damage_hits_b",sb.breakdown.damageHitsLanded);
             m.put("mode",mode);m.put("blocks_a",ba);m.put("blocks_b",bb);
+            m.put("combat_profile",combat.state());
             long now=finish>0?finish:System.currentTimeMillis(),duration=Math.max(0,now-start);
             m.put("stats_a",sa.state(hb-sb.rodHits,now,duration));m.put("stats_b",sb.state(ha-sa.rodHits,now,duration));
             m.put("food_policy","full_food_saturation_every_20_ticks");m.put("fishing_rods",rods());
@@ -149,7 +152,7 @@ public final class Referee {
                 if(ticks%10==0){
                     long left=m.start-System.currentTimeMillis();
                     String score=left>0?"Starting "+m.mode+" in "+((left+999)/1000)+"...":
-                        (m.sumo()?"Sumo: "+m.label("a")+" "+m.ha+"–"+m.hb+" "+m.label("b"):m.boxing()?m.label("a")+" "+m.ha+" / 100  |  "+m.hb+" "+m.label("b"):
+                        (m.sumo()?"Sumo: "+m.label("a")+" "+m.ha+"–"+m.hb+" "+m.label("b"):m.boxing()?m.label("a")+" "+m.ha+(m.scenario?" hits  |  ":" / 100  |  ")+m.hb+" "+m.label("b"):
                         m.label("a")+" "+hearts(a)+" hearts  |  "+hearts(b)+" "+m.label("b"));
                     String ba=m.sa.blockRatioText(m.hb-m.sb.rodHits),bb=m.sb.blockRatioText(m.ha-m.sa.rodHits);
                     String ping=" §8| §7RTT "+(int)m.pingA+"/"+(int)m.pingB+" ms";
@@ -166,6 +169,7 @@ public final class Referee {
                 Map<String,Object> status=new LinkedHashMap<>();status.put("version","1.8.9");status.put("time",System.currentTimeMillis());
                 status.put("players",people.stream().map(R::name).toList());status.put("policies",new ArrayList<>(policies.keySet()));
                 status.put("matches",matches.values().stream().map(Match::state).toList());
+                status.put("next_scenario_combat",CombatTuning.nextScenario.state());
                 status.put("replays",ServerReplay.state());
                 List<Map<String,Object>> details=new ArrayList<>();
                 for(Object p:people){Map<String,Object> detail=position(p);detail.put("name",R.name(p));detail.put("health",R.call(p,"getHealth"));detail.put("alive",R.call(p,"isEntityAlive"));
@@ -256,7 +260,7 @@ public final class Referee {
             hit.put("rod",rod);hit.put("damage_upgrade",immuneBefore);
             hit.put("hit_index",m.ha+m.hb);hit.put("server_tick",ticks);
             append(m.replay,hit);
-            if(m.boxing()){if(m.ha>=m.goal)m.winner=m.a;else if(m.hb>=m.goal)m.winner=m.b;}
+            if(m.boxing()){if(!m.scenario){if(m.ha>=m.goal)m.winner=m.a;else if(m.hb>=m.goal)m.winner=m.b;}}
             else if(!m.sumo()&&((Number)R.call(target,"getHealth")).floatValue()<=0){m.winner=who;m.finishReason="death";}
         }catch(Throwable e){if(errors++<10)e.printStackTrace();}
     }
@@ -363,6 +367,8 @@ public final class Referee {
                 if(ServerReplay.close(safeName(sender),true))return true;
                 watching.remove(safeName(sender));R.call(sender,"setSpectatingEntity",sender);
                 Match m=find(R.name(sender));if(m!=null)finish(m,"stopped");else{vanilla("gamemode 0 "+safeName(sender));teleport(sender,0,4,0);}
+            }else if(cmd.equals("lab")&&args.length>=2&&args[1].equals("combat")){
+                CombatTuning.command(sender,args);
             }else if(cmd.equals("lab")&&args.length>=4&&MODES.contains(args[1])&&!args[1].equals("boxing")){
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
                 if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}
@@ -419,6 +425,7 @@ public final class Referee {
         if(a.equals(b)||find(a)!=null||find(b)!=null)throw new IllegalArgumentException("A player cannot be assigned to two matches");
         if(!pa.equals("human")&&!policies.containsKey(pa)||!policies.containsKey(pb))throw new IllegalArgumentException("Unknown bot; use /bots.");
         Match m=new Match();m.mode=mode(selectedMode);m.goal=m.boxing()?100:0;m.request=request;if(duration>0){m.scenario=true;m.durationMs=duration;}
+        if(m.scenario&&isBot(a)&&isBot(b)){m.combat=CombatTuning.nextScenario;m.goal=0;}
         if(m.sumo()&&duration==0)m.durationMs=SumoArena.DURATION_MS;
         m.startGap=m.sumo()?SumoArena.START_GAP:startGap;m.drillRound=round;m.drillPreset=preset;
         do{m.id=String.format("m%04d",++counter);}while(Files.exists(DATA.resolve("results/"+m.id+".json"))||Files.exists(DATA.resolve("replays/"+m.id+".jsonl")));
@@ -455,6 +462,7 @@ public final class Referee {
         }
         if(round>0||m.sumo()){m.start=System.currentTimeMillis()+(m.sumo()?SumoArena.COUNTDOWN_MS:EntryDrills.COUNTDOWN_MS);PovArchives.manifest(m,false);}
         botLabel(player(a),m.label("a"));botLabel(player(b),m.label("b"));
+        CombatTuning.configurePlayer(player(a),m.combat);CombatTuning.configurePlayer(player(b),m.combat);
         control(a,pa,b,m,pingA,pingB);control(b,pb,a,m,pingB,pingA);
         Map<String,Object> initial=m.state();initial.put("parameters_a",m.configA);initial.put("parameters_b",m.configB);
         if(round>0)initial.put("drill_reset",continuousDrill?"teleport_heal":"initial_setup");
@@ -464,7 +472,7 @@ public final class Referee {
         initial.put("bot_click_cap_cps",caps);
         append(m.replay,Map.of("type","start","match",initial));
         EntryDrills.countdown(m,System.currentTimeMillis());
-        String rules=m.sumo()?"Sumo: bare fists, full health; knock your opponent off the platform. Two-minute limit.":m.drillRound>0?"Entry drill #"+round+", "+startGap+" block gap. Rod diamond; automatic repeat.":m.boxing()?"Boxing: first to 100 hits.":(m.box()?"Diamond box: 1x1, wooden swords":m.rods()?"Rod diamond: wooden swords and fishing rods with PvP knockback":"Diamond: wooden swords")+", unbreakable swords, unenchanted diamond armor, fight to death. Respawn, then /rematch.";
+        String rules=m.sumo()?"Sumo: bare fists, full health; knock your opponent off the platform. Two-minute limit.":m.drillRound>0?"Entry drill #"+round+", "+startGap+" block gap. Rod diamond; automatic repeat.":m.boxing()?(m.scenario?"Timed research: "+duration/1000+" seconds, no hit-score limit.":"Boxing: first to 100 hits."):(m.box()?"Diamond box: 1x1, wooden swords":m.rods()?"Rod diamond: wooden swords and fishing rods with PvP knockback":"Diamond: wooden swords")+", unbreakable swords, unenchanted diamond armor, fight to death. Respawn, then /rematch.";
         message(player(a),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules+" §b/stop §7to exit.");
         message(player(b),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules);
         if(pa.equals("human")){
@@ -647,6 +655,8 @@ public final class Referee {
         result.put("duration_seconds",Math.max(0,(m.finish-m.start)/1000.0));
         writeJson(DATA.resolve("results/"+m.id+".json"),result);append(m.replay,Map.of("type","finish","result",result));
         matches.remove(m.id);
+        if(finalA!=null)CombatTuning.configurePlayer(finalA,CombatProfile.VANILLA);
+        if(finalB!=null)CombatTuning.configurePlayer(finalB,CombatProfile.VANILLA);
         Set<String> recipients=new LinkedHashSet<>(List.of(m.a,m.b));
         for(var watcher:watching.entrySet())if(watcher.getValue().equals(m.id))recipients.add(watcher.getKey());
         for(String who:recipients){Object p=player(who);if(p!=null){

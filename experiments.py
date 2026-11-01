@@ -25,7 +25,7 @@ def status():
     if time.time()-data['time']/1000>5:raise RuntimeError('Server status is stale; start the lab first')
     return data
 
-async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing',*,reach_curriculum=False):
+async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing',*,reach_curriculum=False,experimental_combat=False):
     request='exp-'+uuid.uuid4().hex
     # This UUID cannot occur in an already completed match. Avoid decoding the
     # entire historical ladder on every poll: with concurrent short trials that
@@ -76,7 +76,9 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing',*,reach_c
             result=json.loads(p.read_text())
             if result.get('request')==request:
                 if result.get('modified_reach') and not reach_curriculum:issues.add('Modified-reach practice is excluded from the vanilla ladder')
+                if result.get('combat_profile',{}).get('modified') and not experimental_combat:issues.add('Modified combat requires explicit experimental_combat=True')
                 result['evaluation_scope']='reduced-reach curriculum; excluded from vanilla ladder' if reach_curriculum else 'native-reach evaluation'
+                if result.get('combat_profile',{}).get('modified'):result['evaluation_scope']='experimental server combat; excluded from vanilla ladder'
                 result['parameters']=parameters
                 intervals=[];resets=0;input_metrics={}
                 for side in ('a','b'):
@@ -199,7 +201,7 @@ def combat_metrics(result):
         metrics[side]['longest_unanswered_streak']=max(metrics[side]['longest_unanswered_streak'],streak)
         if 'attacker_sprint' in hit:metrics[side]['sprint_contacts' if hit['attacker_sprint'] else 'ordinary_contacts']+=1
         if 'target_state' in hit:
-            fresh=hit['target_state']['hurtResistantTime']==20
+            fresh=not hit.get('damage_upgrade',hit['target_state']['hurtResistantTime']!=20)
             metrics[side]['fresh_hurt_contacts' if fresh else 'damage_upgrades']+=1
             if fresh:
                 fresh_streak=fresh_streak+1 if side==fresh_previous else 1;fresh_previous=side
@@ -209,7 +211,7 @@ def combat_metrics(result):
         path=RUNTIME/'bots'/result[side].removeprefix('LabSlot')/'events.jsonl'
         probes=[e for e in match_events(path,result['id']) if e['type']=='reach_probe']
         all_probes[side]=probes
-        received=[h for h in hits if h['target']==result[side] and h.get('target_state',{}).get('hurtResistantTime')==20]
+        received=[h for h in hits if h['target']==result[side] and not h.get('damage_upgrade',h.get('target_state',{}).get('hurtResistantTime')!=20)]
         if len(received)>=3:
             probes=[p for p in probes if p['time']>=received[2]['time'] and p['time']<=result['finish']]
             if probes:
@@ -227,7 +229,7 @@ def combat_metrics(result):
     if all(all_probes.values()):
         native=overlap(all_probes['a'],all_probes['b'],result['start'],result['finish'],include_windows=True)
         for side,other in [('a','b'),('b','a')]:
-            contacts=[h['time']for h in hits if h['attacker']==result[side]and h.get('target_state',{}).get('hurtResistantTime')==20]
+            contacts=[h['time']for h in hits if h['attacker']==result[side]and not h.get('damage_upgrade',h.get('target_state',{}).get('hurtResistantTime')!=20)]
             returns=[h['time']for h in hits if h['attacker']==result[other]]
             windows=native[side].pop('defender_denial_windows')
             metrics[side]['sustained_native_combo']=sustained_combo(windows,contacts,returns)

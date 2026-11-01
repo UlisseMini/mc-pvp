@@ -63,8 +63,27 @@ public final class Agent implements ClassFileTransformer {
                     if(limits!=2||rays!=1)throw new IllegalStateException("Pinned native raycast shape changed: "+limits+" limits, "+rays+" rays");
                     changed=true;
                 } else if (name.equals("net/minecraft/server/MinecraftServer") && method.name.equals("A") && method.desc.equals("()V")) {
-                    for (AbstractInsnNode ins : method.instructions.toArray()) if (ins.getOpcode() == Opcodes.RETURN)
+                    method.instructions.insert(serverClock("tick_start"));
+                    for (AbstractInsnNode ins : method.instructions.toArray()) if (ins.getOpcode() == Opcodes.RETURN){
+                        method.instructions.insertBefore(ins, serverClock("tick_end"));
                         method.instructions.insertBefore(ins, callThis("lab/Referee", "tick"));
+                    }
+                    changed = true;
+                } else if (name.equals("net/minecraft/server/MinecraftServer") && method.name.equals("B") && method.desc.equals("()V")) {
+                    int locks=0,unlocks=0,worlds=0,entities=0,trackers=0;
+                    for(AbstractInsnNode ins:method.instructions.toArray()){
+                        if(ins.getOpcode()==Opcodes.MONITORENTER){method.instructions.insert(ins,serverClock("drain_start"));locks++;}
+                        else if(ins.getOpcode()==Opcodes.MONITOREXIT){method.instructions.insertBefore(ins,serverClock("drain_end"));unlocks++;}
+                        else if(ins instanceof MethodInsnNode call&&call.desc.equals("()V")){
+                            String phase=null;
+                            if(call.owner.equals("le")&&call.name.equals("c")){phase="world_tick";worlds++;}
+                            if(call.owner.equals("le")&&call.name.equals("i")){phase="entity_tick";entities++;}
+                            if(call.owner.equals("la")&&call.name.equals("a")){phase="tracker_tick";trackers++;}
+                            if(phase!=null){method.instructions.insertBefore(ins,serverClock(phase+"_start"));method.instructions.insert(ins,serverClock(phase+"_end"));}
+                        }
+                    }
+                    if(locks!=1||unlocks!=2||worlds!=1||entities!=1||trackers!=1)
+                        throw new IllegalStateException("Pinned server clock shape changed: "+locks+","+unlocks+","+worlds+","+entities+","+trackers);
                     changed = true;
                 } else if (name.equals("j") && method.name.equals("a") && method.desc.equals("(Lm;Ljava/lang/String;)I")) {
                     InsnList hook = new InsnList(); LabelNode proceed = new LabelNode();
@@ -203,6 +222,19 @@ public final class Agent implements ClassFileTransformer {
                         InsnList after=callPair("lab/ServerScienceTrace","velocityCreated");method.instructions.insertBefore(ins,after);
                     }changed=true;
                 } else if(name.equals("wn")&&method.name.equals("f")&&method.desc.equals("(Lpk;)V")){
+                    if("server".equals(System.getProperty("lab.role"))){
+                        method.instructions.insert(callPair("lab/CombatTuning","before"));
+                        int velocitySites=0;
+                        for(AbstractInsnNode ins:method.instructions.toArray()){
+                            if(ins instanceof TypeInsnNode allocation&&allocation.getOpcode()==Opcodes.NEW&&allocation.desc.equals("hm")){
+                                InsnList tune=new InsnList();tune.add(new VarInsnNode(Opcodes.ALOAD,1));
+                                tune.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/CombatTuning","outgoing","(Ljava/lang/Object;)V",false));
+                                method.instructions.insertBefore(ins,tune);velocitySites++;
+                            }
+                            if(ins.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(ins,new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/CombatTuning","after","()V",false));
+                        }
+                        if(velocitySites!=1)throw new IllegalStateException("Pinned player fresh velocity site changed: "+velocitySites);
+                    }
                     int damageContext=method.maxLocals++;
                     int critBaseSites=0,plannedSites=0;
                     for(AbstractInsnNode ins:method.instructions.toArray()){
@@ -289,6 +321,10 @@ public final class Agent implements ClassFileTransformer {
         InsnList list = new InsnList(); list.add(new VarInsnNode(Opcodes.ALOAD, 0));
         list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, owner, method, "(Ljava/lang/Object;)V", false));
         return list;
+    }
+    private static InsnList serverClock(String phase){
+        InsnList out=new InsnList();out.add(new VarInsnNode(Opcodes.ALOAD,0));out.add(new LdcInsnNode(phase));
+        out.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/ServerReplicationTrace","clock","(Ljava/lang/Object;Ljava/lang/String;)V",false));return out;
     }
     private static AbstractInsnNode nextInstruction(AbstractInsnNode node){
         if(node==null)return null;

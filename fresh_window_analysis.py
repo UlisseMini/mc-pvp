@@ -40,17 +40,18 @@ def reach_window(probes,start,end,max_age=100):
                 min_range=min(distances,default=None),max_range=max(distances,default=None))
 
 
-def ready_bracket(ticks,start,end,target):
+def ready_bracket(ticks,start,end,target,fresh_ticks=10):
     last_immune=start
     for e in ticks:
         if not start<e['time']<end:continue
-        if e[target]['hurtResistantTime']>10:last_immune=e['time']
+        if e[target]['hurtResistantTime']>fresh_ticks:last_immune=e['time']
         else:return [last_immune,e['time']]
     return None
 
 
 def analyze(game,side='a'):
     other='b' if side=='a' else 'a'
+    fresh_ticks=game.get('combat_profile',{}).get('fresh_hit_ticks',10)
     raw=server_events(game['id']);native=client_events(game,side);opposite=client_events(game,other)
     rows,links,linkage=link_clicks(raw,native,game,side)
     if linkage['errors']:raise ValueError(linkage)
@@ -63,16 +64,16 @@ def analyze(game,side='a'):
     other_probes=[p for p in opposite if p['type']=='reach_probe']
     ticks=[p for p in raw if p['type']=='tick']
     fresh=[(i,e) for i,e in enumerate(raw) if e['type']=='science_server_attack' and e['attacker']==game[side]
-           and e['score_before']!=e['score_after'] and e['target_before']['hurtResistantTime']<=10]
+           and e['score_before']!=e['score_after'] and e['target_before']['hurtResistantTime']<=fresh_ticks]
     returns=[e['time'] for e in raw if e['type']=='hit' and e['attacker']==game[other] and not e.get('rod')]
     windows=[]
     for index,((i,hit),(j,next_hit)) in enumerate(zip(fresh,fresh[1:])):
         left,end=hit['time'],next_hit['time']
-        bracket=ready_bracket(ticks,left,end,other)
+        bracket=ready_bracket(ticks,left,end,other,fresh_ticks)
         if bracket is None:
             # The next accepted fresh attack proves readiness no later than
             # that event; previous native snapshots still give a lower bound.
-            immune=[t['time'] for t in ticks if left<t['time']<end and t[other]['hurtResistantTime']>10]
+            immune=[t['time'] for t in ticks if left<t['time']<end and t[other]['hurtResistantTime']>fresh_ticks]
             bracket=[max(immune,default=left),end]
         local=[bracket[0]-delay_hi,bracket[1]-delay_lo]
         own=reach_window(own_probes,*local)
@@ -94,12 +95,12 @@ def analyze(game,side='a'):
     for ok in successes:run=run+1 if ok else 0;best=max(best,run)
     terminal=None
     if fresh:
-        bracket=ready_bracket(ticks,fresh[-1][1]['time'],game['finish'],other)
+        bracket=ready_bracket(ticks,fresh[-1][1]['time'],game['finish'],other,fresh_ticks)
         if bracket is not None:
             terminal=dict(ready_server_bracket_ms=[t-game['start'] for t in bracket],
                           unfinished_ready_duration_ms=[game['finish']-bracket[1],game['finish']-bracket[0]],
                           definitely_over_two_ticks=game['finish']-bracket[1]>100)
-    return dict(match=game['id'],candidate_side=side,linkage=linkage,
+    return dict(match=game['id'],candidate_side=side,linkage=linkage,fresh_hit_ticks=fresh_ticks,
                 contact_to_server_delay_envelope_ms=[delay_lo,delay_hi],contact_delay_median_ms=statistics.median(delays),
                 windows=windows,post_third_hit_windows=len(after_entry),certified_ready_windows=sum(successes),longest_certified_ready_window_run=best,
                 readiness_class_counts={k:sum(w['own_reach_at_ready']['classification']==k for w in after_entry) for k in ('in','out','mixed','unknown')},
