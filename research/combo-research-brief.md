@@ -62,6 +62,18 @@ seeds1000–1019 on each m1397–m1400 calendar. Target at least16/20 minute-loc
 each evaluation calendar, not80% pooled by hiding a failing calendar. These are
 conditional draws on four previously seen calendars, not80 native experiments.
 
+Checkpoint: v1 passed4/4 development draws but only4/23 evaluated reserved draws
+(3 UNKNOWN), making64/80 impossible even if all57 unrun draws succeeded. Preserve
+that negative result. Version2 retains the prior plan suffix as an independently
+reevaluated candidate; its selected diagnostic78→143 versus WT1 is not a robust
+qualification. Its new reserved seeds are2000–2019, with a prespecified stop when
+16/20 on any calendar becomes unattainable. Exact failure replay also exposed a
+return-truncated-gap tie-break that can reward earlier death, and safe forecasts
+with no active continuation. Compare objective repair, longer horizon, and more
+timing particles separately on development/tuning data before further reserved
+evaluation. Do not turn a finite beam's horizon/scoring failure into a physical
+impossibility argument. See [search findings](combo-robust-search-20261101.md).
+
 Only after an oracle witness survives that gate, search own-observation spacing,
 braking and hit-strength parameters. Every row includes identical-state W-tap.
 Sweep RTT and near-vanilla KB/hit delay under the same calibrated law, report its
