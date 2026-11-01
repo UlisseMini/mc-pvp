@@ -23,5 +23,6 @@
   "AimController",
   "OrbitController",
   "CycleController",
-  "FrozenLegalCycleController"
+  "FrozenLegalCycleController",
+  "TickIndexedLegalCycleController"
 ]

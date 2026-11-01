@@ -273,3 +273,34 @@ per-match metadata are retained. See [the prefix diagnosis](poc-20261101/legal-c
 and [the timing-only proposal](poc-20261101/legal-controller/timing-contract-proposal.md).
 `/replay m1254` shows W-tap's easy reduced-reach lock; it is not the requested
 candidate-over-W-tap POC or evidence about full-reach vanilla feasibility.
+
+## Timing ablation: corrected slots still do not maintain the lock
+
+The tick-indexed version preserves the same 200 movement/click slots and opening;
+only cue-slot selection changes. All 12 nominal comparisons (four timing switches
+and three phases) retain 120/60s versus W-tap's one, and recorded-jitter admission
+tests pass. A second native six-match suite uses the same settings as above.
+
+| Metric; repeats 1 / 2 / 3 | Tick-indexed candidate | Plain W-tap, same opening |
+|---|---|---|
+| Fresh maintenance hits before return | 2* / 0 / 3 | 1 / 31* / 13 |
+| Full 60-second maintenance without return | no / no / no | no / no / no |
+| Replay IDs | m1259 / m1262 / m1263 | m1260 / m1261 / m1264 |
+
+The first candidate has a 117 ms acquisition stall, although its maintenance
+prefix has no interval above 100 ms. The second W-tap has a 288 ms defender
+stall before its return. Both are flagged; conditioning only on a clean later
+maintenance clock would not make their acquisition/earlier trajectory clean.
+
+The corrected native controller does emit all ten slots after a new cue. But
+m1259's intended opening contacts encounter H11/H12 immunity, postponing fresh
+hits. At the fixed two-second handoff there are only three fresh hits instead of
+the model's four. The old cue starts the teacher word at slot eight; the eventual
+fourth cue advances to the next word interval. Even its next sprint hit cannot
+rescue the spacing. The acquisition state differs, not just the timestamp label.
+See [the measured diagnosis](poc-20261101/legal-controller/native-m1259-diagnosis.md).
+
+This temporal-word branch is stopped. It has not earned another strategy feature
+or a vanilla-feasibility conclusion. The next approach derives a feedback law in
+a deliberately stronger relaxation, so its response depends on actual visible
+spacing instead of assuming the nominal acquisition trajectory.
