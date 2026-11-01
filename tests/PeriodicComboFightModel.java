@@ -61,6 +61,8 @@ public final class PeriodicComboFightModel {
                 throw new IllegalArgumentException("Invalid packet timing plan");
         }
     }
+    /** Immutable diagnostic, never an input to physics or a legal policy. */
+    public record FreshImpulse(double time,ExactTravel.State victimBefore,double x,double y,double z) {}
     static TimingSemantic timingSemantic(int kind){
         return switch(kind){
             case 12,13 -> TimingSemantic.TARGET_HURT;
@@ -102,6 +104,7 @@ public final class PeriodicComboFightModel {
         int teleportAgeA,teleportAgeB;int trackedYawA=-64,trackedYawB=64,trackedPitchA,trackedPitchB;double serverPitchA,serverPitchB;
         boolean serverSprint,serverSprintB,dirtyA,dirtyB,sprintDirtyA,sprintDirtyB,airborneA,airborneB;int freshThreshold=10,resistant,ownResistant,hits,sprintHits,incomingHits,immuneAttempts,acceptedA,acceptedB,lastDamageA,lastDamageB;float fallA,fallB;boolean velocityChangedA,velocityChangedB;double lastVx,lastVy,serverYawA=-90,serverYawB=90;
         double minDef=1e9,lastOwn,maxOwn,lowerOffset=-1e9,upperOffset=1e9;ArrayList<Packet> packets=new ArrayList<>(),outboundA=new ArrayList<>(),outboundB=new ArrayList<>();
+        FreshImpulse lastFreshA,lastFreshB;
         State(double gap){this(0,0,gap,0);}
         State(double ax,double az,double bx,double bz){
             a=new Body(ax);b=new Body(bx);a.q=state(ax,4,az,0,-.0784000015258789,0,true);b.q=state(bx,4,bz,0,-.0784000015258789,0,true);a.reportZ=az;b.reportZ=bz;
@@ -282,6 +285,7 @@ public final class PeriodicComboFightModel {
             if(fresh&&sprint&&c.sprintVertical!=.1)vy+=c.sprintVertical-.1;
             s.lastVx=vel(vx*(fresh?c.kbScale:1));s.lastVy=vel(vy*(fresh?c.verticalScale:1));
             s.add3(fromA?4:8,t+(fromA?c.otherRtt:c.ownRtt)/2,0,0,0,s.lastVx,s.lastVy,vel(vz*(fresh?c.kbScale:1)),false);
+            if(fresh){FreshImpulse impulse=new FreshImpulse(t,victim,s.lastVx,s.lastVy,vel(vz*c.kbScale));if(fromA)s.lastFreshB=impulse;else s.lastFreshA=impulse;}
         }else victim=motion(victim,vx,vy,vz);
         long acceptedOrder=++s.combatOrder;if(fromA){s.lastAcceptedOrderA=acceptedOrder;if(fresh)s.lastFreshOrderA=acceptedOrder;}else{s.lastAcceptedOrderB=acceptedOrder;if(fresh)s.lastFreshOrderB=acceptedOrder;}
         if(fromA){s.acceptedA++;s.lastDamageB=damage;s.dirtyB=true;s.serverA=attacker;s.serverB=victim;s.velocityChangedB=false;if(fresh){s.hits++;s.resistant=2*c.hitTicks;}if(fresh||sprint)s.airborneB=true;if(sprint){s.sprintHits++;s.dirtyA=true;s.sprintDirtyA=true;s.serverSprint=false;}}

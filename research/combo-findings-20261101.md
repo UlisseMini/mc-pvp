@@ -1,6 +1,39 @@
 # Combo research — findings, November 1
 
-## Latest checkpoint: physics-based body sets are not ready for control
+## Latest checkpoint: correlated filtering still fails coverage
+
+The new filter preserves whole fight states and timing histories through the
+canonical pipeline, with no independently redrawn launch velocities or body
+nudges. Four new native recordings were kept separate until the algorithm froze.
+The result is still too unreliable for control:
+
+| Held-out observer result | Candidate recordings | Plain W-tap recordings |
+|---|---:|---:|
+| Joint body-position coverage | 78.3% | 10.7% |
+| Median /p95 horizontal hull width | .339 /.624 blocks | .366 /1.132 blocks |
+| Median /p95 position error | .044 /.292 blocks | 2.026 /6.270 blocks |
+| Unchanged controller: fresh hits before first return, paired native runs | 1 /5 | 2 /2 |
+
+A later deferred-stage timing correction gives 77.0% /10.7% on the same
+now-exposed recordings, with no parameter changes. The 99% gate still fails.
+Small reported width can mean lost hypotheses and false
+confidence. Unsupported timing histories remain explicit. A huge error margin
+fitted on older recordings also fails to transfer; no new controller was deployed.
+Conditional physics still matches all **5,121 fresh movement steps and343 launches**.
+
+Our connection receives no opponent S12s. Position history does contain launch
+information: with the true source timing and launch height supplied as an offline
+oracle, it narrows launch Y to a median .015625 blocks/tick by300ms. It supplies
+no informative post-launch positions by150ms in these new recordings. This makes
+packet-source association the next concrete target, rather than more control
+rules. A first large W-tap-body error already occurs during the quiet opening,
+with the correct vertical launch still represented; velocity uncertainty alone
+is not a sufficient explanation.
+
+[Full paired widths, tests and limitations](hypixel-inference-20261101/correlated-filter/findings.md).
+All four new recordings are now exposed; older sealed m1415–18 remain untouched.
+
+## Previous checkpoint: physics-based body sets are not ready for control
 
 Forward-simulating post-hit physics from own packets is implemented as a frozen
 observer experiment. Conditional arithmetic matches all 5,124 held-out movement

@@ -112,6 +112,10 @@ public final class PeriodicComboClock {
     // Opt-in immutable future opportunities; only dynamically generated events remain in the heap.
     private Event[] sharedCalendar;
     private int calendarCursor;
+    private Event[][] phaseCalendar;
+    private int[] phaseCursors;
+    private double[] phaseOffsets;
+    private int nextSource=-1;
     private boolean shareableCalendar=true;
     private final long[] ticks=new long[2];private final Control[] controls=new Control[2];private final double[] lastClick={-1e100,-1e100};
     private final ClickQueue[] clickQueues={new ClickQueue(),new ClickQueue()};
@@ -157,7 +161,9 @@ public final class PeriodicComboClock {
     private PeriodicComboClock(PeriodicComboClock source,Policy a,Policy b){
         state=source.state.deepCopy();config=source.config.deepCopy();timing=source.timing.deepCopy();policies=new Policy[]{Objects.requireNonNull(a),Objects.requireNonNull(b)};recordedSchedule=source.recordedSchedule;scheduleEnd=source.scheduleEnd;
         events=new PriorityQueue<>(source.events.comparator());
-        events.addAll(source.events);sharedCalendar=source.sharedCalendar;calendarCursor=source.calendarCursor;shareableCalendar=source.shareableCalendar;System.arraycopy(source.ticks,0,ticks,0,2);System.arraycopy(source.controls,0,controls,0,2);System.arraycopy(source.lastClick,0,lastClick,0,2);executionStarted=source.executionStarted;
+        events.addAll(source.events);sharedCalendar=source.sharedCalendar;calendarCursor=source.calendarCursor;shareableCalendar=source.shareableCalendar;
+        phaseCalendar=source.phaseCalendar;phaseCursors=source.phaseCursors==null?null:source.phaseCursors.clone();phaseOffsets=source.phaseOffsets==null?null:source.phaseOffsets.clone();nextSource=source.nextSource;
+        System.arraycopy(source.ticks,0,ticks,0,2);System.arraycopy(source.controls,0,controls,0,2);System.arraycopy(source.lastClick,0,lastClick,0,2);executionStarted=source.executionStarted;
         System.arraycopy(source.selectionReady,0,selectionReady,0,2);clickQueues[0]=source.clickQueues[0].copy();clickQueues[1]=source.clickQueues[1].copy();order=source.order;now=source.now;
         System.arraycopy(source.injections,0,injections,0,2);
         for(int side=0;side<2;side++)for(Publication p:source.publications.get(side))publications.get(side).addLast(p.deepCopy());
@@ -169,6 +175,42 @@ public final class PeriodicComboClock {
     /** Policies must be fresh or immutable. All packet/input queues and scheduler state are copied;
      * audits are detached. An already admitted input survives a later gate/key change. */
     public PeriodicComboClock fork(Policy a,Policy b){return new PeriodicComboClock(this,a,b);}
+    /** Observer-only timing proposal on a fork. Retain all executed state,
+     * packets, publications and in-progress injection/service completions.
+     * Only unattempted future client opportunities move; an already deferred
+     * opportunity retains its original time and pending execution. Normal backpressure
+     * still applies. This is an explicit schedule hypothesis, never a policy
+     * control or a change to default/replay timing. */
+    public void shiftFutureClientOpportunities(boolean fromA,double deltaMillis){
+        if(!recordedSchedule||!Double.isFinite(deltaMillis)||Math.abs(deltaMillis)>25)
+            throw new IllegalArgumentException("Bounded tape-only client phase proposal required");
+        if(phaseCalendar==null){
+            List<List<Event>> groups=List.of(new ArrayList<>(),new ArrayList<>(),new ArrayList<>());
+            List<Event> future=new ArrayList<>(events);events.clear();
+            if(sharedCalendar!=null)for(int i=calendarCursor;i<sharedCalendar.length;i++)future.add(sharedCalendar[i]);
+            for(Event e:future){
+                if(e.kind>=22||e.originalTime<e.time){events.add(e);continue;}
+                boolean client=e.kind<8||e.kind>=12;
+                groups.get(client?(e.kind&1):2).add(e);
+            }
+            phaseCalendar=new Event[3][];phaseCursors=new int[3];phaseOffsets=new double[3];
+            for(int i=0;i<3;i++){groups.get(i).sort(events.comparator());phaseCalendar[i]=groups.get(i).toArray(Event[]::new);}
+            sharedCalendar=null;calendarCursor=0;
+        }
+        int side=fromA?0:1;
+        if(phaseCursors[side]<phaseCalendar[side].length)
+            deltaMillis=Math.max(deltaMillis,now+.000001-phaseCalendar[side][phaseCursors[side]].time-phaseOffsets[side]);
+        for(Event e:events)if(e.kind<22&&e.originalTime==e.time&&(e.kind<8||e.kind>=12)&&(e.kind&1)==side)
+            deltaMillis=Math.max(deltaMillis,now+.000001-e.time);
+        phaseOffsets[side]+=deltaMillis;
+        ArrayList<Event> pending=new ArrayList<>(events);events.clear();
+        for(Event e:pending){
+            if(e.kind<22&&e.originalTime==e.time&&(e.kind<8||e.kind>=12)&&(e.kind&1)==side)
+                events.add(new Event(e.time+deltaMillis,e.kind,e.order,e.originalTime+deltaMillis));
+            else events.add(e);
+        }
+        shareableCalendar=false;
+    }
     /** Freeze remaining recorded opportunities once; forks share this immutable array.
      * Negative source sequences are unsupported here because they can alias generated
      * completion/publication priorities. Legacy/default queues remain unrestricted. */
@@ -183,14 +225,22 @@ public final class PeriodicComboClock {
         sharedCalendar=tape;calendarCursor=0;events.clear();
     }
     private Event nextEvent(){
-        Event heap=events.peek();
-        if(sharedCalendar==null||calendarCursor==sharedCalendar.length)return heap;
-        Event tape=sharedCalendar[calendarCursor];
-        return heap==null||events.comparator().compare(tape,heap)<0?tape:heap;
+        Event best=events.peek();nextSource=-1;
+        if(sharedCalendar!=null&&calendarCursor<sharedCalendar.length){
+            Event tape=sharedCalendar[calendarCursor];
+            if(best==null||events.comparator().compare(tape,best)<0){best=tape;nextSource=-2;}
+        }
+        if(phaseCalendar!=null)for(int i=0;i<3;i++)if(phaseCursors[i]<phaseCalendar[i].length){
+            Event e=phaseCalendar[i][phaseCursors[i]];double d=phaseOffsets[i];
+            Event shifted=d==0?e:new Event(e.time+d,e.kind,e.order,e.originalTime+d);
+            if(best==null||events.comparator().compare(shifted,best)<0){best=shifted;nextSource=i;}
+        }
+        return best;
     }
     private Event removeEvent(){
         Event next=nextEvent();
-        if(sharedCalendar!=null&&calendarCursor<sharedCalendar.length&&next==sharedCalendar[calendarCursor])calendarCursor++;
+        if(nextSource==-2)calendarCursor++;
+        else if(nextSource>=0)phaseCursors[nextSource]++;
         else events.remove();
         return next;
     }

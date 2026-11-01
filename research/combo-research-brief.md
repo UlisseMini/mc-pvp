@@ -38,7 +38,39 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Current follow-up: broaden inference and build legal control
 
-LATEST CHECKPOINT — physics-based body hypotheses: the user's proposed
+LATEST CHECKPOINT — correlated pipeline filter: see
+`hypixel-inference-20261101/correlated-filter/findings.md`. Complete canonical
+clocks are persistent particles; own packets condition history with soft
+likelihoods. Fixed200ms timing-prior segments and path Metropolis moves preserve
+physics/queue correlations without nudging body or server motion. The finite
+filter still FAILS the approximately99% coverage gate: new m1425/m1428 candidate
+78.3% coverage versus m1426/m1427 W-tap10.7%; p95 horizontal diameters.624/1.132
+blocks. A deferred-stage phase-proposal correction gives77.0% /10.7% on the
+same now-exposed data; no parameter changes. Narrow W-tap estimates can be wrong
+by several blocks. Unknown cue-order,
+service-composition and near-zero-separation branches remain explicit; surviving
+clouds do not certify their excluded mass. No controller was changed/promoted.
+
+Fresh conditional checks pass5,121 travel steps and343 launches. Unchanged native
+policies score1/5 versus matched W-tap2/2 before first return after4s; all primary
+windows timing-clean, m1425 has a later whole-match flag. Own connections contain
+zero opponent S12s. Privileged source-phase/launch-height inversion shows own
+position packets can constrain launch Y by300ms (median width.015625 blocks/tick),
+but timing association is granted, not solved. At0–150ms the new captures have
+no informative post-launch positions in that diagnostic. Caps and floor clipping
+can leave prior server velocity unidentified. Do not claim velocity is proven to
+be the sole width driver: an early quiet-opening miss retains the correct K_y.
+
+Next justified capability: recover correlated source/tick histories in a single
+quiet opening, before the first lost hypothesis, across several hit intervals;
+resolve unsupported service composition from native evidence. Do not add combat
+controller features or widen a huge residual margin and claim success. m1425–28
+are now exposed; m1415–18 remain unopened. A new estimator needs new frozen
+validation. The final filter freeze is v2; earlier state-nudging/ESS-timed drift
+prototypes were rejected, with chronology and an analysis-only inversion fix
+recorded in that directory.
+
+PREVIOUS CHECKPOINT — physics-based body hypotheses: the user's proposed
 post-hit reachable-set observer has a frozen native-recording audit in
 `hypixel-inference-20261101/reachable-body/`. Development m1419/m1420;
 validation m1422/m1423/m1421/m1424 (previously exposed to the older observer,
