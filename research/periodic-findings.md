@@ -14,6 +14,8 @@ Complete recorded-schedule replay passes the following fixtures. Every compared 
 | m1200 | angular movement / still, no clicks | 0/0 | 8.05 s | 322 | 322 | 0 | 161 |
 | m1203 | hold W / hold W | 0/120 | 15 s | 600 | 600 | 571 | 300 |
 | m1204 | Wtap / hold W | 0/120 | 15 s | 600 | 600 | 575 | 300 |
+| m1205 | fixed word / hold W, target reach2.5 | 0/120 | 30 s | 1201 | 1201 | 621 | 601 |
+| m1206 | fixed word / hold W, target reach3 | 0/120 | 30 s | 1200 | 1200 | 628 | 600 |
 
 The comparisons include own XYZ position and velocity, collision ground state, sprint and head yaw; replicated XYZ position; own/target coordinates and selected-target classification at clicks; server reported and latent XYZ position/velocity, hurt resistance, fall distance, last damage, sprint, and accepted scores. This is **recorded-schedule composition validation**, not a guarantee about untested future fights or a proof of combo feasibility.
 
@@ -21,6 +23,7 @@ The comparisons include own XYZ position and velocity, collision ground state, s
 
 ```sh
 python3 research/periodic-clock-replay.py m1196 m1197 m1198 m1200 m1203 m1204 --frames --transport-trace --seconds 15
+python3 research/periodic-clock-replay.py m1205 m1206 --frames --transport-trace --seconds 30
 ```
 
 ## Conditioning and causal boundary
@@ -30,6 +33,8 @@ The adapter supplies recorded player inputs and look angles, client movement/rem
 Both player bodies, server bodies and replicas are seeded once at the settled initial position. Tracker counters, initial C03 report caches and report ages come from pre-start history. Initial `lastDamage` comes from the first pre-contact server snapshot after verifying that no earlier attack occurred: native setup may retain the prior duel's damage value even when immunity is zero. No later state is injected.
 
 The m1203 first-divergence investigation showed why wire arrival alone is insufficient: a movement packet arrived about 0.014 ms before a server drain began, but its queued task was serviced on the following drain. Treating arrival as queue admission generated an extra replica. Using the actual task-service schedule resolves this divergence without changing the generated movement or replication payload. Future fixed-clock simulations must therefore vary enqueue/service timing, rather than treating one recorded schedule as universal.
+
+The two new fixed-word native fixtures are held-out policy and longer-horizon checks. Their failures to maintain combos are reproduced under recorded inputs and task schedules. This isolates a limitation of nominal-clock controller predictions without attributing it to an unexplained transition mismatch. It does not establish impossibility under other feedback or schedules.
 
 The independent fixed-clock adapter, `PeriodicComboClock`, calls the same transitions and explicitly models frame drains separately from movement ticks. Its phase and latency assumptions are hypothetical. Its aim generator is a convenient local perfect-aim policy; recorded replay uses the actual recorded look inputs. No policy may read the other true body or server state unless explicitly labeled an offline oracle experiment.
 
@@ -43,7 +48,7 @@ Native fixed-word testing additionally shows that a nominal ten-client-tick atta
 
 ## Explicit limits
 
-- Native degenerate knockback at horizontal separation below .01 uses a random direction. The kernel stops there rather than inventing a deterministic vector. Historical m1193 has an exact prefix through about 4326.7 ms and an unsupported tail; it is not a full pass. The six fixtures above finish without this stop.
+- Native degenerate knockback at horizontal separation below .01 uses a random direction. The kernel stops there rather than inventing a deterministic vector. Historical m1193 has an exact prefix through about 4326.7 ms and an unsupported tail; it is not a full pass. The eight fixtures above finish without this stop.
 - S1C checks cover own sprint flags; unrelated metadata and S19 statuses other than hurt status2 are outside this version. Packet checks are exact for represented fields, not every byte of every native packet.
 - Tracker forced teleport is implemented: its age advances only inside the eligible update branch and resets when age exceeds 400 or another teleport trigger fires. Native bytecode `lh.a` offsets347–354,608–652 establish the rule; a focused check exercises the gated age400/401 boundary. Replay seeds its initial age once from the initial tracker snapshot. The long-age boundary itself has source/boundary-test evidence, rather than a dedicated long native fixture.
 - Flat open ground, two ordinary players, native walking/sprinting/strafe and modeled melee are the supported world. Arbitrary blocks, rods, inventory/world interactions and jumps supplied as controls are outside the current control adapter.
