@@ -38,6 +38,59 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Current follow-up: broaden inference and build legal control
 
+LATEST USER DIRECTION — two parallel tracks (after the correlated-filter result):
+first audit structural observer omissions before adding filter machinery. Use
+observed opponent body/head-look correctly, and treat a received position
+packet's source server tick as a discrete hypothesis with the native two-tick
+tracker cadence and dirty/isAirBorne bypasses. Do not overwrite current hidden
+yaw with delayed look or score a packet against an unrelated latest endpoint.
+Development m1425/m1426 and transfer m1428/m1427 are all previously exposed;
+this is a structural ablation, not pristine confirmation.
+
+Independently, bypass the observer with direct parameter search over a small
+legal own-observation controller family in the calibrated fight model. Freeze
+training/selection/test calendars before outcomes, include matched W-tap and
+UNKNOWNs, and test both hit9 and hit10. Training m1391/m1392/m1395/m1396,
+selection m1397–m1400, and current-search test m1419–m1428 are distinct calendars;
+the latter were previously exposed in observer work and are NOT pristine native
+evidence. m1415–m1418 remain sealed. This explicitly authorizes the simple
+controller search despite the still-failed filter gate; it does not authorize
+using uncertified filter bounds as safety guarantees. No further controller
+features after a failed matched comparison without a baseline-grounded diagnosis.
+See `hypixel-inference-20261101/direct-policy-search/` and
+`hypixel-inference-20261101/filter-structure/` for frozen plans and results.
+
+COMPLETED TWO-TRACK RESULT: explicit source association fixes the development
+quiet-opening W-tap coverage25%→100% (44eligible positions before4s), but full
+transfer at native51ms remains inadequate: original candidate/W-tap78.5/20.2%,
+source74.4/11.0%, source+look66.1/13.5%. No observer promotion. At a5.212s transfer
+miss, yaw is within.261degrees and tracker history is present, but simulated
+opponent contacts6–7 disagree with native5. Contact/timing history is the next
+specific discrepancy; adding more angular conditioning is not justified.
+
+The direct seven-parameter CEM family evaluated96 proposals across hit9/hit10,
+with separate training/selection/current-search test calendars. Final180paired
+test evaluations produce zero wins or minute locks. MIDPOINT hit9 gives0wins,
+2losses,25ties,3UNKNOWN; hit10 gives0/0/27/3. Other service bounds do not rescue
+the result. The best parameters return toward W-tap; keep exact plain W-tap as
+fallback. No native promotion or additional controller features. A nontrivial
+training proposal scores1/1/5/5/1/1/1/1 versus W-tap2each: its apparent gain
+does not transfer. Training-only one-variable and physical traces identify the
+failure mechanism: coasting removes approach momentum/POV separation, so a
+return attack can leave before our next knockback reaches the opponent. Merely
+being inside our own reach does not certify denial. Preserve the final test
+set from action/example tuning; it is already exposed to result inspection.
+
+Source-format audit during this work: m1419–m1428 native clients use a51ms
+injection interval, whereas older `NativeCalendarEvaluation` tapes default to
+50ms. New direct-search tapes explicitly set51ms for all arms/acquisition; the
+filter tests the same correction separately. Historical model/native results
+using those defaults were not matched on this detail. Do not silently rewrite
+them or infer that recorded-input movement/knockback parity was invalidated.
+The new loader preserves legacy defaults and has an explicit `CLICK_INTERVAL_NS`
+field. New opening captures also use a declared saved-HEAD clock, now supported
+by extraction without weakening the legacy event-order assertions.
+
 LATEST CHECKPOINT — correlated pipeline filter: see
 `hypixel-inference-20261101/correlated-filter/findings.md`. Complete canonical
 clocks are persistent particles; own packets condition history with soft

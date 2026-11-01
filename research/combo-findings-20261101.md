@@ -1,6 +1,74 @@
 # Combo research — findings, November 1
 
-## Latest checkpoint: correlated filtering still fails coverage
+## Latest checkpoint: structural observer fixes and direct policy search
+
+Two tracks ran independently. The observer really did omit packet look and
+compare an incoming position with a potentially unrelated latest predicted
+endpoint. The new ablation conditions on complete ordered tracker emissions,
+whose source server tick is discrete and different in each whole-world
+hypothesis. Native source ticks remain validation labels. Body-look packets are
+now read; head-look is distinguished and audited rather than substituted for
+walking yaw. All2,783 target tracker packets match the own-client handler stream,
+including91 previously omitted look-only packets, with no target packets lost or
+pending at the settled opening.
+
+This fixes a specific quiet-opening error: development W-tap coverage during
+the first4s rises25%→100%, before the opponent starts clicking. It does **not**
+fix full-match inference. With the corrected native51ms cap, the transfer result
+on two previously exposed recordings is:
+
+| Observer variant, full64s | Candidate recording m1428: coverage | Plain W-tap recording m1427: coverage |
+|---|---:|---:|
+| Original endpoint likelihood |78.5%|20.2%|
+| Explicit source association |74.4%|11.0%|
+| Source association + body look |66.1%|13.5%|
+
+The99% gate still fails. These are finite-cloud body-position coverage figures,
+not control results or unconditional confidence guarantees. Some timing branches
+remain unsupported. More accurate input parsing did not make the remaining
+filter reliable; narrowing its cloud would be misleading.
+[Observer ablations and widths](hypixel-inference-20261101/filter-structure/findings.md).
+
+The independent seven-parameter search uses only own rendered range/height,
+hurt confirmations and local state/time. It varies braking, linear forecast,
+W-release time, sprint rearming, click anticipation/bursts and A/D.96 proposals
+were evaluated on four training calendars; four different calendars selected
+the finalists. Ten other calendars were kept out of this search's fitting and
+selection, though previously exposed during observer work. The final180 paired
+evaluations include two hit delays and three service-time assumptions; these
+are not180 independent native experiments.
+
+| Fixed search winner, MIDPOINT timing;30 cases each | Candidate fresh hits before first return | Plain W-tap | Wins /losses /ties /UNKNOWN |
+|---|---|---|---|
+| Hypixel hit9 |1–2|1–2|0 /2 /25 /3|
+| Hypixel hit10 |0–1|0–1|0 /0 /27 /3|
+
+There are zero wins and zero minute locks under all three timing assumptions.
+The selected rules approach W-tap behavior, without becoming an exact copy.
+A more interesting training-only rule gets1/1/5/5/1/1/1/1 versus W-tap2 on every
+case: a local improvement that fails transfer. No new features or native
+promotion followed. One-variable diagnostics are in the
+[search findings](hypixel-inference-20261101/direct-policy-search/findings.md).
+
+The training-only failure trace gives a useful mechanical distinction. The
+candidate coasts for about250ms, losing most of its forward speed. At the
+opponent's next click, that opponent's ray is2.757blocks: a legal return can
+leave about50ms before the new knockback arrives. W-tap preserves more forward
+motion and separation and earns its second fresh hit before the first return.
+The five-hit example also eventually loses during coasting, with the return
+leaving before knockback. Removing braking entirely makes both tested training
+cases worse, so the conclusion is about **when and how long to coast**, not
+"never brake." Own reach alone is insufficient feedback for denying returns.
+
+The audit also found an input-cap mismatch: newer native clients use51ms,
+whereas older model tapes defaulted to50ms. The new search explicitly uses51ms
+for both arms and their common acquisition; the filter tested it separately.
+Legacy results keep their original cap. An explicit tape field and boundary
+checks now prevent silently inheriting the wrong value. This does not change
+the recorded-input movement/knockback parity results. Older sealed m1415–18
+remain untouched; no server or human client was restarted.
+
+## Previous checkpoint: correlated filtering still fails coverage
 
 The new filter preserves whole fight states and timing histories through the
 canonical pipeline, with no independently redrawn launch velocities or body
@@ -66,8 +134,13 @@ Three matched pairs scored **6/1/0 versus W-tap 1/2/2** fresh hits before the fi
 accepted return, counting 4–64 seconds. All six primary windows passed timing and native
 reach/CPS/identity checks; later stalls in two full matches remain flagged.
 Settings were provisional `hypixel`, hit delay 9 ticks, H/V 1/1, sprint extra Y 0.07, RTT 120/120 ms,
-reach 3, 20 CPS cap with the model's 51 ms pacing, shared 3.5-second acquisition and a 4-second
+reach 3, 20 CPS cap with native 51 ms pacing, shared 3.5-second acquisition and a 4-second
 opponent click handicap. The native improvement gate remains closed.
+
+Later source-format audit: the older calibrated model loader defaulted to50ms,
+so its previously compared runs did not match this native51ms injection detail.
+The current direct-search/filter experiments declare and test the cap explicitly.
+Recorded-input movement/knockback parity is a separate result and is unaffected.
 
 The own-observation audit explains where precision is missing. On the new
 candidate prefixes, own sent positions plus approximate tracker/interpolation
