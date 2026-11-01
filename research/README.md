@@ -56,6 +56,10 @@ records the evidence, remaining composition gap and next minimal experiment.
 
 ## Native evidence
 
+- [Movement speed versus effective reach](speed-reach-model.md): 88 native trials
+  separate view advantage, first-hit timing, steady speeds, W-release cycles,
+  knockback and added ping. A local 0.15-block-per-m/s rule is useful on average;
+  separate view ages and recent movement history explain its limits.
 - [Higher-CPS W-tap comparison](cps-wtap-results.md): four side-balanced games
   each at 15, 20, 25 and 30 CPS versus otherwise identical 10 CPS W-tap, plus two
   equal-policy controls. Measured input rates, fresh hits and within-immunity

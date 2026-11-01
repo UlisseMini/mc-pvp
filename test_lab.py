@@ -117,6 +117,10 @@ class RealEngineEvidenceTest(unittest.TestCase):
             player='LabSlot'+path.parent.name if path.parent.name.isdigit() else path.parent.name
             for line in path.read_text().splitlines():
                 event=json.loads(line)
+                # Validate the completed-match snapshot above. Live trials can
+                # append zero-delay inputs while this historical audit runs;
+                # without their frozen result, assuming 150 ms is incorrect.
+                if (event.get('match'),player) not in delays:continue
                 delay=delays.get((event.get('match'),player),150)
                 cps=rates.get((event.get('match'),player),10)
                 if event['type']=='observation':

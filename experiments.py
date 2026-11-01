@@ -26,6 +26,10 @@ def status():
 
 async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
     request='exp-'+uuid.uuid4().hex
+    # This UUID cannot occur in an already completed match. Avoid decoding the
+    # entire historical ladder on every poll: with concurrent short trials that
+    # work can otherwise starve the live heartbeat qualification checks.
+    existing_results={p.name for p in (RUNTIME/'results').glob('*.json')}
     for name in (a,b):
         if not re.fullmatch('[a-z0-9_-]{1,64}',name) or not (ROOT/'policies'/f'{name}.properties').is_file():
             raise ValueError('Unknown bot: '+name)
@@ -63,6 +67,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
     deadline=time.monotonic()+220;issues=set();checks=0;client_builds={};client_frame_sleep={}
     while time.monotonic()<deadline:
         for p in (RUNTIME/'results').glob('*.json'):
+            if p.name in existing_results:continue
             result=json.loads(p.read_text())
             if result.get('request')==request:
                 if result.get('modified_reach'):issues.add('Modified-reach practice is excluded from the vanilla ladder')
