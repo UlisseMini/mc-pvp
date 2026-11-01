@@ -41,6 +41,9 @@ def diagnose(row):
         out[side+'_wake_probes'] = [dict(ms=e['time']-start, nearest=nearest(e),
             own_y=e['own']['posY']-4, target_y=e['target']['posY']-4) for e in es[side]
             if e.get('type')=='reach_probe' and start+1900<=e['time']<=start+stop]
+    out['a_cycle_plans'] = [e for e in es['a'] if e.get('type') == 'cycle_plan' and start <= e['time'] <= start+stop]
+    out['a_issued_clicks'] = [e for e in es['a'] if e.get('type') == 'click' and start <= e['time'] <= start+stop]
+    out['server_attack_attempts'] = [e for e in attacks if e['attacker'] == game['a']]
     out['a_wake_movement'] = [dict(ms=e['time']-start, forward=e['forward'], strafe=e['strafe'],
         sprint=e['before']['sprint'], vx=e['before']['motionX'], vz=e['before']['motionZ'])
         for e in es['a'] if e.get('type')=='science_move' and start+1900<=e['time']<=start+stop]
@@ -48,9 +51,10 @@ def diagnose(row):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--repeat', type=int, default=1)
+    parser.add_argument('--matches', nargs='+')
     parser.add_argument('--output', default='research/combo-feasibility-native-first-repeat.json')
     args=parser.parse_args(); suite=json.loads((ROOT/'research/matched-native-20261101.json').read_text())
-    rows=[diagnose(row) for row in suite['rows'] if row['repeat']==args.repeat]
+    rows=[diagnose(row) for row in suite['rows'] if (row['match'] in args.matches if args.matches else row['repeat']==args.repeat)]
     report=dict(scope=suite['scope'], wtap_baseline=suite['wtap_baseline'],
         caution='Observed causal ordering, not a same-clock counterfactual. Wall-clock event ms may differ slightly between science attack and hit callbacks. Probes are sampled; contacts are native engine events.', rows=rows)
     (ROOT/args.output).write_text(json.dumps(report, indent=2)+'\n')

@@ -131,3 +131,33 @@ The word's extra fresh hit occurs before wake-up. It does not yield an additiona
 This is a coupled spacing/height/latency failure, not evidence that a timing resync or maximal knockback alone solves the problem. The fixed-word and W-tap acquisition states differ markedly by the second hit (true center gaps.726 versus1.706), so replacing a single impulse is not a demonstrated causal cure. No new controller feature follows from this inspection. The useful next evidence is the complete matched repeat spread and, if needed, a same-state replay intervention explaining this exact tradeoff.
 
 Reproduce the saved first-repeat evidence with `python3 research/combo-feasibility-native-diagnosis.py --repeat 1`. It reads completed archives only and stores server accepted attacks, native local contacts, independent reach probes and actual consumed movement around wake-up in `combo-feasibility-native-first-repeat.json`. Science-attack and scoring-hit callbacks can differ by a few milliseconds; the primary table uses the suite's scoring callback, while the mechanism paragraphs use the named native event.
+
+## Third fixed-word repeat: the first lost transition moves earlier
+
+The same frozen word fails differently in m1247. Compare each word run with its own same-repeat W-tap0 reference:
+
+| Repeat / word match | Word fresh before return | Matched plain W-tap0 baseline | Word / W-tap post-wake fresh | Word / W-tap first return |
+|---|---:|---:|---:|---:|
+| 1 / m1227 | 5 | 4, m1225 | 1 / 1 | 2563 / 2695ms |
+| 3 / m1247 | 3 | 4, m1245 | 0 / 1 | 2138 / 2698ms |
+
+All four runs pass the native quality gate. No policy setting or physical constant changed. The first sprint launch is identical in the two word runs, `[.9,.46075,0]`, with true center gap1.900. The decisive next transition is different:
+
+- m1227: first local contact477ms → server495ms, then phase10 contact961ms → server996ms. The second attack arrives10 server ticks later with target H10 and is fresh. The measured contact-to-server delays are18.731749 and35.011958ms.
+- m1247: first local contact499ms → server542ms, then phase10 contact985ms → server989ms. The second attack arrives only9 server ticks later with H11 and is immune. Contact-to-server delays are42.558250 and4.525167ms. Thus a comparable484–486ms local-contact interval spans ten server ticks in one run and nine in the other.
+
+The word intends another attempt at phase11. In m1247 its plan at1033ms has `click_gate=true`, the native ray selects the opponent, and no screen is open, yet no `click`, `science_click`, engine contact or server C02 is recorded. The preceding injection is984ms. Cycle policy inputs are evaluated only at the native tick; by phase12 at1084ms the gate is closed. The next actual contact is1486ms and the next fresh server attack1489ms—947ms after the first fresh hit.
+
+The missing retry is consistent with the hard20CPS gate: the policy evaluation occurs about49ms after the prior completed injection. Precisely, that injection is monotonic50193980826875ns. The next `tick_start` snapshot begins50194030830917ns, only50.004042ms later; the eligibility check occurs before this snapshot. Its exact `ClickRate.ready` timestamp is not logged, so **CPS rejection is an inference from timing and the other satisfied conditions, not a directly recorded rejection code**. By contrast, m1227 actually issues its phase11 retry50.169250ms after the phase10 injection.
+
+The missed fresh launch permits the bodies to cross. At1489ms A's server X8194.34118 exceeds B's8193.82987, while A still faces−90 degrees from its delayed local view. Normal separation knockback points backward, and the sprint yaw bonus points forward: B's latent horizontal motion/2 minus.4 plus.5 yields only `[.11125,.46075,0]` after quantization. This is not an unexpectedly weak sprint constant. It is the native vector sum in a crossed geometry. The third fresh at1995ms is normal `[.473125,.36075,0]` at true gap.795. B contacts2053ms at native range1.197 and returns2138ms.
+
+Plain W-tap m1245 retries through H11 at946ms and reaches H10 at997ms, then lands another sprint fresh at1497ms. Its later overshoot/reacquisition failure matches the first W-tap repeat, but it does not lose an entire attack window here. `Client.frame` permits ordinary W-tap's continuous gate to retry on frames after the50ms cap expires; cycle clicks additionally require `nativeInputPoll`, so a short tick can consume the sole remaining retry slot without issuing anything.
+
+This separates **policy-to-native input scheduling** from **fight-kernel mechanics**. The parent's recorded-schedule replay of the first4s of m1245/m1247 passes all1419/1380 requested rows, with0 unexecuted rows, exact represented state/packet comparisons and zero numeric range error. That replay consumes the clicks actually issued; it cannot validate the missing policy-level retry. The nominal fixed-clock search assumes50ms input steps and does not expose this particular sub50ms tick/cap interaction. Before any new spacing feature, the controller-to-click pacing adapter needs an explicit native comparison. This diagnosis does not authorize raising the shared20CPS ceiling or establish that repairing pacing alone yields sustained denial: m1227 still fails geometrically after five regular fresh hits.
+
+`combo-feasibility-native-word-repeat.json` retains the three compared native event streams, including immune attempts and plans. `combo-feasibility-native-word-timing.json` retains FIFO contact/server pairings and exact injection/snapshot clocks. Recreate the principal extract with:
+
+```sh
+python3 research/combo-feasibility-native-diagnosis.py --matches m1227 m1247 m1245 --output research/combo-feasibility-native-word-repeat.json
+```
