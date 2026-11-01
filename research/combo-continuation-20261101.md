@@ -169,6 +169,26 @@ not a complete forecast when changing actual latency. The next task is to explai
 why ordinary W-tap handles these entries better and what own-observation feedback
 can correct, before any further controller features or profile sweeps.
 
+The input audit finds no lost press: all three candidates consume the76 planned
+pulses exactly. But their first maintenance contact waits until1091–1097ms;
+W-tap contacts at943ms after the common opening. In m1354 the return at1041ms
+even precedes the candidate's first admission. In clean m1358, the opening
+launch is one server tick later than the clean RTT120 entry. At900ms B's own
+distance is about3.114 rather than3.422. The first scored launch has stronger
+vertical velocity, but begins airborne and B contacts before its first movement.
+That contact brakes the new horizontal velocity from0.8485 to0.5091, allowing
+the1304ms return. W-tap accepts an earlier normal hit and reaches3 before return.
+The entries are independent physical runs, so this is a mechanism diagnosis,
+not a same-state causal attribution of the whole score difference.
+
+Next: audit a small passive landing estimator using only A's received position
+updates and own input history, before changing control. Rendered motion alone
+mixes actual target motion with client interpolation. The raw replica endpoints
+and their ages are legal own-client observations already in the recordings;
+they still cannot reveal B's exact future tick phase. Report uncertainty and
+incorrect confident predictions, then test any resulting controller on fresh
+native data with the same W-tap gate. Further fixed-word patches are stopped.
+
 ## Native continuation ladder
 
 Every new comparison uses the same20CPS ceiling, perfect own-client aim, zero
