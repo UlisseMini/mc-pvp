@@ -1,6 +1,6 @@
 # Shared Forge practice mod: headless bot migration
 
-Status: approved for implementation by the user, 2026-11-01. This is an implementation contract, not a claim that migration is already complete.
+Status: implementation and isolated native acceptance complete, 2026-11-01. The default backend is now Forge; production integration/deployment and the human bridge restart remain parent-coordinated. See [acceptance evidence](../experiments/forge-migration-20261101/README.md) and [operations](forge-bot-migration-operations.md). This contract is retained below, with coverage limits recorded in the evidence rather than implying every possible fault or policy combination was exercised.
 
 User clarification (takes precedence over strict legacy parity): **functional equivalence is the target.** Small differences are acceptable when the bots behave substantially the same. Prefer simpler shared code and ordinary Forge integration over elaborate reproduction of incidental legacy timing. Exact action timestamps, callback phase identity and bit-for-bit legacy decisions are not acceptance gates. Preserve real native mechanics, policy intent/settings, bot/human separation and reliable practice/recording/replay behavior; diagnose and document meaningful differences.
 

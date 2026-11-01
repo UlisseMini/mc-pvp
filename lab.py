@@ -194,7 +194,7 @@ def main():
     parser.add_argument('command', choices=['prepare', 'build','sandbox-test','logging-test','serve','stop','reload-bots','status','match','ping-match','verify-ux','console'])
     parser.add_argument('extra',nargs='*')
     parser.add_argument('--frame-sleep-ms',type=int,default=10,help='Headless display throttle for serve; 1 ms gives finer input scheduling')
-    parser.add_argument('--bot-backend',choices=['legacy','forge'],default='legacy',help='Explicit native bot backend; no automatic fallback')
+    parser.add_argument('--bot-backend',choices=['legacy','forge'],default='forge',help='Explicit native bot backend; no automatic fallback')
     parser.add_argument('--slot-backends',default='',help='Test-only comma-separated assignment, e.g. forge,legacy')
     parser.add_argument('--bot-slots',type=int,default=8,help='Number of native bot processes (1–8)')
     parser.add_argument('--port-offset',type=int,default=0,help='Isolated test instance offset; production uses 0')

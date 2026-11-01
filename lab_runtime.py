@@ -175,7 +175,7 @@ max-tick-time=60000
     assets=CACHE/'assets';assets.mkdir(exist_ok=True)
 
 
-async def serve(frame_sleep_ms=10,bot_backend='legacy',slot_backends='',bot_slots=8,port_offset=0):
+async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots=8,port_offset=0):
     global BOT_SLOTS
     if bot_backend not in ('legacy','forge') or not 1<=bot_slots<=8:raise ValueError('Choose legacy/forge and 1–8 bot slots')
     if not 0<=port_offset<=39000:raise ValueError('Invalid local port offset')

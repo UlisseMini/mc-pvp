@@ -1,6 +1,6 @@
 # Forge bot operations
 
-Implementation is on `codex/forge-bot-migration`. Native acceptance and parent-coordinated cutover are in progress; these commands do not claim that production already migrated. The legacy source baseline remains `codex/legacy-bots-before-forge` (`9e5624d`), and `--bot-backend legacy` remains executable from the new code.
+Implementation is on `codex/forge-bot-migration`. Isolated native acceptance is complete and Forge is the new default. Parent-coordinated production cutover is separate; these commands do not claim that the live installation already migrated. The legacy source baseline remains `codex/legacy-bots-before-forge` (`9e5624d`), and `--bot-backend legacy` remains executable from the new code.
 
 ## Build and run
 
@@ -14,7 +14,7 @@ python3 lab.py serve --bot-backend forge
 
 Forge dependencies are enumerated with SHA-256 hashes in `practice-client/forge-runtime.lock.json`. The pinned installed Forge libraries and the official launcher's Java 8 runtime must exist. Missing/changed libraries or a failed sandbox/logging check stop startup; there is no fallback. Java 17 compiles shared sources with `--release 8`; the Forge JVM runs Java 8. Server instrumentation continues on Java 17.
 
-`serve` builds the agent and, for Forge slots, the practice bridge/module before launching. HeadlessMC's graphics agent uses shaded ASM and the logging hardener only; it never installs the legacy gameplay transformer on Forge. Bots load exactly `practice-bridge.jar`, not arbitrary files from a human mods directory. The native game connects offline to a loopback proxy using its isolated `LabSlotN` identity.
+`serve` verifies and launches the existing built artifacts; it does not rebuild source changes. Run both build commands above after a code update. HeadlessMC's graphics agent uses shaded ASM and the logging hardener only; it never installs the legacy gameplay transformer on Forge. Bots load exactly `practice-bridge.jar`, not arbitrary files from a human mods directory. The native game connects offline to a loopback proxy using its isolated `LabSlotN` identity.
 
 Human Forge clients install the same artifacts with `python3 practice-client/build.py --install` from the production checkout. This installation changes files but does not reload a running JVM's bridge. Preserve the user's settings and restart their game once for a new bridge. Human mode is the default even when old lab-related JVM properties or saved configurations exist; only `practice.role=bot` with valid slot/directory/identity enables control. Human ToggleSprint never writes a bot's sprint input.
 
@@ -53,6 +53,7 @@ Reversing the final command to `--bot-backend forge` restores Forge. Recording f
 
 ```sh
 python3 forge_runtime.py verify
+python3 tests/check_forge_shared.py
 python3 practice-client/smoke.py --optifine --port 26565
 python3 tests/forge_migration_report.py m0001 m0002 --output experiments/forge-migration-20261101/report.json
 ```
@@ -62,3 +63,13 @@ The smoke uses a separate sandboxed human-role Forge client and its own game dir
 The common archive writes one events stream and one pose index per client/source/match, with role/backend/build identity, integrity footer and drop counts. PLAY packets only are recorded; login/authentication packets remain excluded. The high-rate stream is diagnostic, bypasses artificial gameplay RTT, and never bypasses the normal gameplay connection for bot actions. Archives remain in `runtime/pov/<match>`, with standard replay files/results unchanged.
 
 Independent client/server phases and Java 8 versus Java 17 scheduling can change scores and exact action times. Acceptance checks native mechanics, policy intent, input bounds and reliable practice/capture behavior rather than identical networked scores. Resource measurements and the completed native acceptance matrix live in `experiments/forge-migration-20261101`; use its actual tested concurrency rather than extrapolating legacy measurements.
+
+
+Experiment helpers use `runtime_provenance.py`: `artifact_hashes()` freezes
+protocol/version and built artifact hashes; `cohort_provenance()` includes slot
+backends; `client_matches()` qualifies the backend's actual loaded code. Forge
+requires bridge and loaded-module hashes; legacy requires the agent hash. An
+unknown or stale hash never counts as a ready scientific client. The final
+native negative test intentionally invalidated one policy: inputs released and
+the referee cancelled the game; a fresh duel recovered, then idle client reload
+returned both backends to zero policy errors.

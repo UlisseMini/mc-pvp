@@ -11,7 +11,10 @@ bind to IPv4 loopback. No router changes, public tunnels, RCON, or query service
    `c83e908335e0a23552a273143a219ec5600b9be9`.
 4. ASM and ASM-tree, pinned Maven Central artifacts.
 5. Data-only MCP mappings for Minecraft 1.8.9, from Forge's Maven server.
-6. This repository's control, match management, and sandbox code.
+6. Official Forge 1.8.9/LaunchWrapper and their pinned libraries in
+   `practice-client/forge-runtime.lock.json`, plus the official launcher's
+   installed Java 8 runtime.
+7. This repository's control, match management, and sandbox code.
 
 The HeadlessMC authentication launcher is not used. Bot processes have synthetic
 local identities and no Microsoft account tokens. Use your normal trusted
@@ -82,22 +85,33 @@ programs. Offline mode is needed for synthetic bot identities. Do not change
 the binding or expose these old binaries to a public network. One shared
 human latency proxy is intended for a single human player in this version.
 
-## Optional human Forge client
+## Shared Forge client and headless bots
 
 The separately installed practice bridge uses pinned official Forge 1.8.9 and
 LaunchWrapper dependencies. Its own core hooks copy PLAY packet bytes and expose
 input/view observations to one fixed local reloadable module. The diagnostic
 channel uses the existing loopback Minecraft connection, bounded messages and
 queues, connection-derived identity and a small data-only protocol. It does not
-allow remote commands, executable updates or remote module selection. No new
-network listener is opened. Bot policies do not consume other clients' views.
+allow remote commands, executable updates or remote module selection. The shared
+low-latency pose publisher opens an authenticated loopback-only TCP listener with
+a per-session token and bounded work. Bot policies do not consume other clients'
+views. The common bridge defaults to human mode; only explicit trusted startup
+configuration, a valid isolated slot directory/identity and an exclusive slot
+lock enable autonomous controls. Bots load only the allowlisted practice bridge
+and local module, never all of the human's installed mods.
 
 Detailed localhost captures include PLAY chat and player names/UUIDs, but exclude
 login/authentication traffic and account/session objects. Files stay local, rotate
 at fixed limits and explicitly mark drops/caps. The human's ordinary launcher and
 local modules have normal Java permissions; they are not covered by the bot
 process sandbox. The separate Forge smoke client is sandboxed and uses only a
-synthetic identity. See `practice-client/README.md` for recording controls.
+synthetic identity. Forge bots likewise use isolated directories, clean environments,
+allowlisted Java 8 execution and restricted slot/pov writes. Only the selected
+Java runtime and asset directory are added to read access, not account stores.
+Both Java backends pass separate native sandbox and JNDI probes. This installed
+Java 8 and Minecraft/Forge version are old software; the restrictions reduce
+exposure rather than make a vulnerability-free claim. See
+`practice-client/README.md` for recording controls.
 
 OptiFine L5 is optional in the human client. The installed file's SHA-256 is
 `b442bf55e4c703c55f5f48055d79c07eb853fcb76fa88f85587e911af4f2b084`; it was

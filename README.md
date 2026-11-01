@@ -711,7 +711,7 @@ No npm or pip install is needed. For the legacy backend on a similarly configure
 python3 lab.py prepare
 python3 lab.py build
 python3 lab.py sandbox-test
-python3 lab.py serve
+python3 lab.py serve --bot-backend legacy
 ```
 
 To launch shared-mod bots explicitly after building the practice bridge:
@@ -724,8 +724,7 @@ python3 lab.py serve --bot-backend forge
 The public join address stays `127.0.0.1:25565`. One bridge/module artifact pair
 serves both humans and bots; trusted launch configuration enables bot controls.
 `python3 lab.py stop` followed by `python3 lab.py serve --bot-backend legacy`
-rolls back without deleting recordings, policies or the server world. Until the
-migration acceptance run is complete, startup still defaults to legacy.
+rolls back without deleting recordings, policies or the server world. Startup now defaults to the validated Forge backend.
 See [the migration operations guide](research/forge-bot-migration-operations.md)
 for isolated/mixed launches, security checks and restart boundaries.
 
