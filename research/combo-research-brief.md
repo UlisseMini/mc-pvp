@@ -40,19 +40,26 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ### Latest priority: native schedule calibration, then robustness
 
-Current checkpoint: whole-donor receipt→enqueue fields fix early native queue
-chronology; two one-leg oracle arrival interventions isolate a separate C02
-source-clock error (loop start versus actual send call). m1391 now reproduces
-native26 and m1395 native19 at the same accepting drains; native-source W-tap
-remains1/2. Counterfactual source-stage gaps remain unknown, and full trajectory
-validation is underway. This is NOT calibration acceptance or controller tuning.
-Next: generalize the proven attack-source timing correction, and separately
-represent S19 cue publication inside its handler (386µs already flips one
-admission). Preserve paired calendars, whole-recording timing correlation and
-complete-state W-tap forks. Do not sample wall preparation costs independently:
-observed174ms pauses can already be represented in calendar gaps. See
-[current findings](combo-native-schedules-20261101.md). No new prospective native
-matches until the calibration gate passes; two reserved pairs remain unused.
+Current checkpoint: whole-donor queue fields plus the GENERAL C02 loop-source
+clock correction reproduce native26/19 failures, all35/27 launch vectors, and
+body/view/key/range rows within1e−12 through return. General traces equal the
+one-leg oracle repair byte-for-byte; no arrival override remains in that test.
+Native-source W-tap is1/2; same-seed counterfactual timing gaps stay unknown.
+Min/mean/max duplicate-loop timing reductions do not change these outcomes.
+This is conditional chronology, NOT predictive calibration. m1391 still has
+three extra immune clicks from S19 cue publication being too early; the optional
+delayed-publication engine is tested, but its exact-own-cue diagnostic is pending.
+Legacy replay remains24,683 events/9,243 states bit-exact. Frozen queue-only and
+queue+loop80-case ensembles are running, with unchanged policies/seeds/donors.
+
+Masked native-stage validation rejects a simple time-only interpolation fix:
+10–16% wrong client drains; even unmasked per-stage means collapse S19/S12 that
+belong to different batches. Next audit separates generated semantic classes in
+one joint stage tuple; no new generator or controller is authorized by that
+hypothesis alone. Preserve whole-calendar correlations, all unsupported cases,
+and matched W-tap. No new prospective native matches until the calibration gate
+passes; two reserved pairs remain unused. See
+[current findings](combo-native-schedules-20261101.md).
 
 User requests that evaluation clocks use native-recorded packet jitter, client
 tick gaps, task-drain timing and opening variation, rather than the ideal

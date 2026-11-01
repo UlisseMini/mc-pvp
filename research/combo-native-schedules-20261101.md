@@ -39,9 +39,26 @@ from the native outcome being explained, and counterfactual arms still encounter
 unmeasured source stages. The repaired candidate traces now match all compared body/view/key/range
 rows to1e−12 through their first returns (m1395:232A/228B movement rows;
 m1391 through14.318 s); m1395 admissions and consumptions also match exactly.
-This remains conditional trajectory repair. The next change must correct the general send-clock basis, not retain per-match patches.
-A separate within-handler S19 cue-publication error is also proven:386 µs changes
-one admission predicate in m1391. It will be modeled independently of control.
+This remains conditional trajectory repair.
+
+The general source-clock fix is now tested: C02 timing is anchored to the
+unconditional native attack loop, while other uplinks retain their original
+send-call anchor. **No per-match arrival override is used.** Its four saved
+traces are byte-identical to the diagnostic repair (8,041 event-object checks).
+Min/mean/max reductions of the six duplicate-loop receipt intervals all give the
+same completed or unknown primary outcomes. Two256MiB bookkeeping heap failures
+were retained and rerun at512MiB; neither changed the model or result.
+
+This also preserves the remaining discrepancy rather than hiding it: m1391 has
+three extra normal immune consumes (173 versus native170). Their admission cue
+is timestamped at drain start rather than at publication inside the handler;
+a386µs difference flips the first gate. m1395 admissions/consumptions match.
+An opt-in delayed-publication capability is implemented with46 focused checks;
+the unchanged legacy replay still passes24,683 events/9,243 states bit-exact.
+It is not enabled in the ongoing queue-only versus queue+loop timing ensembles.
+The separate cue diagnostic will use measured own cue timestamps, with no
+controller change. A correlated stage-field proposal will first face masked
+native packet/drain tests before any new fight generation.
 
 No controller tuning or prospective native trials have resumed. A simple opening
 snapshot still does not separate prior successes from failures; later failures
