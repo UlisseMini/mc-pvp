@@ -43,6 +43,18 @@ maintenance stability. Hold-W later finds250- and454-hit unanswered chains
 after its initial failures; those are interesting secondary evidence, not its
 score on the prescribed starting-window task.
 
+We also tested the simpler held-sprint mechanism from a common eight-second
+hold opening. It fails the baseline gate:
+
+| Native repeats, same60s maintenance | Held W+Ctrl | Plain status-cue W-tap |
+|---|---|---|
+| Fresh before first return |2 /1 /1|2 /1* /2|
+| Full60s without return |no /no /no|no /no* /no|
+
+The three hold repeats have clean clocks. One W-tap opening is timing-flagged.
+A separate startup pilot was excluded before its outcome and replaced; its
+failure remains recorded. We stopped this candidate rather than adding features.
+
 ## The controller and mechanism
 
 It holds W without Ctrl and clicks through the ordinary capped input path.
@@ -81,10 +93,25 @@ must fail.
   exact on tested traces; future click admission and OS scheduling are a separate
   validation problem.
 
-There is **no vanilla impossibility proof**. The next justified work is to test
-the measured packet-phase failure causally, widen legal pursuit/braking control,
-and validate that controller against the same W-tap references before another
-physical continuation step.
+The most useful new diagnosis is how fragile idealized click timing can be.
+In the model, constant held sprint gets584–600 fresh hits versus W-tap8–14 when
+click admissions are exactly50ms apart. Change only that interval to51ms on both
+clients, and both policies get just1 hit before a return. Initial contacts and
+launches are unchanged; the slower cadence changes later knockback and contact
+braking enough to prevent acquisition. This qualitatively reproduces the native
+failure. It is not an exact prediction of the native clock, which also has jitter.
+The existing distance controller survives both fixed cadences in the model.
+
+The mechanics check remains strong: a fresh native held-sprint failure is
+reproduced through its first return with3,071 event rows, zero state-bit
+mismatches and zero error on323 distance/raycast checks, using its recorded
+inputs and processing schedule. Exact mechanics do not guarantee a useful
+forecast if the assumed input/clock schedule differs from the real client.
+
+There is **no vanilla impossibility proof**. A next justified control check is
+whether the existing distance feedback can retain the ordinary sprinting
+client's faster recovery without losing its braking behavior. Any result must
+pass the same native W-tap comparison before another physical continuation step.
 
 Detailed evidence: [full findings](combo-findings-20261101.md),
 [native success audit](poc-20261101/legal-controller/native-m1270-findings.md),

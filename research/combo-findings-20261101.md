@@ -469,8 +469,8 @@ finite witnesses, not evidence that this feedback law always maintains a lock.
 The hold-W control later finds250- and454-fresh unanswered chains in m1285 and
 m1286 respectively, after its initial failure. This is valuable evidence that
 other states can enter long-lived motion modes; it is not a substitute for its
-primary5/1 scores or a reason to hide the simple control. These later chains
-have not yet received the full actionable-reach audit used for m1270/m1272.
+primary5/1 scores or a reason to hide the simple control. The later454-hit chain
+now has an [actionable-reach and contact-drag audit](poc-20261101/legal-controller/native-m1286-late-findings.md).
 
 All12 rows, timing measurements and actual profiles are preserved in
 [the complete trial](poc-20261101/strong-native-trial-opening8s.json). Server
@@ -500,3 +500,91 @@ pass, including14,972 fork comparisons. Original DIRECT-mode results are
 unchanged. Admission-call duration and held-out native admission/queue parity
 remain unvalidated; this extension alone does not establish future-timing
 prediction accuracy.
+
+## Ordinary held sprint: useful mechanism, failed acquisition
+
+The audited later454-hit native chain suggested a simpler mechanism. Holding
+Ctrl re-arms local sprint after contact drag, while the server can remain in
+normal-hit state because no new sprint transition is sent. Contact ticks brake
+the attacker; missed contacts allow faster pursuit. This is ordinary native
+client behavior, with no direct sprint-state assignment or forged packets.
+That chain tolerates25 zero-Y/airborne-flag bursts. Its prescribed primary score
+remains1, versus matched W-tap8 (sampled cue) or4 (status cue); the later chain
+is diagnostic evidence, not a matched performance win.
+
+Six model checks then tested acquisition from rest: either constant W+Ctrl for
+8s, or4s frozen gap feedback followed by4s W+Ctrl. At8s, complete states and
+queues fork into the candidate and a shadowed plain status-cue W-tap baseline.
+Same h1/v0/hit2, reach3/3, RTT0/120,20CPS ceiling and60s maintenance throughout.
+
+| Common model acquisition; phases0/10/25,0/25/5,0/40/40 | Constant hold fresh before return | Plain W-tap fresh before return | Full60s zero return, hold / W-tap |
+|---|---|---|---|
+| Hold from start |599 /600 /584|8 /13 /14|yes in all /no in all|
+| Gap4s then hold4s |599 /599 /585|15 /8 /13|yes in all /no in all|
+
+These are nominal DIRECT-input clock results, not a native acquisition forecast.
+The subsequent native experiment falsifies that transfer for hold from start:
+
+| Native common8s hold acquisition; repeat1/2/3 | Constant hold | Plain status-cue W-tap |
+|---|---|---|
+| Fresh before first accepted return, strict8..68s |2 /1 /1|2 /1* /2|
+| Full60s without return |no /no /no|no /no* /no|
+| Replay IDs |m1293 /m1290 /m1291|m1288 /m1289 /m1292|
+
+The star marks an acquisition clock interval over100ms. All three main hold
+runs and the other two baseline runs have clean clocks throughout. m1287 is
+retained separately as a startup pilot (primary1). Its exclusion and replacement
+were prescribed before its outcome: the scheduler started while other clients
+were loading, so the required quiet interval had not occurred. The initial
+six-case batch alternated pair order; replacement m1293 ran last. The runner now
+requires all eight current-build clients ready plus10s quiet before starting.
+
+**This branch fails the W-tap improvement gate and is stopped.** No extra hold
+strategy features were added. Longer native chains after earlier trades do not
+repair its failed prescribed acquisition. The frozen gap controller remains the
+native POC; a nominal simpler model winner is not substituted for it.
+
+Clean failures m1290/m1291 have73 free opening fresh hits and about19.34 admitted
+CPS, versus76 opening fresh in the nominal model. Neither has a defender
+airborne/zero-Y burst before the first return. Their first local contacts occur
+at447/437ms, from the same own X position4094.910117592, with native selected-ray
+distances2.823370/2.801765. Both first sprint responses are bit-identical:
+defender X4096.250263896769→4097.022738915746→4097.419030326659.
+By about1s, own nearest distance is about.37 and the opponent's about2.15.
+Nominal model openings also pass through this close state. Its presence alone
+does not explain the failed transfer: ideal50ms admission later recovers the gap,
+whereas slightly slower admission can prevent that recovery.
+
+A fresh held-out coupled replay of m1290 through8.3s, including its first return,
+matches3,071/3,071 supplied-schedule event rows with zero state-bit mismatches.
+All165 nearest-distance and158 selected-ray comparisons have zero error. There
+are no unsupported events or unexecuted tails. No physics change was needed.
+This validates the mechanics on the failed opening while leaving the nominal
+clock/admission forecast unvalidated. See [replay summary](poc-20261101/m1290-coupled-replay-8s-summary.json),
+[native trial](poc-20261101/hold-native-trial.json), and
+[clean opening audit](poc-20261101/legal-controller/native-m1291-early-contact.md).
+
+The bounded queued-input ablation identifies a sufficient failure mechanism.
+Only the physical admission interval changes, on both clients; the control,
+profiles, three phase pairs, common8s acquisition and60s maintenance stay fixed.
+Every row forks the complete acquired state into hold and shadowed plain W-tap.
+
+| Shared physical admission interval | Hold fresh before return | Plain W-tap fresh before return | Hold full60s zero-return |
+|---|---|---|---|
+|50ms|599 /600 /584|8 /13 /14|yes /yes /yes|
+|51ms|1 /1 /1|1 /1 /1|no /no /no|
+
+First contacts, the first five launches and the1s states are identical between
+the two admission settings within each phase. The51ms case then gets73 opening
+fresh hits instead of76, matching the clean native opening count. By8s its own
+gap is0–.16 and the defender's1.62–1.77: denial was never established. None of
+these openings requires an airborne/zero-Y burst. At one phase the initial
+defender response matches the native X positions above exactly.
+
+This is a causal fixed-clock ablation, not a claim that51ms is the actual native
+schedule. Native clicks average about19.34CPS and have jitter; the51ms model's
+frame-polled cadence is about19.05CPS. The important corrected conclusion is that
+slightly noncommensurate admission is sufficient to break this constant-input
+acquisition. Earlier50/51ms tests left the **gap-feedback** controller successful;
+they did not establish cadence irrelevant to all controllers. Ordinary held
+sprint lacks feedback to repair this changed knockback/braking balance.
