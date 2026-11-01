@@ -1,119 +1,81 @@
-# Combo POC: what works, and what still breaks
+# Combo POC: a real demonstration, with a remaining timing boundary
 
-**A simple legal bot has now held two native, full-reach, 60-second locks:
-527 and535 fresh hits without being hit back.** Matched plain W-tap gets only
-a few hits. Watch `/replay m1272` for the clearest demonstration.
+**The simple own-observation controller held two full 60-second native locks:
+527 and 535 fresh hits, zero returns.** Watch `/replay m1272` (535 hits) or
+`/replay m1270` (527). These are finite demonstrations, not proof of infinity.
 
-This works with a large declared relaxation: horizontal knockback1,
-**vertical knockback0, fresh damage every2ticks instead of10**, and RTTs0/120ms.
-Both players have3.0 reach, perfect aim and the same20CPS ceiling. The opponent
-walks/sprints toward us throughout and starts attacking after a shared acquisition
-period. Free opening hits are excluded. This is neither vanilla nor proof of
-an infinite lock.
+The declared scenario is deliberately easier than vanilla: horizontal KB 1,
+**vertical KB 0, fresh damage every 2 ticks instead of 10**, RTTs 0/120 ms, reach 3.0
+for both, perfect aim and the same 20 CPS ceiling. Hold-W moves and sprints
+throughout, but starts clicking after the common acquisition period. Free
+opening hits are excluded from every score below.
 
-## The honest comparison
+## Native results, including failures
 
-All three native repeats below use the same four-second opening and60-second
-scoring window. Schedules vary naturally between native runs. W-tap has zero
-reaction delay; its two columns differ only in whether it reads sampled hurt
-animation or its own delivered fresh-hit status packet.
+Each row has three independent native repeats and a fixed 60 s maintenance window.
+Every W-tap reference has identical settings/acquisition and zero reaction delay.
 
-| Native repeats | Gap controller | Plain W-tap | Plain W-tap, status cue |
+| Shared opening and controller | Fresh hits before first return | Plain W-tap baseline | Full 60 s locks, candidate / W-tap |
 |---|---|---|---|
-| Fresh hits before first return |2* /527 /535|7 /5 /7*|1 /2 /5|
-| Full60s without a return |no* /yes /yes|no /no /no*|no /no /no|
-| Replay IDs |m1265 /m1270 /m1272|m1274 /m1268 /m1273|m1267 /m1269 /m1271|
+|4 s walking gap feedback|2* /527 /535|7 /5 /7*|2 of 3 /0 of 3|
+|Same 4 s trials, alternative own-status W-tap cue|2* /527 /535|1 /2 /5|2 of 3 /0 of 3|
+|8 s walking gap feedback|129 /114 /40*|4 /1 /8|0 of 3 /0 of 3|
+|8 s Ctrl-gap feedback|1* /424 /47|7 /5* /2|0 of 3 /0 of 3|
 
-The stars mark timing flags before the primary outcome. Both successful runs
-have clean clocks throughout. The defender actively tries to attack: all1,200
-attack opportunities in each success are outside its own reach. Its actual
-1,167/1,165 clicks all miss. Our bot remains in its own reach. Real capped input
-timing still misses some earliest damage windows; these are not perfect600-hit
-runs.
+Stars mark timing flags during acquisition or before the first return; all rows
+are retained. Both full-minute successes have clean clocks throughout. The final
+Ctrl-gap run has a later timing flag after its primary outcome. Different rows
+use different acquisition policies, so they do not isolate Ctrl's maintenance
+effect. The Ctrl version is not established as better than the original.
 
-The completed eight-second-opening trial is less stable:
+The two successes are actual denied reach: all 1,200 defender input opportunities
+in each run are outside its own reach, and all 1,167/1,165 actual clicks miss.
+Its minimum actionable nearest distances are 3.093/3.232 blocks. Our contacts use
+ordinary native reach and inputs. Some earliest fresh windows are missed through
+input timing, so these are not perfect 600-hit runs.
 
-| Native repeats, same60s maintenance | Gap controller | Plain W-tap | Status W-tap | Hold-W control |
-|---|---|---|---|---|
-| Fresh before first return |129 /114 /40*|4 /1 /8|2 /7 /4|5 /5* /1|
-| Full60s without return |no /no /no*|no /no /no|no /no /no|no /no* /no|
+## What the controller does, and why it works
 
-Stars again mark acquisition timing flags. More acquisition time does not fix
-maintenance stability. Hold-W later finds250- and454-hit unanswered chains
-after its initial failures; those are interesting secondary evidence, not its
-score on the prescribed starting-window task.
+It holds W, keeps the normal capped click gate open, and uses only the opponent's
+distance **on its own client**. Alternating A/D pulses slow forward pursuit when
+too close. There is no live opponent-POV or server-state input.
 
-We also tested the simpler held-sprint mechanism from a common eight-second
-hold opening. It fails the baseline gate:
+In the regular two-tick knockback cycle, the defender retreats about 0.198 blocks
+per tick. Walking W versus W+A/D spans roughly 0.153–0.216, letting feedback match
+that retreat. Delayed client views then let us hit while denying their return.
+Plain W-tap disrupts this balance through its release, sprint and knockback
+sequence. The lesson is speed matching, not maximizing knockback.
 
-| Native repeats, same60s maintenance | Held W+Ctrl | Plain status-cue W-tap |
-|---|---|---|
-| Fresh before first return |2 /1 /1|2 /1* /2|
-| Full60s without return |no /no /no|no /no* /no|
+Native packet timing can break the regular cycle. In two clean walking-controller
+failures, closely spaced velocity deliveries produce defender steps around
+0.375/0.315 instead of 0.273/0.123. Walking cannot catch up; own reach is lost, fresh
+knockback stops, and the opponent runs back into range. The held-Ctrl variant
+adds recovery speed but also contact braking, and has not eliminated this failure.
+Its clean failures confirm the same sequence; one needs only a single preceding
+burst and a six-tick fresh-hit gap. The actual controls and click timing check out.
 
-The three hold repeats have clean clocks. One W-tap opening is timing-flagged.
-A separate startup pilot was excluded before its outcome and replaced; its
-failure remains recorded. We stopped this candidate rather than adding features.
+## What the parallel work ruled out
 
-## The controller and mechanism
+The toy thermostat treated movement and hit strength as independent; it lost to
+W-tap in the exact kernel. Frozen oracle scripts also failed native transfer.
+Those branches stopped. Constant held sprint without distance feedback tied
+W-tap natively and stopped too. Feedback produced the useful positive results.
 
-It holds W without Ctrl and clicks through the ordinary capped input path.
-Using only the distance to the opponent **as rendered on its own client**, it
-adds alternating A/D pulses when too close. Diagonal movement reduces forward
-pursuit speed. There is no opponent-client telemetry or server-state oracle in
-the live controller.
+A revealing model ablation changes only physical click spacing from 50 to 51 ms:
+constant hold drops from 584–600 fresh hits against W-tap 8–14 to 1 against 1.
+Thus a periodic-clock success can be fragile even when the mechanics are exact.
+A fresh native failure reconstructs with 3,071 event rows and 323 distance/ray
+checks, all zero error, **given its recorded inputs and processing times**.
+That does not validate forecasts using idealized future clocks.
 
-The usual two-move knockback cycle makes the defender retreat at about.198
-blocks/tick. Our walking speed can range from about.153 to.216 using W versus
-W+A/D, so feedback can match that retreat and keep the gap. The delayed views
-then permit our hits while denying theirs. W-tap changes sprint/hit strength
-and loses this particular balance.
+Walking toward vanilla remains unsolved. Tiny vertical values are erased by
+native quantization/cutoffs; larger ones change the launch cycle and break the
+current law. There is no vanilla impossibility proof and no claim that this
+profile is Hypixel's. The next useful step is to reproduce the measured service
+perturbations in a matched model test and establish enough spacing/control margin
+before changing more physics. The server is back on vanilla defaults.
 
-But native packet timing sometimes changes the ground-flag cycle. In failed
-m1275, two closely spaced velocity deliveries produce defender steps of roughly
-.375/.315 instead of.273/.123. Our maximum walking speed cannot keep up. We
-lose reach, stop supplying knockback, and the defender runs back into us. This
-is a concrete control-authority failure, not evidence that all legal controllers
-must fail.
-
-## What the parallel work established
-
-- The simplified model exposed a useful speed-matching idea, but its first
-  controller incorrectly treated movement and sprint knockback as independent.
-  It lost to W-tap in the exact kernel, so that branch stopped.
-- Oracle trajectories produced long model locks at reduced reach. Distilled
-  temporal scripts then lost to W-tap natively. Timing corrections were tested;
-  the weak script branch stopped instead of accumulating more features.
-- The feedback branch produced the native successes above. Walking settings
-  back toward vanilla has not yet produced a meaningful positive: tiny vertical
-  impulses get erased by the movement cutoff; larger ones change the server's
-  inferred motion and weaken later horizontal launches.
-- The timing branch is extending the same fight model to distinguish capped
-  physical clicks from queued native consumption. Recorded-input mechanics are
-  exact on tested traces; future click admission and OS scheduling are a separate
-  validation problem.
-
-The most useful new diagnosis is how fragile idealized click timing can be.
-In the model, constant held sprint gets584–600 fresh hits versus W-tap8–14 when
-click admissions are exactly50ms apart. Change only that interval to51ms on both
-clients, and both policies get just1 hit before a return. Initial contacts and
-launches are unchanged; the slower cadence changes later knockback and contact
-braking enough to prevent acquisition. This qualitatively reproduces the native
-failure. It is not an exact prediction of the native clock, which also has jitter.
-The existing distance controller survives both fixed cadences in the model.
-
-The mechanics check remains strong: a fresh native held-sprint failure is
-reproduced through its first return with3,071 event rows, zero state-bit
-mismatches and zero error on323 distance/raycast checks, using its recorded
-inputs and processing schedule. Exact mechanics do not guarantee a useful
-forecast if the assumed input/clock schedule differs from the real client.
-
-There is **no vanilla impossibility proof**. A next justified control check is
-whether the existing distance feedback can retain the ordinary sprinting
-client's faster recovery without losing its braking behavior. Any result must
-pass the same native W-tap comparison before another physical continuation step.
-
-Detailed evidence: [full findings](combo-findings-20261101.md),
-[native success audit](poc-20261101/legal-controller/native-m1270-findings.md),
-[matched native trial](poc-20261101/strong-native-trial.json), and
-[vertical continuation](poc-20261101/continuation/vertical-continuation-findings.md).
+[Full findings and baseline tables](combo-findings-20261101.md) ·
+[Native success audit](poc-20261101/legal-controller/native-m1270-findings.md) ·
+[Latest native comparison](poc-20261101/ctrl-gap-native-trial.json) ·
+[Clean failure audit](poc-20261101/legal-controller/native-ctrl-gap-break-audit.md)

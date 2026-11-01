@@ -588,3 +588,84 @@ slightly noncommensurate admission is sufficient to break this constant-input
 acquisition. Earlier50/51ms tests left the **gap-feedback** controller successful;
 they did not establish cadence irrelevant to all controllers. Ordinary held
 sprint lacks feedback to repair this changed knockback/braking balance.
+
+## One-factor Ctrl extension of the frozen distance controller
+
+The next bounded check changed only the held sprint key in the existing gap
+controller. Its own-view distance target2.55, gain2, base diagonal duty.283,
+alternating A/D accumulator and persistent capped click gate stayed frozen.
+This tests whether ordinary Ctrl re-arming can add recovery speed while retaining
+distance feedback; it does not assign velocity or sprint state directly.
+
+All model rows use h1/v0/hit2, reach3/3, RTT0/120, a20CPS ceiling, an8s common
+Ctrl-gap acquisition and a60s maintenance window. Each complete acquired state
+and input/packet queue forks into independent, shadow-primed policies. The three
+opponent/server phases are10/25,25/5,40/40ms, with own phase0.
+
+| Physical admission interval | Ctrl-gap fresh before return | Plain status W-tap | Same-state gap without Ctrl | Same-state constant hold | Ctrl-gap full60s zero-return |
+|---|---|---|---|---|---|
+|50ms|600 /600 /582|2 /2 /2|599 /2 /599|600 /600 /583|yes /yes /yes|
+|51ms|571 /571 /571|4 /4 /15|571 /571 /571|117 /116 /136|yes /yes /yes|
+
+The50ms40/40 candidate misses35 earliest geometric reach windows, while its
+W-tap reference misses4; both are retained as secondary diagnostics. Every51ms
+candidate misses57 earliest fresh contacts through admission timing despite zero
+geometric reach-window misses. Thus these finite no-return results are not
+perfect contact utilization. The comparison supports native testing, not a claim
+that Ctrl always improves the old controller or that fixed clocks predict the
+native schedule. See [the complete24-trajectory ablation](poc-20261101/clever-inputs/queued-ctrl-gap-findings.md).
+
+The frozen native trial is now complete. All six rows pass loaded-build, normal
+input/CPS, reach/target and actual-profile checks. All clients were ready on the
+current build, followed by10s quiet before the batch; model workers were idle.
+Native matches ran sequentially, with candidate/baseline pair order alternating.
+
+| Native8s Ctrl-gap opening, strict8..68s; repeats1/2/3 | Ctrl-gap candidate | Plain status-cue W-tap |
+|---|---|---|
+| Fresh before first accepted return |1* /424 /47|7 /5* /2|
+| Full60s without return |no /no /no|no /no /no|
+| First return after opening, seconds |.133 /44.948 /5.342|1.288 /1.193 /.636|
+| Replay IDs |m1294 /m1297 /m1298|m1295 /m1296 /m1299|
+
+Stars denote acquisition timing flags: own/opponent intervals108.2/107.1ms in
+m1294, and opponent328.8ms in m1296. m1298 has an opponent113.6ms interval after
+its first return; its acquisition/primary prefix is clean. m1297 is clean for the
+entire match, with maximum own/opponent/server intervals66.1/62.6/70.7ms. All
+timing-invalid evidence remains visible; no repeat was replaced after its result.
+
+The two clean candidate prefixes substantially beat the observed W-tap range,
+but no candidate maintains the full minute. The widest result,424, is not proof
+of reliable maintenance. There is also no controlled native demonstration that
+Ctrl improves the original walking controller: their acquisition policies differ.
+Keep this as a useful research variant, not a validated upgrade to the original
+two successful native demonstrations.
+
+The m1294 input audit reconstructs163 decisions and movements without a mismatch:
+the intended keys, A/D pulses and own-view distances really were used. It briefly
+acquires denial, then loses reach across eight-tick fresh gaps before the opponent
+begins clicking. Its large later total608–59 and later289-hit chain do not repair
+its primary score1. See [adapter audit](poc-20261101/legal-controller/native-m1294-adapter-audit.md).
+
+All six recordings, server/client science traces, timing flags and outcomes are
+preserved in [the completed native trial](poc-20261101/ctrl-gap-native-trial.json).
+Server defaults were confirmed restored to h1/v1/hit10 after the batch.
+
+Both clean failures now have a [bounded native audit](poc-20261101/legal-controller/native-ctrl-gap-break-audit.md).
+All1,059/267 own control decisions reconstruct exactly, including actual movement,
+Ctrl re-arm and the own distance feedback. In each final two seconds, all own
+movements are locally sprinting; contact drag is exactly.6, while all30/31 server
+attack attempts are normal hits. Final click-admission intervals are at most54ms.
+This is not a missing input, reversed strafe or stalled-click explanation.
+
+In m1297, earlier maintenance has859 denied defender input opportunities, with
+minimum nearest distance3.3863. Two late velocity/air-flag bursts199ms apart
+precede own range3.1046 and six real misses. Fresh contacts then have an eight-tick
+399ms hole, and the defender reaches2.971 before returning. Held-out m1298 has
+earlier denied samples with minimum3.2988; a single preceding burst, own range
+3.0381 and three actual misses precede a six-tick308ms fresh gap and re-entry.
+
+The supported failure family is upper own reach loss, missed real contacts,
+missing knockback deliveries, then defender re-entry. Neither a double burst nor
+a nine-tick hole is necessary. Individual bursts are not sufficient either:
+many earlier ones recover. These audits do not claim that an untested target,
+click schedule or counterfactual controller would have saved the fight.
