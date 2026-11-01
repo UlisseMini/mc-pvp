@@ -7,8 +7,8 @@ public final class PracticeApiCheck {
         R.call(food,"setFoodLevel",20);R.set(food,"foodSaturationLevel",5.0f);
         R.set(food,"foodExhaustionLevel",0.0f);R.set(food,"foodTimer",0);
         if(((Number)R.call(food,"getFoodLevel")).intValue()!=20||R.num(food,"foodSaturationLevel")!=5)throw new AssertionError("Food reset");
-        Object sound=R.construct("net.minecraft.network.play.server.S29PacketSoundEffect","note.pling",0.0,4.0,0.0,.65f,1.4f);
-        if(!R.get(sound,"soundName").equals("note.pling"))throw new AssertionError("Sound packet");
+        Object sound=R.construct("net.minecraft.network.play.server.S29PacketSoundEffect","random.anvil_land",0.0,4.0,0.0,.25f,1.6f);
+        if(!R.get(sound,"soundName").equals("random.anvil_land"))throw new AssertionError("Sound packet");
         java.util.Set<String> methods=new java.util.HashSet<>();
         for(Class<?> c=R.cls("net.minecraft.entity.player.EntityPlayerMP");c!=null;c=c.getSuperclass())
             for(java.lang.reflect.Method m:c.getDeclaredMethods())

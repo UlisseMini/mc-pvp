@@ -19,6 +19,15 @@ public final class DamageBenefitsCheck {
         near(DamageBenefits.loss(8,false,20,-1,0,.1f,0),.1,"lethal damage capped at actual HP");
         near(DamageBenefits.loss(12,false,20,-1,0,.1f,0)-DamageBenefits.loss(8,false,20,-1,0,.1f,0),0,"both versions lethal: no extra HP removed");
         near(DamageBenefits.loss(0,true,20,-1,20,20,0),0,"rejected noncrit must not gain block's +1");
+        near(DamageBenefits.normalHits(.7,8,20,-1,0),.4375,"diamond normal-hit equivalence");
+        near(DamageBenefits.normalHits(.4,5,20,-1,0),.4,"wood normal-hit equivalence");
+        near(DamageBenefits.normalHits(1.1,8,20,-1,0),.6875,"blocked crit uses noncrit denominator");
+        near(DamageBenefits.normalHits(.3,8,20,-1,0),.1875,"partial crit upgrade uses full normal-hit denominator");
+        near(DamageBenefits.normalHitDamage(8,20,-1,20),.32,"Protection applies to normal reference");
+        near(DamageBenefits.normalHitDamage(8,0,-1,0),8,"unarmored reference");
+        near(DamageBenefits.normalHitDamage(8,10,-1,0),4.8,"partial armor reference");
+        near(DamageBenefits.normalHits(0,8,20,4,20),0,"zero saved with invulnerability");
+        if(DamageBenefits.normalHits(1,0,20,-1,0)!=null)throw new AssertionError("undefined zero-damage reference");
         System.out.println("PASS block/crit benefits, overlapping effects, immunity/rod cases, Protection, Resistance, absorption and lethal caps");
     }
 }

@@ -26,7 +26,7 @@ def run():
     (directory/'options.txt').write_text('renderDistance:6\nfancyGraphics:false\nparticles:2\nsoundCategory_master:0.0\n')
     identifier='combat-stats-'+time.strftime('%Y%m%d-%H%M%S')+'-'+uuid.uuid4().hex[:6]
     out=ROOT/'experiments'/identifier;out.mkdir()
-    sources=('src/lab/Agent.java','src/lab/Referee.java','src/lab/CombatStats.java','src/lab/DamageBreakdown.java','src/lab/DamageBenefits.java','src/lab/PracticeProbe.java','combat_stats_check.py')
+    sources=('src/lab/Agent.java','src/lab/Referee.java','src/lab/CombatStats.java','src/lab/DamageBreakdown.java','src/lab/DamageBenefits.java','src/lab/BlockTiming.java','src/lab/BlockAccuracy.java','src/lab/PracticeProbe.java','combat_stats_check.py')
     frozen={f:hashlib.sha256((ROOT/f).read_bytes()).hexdigest() for f in sources}
     agent_hash=hashlib.sha256((BUILD/'lab-agent.jar').read_bytes()).hexdigest()
     launched=time.time()*1000
@@ -64,12 +64,14 @@ def run():
     all_events=[e for es in events.values() for e in es]
     client=[json.loads(line) for line in (directory/'practice.jsonl').read_text().splitlines() if json.loads(line).get('time',0)>=launched]
     blocks=[e for e in all_events if e['type']=='blocked_damage' and e['target']=='LabObserver']
-    sounds=[e for e in client if e['type']=='practice_sound' and e['sound']=='note.pling']
+    sounds=[e for e in client if e['type']=='practice_sound' and e['sound']=='random.anvil_land']
     rods=[e for e in all_events if e['type']=='hit' and e['rod']]
     crits=[e for e in all_events if e['type']=='critical']
     starts=[e['match'] for e in all_events if e['type']=='start']
     log=(out/'client.log').read_text()
     plain=re.sub(r'§[0-9a-fk-or]','',log,flags=re.I)
+    bars=[{'time':e['time'],'text':re.sub(r'§[0-9a-fk-or]','',e['action_bar'],flags=re.I)} for e in client if e.get('action_bar')]
+    ratios=[m for e in bars if (m:=re.search(r'Blocks: (\d+)/(\d+) \(([\d.]+)%\)',e['text']))]
     checks={
         'native_client_clean_exit':process.returncode==0 and 'at lab.' not in log,
         'source_unchanged_during_probe':all(hashlib.sha256((ROOT/f).read_bytes()).hexdigest()==h for f,h in frozen.items()),
@@ -91,6 +93,10 @@ def run():
         'native_healing_observed':any(e['type']=='heal' and e['amount']>0 for e in all_events),
         'all_players_fed_equally':len(samples)>10 and all(p['food']==20 and 19<=p['saturation']<=20 for s in samples for p in s['players']),
         'block_sound_delivery_unchanged':len(blocks)>0 and len(sounds)==1+sum(e['sound_sent'] for e in blocks),
+        'quiet_metallic_sound_received':bool(sounds) and all(abs(e['volume']-.25)<1e-6 and 1.5<e['pitch']<1.7 for e in sounds),
+        'native_timing_feedback_received':any('BLOCKED' in e['text'] and 'held ~' in e['text'] for e in bars),
+        'native_bar_ratio_arithmetic':bool(ratios) and all(int(m[2])>0 and abs(float(m[3])-100*int(m[1])/int(m[2]))<=.051 for m in ratios),
+        'native_bar_retains_damage_fraction':any('BLOCKED' in e['text'] and 'Dmg blocked:' in e['text'] for e in bars),
         'summary_received_in_chat':log.count('Finished ')==len(games)>0 and log.count('Health/damage in hearts.')==len(games),
     }
     for g in games:
@@ -138,6 +144,15 @@ def run():
                 checks[g['id']+'_'+side+'_'+key]=(group['hits']==count and abs(group['damage']-damage)<1e-6 and
                     (group['damage_per_hit'] is None if not count else abs(group['damage_per_hit']-damage/count)<1e-6))
             breakdown=stats['damage_breakdown']
+            normal_hits=sum(e['blocking_saved_normal_hits'] for e in observed if e['target']==name and e['blocked'])
+            checks[g['id']+'_'+side+'_normal_hit_equivalence']=(abs(breakdown['blocking_saved_normal_hits']-normal_hits)<1e-6 and all(
+                e['noncrit_raw_damage']==(5 if g['mode']=='diamond_box' else 8) and e['normal_hit_damage']>0 and
+                abs(e['blocking_saved_normal_hits']-e['blocking_saved']/e['normal_hit_damage'])<1e-6 for e in observed if e['target']==name))
+            saved=breakdown['blocking_saved']['damage'];taken_damage=breakdown['blocked_taken']['damage']+breakdown['unblocked_taken']['damage']
+            damage_percent=100*saved/(taken_damage+saved) if taken_damage+saved else None
+            checks[g['id']+'_'+side+'_damage_block_fraction']=(stats['damage_blocked_percent'] is None if damage_percent is None else abs(stats['damage_blocked_percent']-damage_percent)<1e-8)
+            block_percent=100*g['blocks_'+side]/len(incoming) if incoming else None
+            checks[g['id']+'_'+side+'_hit_block_fraction']=(stats['block_percent'] is None if block_percent is None else abs(stats['block_percent']-block_percent)<1e-8)
             checks[g['id']+'_'+side+'_group_totals_reconcile']=(
                 abs(breakdown['blocked_taken']['damage']+breakdown['unblocked_taken']['damage']-(stats['damage_taken']-stats['other_damage']))<1e-6 and
                 abs(breakdown['critical_dealt']['damage']+breakdown['normal_dealt']['damage']-stats['damage_dealt'])<1e-6 and
@@ -158,7 +173,8 @@ def run():
                     (group['damage_per_hit'] is None if count==0 else abs(group['damage_per_hit']-total/count)<1e-6) and
                     (breakdown[per_all_key] is None if total_count==0 else abs(breakdown[per_all_key]-total/total_count)<1e-6))
                 per=f'{total/count/2:.3f}' if count else 'N/A';overall=f'{total/total_count/2:.3f}' if total_count else 'N/A'
-                expected_benefits.extend([f'{title}: {total/2:.2f} hearts',f'{per_label}: {per} | {all_label}: {overall}'])
+                equivalent=f' ({normal_hits:.2f} normal hits)' if group_key=='blocking_saved' else ''
+                expected_benefits.extend([f'{title}: {total/2:.2f} hearts'+equivalent,f'{per_label}: {per} | {all_label}: {overall}'])
         # The native logger wraps chat in an XML CDATA element; only compare the message.
         received=[value.split(']]>',1)[0] for value in re.findall(r'Damage taken per hit: ([^\r\n]*)',summary)]
         checks[g['id']+'_both_damage_per_hit_chat_values']=received==expected_per_hit
@@ -168,6 +184,7 @@ def run():
             'rod_contacts':len(rods),'criticals':len(crits),'blocks':len(blocks),'chimes':len(sounds),'food_samples':len(samples)}
     (out/'food-samples.json').write_text(json.dumps(samples,indent=2)+'\n')
     (out/'rod-inputs.json').write_text(json.dumps([e for e in client if e.get('rod_input')],indent=2)+'\n')
+    (out/'action-bars.json').write_text(json.dumps(bars,indent=2)+'\n')
     (out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({'directory':str(out),'checks':checks,'rod_contacts':len(rods),'criticals':len(crits)},indent=2),flush=True)
     if not report['passed']:raise RuntimeError('Native statistics verification failed; inspect '+str(out))

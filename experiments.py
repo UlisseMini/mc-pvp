@@ -24,13 +24,15 @@ def status():
     if time.time()-data['time']/1000>5:raise RuntimeError('Server status is stale; start the lab first')
     return data
 
-async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
+async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
     request='exp-'+uuid.uuid4().hex
     for name in (a,b):
         if not re.fullmatch('[a-z0-9_-]{1,64}',name) or not (ROOT/'policies'/f'{name}.properties').is_file():
             raise ValueError('Unknown bot: '+name)
     if any(not math.isfinite(p) or not 0<=p<=500 for p in (ping_a,ping_b)):raise ValueError('RTTs must be 0–500 ms')
     if duration_ms is not None and (not isinstance(duration_ms,int) or not 1000<=duration_ms<=180000):raise ValueError('Scenario duration must be1000–180000ms')
+    if mode not in ('boxing','diamond','diamond_box','rod_diamond'):raise ValueError('Unknown combat mode')
+    if mode!='boxing' and duration_ms is not None:raise ValueError('Timed scenarios currently use boxing; health duels run to death or timeout')
     parameters={name:properties(ROOT/'policies'/f'{name}.properties') for name in (a,b)}
     expected_build=hashlib.sha256((ROOT/'build/lab-agent.jar').read_bytes()).hexdigest()
     # Preserve spare capacity for the user's challenges: three matches / eight bots.
@@ -38,19 +40,22 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
         with open(RUNTIME/'manager/scheduler.lock','a+') as lock:
             fcntl.flock(lock,fcntl.LOCK_EX)
             data=status();occupied={m[k] for m in data['matches'] for k in ('a','b')}
-            free=[]
+            free=[];unready_free=False
             for name in data['players']:
                 if not name.startswith('LabSlot') or name in occupied:continue
                 try:heartbeat=json.loads((RUNTIME/'bots'/name.removeprefix('LabSlot')/'heartbeat.json').read_text())
-                except (FileNotFoundError,json.JSONDecodeError):continue
+                except (FileNotFoundError,json.JSONDecodeError):unready_free=True;continue
                 if time.time()-heartbeat['time']/1000<=4 and heartbeat.get('agent_sha256')==expected_build and not heartbeat.get('enabled'):free.append(name)
+                else:unready_free=True
             reservation_path=RUNTIME/'manager/reservations.json'
             reservations=json.loads(reservation_path.read_text()) if reservation_path.exists() else {}
             active={m.get('request') for m in data['matches']}
             reservations={key:created for key,created in reservations.items() if key not in active and time.time()-created<15}
-            if len(free)-len(reservations)*2>=3:
+            # The referee allocates any idle slot, so a count of current-build
+            # slots alone cannot exclude a stale client that just left a duel.
+            if not unready_free and len(free)-len(reservations)*2>=3:
                 reservations[request]=time.time();reservation_path.write_text(json.dumps(reservations))
-                command=f'lab match {a} {b} {ping_a} {ping_b} {request}' if duration_ms is None else f'lab scenario {a} {b} {ping_a} {ping_b} {duration_ms} {request}'
+                command=f'lab {"match" if mode=="boxing" else mode} {a} {b} {ping_a} {ping_b} {request}' if duration_ms is None else f'lab scenario {a} {b} {ping_a} {ping_b} {duration_ms} {request}'
                 send(command);break
             reservation_path.write_text(json.dumps(reservations))
         await asyncio.sleep(1)
@@ -97,7 +102,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                             issues.add(f'{side}: player fell below the declared flat arena floor')
                         if event['type']=='science_move' and any(event[k].get('isCollidedHorizontally',False) for k in ('before','after')):
                             issues.add(f'{side}: unexpected horizontal block collision in flat arena')
-                        if event['type'] in ('momentum_plan','mpc_plan','burst_plan','motion_click_plan') and event['time']-event['observation_time']<reaction:
+                        if event['type'] in ('momentum_plan','mpc_plan','burst_plan','motion_click_plan','blockhit_plan') and event['time']-event['observation_time']<reaction:
                             issues.add(f'{side}: tactical plan reacted before declared delay')
                         if event['type']=='click' and parameters[result['policy_'+side]].get('click_mode') in ('reactive-burst','motion-burst'):
                             if event['time']-event.get('burst_observation_time',event['time'])<reaction:
@@ -140,8 +145,9 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None):
                                       'click_intervals_checked':len(intervals),'min_click_gap_ns':min(intervals,default=None),'post_hit_resets':resets}
                 if not result['validation']['passed']:
                     raise RuntimeError(f'Invalid setup for {result["id"]}: {result["validation"]}')
-                if result['reason']!='100_hits' and not (duration_ms is not None and result['reason']=='scenario_completed'):
-                    raise RuntimeError(f'{result["id"]} did not reach 100 hits: {result["reason"]}')
+                valid_outcomes=('death','timeout_draw') if mode!='boxing' else ('scenario_completed',) if duration_ms is not None else ('100_hits',)
+                if result['reason'] not in valid_outcomes:
+                    raise RuntimeError(f'{result["id"]} did not finish the requested {mode} round: {result["reason"]}')
                 result['combat_metrics']=combat_metrics(result)
                 print(f'{result["id"]}: {a} {result["hits_a"]}–{result["hits_b"]} {b} ({result["reason"]})',flush=True)
                 return result

@@ -57,6 +57,7 @@ public final class PracticeProbe {
         R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"setKeyBindState",(int)R.call(key,"getKeyCode"),down&&!rod&&!attack);
         Map<String,Object> e=new LinkedHashMap<>();e.put("type","practice_input");e.put("time",System.currentTimeMillis());e.put("elapsed_ms",elapsed);
         e.put("use_key",down);e.put("blocking",R.call(player,"isBlocking"));e.put("health",R.call(player,"getHealth"));
+        e.put("action_bar",R.get(R.get(minecraft,"ingameGUI"),"recordPlaying"));
         e.put("armor_points",R.call(player,"getTotalArmorValue"));e.put("food",R.call(R.call(player,"getFoodStats"),"getFoodLevel"));
         e.put("saturation",R.num(R.call(player,"getFoodStats"),"foodSaturationLevel"));
         e.put("rod_input",rod);e.put("attack_input",attack);

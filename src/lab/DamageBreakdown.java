@@ -21,10 +21,13 @@ public final class DamageBreakdown {
     final Group blockedTaken=new Group(),unblockedTaken=new Group(),criticalDealt=new Group(),normalDealt=new Group();
     final Group blockingSaved=new Group(),criticalExtra=new Group();
     int damageHitsLanded,damageHitsTaken;
+    double blockingSavedNormalHits;
+    int undefinedNormalHits;
     Map<String,Object> state(){
         Map<String,Object> result=new LinkedHashMap<>(Map.of("blocked_taken",blockedTaken.state(),"unblocked_taken",unblockedTaken.state(),
             "critical_dealt",criticalDealt.state(),"normal_dealt",normalDealt.state()));
         result.put("blocking_saved",blockingSaved.state());result.put("critical_extra",criticalExtra.state());
+        result.put("blocking_saved_normal_hits",undefinedNormalHits==0?blockingSavedNormalHits:null);
         result.put("damage_hits_landed",damageHitsLanded);result.put("damage_hits_taken",damageHitsTaken);
         result.put("blocking_saved_per_received_hit",damageHitsTaken==0?null:blockingSaved.damage/damageHitsTaken);
         result.put("critical_extra_per_landed_hit",damageHitsLanded==0?null:criticalExtra.damage/damageHitsLanded);
@@ -32,7 +35,8 @@ public final class DamageBreakdown {
     }
     static String average(double total,int count){return count==0?"N/A":String.format(Locale.ROOT,"%.3f",total/count/2);}
     List<String> lines(){return List.of(
-        String.format(Locale.ROOT,"  §bBlocking saved: §f%.2f hearts",blockingSaved.damage/2),
+        String.format(Locale.ROOT,"  §bBlocking saved: §f%.2f hearts §7(%s normal hits)",blockingSaved.damage/2,
+            undefinedNormalHits==0?String.format(Locale.ROOT,"%.2f",blockingSavedNormalHits):"N/A"),
         "    §bPer block: §f"+average(blockingSaved.damage,blockingSaved.hits)+" §8| §bPer received hit: §f"+average(blockingSaved.damage,damageHitsTaken),
         String.format(Locale.ROOT,"  §dExtra crit damage: §f%.2f hearts",criticalExtra.damage/2),
         "    §dPer crit: §f"+average(criticalExtra.damage,criticalExtra.hits)+" §8| §dPer landed hit: §f"+average(criticalExtra.damage,damageHitsLanded));}
@@ -108,18 +112,27 @@ public final class DamageBreakdown {
             float noncritApplied=DamageBenefits.acceptedDamage(a.rawNoncrit,a.previousDamage,a.immune);
             double withoutCrit=DamageBenefits.loss(noncritApplied,a.blockApplied,a.armor,a.resistance,a.protection,a.hp,a.absorption);
             double saved=a.blocked?Math.max(0,withoutBlock-a.healthLoss):0,extra=a.critical?Math.max(0,a.healthLoss-withoutCrit):0;
+            double normalHit=DamageBenefits.normalHitDamage(a.rawNoncrit,a.armor,a.resistance,a.protection);
+            Double normalHits=DamageBenefits.normalHits(saved,a.rawNoncrit,a.armor,a.resistance,a.protection);
             record(a.match.stats(a.who).breakdown,a.match.stats(a.victim).breakdown,a.critical,a.blocked,a.healthLoss);
-            if(a.blocked)a.match.stats(a.victim).breakdown.blockingSaved.add(saved);
+            if(a.blocked){
+                DamageBreakdown defender=a.match.stats(a.victim).breakdown;defender.blockingSaved.add(saved);
+                if(normalHits==null)defender.undefinedNormalHits++;else defender.blockingSavedNormalHits+=normalHits;
+            }
             if(a.critical)a.match.stats(a.who).breakdown.criticalExtra.add(extra);
             Map<String,Object> event=new LinkedHashMap<>();event.put("type","melee_damage");event.put("time",System.currentTimeMillis());
             event.put("attacker",a.who);event.put("target",a.victim);event.put("hit_index",a.hitIndex);
             event.put("critical",a.critical);event.put("blocked",a.blocked);event.put("health_loss",a.healthLoss);
             event.put("blocking_saved",saved);event.put("critical_extra",extra);event.put("predicted_health_loss",predicted);
+            event.put("normal_hit_damage",normalHit);event.put("blocking_saved_normal_hits",normalHits);
             event.put("without_block_health_loss",withoutBlock);event.put("without_crit_health_loss",withoutCrit);
             event.put("applied_damage",a.applied);event.put("noncrit_raw_damage",a.rawNoncrit);event.put("previous_damage",a.previousDamage);event.put("immune_before",a.immune);
             event.put("block_applied",a.blockApplied);event.put("armor_points",a.armor);event.put("resistance_amplifier",a.resistance);event.put("protection_roll",a.protection);
             event.put("health_before",a.hp);event.put("absorption_before",a.absorption);
             Referee.append(a.match.replay,event);
+            long now=System.currentTimeMillis();
+            a.match.stats(a.victim).blockTiming.hit(a.blocked,now);
+            Referee.timingFeedback(a.match,a.victim,now);
         }catch(Throwable e){error(e);}
     }
     static void error(Throwable e){if(Referee.errors++<10)e.printStackTrace();}

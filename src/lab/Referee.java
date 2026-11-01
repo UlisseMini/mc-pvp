@@ -16,6 +16,7 @@ public final class Referee {
     static final Map<String,Properties> lastOverrides=new HashMap<>();
     static final Map<String,String> preferredModes=new HashMap<>(),lastModes=new HashMap<>();
     static final Set<String> mutedBlockSounds=new HashSet<>(),pendingLobby=new HashSet<>();
+    static final Set<String> mutedBlockTiming=new HashSet<>();
     static final Map<String,String> watching=new HashMap<>();
     static final Map<String,Long> pendingTracking=new LinkedHashMap<>();
     static final Set<Integer> preparedArenas=new HashSet<>();
@@ -96,6 +97,7 @@ public final class Referee {
                 Object a=player(m.a),b=player(m.b);
                 if(a==null||b==null){m.winner=a==null?m.b:m.a;finish(m,"disconnect");continue;}
                 long setupNow=System.currentTimeMillis();
+                if(setupNow>=m.start){CombatStats.usingItemChanged(a);CombatStats.usingItemChanged(b);}
                 if(!m.setupReseated&&setupNow<m.start&&setupNow>=m.start-1500){
                     // Initial destination chunks may arrive after the teleport,
                     // allowing a client to fall into the floor during countdown.
@@ -125,9 +127,13 @@ public final class Referee {
                     long left=m.start-System.currentTimeMillis();
                     String score=left>0?"Starting "+m.mode+" in "+((left+999)/1000)+"...":
                         (m.boxing()?m.pa+" "+m.ha+" / 100  |  "+m.hb+" "+m.pb:
-                        m.pa+" "+hearts(a)+" hearts  |  "+hearts(b)+" "+m.pb)+"  |  Blocks "+m.ba+"/"+m.bb+"  |  RTT "+(int)m.pingA+"/"+(int)m.pingB+" ms";
-                    overlay(a,score);overlay(b,score);
-                    for(var watcher:watching.entrySet())if(watcher.getValue().equals(m.id)&&player(watcher.getKey())!=null)overlay(player(watcher.getKey()),score);
+                        m.pa+" "+hearts(a)+" hearts  |  "+hearts(b)+" "+m.pb);
+                    String ba=m.sa.blockRatioText(m.hb-m.sb.rodHits),bb=m.sb.blockRatioText(m.ha-m.sa.rodHits);
+                    String ping=" §8| §7RTT "+(int)m.pingA+"/"+(int)m.pingB+" ms";
+                    overlay(a,timedBar(m,m.a,score+" §8| "+m.sa.blockBarText(m.hb-m.sb.rodHits)+ping,System.currentTimeMillis()));
+                    overlay(b,timedBar(m,m.b,score+" §8| "+m.sb.blockBarText(m.ha-m.sa.rodHits)+ping,System.currentTimeMillis()));
+                    for(var watcher:watching.entrySet())if(watcher.getValue().equals(m.id)&&player(watcher.getKey())!=null)
+                        overlay(player(watcher.getKey()),score+" §8| §bBlocks: §f"+ba+" dmg "+m.sa.damageBlockedText()+" §7vs §f"+bb+" dmg "+m.sb.damageBlockedText()+ping);
                 }
             }
             if(ticks%10==0){
@@ -171,6 +177,7 @@ public final class Referee {
             if(m==null||System.currentTimeMillis()<m.start||!m.winner.isEmpty()||
                     !(who.equals(m.a)&&victim.equals(m.b)||who.equals(m.b)&&victim.equals(m.a)))return;
             if(victim.equals(m.a))m.ba++;else m.bb++;
+            m.stats(victim).blockAccuracy.damageReduced();
             DamageBreakdown.blocked(target,source);
             boolean sounded=!isBot(victim)&&!mutedBlockSounds.contains(victim);
             if(sounded)blockSound(target);
@@ -183,7 +190,20 @@ public final class Referee {
     }
     static void blockSound(Object p){
         R.call(R.get(p,"playerNetServerHandler"),"sendPacket",R.construct("net.minecraft.network.play.server.S29PacketSoundEffect",
-            "note.pling",R.num(p,"posX"),R.num(p,"posY"),R.num(p,"posZ"),.65f,1.4f));
+            "random.anvil_land",R.num(p,"posX"),R.num(p,"posY"),R.num(p,"posZ"),.25f,1.6f));
+    }
+    static String timedBar(Match m,String who,String normal,long now){
+        if(mutedBlockTiming.contains(who))return normal;
+        CombatStats stats=m.stats(who);String feedback=stats.blockTiming.text(now);
+        if(feedback.isEmpty())return normal;
+        int incoming=who.equals(m.a)?m.hb-m.sb.rodHits:m.ha-m.sa.rodHits;
+        Object p=player(who);
+        return feedback+" §8| "+stats.blockBarText(incoming)+(p==null?"":" §8| §cHP: "+hearts(p));
+    }
+    static void timingFeedback(Match m,String who,long now){
+        append(m.replay,Map.of("type","block_timing","time",now,"player",who,"feedback",m.stats(who).blockTiming.state()));
+        Object p=player(who);
+        if(p!=null&&!isBot(who)&&!mutedBlockTiming.contains(who))overlay(p,timedBar(m,who,"",now));
     }
     static String hearts(Object p){return String.format(Locale.ROOT,"%.1f",((Number)R.call(p,"getHealth")).doubleValue()/2);}
     public static void hit(boolean accepted,Object target,Object source,float damage,boolean immuneBefore){
@@ -216,7 +236,7 @@ public final class Referee {
         String[] args=text.trim().split("\\s+");if(args.length==0)return false;
         String cmd=args[0].toLowerCase(Locale.ROOT);
         if(cmd.equals("stop")&&!R.cls("net.minecraft.entity.player.EntityPlayerMP").isInstance(sender))return false;
-        boolean ours=List.of("bots","duel","mode","blocksound","ping","matches","watch","stop","rematch","lab").contains(cmd)||(cmd.equals("help")&&args.length>1&&args[1].equals("lab"));
+        boolean ours=List.of("bots","duel","mode","blocksound","blocktiming","ping","matches","watch","stop","rematch","lab").contains(cmd)||(cmd.equals("help")&&args.length>1&&args[1].equals("lab"));
         if(!ours)return false;
         try{
             if(server==null){message(sender,"Lab is still starting.");return true;}
@@ -234,9 +254,15 @@ public final class Referee {
                 String name=safeName(sender);
                 if(args.length==2&&args[1].equals("off"))mutedBlockSounds.add(name);
                 else if(args.length==2&&args[1].equals("on"))mutedBlockSounds.remove(name);
-                else if(args.length==2&&args[1].equals("test")){blockSound(sender);message(sender,"Test chime. In duels it sounds only when vanilla actually reduces an opponent's damage.");return true;}
+                else if(args.length==2&&args[1].equals("test")){blockSound(sender);message(sender,"Test block clang. In duels it sounds only when vanilla actually reduces an opponent's damage.");return true;}
                 else if(args.length!=1)throw new IllegalArgumentException("Usage: /blocksound on, off, or test");
                 message(sender,"Successful-block sound: "+(mutedBlockSounds.contains(name)?"OFF":"ON")+". /blocksound test previews it.");
+            }else if(cmd.equals("blocktiming")){
+                String name=safeName(sender);
+                if(args.length==2&&args[1].equals("off"))mutedBlockTiming.add(name);
+                else if(args.length==2&&args[1].equals("on"))mutedBlockTiming.remove(name);
+                else if(args.length!=1)throw new IllegalArgumentException("Usage: /blocktiming on or off");
+                message(sender,"Block timing feedback: "+(mutedBlockTiming.contains(name)?"OFF":"ON")+". Uses server timing; early/late only within 250 ms of a hit.");
             }else if(cmd.equals("bots")){
                 loadPolicies();message(sender,"Choose a bot with /duel <name>. Mode: "+preferredModes.getOrDefault(R.name(sender),"boxing")+". Options: reach=3.5 cps=15 ping=100. Your ping is saved; /ping me <ms>.");
                 button(sender,"Switch to boxing","/mode boxing");button(sender,"Switch to full diamond","/mode diamond");

@@ -35,11 +35,15 @@ public final class Client {
     static boolean nativeInputPoll;
     static final CriticalClickController criticalClicks=new CriticalClickController();
     static boolean targetReady;
+    static final BlockhitController blockhit=new BlockhitController();
+    static boolean blockKey;
+    static long freshHurtStatus;
 
     static final class Observation {
-        long time, tick; double x,y,z,tx,ty,tz,vx,vy,vz,distance,closing,ux,uz,tvx,tvz; int hurt,targetHurt; boolean sprint,ground,sentSprint;
+        long time, tick, freshHurtCue; double x,y,z,tx,ty,tz,vx,vy,vz,distance,closing,ux,uz,tvx,tvz; int hurt,targetHurt; boolean sprint,ground,sentSprint;
         Observation(long time) {
             this.time=time;this.tick=ticks;
+            freshHurtCue=freshHurtStatus;
             x=R.num(player,"posX"); y=R.num(player,"posY"); z=R.num(player,"posZ");
             tx=R.num(opponent,"posX"); ty=R.num(opponent,"posY"); tz=R.num(opponent,"posZ");
             vx=R.num(player,"motionX");vy=R.num(player,"motionY"); vz=R.num(player,"motionZ");
@@ -245,6 +249,7 @@ public final class Client {
                 momentum.reset();
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 criticalClicks.reset();
+                blockhit.reset();blockKey=false;freshHurtStatus=0;
                 targetWatchdog.reset();targetReady=false;
             }
             opponent=null;
@@ -260,7 +265,7 @@ public final class Client {
                 (long)R.num(opponent,"ticksExisted"),identityContains(R.get(world,"loadedEntityList"),opponent),
                 (Boolean)R.get(opponent,"addedToChunk"),regionLoaded(world,opponent));
             if(!active() || !targetReady){
-                setKeys(false);clickGate=false;
+                setKeys(false);clickGate=false;blockKey=false;
                 // Invalid world/setup: also discard an already queued physical
                 // click. This guard never filters ordinary immune-frame clicks.
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"unPressAllKeys");
@@ -315,13 +320,14 @@ public final class Client {
             if(kind.equals("standstill"))w=false;
             if(kind.equals("periodic"))w=(now-epoch)%(long)number("period_ms",400)>=(long)number("pause_ms",50);
             if(kind.equals("hitreset"))w=now-lastObservedTargetHurt>reaction+number("pause_ms",50);
-            if(kind.equals("wtap") || kind.equals("tradetap")){
+            boolean timedBlockTap=kind.equals("blockhit")&&number("block_wtap",0)>0;
+            if(kind.equals("wtap") || kind.equals("tradetap") || timedBlockTap){
                 // A landed-hit cue arms one reset. No periodic taps and no hidden server feedback.
                 if(lastObservedTargetHurt>handledTapCue)pendingTapCue=lastObservedTargetHurt;
                 if(pendingTapCue>0){
                     boolean traded=lastObservedHurt>=pendingTapCue-number("trade_window_ms",200);
                     boolean waited=now-pendingTapCue>=reaction+number("reply_wait_ms",150)+oppPing/2;
-                    if(kind.equals("wtap") || traded || waited){
+                    if(kind.equals("wtap") || timedBlockTap || traded || waited){
                         tapUntil=now+(long)number("pause_ms",50);handledTapCue=pendingTapCue;pendingTapCue=0;
                         tapReason=traded?"landed_hit_after_received_hit":waited?"landed_hit_reply_wait_expired":"landed_hit";
                         log(Map.of("type","wtap","time",now,"match",match,"cue_time",handledTapCue,"release_until",tapUntil,"reason",tapReason));
@@ -449,6 +455,22 @@ public final class Client {
                 }
             }
             if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
+            if(kind.equals("blockhit")){
+                BlockhitController.Decision decision=blockhit.decide(new BlockhitController.Input(now,obs.freshHurtCue,ping,obs.distance,obs.closing),BlockhitController.Settings.from(controls));
+                boolean block=number("block_enabled",1)>0&&decision.block();
+                Object key=R.get(R.get(mc,"gameSettings"),"keyBindUseItem");
+                R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"setKeyBindState",(int)R.call(key,"getKeyCode"),block);
+                // A real right-mouse press generates both key state and one press
+                // event. Vanilla itself starts/stops use and suppresses attacks.
+                if(block&&!blockKey)R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
+                blockKey=block;
+                Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","blockhit_plan");plan.put("time",now);plan.put("match",match);
+                plan.put("observation_time",obs.time);plan.put("incoming_cue",lastObservedHurt);plan.put("block_key",block);
+                plan.put("fresh_hurt_cue",obs.freshHurtCue);
+                plan.put("native_blocking",R.call(player,"isBlocking"));plan.put("reason",decision.reason());
+                plan.put("ready_at",decision.readyAt());plan.put("window_start",decision.windowStart());plan.put("window_end",decision.windowEnd());
+                plan.put("distance",obs.distance);plan.put("own_rtt",ping);log(plan);
+            }else blockKey=false;
             if(kind.equals("scripted")){
                 // Open-loop, predeclared ordinary inputs. No state oracle or adaptive click filtering.
                 long elapsed=now-Long.parseLong(controls.getProperty("start_at","0"));
@@ -505,6 +527,28 @@ public final class Client {
     static boolean regionLoaded(Object world,Object target){
         int x=(int)Math.floor(R.num(target,"posX")),z=(int)Math.floor(R.num(target,"posZ"));
         return (Boolean)R.call(world,"isAreaLoaded",x-32,0,z-32,x+32,0,z+32,true);
+    }
+    /** Read-only diagnosis of native guard cancellation; never supplies a policy input. */
+    public static void blockUseClearing(Object self){
+        if(!"client".equals(System.getProperty("lab.role"))||self!=player||!active()||!controls.getProperty("kind","").equals("blockhit"))return;
+        try{
+            Object used=R.get(self,"itemInUse");if(used==null)return;
+            Object held=R.call(self,"getHeldItem");
+            Map<String,Object> event=new LinkedHashMap<>();event.put("type","block_use_clear");event.put("time",System.currentTimeMillis());event.put("match",match);
+            event.put("block_key",blockKey);event.put("held_is_used",held==used);
+            event.put("used_damage",R.call(used,"getItemDamage"));event.put("held_damage",held==null?null:R.call(held,"getItemDamage"));
+            event.put("caller",Arrays.stream(Thread.currentThread().getStackTrace()).skip(2).limit(5).map(StackTraceElement::toString).toList());log(event);
+        }catch(Throwable e){if(errors++<5)e.printStackTrace();}
+    }
+    /** Native hurt-status message: emitted for a fresh hit, unlike health updates for immunity upgrades. */
+    public static void hurtStatus(Object packet){
+        if(!"client".equals(System.getProperty("lab.role"))||player==null||!active())return;
+        try{
+            if(((Number)R.call(packet,"getOpCode")).intValue()!=2)return;
+            Object entity=R.call(packet,"getEntity",R.get(mc,"theWorld"));
+            if(entity==player){freshHurtStatus=System.currentTimeMillis();
+                log(Map.of("type","fresh_hurt_status","time",freshHurtStatus,"match",match));}
+        }catch(Throwable e){fail(e);}
     }
     public static void velocityPacket(Object packet){
         if(!"client".equals(System.getProperty("lab.role"))||player==null)return;

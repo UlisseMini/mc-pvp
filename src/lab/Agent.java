@@ -162,6 +162,19 @@ public final class Agent implements ClassFileTransformer {
                         heal.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/CombatStats","healed","(Ljava/lang/Object;F)V",false));method.instructions.insertBefore(ins,heal);
                     }
                     changed=true;
+                } else if(name.equals("wn")&&((method.name.equals("a")&&method.desc.equals("(Lzx;I)V"))||
+                        (method.name.equals("bV")&&method.desc.equals("()V")))){
+                    if(method.name.equals("bV"))method.instructions.insert(callThis("lab/Client","blockUseClearing"));
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)
+                        method.instructions.insertBefore(ins,callThis("lab/CombatStats","usingItemChanged"));
+                    changed=true;
+                } else if(name.equals("bcy")&&method.name.equals("a")&&method.desc.equals("(Lgi;)V")){
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN){
+                        InsnList hook=new InsnList();hook.add(new VarInsnNode(Opcodes.ALOAD,1));
+                        hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","hurtStatus","(Ljava/lang/Object;)V",false));
+                        method.instructions.insertBefore(ins,hook);
+                    }
+                    changed=true;
                 } else if(name.equals("bcy")&&method.name.equals("a")&&method.desc.equals("(Lgs;)V")){
                     for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)
                         method.instructions.insertBefore(ins,callPair("lab/PracticeProbe","sound"));

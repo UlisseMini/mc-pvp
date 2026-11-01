@@ -11,6 +11,8 @@ The [burst-clicking experiments](research/burst-clicking-results.md) test immedi
 recoil cancellation, continuous one-tick W-tap and critical-aware click scheduling.
 The [click-rate comparison](research/cps-wtap-results.md) isolates 15, 20, 25 and
 30 CPS against otherwise identical 10 CPS one-tick W-tap.
+The [timed-block trials](research/blockhit-timing-results.md) cover the practice
+feedback, damage metrics and measured strengths and limitations of `blockhit_timing`.
 The [formal model](FORMAL-MODEL.md) states the mechanics, hidden information and
 combo proof conditions; controlled native recordings test those claims. Its
 individual equations are much better checked than its full-fight forecasts.
@@ -40,13 +42,15 @@ enabling RCON or opening another network port.
 | `/bots all` | Include every saved tuning candidate |
 | `/duel hold-w` | Fight the simplest baseline |
 | `/duel wtap diamond` | Full Protection IV diamond armor and an unenchanted diamond sword; real health and regeneration; fight to death |
+| `/duel blockhit_timing diamond` | Timed sword-block bot; native controls, 10 CPS ceiling, 3-block reach, zero artificial reaction delay |
 | `/duel wtap rod_diamond` | Same Protection IV diamond kit, plus a fishing rod in hotbar slot 2 for both players; existing bots keep using their sword |
-| `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full Protection IV diamond armor; successful blocks play your chime |
+| `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full Protection IV diamond armor; successful blocks play your block sound |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
 | `/duel wtap rod_diamond reach=3.5 cps=15 ping=100` | Custom practice bot: 3.5-block reach, 15 CPS ceiling, 100 ms added bot RTT; keeps your saved ping |
 | `/mode rod_diamond` / `/mode diamond_box` / `/mode diamond` / `/mode boxing` | Choose the default mode for subsequent `/duel` and roster clicks in this session |
-| `/blocksound test` | Preview the private chime for a successful sword block |
-| `/blocksound on` / `/blocksound off` | Enable or mute that chime; enabled by default |
+| `/blocksound test` | Preview the quiet metallic block clang |
+| `/blocksound on` / `/blocksound off` | Enable or mute the block sound; enabled by default |
+| `/blocktiming on` / `/blocktiming off` | Enable or hide brief colored timing feedback above the hotbar; enabled by default |
 | `/duel predictive` | Fight the hand-written spacing controller |
 | `/duel standstill` | Fight a clicking opponent that presses no movement keys; knockback still moves it |
 | `/duel zest-w 20 100` | Fight W-only Zest: bot RTT 20 ms, your added RTT 100 ms |
@@ -107,12 +111,44 @@ block/crit and across all damage-dealing melee hits received/landed; empty
 denominators show `N/A`. A blocked critical can contribute to both metrics, so
 the two benefits are not an additive decomposition of total damage.
 
+`Blocking saved` also shows equivalent **normal hits**. For each blocked hit,
+divide the actual HP saved by a full, unblocked, noncritical hit from that
+attacker's weapon, with the same armor, Resistance and Protection roll; then sum
+those fractions. This handles wood/diamond swords, partial armor, criticals and
+immunity upgrades. The reference is a full mitigated hit before absorption and
+remaining-HP caps; the saved HP numerator keeps those caps. Protection varies
+between hits, so a single fixed hearts-per-hit divisor would be misleading.
+
+**Damage blocked %**, shown after hit block %, is saved HP divided by (actual
+melee HP lost + saved HP). It excludes rods, environmental damage and healing.
+It compares the same recorded hits with their blocking removed, not a replay of
+how an entire unblocked fight would have unfolded.
+
 The result panel's headline **Hits** now counts only accepted melee attacks that
 actually removed HP. **Rod contacts** are listed separately and never added to
 that headline. Saved replays retain the original accepted-contact `hits_a/b`
 counters for research and add `damage_hits_a/b` for the new headline.
 
-Successful sword blocks play a short `note.pling` only to the blocking player.
+**Block %** is blocked incoming melee hits / all incoming melee hits. Blocking
+30 of 40 hits shows `75.0% (30/40 incoming hits)`. Each accepted critical upgrade
+is a hit; zero-damage rod contacts, misses and rejected immune-frame attacks are
+excluded. Missed block attempts do not affect this percentage. No incoming melee
+hits displays `N/A`. Your bottom bar uses the same definition: `Blocks: 30/40
+(75.0%)`, with your own incoming-hit count; spectators see both players in score
+order. Separate raw attempt telemetry remains in research logs.
+
+`blockhit_timing` keeps normal forward/sprint and capped attack inputs. After an
+opening trade it predicts the next fresh-hit window from its client's native
+hurt-status notification and its configured RTT. It briefly right-clicks around
+that window, then releases to move and attack. Native health updates for stronger
+criticals inside immunity do not restart its timer. It uses no referee state;
+vanilla still applies blocking's movement penalty and attack suppression.
+Native sword inventory updates can cancel client item use while the server still
+considers the sword raised; therefore a short input pulse does not guarantee a
+short server-side guard. The bot does not modify that native behavior. Recorded
+trials distinguish intended key state, native client state and server state.
+
+Successful sword blocks play a quiet, higher-pitched `random.anvil_land` only to the blocking player.
 The server observes the actual vanilla damage-reduction branch, after attack
 acceptance and before armor. Merely holding right-click, an opponent's miss, or
 an attack rejected during immunity produces no chime. Accepted damage upgrades
@@ -120,6 +156,16 @@ can produce a chime when blocking really reduces them. Sound arrives with the
 normal server-to-client network delay; no client mod or resource pack is needed.
 The action bar also counts successful blocks for each player. Use
 `/blocksound test` to check your sound settings.
+
+The hotbar feedback briefly shows green `BLOCKED · held ~80 ms`, orange
+`EARLY · released ~60 ms before hit`, or red `LATE · blocked ~90 ms after hit`.
+Successful blocks report how long the guard was held before impact, not an
+optimal timing error. Early/late attribution requires an actual unblocked
+melee hit within 250 ms of a guard edge; if both edges are nearby, the closer
+one wins. Other hits show `HIT · no nearby block`. Durations use server-observed
+times and include network/tick scheduling; they are rounded to 10 ms. Feedback
+lasts one second, retains your block ratio and HP, then restores the normal bar.
+Use `/blocktiming off` to keep the normal stats bar throughout combat.
 
 Diamond mode starts each player at ten hearts, full hunger and full
 saturation, with a fresh unenchanted diamond sword and all four diamond armor
