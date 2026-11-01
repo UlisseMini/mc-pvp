@@ -577,13 +577,14 @@ public final class Client {
             }
             if(kind.equals("gap-strafe") || now-epoch<number("gap_opening_ms",0)){
                 StrongRelaxationPolicy.Control d=strongGap.step(obs.localRange);
+                int key=number("gap_sprint",0)>0 && d.key!=0?2:d.key;
                 // Native positive moveStrafe means Left; our key helper uses
                 // negative lateral for Left and positive lateral for Right.
                 int side=d.strafe>0?-1:d.strafe<0?1:0;
-                setKeys(d.key!=0,side,d.key==2);clickGate=d.click;
+                setKeys(key!=0,side,key==2);clickGate=d.click;
                 Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","gap_strafe_plan");plan.put("time",now);plan.put("match",match);
                 plan.put("native_tick",ticks);plan.put("observation_time",obs.time);plan.put("local_range",obs.localRange);
-                plan.put("key",d.key);plan.put("native_strafe",d.strafe);plan.put("lateral_key",side);plan.put("click_gate",d.click);
+                plan.put("key",key);plan.put("native_strafe",d.strafe);plan.put("lateral_key",side);plan.put("click_gate",d.click);
                 plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);log(plan);
             }
             if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
