@@ -19,6 +19,11 @@ public final class StrongRelaxationPolicy {
     private int sign=1;
     public StrongRelaxationPolicy(){this(.283,2,2.55,1);}
     public StrongRelaxationPolicy(double nominal,double gain,double target,int key){this.nominal=nominal;this.gain=gain;this.target=target;this.key=key;}
+    /** Independent continuation of the same observed PWM history. */
+    public StrongRelaxationPolicy(StrongRelaxationPolicy source){
+        this(source.nominal,source.gain,source.target,source.key);
+        accumulator=source.accumulator;sign=source.sign;
+    }
     public Control step(double ownNearestRenderedTarget){
         double duty=Math.max(0,Math.min(1,nominal+gain*(target-ownNearestRenderedTarget)));
         accumulator+=duty;
