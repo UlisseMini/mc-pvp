@@ -12,12 +12,12 @@ public final class ScienceTrace {
     }
     static Map<String,Object> state(Object entity) {
         Map<String,Object> s=new LinkedHashMap<>();
-        for(String k:List.of("posX","posY","posZ","motionX","motionY","motionZ","rotationYaw","rotationYawHead","prevRotationYawHead","rotationPitch","hurtResistantTime","fallDistance","lastDamage"))s.put(k,R.num(entity,k));
+        for(String k:Compat.list("posX","posY","posZ","motionX","motionY","motionZ","rotationYaw","rotationYawHead","prevRotationYawHead","rotationPitch","hurtResistantTime","fallDistance","lastDamage"))s.put(k,R.num(entity,k));
         s.put("ground",R.get(entity,"onGround"));s.put("sprint",R.call(entity,"isSprinting"));
         Object box=R.call(entity,"getEntityBoundingBox");
-        s.put("box",List.of(R.num(box,"minX"),R.num(box,"minY"),R.num(box,"minZ"),R.num(box,"maxX"),R.num(box,"maxY"),R.num(box,"maxZ")));
-        for(String k:List.of("width","height","stepHeight"))s.put(k,R.num(entity,k));
-        for(String k:List.of("noClip","isInWeb","isCollidedHorizontally","isCollidedVertically","isCollided"))s.put(k,R.get(entity,k));
+        s.put("box",Compat.list(R.num(box,"minX"),R.num(box,"minY"),R.num(box,"minZ"),R.num(box,"maxX"),R.num(box,"maxY"),R.num(box,"maxZ")));
+        for(String k:Compat.list("width","height","stepHeight"))s.put(k,R.num(entity,k));
+        for(String k:Compat.list("noClip","isInWeb","isCollidedHorizontally","isCollidedVertically","isCollided"))s.put(k,R.get(entity,k));
         s.put("sneaking",R.call(entity,"isSneaking"));
         return s;
     }
@@ -35,7 +35,7 @@ public final class ScienceTrace {
             click.put("ray_type",ray==null?"null":R.get(ray,"typeOfHit").toString());
             click.put("selected_target",selected==Client.opponent);
             Object point=ray==null?null:R.get(ray,"hitVec");
-            if(point!=null)click.put("ray_point",List.of(R.num(point,"xCoord"),R.num(point,"yCoord"),R.num(point,"zCoord")));
+            if(point!=null)click.put("ray_point",Compat.list(R.num(point,"xCoord"),R.num(point,"yCoord"),R.num(point,"zCoord")));
         }catch(Throwable e){click=null;Client.fail(e);}
     }
     public static void clickAfter(Object minecraft){
@@ -78,7 +78,7 @@ public final class ScienceTrace {
         try {
             interpolation=event("science_interpolation");interpolation.put("before",state(self));
             interpolation.put("steps",R.num(self,"otherPlayerMPPosRotationIncrements"));
-            interpolation.put("goal",List.of(R.num(self,"otherPlayerMPX"),R.num(self,"otherPlayerMPY"),R.num(self,"otherPlayerMPZ")));
+            interpolation.put("goal",Compat.list(R.num(self,"otherPlayerMPX"),R.num(self,"otherPlayerMPY"),R.num(self,"otherPlayerMPZ")));
         }catch(Throwable e){Client.fail(e);}
     }
     public static void interpolationAfter(Object self) {
@@ -88,41 +88,7 @@ public final class ScienceTrace {
     public static void remoteUpdate(Object self) {
         if(!client() || self!=Client.opponent)return;
         try {Map<String,Object> e=event("science_remote_update");e.put("steps",R.num(self,"otherPlayerMPPosRotationIncrements"));
-            e.put("goal",List.of(R.num(self,"otherPlayerMPX"),R.num(self,"otherPlayerMPY"),R.num(self,"otherPlayerMPZ")));Client.log(e);
+            e.put("goal",Compat.list(R.num(self,"otherPlayerMPX"),R.num(self,"otherPlayerMPY"),R.num(self,"otherPlayerMPZ")));Client.log(e);
         }catch(Throwable e){Client.fail(e);}
-    }
-    static Referee.Match tracedMatch(Object player) {
-        if(!"server".equals(System.getProperty("lab.role")) || Referee.server==null)return null;
-        Referee.Match m=Referee.find(R.name(player));
-        return m!=null && (m.configA.getProperty("science_trace","0").equals("1") || m.configB.getProperty("science_trace","0").equals("1")) ? m:null;
-    }
-    public static void attackBefore(Object self,Object target) {
-        if(!"server".equals(System.getProperty("lab.role")))return;
-        try {
-            attack=null;Referee.Match m=tracedMatch(self);if(m==null || System.currentTimeMillis()<m.start)return;
-            attack=new LinkedHashMap<>();attack.put("type","science_server_attack");attack.put("time",System.currentTimeMillis());
-            attack.put("monotonic_ns",System.nanoTime());
-            attack.put("server_tick",Referee.ticks);attack.put("attacker",R.name(self));attack.put("target",R.name(target));
-            attack.put("attacker_before",state(self));attack.put("target_before",state(target));
-            attack.put("score_before",List.of(m.ha,m.hb));
-        }catch(Throwable e){if(Referee.errors++<10)e.printStackTrace();}
-    }
-    public static void attackAfter(Object self,Object target) {
-        if(!"server".equals(System.getProperty("lab.role")) || attack==null)return;
-        try {
-            Referee.Match m=tracedMatch(self);if(m==null)return;
-            attack.put("attacker_after",state(self));attack.put("target_after",state(target));
-            attack.put("score_after",List.of(m.ha,m.hb));Referee.append(m.replay,attack);attack=null;
-        }catch(Throwable e){if(Referee.errors++<10)e.printStackTrace();}
-    }
-    public static void velocityCreated(Object packet,Object target) {
-        if(!"server".equals(System.getProperty("lab.role")))return;
-        try {
-            Referee.Match m=tracedMatch(target);if(m==null || System.currentTimeMillis()<m.start)return;
-            Map<String,Object> e=new LinkedHashMap<>();e.put("type","science_velocity_created");e.put("time",System.currentTimeMillis());
-            e.put("server_tick",Referee.ticks);e.put("target",R.name(target));e.put("entity_id",R.call(target,"getEntityId"));
-            e.put("velocity",List.of(R.num(packet,"motionX")/8000,R.num(packet,"motionY")/8000,R.num(packet,"motionZ")/8000));
-            e.put("source_motion",state(target));if(attack!=null){e.put("attack_time",attack.get("time"));attack.put("velocity_packet",e.get("velocity"));}Referee.append(m.replay,e);
-        }catch(Throwable e){if(Referee.errors++<10)e.printStackTrace();}
     }
 }

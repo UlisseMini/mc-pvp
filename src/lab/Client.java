@@ -6,6 +6,13 @@ import java.util.*;
 
 /** Policies drive keys, aim and capped clicks; explicit practice setups can change the native selection reach. */
 public final class Client {
+    private static ClientServices services=ClientServices.legacy();
+    public static void installServices(ClientServices service){services=Objects.requireNonNull(service);}
+    public static Properties configuration(){Properties p=new Properties();p.putAll(controls);return p;}
+    public static long nativeTicks(){return ticks;}
+    public static void releaseInputs(){clickGate=false;blockKey=false;targetReady=false;
+        if(mc!=null)try{setKeys(false);R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"unPressAllKeys");}catch(Throwable ignored){}
+    }
     static final String SLOT = System.getProperty("lab.slot", "0");
     static final Path DIR = R.ROOT.resolve("runtime/bots/" + SLOT);
     static Properties controls = new Properties();
@@ -42,6 +49,9 @@ public final class Client {
     static long blockTapQueued;
     static boolean blockKey;
     static long freshHurtStatus;
+    static final AimController aim=new AimController();
+    static Object aimTarget;
+    static long aimLogAt;
 
     static final class Observation {
         long time, tick, freshHurtCue; double x,y,z,tx,ty,tz,vx,vy,vz,distance,closing,ux,uz,tvx,tvz; int hurt,targetHurt; boolean sprint,ground,sentSprint;
@@ -69,16 +79,23 @@ public final class Client {
         mc=minecraft;
         if(!nativeInputPoll)ReplicationTrace.frame();
         try {
-            FastPov.frame();
-            BotArchive.frame();
+            if(services!=null)services.frame();
             if(player==null || opponent==null || !targetReady || (Boolean)R.get(opponent,"isDead") || !active())return;
-            // Perfect aim uses the current local, interpolated entity, never server state.
+            // Tracking uses only this client's entity view; defaults preserve perfect aim.
             double dx=R.num(opponent,"posX")-R.num(player,"posX"), dz=R.num(opponent,"posZ")-R.num(player,"posZ");
             double eye=R.num(player,"posY")+((Number)R.call(player,"getEyeHeight")).doubleValue();
-            double targetEye=Math.max(R.num(opponent,"posY")+.15,Math.min(eye,R.num(opponent,"posY")+1.65));
-            float yaw=(float)Math.toDegrees(Math.atan2(-dx,dz));
-            float pitch=(float)-Math.toDegrees(Math.atan2(targetEye-eye,Math.hypot(dx,dz)));
-            R.set(player,"rotationYaw",yaw); R.set(player,"rotationPitch",pitch);
+            long aimNow=System.currentTimeMillis();
+            if(aimTarget!=opponent){aim.reset();aimTarget=opponent;}
+            AimController.Settings aimSettings=AimController.Settings.from(controls);
+            AimController.Result tracking=aim.aim(aimNow,R.num(player,"posX"),eye,R.num(player,"posZ"),
+                R.num(opponent,"posX"),R.num(opponent,"posY"),R.num(opponent,"posZ"),
+                (float)R.num(player,"rotationYaw"),(float)R.num(player,"rotationPitch"),aimSettings);
+            R.set(player,"rotationYaw",tracking.yaw); R.set(player,"rotationPitch",tracking.pitch);
+            if(aimNow-aimLogAt>=50){aimLogAt=aimNow;Map<String,Object> a=new LinkedHashMap<>();
+                a.put("type","aim_plan");a.put("time",aimNow);a.put("match",match);a.put("applied",Compat.list(tracking.yaw,tracking.pitch));
+                a.put("ideal",Compat.list(tracking.idealYaw,tracking.idealPitch));a.put("error_deg",tracking.errorDegrees);
+                a.put("sample_age_ms",tracking.sampleAge);a.put("noise",Compat.list(tracking.noiseYaw,tracking.noisePitch));
+                a.put("delay_ms",aimSettings.delayMs);a.put("noise_deg",aimSettings.noiseDegrees);a.put("turn_rate_dps",aimSettings.turnRate);a.put("seed",aimSettings.seed);log(a);}
             Object renderer=R.get(mc,"entityRenderer"); R.call(renderer,"getMouseOver",1.0f);
             Object ray=R.get(mc,"objectMouseOver"),selected=ray==null?null:R.get(ray,"entityHit");
             long wall=System.currentTimeMillis();
@@ -88,7 +105,7 @@ public final class Client {
             if(!canonical||!identityContains(R.get(world,"loadedEntityList"),opponent)||staleRay){
                 targetWatchdog.invalidate();targetReady=false;clickGate=false;setKeys(false);
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"unPressAllKeys");
-                log(Map.of("type","invalid_native_view","time",wall,"match",match,"canonical",canonical,"stale_raycast",staleRay));return;
+                log(Compat.map("type","invalid_native_view","time",wall,"match",match,"canonical",canonical,"stale_raycast",staleRay));return;
             }
             if(wall-probeAt>=50){
                 probeAt=wall;Map<String,Object> probe=new LinkedHashMap<>();
@@ -102,13 +119,13 @@ public final class Client {
                     probe.put("own",ScienceTrace.state(player));probe.put("target",ScienceTrace.state(opponent));
                     probe.put("eye_height",R.call(player,"getEyeHeight"));
                     Object eyeVector=R.call(player,"getPositionEyes",1.0f),lookVector=R.call(player,"getLook",1.0f);
-                    probe.put("native_eye",List.of(R.num(eyeVector,"xCoord"),R.num(eyeVector,"yCoord"),R.num(eyeVector,"zCoord")));
-                    probe.put("native_look",List.of(R.num(lookVector,"xCoord"),R.num(lookVector,"yCoord"),R.num(lookVector,"zCoord")));
+                    probe.put("native_eye",Compat.list(R.num(eyeVector,"xCoord"),R.num(eyeVector,"yCoord"),R.num(eyeVector,"zCoord")));
+                    probe.put("native_look",Compat.list(R.num(lookVector,"xCoord"),R.num(lookVector,"yCoord"),R.num(lookVector,"zCoord")));
                     Object camera=R.call(mc,"getRenderViewEntity");probe.put("camera_is_player",camera==player);
                     probe.put("target_collidable",R.call(opponent,"canBeCollidedWith"));
                     double border=((Number)R.call(opponent,"getCollisionBorderSize")).doubleValue();
                     Object box=R.call(R.call(opponent,"getEntityBoundingBox"),"expand",border,border,border);
-                    probe.put("expanded_box",List.of(R.num(box,"minX"),R.num(box,"minY"),R.num(box,"minZ"),R.num(box,"maxX"),R.num(box,"maxY"),R.num(box,"maxZ")));
+                    probe.put("expanded_box",Compat.list(R.num(box,"minX"),R.num(box,"minY"),R.num(box,"minZ"),R.num(box,"maxX"),R.num(box,"maxY"),R.num(box,"maxZ")));
                     double reach=attackReach();
                     Object end=R.call(eyeVector,"addVector",R.num(lookVector,"xCoord")*reach,R.num(lookVector,"yCoord")*reach,R.num(lookVector,"zCoord")*reach);
                     Object intercept=R.call(box,"calculateIntercept",eyeVector,end);
@@ -203,12 +220,15 @@ public final class Client {
         mc=minecraft; ticks++;
         try {
             long now=System.currentTimeMillis();
-            if(now-readAt>100){controls=R.properties(DIR.resolve("control.properties"));readAt=now;}
+            if(now-readAt>100){
+                Properties nextControls=R.properties(DIR.resolve("control.properties"));
+                validateControls(nextControls);controls=nextControls;readAt=now;
+            }
             player=R.get(mc,"thePlayer"); Object world=R.get(mc,"theWorld");
-            FastPov.tick();
-            BotArchive.tick();
-            if(player!=null&&world!=null)PovLink.clientTick();
+            if(services!=null)services.tick();
             if(player==null || world==null){
+                releaseInputs();opponent=null;
+                if(connecting&&now-connectAt>5000)connecting=false;
                 if(!connecting && ticks>30){
                     connecting=true;connectAt=now;
                     Object gui=R.construct("net.minecraft.client.multiplayer.GuiConnecting",null,mc,"127.0.0.1",Integer.parseInt(System.getProperty("lab.port")));
@@ -224,7 +244,7 @@ public final class Client {
             if(now-heartbeatAt>1000){
                 heartbeatAt=now;List<String> visible=new ArrayList<>();List<Map<String,Object>> entities=new ArrayList<>();
                 for(Object e:(List<?>)R.get(world,"playerEntities")){
-                    visible.add(R.name(e));entities.add(Map.of("name",R.name(e),"id",R.call(e,"getEntityId"),"dead",R.get(e,"isDead"),"x",R.num(e,"posX"),"y",R.num(e,"posY"),"z",R.num(e,"posZ"),"canonical",R.call(world,"getEntityByID",(int)R.call(e,"getEntityId"))==e));
+                    visible.add(R.name(e));entities.add(Compat.map("name",R.name(e),"id",R.call(e,"getEntityId"),"dead",R.get(e,"isDead"),"x",R.num(e,"posX"),"y",R.num(e,"posY"),"z",R.num(e,"posZ"),"canonical",R.call(world,"getEntityByID",(int)R.call(e,"getEntityId"))==e));
                 }
                 Map<String,Object> heartbeat=new LinkedHashMap<>();heartbeat.put("time",now);heartbeat.put("match",controls.getProperty("match",""));heartbeat.put("enabled",active());
                 heartbeat.put("health",R.call(player,"getHealth"));heartbeat.put("alive",R.call(player,"isEntityAlive"));heartbeat.put("dead",R.get(player,"isDead"));
@@ -233,12 +253,15 @@ public final class Client {
                 heartbeat.put("selected_target_dead",opponent!=null&&(Boolean)R.get(opponent,"isDead"));
                 if(opponent!=null){heartbeat.put("target_ticks",R.num(opponent,"ticksExisted"));heartbeat.put("target_region_loaded",regionLoaded(world,opponent));}
                 heartbeat.put("agent_sha256",System.getProperty("lab.agent_sha256","unknown"));
+                heartbeat.put("backend",System.getProperty("lab.backend","legacy"));heartbeat.put("role","bot");
+                heartbeat.put("policy_errors",errors);
+                heartbeat.put("bridge_sha256",System.getProperty("practice.bridge_sha256",""));
                 heartbeat.put("frame_sleep_ms",Integer.getInteger("hmc.lwjgl.update_sleep",10));
                 heartbeat.put("target_ready",targetReady);
                 heartbeat.put("attack_reach",attackReach());heartbeat.put("click_cps",ClickRate.cps(controls));
                 heartbeat.put("native_ticks",ticks);
                 Object screen=R.get(mc,"currentScreen");heartbeat.put("screen",screen==null?null:screen.getClass().getName());
-                Files.createDirectories(DIR);Files.writeString(DIR.resolve("heartbeat.json"),Json.encode(heartbeat));
+                Files.createDirectories(DIR);Compat.writeString(DIR.resolve("heartbeat.json"),Json.encode(heartbeat));
                 Properties integrity=new Properties();integrity.setProperty("time",Long.toString(now));
                 integrity.setProperty("match",controls.getProperty("match",""));integrity.setProperty("target_ready",Boolean.toString(targetReady));
                 R.writeProperties(DIR.resolve("view.properties"),integrity);
@@ -249,7 +272,7 @@ public final class Client {
                 if(scriptIndex<script.length){String[] step=script[scriptIndex].split(":",2);if(now-scriptStarted>=Long.parseLong(step[0])){R.call(player,"sendChatMessage",step[1]);scriptIndex++;}}
                 if(now-scriptStarted>Long.parseLong(System.getProperty("lab.test_duration","20000")))R.call(mc,"shutdown");
             }
-            if(PracticeProbe.input(mc,player,now-scriptStarted))return;
+            if(services!=null&&services.probe(mc,player,now-scriptStarted))return;
             String next=controls.getProperty("match","");
             if(!next.equals(match)){
                 match=next;epoch=Long.parseLong(controls.getProperty("start_at",Long.toString(now)));history.clear();previous=null;lastConsumed=null;lastClick=firstClickEligible=0;
@@ -266,6 +289,7 @@ public final class Client {
                 blockhit.reset();blockKey=false;freshHurtStatus=0;
                 hitPredictor.reset();timedBlock.reset();blockTapCues.clear();blockTapQueued=0;
                 targetWatchdog.reset();targetReady=false;
+                aim.reset();aimTarget=null;aimLogAt=0;
             }
             opponent=null;
             for(Object entity:(List<?>)R.get(world,"playerEntities")){
@@ -348,7 +372,7 @@ public final class Client {
                     if(kind.equals("wtap") || timedBlockTap || traded || waited){
                         tapUntil=now+(long)number("pause_ms",50);handledTapCue=pendingTapCue;pendingTapCue=0;
                         tapReason=traded?"landed_hit_after_received_hit":waited?"landed_hit_reply_wait_expired":"landed_hit";
-                        log(Map.of("type","wtap","time",now,"match",match,"cue_time",handledTapCue,"release_until",tapUntil,"reason",tapReason));
+                        log(Compat.map("type","wtap","time",now,"match",match,"cue_time",handledTapCue,"release_until",tapUntil,"reason",tapReason));
                     }
                 }
                 w=now>=tapUntil;
@@ -374,7 +398,7 @@ public final class Client {
                     if(zestSelecting || lost){
                         zestSelecting=true;zestEntryAt=now+(long)number("select_delay_ms",0);
                         zestPhase=0;zestRelease=zestResume=0;
-                        log(Map.of("type","zest_select","time",now,"match",match,"cue_time",zestIncoming,"resume_at",zestEntryAt,"recovery",lost));
+                        log(Compat.map("type","zest_select","time",now,"match",match,"cue_time",zestIncoming,"resume_at",zestEntryAt,"recovery",lost));
                     }
                 }
                 if(landed){
@@ -387,7 +411,7 @@ public final class Client {
                         // a sub-150-ms reaction to a new event.
                         zestRelease=Math.max(now,zestCue+(long)(number("hit_window_ms",500)-ping-number("release_lead_ms",100)));
                         zestResume=zestRelease+(long)number("release_ms",200);
-                        log(Map.of("type","zest_plan","time",now,"match",match,"cue_time",zestCue,"phase",zestPhase,"release_at",zestRelease,"resume_at",zestResume));
+                        log(Compat.map("type","zest_plan","time",now,"match",match,"cue_time",zestCue,"phase",zestPhase,"release_at",zestRelease,"resume_at",zestResume));
                     }
                 }
                 if(zestSelecting && zestEntryAt>0 && now>=zestEntryAt)zestSelecting=false;
@@ -437,14 +461,14 @@ public final class Client {
                         // separation with a post-hit sprint reset. In a viable
                         // pursuit window retain ordinary Zest contacts instead.
                         zestRelease=now;zestResume=now+(long)number("emergency_tap_ms",50);zestPhase=0;w=false;
-                        log(Map.of("type","zest_plan","time",now,"match",match,"cue_time",zestCue,"phase",0,"release_at",zestRelease,"resume_at",zestResume,"reason","predicted_window_collapsed"));
+                        log(Compat.map("type","zest_plan","time",now,"match",match,"cue_time",zestCue,"phase",0,"release_at",zestRelease,"resume_at",zestResume,"reason","predicted_window_collapsed"));
                     }
                     if(number("opening_range",0)>0 && !zestOpened && !zestSelecting){
                         // Deliberate opening hit selection: do not start a click
                         // train in empty air. Once started, keep its native misses.
                         zestOpened=ourGap<=reach-number("opening_margin",.05);clickGate=zestOpened;
                     }
-                    if(now-logAt>=50)log(Map.of("type","lock_estimate","time",now,"observation_time",obs.time,"match",match,"our_gap",ourGap,"their_gap",theirGap,"target_away_speed",targetAlong,"own_toward_speed",ownAlong,"desired_gap",desiredGap,"pursuing",pursuing));
+                    if(now-logAt>=50)log(Compat.map("type","lock_estimate","time",now,"observation_time",obs.time,"match",match,"our_gap",ourGap,"their_gap",theirGap,"target_away_speed",targetAlong,"own_toward_speed",ownAlong,"desired_gap",desiredGap,"pursuing",pursuing));
                 }
             }
             setKeys(w,lateral);
@@ -459,7 +483,7 @@ public final class Client {
                     obs.ux*nx+obs.uz*nz,obs.tvx*nx+obs.tvz*nz,obs.vx*nx+obs.vz*nz,
                     obs.y,obs.ty,obs.ground,ping,oppPing),MomentumController.Settings.from(controls));
                 setKeys(decision.forward(),decision.lateral(),decision.sprintKey());
-                if(decision.resetStarted())log(Map.of("type","wtap","time",now,"match",match,
+                if(decision.resetStarted())log(Compat.map("type","wtap","time",now,"match",match,
                     "cue_time",decision.cue(),"release_until",decision.releaseUntil(),"reason","momentum_planned_reset",
                     "pause_ticks",controls.getProperty("pause_ticks","0"),"native_tick",ticks,"last_click_ms",ModelController.lastInjection));
                 if(now-logAt>=50){
@@ -480,22 +504,22 @@ public final class Client {
                     // Poll the same capped native left-click input before the
                     // block admission check, so left/right can share this tick.
                     if(reaction==0){nativeInputPoll=true;try{frame(mc);}finally{nativeInputPoll=false;}}
-                    var prediction=hitPredictor.predict(new LinearHitPredictor.Sample(obs.time,obs.x,obs.y,obs.z,obs.tx,obs.ty,obs.tz),
+                    LinearHitPredictor.Prediction prediction=hitPredictor.predict(new LinearHitPredictor.Sample(obs.time,obs.x,obs.y,obs.z,obs.tx,obs.ty,obs.tz),
                         obs.freshHurtCue,ping,oppPing,LinearHitPredictor.Settings.from(controls));
                     Object attack=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                     Object ray=R.get(mc,"objectMouseOver");
                     boolean queued=R.num(attack,"pressTime")>0,inRange=ray!=null&&R.get(ray,"entityHit")==opponent;
-                    var decision=timedBlock.decide(new TimedBlockController.Input(now,ticks,obs.freshHurtCue,prediction.commandAt(),queued,inRange),TimedBlockController.Settings.from(controls));
+                    TimedBlockController.Decision decision=timedBlock.decide(new TimedBlockController.Input(now,ticks,obs.freshHurtCue,prediction.commandAt(),queued,inRange),TimedBlockController.Settings.from(controls));
                     requested=decision.block();reason=decision.reason();
                     plan.put("model","linear");plan.put("predicted_receipt_at",Double.isFinite(prediction.receiptAt())?prediction.receiptAt():null);
                     plan.put("predicted_command_at",Double.isFinite(prediction.commandAt())?prediction.commandAt():null);
                     plan.put("eligible_at",prediction.eligibleAt());plan.put("opponent_range",prediction.opponentRangeNow());
-                    plan.put("own_velocity",List.of(prediction.ownVx(),prediction.ownVy(),prediction.ownVz()));
-                    plan.put("target_velocity",List.of(prediction.targetVx(),prediction.targetVy(),prediction.targetVz()));
-                    plan.put("own_position",List.of(obs.x,obs.y,obs.z));plan.put("target_position",List.of(obs.tx,obs.ty,obs.tz));
+                    plan.put("own_velocity",Compat.list(prediction.ownVx(),prediction.ownVy(),prediction.ownVz()));
+                    plan.put("target_velocity",Compat.list(prediction.targetVx(),prediction.targetVy(),prediction.targetVz()));
+                    plan.put("own_position",Compat.list(obs.x,obs.y,obs.z));plan.put("target_position",Compat.list(obs.tx,obs.ty,obs.tz));
                     plan.put("attack_queued",queued);plan.put("in_range",inRange);plan.put("release_tick",decision.releaseTick());plan.put("native_tick",ticks);
                 }else{
-                    var decision=blockhit.decide(new BlockhitController.Input(now,obs.freshHurtCue,ping,obs.distance,obs.closing),BlockhitController.Settings.from(controls));
+                    BlockhitController.Decision decision=blockhit.decide(new BlockhitController.Input(now,obs.freshHurtCue,ping,obs.distance,obs.closing),BlockhitController.Settings.from(controls));
                     requested=decision.block();reason=decision.reason();
                     plan.put("ready_at",decision.readyAt());plan.put("window_start",decision.windowStart());plan.put("window_end",decision.windowEnd());
                 }
@@ -564,6 +588,18 @@ public final class Client {
         }catch(Throwable e){fail(e);}
     }
     static Observation lastConsumed;
+    static void validateControls(Properties p){
+        if(!Boolean.parseBoolean(p.getProperty("enabled","false")))return;
+        if(!p.getProperty("match","").matches("m[0-9]{4,9}")||!p.getProperty("opponent","").matches("[A-Za-z0-9_]{1,16}"))
+            throw new IllegalArgumentException("Enabled bot controls require a valid match and opponent");
+        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","blockhit","scripted").contains(p.getProperty("kind","hold")))
+            throw new IllegalArgumentException("Unsupported bot strategy: "+p.getProperty("kind"));
+        ClickRate.cps(p);DuelSettings.reach(p);
+        AimController.Settings.from(p);
+        double reaction=Double.parseDouble(p.getProperty("reaction_ms","150"));
+        if(!Double.isFinite(reaction)||reaction<0||reaction>1000)throw new IllegalArgumentException("Invalid reaction delay");
+        Long.parseLong(p.getProperty("start_at","0"));
+    }
     static boolean identityContains(Object collection,Object target){for(Object item:(Iterable<?>)collection)if(item==target)return true;return false;}
     static boolean regionLoaded(Object world,Object target){
         int x=(int)Math.floor(R.num(target,"posX")),z=(int)Math.floor(R.num(target,"posZ"));
@@ -578,7 +614,7 @@ public final class Client {
             Map<String,Object> event=new LinkedHashMap<>();event.put("type","block_use_clear");event.put("time",System.currentTimeMillis());event.put("match",match);
             event.put("block_key",blockKey);event.put("held_is_used",held==used);
             event.put("used_damage",R.call(used,"getItemDamage"));event.put("held_damage",held==null?null:R.call(held,"getItemDamage"));
-            event.put("caller",Arrays.stream(Thread.currentThread().getStackTrace()).skip(2).limit(5).map(StackTraceElement::toString).toList());log(event);
+            event.put("caller",Arrays.stream(Thread.currentThread().getStackTrace()).skip(2).limit(5).map(StackTraceElement::toString).collect(java.util.stream.Collectors.toList()));log(event);
         }catch(Throwable e){if(errors++<5)e.printStackTrace();}
     }
     /** Native hurt-status message: emitted for a fresh hit, unlike health updates for immunity upgrades. */
@@ -588,10 +624,10 @@ public final class Client {
             if(((Number)R.call(packet,"getOpCode")).intValue()!=2)return;
             Object entity=R.call(packet,"getEntity",R.get(mc,"theWorld"));
             if(entity==player){freshHurtStatus=System.currentTimeMillis();
-                log(Map.of("type","fresh_hurt_status","time",freshHurtStatus,"match",match));
+                log(Compat.map("type","fresh_hurt_status","time",freshHurtStatus,"match",match));
                 if(Boolean.parseBoolean(controls.getProperty("block_adapt","false"))){
-                    var calibration=hitPredictor.hurt(freshHurtStatus,number("ping",0));
-                    if(calibration!=null)log(Map.of("type","prediction_calibration","time",freshHurtStatus,"match",match,
+                    LinearHitPredictor.Calibration calibration=hitPredictor.hurt(freshHurtStatus,number("ping",0));
+                    if(calibration!=null)log(Compat.map("type","prediction_calibration","time",freshHurtStatus,"match",match,
                         "forecast_time",calibration.forecastTime(),"error_ms",calibration.error(),"correction_ms",calibration.correction(),"count",calibration.count()));
                 }
             }
@@ -603,7 +639,7 @@ public final class Client {
             Map<String,Object> event=new LinkedHashMap<>();event.put("type","velocity_packet");event.put("time",System.currentTimeMillis());event.put("match",match);
             event.put("entity_id",R.num(packet,"entityID"));event.put("own_entity",(int)R.num(packet,"entityID")==((Number)R.call(player,"getEntityId")).intValue());
             event.put("vx",R.num(packet,"motionX")/8000);event.put("vy",R.num(packet,"motionY")/8000);event.put("vz",R.num(packet,"motionZ")/8000);
-            if(ScienceTrace.client() && Boolean.TRUE.equals(event.get("own_entity")))event.put("applied_motion",List.of(R.num(player,"motionX"),R.num(player,"motionY"),R.num(player,"motionZ")));
+            if(ScienceTrace.client() && Boolean.TRUE.equals(event.get("own_entity")))event.put("applied_motion",Compat.list(R.num(player,"motionX"),R.num(player,"motionY"),R.num(player,"motionZ")));
             log(event);
         }catch(Throwable e){fail(e);}
     }
@@ -650,18 +686,17 @@ public final class Client {
     }
     static void setKeys(boolean w,int lateral,boolean ctrl){
         sprintKey=w&&ctrl;forward=w;strafe=lateral; Object settings=R.get(mc,"gameSettings");
-        for(String key:List.of("keyBindForward","keyBindSprint","keyBindBack","keyBindLeft","keyBindRight","keyBindJump","keyBindSneak","keyBindUseItem")){
+        for(String key:Compat.list("keyBindForward","keyBindSprint","keyBindBack","keyBindLeft","keyBindRight","keyBindJump","keyBindSneak","keyBindUseItem")){
             Object binding=R.get(settings,key);boolean down=key.equals("keyBindForward")?w:key.equals("keyBindSprint")?sprintKey:key.equals("keyBindLeft")?lateral<0:key.equals("keyBindRight")&&lateral>0;
             R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"setKeyBindState",(int)R.call(binding,"getKeyCode"),down);
         }
     }
     static void log(Map<String,?> entry){
-        try{String encoded=Json.encode(entry);BotArchive.archive.event(encoded);Files.createDirectories(DIR);Files.writeString(DIR.resolve("events.jsonl"),encoded+"\n",StandardOpenOption.CREATE,StandardOpenOption.APPEND);}
+        try{String encoded=Json.encode(entry);if(services!=null)services.event(encoded);Files.createDirectories(DIR);Compat.writeString(DIR.resolve("events.jsonl"),encoded+"\n",StandardOpenOption.CREATE,StandardOpenOption.APPEND);}
         catch(IOException e){throw new RuntimeException(e);}
     }
     static void fail(Throwable e){
         if(errors++<5)e.printStackTrace();
-        clickGate=false;
-        if(player!=null)try{setKeys(false);}catch(Throwable ignored){}
+        releaseInputs();
     }
 }

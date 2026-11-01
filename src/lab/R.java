@@ -21,6 +21,8 @@ public final class R {
         try { return Class.forName(MAP.getProperty("C." + name.replace('.', '/'), name).replace('/', '.')); }
         catch (Exception e) { throw new RuntimeException(name, e); }
     }
+    /** Stable legacy class tags keep existing passive replication analyses readable. */
+    public static String classTag(Object object){String name=object.getClass().getName();return MAP.getProperty("O."+name.replace('.','/'),name);}
     public static Object get(Object object, String name) {
         try { return field(object instanceof Class ? (Class<?>) object : object.getClass(), name).get(object instanceof Class ? null : object); }
         catch (Exception e) { throw new RuntimeException("get " + name, e); }

@@ -15,21 +15,13 @@ public final class Agent implements ClassFileTransformer {
             LwjglAgent.premain("", instrumentation);
             MacosMenuAgent.premain("", instrumentation);
         }
+        instrumentation.addTransformer(new security.LegacyLoggingTransformer());
         instrumentation.addTransformer(new Agent());
         System.out.println("[PvP Lab] Agent loaded: " + System.getProperty("lab.role"));
     }
 
     @Override public byte[] transform(ClassLoader loader, String name, Class<?> cls,
                                       ProtectionDomain domain, byte[] bytes) {
-        if ("org/apache/logging/log4j/core/lookup/JndiLookup".equals(name)) {
-            // Legacy beta Log4j hard-links this class: keep its shape but disable JNDI itself.
-            ClassNode logging = new ClassNode(); new ClassReader(bytes).accept(logging,0);
-            for(MethodNode m:logging.methods)if(m.name.equals("lookup")&&m.desc.endsWith("Ljava/lang/String;")){
-                m.instructions.clear();m.tryCatchBlocks.clear();if(m.localVariables!=null)m.localVariables.clear();
-                m.instructions.add(new InsnNode(Opcodes.ACONST_NULL));m.instructions.add(new InsnNode(Opcodes.ARETURN));
-            }
-            ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES);logging.accept(out);return out.toByteArray();
-        }
         if (name == null || !(name.equals("ave") || name.equals("j") || name.equals("pr")
                 || name.equals("wn") || name.equals("bcy") || name.equals("bex") || name.equals("hm") || name.equals("bfk")
                 || name.equals("en") || name.equals("eo") || name.equals("lh") || name.equals("lm") || name.equals("ek") || name.equals("net/minecraft/server/MinecraftServer"))) return null;
@@ -208,7 +200,7 @@ public final class Agent implements ClassFileTransformer {
                     for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(ins,callThis("lab/ScienceTrace","remoteUpdate"));changed=true;
                 } else if(name.equals("hm")&&method.name.equals("<init>")&&method.desc.equals("(Lpk;)V")){
                     for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN){
-                        InsnList after=callPair("lab/ScienceTrace","velocityCreated");method.instructions.insertBefore(ins,after);
+                        InsnList after=callPair("lab/ServerScienceTrace","velocityCreated");method.instructions.insertBefore(ins,after);
                     }changed=true;
                 } else if(name.equals("wn")&&method.name.equals("f")&&method.desc.equals("(Lpk;)V")){
                     int damageContext=method.maxLocals++;
@@ -241,11 +233,11 @@ public final class Agent implements ClassFileTransformer {
                     before.add(new VarInsnNode(Opcodes.ASTORE,damageContext));
                     before.add(new VarInsnNode(Opcodes.ALOAD,0));before.add(new VarInsnNode(Opcodes.ALOAD,1));
                     before.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","attackBefore","(Ljava/lang/Object;Ljava/lang/Object;)V",false));
-                    before.add(callPair("lab/ScienceTrace","attackBefore"));method.instructions.insert(before);
+                    before.add(callPair("lab/ServerScienceTrace","attackBefore"));method.instructions.insert(before);
                     for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN){
                         InsnList after=new InsnList();after.add(new VarInsnNode(Opcodes.ALOAD,0));after.add(new VarInsnNode(Opcodes.ALOAD,1));
                         after.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/Client","attackAfter","(Ljava/lang/Object;Ljava/lang/Object;)V",false));
-                        after.add(callPair("lab/ScienceTrace","attackAfter"));method.instructions.insertBefore(ins,after);
+                        after.add(callPair("lab/ServerScienceTrace","attackAfter"));method.instructions.insertBefore(ins,after);
                         InsnList damageEnd=new InsnList();damageEnd.add(new VarInsnNode(Opcodes.ALOAD,damageContext));
                         damageEnd.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/DamageBreakdown","end","(Ljava/lang/Object;)V",false));
                         method.instructions.insertBefore(ins,damageEnd);
@@ -260,11 +252,11 @@ public final class Agent implements ClassFileTransformer {
                         method.instructions.insertBefore(ins,callBoolean("tracker",0,true));
                     changed=true;
                 }else if(name.equals("lm")&&method.name.equals("a")&&method.desc.equals("(Lff;)V")){
-                    method.instructions.insert(callPair("lab/ReplicationTrace","send"));changed=true;
+                    method.instructions.insert(callPair("lab/ServerReplicationTrace","send"));changed=true;
                 }else if(name.equals("lm")&&method.name.equals("a")&&method.desc.equals("(Lim;)V")){
                     method.instructions.insert(callPair("lab/PovLink","receive"));changed=true;
                 }else if(name.equals("lm")&&method.name.equals("a")&&java.util.Set.of("(Lip;)V","(Lin;)V","(Lis;)V").contains(method.desc)){
-                    method.instructions.insert(callPair("lab/ReplicationTrace","input"));changed=true;
+                    method.instructions.insert(callPair("lab/ServerReplicationTrace","input"));changed=true;
                 }else if(name.equals("ek")&&method.name.equals("a")&&method.desc.equals("(Lio/netty/channel/ChannelHandlerContext;Lff;)V")){
                     InsnList hook=new InsnList();hook.add(new VarInsnNode(Opcodes.ALOAD,2));
                     hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/ReplicationTrace","receive","(Ljava/lang/Object;)V",false));
@@ -310,6 +302,6 @@ public final class Agent implements ClassFileTransformer {
     private static InsnList callBoolean(String method,int local,boolean after){
         InsnList list=new InsnList();list.add(new VarInsnNode(Opcodes.ALOAD,local));
         list.add(new InsnNode(after?Opcodes.ICONST_1:Opcodes.ICONST_0));
-        list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/ReplicationTrace",method,"(Ljava/lang/Object;Z)V",false));return list;
+        list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,method.equals("tracker")?"lab/ServerReplicationTrace":"lab/ReplicationTrace",method,"(Ljava/lang/Object;Z)V",false));return list;
     }
 }

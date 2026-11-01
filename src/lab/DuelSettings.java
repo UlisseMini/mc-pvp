@@ -13,7 +13,7 @@ public final class DuelSettings {
     }
     public static DuelSettings parse(String[] args,int offset,String mode,double botPing,double humanPing,Properties inherited){
         Properties overrides=new Properties();overrides.putAll(inherited);
-        if(args.length>offset&&List.of("boxing","diamond","diamond_box","rod_diamond","sumo").contains(args[offset]))mode=args[offset++];
+        if(args.length>offset&&Compat.list("boxing","diamond","diamond_box","rod_diamond","sumo").contains(args[offset]))mode=args[offset++];
         Set<String> seen=new HashSet<>();int positional=0;
         for(int i=offset;i<args.length;i++){
             String[] pair=args[i].split("=",-1);String key,value;
@@ -25,17 +25,17 @@ public final class DuelSettings {
             if(key.equals("botping"))key="ping";
             if(!seen.add(key))throw new IllegalArgumentException("Duplicate setting: "+key);
             switch(key){
-                case "ping" -> botPing=ping(value);
-                case "myping" -> humanPing=ping(value);
-                case "reach" -> overrides.setProperty("attack_reach",Double.toString(reach(value)));
-                case "cps" -> {
+                case "ping": botPing=ping(value); break;
+                case "myping": humanPing=ping(value); break;
+                case "reach": overrides.setProperty("attack_reach",Double.toString(reach(value))); break;
+                case "cps": {
                     int cps;
                     try{cps=Integer.parseInt(value);}catch(NumberFormatException e){throw new IllegalArgumentException("CPS must be a whole number from 1 to 30");}
                     if(cps<1||cps>30)throw new IllegalArgumentException("CPS must be 1 through 30");
-                    overrides.setProperty("click_cps",Integer.toString(cps));
+                    overrides.setProperty("click_cps",Integer.toString(cps)); break;
                 }
-                default -> throw new IllegalArgumentException("Unknown setting '"+key+"'. Use reach=, cps=, ping=, or myping=.");
-            }
+                default: throw new IllegalArgumentException("Unknown setting '"+key+"'. Use reach=, cps=, ping=, or myping=.");
+}
         }
         return new DuelSettings(mode,botPing,humanPing,overrides);
     }

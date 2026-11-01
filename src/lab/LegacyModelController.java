@@ -59,7 +59,7 @@ public final class LegacyModelController {
         ComboModel.CueCorrection cue=null;
         if(Client.lastObservedTargetHurt>0)cue=state.assimilateFreshHurt(Client.lastObservedTargetHurt,config);
         snapshots.tailMap(obs.time,true).clear();snapshots.put(state.nowMs,state.copy());
-        for(var issued:new ArrayList<>(inputs.subMap(obs.time,true,now,false).entrySet())){
+        for(Map.Entry<Long,Issued> issued:new ArrayList<>(inputs.subMap(obs.time,true,now,false).entrySet())){
             // Replay actual native tick boundaries, including initial idle ticks
             // and catch-up ticks; do not invent extra/missing actions by rounding.
             state.nowMs=issued.getKey();snapshots.put(state.nowMs,state.copy());
@@ -81,7 +81,7 @@ public final class LegacyModelController {
         entry.put("predicted_defender_view_y",state.bSeesA.y);entry.put("predicted_defender_view_z",state.bSeesA.z);
         entry.put("cue_applied",cue!=null&&cue.applied);entry.put("cue_needs_earlier_replay",cue!=null&&cue.needsEarlierReplay);
         entry.put("predicted_defender_view_x",state.bSeesA.x);entry.put("pending_packets",state.pendingPacketCount());
-        entry.put("plan",decision.plan.stream().map(Enum::name).toList());Client.log(entry);
+        entry.put("plan",decision.plan.stream().map(Enum::name).collect(java.util.stream.Collectors.toList()));Client.log(entry);
         snapshots.headMap(now-3000,false).clear();inputs.headMap(now-3000,false).clear();
         inputs.put(now,new Issued(decision.action,lastInjection>lastIssued));lastIssued=now;
         return decision.action;
