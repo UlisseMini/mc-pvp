@@ -80,7 +80,7 @@ def main():
     profile=profile.replace('(subpath '+json.dumps(str(ROOT/'runtime'))+')','(subpath '+json.dumps(str(game))+')')
     (game/'sandbox.sb').write_text(profile)
     args=['/usr/bin/sandbox-exec','-f',str(game/'sandbox.sb'),str(java),'-Xmx768M','-XX:-UsePerfData',
-          '-Duser.home='+str(game/'home'),'-Djava.io.tmpdir='+str(game/'tmp'),'-Djava.net.preferIPv4Stack=true',
+          '-Duser.home='+str(game/'home'),'-Djava.io.tmpdir='+str(game/'tmp'),'-Djava.net.preferIPv4Stack=true','-Dhmc.lwjgl.update_sleep=1',
           '-Dlog4j.configurationFile='+str(ROOT/'.cache/server-logging.xml'),'-javaagent:'+str(work/'headless-shaded.jar'),
           '-cp',os.pathsep.join(cp),'net.minecraft.launchwrapper.Launch','--username','PracticeCheck','--version','1.8.9',
           '--gameDir',str(game),'--assetsDir',str(mc/'assets'),'--assetIndex','1.8','--uuid','00000000-0000-0000-0000-000000000007',
@@ -92,7 +92,7 @@ def main():
             env={'PATH':'/usr/bin:/bin','LANG':'en_US.UTF-8','TMPDIR':str(game/'tmp')+'/'})
         (game/'pid').write_text(str(process.pid))
         print('Isolated Forge client running; log:',log,flush=True)
-        try:code=process.wait(timeout=100)
+        try:code=process.wait(timeout=150)
         except subprocess.TimeoutExpired:
             process.kill();process.wait();raise RuntimeError('Forge smoke test timed out; see '+str(log))
     text=log.read_text(errors='replace')

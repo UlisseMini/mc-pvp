@@ -69,6 +69,7 @@ public final class Client {
         mc=minecraft;
         if(!nativeInputPoll)ReplicationTrace.frame();
         try {
+            FastPov.frame();
             if(player==null || opponent==null || !targetReady || (Boolean)R.get(opponent,"isDead") || !active())return;
             // Perfect aim uses the current local, interpolated entity, never server state.
             double dx=R.num(opponent,"posX")-R.num(player,"posX"), dz=R.num(opponent,"posZ")-R.num(player,"posZ");
@@ -203,6 +204,7 @@ public final class Client {
             long now=System.currentTimeMillis();
             if(now-readAt>100){controls=R.properties(DIR.resolve("control.properties"));readAt=now;}
             player=R.get(mc,"thePlayer"); Object world=R.get(mc,"theWorld");
+            FastPov.tick();
             if(player!=null&&world!=null)PovLink.clientTick();
             if(player==null || world==null){
                 if(!connecting && ticks>30){

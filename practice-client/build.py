@@ -43,7 +43,7 @@ def main():
             if hashlib.sha256(data).hexdigest()!=rec['sha256']:raise RuntimeError('Download hash mismatch: '+name)
             p.write_bytes(data)
         if hashlib.sha256(p.read_bytes()).hexdigest()!=rec['sha256']:raise RuntimeError('Cached hash mismatch: '+name)
-    api=BUILD/'api';compile_to(api,sorted((SRC/'api').rglob('*.java')),'')
+    api=BUILD/'api';compile_to(api,sorted((SRC/'api').rglob('*.java'))+sorted((ROOT/'src/practice').rglob('*.java')),'')
     core=BUILD/'core';compile_to(core,sorted((SRC/'core').rglob('*.java')),str(api))
     module=BUILD/'module';compile_to(module,sorted((SRC/'module').rglob('*.java')),str(api))
     jar(BUILD/'practice-module.jar',module)
@@ -59,7 +59,7 @@ def main():
         with zipfile.ZipFile(ROOT/'.cache/mcp-names.zip') as names:
             field_names='\n'.join(r['searge']+'='+r['name'] for r in csv.DictReader(io.StringIO(names.read('fields.csv').decode())))
         manifest='Manifest-Version: 1.0\nFMLCorePlugin: practice.bridge.PracticeLoadingPlugin\nFMLCorePluginContainsFMLMod: true\n\n'
-        jar(BUILD/'practice-bridge.jar',shim,[{'modid':'practicebridge','name':'PvP Practice Bridge','description':'Local, reloadable practice HUD and telemetry.','version':'0.2.0','mcversion':'1.8.9','authorList':['PvP Lab']}],{'META-INF/MANIFEST.MF':manifest,'practice/field-names.properties':field_names})
+        jar(BUILD/'practice-bridge.jar',shim,[{'modid':'practicebridge','name':'PvP Practice Bridge','description':'Local, reloadable practice HUD and telemetry.','version':'0.3.0','mcversion':'1.8.9','authorList':['PvP Lab']}],{'META-INF/MANIFEST.MF':manifest,'practice/field-names.properties':field_names})
     tests=BUILD/'tests';compile_to(tests,sorted((SRC/'tests').rglob('*.java')),os.pathsep.join(map(str,[api,core,module])))
     run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.Check',BUILD/'practice-module.jar'])
     if args.install:

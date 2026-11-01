@@ -22,9 +22,10 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.*;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.GL11;
 
 /** Forge-only adapter. SRG names intentionally match the production 1.8.9 API. */
-@Mod(modid="practicebridge",name="PvP Practice Bridge",version="0.2.0",
+@Mod(modid="practicebridge",name="PvP Practice Bridge",version="0.3.0",
      clientSideOnly=true,acceptedMinecraftVersions="[1.8.9]",acceptableRemoteVersions="*")
 public final class PracticeBridge {
     private ReloadHost host;
@@ -113,6 +114,7 @@ public final class PracticeBridge {
     }
     @SubscribeEvent public void chat(ClientChatReceivedEvent event){host.chat(event.message.func_150260_c(),event.type);}
     @SubscribeEvent public void renderTick(TickEvent.RenderTickEvent event){if(event.phase==TickEvent.Phase.END)capture.render(event.renderTickTime);}
+    @SubscribeEvent public void world(RenderWorldLastEvent event){capture.viewFrame(event.partialTicks);WorldDrawing.draw(host.world(event.partialTicks),event.partialTicks);}
     @SubscribeEvent public void overlay(RenderGameOverlayEvent.Post event) {
         if(event.type!=RenderGameOverlayEvent.ElementType.ALL)return;
         Minecraft mc=Minecraft.func_71410_x();
@@ -125,8 +127,12 @@ public final class PracticeBridge {
         for(Frame.Line line:display.lines){
             if(++count>40)break;
             String text=line.text==null?"":line.text.substring(0,Math.min(256,line.text.length()));
-            int x=line.right?width-line.x-mc.field_71466_p.func_78256_a(text):line.x;
-            mc.field_71466_p.func_175063_a(text,Math.max(0,Math.min(width-1,x)),Math.max(0,Math.min(height-10,line.y)),line.color);
+            float scale=Float.isFinite(line.scale)?Math.max(.5f,Math.min(4,line.scale)):1;
+            float textWidth=mc.field_71466_p.func_78256_a(text)*scale;
+            float x=line.centered?(width-textWidth)/2+line.x:line.right?width-line.x-textWidth:line.x;
+            GL11.glPushMatrix();try{GL11.glScalef(scale,scale,1);
+                mc.field_71466_p.func_175063_a(text,Math.max(0,Math.min(width-1,x))/scale,Math.max(0,Math.min(height-10*scale,line.y))/scale,line.color);
+            }finally{GL11.glPopMatrix();}
         }
         int edge=Math.min(30,Math.max(0,display.edgeWidth));
         if((display.edgeColor>>>24)!=0 && edge>0){
@@ -148,7 +154,7 @@ public final class PracticeBridge {
     }
     private final class Command extends CommandBase {
         public String func_71517_b(){return "practice";}
-        public String func_71518_a(ICommandSender sender){return "/practice reload | status | capture/link/metrics/potions/record/sprint on/off | mark <text> | ping";}
+        public String func_71518_a(ICommandSender sender){return "/practice opening on/off/large/small | reach on/off | ghost bot/me on/off | debug on/off | reload | status | capture/link/metrics/potions/record/sprint on/off | mark <text> | ping";}
         public int func_82362_a(){return 0;}
         public boolean func_71519_b(ICommandSender sender){return true;}
         public void func_71515_b(ICommandSender sender,String[] args) {
@@ -157,7 +163,9 @@ public final class PracticeBridge {
                 else if(args.length==1 && args[0].equals("status")){say(host.status()+" | "+directory);say(capture.status());}
                 else if(args.length>=2 && args[0].equals("mark")){capture.marker(String.join(" ",Arrays.copyOfRange(args,1,args.length)));say("Marker recorded.");}
                 else if(args.length==1 && args[0].equals("ping")){say(capture.send("ping","manual")?"Clock probe sent.":"No local practice connection.");}
-                else if(args.length==2 && Arrays.asList("metrics","potions","record","sprint","capture","link").contains(args[0])
+                else if(args.length==3&&args[0].equals("ghost")&&Arrays.asList("bot","me").contains(args[1])&&Arrays.asList("on","off").contains(args[2]))set("ghost."+args[1]+".enabled",String.valueOf(args[2].equals("on")));
+                else if(args.length==2&&args[0].equals("opening")&&Arrays.asList("large","small").contains(args[1]))set("opening.large",String.valueOf(args[1].equals("large")));
+                else if(args.length==2 && Arrays.asList("metrics","potions","record","sprint","capture","link","opening","reach","debug").contains(args[0])
                     && Arrays.asList("on","off").contains(args[1]))set(args[0]+".enabled",String.valueOf(args[1].equals("on")));
                 else if(!host.command(args))say(func_71518_a(sender));
             }catch(Exception e){say("Could not update settings: "+e.getMessage());}

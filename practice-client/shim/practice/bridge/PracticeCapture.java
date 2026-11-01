@@ -39,6 +39,9 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     private volatile long lastServer;
     private volatile Map<String,Object> lastState=Collections.emptyMap();
     private final Gson gson=new Gson();
+    private final PracticeViews views=new PracticeViews();
+    private long lastViewRecord;
+    private Map<String,Object> lastViews=Collections.emptyMap();
     private static final class Raw {Channel channel;byte[] bytes;long ms,ns;Raw(Channel c,byte[] b){channel=c;bytes=b;ms=System.currentTimeMillis();ns=System.nanoTime();}}
     PracticeCapture(ReloadHost host,Path directory){this.host=host;this.directory=directory;}
     void settings(Properties p){
@@ -61,7 +64,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         if(active!=c){finishLog();active=c;session=System.currentTimeMillis()+"-"+UUID.randomUUID().toString();match="";lastServer=0;lastState=Collections.emptyMap();lastHello=0;lastTelemetry=0;started=false;}
         if(recording&&log==null){
             log=new CaptureLog(directory.resolve("captures").resolve(session+"-"+System.nanoTime()+".jsonl.gz"),256L*1024*1024,128);
-            emit("capture_start",map("schema",2,"minecraft","1.8.9","protocol",47,"bridge","0.2.0","module_status",host.status(),"clock","unix_ms_shared_host; monotonic_ns_process_local",
+            emit("capture_start",map("schema",2,"minecraft","1.8.9","protocol",47,"bridge","0.3.0","module_status",host.status(),"clock","unix_ms_shared_host; monotonic_ns_process_local",
                 "packet_bytes","uncompressed PLAY packet id + body, base64","login_recorded",false,
                 "started_mid_connection",started,"render_sampling_hz",60,"segment_limit_bytes",256L*1024*1024,"max_segments",128),false);
         }
@@ -106,7 +109,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     }
     void inputEvent(String kind,Map<String,Object> fields){if(active!=null)emit(kind,fields,true);}
     void tick(long tick,boolean after){
-        this.tick=tick;if(active==null)return;
+        this.tick=tick;if(active==null){views.close();lastViews=Collections.emptyMap();return;}
         Minecraft mc=Minecraft.func_71410_x();if(mc.field_71439_g==null)return;
         emit(after?"tick_end":"tick_start",GameObservations.state(mc,true),true);
         if(!after){
@@ -124,6 +127,15 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         Map<String,Object> view=GameObservations.state(Minecraft.func_71410_x(),true);view.put("partial_ticks",partial);emit("render_view",view,true);
     }
     Map<String,Object> linkedState(){return lastState;}
+    Map<String,Object> viewState(){return lastViews;}
+    void viewFrame(float partial){
+        Map<String,Object> data=views.update(Minecraft.func_71410_x(),active!=null&&coordination?lastState:Collections.emptyMap(),partial);
+        lastViews=data;
+        long seq=sequence.incrementAndGet(),ms=System.currentTimeMillis(),ns=System.nanoTime();
+        // Deliver directly on the render thread, not through the next 20Hz tick.
+        host.event(new PracticeEvent("practice_views",seq,ms,ns,data));
+        if(!data.isEmpty()&&ns-lastViewRecord>=50000000){lastViewRecord=ns;record("practice_views",seq,ms,ns,data);}
+    }
     String status(){return (log==null?"Capture off (localhost only)":log.status())+" | observer errors "+ObserverHooks.errors+" | link "+(lastServer==0?"waiting":System.currentTimeMillis()-lastServer+" ms old")+" | "+match;}
     void emit(String type,Map<String,Object> data,boolean deliver){
         long seq=sequence.incrementAndGet(),ms=System.currentTimeMillis(),ns=System.nanoTime();record(type,seq,ms,ns,data);
@@ -167,6 +179,6 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         Minecraft mc=Minecraft.func_71410_x();if(mc.field_71439_g==null||id==null||!id.matches("[a-z0-9_.:]{1,80}")||!Float.isFinite(volume)||!Float.isFinite(pitch))return;
         mc.field_71439_g.func_85030_a(id,Math.min(1,Math.max(0,volume)),Math.min(2,Math.max(.5f,pitch)));
     }
-    synchronized void close(){finishLog();long deadline=System.currentTimeMillis()+2000;
+    synchronized void close(){views.close();finishLog();long deadline=System.currentTimeMillis()+2000;
         for(CaptureLog l:finishing)try{l.awaitClosed(Math.max(1,deadline-System.currentTimeMillis()));}catch(InterruptedException e){Thread.currentThread().interrupt();break;}}
 }

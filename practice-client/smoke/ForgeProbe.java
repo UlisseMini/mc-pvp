@@ -1,6 +1,7 @@
 package practice.smoke;
 
 import practice.api.Frame;
+import practice.api.WorldFrame;
 import java.lang.reflect.*;
 import java.nio.file.*;
 import java.util.*;
@@ -9,6 +10,7 @@ import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.*;
 import net.minecraftforge.fml.common.event.*;
@@ -17,10 +19,15 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 @Mod(modid="practiceprobe",name="Practice smoke test",version="1",clientSideOnly=true,dependencies="required-after:practicebridge")
 public final class ForgeProbe {
-    private int ticks,draws; private Object bridge;
+    private int ticks,draws,worldDraws,stopAt; private Object bridge;
+    private final Set<Double> drillGaps=new HashSet<>();
+    private int openingResults;
     private Frame frame()throws Exception{Field f=bridge.getClass().getDeclaredField("frame");f.setAccessible(true);return (Frame)f.get(bridge);}
     private Map<?,?> linked()throws Exception{Field f=bridge.getClass().getDeclaredField("capture");f.setAccessible(true);Object capture=f.get(bridge);
         Method m=capture.getClass().getDeclaredMethod("linkedState");m.setAccessible(true);return (Map<?,?>)m.invoke(capture);}
+    private Map<?,?> views()throws Exception{Field f=bridge.getClass().getDeclaredField("capture");f.setAccessible(true);Object capture=f.get(bridge);Method m=capture.getClass().getDeclaredMethod("viewState");m.setAccessible(true);return (Map<?,?>)m.invoke(capture);}
+    private WorldFrame world()throws Exception{Field f=bridge.getClass().getDeclaredField("host");f.setAccessible(true);Object host=f.get(bridge);return (WorldFrame)host.getClass().getMethod("world",float.class).invoke(host,0f);}
+    private void command(String text){ClientCommandHandler.instance.func_71556_a(Minecraft.func_71410_x().field_71439_g,text);}
     private void cleanHooks()throws Exception{check(Class.forName("practice.bridge.ObserverHooks").getField("errors").getLong(null)==0,"native observer hooks report no errors");}
     private void check(boolean ok,String message){if(!ok)throw new AssertionError(message);System.out.println("[PracticeProbe] PASS "+message);}
     @Mod.EventHandler public void init(FMLInitializationEvent e){
@@ -28,6 +35,7 @@ public final class ForgeProbe {
         FMLCommonHandler.instance().bus().register(this);MinecraftForge.EVENT_BUS.register(this);
     }
     @SubscribeEvent public void render(RenderGameOverlayEvent.Post e){if(e.type==RenderGameOverlayEvent.ElementType.ALL)draws++;}
+    @SubscribeEvent public void worldRender(RenderWorldLastEvent e){worldDraws++;}
     @SubscribeEvent public void tick(TickEvent.ClientTickEvent e){
         if(e.phase!=TickEvent.Phase.END)return;
         Minecraft mc=Minecraft.func_71410_x();if(mc.field_71439_g==null)return;
@@ -64,10 +72,11 @@ public final class ForgeProbe {
                 mc.field_71439_g.func_71165_d("/duel wtap boxing ping=80");
             }
             if(ticks==220){
+                command("/practice reach on");command("/practice ghost bot on");command("/practice ghost me on");command("/practice debug on");
                 ClientCommandHandler.instance.func_71556_a(mc.field_71439_g,"/practice mark forge-integration");
                 ClientCommandHandler.instance.func_71556_a(mc.field_71439_g,"/practice ping");
             }
-            if(ticks>=220&&ticks<310){
+            if((ticks>=220&&ticks<310)||(ticks>340&&stopAt==0)){
                 EntityPlayer closest=null;double distance=Double.POSITIVE_INFINITY;
                 for(Object o:mc.field_71441_e.field_73010_i){EntityPlayer p=(EntityPlayer)o;
                     if(p==mc.field_71439_g||p.func_175149_v())continue;double d=p.func_70068_e(mc.field_71439_g);
@@ -88,14 +97,34 @@ public final class ForgeProbe {
                 check(state.get("match") instanceof String&&!state.get("match").equals(""),"live state identifies the current duel");
                 check(state.get("server") instanceof Map&&((Map<?,?>)state.get("server")).size()==2,"authoritative state covers both participants");
                 check(state.get("clients") instanceof Map&&((Map<?,?>)state.get("clients")).size()==2,"human and bot client views join the same server snapshot");
+                check(Boolean.TRUE.equals(views().get("available")),"direct bot view arrives despite 80 ms gameplay RTT");
+                check(worldDraws>0&&world().boxes.size()==12&&world().lines.size()>288,"real Forge world callback draws two ghosts and two reach views");
+                System.out.println("[PracticeProbe] TIMING "+views().get("timing"));
+                command("/practice ghost bot off");
                 cleanHooks();
                 KeyBinding.func_74510_a(mc.field_71474_y.field_74351_w.func_151463_i(),false);
                 KeyBinding.func_74510_a(mc.field_71474_y.field_74313_G.func_151463_i(),false);
                 mc.field_71439_g.func_71165_d("/stop");
             }
-            if(ticks==325){
+            if(ticks==330)mc.field_71439_g.func_71165_d("/drill mixed");
+            if(ticks>340&&stopAt==0){
+                Map<?,?> state=linked(),v=views();Object drill=state.get("drill");
+                if(drill instanceof Map){Map<?,?> d=(Map<?,?>)drill;double gap=((Number)d.get("gap")).doubleValue();drillGaps.add(gap);
+                    Object o=v.get("opening");if(o instanceof Map&&((Map<?,?>)((Map<?,?>)o).get("last")).size()>0)openingResults++;
+                    if(drillGaps.size()==3&&System.currentTimeMillis()-((Number)state.get("combat_start")).longValue()>3000){
+                        check(drillGaps.containsAll(Arrays.asList(4.5,6.,9.)),"mixed drill automatically cycles all three starting distances");
+                        check(openingResults>0,"paired local reach streams produce opening intervals during drills");
+                        check(Boolean.TRUE.equals(v.get("available"))&&world().boxes.size()==6,"independent ghost toggle persists across automatic rounds");
+                        System.out.println("[PracticeProbe] DRILL_TIMING "+v.get("timing"));cleanHooks();
+                        mc.field_71439_g.func_71165_d("/stop");KeyBinding.func_74510_a(mc.field_71474_y.field_74351_w.func_151463_i(),false);KeyBinding.func_74510_a(mc.field_71474_y.field_74313_G.func_151463_i(),false);stopAt=ticks;
+                    }
+                }
+            }
+            if(stopAt>0&&ticks==stopAt+100){
+                check("".equals(linked().get("match")),"stop cancels automatic drill restart");
                 System.out.println("[PracticeProbe] ALL CHECKS PASSED");mc.func_71400_g();
             }
+            if(ticks>1700)throw new AssertionError("drill test did not complete");
         }catch(Throwable t){System.out.println("[PracticeProbe] FAILED");t.printStackTrace();mc.func_71400_g();}
     }
 }

@@ -18,10 +18,15 @@ public final class PracticeModule implements PracticeExtension {
     private long flashUntil;
     private Map<String,Object> linked=Collections.emptyMap();
     private long linkReceived;
-    public void event(PracticeEvent e){if(e.type.equals("link_state")){linked=e.data;linkReceived=e.timeMillis;}}
+    private final PracticeOverlay overlays=new PracticeOverlay();
+    private Frame base=Frame.empty();
+    public void event(PracticeEvent e){if(e.type.equals("link_state")){linked=e.data;linkReceived=e.timeMillis;}if(e.type.equals("practice_views"))overlays.views=e.data;}
+    public Frame render(float partial,int width,int height){return overlays.hud(base,width,height);}
+    public WorldFrame world(float partial){return overlays.world();}
 
     public void configure(Properties p,Path directory) {
         this.directory=directory;
+        overlays.configure(p);
         enabled=bool(p,"sprint.enabled",true);sprint=bool(p,"sprint.startEnabled",true);
         potions=bool(p,"potions.enabled",true);metrics=bool(p,"metrics.enabled",false);
         record=bool(p,"record.enabled",false);hurtFlash=bool(p,"feedback.hurtFlash",false);
@@ -44,7 +49,7 @@ public final class PracticeModule implements PracticeExtension {
     public Frame tick(Snapshot s) throws IOException {
         if(s.sprintPressed && s.playing && !s.screenOpen)sprint=!sprint;
         List<Frame.Line> lines=new ArrayList<>();
-        if(!s.playing){close();previousHurt=0;blockedTicks=playingTicks=0;return Frame.empty();}
+        if(!s.playing){close();previousHurt=0;blockedTicks=playingTicks=0;overlays.views=Collections.emptyMap();return base=Frame.empty();}
         if(enabled && sprint)lines.add(new Frame.Line(label,inset,top,color,true));
         if(potions){int y=potionY;for(String effect:s.effects){lines.add(new Frame.Line(effect,inset,y,0xFFFFFF,true));y+=11;}}
         if(s.self!=null){
@@ -60,11 +65,11 @@ public final class PracticeModule implements PracticeExtension {
                 }
                 lines.add(new Frame.Line(String.format(Locale.ROOT,"Blocking: %.1f%% of observed ticks",100.0*blockedTicks/playingTicks),6,y,0x55FFFF,false));
                 if(linkReceived>0){y+=11;Object clients=linked.get("clients");int views=clients instanceof Map?((Map<?,?>)clients).size():0;
-                    lines.add(new Frame.Line("Practice link: server + "+views+" client views | "+Math.max(0,s.timeMillis-linkReceived)+" ms old",6,y,0xAAAAAA,false));}
+                    lines.add(new Frame.Line("Practice link: server + "+views+" client views",6,y,0xAAAAAA,false));}
             }
             if(record)write(s);
         }
-        return new Frame(enabled&&sprint&&!s.screenOpen,lines,hurtFlash&&s.timeMillis<flashUntil?0x40FF4444:0,5);
+        return base=new Frame(enabled&&sprint&&!s.screenOpen,lines,hurtFlash&&s.timeMillis<flashUntil?0x40FF4444:0,5);
     }
     private void write(Snapshot s) throws IOException {
         if(writer==null){

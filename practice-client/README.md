@@ -28,6 +28,38 @@ Client commands work without server permissions:
 | `/practice link on` / `off` | Enable/disable localhost coordination |
 | `/practice mark <text>` | Timestamp a named marker on client and server |
 | `/practice ping` | Record a clock/round-trip probe |
+| `/practice opening on` / `off` | Show/hide geometric opening lead (on by default) |
+| `/practice opening large` / `small` | Prominent centered opening HUD, or compact text |
+| `/practice reach on` / `off` | Overlay your reach in cyan and the bot's client reach in amber |
+| `/practice ghost bot on` / `off` | Faint amber silhouette at the bot's own client-rendered position |
+| `/practice ghost me on` / `off` | Faint pink silhouette where the bot's client renders you |
+| `/practice debug on` / `off` | Show direct-stream delivery age, draw age, clock RTT and recent latency statistics |
+
+Server commands `/drill near`, `/drill medium`, `/drill far` and `/drill mixed`
+start repeated rod-diamond approaches against wtap, from center-to-center gaps of
+4.5, 6 and 9 blocks. Append another bot name to change opponents. Mixed cycles the
+three distances. Each attempt resets five seconds after the first accepted sword
+hit, or after twelve seconds without one; there is a fresh countdown. `/stop` or
+`/drill stop` exits. Your saved ping and the bot's previous duel ping are retained.
+During setup only, players are held at their starting positions and pre-cast rods
+are cleared. Once combat starts, normal movement and combat apply.
+
+**Opening lead is geometric range-entry lead, not a prediction of who lands a hit.**
+It compares each client's own eye-to-opponent-expanded-hitbox distance against
+its reach, accounting for height. Positive means you entered range first.
+Actual aim, invulnerability, click timing, and queued attacks are excluded.
+Crossings are bracketed between outside/inside samples; the HUD reports the
+midpoint and `+/-` half-width, not invented exact millisecond precision. It keeps
+the last eight approaches and rearms after both views remain outside for 200 ms.
+A one-sided opening shows a growing lower bound. Missing samples invalidate a
+crossing rather than producing a precise-looking answer.
+
+Reach circles are three perpendicular cross sections of a 3D reach sphere, with
+the observed target hitbox and shortest-distance line. They use logical entity
+positions; ghost silhouettes use the source client's interpolated render position.
+Ghosts are simple translucent player-shaped guides, not copied skins/animations.
+Both ghosts are independent of the reach and opening toggles. Unavailable or stale
+bot data hides its overlays; there is **no delay label on the normal HUD**.
 
 Settings are in `config/pvp-practice/settings.properties` inside the Minecraft
 game directory. Changes reload about once per second while Minecraft is running;
@@ -44,7 +76,7 @@ crosshair, otherwise the nearest player within six blocks. Gap is horizontal
 center-to-center distance, **not attack reach**. Blocking time counts sampled
 client ticks, not server-confirmed blocked damage. The optional red edge flash
 (`feedback.hurtFlash=true`) indicates an observed hurt animation, not a verified
-block or a timing verdict. No estimated combat advantage is claimed yet.
+block or a timing verdict. Opening lead has the narrower geometric meaning above.
 
 The small CSV files stay in `config/pvp-practice/recordings/`. Detailed compressed
 JSONL files stay in `config/pvp-practice/captures/`. Recording uses only an actual
@@ -62,6 +94,8 @@ world chunks are applied, and captures:
   motion, height, bounding boxes, aim/raycast, interpolation targets, blocking,
   item use, held items/armor, hunger, selected slot and camera settings.
 - Match identity, server snapshots, latest human/bot views, markers and clock probes.
+- Direct view/geometry/opening/debug snapshots capped at 20 Hz (`practice_views`),
+  including original bot sequence/time. This is not a recording of every fast-stream frame.
 
 **Login/authentication traffic and typed GUI text are excluded. Local PLAY chat
 and commands are included in the raw packets.** Player names/UUIDs are present.
@@ -85,8 +119,8 @@ hooks observe work but still have CPU cost, measured in snapshot timing fields.
 
 ## Three-view coordination
 
-The `PvpLab|v1` custom-payload channel uses Minecraft's existing connection; it
-opens no additional listener. The server accepts versioned `hello`, `telemetry`,
+The `PvpLab|v1` custom-payload channel uses Minecraft's existing connection. The
+server accepts versioned `hello`, `telemetry`,
 `marker` and `ping` data only from loopback connections. It binds identity to the
 actual player connection, limits messages to 30,000 bytes and 20/second/player,
 bounds JSON nesting and uses bounded queues. There is no remote-command or
@@ -98,6 +132,25 @@ time. Live human telemetry contains only the duel participants, keeping messages
 small; full local captures include other loaded entities. Bot telemetry is
 observational and is not supplied to bot policies. Live messages pass through
 the ordinary artificial-ping proxy, so their ages must be respected.
+
+For human duels, the bot also opens an ephemeral **127.0.0.1-only TCP listener**
+with a fresh 128-bit per-match token, announced through the practice channel.
+This carries fixed-size numeric snapshots directly to the human client and
+bypasses gameplay ping and the server tick queue. No new dependencies, command
+messages, Java object deserialization or executable downloads are involved.
+Readers authenticate, use TCP_NODELAY, calibrate monotonic clock offset using
+eight timestamp probes, and exchange bounded immutable snapshots. The stream
+closes on match change. Reading and writing happen on daemon workers; no socket
+I/O blocks Minecraft's game thread. Bot policies never read this diagnostic link.
+
+`/practice debug on` separates **sample → receive** from **sample → draw**, showing
+current values and rolling mean/p95 over the last 600 samples/frames. The first
+includes snapshot construction, producer handoff and socket delivery; the second
+also includes waiting for your render callback. Clock uncertainty is approximately
+half the best probe RTT. Physics-tick age is separate: game logic updates at 20 Hz
+even when the stream delivers in under a millisecond. Draw age does not include
+GPU presentation/display scanout. Low transport delay cannot guarantee a 1 ms
+visible update on a 60 Hz screen. No extrapolation disguises sample age.
 
 For duels started after the human link is established, the referee also enables
 the bot's existing detailed native movement, interpolation, click and network
@@ -140,7 +193,7 @@ python3 practice-client/build.py --module-only --install
 Minecraft picks it up automatically. The API accepts immutable snapshots and
 events and returns HUD text, rectangles/history bars, an optional edge flash,
 and whether to hold ordinary Sprint input. Modules can maintain state, calculate
-feedback, draw per frame, add `/practice` subcommands, play local sounds and send
+feedback, draw per frame (including bounded world-space lines/translucent boxes), add `/practice` subcommands, play local sounds and send
 markers/clock probes. They also receive chat/action-bar and linked server events.
 Modules do not register their own Forge listeners.
 
@@ -150,6 +203,8 @@ Larger packet bodies stay in the full disk recording and have an explicit
 `module_payload_omitted` flag in live events. This lets future modules decode
 ordinary combat packets without adding a new core hook. `render()` returns an
 optional per-frame HUD; `PracticeServices` supplies the sound/marker/probe methods.
+`world()` returns the world overlay; `practice_views` events arrive directly on
+the render thread so overlays do not wait for the next 20 Hz client tick.
 Events are delivered on the game thread. Process them briefly or offload math
 using only immutable copies, never live game objects.
 
@@ -181,7 +236,9 @@ This starts a separate headless Forge 1.8.9 client as `PracticeCheck`, verifies
 event dispatch, HUD rendering callbacks, normal sprint input, client commands,
 live reload and native observer hooks. It starts a short boxing duel against
 wtap with 80 ms bot RTT, checks that server/human/bot views arrive together,
-sends markers/probes, performs ordinary clicks, stops the duel and exits. Test files go under
+checks the direct stream and both world overlays, then cycles all three entry
+distances and verifies that `/stop` prevents another round. It logs measured
+delivery/draw timing. Test files go under
 `runtime/practice-forge-smoke`; a macOS process sandbox restricts filesystem
 access and networking to localhost. The smoke test's own Forge probe and
 HeadlessMC agent are **not installed** in the user's client.

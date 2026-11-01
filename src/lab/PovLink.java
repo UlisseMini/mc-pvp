@@ -14,7 +14,7 @@ public final class PovLink {
     private static final Map<Object,Boolean> seen=Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<String,Peer> peers=new HashMap<>();
     private static long helloAt,telemetryAt,errors,dropped;
-    private static final class Peer {String session="";long seen,clientMs,received,window;int count;Map<String,Object> view=Map.of();}
+    private static final class Peer {String session="";long seen,clientMs,received,window;int count;Map<String,Object> view=Map.of(),fast=Map.of();}
 
     public static void receive(Object handler,Object packet){
         if(!"server".equals(System.getProperty("lab.role")))return;
@@ -49,6 +49,7 @@ public final class PovLink {
                 long sent=data.get("client_ms") instanceof Number n?n.longValue():0;
                 Referee.Match m=Referee.find(name);String match=m==null?"":m.id;
                 if(type.equals("hello")||type.equals("ping")){
+                    if(Referee.isBot(name)&&data.get("fast_view") instanceof Map fast)peer.fast=fast;
                     Map<String,Object> reply=new LinkedHashMap<>();reply.put("type",type.equals("hello")?"welcome":"pong");reply.put("version",1);
                     reply.put("match",match);reply.put("client_send_ms",sent);reply.put("server_receive_ms",incoming.received);reply.put("server_send_ms",System.currentTimeMillis());
                     reply.put("server_tick",Referee.ticks);reply.put("clock","same-host UNIX ms; delivery includes configured ping");send(player,reply);
@@ -77,6 +78,10 @@ public final class PovLink {
                     Map<String,Object> server=Map.of("a",state(a),"b",state(b));reply.put("server",server);
                     reply.put("mode",m.mode);reply.put("players",List.of(m.a,m.b));reply.put("policies",List.of(m.pa,m.pb));
                     reply.put("rtt_ms",List.of(m.pingA,m.pingB));reply.put("hits",List.of(m.ha,m.hb));reply.put("combat_start",m.start);
+                    reply.put("reach",List.of(DuelSettings.reach(m.configA),DuelSettings.reach(m.configB)));
+                    if(m.drillRound>0)reply.put("drill",Map.of("round",m.drillRound,"preset",m.drillPreset,"gap",m.startGap));
+                    Peer botPeer=peers.get(name.equals(m.a)?m.b:m.a);
+                    if(botPeer!=null&&m.id.equals(botPeer.fast.get("match")))reply.put("fast_view",botPeer.fast);
                     Map<String,Object> views=new LinkedHashMap<>();
                     for(String who:List.of(m.a,m.b)){Peer other=peers.get(who);if(other!=null&&!other.view.isEmpty()&&other.received>=m.start)views.put(who,Map.of("client_ms",other.clientMs,"received_ms",other.received,"age_ms",now-other.received,"session",other.session,"view",other.view));}
                     reply.put("clients",views);
@@ -101,7 +106,7 @@ public final class PovLink {
     public static void clientTick(){
         try{
             if(Client.player==null||Client.mc==null)return;long now=System.currentTimeMillis();
-            if(now-helloAt>=2000){helloAt=now;clientSend(Map.of("type","hello","version",1,"session","bot-"+Client.SLOT,"client_ms",now));}
+            if(now-helloAt>=500){helloAt=now;clientSend(Map.of("type","hello","version",1,"session","bot-"+Client.SLOT,"client_ms",now,"fast_view",FastPov.descriptor()));}
             if(!Client.active()||Client.opponent==null||now-telemetryAt<200)return;
             if(!Client.match.equals(Client.controls.getProperty("match",""))||!R.name(Client.opponent).equals(Client.controls.getProperty("opponent","")))return;
             telemetryAt=now;

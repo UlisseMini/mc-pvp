@@ -93,6 +93,7 @@ public final class Check {
         check(content.contains("rotating-part2.jsonl.gz")&&content.contains("\"writer_complete\":true"),"rotation links a complete first segment");
         try(Scanner scanner=new Scanner(new GZIPInputStream(Files.newInputStream(dir.resolve("rotating-part2.jsonl.gz"))),"UTF-8")){content=scanner.useDelimiter("\\A").next();}
         check(content.contains("\"n\":3")&&content.contains("\"writer_complete\":true")&&rotating.dropped()==0,"boundary record is retained in the next compressed segment");
+        ViewChecks.run(dir);
         try(java.util.stream.Stream<Path> paths=Files.walk(dir)){paths.sorted(Comparator.reverseOrder()).forEach(p->{try{Files.delete(p);}catch(IOException e){throw new UncheckedIOException(e);}});}
         System.out.println("Practice checks passed: "+checks);
     }

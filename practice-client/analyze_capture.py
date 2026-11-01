@@ -56,6 +56,9 @@ def summarize(path, replay=None):
     start, footer = {}, {}
     warnings, matches = set(), set()
     linkage, clock, samples = [], [], []
+    direct_delivery, direct_draw, direct_clock = [], [], []
+    openings, drill_gaps = {}, set()
+    direct_drops = 0
     three_views = 0
     observer_errors = module_drops = 0
     first_inbound = None
@@ -91,6 +94,18 @@ def summarize(path, replay=None):
             linkage.append(row['time_ms']-data['server_ms'])
             if len(data.get('clients', {})) == 2 and len(data.get('server', {})) == 2:
                 three_views += 1
+            if data.get('drill'):
+                drill_gaps.add(data['drill']['gap'])
+        elif kind == 'practice_views':
+            timing = data.get('timing', {})
+            if data.get('available') and timing:
+                direct_delivery.append(timing['delivery_ms'])
+                direct_draw.append(timing['draw_ms'])
+                direct_clock.append(timing['clock_rtt_ms'])
+                direct_drops = max(direct_drops, timing['dropped'])
+            last = data.get('opening', {}).get('last', {})
+            if last:
+                openings[(data.get('match'), last['index'])] = last
         elif kind in ('link_welcome', 'link_pong'):
             clock.append(row['time_ms']-data['client_send_ms'])
         if 'sample_begin_ns' in data:
@@ -114,6 +129,12 @@ def summarize(path, replay=None):
               'server_state_delivery_age_ms': distribution(linkage),
               'clock_probe_round_trip_ms': distribution(clock),
               'snapshot_construction_ms': distribution(samples),
+              'direct_view': {'sample_to_receive_ms': distribution(direct_delivery),
+                              'sample_to_draw_ms': distribution(direct_draw),
+                              'clock_probe_rtt_ms': distribution(direct_clock), 'max_queue_drops': direct_drops,
+                              'scope': '20 Hz capture sample of render-frame measurements; excludes GPU/display latency'},
+              'opening_intervals': [{'match': key[0], **value} for key, value in openings.items()],
+              'drill_start_gaps': sorted(drill_gaps),
               'warnings': sorted(warnings),
               'scope': 'Capture integrity and timing report; not proof of pixel-perfect replay or zero observation overhead.'}
     if replay:

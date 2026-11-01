@@ -68,6 +68,10 @@ public final class ReloadHost implements AutoCloseable {
         if(active==null||faulted)return false;
         try{return active.command(args);}catch(Exception|LinkageError e){faulted=true;status="Module command error: "+e;return false;}
     }
+    public WorldFrame world(float partial){
+        if(active==null||faulted)return null;
+        try{return active.world(partial);}catch(Exception|LinkageError e){faulted=true;status="Module world error: "+e;return null;}
+    }
     private static void dispose(PracticeExtension mod,URLClassLoader loader,Path copy) {
         try{if(mod!=null)mod.close();}catch(Exception ignored){}
         try{if(loader!=null)loader.close();}catch(IOException ignored){}
