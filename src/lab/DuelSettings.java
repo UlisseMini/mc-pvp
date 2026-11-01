@@ -4,7 +4,7 @@ import java.util.*;
 
 /** Per-duel overrides. Parsing never changes a shared policy or player preference. */
 public final class DuelSettings {
-    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [reach=3.0] [cps=20] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks=10]";
+    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8] [reach=3.0] [cps=20] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks=10]";
     public final String mode;
     public final double botPing,humanPing;
     public final Properties overrides;
@@ -14,6 +14,19 @@ public final class DuelSettings {
     public static DuelSettings parse(String[] args,int offset,String mode,double botPing,double humanPing,Properties inherited){
         Properties overrides=new Properties();overrides.putAll(inherited);
         if(args.length>offset&&Compat.list("boxing","diamond","diamond_box","rod_diamond","sumo").contains(args[offset]))mode=args[offset++];
+        String preset=null;
+        for(int i=offset;i<args.length;i++){
+            String[] pair=args[i].split("=",-1);
+            if(pair.length==2&&pair[0].equalsIgnoreCase("preset")){
+                if(preset!=null)throw new IllegalArgumentException("Duplicate setting: preset");
+                preset=PracticePresets.normalize(pair[1]);
+            }
+        }
+        if(preset!=null){
+            overrides.putAll(PracticePresets.defaults(preset));
+            botPing=PracticePresets.defaultControllerRtt(preset);
+            humanPing=PracticePresets.defaultOpponentRtt(preset);
+        }
         Set<String> seen=new HashSet<>();int positional=0;
         for(int i=offset;i<args.length;i++){
             String[] pair=args[i].split("=",-1);String key,value;
@@ -25,6 +38,7 @@ public final class DuelSettings {
             if(key.equals("botping"))key="ping";
             if(!seen.add(key))throw new IllegalArgumentException("Duplicate setting: "+key);
             switch(key){
+                case "preset": break; // Defaults were applied before every explicit option.
                 case "ping": botPing=ping(value);break;
                 case "myping": humanPing=ping(value);break;
                 case "reach": overrides.setProperty("attack_reach",Double.toString(reach(value)));break;
@@ -47,19 +61,25 @@ public final class DuelSettings {
                     if(!value.equals("vanilla"))throw new IllegalArgumentException("Use kb=vanilla, or explicit kb_horizontal/kb_vertical/hit_ticks settings");
                     overrides.setProperty("combat_kb_horizontal","1.0");
                     overrides.setProperty("combat_kb_vertical","1.0");
-                    overrides.setProperty("combat_hit_ticks","10");break;
+                    overrides.setProperty("combat_hit_ticks","10");
+                    if(overrides.containsKey("hurt_window_ticks"))overrides.setProperty("hurt_window_ticks","10");
+                    break;
                 case "kb_horizontal": case "kb_vertical":
                     overrides.setProperty("combat_"+key,Double.toString(bounded(value,0,2,"Knockback multiplier")));break;
                 case "hit_ticks":
                     int ticks;
                     try{ticks=Integer.parseInt(value);}catch(NumberFormatException e){throw new IllegalArgumentException("hit_ticks must be a whole number from 1 to 20");}
                     if(ticks<1||ticks>20)throw new IllegalArgumentException("hit_ticks must be 1–20; vanilla is 10");
-                    overrides.setProperty("combat_hit_ticks",Integer.toString(ticks));break;
+                    overrides.setProperty("combat_hit_ticks",Integer.toString(ticks));
+                    if(overrides.containsKey("hurt_window_ticks"))overrides.setProperty("hurt_window_ticks",Integer.toString(ticks));
+                    break;
                 default: throw new IllegalArgumentException("Unknown setting '"+key+"'. Use /help settings for all options.");
             }
         }
         if(seen.contains("kb")&&(seen.contains("kb_horizontal")||seen.contains("kb_vertical")||seen.contains("hit_ticks")))
             throw new IllegalArgumentException("Use kb=vanilla alone to reset combat settings, or give explicit multipliers/delay");
+        String label=overrides.getProperty(PracticePresets.LABEL);
+        if(label!=null&&!PracticePresets.combatMatches(label,overrides))overrides.remove(PracticePresets.LABEL);
         return new DuelSettings(mode,botPing,humanPing,overrides);
     }
     public static double ping(String value){return bounded(value,0,500,"Ping (added RTT in ms)");}

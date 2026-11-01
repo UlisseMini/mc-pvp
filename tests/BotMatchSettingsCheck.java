@@ -22,6 +22,23 @@ public final class BotMatchSettingsCheck {
             boolean rejected=false;try{parse("lab match wtap wtap "+value);}catch(IllegalArgumentException e){rejected=true;}
             check(rejected,"reject "+value);
         }
+        BotMatchSettings preset=parse("lab match lock8 lock8-target preset=lock8");
+        check(preset.pingA==150&&preset.pingB==0&&preset.request.equals("default"),"match preset uses controller A RTT convention");
+        check(preset.a.equals(preset.b)&&preset.a.getProperty("practice_preset").equals("lock8")&&preset.a.getProperty("hurt_window_ticks").equals("8"),"shared match-scoped preset properties");
+        BotMatchSettings before=parse("lab match wtap hold-w preset=lock8 20 80 req-preset cps=12 b.aimnoise=2");
+        BotMatchSettings after=parse("lab match wtap hold-w 20 80 req-preset cps=12 preset=LOCK8 b.aimnoise=2");
+        check(before.pingA==20&&before.pingB==80&&before.request.equals("req-preset")&&before.a.equals(after.a)&&before.b.equals(after.b)&&after.pingA==20&&after.pingB==80,"preset order preserves explicit positional pings, request and options");
+        BotMatchSettings named=parse("lab match wtap hold-w a.ping=35 b.ping=65 cps=11 b.cps=9 preset=lock8");
+        check(named.pingA==35&&named.pingB==65&&named.a.getProperty("click_cps").equals("11")&&named.b.getProperty("click_cps").equals("9"),"explicit per-side settings beat preset");
+        BotMatchSettings one=parse("lab match wtap hold-w preset=lock8 45");
+        check(one.pingA==45&&one.pingB==0,"single explicit positional RTT overrides only its side");
+        BotMatchSettings reset=parse("lab match wtap hold-w kb=vanilla preset=lock8");
+        check(!reset.a.containsKey("practice_preset")&&!reset.b.containsKey("practice_preset")&&reset.a.getProperty("hurt_window_ticks").equals("10"),"explicit vanilla clears both labels and timing defaults");
+        named.a.setProperty("click_cps","1");
+        check(named.b.getProperty("click_cps").equals("9")&&preset.a.getProperty("click_cps").equals("20")&&parse("lab match wtap hold-w").a.isEmpty(),"sides, separate matches and legacy defaults do not share preset mutation");
+        for(String value:new String[]{"a.preset=lock8","b.preset=lock8","preset=lock8 a.preset=lock8","preset=unknown","preset=lock8 preset=LOCK8"}){
+            boolean rejected=false;try{parse("lab match wtap hold-w "+value);}catch(IllegalArgumentException expected){rejected=true;}check(rejected,"reject match-scoped/invalid preset "+value);
+        }
         System.out.println("PASS bot match old syntax, shared and per-side settings, invalid options");
     }
 }

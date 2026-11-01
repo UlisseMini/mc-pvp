@@ -33,6 +33,27 @@ public final class DuelSettingsCheck {
             check(rejected,"reject "+option);
         }
         check(parse("/duel wtap reach=1 cps=1 ping=500 myping=0",empty).humanPing==0,"valid bounds");
+        DuelSettings preset=parse("/duel wtap preset=lock8",empty);
+        check(preset.mode.equals("boxing")&&preset.botPing==150&&preset.humanPing==0,"preset pings without changing selected mode");
+        check(preset.overrides.getProperty("practice_preset").equals("lock8")&&preset.overrides.getProperty("combat_hit_ticks").equals("8"),"preset persisted with combat defaults");
+        DuelSettings before=parse("/duel wtap diamond cps=12 aimnoise=2 40 50 preset=lock8",empty);
+        DuelSettings after=parse("/duel wtap diamond preset=LOCK8 40 50 aimnoise=2 cps=12",empty);
+        check(before.mode.equals("diamond")&&before.botPing==40&&before.humanPing==50&&before.overrides.equals(after.overrides)&&after.botPing==40&&after.humanPing==50,"preset token order cannot override explicit positional pings/settings");
+        DuelSettings namedPreset=parse("/duel wtap ping=25 myping=70 reach=4 preset=lock8",empty);
+        check(namedPreset.botPing==25&&namedPreset.humanPing==70&&DuelSettings.reach(namedPreset.overrides)==4,"explicit named options beat preset");
+        DuelSettings keep=DuelSettings.parse(new String[]{"/rematch","cps=13"},1,namedPreset.mode,namedPreset.botPing,namedPreset.humanPing,namedPreset.overrides);
+        check(keep.botPing==25&&keep.humanPing==70&&DuelSettings.reach(keep.overrides)==4&&keep.overrides.getProperty("click_cps").equals("13")&&keep.overrides.getProperty("practice_preset").equals("lock8"),"rematch preserves preset-derived settings without reapplying defaults");
+        DuelSettings fresh=DuelSettings.parse(new String[]{"/rematch","cps=14","preset=lock8"},1,"sumo",keep.botPing,keep.humanPing,keep.overrides);
+        check(fresh.mode.equals("sumo")&&fresh.botPing==150&&fresh.humanPing==0&&DuelSettings.reach(fresh.overrides)==3&&fresh.overrides.getProperty("click_cps").equals("14"),"new preset replaces inherited defaults and keeps mode; explicit options still win");
+        check(DuelSettings.reach(namedPreset.overrides)==4&&keep.overrides.getProperty("click_cps").equals("13")&&empty.isEmpty(),"preset/rematch cannot mutate previous match or player defaults");
+        DuelSettings vanilla=DuelSettings.parse(new String[]{"/rematch","kb=vanilla"},1,preset.mode,preset.botPing,preset.humanPing,preset.overrides);
+        check(!vanilla.overrides.containsKey("practice_preset")&&vanilla.overrides.getProperty("combat_hit_ticks").equals("10")&&vanilla.overrides.getProperty("hurt_window_ticks").equals("10"),"combat reset clears label and synchronizes timing");
+        DuelSettings changed=parse("/duel wtap hit_ticks=9 preset=lock8",empty);
+        check(!changed.overrides.containsKey("practice_preset")&&changed.overrides.getProperty("hurt_window_ticks").equals("9"),"explicit hurt interval wins before preset token and updates controller timing");
+        check(parse("/duel wtap preset=lock8 kb_horizontal=1.10",empty).overrides.containsKey("practice_preset"),"equivalent combat keeps label");
+        for(String option:new String[]{"preset=unknown","preset=","preset=lock8 preset=lock8","PRESET=lock8 preset=LOCK8","preset=lock8 kb=vanilla hit_ticks=9"}){
+            boolean rejected=false;try{parse("/duel wtap "+option,empty);}catch(IllegalArgumentException expected){rejected=true;}check(rejected,"reject invalid preset option "+option);
+        }
         System.out.println("PASS duel defaults, named/positional options, rematch isolation and invalid input rejection");
     }
 }
