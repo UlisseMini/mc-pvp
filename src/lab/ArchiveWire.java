@@ -19,6 +19,11 @@ public final class ArchiveWire {
     public static void before(Object ctx,Object buffer){try{incoming.set(copy(ctx,buffer));}catch(Throwable e){incoming.remove();error(e);}}
     public static void after(Object packets){try{Raw r=incoming.get();incoming.remove();List<?> p=(List<?>)packets;if(r!=null&&!p.isEmpty())write(r,"in",p.get(p.size()-1));}catch(Throwable e){error(e);}}
     public static void out(Object ctx,Object packet,Object buffer){try{Raw r=copy(ctx,buffer);if(r!=null)write(r,"out",packet);}catch(Throwable e){error(e);}}
-    private static void write(Raw r,String direction,Object packet){r.route.archive().event(Json.encode(Map.of("type","packet_wire","time_ms",r.ms,"monotonic_ns",r.ns,"sequence",sequence.incrementAndGet(),"match",r.route.match(),"player",r.route.player(),"data",Map.of("direction",direction,"kind",packet.getClass().getName(),"bytes",r.bytes.length,"base64",Base64.getEncoder().encodeToString(r.bytes)))));}
+    private static void write(Raw r,String direction,Object packet){
+        Map<String,Object> data=new LinkedHashMap<>();data.put("direction",direction);data.put("kind",packet.getClass().getName());
+        data.put("bytes",r.bytes.length);data.put("base64",Base64.getEncoder().encodeToString(r.bytes));
+        if("server".equals(System.getProperty("lab.role")))data.put("packet_id",ServerReplicationTrace.packetId(packet));
+        r.route.archive().event(Json.encode(Map.of("type","packet_wire","time_ms",r.ms,"monotonic_ns",r.ns,"sequence",sequence.incrementAndGet(),"match",r.route.match(),"player",r.route.player(),"data",data)));
+    }
     private static void error(Throwable e){String line=Json.encode(Map.of("type","observer_error","time_ms",System.currentTimeMillis(),"observer","archive_wire","reason",e.toString()));if("server".equals(System.getProperty("lab.role")))for(var a:PovArchives.active.values())a.event(line);else BotArchive.archive.event(line);if(errors++<3)System.err.println("[PvP Lab] Archive wire error: "+e);}
 }

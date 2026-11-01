@@ -86,6 +86,14 @@ public final class Agent implements ClassFileTransformer {
                     if(locks!=1||unlocks!=2||worlds!=1||entities!=1||trackers!=1)
                         throw new IllegalStateException("Pinned server clock shape changed: "+locks+","+unlocks+","+worlds+","+entities+","+trackers);
                     changed = true;
+                } else if(name.equals("net/minecraft/server/MinecraftServer")&&method.desc.equals("(Ljava/util/concurrent/Callable;)Lcom/google/common/util/concurrent/ListenableFuture;")){
+                    int adds=0;
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins instanceof MethodInsnNode call&&
+                            call.owner.equals("java/util/Queue")&&call.name.equals("add")&&call.desc.equals("(Ljava/lang/Object;)Z")){
+                        method.instructions.insert(ins,new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/ServerReplicationTrace","queued","()V",false));adds++;
+                    }
+                    if(adds!=1)throw new IllegalStateException("Pinned server task enqueue changed: "+adds);
+                    changed=true;
                 } else if (name.equals("j") && method.name.equals("a") && method.desc.equals("(Lm;Ljava/lang/String;)I")) {
                     InsnList hook = new InsnList(); LabelNode proceed = new LabelNode();
                     hook.add(new VarInsnNode(Opcodes.ALOAD, 1)); hook.add(new VarInsnNode(Opcodes.ALOAD, 2));
@@ -292,7 +300,10 @@ public final class Agent implements ClassFileTransformer {
                 }else if(name.equals("lm")&&method.name.equals("a")&&method.desc.equals("(Lim;)V")){
                     method.instructions.insert(callPair("lab/PovLink","receive"));changed=true;
                 }else if(name.equals("lm")&&method.name.equals("a")&&java.util.Set.of("(Lip;)V","(Lin;)V","(Lis;)V").contains(method.desc)){
-                    method.instructions.insert(callPair("lab/ServerReplicationTrace","input"));changed=true;
+                    method.instructions.insert(callPair("lab/ServerReplicationTrace","input"));
+                    method.instructions.insert(serverHandler(false));
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(ins,serverHandler(true));
+                    changed=true;
                 }else if(name.equals("ek")&&method.name.equals("a")&&method.desc.equals("(Lio/netty/channel/ChannelHandlerContext;Lff;)V")){
                     InsnList hook=new InsnList();hook.add(new VarInsnNode(Opcodes.ALOAD,2));
                     hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/ReplicationTrace","receive","(Ljava/lang/Object;)V",false));
@@ -329,6 +340,11 @@ public final class Agent implements ClassFileTransformer {
     private static InsnList serverClock(String phase){
         InsnList out=new InsnList();out.add(new VarInsnNode(Opcodes.ALOAD,0));out.add(new LdcInsnNode(phase));
         out.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/ServerReplicationTrace","clock","(Ljava/lang/Object;Ljava/lang/String;)V",false));return out;
+    }
+    private static InsnList serverHandler(boolean after){
+        InsnList out=new InsnList();out.add(new VarInsnNode(Opcodes.ALOAD,0));out.add(new VarInsnNode(Opcodes.ALOAD,1));
+        out.add(new InsnNode(after?Opcodes.ICONST_1:Opcodes.ICONST_0));
+        out.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/ServerReplicationTrace","handler","(Ljava/lang/Object;Ljava/lang/Object;Z)V",false));return out;
     }
     private static AbstractInsnNode nextInstruction(AbstractInsnNode node){
         if(node==null)return null;

@@ -13,10 +13,11 @@ public final class ServerScienceTrace {
     }
     public static void attackBefore(Object self,Object target) {
         if(!"server".equals(System.getProperty("lab.role")))return;
+        long ns=System.nanoTime(),ms=System.currentTimeMillis();
         try {
             attack=null;Referee.Match m=tracedMatch(self);if(m==null || System.currentTimeMillis()<m.start)return;
-            attack=new LinkedHashMap<>();attack.put("type","science_server_attack");attack.put("time",System.currentTimeMillis());
-            attack.put("monotonic_ns",System.nanoTime());
+            attack=new LinkedHashMap<>();attack.put("type","science_server_attack");attack.put("time",ms);
+            attack.put("monotonic_ns",ns);attack.put("packet_id",ServerReplicationTrace.currentPacketId());
             attack.put("server_tick",Referee.ticks);attack.put("attacker",R.name(self));attack.put("target",R.name(target));
             attack.put("attacker_before",state(self));attack.put("target_before",state(target));
             attack.put("score_before",List.of(m.ha,m.hb));
@@ -24,8 +25,10 @@ public final class ServerScienceTrace {
     }
     public static void attackAfter(Object self,Object target) {
         if(!"server".equals(System.getProperty("lab.role")) || attack==null)return;
+        long ns=System.nanoTime(),ms=System.currentTimeMillis();
         try {
             Referee.Match m=tracedMatch(self);if(m==null)return;
+            attack.put("monotonic_end_ns",ns);attack.put("return_time",ms);
             attack.put("attacker_after",state(self));attack.put("target_after",state(target));
             attack.put("score_after",List.of(m.ha,m.hb));Referee.append(m.replay,attack);attack=null;
         }catch(Throwable e){if(Referee.errors++<10)e.printStackTrace();}
