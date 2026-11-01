@@ -146,7 +146,12 @@ public final class PeriodicComboFightModel {
     }
     static final class Config implements Cloneable {
         public Config deepCopy(){try{return (Config)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
-        double ownRtt=20,otherRtt=20,defenderReach=1.5,kbScale=1,verticalScale=1;
+        double ownRtt=20,otherRtt=20,defenderReach=1.5,kbScale=1,verticalScale=1,sprintVertical=.1;
+        /** Explicit profile import keeps model/native options identical; omitted fields retain defaults. */
+        void applyCombat(Properties p){
+            lab.CombatProfile q=lab.CombatProfile.fromOverrides(p,new lab.CombatProfile(kbScale,verticalScale,hitTicks,sprintVertical));
+            kbScale=q.horizontal();verticalScale=q.vertical();hitTicks=q.freshTicks();sprintVertical=q.sprintVertical();
+        }
         int bPhase=10,serverPhase=25,hitTicks=10;boolean quantize=true,nativeNormalization=true,forceContacts=true,deferMovementSend=false;
     }
     static ExactTravel.State state(double x,double y,double vx,double vy,boolean ground){
@@ -261,6 +266,9 @@ public final class PeriodicComboFightModel {
         if(sprint){float angle=(float)(fromA?s.serverYawA:s.serverYawB)*(float)Math.PI/180f;vx+=(double)(-sin(angle)*.5f);vy+=.1;vz+=(double)(cos(angle)*.5f);attacker=motion(attacker,attacker.vx()*.6,attacker.vy(),attacker.vz()*.6);}
         boolean send=fresh||(fromA?s.velocityChangedB:s.velocityChangedA);
         if(send){
+            // Match the native pre-S12 intervention, including double arithmetic order.
+            // Damage upgrades and unpacketized server motion retain native sprint lift.
+            if(fresh&&sprint&&c.sprintVertical!=.1)vy+=c.sprintVertical-.1;
             s.lastVx=vel(vx*(fresh?c.kbScale:1));s.lastVy=vel(vy*(fresh?c.verticalScale:1));
             s.add3(fromA?4:8,t+(fromA?c.otherRtt:c.ownRtt)/2,0,0,0,s.lastVx,s.lastVy,vel(vz*(fresh?c.kbScale:1)),false);
         }else victim=motion(victim,vx,vy,vz);

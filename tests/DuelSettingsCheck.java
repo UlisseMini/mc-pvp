@@ -62,6 +62,18 @@ public final class DuelSettingsCheck {
         for(String option:new String[]{"preset=unknown","preset=","preset=lock8 preset=lock8","PRESET=lock8 preset=LOCK8","preset=lock8 kb=vanilla hit_ticks=9"}){
             boolean rejected=false;try{parse("/duel wtap "+option,empty);}catch(IllegalArgumentException expected){rejected=true;}check(rejected,"reject invalid preset option "+option);
         }
+        DuelSettings housing=parse("/duel wtap preset=hypixel",empty);
+        check(housing.humanPing==80&&housing.botPing==0&&!housing.humanPingExplicit,"Housing preset preserves preferred human RTT");
+        check(housing.overrides.getProperty("combat_sprint_vertical").equals("0.07"),"Housing explicit sprint profile");
+        DuelSettings housingRematch=DuelSettings.parse(new String[]{"/rematch","preset=hypixel"},1,"boxing",35,120,new Properties());
+        check(housingRematch.botPing==35&&housingRematch.humanPing==120,"combat-only preset preserves both inherited RTTs");
+        check(parse("/duel wtap preset=hypixel myping=25 ping=70",empty).humanPing==25,"explicit human RTT wins");
+        DuelSettings nativeReset=DuelSettings.parse(new String[]{"/rematch","kb=vanilla"},1,"boxing",0,80,housing.overrides);
+        check(nativeReset.overrides.getProperty("combat_sprint_vertical").equals("0.1")&&!nativeReset.overrides.containsKey("practice_preset"),"vanilla resets fourth parameter and label");
+        check(parse("/duel wtap combat_sprint_vertical=.07",empty).overrides.getProperty("combat_sprint_vertical").equals("0.07"),"explicit property alias");
+        for(String option:new String[]{"sprint_vertical=NaN","sprint_vertical=-.1","sprint_vertical=1.1","sprint_vertical=.07 combat_sprint_vertical=.1","kb=vanilla sprint_vertical=.07"}){
+            boolean bad=false;try{parse("/duel wtap "+option,empty);}catch(IllegalArgumentException expected){bad=true;}check(bad,"reject sprint option "+option);
+        }
         System.out.println("PASS duel defaults, named/positional options, rematch isolation and invalid input rejection");
     }
 }

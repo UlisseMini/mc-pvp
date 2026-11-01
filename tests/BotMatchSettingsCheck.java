@@ -14,7 +14,7 @@ public final class BotMatchSettingsCheck {
         check(s.a.getProperty("click_cps").equals("20")&&s.b.getProperty("click_cps").equals("10"),"specific settings override shared settings");
         s=parse("lab match wtap hold-w kb_horizontal=0.95 hit_ticks=9");
         check(s.a.equals(s.b)&&s.b.getProperty("combat_hit_ticks").equals("9"),"combat profile shared by both players");
-        for(String value:new String[]{"a.kb_horizontal=0.9","b.hit_ticks=9","a.kb=vanilla"}){
+        for(String value:new String[]{"a.kb_horizontal=0.9","b.hit_ticks=9","a.kb=vanilla","a.sprint_vertical=.07","b.combat_sprint_vertical=.07"}){
             boolean rejected=false;try{parse("lab match wtap hold-w "+value);}catch(IllegalArgumentException e){rejected=true;}
             check(rejected,"reject asymmetric combat option "+value);
         }
@@ -39,6 +39,9 @@ public final class BotMatchSettingsCheck {
         for(String value:new String[]{"a.preset=lock8","b.preset=lock8","preset=lock8 a.preset=lock8","preset=unknown","preset=lock8 preset=LOCK8"}){
             boolean rejected=false;try{parse("lab match wtap hold-w "+value);}catch(IllegalArgumentException expected){rejected=true;}check(rejected,"reject match-scoped/invalid preset "+value);
         }
+        BotMatchSettings housing=parse("lab match wtap hold-w preset=hypixel");
+        check(housing.pingA==0&&housing.pingB==0&&housing.a.equals(housing.b)&&housing.a.getProperty("combat_sprint_vertical").equals("0.07"),"shared Housing preset uses zero added RTT only for bot match defaults");
+        BotMatchSettings configured=parse("lab match wtap hold-w preset=hypixel a.ping=60 b.ping=120");check(configured.pingA==60&&configured.pingB==120,"explicit added RTT remains separate");
         System.out.println("PASS bot match old syntax, shared and per-side settings, invalid options");
     }
 }

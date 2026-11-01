@@ -385,6 +385,7 @@ public final class Referee {
             }else if(cmd.equals("lab")&&args.length>=2&&args[1].equals("demo")){
                 if(args.length!=3)throw new IllegalArgumentException("Usage: /lab demo lock8 — 4s setup, then a 60s lock demonstration");
                 String preset=PracticePresets.normalize(args[2]);
+                if(!preset.equals(PracticePresets.LOCK8))throw new IllegalArgumentException("Only lock8 has a demo controller; hypixel is a provisional combat preset, not a demo.");
                 if(find(safeName(sender))!=null)throw new IllegalArgumentException("Use /stop before starting a demo.");
                 String a=freeBot(Set.of()),b=a==null?null:freeBot(Set.of(a));
                 if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}
@@ -505,7 +506,7 @@ public final class Referee {
         message(player(a),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules+" §b/stop §7to exit.");
         message(player(b),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules);
         if(!m.combat.vanilla())for(Object who:List.of(player(a),player(b)))
-            message(who,"§dModified combat for both players: §fKB ×"+m.combat.horizontal()+" horizontal, ×"+m.combat.vertical()+" vertical; fresh hit delay "+m.combat.freshTicks()+" ticks. §7Not an exact Hypixel profile.");
+            message(who,"§dModified combat for both players: §fKB ×"+m.combat.horizontal()+" horizontal, ×"+m.combat.vertical()+" vertical; sprint extra Y "+m.combat.sprintVertical()+"; fresh hit delay "+m.combat.freshTicks()+" ticks. §7Not an exact Hypixel profile.");
         if(pa.equals("human")){
             message(player(a),"§6Bot setup: §e"+ClickRate.cps(m.configB)+" CPS cap §8| §d"+DuelSettings.reach(m.configB)+" block reach §8| §bRTT: bot "+(int)pingB+", you "+(int)pingA+" ms");
             message(player(a),"§7Bot aim: "+m.configB.getProperty("aim_delay_ms","0")+" ms delay, "+m.configB.getProperty("aim_noise_deg","0")+"° noise, "+m.configB.getProperty("aim_turn_rate_dps","0")+"°/s cap (0=unlimited). W-tap delay: "+m.configB.getProperty("reaction_ms","150")+" ms.");

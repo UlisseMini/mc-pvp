@@ -4,7 +4,7 @@ import java.util.*;
 
 /** Per-duel overrides. Parsing never changes a shared policy or player preference. */
 public final class DuelSettings {
-    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8] [reach=3.0] [cps=20] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks=10]";
+    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8|hypixel] [reach=3.0] [cps=20] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks=10] [sprint_vertical=.1]";
     public final String mode;
     public final double botPing,humanPing;
     public final boolean humanPingExplicit;
@@ -25,8 +25,10 @@ public final class DuelSettings {
         }
         if(preset!=null){
             overrides.putAll(PracticePresets.defaults(preset));
-            botPing=PracticePresets.defaultControllerRtt(preset);
-            humanPing=PracticePresets.defaultOpponentRtt(preset);
+            if(PracticePresets.overridesDuelRtt(preset)){
+                botPing=PracticePresets.defaultControllerRtt(preset);
+                humanPing=PracticePresets.defaultOpponentRtt(preset);
+            }
         }
         Set<String> seen=new HashSet<>();int positional=0;
         for(int i=offset;i<args.length;i++){
@@ -37,6 +39,7 @@ public final class DuelSettings {
             }else if(pair.length==2){key=pair[0].toLowerCase(Locale.ROOT);value=pair[1];}
             else throw new IllegalArgumentException(USAGE);
             if(key.equals("botping"))key="ping";
+            if(key.equals("combat_sprint_vertical"))key="sprint_vertical";
             if(!seen.add(key))throw new IllegalArgumentException("Duplicate setting: "+key);
             switch(key){
                 case "preset": break; // Defaults were applied before every explicit option.
@@ -59,12 +62,15 @@ public final class DuelSettings {
                 }
                 case "tapdelay": overrides.setProperty("reaction_ms",Double.toString(bounded(value,0,1000,"W-tap observation delay (ms)")));break;
                 case "kb":
-                    if(!value.equals("vanilla"))throw new IllegalArgumentException("Use kb=vanilla, or explicit kb_horizontal/kb_vertical/hit_ticks settings");
+                    if(!value.equals("vanilla"))throw new IllegalArgumentException("Use kb=vanilla, or explicit kb_horizontal/kb_vertical/hit_ticks/sprint_vertical settings");
                     overrides.setProperty("combat_kb_horizontal","1.0");
                     overrides.setProperty("combat_kb_vertical","1.0");
                     overrides.setProperty("combat_hit_ticks","10");
+                    overrides.setProperty("combat_sprint_vertical","0.1");
                     if(overrides.containsKey("hurt_window_ticks"))overrides.setProperty("hurt_window_ticks","10");
                     break;
+                case "sprint_vertical":
+                    overrides.setProperty("combat_sprint_vertical",Double.toString(bounded(value,0,1,"Sprint extra Y")));break;
                 case "kb_horizontal": case "kb_vertical":
                     overrides.setProperty("combat_"+key,Double.toString(bounded(value,0,2,"Knockback multiplier")));break;
                 case "hit_ticks":
@@ -77,7 +83,7 @@ public final class DuelSettings {
                 default: throw new IllegalArgumentException("Unknown setting '"+key+"'. Use /help settings for all options.");
             }
         }
-        if(seen.contains("kb")&&(seen.contains("kb_horizontal")||seen.contains("kb_vertical")||seen.contains("hit_ticks")))
+        if(seen.contains("kb")&&(seen.contains("kb_horizontal")||seen.contains("kb_vertical")||seen.contains("hit_ticks")||seen.contains("sprint_vertical")))
             throw new IllegalArgumentException("Use kb=vanilla alone to reset combat settings, or give explicit multipliers/delay");
         String label=overrides.getProperty(PracticePresets.LABEL);
         if(label!=null&&!PracticePresets.combatMatches(label,overrides))overrides.remove(PracticePresets.LABEL);

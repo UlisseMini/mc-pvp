@@ -17,6 +17,12 @@ public final class PracticePresetsCheck {
         second.setProperty("combat_kb_horizontal","1.10");check(PracticePresets.combatMatches("lock8",second),"numeric combat comparison");
         second.setProperty("combat_hit_ticks","NaN");check(!PracticePresets.combatMatches("lock8",second),"invalid combat cannot retain label");
         for(String name:new String[]{"","vanilla","unknown"}){boolean rejected=false;try{PracticePresets.defaults(name);}catch(IllegalArgumentException expected){rejected=true;}check(rejected,"unknown preset: "+name);}
+        Properties housing=PracticePresets.defaults("HYPIXEL");
+        check(housing.getProperty("combat_kb_horizontal").equals("1.0")&&housing.getProperty("combat_kb_vertical").equals("1.0")&&housing.getProperty("combat_sprint_vertical").equals("0.07")&&housing.getProperty("combat_hit_ticks").equals("9"),"provisional Housing combat");
+        check(PracticePresets.combatMatches("hypixel",housing)&&!PracticePresets.overridesDuelRtt("hypixel"),"Housing keeps human configured RTT");
+        check(PracticePresets.defaultControllerRtt("hypixel")==0&&PracticePresets.defaultOpponentRtt("hypixel")==0,"bot-only zero added RTT defaults");
+        housing.setProperty("combat_sprint_vertical",".1");check(!PracticePresets.combatMatches("hypixel",housing),"sprint boost part of preset identity");
+        Properties legacy=PracticePresets.defaults("lock8");legacy.remove("combat_sprint_vertical");check(PracticePresets.combatMatches("lock8",legacy),"legacy omitted sprint boost means native .1");
         System.out.println("PASS lock8 defaults, canonical names, isolation and unknown rejection");
     }
 }
