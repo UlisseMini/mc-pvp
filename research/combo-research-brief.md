@@ -38,6 +38,30 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Current follow-up: broaden inference and build legal control
 
+Latest user continuation: diagnose the38-hit m1397seed7000hit9 oracle rescue
+against the1-hit legal failure at matched states; widen the calibrated calendar
+set to measure transfer. Once the legal controller beats plain W-tap across
+most calibrated calendars at hit9, run a SMALL serialized native paired batch
+on preset=hypixel. This authorizes native validation on a majority-improvement
+gate; it supersedes the older requirement to first achieve80% full-minute locks.
+Freeze the candidate and evaluation plan before the wider test, retain UNKNOWNs,
+keep hit10 separate, and do not interrupt a human duel or touch live Hypixel.
+
+Wider-transfer checkpoint: exact413-state rescue reconstruction reveals38 is
+censored by CUE_SERVICE_OVERLAP at24.166s, not a completed minute. One-HEAD probes
+isolate premature W resumption in m1397; coast then sprint rearm one HEAD later
+preserves the rescued opening. Adding only its413 own-feature rows improves new
+m1397 draws to9/9/19 (WT2/2/UNKNOWN) and previously unusedm1400 to6/9/UNKNOWN
+(WT2/2/UNKNOWN). Full frozen8-calendar x3-seed hit9 batch: revised10wins/3losses/
+1tie/10UNKNOWN, old7/7/1/9. Revised wins a majority of draws on4/8 calendars;
+native gate (>12/24 resolved strict wins AND5/8 calendars) FAILS. Hit10 revised
+0wins/6losses/10ties/8UNKNOWN. No native batch, no controller/model feature changes.
+Remaining m1399 loses1/1/1vsWT2/2/2. Its firstHEAD instead needs EARLIER W:
+one-key WT substitution then existing legal feedback raises1to4vsWT2. Do not
+generalize the first case to always brake longer. Timing UNKNOWNs require a
+validated busy-completion/FIFO extension, not guard bypass or favorable redraw.
+Artifacts: `research/hypixel-inference-20261101/oracle-transfer/findings.md`.
+
 Latest next step: close the oracle-to-legal gap by replaying the 79/51-hit
 witnesses and comparing oracle, plain W-tap and legal decisions in the **same
 physical states and observed histories**. Identify own-observable predictors of
