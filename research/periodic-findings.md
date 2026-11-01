@@ -63,6 +63,21 @@ Additional evidence, not controller comparisons:
 
 The summary and compressed rows include these qualifications. Accepted melee also records monotonic `combatOrder`, `lastAcceptedOrderA/B` and `lastFreshOrderA/B` so evaluators can order a fresh hit and return processed within the same server drain. These counters do not change physics.
 
+Two further held-out slices cover the first four seconds of matched native
+zero-delay W-tap m1245 and the poorer fixed-word repeat m1247. All 1,419 and
+1,380 requested event rows execute, with no state-bit or represented-packet
+mismatches; 161 nearest-box and 119 selected-ray checks have zero numeric error.
+These slices include both first returns. They reproduce the physical outcome
+given the clicks actually issued, not the policy's intended click gates. In
+particular, a short native tick can place a retry inside the strict 50 ms click
+spacing limit. A nominal-clock policy that assumes one successful injection per
+tick has an additional scheduling obligation even when recorded-input kernel
+replay is exact. Reproduce with:
+
+```sh
+python3 research/periodic-clock-replay.py m1245 m1247 --frames --transport-trace --seconds 4
+```
+
 ## Explicit limits
 
 - Native degenerate knockback at horizontal separation below .01 uses a random direction. The kernel stops there rather than inventing a deterministic vector. Historical m1193 has an exact prefix through about 4326.7 ms and an unsupported tail; it is not a full pass. The eight fixtures above finish without this stop.

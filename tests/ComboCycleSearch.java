@@ -90,7 +90,13 @@ public final class ComboCycleSearch {
             out.put("first_return_ms",Double.isNaN(firstReturnAt)?null:firstReturnAt);
             boolean completed=stop.equals("duration")&&ran>=requested-.001;
             out.put("primary_metric_complete",firstReturn||completed);
-            out.put("zero_return_horizon",firstReturn?false:completed?true:null);
+            // An unsupported tail before any return is unknown, not false.
+            // Mixing primitive booleans with null in a nested conditional can
+            // unbox that null before it reaches Map.put.
+            Boolean zeroReturn=null;
+            if(firstReturn)zeroReturn=Boolean.FALSE;
+            else if(completed)zeroReturn=Boolean.TRUE;
+            out.put("zero_return_horizon",zeroReturn);
             out.put("chain_start_ms",longestStart);out.put("chain_end_ms",longestEnd);out.put("chain_min_defender_margin",bestMargin);
             out.put("ready_windows",ready);out.put("missed_first_eligible_input_windows",miss);out.put("worst_first_eligible_ray",worstOwn);out.put("max_fresh_gap_ms",maxGap);
             out.put("censored_ready_windows",censored);out.put("best_chain_ready_windows",chainReady);out.put("best_chain_missed_ready_windows",chainMiss);

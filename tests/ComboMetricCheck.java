@@ -14,6 +14,12 @@ public final class ComboMetricCheck {
             if(score.freshBeforeReturn!=(ownFirst?2:1))throw new AssertionError("Count changed after return");
             if(!score.firstReturn||score.firstReturnAt!=200)throw new AssertionError("Return boundary");
         }
-        System.out.println("PASS primary first-return and unanswered-run metrics preserve within-drain order");
+        var incomplete=new ComboCycleSearch.Score(config,timing);
+        incomplete.stop="unsupported native random knockback";
+        var result=incomplete.result(new ComboCycleSearch.Plan(20,10,4,0,2,0),
+                new PeriodicComboFightModel.State(0,0,6,0),60000,1250);
+        if(result.get("zero_return_horizon")!=null||!Boolean.FALSE.equals(result.get("primary_metric_complete")))
+            throw new AssertionError("Unsupported no-return prefix must remain unknown");
+        System.out.println("PASS primary ordering and unknown unsupported-tail metrics");
     }
 }

@@ -7,9 +7,11 @@ details. Explain results plainly and distinguish tested behavior from hypotheses
 Before combat-model or combo experiments, read
 [the current research brief](research/combo-research-brief.md). It records the
 user's objective, constraints, hints and methodological corrections. The current
-goal requires own reach at the next **native fresh-damage window**, while denying
-return hits; it does not require continuous own reach during immunity. Delaying
-clicks does not redefine that window. Preserve old evidence under its original
+long-term target is own reach at the next **native fresh-damage window**, while
+denying return hits; it does not require continuous own reach during immunity.
+Delaying clicks does not redefine that window. Score missed windows separately
+from the primary matched improvement gate below; do not reject only candidates
+with a stricter criterion than W-tap. Preserve old evidence under its original
 metric definition.
 
 Check live status before deployment. Do not interrupt a human duel. Research

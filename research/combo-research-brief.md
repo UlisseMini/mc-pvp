@@ -38,6 +38,23 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Overnight mandate (2026-11-01)
 
+### Latest parallel POC direction
+
+The user now prioritizes a legal own-observation controller that sustains a long
+native lock against hold-W in **any declared scenario**, massively outperforming
+matched plain W-tap, before walking settings back toward vanilla. Run distinct
+GPT6.1Sol approaches: simplified analytic existence model, exact-kernel
+relaxation/continuation, witness-to-legal feedback, and justified richer-input
+search at a failure boundary. Astra continues the seven-hit vertical-cycle
+analysis. This supersedes any interpretation that small/vanilla settings must be
+solved first. All baseline and validation gates remain mandatory.
+
+Offline work may run in parallel with isolated owned files. Serialize native
+research matches and coordinate CPU load so clocks remain meaningful. The
+coordinator stops approaches that do not beat W-tap after a fair trial and focuses
+effort on positive, explainable evidence. Each approach writes short findings.
+See [worker ownership and experiment coordination](poc-20261101/COORDINATION.md).
+
 Continue autonomously without questions while the user sleeps. Focus exclusively
 on understanding combo dynamics; no RL or ML. Deliver either a near-indefinite
 vanilla hold-W lock, or a strong, explicitly scoped argument for impossibility
