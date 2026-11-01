@@ -48,6 +48,8 @@ public final class Referee {
             m.put("damage_hits_a",sa.breakdown.damageHitsLanded);m.put("damage_hits_b",sb.breakdown.damageHitsLanded);
             m.put("mode",mode);m.put("blocks_a",ba);m.put("blocks_b",bb);
             m.put("combat_profile",combat.state());
+            String practicePreset=configB.getProperty(PracticePresets.LABEL,"");
+            if(!practicePreset.isEmpty())m.put("practice_preset",practicePreset);
             long now=finish>0?finish:System.currentTimeMillis(),duration=Math.max(0,now-start);
             m.put("stats_a",sa.state(hb-sb.rodHits,now,duration));m.put("stats_b",sb.state(ha-sa.rodHits,now,duration));
             m.put("food_policy","full_food_saturation_every_20_ticks");m.put("fishing_rods",rods());
@@ -369,6 +371,20 @@ public final class Referee {
                 Match m=find(R.name(sender));if(m!=null)finish(m,"stopped");else{vanilla("gamemode 0 "+safeName(sender));teleport(sender,0,4,0);}
             }else if(cmd.equals("lab")&&args.length>=2&&args[1].equals("combat")){
                 CombatTuning.command(sender,args);
+            }else if(cmd.equals("lab")&&args.length>=2&&args[1].equals("demo")){
+                if(args.length!=3)throw new IllegalArgumentException("Usage: /lab demo lock8 — 4s setup, then a 60s lock demonstration");
+                String preset=PracticePresets.normalize(args[2]);
+                if(find(safeName(sender))!=null)throw new IllegalArgumentException("Use /stop before starting a demo.");
+                String a=freeBot(Set.of()),b=a==null?null:freeBot(Set.of(a));
+                if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}
+                loadPolicies();
+                start(a,b,"lock8","lock8-target",PracticePresets.defaultControllerRtt(preset),
+                    PracticePresets.defaultOpponentRtt(preset),"demo-"+System.nanoTime(),64_000,"boxing",
+                    PracticePresets.defaults(preset),PracticePresets.defaults(preset),6,0,"");
+                Match demo=find(a);
+                message(sender,"§bLock8 demo §f"+demo.id+"§7: 4s moving/no-click opponent setup, then 60s active hold-W. Reach3, cap20CPS, RTT150/0, KB1.1/1, hit8.");
+                if(player(safeName(sender))!=null)command(sender,"watch "+demo.id);
+                else message(sender,"Watch with /watch "+demo.id+"; afterwards /replay "+demo.id);
             }else if(cmd.equals("lab")&&args.length>=4&&MODES.contains(args[1])&&!args[1].equals("boxing")){
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
                 if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}

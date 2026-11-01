@@ -20,6 +20,26 @@ the ablation. Deliberate S/N actuation now works as requested, but the tested
 preparation protocol wastes time and spacing and performs worse. The successful
 controller's 150 fresh hits are all normal, not sprint hits.
 
+## Run it yourself
+
+- **`/lab demo lock8`** starts the same 4-second setup plus 60-second maintenance
+  demonstration, and automatically spectates it when used in-game. Its match ID
+  is printed for `/replay <id>` afterwards.
+- **`/duel lock8 boxing preset=lock8`** faces the controller yourself. The preset
+  sets bot/your added RTT to150/0ms, both players' combat to horizontalKB1.1,
+  verticalKB1, hit8, and the bot to native reach3 and cap20CPS with perfect aim.
+  Your attacks are never disabled. To reproduce the controlled opening, holdW
+  without clicking for the first4s, then keep holdingW and attack.
+- `/lab match lock8 lock8-target preset=lock8` is the ordinary first-to100 version.
+  Replace `lock8` with `lock8-wtap` for the matched baseline (same4s acquisition).
+- Explicit options override preset defaults, regardless of token order, e.g.
+  `/duel lock8 boxing preset=lock8 ping=60 myping=60`. `/rematch` preserves them.
+  A new preset does not change shared policies or server combat defaults.
+
+`/help settings` and `/help matches` include these commands. The aliases preserve
+exactly the tested controller, W-tap and opponent inputs. This preset names the
+experimental scenario; it is not claimed to reproduce Hypixel.
+
 ## Native paired results
 
 Primary metric: fresh hits in the fixed 4000..64000 ms interval before the first
