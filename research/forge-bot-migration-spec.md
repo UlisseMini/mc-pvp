@@ -2,6 +2,8 @@
 
 Status: approved for implementation by the user, 2026-11-01. This is an implementation contract, not a claim that migration is already complete.
 
+User clarification (takes precedence over strict legacy parity): **functional equivalence is the target.** Small differences are acceptable when the bots behave substantially the same. Prefer simpler shared code and ordinary Forge integration over elaborate reproduction of incidental legacy timing. Exact action timestamps, callback phase identity and bit-for-bit legacy decisions are not acceptance gates. Preserve real native mechanics, policy intent/settings, bot/human separation and reliable practice/recording/replay behavior; diagnose and document meaningful differences.
+
 ## Objective
 
 Run production bot slots as real HeadlessMC Minecraft Java 1.8.9 clients with the same Forge practice bridge and practice module artifacts used by human clients. Share observation, capture, archive, transport, reach mathematics and replay support. Add an explicitly enabled bot controller to that mod. Preserve normal human behavior by default, retain the legacy bot backend for comparison and rollback, and migrate the default backend only after documented validation.
@@ -24,7 +26,7 @@ Baseline: `9e5624d` on `codex/headless-pvp-lab`, including sumo, two-second seam
 
 ## Scope and non-goals
 
-Implement the runtime migration, shared client services, explicit bot role, parity instrumentation, regression tests, operational flags, documentation and rollback. Keep `/bots`, `/duel`, `/rematch`, `/drill`, `/matches`, `/watch`, `/replay`, `lab match`, `lab <mode>`, ping persistence and per-duel overrides working.
+Implement the runtime migration, shared client services, explicit bot role, behavior-comparison instrumentation, regression tests, operational flags, documentation and rollback. Keep `/bots`, `/duel`, `/rematch`, `/drill`, `/matches`, `/watch`, `/replay`, `lab match`, `lab <mode>`, ping persistence and per-duel overrides working.
 
 Do not change the Minecraft/server version, policies, combat rules, reaction settings, default reach/CPS, packet latency semantics, sumo footprint or player UI as part of migration. Current practice overrides (up to 30 CPS and 1–5 block bot reach) are intentional user-controlled features and must remain labeled and scoped to bots. Do not restore obsolete 150 ms/10 CPS restrictions where existing policies explicitly override them. Do not introduce new tuning/evolution experiments to compensate for migration regressions.
 
@@ -54,7 +56,7 @@ Release inputs on idle, match end, target loss, disconnect, respawn, policy erro
 
 Prefer a Java 8-compatible policy/controller core, fed by immutable local observation snapshots and returning input intents. Share existing algorithms and numerical helpers between backends where practical; preserve the archived baseline independently so extraction cannot invalidate the comparison.
 
-The Forge adapter supplies mapped native state, exact callback placement, input injection and lifecycle. Keep server Java 17 classes out of the human mod. Do not ship two complete independent implementations of the policies or capture pipeline. If temporary port duplication is unavoidable during extraction, enumerate it, prove decisions match, and consolidate before calling the migration complete. Semantic differences required by mappings/runtime versions must be documented and tested, not hidden in mechanical rewrites.
+The Forge adapter supplies mapped native state, appropriate callback placement, input injection and lifecycle. Reuse convenient Forge hooks when they preserve functional behavior; reproduce legacy hook placement only where it matters. Keep server Java 17 classes out of the human mod. Do not ship two complete independent implementations of the policies or capture pipeline. If temporary port duplication is unavoidable during extraction, enumerate it, verify equivalent strategy behavior, and consolidate before calling the migration complete. Semantic differences required by mappings/runtime versions must be documented and tested, not hidden in mechanical rewrites.
 
 Inventory all supported policy kinds and configuration keys, including hold-w, standstill, ordinary/one-tick W-tap, hit-select, Zest variants, blockhit timing, spacing/model candidates, burst/CPS variants and scripted research probes. Preserve their semantics, inputs and existing logs. A policy that cannot be migrated is a cutover blocker, not a silent fallback to hold-w.
 
@@ -90,34 +92,34 @@ Stable Forge/coremod hook changes require a client process restart. Preserve hot
 
 ## Implementation phases and required checkpoints
 
-1. **Audit/baseline.** Inventory hooks, policies, capture events, lifecycle, current launch versions and dependencies. Save baseline jar/source hashes and representative traces. Identify exact vanilla callback placement, especially frame clicks versus ticks, packet application and sprint changes. Send the parent a concise architecture/checkpoint report before major implementation.
+1. **Audit/baseline.** Inventory hooks, policies, capture events, lifecycle, current launch versions and dependencies. Save baseline jar/source hashes and representative traces. Understand existing callback placement, especially frame clicks versus ticks, packet application and sprint changes, so accidental regressions can be distinguished from harmless differences. Send the parent a concise architecture/checkpoint report before major implementation.
 2. **Role and shared services.** Add default-human/explicit-bot configuration, sole input ownership and common capture/transport routing. Add meaningful negative tests: human never controlled, controller cannot use diagnostic remote state, stale/invalid controls release inputs, no double recording.
 3. **Forge bot adapter.** Port/share all supported policies, map necessary native hooks, retain scientific trace compatibility, and launch one isolated Forge slot. Match commands and custom reach/CPS/ping settings remain unchanged.
-4. **Parity and integration.** Run the tests below; diagnose discrepancies by event/input phase instead of tuning policies. Keep old/new runtime differences explicit. Expand to mixed and eight-slot runs only once one slot is sound.
+4. **Parity and integration.** Run the representative tests below; diagnose substantive discrepancies by event/input phase. Do not retune policies to hide a broken port or emulate incidental timing without a demonstrated functional reason. Keep old/new runtime differences explicit. Expand to mixed and eight-slot runs only once one slot is sound.
 5. **Cutover preparation.** Provide changes, complete evidence, hashes, resource usage, known limits, exact launch/rollback commands and any human restart requirement. Rebase/merge the latest parent changes before final verification. Ask the parent to reserve a deployment window; no additional user permission is required for this already authorized migration.
 6. **Deploy and verify.** Coordinate the live restart at idle/drill reset boundary. Switch the default to Forge only if acceptance criteria pass. Confirm eight healthy Forge bots, human duels, live views and new recordings. Retain legacy source/backend. Record the deployed commit/artifact hashes and rollback path.
 
 ## Validation and acceptance
 
-### Deterministic component and callback parity
+### Component behavior and native input correctness
 
 - Existing controller, click-rate, target-watchdog, model/physics, damage/rule and client math/capture/replay tests pass where affected. Use Java 8 runtime tests for code shipped to Forge, not only Java 17 compilation.
-- Feed identical timestamped observation/config sequences to baseline and migrated policy core; compare input intents, click timestamps/gates, sprint/W/use transitions and state reset behavior exactly. Include critical immunity upgrades, missed attacks, block release, target replacement, changing pings, reaction windows and configured CPS/reach limits.
-- Instrument native callback/order boundaries for old and Forge clients. Verify click dispatch, packet application, native attack slowdown, W-tap and block activation occur at equivalent phases. Physics and deterministic replay tests should retain their existing exact/tight validated tolerances. Do not lower tolerances to make migration pass.
-- Never claim networked match scores must be bit-identical: independent JVM/server phases vary. Report deterministic policy/physics parity separately from statistical live-match parity.
+- Use representative timestamped observation/config sequences to compare baseline and migrated policy behavior: intended W-tap/reset logic, click gating/cadence, block timing and state resets. Exact equality is useful when cheap, but differences in precise action timestamps or internal states are acceptable if strategy intent and configured limits hold. Include critical immunity upgrades, missed attacks, block release, target replacement, changing pings, reaction windows and CPS/reach limits.
+- Inspect native callback/order boundaries where needed to verify click dispatch, packet application, attack slowdown, W-tap and block activation work correctly. Legacy phase identity is not required. Existing tests of unchanged native physics/reach mathematics should retain their validated tolerances; this clarification permits different control scheduling, not incorrect mechanics or fabricated measurements.
+- Never require or claim identical networked match scores: independent JVM/server phases vary. Report functional behavior checks and observed match outcomes separately. Do not attempt to prove statistical equality or emulate exact legacy decisions as a migration requirement.
 
 ### Live comparative matrix
 
-Use controlled start positions/kit/configs, stable server tick rate, balanced sides and recorded ping assignments. Start with at least three repeats per selected condition; increase only where discrepancies require it. Include:
+Use controlled start positions/kit/configs, stable server tick rate, balanced sides and recorded ping assignments. Cover the categories below with a small representative set, not an exhaustive cross-product. Repeat a condition when needed to understand a meaningful discrepancy; there is no mandatory fixed repeat count for every configuration. Include:
 
-- Legacy/legacy, Forge/legacy, legacy/Forge and Forge/Forge hold-w versus W-tap at 0/0 and asymmetric 20/80 ms RTT. Equal-policy cross-backend matches detect side/backend bias. Include 80/20 where needed to separate ping from backend effects.
+- Representative legacy/legacy, mixed-backend and Forge/Forge hold-w versus W-tap matches, covering zero and asymmetric ping. Balance sides for comparisons that suggest a backend effect. Equal-policy cross-backend or reversed-ping matches are diagnostic follow-ups when needed, not a required full matrix.
 - Standstill and a no-click moving target for reach/first-contact and input suppression checks; verify 3.0 reach boundary and at least one explicitly modified reach setup.
 - 10 CPS and a representative higher configured rate (20 or 30), including miss cooldown and immunity clicks. Confirm actual native attempt cadence without unauthorized extra swings/attacks.
 - `blockhit_timing` versus W-tap in diamond; inspect native blocked-damage events and use/release timing, not only win rate. Include a Zest strafe policy and a model-based policy.
 - At least one completed native duel in every mode: boxing, diamond, diamond_box, rod_diamond and sumo. Verify kits, unbreakable items, sumo ring-out/full health, health/damage/block metrics and rod behavior unchanged.
 - Capture comparison: packet counts/types/order, missing/drop/error counters, both logical/render pose fields, source/role IDs, first/last timestamps and archive footers. Extra Forge handshake/coordination packets may differ; explicitly whitelist/document them without hiding gameplay differences.
 
-Report scores, first-contact times, accepted hit intervals, click attempts, W/sprint/use transitions, blocks, view validity, observer errors, tick/frame timings and capture coverage. Acceptance requires exact deterministic intent parity and no unexplained systematic combat/input change. Do not set an arbitrary score tolerance after seeing results. Live samples support regression detection; they do not prove statistical equality or bit-for-bit execution.
+Report scores, first-contact times, accepted hit intervals, click attempts, W/sprint/use transitions, blocks, view validity, observer errors, tick/frame timings and capture coverage. Acceptance requires correct native controls/mechanics, recognizable equivalent strategies, preserved settings and reliable practice/recording/replay features. Small timing or outcome differences are acceptable. Investigate substantial unexplained behavior changes, but do not add compatibility machinery solely for exact legacy matching. Live samples support functional regression detection; they do not prove statistical equality or bit-for-bit execution.
 
 ### User-visible and operational checks
 
@@ -132,7 +134,7 @@ Report scores, first-contact times, accepted hit intervals, click attempts, W/sp
 
 Commit implementation/tests/docs in reviewable steps. Keep `research/forge-bot-migration-spec.md` updated with justified deviations; do not weaken acceptance silently. Add an evidence directory with machine-readable configuration/results, runtime/source/artifact hashes, native checks, representative trace comparisons, archive integrity reports, resource/timing measurements and known limitations. Do not commit full noisy session/auth logs or huge recordings unnecessarily; reference local recording IDs and retain concise reproducible analyses.
 
-Final handoff must distinguish implemented, tested, deployed and pending-human-restart states. Include exact commands to start Forge, start legacy, select test backends, duel bots, run the parity checks and roll back. Mention any features that remain legacy-only as blockers rather than declaring the migration done.
+Final handoff must distinguish implemented, tested, deployed and pending-human-restart states. Include exact commands to start Forge, start legacy, select test backends, duel bots, run the functional comparison checks and roll back. Mention any features that remain legacy-only as blockers rather than declaring the migration done.
 
 ## Concurrent-work ownership
 
