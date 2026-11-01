@@ -36,6 +36,69 @@ or looser scoring than the oracle. The historical `combo-wtap20` policy defaults
 to150ms reaction; explicitly label it and include a zero-delay plain W-tap
 reference for zero-delay research controllers rather than silently changing it.
 
+## Current follow-up: broaden inference and build legal control
+
+The user requests three concrete next steps after the provisional preset:
+
+1. Expand knockback inference beyond four stationary launches to all 297
+   plausible self-melee packets and other-player trajectories. Use the coupled
+   mechanics, including prior **server** velocity, attacker sprint/yaw/position
+   and packet processing uncertainty. Use held-out validation. Do not obtain a
+   spurious fit by independently selecting a convenient latent velocity from
+   each target S12. If horizontal coefficients/cap remain unidentifiable,
+   specify the active recording needed: counts, victim/attacker states and
+   which ambiguity each intervention resolves.
+2. Challenge the nine-tick conclusion explicitly against clock drift, phase,
+   packet staging, duplicate or synthetic hurt animations, and damage versus
+   animation semantics. Use alternative hypotheses and known native labels;
+   retain the distinction between an effective hit interval and exact internal
+   server counters.
+3. Continue on `preset=hypixel` toward a **legal own-observation controller**.
+   Oracle witnesses establish available input authority but are not the target
+   deliverable. Keep calibrated timing, matched W-tap and multiple seeds/phases.
+   Use the early-entry and pre-knockback-movement diagnoses to guide the next
+   simple feedback design, with explicit observation-leakage checks.
+
+The current analyses are in `coupled-kb-fit`, `hit-delay-alternatives` and
+`legal-maintenance` under `research/hypixel-inference-20261101`. No live Hypixel
+actions or anti-AFK work are authorized by this follow-up.
+
+Follow-up checkpoint: all 297 plausible self hits are retained (148/149 temporal
+split). Broad latent-motion/direction freedom makes vanilla, native+.07 and the
+rough pre-cap hypothesis all cover297/297; this is non-identification. Coupled
+report-index propagation gives11 conditional contexts, but no shared tuple in
+the declared243-grid passes development. Native arithmetic checks match220
+preattack My labels and30 full launch vectors. Horizontal/cap coefficients are
+not newly identified; use the active recording protocol instead of claiming a
+precise fit from free nuisance states.
+
+S1C watcher0 sprint metadata is available for all297 plausible attackers
+(173true/124false); it agrees with all30 labeled native launches but is a delayed
+proxy (median age496ms). Holding that proxy fixed leaves the conditional fit
+failures unchanged. Do not say attacker sprint has no observable proxy, or treat
+the proxy as guaranteed attack-time truth. Practical next data are20 isolated
+normal,20 sprint and20 rising-normal contacts, recording before house entry;
+attacker POV is optional stronger evidence, not a prerequisite.
+
+The alternative timing audit retains all6110 statuses with stricter boundaries.
+All308 paired own S12/status events share the same tick labels and306 intervals,
+so the pattern is not animation-only. T8 andT9 fit; T10 fails repeated chains
+under tight phase bounds, but wide staging or rare synthetic/reset events can
+rescue it. Health-confirmed38 events and S03-only broad timing do not rejectT10.
+Use “provisional effective hurt/launch opportunity”, not exact measured damage
+immunity. The installed profile remains a declared approximation.
+
+Legal work: the own-motion early-lateral law loses6/ties1 againstWT in7 resolved
+paired cases, plus1 shared acquisitionUNKNOWN. Its8-tick W-rise guard blocks
+early braking. A one-change removal gives earlier release but over-brakes and
+loses throughput: loses5/ties2, sameUNKNOWN. No minute-locks for any arm. All
+repeated baselines and own-stream replay/copy checks are exact. STOP this law;
+no native promotion or extra strength/gain feature is justified. The next gap
+is maintaining the next own-hit opportunity while preserving separation before
+opponent movement, not maximizing either braking or knockback in isolation.
+The separate linear own-view predictor fails on range margins (~.42 median,
+~1.45 p95 held-out blocks); smoothing removes extreme errors but not false safety.
+
 ## Current priorities: Hypixel recordings (2026-11-01, afternoon)
 
 These supersede the vanilla-first target and the earlier task order below:
