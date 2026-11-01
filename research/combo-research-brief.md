@@ -38,6 +38,24 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Overnight mandate (2026-11-01)
 
+### Current priority: continue the anchor toward vanilla
+
+The user explicitly rejects zero vertical KB plus two-tick fresh damage as the
+desired combat regime. Preserve that POC as an anchor only. The deliverable is
+the closest-to-vanilla **natively demonstrated** lock with matched W-tap, plus
+the mechanical reason it breaks at the next continuation step. Desired settings
+are fresh-hit intervals around9–10 ticks and horizontal/vertical KB multipliers
+within roughly0.9–1.1 of vanilla; do not claim these numbers are verified Hypixel
+constants. Follow the hit-delay ladder2→4→6→8→10 (also examine9) and restore
+vertical KB toward1. Separate one-axis causal changes from joint compensation.
+
+The old always-W gap law may leave its control-authority range as the hit interval
+grows. Diagnose its failures against W-tap, then change inputs only from that
+mechanism. Failed acquisition is not maintenance infeasibility, and the boundary
+of one controller is not a universal boundary. Model candidates remain proposals
+until native repeated pairs confirm them with clean timing. Do not substitute
+another far-from-vanilla POC or more tuning at hit2 for this continuation result.
+
 ### Latest parallel POC direction
 
 The user now prioritizes a legal own-observation controller that sustains a long
