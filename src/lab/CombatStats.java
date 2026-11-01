@@ -6,8 +6,19 @@ import java.util.*;
 public final class CombatStats {
     int crits,rodHits,upgrades;
     double regenerated,damageDealt,damageTaken,otherDamage;
-    Map<String,Object> state(){return Map.of("crits",crits,"rod_hits",rodHits,"damage_upgrades",upgrades,
-        "regenerated",regenerated,"damage_dealt",damageDealt,"damage_taken",damageTaken,"other_damage",otherDamage);}
+    Map<String,Object> state(int meleeHitsTaken){
+        Map<String,Object> state=new LinkedHashMap<>(Map.of("crits",crits,"rod_hits",rodHits,"damage_upgrades",upgrades,
+            "regenerated",regenerated,"damage_dealt",damageDealt,"damage_taken",damageTaken,"other_damage",otherDamage));
+        state.put("melee_hits_taken",meleeHitsTaken);state.put("damage_taken_per_hit",damageTakenPerHit(meleeHitsTaken));return state;
+    }
+    /** Actual opponent health loss, including native crit/block/armor effects and partial immunity upgrades.
+     * Rod contacts have zero damage and are excluded by the caller's incoming melee count. */
+    Double damageTakenPerHit(int meleeHitsTaken){return meleeHitsTaken==0?null:Math.max(0,damageTaken-otherDamage)/meleeHitsTaken;}
+    String damageTakenPerHitText(int meleeHitsTaken){
+        Double average=damageTakenPerHit(meleeHitsTaken);
+        return "  §cDamage taken per hit: "+(average==null?"§7N/A (no melee hits)":
+            String.format(Locale.ROOT,"§f%.2f hearts §7(%d melee hits)",average/2,meleeHitsTaken));
+    }
     static Referee.Match match(Object p){
         if(Referee.server==null||!"server".equals(System.getProperty("lab.role")))return null;
         Referee.Match m=Referee.find(R.name(p));return m!=null&&System.currentTimeMillis()>=m.start&&m.finish==0?m:null;
@@ -44,11 +55,12 @@ public final class CombatStats {
             Referee.append(m.replay,Map.of("type","critical","time",System.currentTimeMillis(),"attacker",who,"target",victim));
         }catch(Throwable e){if(Referee.errors++<10)e.printStackTrace();}
     }
-    void summary(Object recipient,String name,int hits,int blocks,boolean rods,Number health){
+    void summary(Object recipient,String name,int hits,int blocks,boolean rods,Number health,int meleeHitsTaken){
         String hp=health==null?"§7HP: unavailable":String.format(Locale.ROOT,"§cHP: %.2f/10",health.doubleValue()/2);
         Referee.message(recipient,name+" §8| "+hp+" §8| §eHits: "+hits+(rods?" §7("+rodHits+" rod)":""));
         Referee.message(recipient,String.format(Locale.ROOT,"  §dCrits: %d §8| §bBlocks: %d §8| §aRegen: +%.2f",crits,blocks,regenerated/2));
         Referee.message(recipient,String.format(Locale.ROOT,"  §6Damage dealt: %.2f §8| §cTaken: %.2f §8| §7Immunity upgrades: %d%s",
             damageDealt/2,damageTaken/2,upgrades,otherDamage>0?String.format(Locale.ROOT," §8| §7Other damage: %.2f",otherDamage/2):""));
+        Referee.message(recipient,damageTakenPerHitText(meleeHitsTaken));
     }
 }

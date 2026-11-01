@@ -91,6 +91,13 @@ Non-three-block setups are visibly marked **modified-reach practice**, recorded
 with effective settings, and excluded from vanilla ladder qualification. Player
 ping preferences are stored by name in `runtime/preferences/`.
 
+After a match, each player's **damage taken per hit** is their actual health
+lost to the opponent divided by accepted melee hits received, displayed in
+hearts. This includes the actual effects of crits, blocks, armor, Protection IV
+and partial immunity damage upgrades. Zero-damage rod contacts and environmental
+damage are excluded; regeneration is not subtracted. Lethal damage counts only
+the HP actually lost, and no melee hits received is shown as `N/A`.
+
 Successful sword blocks play a short `note.pling` only to the blocking player.
 The server observes the actual vanilla damage-reduction branch, after attack
 acceptance and before armor. Merely holding right-click, an opponent's miss, or

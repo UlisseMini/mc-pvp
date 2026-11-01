@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import re
 import subprocess
 import time
 import uuid
@@ -67,6 +68,7 @@ def run():
     crits=[e for e in all_events if e['type']=='critical']
     starts=[e['match'] for e in all_events if e['type']=='start']
     log=(out/'client.log').read_text()
+    plain=re.sub(r'§[0-9a-fk-or]','',log,flags=re.I)
     checks={
         'native_client_clean_exit':process.returncode==0 and 'at lab.' not in log,
         'source_unchanged_during_probe':all(hashlib.sha256((ROOT/f).read_bytes()).hexdigest()==h for f,h in frozen.items()),
@@ -92,6 +94,8 @@ def run():
     }
     for g in games:
         es=events[g['id']]
+        summary=plain.split('Finished '+g['id']+' ',1)[-1].split('Finished ',1)[0]
+        expected_per_hit=[]
         for side in ('a','b'):
             name=g[side];stats=g['stats_'+side];hits=[e for e in es if e['type']=='hit' and e['attacker']==name]
             healed=sum(e['amount'] for e in es if e['type']=='heal' and e['player']==name)
@@ -100,6 +104,16 @@ def run():
             checks[g['id']+'_'+side+'_counters_match_events']=(g['hits_'+side]==len(hits) and stats['rod_hits']==sum(e['rod'] for e in hits)
                 and stats['damage_upgrades']==sum(e['damage_upgrade'] for e in hits) and abs(stats['regenerated']-healed)<.0001
                 and g['blocks_'+side]==sum(e['type']=='blocked_damage' and e['target']==name for e in es))
+            opponent=g['b' if side=='a' else 'a']
+            incoming=[e for e in es if e['type']=='hit' and e['attacker']==opponent and e['target']==name and not e['rod']]
+            actual_loss=sum(e['amount'] for e in es if e['type']=='health_damage' and e['attacker']==opponent and e['target']==name)
+            average=actual_loss/len(incoming) if incoming else None
+            checks[g['id']+'_'+side+'_damage_per_hit_matches_native_events']=(stats['melee_hits_taken']==len(incoming) and
+                (stats['damage_taken_per_hit'] is None if average is None else abs(stats['damage_taken_per_hit']-average)<.000001))
+            expected_per_hit.append('N/A (no melee hits)' if average is None else f'{average/2:.2f} hearts ({len(incoming)} melee hits)')
+        # The native logger wraps chat in an XML CDATA element; only compare the message.
+        received=[value.split(']]>',1)[0] for value in re.findall(r'Damage taken per hit: ([^\r\n]*)',summary)]
+        checks[g['id']+'_both_damage_per_hit_chat_values']=received==expected_per_hit
     report={'checks':checks,'passed':all(checks.values()),'games':games,'script':script,'source_sha256':frozen,'agent_sha256':agent_hash,
             'rod_contacts':len(rods),'criticals':len(crits),'blocks':len(blocks),'chimes':len(sounds),'food_samples':len(samples)}
     (out/'food-samples.json').write_text(json.dumps(samples,indent=2)+'\n')
