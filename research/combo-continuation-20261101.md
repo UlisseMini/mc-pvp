@@ -13,6 +13,45 @@ The desired neighborhood is fresh damage every9–10 ticks, horizontal and verti
 knockback multipliers0.9–1.1. Those are the requested bounds, not claimed Hypixel
 constants. Reach is3 for both players and added RTTs are0/120ms unless stated.
 
+## Latest input-timing checks (model only)
+
+The long vanilla sequence depends on **when the ordinary click is consumed**,
+not just which input ticks leave the click gate open. At the shared51ms admission
+interval an immune contact consumes at1250ms after sprint has resumed; its native
+40% attacker drag preserves spacing. With50ms admission, the same gate word
+consumes earlier and loses that brake. Explicitly requesting the original own
+consumption slots restores the long prefix without changing combat physics.
+
+| Vanilla, same canonical seed and60s horizon | Fresh before return | Plain W-tap | Zero returns for60s |
+|---|---:|---:|---|
+| Original persistent gate, shared51ms admission |105|3|yes|
+| Original persistent gate, shared50ms admission |6|3|no|
+| Explicit own consumption slots, shared50ms |83|3|no|
+| Same slots, real-frame prequeue after prior own movement |83|3|no|
+| Same slots, one W-release at47800ms |95|3|no|
+| Same slots, W-release at47750 and47800ms |84|3|no|
+
+Both explicit encodings reproduce418 ordinary queued consumptions, including
+immune contacts and misses. They never cancel an admitted click. The one-tick
+release adds about0.277 blocks of gap before the old48.26s denial failure and
+prevents it; the unchanged later word then misses reach and returns at55.925s.
+Two releases spend too much of the subsequent reach budget and return at49.525s.
+This isolates an effective spacing actuator and its cost, not a feedback solution.
+These repairs are single-phase diagnostics, not native or robust-cycle results.
+
+The unchanged frame-prequeue contract was then checked over11 physical phases
+at the shared50ms cap. Seven give83 versus W-tap3; four give0 versus0 because
+the opponent returns before the first planned1050ms maintenance click. All11
+reproduce the418 consumption slots exactly. Canonical51ms gives105 versus3;
+53ms misses three slot deadlines and drops to10 versus3. A53ms interval becomes
+55ms on the model's frame grid: the first missed6400ms deadline follows an
+admission at6347.5ms, so the next press cannot legally be injected before6400.5.
+This is a bounded timing test, not a forecast of native frame service.
+
+See the [frame-contract findings](poc-20261101/anneal/mechanism/frame-prequeue-findings.md)
+[timing spread](poc-20261101/anneal/mechanism/frame-prequeue-timing-findings.md),
+and [one/two-release audit](poc-20261101/anneal/astra-boundary/late-gap-repair-findings.md).
+
 ## Native comparisons
 
 Every new comparison uses the same20CPS ceiling, perfect own-client aim, zero

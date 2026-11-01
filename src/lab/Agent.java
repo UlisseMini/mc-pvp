@@ -46,6 +46,7 @@ public final class Agent implements ClassFileTransformer {
                     method.instructions.insert(callThis("lab/Client", "frame")); changed = true;
                 } else if (name.equals("ave") && method.name.equals("aw") && method.desc.equals("()V")) {
                     method.instructions.insert(callThis("lab/ScienceTrace","clickBefore"));
+                    method.instructions.insert(callThis("lab/Client","inputWordConsumed"));
                     for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)
                         method.instructions.insertBefore(ins,callThis("lab/ScienceTrace","clickAfter"));
                     changed=true;
@@ -210,7 +211,10 @@ public final class Agent implements ClassFileTransformer {
                 } else if(name.equals("pr")&&method.name.equals("g")&&method.desc.equals("(FF)V")){
                     InsnList before=new InsnList();before.add(new VarInsnNode(Opcodes.ALOAD,0));before.add(new VarInsnNode(Opcodes.FLOAD,1));before.add(new VarInsnNode(Opcodes.FLOAD,2));
                     before.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/ScienceTrace","movementBefore","(Ljava/lang/Object;FF)V",false));method.instructions.insert(before);
-                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(ins,callThis("lab/ScienceTrace","movementAfter"));
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN){
+                        method.instructions.insertBefore(ins,callThis("lab/ScienceTrace","movementAfter"));
+                        method.instructions.insertBefore(ins,callThis("lab/Client","inputWordMoved"));
+                    }
                     changed=true;
                 } else if(name.equals("bex")&&method.name.equals("m")&&method.desc.equals("()V")){
                     method.instructions.insert(callThis("lab/ScienceTrace","interpolationBefore"));

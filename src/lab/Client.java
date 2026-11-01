@@ -40,6 +40,8 @@ public final class Client {
     static final CycleController cycle=new CycleController();
     static final FrozenLegalCycleController frozenCycle=new FrozenLegalCycleController();
     static final TickIndexedLegalCycleController tickCycle=new TickIndexedLegalCycleController(true,false);
+    static InputWordController inputWord;
+    static InputWordController.Decision inputWordDecision;
     static StrongRelaxationPolicy strongGap=new StrongRelaxationPolicy();
     static final BurstClickController burstClicks=new BurstClickController();
     static BurstClickController.Decision burstDecision;
@@ -94,6 +96,8 @@ public final class Client {
         if(!nativeInputPoll)ReplicationTrace.frame();
         try {
             if(services!=null)services.frame();
+            if(!match.equals(controls.getProperty("match","")) ||
+                    (controls.containsKey("input_word")&&inputWord==null))return;
             if(player==null || opponent==null || !targetReady || (Boolean)R.get(opponent,"isDead") || !active())return;
             // Tracking uses only this client's entity view; defaults preserve perfect aim.
             double dx=R.num(opponent,"posX")-R.num(player,"posX"), dz=R.num(opponent,"posZ")-R.num(player,"posZ");
@@ -191,12 +195,14 @@ public final class Client {
             // cadence when the native ray selects the opponent. It does not
             // inspect immunity, accepted hits or any server-only state.
             boolean contactClicks=controls.getProperty("click_mode","fixed").equals("contact");
-            if(clickGate && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
+            boolean wordPermits=inputWord==null||inputWordDecision==null||!inputWordDecision.active||inputWord.allowInjection(ticks,nativeInputPoll);
+            if(clickGate && wordPermits && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 if(controls.getProperty("kind","").equals("cycle")){cycle.queued(ticks);clickGate=false;}
                 if(controls.getProperty("kind","").equals("frozen-cycle") || System.currentTimeMillis()-epoch<number("frozen_cycle_opening_ms",0))clickGate=frozenCycle.queued();
                 if(controls.getProperty("kind","").equals("tick-cycle"))clickGate=tickCycle.queued();
+                if(inputWord!=null&&inputWordDecision!=null&&inputWordDecision.active)clickGate=inputWord.queued();
                 // A planned Ctrl pulse ends after the first queued click. Native
                 // sprint persists until its ordinary stop condition/attack; later
                 // clicks do not automatically re-enable it. No hit-result oracle.
@@ -215,6 +221,7 @@ public final class Client {
                 issued.put("attack_reach",attackReach());
                 issued.put("native_target_in_range",selected==opponent);
                 issued.put("minimum_click_interval_ns",ClickRate.intervalNanos(controls));
+                if(inputWordDecision!=null&&inputWordDecision.active){issued.put("input_word_index",inputWordDecision.index);issued.put("input_word_mode",inputWordDecision.mode);}
                 if(controls.getProperty("click_mode","fixed").equals("reactive-burst")&&burstDecision!=null){
                     issued.put("burst_opening",burstDecision.opening());issued.put("burst_defensive",burstDecision.defensive());
                     issued.put("burst_attack_window",burstDecision.attackWindow());issued.put("burst_observation_time",burstObservedAt);
@@ -307,6 +314,8 @@ public final class Client {
                 cycle.reset();
                 frozenCycle.reset();
                 tickCycle.reset();
+                inputWordDecision=null;inputWord=null;
+                if(controls.containsKey("input_word"))inputWord=new InputWordController(R.ROOT.resolve(controls.getProperty("input_word")));
                 strongGap=new StrongRelaxationPolicy();freshTargetHurtStatus=0;
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 criticalClicks.reset();
@@ -315,6 +324,10 @@ public final class Client {
                 targetWatchdog.reset();targetReady=false;
                 aim.reset();aimTarget=null;aimLogAt=0;
             }
+            // A rejected/missing recipe must remain disabled on subsequent ticks;
+            // match identity has already advanced, so initialization is not retried.
+            if(controls.containsKey("input_word")&&inputWord==null)
+                throw new IllegalStateException("Input word failed to load; start a new match after repairing it");
             opponent=null;
             for(Object entity:(List<?>)R.get(world,"playerEntities")){
                 if(!R.name(entity).equals(controls.getProperty("opponent","")))continue;
@@ -588,6 +601,19 @@ public final class Client {
                 plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);log(plan);
             }
             if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
+            // Saved ordinary own-tick inputs, including a common acquisition for
+            // W-tap. The reference's cue history above continues to advance.
+            if(inputWord!=null){
+                inputWordDecision=inputWord.decide(ticks,(int)number("input_word_opening_ticks",18),
+                    Boolean.parseBoolean(controls.getProperty("input_word_opening_only","false")));
+                InputWordController.Decision d=inputWordDecision;
+                if(d.active){setKeys(d.key!=0,-d.side,d.key==2);clickGate=d.click;}
+                Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","input_word_plan");plan.put("time",now);plan.put("match",match);
+                plan.put("native_tick",ticks);plan.put("index",d.index);plan.put("active",d.active);plan.put("mode",d.mode);
+                plan.put("key",d.key);plan.put("native_strafe",d.side);plan.put("click_gate",d.click);
+                plan.put("missed_deadlines",inputWord.missedDeadlineCount());plan.put("consumption_mismatches",inputWord.mismatchCount());
+                plan.put("pending_admissions",inputWord.pendingAdmissions());log(plan);
+            }
             if(kind.equals("blockhit")){
                 boolean linear=controls.getProperty("block_model","legacy").equals("linear");
                 Map<String,Object> plan=new LinkedHashMap<>();boolean requested;String reason;
@@ -679,17 +705,40 @@ public final class Client {
         }catch(Throwable e){fail(e);}
     }
     static Observation lastConsumed;
+    /** A local movement boundary, independent of optional scientific logging. */
+    public static void inputWordMoved(Object self){
+        if(self==player&&inputWord!=null&&inputWordDecision!=null&&inputWordDecision.active)
+            inputWord.movementCompleted(ticks);
+    }
+    /** Every native clickMouse invocation, including misses and immune contacts.
+     * This acknowledges an ordinary queued press; it never changes the attack.
+     */
+    public static void inputWordConsumed(Object minecraft){
+        if(minecraft!=mc||inputWord==null||inputWordDecision==null||
+                (!inputWordDecision.active&&inputWord.pendingAdmissions()==0))return;
+        InputWordController.Consumption c=inputWord.consumed(ticks);
+        Map<String,Object> event=new LinkedHashMap<>();event.put("type","input_word_consumed");
+        event.put("time",System.currentTimeMillis());event.put("monotonic_ns",System.nanoTime());event.put("match",match);
+        event.put("native_tick",ticks);event.put("index",c.index);event.put("mode",c.mode);
+        event.put("actual_index",c.actualIndex);
+        event.put("admission_id",c.admissionId);event.put("desired_native_tick",c.desiredNativeTick);
+        event.put("actual_native_tick",c.actualNativeTick);event.put("matched",c.matched);
+        event.put("missed_deadlines",inputWord.missedDeadlineCount());event.put("consumption_mismatches",inputWord.mismatchCount());log(event);
+    }
     static void validateControls(Properties p){
         if(!Boolean.parseBoolean(p.getProperty("enabled","false")))return;
         if(!p.getProperty("match","").matches("m[0-9]{4,9}")||!p.getProperty("opponent","").matches("[A-Za-z0-9_]{1,16}"))
             throw new IllegalArgumentException("Enabled bot controls require a valid match and opponent");
-        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","frozen-cycle","tick-cycle","gap-strafe","blockhit","scripted").contains(p.getProperty("kind","hold")))
+        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","frozen-cycle","tick-cycle","gap-strafe","blockhit","scripted","input-word").contains(p.getProperty("kind","hold")))
             throw new IllegalArgumentException("Unsupported bot strategy: "+p.getProperty("kind"));
         ClickRate.cps(p);DuelSettings.reach(p);
         AimController.Settings.from(p);
         if(p.getProperty("kind","").equals("cycle"))CycleController.Settings.from(p);
         double reaction=Double.parseDouble(p.getProperty("reaction_ms","150"));
         if(!Double.isFinite(reaction)||reaction<0||reaction>1000)throw new IllegalArgumentException("Invalid reaction delay");
+        if(p.getProperty("kind","").equals("input-word")&&!p.containsKey("input_word"))throw new IllegalArgumentException("Input word path required");
+        if(p.containsKey("input_word")&&(reaction!=0||!p.getProperty("click_mode","fixed").equals("fixed")))
+            throw new IllegalArgumentException("Input words require zero reaction delay and fixed capped click admission");
         Long.parseLong(p.getProperty("start_at","0"));
     }
     static boolean identityContains(Object collection,Object target){for(Object item:(Iterable<?>)collection)if(item==target)return true;return false;}
