@@ -123,7 +123,7 @@ is necessary: nominal phase-specific minute locks have failed native transfer.
 
 ## Focused follow-ups
 
-Three small experiments are complete, each preserving a matched W-tap reference:
+The focused experiments below preserve a matched W-tap reference:
 
 - Release W for two ticks when the existing slowdown saturates, with unchanged
   gains/clicks. At6/1/1 the three-phase counts become1/200/8 versus the frozen
@@ -147,15 +147,48 @@ The coast transfer to6/1.1/1.1 fails:7/14/37 versus frozen200/190/38 and
 W-tap3/2/3, destroying both nominal minute locks. This branch is stopped without
 deployment. A correction helpful in one flight state is harmful in another.
 
-Astra's four-mode diagnostic finds a better vanilla handoff: change the fifth
-launch to **normal while airborne**, keep its timing, and coordinate braking and
-subsequent sprint pursuit. From the original900ms seed through4350ms it gives7
-fresh versus W-tap3 with zero candidate returns. Its new1.1s suffix contributes3
-fresh versus W-tap2 from exactly the same later state; both survive that short
-suffix. The minimum sampled defender distance is3.14765. This is a single-phase
-oracle prefix, not a legal controller or stable cycle. The final sprint's flight
-falls beyond the horizon and remains unresolved. The next extension branches
-before that hit and checks post-launch viability, preserving all earlier credit.
+Astra's normal-airborne handoff leads to a stronger **vanilla model** result.
+The completed-launch search preserves the physical first-hit acquisition and
+extends it to18 fresh hits with zero returns over10s, versus W-tap3 from exactly
+the same900ms seed. All ordinary inputs and queued clicks are saved. This is
+one nominal phase, selected by an offline oracle, not a playable feedback bot
+or an established cycle. Its first18 launch modes are mostly grounded sprint
+hits, with two normal-airborne and two sprint-airborne launches. Height remains
+bounded in this prefix; a full relative-state recurrence is not established.
+
+| Same vanilla seed and10s horizon | Candidate fresh before first return | Plain W-tap |
+|---|---:|---:|
+| Coordinated saved movement/click word |18, no return|3|
+| Same movement, click gate always open |3|3|
+| Same click gate, ordinary W-tap movement |3|3|
+
+Both parts matter. Constant clicking changes launch strengths as well as contact
+drag, so this is not a pure slowdown ablation. Sparse clicking with W-tap
+movement preserves the first three hits but then loses spacing. Merely combining
+"few clicks" and "sprint reset" without their timing does not reproduce the result.
+The first attempt to extend from its11.6s terminal state reaches20 fresh but
+returns at11.975s: the last normal-grounded launch leaves the opponent advancing
+only0.048 blocks/tick while our bot advances0.150. The next attempt branches
+before that launch's preparation; no long-duration success is claimed yet.
+
+The RTT-only check is also complete:60 cells, with all12 old120ms fingerprints
+passing unchanged. Opponent RTT140/180/240 does not rescue the frozen9–10 tick
+controller. At six ticks/+10% KB/140ms, however, **plain hold W+Ctrl** gives
+200/200/3 versus W-tap5/5/3 over the same60s: two large wins and one tie. The two
+successes naturally give one sprint fresh hit then199 normal hits. W-tap keeps
+rearming strong sprint launches and later loses reach; the normal-only gap law
+never gets the initial impulse and closes too far. A cue-based one-sprint
+intervention produces the same primary spread, so it adds no demonstrated benefit
+over simple hold. A matched native test of that simpler control is declared.
+
+A separate forced-pulse diagnostic rules out a tempting overclaim: vanilla
+victim flight itself can be periodic. Alternating normal/sprint hits every ten
+ticks settles into four flight modes over2s, requiring6.366 blocks of pursuit.
+The sequence includes a weak sprint launch while airborne and a normal launch
+on the ground; "air means normal, ground means sprint" is too crude. This
+relaxes attacker reach and input feasibility, so it proves no playable combo.
+The missing obligation is keeping both POV distances legal through the outward
+burst and the slow return leg using ordinary movement and sprint commands.
 
 These are causal tests, not a vanilla infeasibility proof. No bounded search has
 covered all allowed inputs, phases, acquisition states or pings.
@@ -165,3 +198,5 @@ Detailed evidence: [full compensation grid](poc-20261101/anneal/continuation/hor
 [six-tick native audit](poc-20261101/anneal/legal/native-t6-phase-findings.md),
 [vanilla oracle/landing audit](poc-20261101/anneal/mechanism/findings.md),
 [Astra's reach corridor and normal-airborne witness](poc-20261101/anneal/astra-boundary/findings.md).
+
+Further details: [RTT check](poc-20261101/anneal/continuation/rtt-continuation-findings.md), [forced-flight return map](poc-20261101/anneal/astra-boundary/shooting-findings.md).
