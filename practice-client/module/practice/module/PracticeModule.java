@@ -19,14 +19,15 @@ public final class PracticeModule implements PracticeExtension {
     private Map<String,Object> linked=Collections.emptyMap();
     private long linkReceived;
     private final PracticeOverlay overlays=new PracticeOverlay();
-    private Frame base=Frame.empty();
+    private Frame base=Frame.empty(),remoteBase=Frame.empty();
+    private boolean practiceAllowed=true;
     private final ReplayOverlay replay=new ReplayOverlay();
     private final RangeIndicators ranges=new RangeIndicators();
     private final RangeCommands rangeCommands=new RangeCommands();
     private long liveReceived;
-    public void event(PracticeEvent e){if(e.type.equals("replay_frame"))replay.state=e.data;if(e.type.equals("link_state")){linked=e.data;linkReceived=e.timeMillis;}if(e.type.equals("practice_views")){overlays.views=e.data;liveReceived=System.nanoTime();}}
-    public Frame render(float partial,int width,int height){Frame hud=replay.active()?replay.hud(base,width,height):overlays.hud(base,width,height);return rangeCommands.feedback(ranges.render(hud,width,height,overlays.views,replay.state,liveReceived));}
-    public WorldFrame world(float partial){return replay.active()?replay.world():overlays.world();}
+    public void event(PracticeEvent e){if(e.type.equals("connection_scope"))practiceAllowed=Boolean.TRUE.equals(e.data.get("practice_allowed"));if(e.type.equals("replay_frame"))replay.state=e.data;if(e.type.equals("link_state")){linked=e.data;linkReceived=e.timeMillis;}if(e.type.equals("practice_views")){overlays.views=e.data;liveReceived=System.nanoTime();}}
+    public Frame render(float partial,int width,int height){if(!practiceAllowed)return remoteBase;Frame hud=replay.active()?replay.hud(base,width,height):overlays.hud(base,width,height);return rangeCommands.feedback(ranges.render(hud,width,height,overlays.views,replay.state,liveReceived));}
+    public WorldFrame world(float partial){if(!practiceAllowed)return new WorldFrame(Collections.emptyList(),Collections.emptyList(),Collections.emptyList());return replay.active()?replay.world():overlays.world();}
     public boolean command(String[] args){return rangeCommands.handle(args,ranges);}
 
     public void configure(Properties p,Path directory) {
@@ -53,16 +54,18 @@ public final class PracticeModule implements PracticeExtension {
         if(value<min||value>max)throw new IllegalArgumentException(key+" out of bounds");return value;
     }
     public Frame tick(Snapshot s) throws IOException {
+        practiceAllowed=s.practiceAllowed;
         if(s.sprintPressed && s.playing && !s.screenOpen)sprint=!sprint;
         List<Frame.Line> lines=new ArrayList<>();
-        if(!s.playing){close();previousHurt=0;blockedTicks=playingTicks=0;overlays.views=Collections.emptyMap();replay.state=Collections.emptyMap();return base=Frame.empty();}
+        if(!s.playing){close();previousHurt=0;blockedTicks=playingTicks=0;overlays.views=Collections.emptyMap();replay.state=Collections.emptyMap();remoteBase=Frame.empty();return base=Frame.empty();}
         if(enabled && sprint)lines.add(new Frame.Line(label,inset,top,color,true));
         if(potions){int y=potionY;for(String effect:s.effects){lines.add(new Frame.Line(effect,inset,y,0xFFFFFF,true));y+=11;}}
+        remoteBase=new Frame(enabled&&sprint&&!s.screenOpen,lines,0,0);
         if(s.self!=null){
             playingTicks++;if(s.self.blocking)blockedTicks++;
             if(s.self.hurtTicks>previousHurt)flashUntil=s.timeMillis+150;
             previousHurt=s.self.hurtTicks;
-            if(metrics){
+            if(metrics&&practiceAllowed){
                 int y=6;
                 lines.add(new Frame.Line(String.format(Locale.ROOT,"Speed: %.2f m/s (client)",s.self.speed()),6,y,0xFFFFFF,false));y+=11;
                 if(s.target!=null){
@@ -73,9 +76,9 @@ public final class PracticeModule implements PracticeExtension {
                 if(linkReceived>0){y+=11;Object clients=linked.get("clients");int views=clients instanceof Map?((Map<?,?>)clients).size():0;
                     lines.add(new Frame.Line("Practice link: server + "+views+" client views",6,y,0xAAAAAA,false));}
             }
-            if(record)write(s);
+            if(record&&practiceAllowed)write(s);
         }
-        return base=new Frame(enabled&&sprint&&!s.screenOpen,lines,hurtFlash&&s.timeMillis<flashUntil?0x40FF4444:0,5);
+        return base=new Frame(enabled&&sprint&&!s.screenOpen,lines,practiceAllowed&&hurtFlash&&s.timeMillis<flashUntil?0x40FF4444:0,5);
     }
     private void write(Snapshot s) throws IOException {
         if(writer==null){

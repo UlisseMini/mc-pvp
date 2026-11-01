@@ -1,7 +1,7 @@
 # PvP Practice client (Forge 1.8.9)
 
 This is our own client mod. It includes ToggleSprint, a potion-effect HUD,
-localhost packet/input/view recording, and a diagnostic link between the human
+opt-in remote and localhost packet/input/view recording, and a diagnostic link between the human
 client, bot client and server. Practice displays and analysis live in a reloadable
 module. No third-party HUD mod is required.
 
@@ -35,6 +35,8 @@ with all the same subcommands, for example `/p advantage on`:
 | `/practice potions on` / `off` | Show/hide potion timers |
 | `/practice metrics on` / `off` | Show observed speeds, target gap/height, and blocking time |
 | `/practice record on` / `off` | Start/stop local client-observation CSV recording |
+| `/p remote record on` / `off` | Opt in/out of remote-server recording (default off); local archive upload only |
+| `/p antiafk on [seconds]` / `off` | Session-only housing-idle movement pulses; default off, 60-second interval |
 | `/practice capture on` / `off` | Enable/disable the detailed localhost capture |
 | `/practice link on` / `off` | Enable/disable localhost coordination |
 | `/practice mark <text>` | Timestamp a named marker on client and server |
@@ -184,8 +186,8 @@ client ticks, not server-confirmed blocked damage. The optional red edge flash
 block or a timing verdict. Opening lead has the narrower geometric meaning above.
 
 The small CSV files stay in `config/pvp-practice/recordings/`. Detailed compressed
-JSONL files stay in `config/pvp-practice/captures/`. Recording uses only an actual
-loopback Minecraft connection. It starts at the first PLAY packet, before initial
+JSONL files stay in `config/pvp-practice/captures/`. Local recording uses an actual
+loopback Minecraft connection; remote recording requires the separate opt-in below. It starts at the first PLAY packet, before initial
 world chunks are applied, and captures:
 
 - Original inbound/outbound uncompressed packet ID + body bytes, Base64-encoded,
@@ -204,7 +206,8 @@ world chunks are applied, and captures:
 
 **Login/authentication traffic and typed GUI text are excluded. Local PLAY chat
 and commands are included in the raw packets.** Player names/UUIDs are present.
-Nothing is uploaded. Captures are not screenshots or video.
+Nothing leaves this computer. Remote captures may transfer to the local lab receiver
+as described below. Captures are not screenshots or video.
 
 The asynchronous writer has a 2,048-record/32 MiB pending limit, rotates at
 256 MiB of uncompressed records per file, and permits 128 linked parts per session.
@@ -221,6 +224,89 @@ client replay player or a promise of pixel-perfect reconstruction**. Entity
 snapshots are capped at 128 (with a truncation flag); packets remain captured.
 We do not save resource-pack binaries or every rendered frame. Native handler
 hooks observe work but still have CPU cost, measured in snapshot timing fields.
+
+## Remote recording and housing idling
+
+`/p remote record on` enables the detailed recorder on your current and future
+remote connections; `/p remote record off` stops it. It starts **off** on every Minecraft launch. It stays enabled across connections in that client
+session until turned off. The command does not reload the module or change your
+current ToggleSprint preference. `/p status` reports this setting, capture writer,
+and local upload/backlog status. These are intercepted client commands; they are
+not sent as chat to the Minecraft server. Turning it on after joining marks the
+capture as missing the connection's initial state. Reconnect with recording on
+if you need the initial PLAY world/chunks. Login/authentication remain excluded;
+ordinary PLAY chat, names/UUIDs and server address are recorded.
+
+Remote recording observes the same raw inbound/outbound PLAY bytes, packet-handler
+entry/return, input/click/tick/render state and task-drain timing. Own-view pose
+samples identify the crosshair target (or nearest player within six blocks) by
+entity/name, and full entity snapshots retain other nearby players. No lab match,
+bot or practice-server handshake is needed. Files are tagged `role=human-remote`
+and with the configured server host and actual connected socket endpoint. A single client's timestamps,
+S12s and keepalive/transaction observations can support timing estimates and
+bounds; they cannot reveal exact one-way latency or private server processing.
+
+**The recorder adds zero Minecraft packets on remote connections.** It does not
+send the lab's C17 hello, telemetry, markers, clock probes or replay commands.
+The guard checks the current real socket, including during a server switch,
+regardless of whether a prior capture is still active. All practice overlays
+(range indicators, reach fields, opening/advantage, ghosts, metrics, hurt flash,
+replay/debug) are suppressed remotely even if their local settings are on.
+ToggleSprint and potion timers remain available. The separate anti-AFK option
+below is the only explicitly enabled movement addition.
+
+Captures stay in local `config/pvp-practice/captures/` gzip files. Closed parts
+are offered approximately every two seconds to **literal `127.0.0.1:8766`** over
+an independent HTTP side channel, with proxies and redirects disabled. The
+receiver binds only loopback, checks bounded gzip/JSON payloads and safe session
+names, and offers no filesystem download endpoint. No recording goes through the
+Minecraft connection or leaves this computer. The lab starts this receiver on
+its next launch; it can also be started independently, without a Minecraft server
+restart:
+
+```sh
+python3 practice-client/capture_ingest.py
+```
+
+If the lab/receiver is down, the local gzip and `remote-outbox` descriptors remain.
+The background worker retries when it returns, including after a client restart.
+Uploads are checksum acknowledged and deduplicated; local source files are kept
+**even after acknowledgement**. Disk/queue limits and incomplete recordings stay
+explicit. Remote parts rotate every two seconds or 16 MiB, with a 10,000-part
+session cap and the usual 512 MiB free-space guard. Recording off stops new
+capture; already authorized local backlog transfer may finish.
+
+The receiver writes the same `runtime/pov/` archive used by lab analysis/replay:
+`r<32 hexadecimal digits>/manifest.json`, a full `a-client-*-events.jsonl.gz`
+stream and own-view `*-poses.jsonl.gz` indexes. `runtime/pov/remote-index.json`
+lists remote sessions. These are **one-client recordings**: opponent-client and
+authoritative server POVs are absent, never fabricated. They can be inspected or
+exported with the existing archive tool:
+
+```sh
+python3 pov_archive.py r0123456789abcdef0123456789abcdef --full
+python3 pov_archive.py r0123456789abcdef0123456789abcdef --export a
+```
+
+The local server's `/replay` match selector still requires a lab duel/server
+recording; this change does not turn a remote capture into an authoritative
+three-view match or a finished interactive remote replay player.
+
+For housing idling only, `/p antiafk on` opts into a brief normal forward then
+back pulse every 60 seconds. `/p antiafk on 90` chooses 90 seconds (allowed range
+10–3600); `/p antiafk off` releases only keys it owns. Each half lasts three game
+ticks, so it roughly returns toward the starting position; collisions, server
+movement rules and lag can produce drift. It never teleports or writes motion.
+It pauses and releases synthetic keys whenever any GUI/chat is open or the human
+holds a movement/jump/sneak/sprint key. Closing the GUI or releasing movement
+restarts the interval. ToggleSprint is temporarily suppressed during a synthetic
+pulse, preserving the user's toggle preference; human-held keys are never
+cancelled. Activation is **never saved** and automatically turns off on disconnect
+or connection change. Chat confirms on/off, and `/p status` reports it.
+
+Bridge/API changes require one Minecraft restart after installation. The new
+settings and capture commands then apply immediately; no server restart or bot
+reload is needed.
 
 ## Three-view coordination
 
@@ -331,6 +417,21 @@ The build checks toggling, GUI behavior, placement, configuration reload,
 invalid-reload recovery, CSV shape, immutable events, compressed writer completion,
 cap/rotation boundaries, and replacement of **actual bytecode in the same JVM**.
 
+For the remote recorder and housing-idle input path, use:
+
+```sh
+python3 practice-client/remote_checks.py
+python3 practice-client/remote_smoke.py --wait-idle-seconds 180
+```
+
+The first test covers local receiver rejection, gzip integrity, retry after
+receiver downtime/restart, checksum deduplication and proxy/redirect refusal.
+The second uses a separate 512 MiB, low-priority Forge guest in the localhost
+lobby, classifies that socket as remote, checks commands/HUD/packet counts and
+one explicit anti-AFK pulse, and never starts a match or changes another player.
+Its probe is not installed in the human client. An actual external connection
+is not used by this test.
+
 With the local practice server running, use:
 
 ```sh
@@ -352,7 +453,7 @@ restoration. Test files go under
 access and networking to localhost. The smoke test's own Forge probe and
 HeadlessMC agent are **not installed** in the user's client.
 
-The practice mod opens no HTTP/WebSocket port, downloads no code, runs no
+The practice mod opens no HTTP/WebSocket listener, downloads no code, runs no
 subprocesses, and reads no account/session data. Only a fixed local module path
 is loaded; server messages cannot select or replace executable code. A local
 Java module has the client's normal Java permissions: it is **not a sandbox**.

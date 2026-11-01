@@ -97,6 +97,16 @@ final class GameObservations {
         if(names instanceof List&&mc.field_71441_e!=null)for(Object o:mc.field_71441_e.field_73010_i){EntityPlayer p=(EntityPlayer)o;if(p!=mc.field_71439_g&&!p.field_70128_L&&mc.field_71441_e.func_73045_a(p.func_145782_y())==p&&((List<?>)names).contains(p.func_70005_c_())){renderPose(out.get("opponent"),p,partial);break;}}
         return out;
     }
+    /** Own local entities only, no lab identity/link needed. Target identity stays
+     * explicit because the crosshair/nearest target can change during a session. */
+    static Map<String,Object> remoteReplayView(Minecraft mc,float partial){
+        java.util.List<String> names=new java.util.ArrayList<>();
+        if(mc.field_71476_x!=null&&mc.field_71476_x.field_72308_g instanceof EntityPlayer){EntityPlayer p=(EntityPlayer)mc.field_71476_x.field_72308_g;if(p!=mc.field_71439_g)names.add(p.func_70005_c_());}
+        if(names.isEmpty()&&mc.field_71441_e!=null&&mc.field_71439_g!=null){EntityPlayer target=null;double best=36;
+            for(Object o:mc.field_71441_e.field_73010_i){EntityPlayer p=(EntityPlayer)o;if(p==mc.field_71439_g||p.field_70128_L)continue;double dx=p.field_70165_t-mc.field_71439_g.field_70165_t,dy=p.field_70163_u-mc.field_71439_g.field_70163_u,dz=p.field_70161_v-mc.field_71439_g.field_70161_v,d=dx*dx+dy*dy+dz*dz;if(d<best){best=d;target=p;}}
+            if(target!=null)names.add(target.func_70005_c_());}
+        Map<String,Object> out=replayView(mc,names,partial);out.put("target_names",names);out.put("source_scope","own-client; no server or opponent POV");return out;
+    }
     @SuppressWarnings("unchecked") private static void renderPose(Object value,Entity e,float t){if(!(value instanceof Map))return;Map<String,Object> m=(Map<String,Object>)value;
         m.put("render",Arrays.asList(e.field_70142_S+(e.field_70165_t-e.field_70142_S)*t,e.field_70137_T+(e.field_70163_u-e.field_70137_T)*t,e.field_70136_U+(e.field_70161_v-e.field_70136_U)*t));
         m.put("render_yaw",e.field_70126_B+(e.field_70177_z-e.field_70126_B)*t);m.put("render_pitch",e.field_70127_C+(e.field_70125_A-e.field_70127_C)*t);

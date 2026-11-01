@@ -13,6 +13,7 @@ public final class CaptureLog implements AutoCloseable {
     private final AtomicLong queuedBytes=new AtomicLong(),dropped=new AtomicLong();
     private final long limit;
     private final int maxSegments;
+    private final long rotateMillis;
     private volatile int segment=1;
     private volatile boolean closing,failed,capped;
     private final Thread worker;
@@ -21,9 +22,12 @@ public final class CaptureLog implements AutoCloseable {
     public CaptureLog(Path path,long limit){
         this(path,limit,1);
     }
-    public CaptureLog(Path path,long limit,int maxSegments){
+    public CaptureLog(Path path,long limit,int maxSegments){this(path,limit,maxSegments,0);}
+    /** Optional time-bounded parts let a local side channel ingest closed gzip files. */
+    public CaptureLog(Path path,long limit,int maxSegments,long rotateMillis){
         if(limit<1||maxSegments<1)throw new IllegalArgumentException("Positive capture limits required");
-        this.path=path;this.limit=limit;this.maxSegments=maxSegments;worker=new Thread(this::write,"practice-recording");worker.setDaemon(true);worker.start();
+        if(rotateMillis<0)throw new IllegalArgumentException("Negative rotation interval");
+        this.path=path;this.limit=limit;this.maxSegments=maxSegments;this.rotateMillis=rotateMillis;worker=new Thread(this::write,"practice-recording");worker.setDaemon(true);worker.start();
     }
     public synchronized void offer(String line){
         if(closing||failed||capped)return;
@@ -42,16 +46,16 @@ public final class CaptureLog implements AutoCloseable {
         out.write((JsonData.encode(JsonData.map("type","capture_end","dropped",dropped.get(),"size_capped",capped,"writer_complete",dropped.get()==0&&!capped,"continues",next))+"\n").getBytes(StandardCharsets.UTF_8));
     }
     private void write(){
-        long bytes=0;OutputStream out=null;
+        long bytes=0,opened=System.currentTimeMillis();OutputStream out=null;
         try{
             Files.createDirectories(path.getParent());
             out=open(path);
                 while(!closing||!queue.isEmpty()){
                     byte[] row=queue.poll(250,TimeUnit.MILLISECONDS);if(row==null)continue;
                     queuedBytes.addAndGet(-row.length);
-                    if(bytes+row.length>limit&&row.length<=limit&&segment<maxSegments){
+                    if((bytes+row.length>limit||rotateMillis>0&&bytes>0&&System.currentTimeMillis()-opened>=rotateMillis)&&row.length<=limit&&segment<maxSegments){
                         Path next=segmentPath(segment+1);footer(out,next.getFileName().toString());out.close();out=null;
-                        out=open(next);segment++;bytes=0;
+                        out=open(next);segment++;bytes=0;opened=System.currentTimeMillis();
                         out.write((JsonData.encode(JsonData.map("type","capture_segment","first",path.getFileName().toString(),"part",segment))+"\n").getBytes(StandardCharsets.UTF_8));
                     }
                     if(bytes+row.length>limit){capped=true;dropped.incrementAndGet();continue;}

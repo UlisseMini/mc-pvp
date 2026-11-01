@@ -4,12 +4,17 @@ import java.util.*;
 
 public final class Snapshot {
     public final long timeMillis, timeNanos, tick;
-    public final boolean playing, screenOpen, sprintPressed;
+    public final boolean playing, screenOpen, sprintPressed, practiceAllowed;
     public final Player self, target;
     public final List<String> effects;
 
     public Snapshot(long millis,long nanos,long tick,boolean playing,boolean screenOpen,
                     boolean sprintPressed,Player self,Player target,List<String> effects) {
+        this(millis,nanos,tick,playing,screenOpen,sprintPressed,self,target,effects,true);
+    }
+    public Snapshot(long millis,long nanos,long tick,boolean playing,boolean screenOpen,
+                    boolean sprintPressed,Player self,Player target,List<String> effects,boolean practiceAllowed) {
+        this.practiceAllowed=practiceAllowed;
         this.timeMillis=millis;this.timeNanos=nanos;this.tick=tick;this.playing=playing;
         this.screenOpen=screenOpen;this.sprintPressed=sprintPressed;this.self=self;this.target=target;
         this.effects=Collections.unmodifiableList(new ArrayList<>(effects));

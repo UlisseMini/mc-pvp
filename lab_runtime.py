@@ -185,6 +185,11 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
     try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     except BlockingIOError:raise RuntimeError('PvP Lab is already running')
     verify_cache();sandbox_test();logging_test();configure(port_offset)
+    # Independent loopback capture ingress; never routes data through Minecraft.
+    import importlib.util
+    capture_spec=importlib.util.spec_from_file_location('practice_capture_ingest',ROOT/'practice-client/capture_ingest.py')
+    capture_ingest=importlib.util.module_from_spec(capture_spec);capture_spec.loader.exec_module(capture_ingest)
+    capture_ingest.ensure_running(RUNTIME)
     forge_classpath=None
     if 'forge' in backends:
         import forge_runtime
