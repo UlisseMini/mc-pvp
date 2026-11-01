@@ -103,6 +103,10 @@ public final class PeriodicComboClock {
     private final boolean recordedSchedule;
     private final double scheduleEnd;
     private final PriorityQueue<Event> events;
+    // Opt-in immutable future opportunities; only dynamically generated events remain in the heap.
+    private Event[] sharedCalendar;
+    private int calendarCursor;
+    private boolean shareableCalendar=true;
     private final long[] ticks=new long[2];private final Control[] controls=new Control[2];private final double[] lastClick={-1e100,-1e100};
     private final ClickQueue[] clickQueues={new ClickQueue(),new ClickQueue()};
     private final Injection[] injections=new Injection[2];
@@ -132,6 +136,7 @@ public final class PeriodicComboClock {
             if(timing.inputMode!=InputMode.NATIVE_QUEUED)throw new IllegalArgumentException("Explicit event tapes require NATIVE_QUEUED mode");
             Set<Long> sequences=new HashSet<>();
             for(Scheduled e:List.copyOf(schedule)){
+                if(e.sequence<0)shareableCalendar=false;
                 if(e.nanos<0||!sequences.add(e.sequence))throw new IllegalArgumentException("Tape requires nonnegative times and unique sequence values");
                 if((e.kind==Kind.POLL_FRAME||e.kind==Kind.POLL_NATIVE)&&!timing.explicitPolls)throw new IllegalArgumentException("POLL tape events require explicitPolls");
                 events.add(new Event(e.nanos/1_000_000.0,kind(e),e.sequence,e.nanos/1_000_000.0));
@@ -142,7 +147,7 @@ public final class PeriodicComboClock {
     private PeriodicComboClock(PeriodicComboClock source,Policy a,Policy b){
         state=source.state.deepCopy();config=source.config.deepCopy();timing=source.timing.deepCopy();policies=new Policy[]{Objects.requireNonNull(a),Objects.requireNonNull(b)};recordedSchedule=source.recordedSchedule;scheduleEnd=source.scheduleEnd;
         events=new PriorityQueue<>(source.events.comparator());
-        events.addAll(source.events);System.arraycopy(source.ticks,0,ticks,0,2);System.arraycopy(source.controls,0,controls,0,2);System.arraycopy(source.lastClick,0,lastClick,0,2);executionStarted=source.executionStarted;
+        events.addAll(source.events);sharedCalendar=source.sharedCalendar;calendarCursor=source.calendarCursor;shareableCalendar=source.shareableCalendar;System.arraycopy(source.ticks,0,ticks,0,2);System.arraycopy(source.controls,0,controls,0,2);System.arraycopy(source.lastClick,0,lastClick,0,2);executionStarted=source.executionStarted;
         System.arraycopy(source.selectionReady,0,selectionReady,0,2);clickQueues[0]=source.clickQueues[0].copy();clickQueues[1]=source.clickQueues[1].copy();order=source.order;now=source.now;
         System.arraycopy(source.injections,0,injections,0,2);
         for(int side=0;side<2;side++)for(Publication p:source.publications.get(side))publications.get(side).addLast(p.deepCopy());
@@ -153,6 +158,74 @@ public final class PeriodicComboClock {
     /** Policies must be fresh or immutable. All packet/input queues and scheduler state are copied;
      * audits are detached. An already admitted input survives a later gate/key change. */
     public PeriodicComboClock fork(Policy a,Policy b){return new PeriodicComboClock(this,a,b);}
+    /** Freeze remaining recorded opportunities once; forks share this immutable array.
+     * Negative source sequences are unsupported here because they can alias generated
+     * completion/publication priorities. Legacy/default queues remain unrestricted. */
+    public void enableSharedCalendar(){
+        if(sharedCalendar!=null)return;
+        if(!recordedSchedule||!shareableCalendar)
+            throw new IllegalStateException("Shared calendar requires a tape with nonnegative source sequences");
+        Event[] tape=events.toArray(Event[]::new);
+        Arrays.sort(tape,events.comparator());
+        for(int i=1;i<tape.length;i++)if(events.comparator().compare(tape[i-1],tape[i])==0)
+            throw new IllegalStateException("Shared calendar requires unambiguous event priorities");
+        sharedCalendar=tape;calendarCursor=0;events.clear();
+    }
+    private Event nextEvent(){
+        Event heap=events.peek();
+        if(sharedCalendar==null||calendarCursor==sharedCalendar.length)return heap;
+        Event tape=sharedCalendar[calendarCursor];
+        return heap==null||events.comparator().compare(tape,heap)<0?tape:heap;
+    }
+    private Event removeEvent(){
+        Event next=nextEvent();
+        if(sharedCalendar!=null&&calendarCursor<sharedCalendar.length&&next==sharedCalendar[calendarCursor])calendarCursor++;
+        else events.remove();
+        return next;
+    }
+    private void validateEnd(double end){
+        if(end<now)throw new IllegalArgumentException("Cannot run a clock backwards");
+        if(!Double.isFinite(end)||end>scheduleEnd)throw new IllegalArgumentException("Requested time exceeds supplied event-tape coverage");
+        executionStarted=true;
+    }
+    /** Resolve a busy opportunity by the same pop/reinsert rule used by runUntil.
+     * A ready HEAD is inspected but never popped by the boundary API. */
+    private boolean prepareNext(){
+        Event e=nextEvent();now=e.time;int k=e.kind,side=(k&1)==0?0:1;
+        if((k<8||k>=12&&k<24)&&!publications.get(side).isEmpty()){
+            removeEvent(); // Match legacy rejection state: the unsupported opportunity was popped.
+            throw new IllegalStateException("UNSUPPORTED_CUE_SERVICE_OVERLAP: same-client stage before FIFO publication completes");
+        }
+        if((k<8||k>=12&&k<22)&&injections[side]!=null){
+            if(!timing.causalBackpressure){
+                removeEvent();
+                throw new IllegalStateException("UNSUPPORTED_INJECTION_OVERLAP: same-client event before synchronous injection completion");
+            }
+            removeEvent();now=e.time;defer(e,side);return false;
+        }
+        return true;
+    }
+    /** Process all preceding events, including equal-time predecessors, then pause
+     * immediately BEFORE a backpressure-ready requested HEAD. No policy is called.
+     * False means coverage/limit reached; the clock has executed through limit. */
+    public boolean advanceToBeforeNextHead(boolean a,double limit){
+        validateEnd(limit);
+        while(nextEvent()!=null&&nextEvent().time<=limit){
+            if(!prepareNext())continue;
+            if(nextEvent().kind==(a?2:3)){now=nextEvent().time;return true;}
+            executeNext();
+        }
+        now=limit;return false;
+    }
+    public boolean advanceToBeforeNextHead(boolean a){return advanceToBeforeNextHead(a,scheduleEnd);}
+    /** Execute one requested HEAD, then stop before the next ready requested HEAD.
+     * False retains all work/credit through limit, without executing beyond it. */
+    public boolean runHeadInterval(boolean a,double limit){
+        if(!advanceToBeforeNextHead(a,limit))return false;
+        executeNext();
+        return advanceToBeforeNextHead(a,limit);
+    }
+    public boolean runHeadInterval(boolean a){return runHeadInterval(a,scheduleEnd);}
     /** Explicit source-derived inactive input for a tick straddling activation.
      * This is not a policy HEAD: no callback, aiming, cap update, queue reset or
      * tick increment occurs. Retain the real residual INTERP/MOVE/FLUSH events.
@@ -297,16 +370,14 @@ public final class PeriodicComboClock {
         q.missCounter=0;
     }
     public void runUntil(double end){
-        if(end<now)throw new IllegalArgumentException("Cannot run a clock backwards");
-        if(!Double.isFinite(end)||end>scheduleEnd)throw new IllegalArgumentException("Requested time exceeds supplied event-tape coverage");
-        executionStarted=true;
-        while(!events.isEmpty()&&events.peek().time<=end){Event e=events.remove();now=e.time;int k=e.kind;boolean a=(k&1)==0;int side=a?0:1;String name;
-            if((k<8||k>=12&&k<24)&&!publications.get(side).isEmpty())
-                throw new IllegalStateException("UNSUPPORTED_CUE_SERVICE_OVERLAP: same-client stage before FIFO publication completes");
-            if((k<8||k>=12&&k<22)&&injections[side]!=null){
-                if(!timing.causalBackpressure)throw new IllegalStateException("UNSUPPORTED_INJECTION_OVERLAP: same-client event before synchronous injection completion");
-                defer(e,side);continue;
-            }
+        validateEnd(end);
+        while(nextEvent()!=null&&nextEvent().time<=end){
+            if(prepareNext())executeNext();
+        }
+        now=end;
+    }
+    private void executeNext(){
+        Event e=removeEvent();now=e.time;int k=e.kind;boolean a=(k&1)==0;int side=a?0:1;String name;
             if(k<2){
                 if(timing.inputMode==InputMode.NATIVE_QUEUED){aim(a);if(!timing.explicitPolls)poll(a,"frame");if(!recordedSchedule){receive(a);selectionReady[side]=false;}}
                 else{if(timing.aimBeforeFrameDrain)aim(a);receive(a);if(!timing.aimBeforeFrameDrain)aim(a);}
@@ -348,8 +419,6 @@ public final class PeriodicComboClock {
             else if(k<24){completeInjection(a);name="INJECTION_COMPLETE"+(a?"A":"B");}
             else{name=publish(a);}
             checkpoint(name);
-        }
-        now=end;
     }
     private void checkpoint(String name){PeriodicComboFightModel.audit(state);if(audit!=null)audit.event(now,name,state);}
 }
