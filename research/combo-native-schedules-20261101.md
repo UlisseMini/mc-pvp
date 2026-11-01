@@ -1,11 +1,135 @@
-# Native timing calibration: work in progress
+# Native timing calibration and acquisition diagnosis
 
-The periodic-clock prediction is not a robustness result. The unchanged lock8
-controller remains frozen while we replace that evaluation with measured timing
-opportunities and validate both it and plain W-tap. A physics replay with recorded
-inputs and packet timings is a different claim from predicting a new fight.
+The periodic-clock prediction was misleading: realistic timing makes the same
+controller fail. The frozen replacement now predicts failures in four fresh
+native tests, including the opponent clicking after receiving knockback but
+before moving. This supports a narrow controller experiment, not a claim that
+we have calibrated every timing distribution or achieved a reliable lock.
 
-## Current: frozen joint-timing distribution goes to fresh validation
+## Current: fresh validation, with the controller still unchanged
+
+We froze the controller, timing donor pool and advance prediction before running
+two more native pairs. Both use150/0 RTT, H1.1/V1/hit8, reach3/3,20CPS and a
+four-second silent-opponent opening followed by60s of maintenance. The primary
+score excludes the free opening hits and stops at the first accepted return.
+
+| Fresh native repeat | Frozen candidate | Plain W-tap | Timing quality through first return |
+|---|---:|---:|---|
+|1: m1398 / m1397|6|2|Both clean|
+|2: m1399 / m1400|5|2|Both clean; m1400 has a later whole-match stall|
+
+The native pairs share settings and the opening rule, not identical physical
+clock realizations. The model comparisons below fork the complete acquired
+state, including queues and a primed W-tap history, on each recorded calendar.
+No controller fitting or parameter adjustment occurred between these tests.
+
+There are two different validation claims:
+
+- **Before seeing the new recordings:** the frozen equal-calendar timing mixture
+  predicts frequent early failures. The new candidate scores5 and6 fall around
+  the41st–46th percentile, accounting for unfinished prefixes; both W-tap2
+  results fall in its central mass. It no longer predicts a universal750-hit lock.
+- **After capturing the new clocks:** reuse the frozen timing sampler on each
+  held-out calendar, with20 declared seeds. This conditions on measured host
+  stage times and queue workload. It is stronger than replaying recorded attacks,
+  but is not an unconditional forecast of a new laptop workload.
+
+| Held-out calendar / native arm | Candidate model distribution | Matched W-tap model distribution | Native observation |
+|---|---|---|---|
+|m1397 / W-tap|2 in20/20|2 in20/20|W-tap2|
+|m1398 / candidate|6 in19/20;3 once|1 in20/20|Candidate6|
+|m1399 / candidate|5 in11/20;2 five times;9 three times;20 once|2 in16/20;1 four times|Candidate5|
+|m1400 / W-tap|5 in20/20|2 in9/20;5 in11/20|W-tap2|
+
+All80 held-out paired model draws resolve their primary prefix; none sustains
+the60s horizon. These are **four native observations**, not80 independent native
+trials. The table's unplayed arm is a model counterfactual, not another native
+measurement. The development ensemble's4/80 candidate and1/80 W-tap unknowns
+remain in its advance forecast; they have not been discarded.
+
+Matching the endpoint alone is insufficient. In m1398, the sampled seed0 path
+also matches all14 pre-return launch vectors and compared physical/view geometry
+to1e-12. In m1399, six of20 frozen draws match all14 precritical fresh launch
+vectors and accepting drains, and both bodies/views by operation ordinal to
+1e-12. Those six also reproduce the decisive opponent ray
+**2.998794094709 blocks**, only0.001205905291 inside reach. Two match every
+compared physical/view timestamp; four retain small generated backpressure
+shifts, so they are not timestamp-exact replays. Other draws legitimately take
+different trajectories; do not interpret their distance from this one native
+realization as a physics error or select only the matching seed.
+
+Both new candidate failures have the same dangerous order:
+
+- m1398: knockback applied6346.055ms; opponent clicks6389.376ms;
+  moves6392.668ms; return accepted6396.576ms.
+- m1399: knockback applied5846.519ms; opponent clicks5882.644ms;
+  moves5886.779ms; return accepted5893.323ms.
+
+The body has not yet moved away when the click is selected. Its sprint contact
+also applies the native horizontal attack drag to the received velocity. A
+controller must prevent this contact opportunity; simply sending knockback in
+time does not ensure that the target moves before attacking.
+
+Evidence: [fresh native captures](poc-20261101/native-schedules/native/reserved/trial.json),
+[distribution comparison](poc-20261101/native-schedules/joint-stage-generator/reserved-comparison.json),
+[native failure audit](poc-20261101/native-schedules/reserved-native-audit/findings.md),
+[held-out path audit](poc-20261101/native-schedules/joint-stage-generator/heldout-native-audit/findings.md).
+
+## Does a better opening solve it?
+
+The old three150-hit successes do not separate cleanly from failures by a4s
+pose: successful m1365 and failed m1368 have the same defender height/vertical
+speed and differ in horizontal spacing by only about0.0012 blocks. The old
+recordings lack the unconditional input-stage hooks needed for the newer exact
+schedule crossover, so we have not proved that every old successful acquisition
+survives arbitrary later timing.
+
+A complete-state crossover on the newer m1395 calendar gives causal evidence
+that acquisition matters. Keep the entire4s prefix, pending packets, selected
+timing tuples, policies and startup-cost commitments, then change only the future
+sampler seed. Every diagonal reproduces all original result fields:
+
+| Acquisition timing seed | Future timing seed | Frozen candidate | Same-state plain W-tap |
+|---|---|---:|---:|
+|0|0|19|1|
+|0|3|19|1|
+|3|0|1|2|
+|3|3|1|2|
+
+Scores follow the inherited prefix in these four tests. They do **not** establish
+that a good acquisition lasts indefinitely: even the better prefix returns a
+hit after19. The prefix also retains the opponent's first two startup-call costs,
+so this is a complete acquired-state result, not a pure position-only comparison.
+
+The first seven fresh launch vectors are identical. At the seventh, about half
+a millisecond of enqueue timing puts the same impulse on opposite sides of a
+client drain. In one path the defender lands before receiving it; in the other
+it receives it while airborne, retains more horizontal momentum, and escapes
+six attempted contacts. The candidate then misses the next fresh window.
+
+W-tap shows this state is recoverable: its Ctrl pursuit makes a contact at
+**2.973391 blocks**, while the candidate misses at**3.002790**. Its next fresh
+hit arrives57.45ms earlier and the defender moves before its dangerous click.
+W-tap still fails later; this diagnoses a useful behavior, not a lock.
+
+The next tightly scoped model test adds Ctrl pursuit only while the candidate's
+own aimed ray is outside3.0 and its existing law holds W. Coasting, strafe,
+click timing and queued inputs remain unchanged. It must beat both the old law
+and W-tap from the same complete state without wrecking the better opening.
+No live controller has been changed. See the
+[causal opening audit](poc-20261101/native-schedules/acquisition-tail/opening-findings.md).
+
+## Remaining limits
+
+The replacement is credible enough to test this one causal hypothesis. It is
+not a universal latency generator: whole calendars and queue fields are still
+conditional on measured workloads, only two development donors supply the
+joint per-hit costs, and long-range cost correlation is not fully modeled.
+Four fresh runs cannot calibrate rare five-minute survival probabilities.
+Any improved model result still needs new, serialized native pairs. We have
+neither established a robust lock nor proved vanilla combat infeasible.
+
+## Previous: frozen joint-timing distribution goes to fresh validation
 
 The new timing sampler keeps each measured hit's hurt notification, knockback,
 enqueue delay and cue-publication cost together. It uses only the two development

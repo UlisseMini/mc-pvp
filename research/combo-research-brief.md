@@ -40,23 +40,32 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ### Latest priority: native schedule calibration, then robustness
 
-Current checkpoint: conditional native reconstruction agrees through return,
-including inputs, views and launch vectors; legacy exact replay remains24,683
-events. Frozen joint raw/enqueue/cue timing MID ensemble now reproduces native
-candidate26 in16/20 draws and19 in5/20, with native-source W-tap1/2 in20/20.
-No completed draw sustains60s;4/80 candidate and1/80 W-tap prefixes are unknown.
-This is credible enough for fresh falsification, NOT a calibration pass. Do not
-keep fitting until a lone native outcome becomes modal. Finish declared cue
-bound sensitivities, then run the two reserved native pairs with heavy compute
-paused and controller/pools frozen. Report pre-outcome equal-calendar mixture
-separately from post-capture held-out-clock evaluation. Unknowns and timing flags
-stay visible. No controller optimization yet.
+Current checkpoint: the frozen timing model passed a narrow fresh-failure check.
+Reserved native pairs give candidate6/5 versus W-tap2/2, with clean acquisition
+and primary prefixes; final W-tap has a later stall, retained. All four outcomes
+are represented by the pre-outcome mixture. On held-out host calendars, native
+candidate6/5 occur in19/20 and11/20 draws; W-tap2 in20/20 and9/20. All80 paired
+draws resolve and fail before60s. The sampled native1399 critical ray plus all14
+launches and body/view geometry occur in6/20 draws; only2/20 match all compared
+physical timestamps. Keep the distinction. The older development ensemble's
+4/80 candidate and1/80 W-tap unknowns remain visible.
 
-A small causal diagnostic is planned afterward: m1395 complete4s acquisitions
-from seeds0/3 crossed with future timing seeds0/3, matched primed W-tap per cell.
-Preserve all pending packets/clicks/publications, FIFO, selected tuple caches and
-policy histories; do not splice poses or discard clock commitments. This tests
-whether the contrasting failures follow acquisition or future timing. See
+This permits ONE mechanism-derived model-only recovery test, not a universal
+scheduler validation or native promotion. Whole held-out calendars/queuefields
+condition on measured workload; only the frozen old-calendar mixture was an
+advance prediction. Four native observations cannot calibrate rare5min survival.
+Legacy conditional exact replay remains24,683 events. No live controller change.
+
+The m1395 complete4s acquisition×future seed0/3 crossover is complete. Candidate
+19/19/1/1 versus primed W-tap1/1/2/2 follows the inherited prefix (including
+retained startup-cost program), not the two future seeds. The same seventh
+impulse lands before/after a drain and opposite sides of landing; bad prefix
+loses six contacts. W-tap's Ctrl pursuit recovers contact at ray2.973391 where
+candidate misses at3.002790, delivering the next fresh hit57.45ms earlier.
+Test only a maintenance own-ray>3.0 Ctrl overlay on existing W-held decisions;
+preserve coast/strafe/gating/queues and compare old law+W-tap from identical
+full states. Stop if it does not recover the contact, causes worse overshoot,
+or loses the better prefix. No broad controller sweep. See
 [current findings](combo-native-schedules-20261101.md).
 
 User requests that evaluation clocks use native-recorded packet jitter, client
