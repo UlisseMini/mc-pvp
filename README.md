@@ -11,7 +11,7 @@ The [burst-clicking experiments](research/burst-clicking-results.md) test immedi
 recoil cancellation, continuous one-tick W-tap and critical-aware click scheduling.
 The [click-rate comparison](research/cps-wtap-results.md) isolates 15, 20, 25 and
 30 CPS against otherwise identical 10 CPS one-tick W-tap.
-The [timed-block trials](research/blockhit-timing-results.md) cover the practice
+The [timed-block trials](research/blockhit-linear-results.md) cover the practice
 feedback, damage metrics and measured strengths and limitations of `blockhit_timing`.
 The [formal model](FORMAL-MODEL.md) states the mechanics, hidden information and
 combo proof conditions; controlled native recordings test those claims. Its
@@ -137,16 +137,23 @@ hits displays `N/A`. Your bottom bar uses the same definition: `Blocks: 30/40
 (75.0%)`, with your own incoming-hit count; spectators see both players in score
 order. Separate raw attempt telemetry remains in research logs.
 
-`blockhit_timing` keeps normal forward/sprint and capped attack inputs. After an
-opening trade it predicts the next fresh-hit window from its client's native
-hurt-status notification and its configured RTT. It briefly right-clicks around
-that window, then releases to move and attack. Native health updates for stronger
-criticals inside immunity do not restart its timer. It uses no referee state;
-vanilla still applies blocking's movement penalty and attack suppression.
-Native sword inventory updates can cancel client item use while the server still
-considers the sword raised; therefore a short input pulse does not guarantee a
-short server-side guard. The bot does not modify that native behavior. Recorded
-trials distinguish intended key state, native client state and server state.
+`blockhit_timing` uses immediate post-hit W-taps plus separate defensive blocks.
+It fits straight-line motion to the last three visible positions of each player,
+projects the opponent's reach and next fresh-hit opportunity, and learns a small
+timing correction from its own native hurt notifications. It commits to an impending hit forecast, raises the sword independently of its
+attack cadence, and releases one client tick later (about 50 ms).
+Clicks remain capped at 10 CPS and continue during immunity when the opponent
+is in native three-block reach. Blocking retains vanilla's movement penalty and
+attack suppression; the policy reads no referee or hidden opponent state.
+See the [linear-controller experiments](research/blockhit-linear-results.md)
+for the algorithm, calibration, controls, unequal-ping results and recordings.
+
+Results now also show **Blocking time** in seconds and as a percentage of fight
+time, plus **saved hearts per second spent blocking**. These measure actual
+server guard intervals, including an unfinished guard at match end. Use the
+percentage alongside hit block %: less time blocking is useful only if it still
+prevents damage and preserves good trades. Native client/server item-use
+mismatches can make a server guard outlast a mouse press, so trials audit both.
 
 Successful sword blocks play a quiet, higher-pitched `random.anvil_land` only to the blocking player.
 The server observes the actual vanilla damage-reduction branch, after attack

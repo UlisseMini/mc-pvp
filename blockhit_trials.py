@@ -18,7 +18,7 @@ async def run(args):
     out = ROOT / 'experiments' / ('blockhit-' + time.strftime('%Y%m%d-%H%M%S') + '-' + uuid.uuid4().hex[:6])
     out.mkdir()
     names = {args.bot, *args.opponents}
-    sources = ['src/lab/Client.java', 'src/lab/Agent.java', 'src/lab/BlockhitController.java', 'experiments.py', 'blockhit_trials.py']
+    sources = ['src/lab/Client.java', 'src/lab/Agent.java', 'src/lab/BlockhitController.java', 'src/lab/LinearHitPredictor.java', 'src/lab/TimedBlockController.java', 'experiments.py', 'blockhit_trials.py']
     sources += ['policies/' + n + '.properties' for n in sorted(names)]
     hashes = {}
     for f in sources:
@@ -52,12 +52,20 @@ async def run(args):
             for s in ('a', 'b'):
                 attempts = successes = 0
                 active = saved = False
+                guard_start = None
+                guard_ms = 0
+                guard_lengths = []
                 for e in server:
                     if e['type'] == 'block_attempt' and e['player'] == result[s]:
                         if e['blocking']:
                             assert not active, 'duplicate block begin'
                             attempts += 1
                             saved = False
+                            guard_start = e['time']
+                        elif guard_start is not None:
+                            guard_ms += e['time']-guard_start
+                            guard_lengths.append(e['time']-guard_start)
+                            guard_start = None
                         active = e['blocking']
                     if e['type'] == 'blocked_damage' and e['target'] == result[s]:
                         assert active, 'blocked damage without an observed block attempt'
@@ -65,8 +73,18 @@ async def run(args):
                             successes += 1
                             saved = True
                 actual = result['stats_' + s]['block_accuracy']
+                if guard_start is not None:
+                    guard_ms += result['finish']-guard_start
+                    guard_lengths.append(result['finish']-guard_start)
+                if 'blocking_time_ms' in result['stats_'+s]:
+                    assert guard_ms == result['stats_'+s]['blocking_time_ms'], (guard_ms,result['stats_'+s]['blocking_time_ms'])
                 assert (attempts, successes) == (actual['attempts'], actual['successful_attempts'])
                 accuracy_checks[s] = {'attempts': attempts, 'successes': successes, 'passed': True}
+                accuracy_checks[s]['blocking_time_verified_ms'] = guard_ms
+                accuracy_checks[s]['server_guard_lengths_ms'] = guard_lengths
+                # Keep the result, but reject it as evidence of brief timing if
+                # native item-use cancellation left a long server-side guard.
+                accuracy_checks[s]['short_guards_qualified'] = max(guard_lengths, default=0)<=200
                 melee = [e for e in server if e['type'] == 'melee_damage' and e['target'] == result[s]]
                 blocked = sum(e['blocked'] for e in melee)
                 assert len(melee) == result['stats_' + s]['melee_hits_taken']
@@ -77,12 +95,20 @@ async def run(args):
             plans = [e for e in events if e['type'] == 'blockhit_plan']
             durations = [min(100, y['time'] - x['time']) for x, y in zip(plans, plans[1:])]
             duty = sum(dt for e, dt in zip(plans, durations) if e['native_blocking']) / max(1, sum(durations))
+            key_duty = sum(dt for e, dt in zip(plans, durations) if e['block_key']) / max(1, sum(durations))
+            key_lengths=[]
+            began=None
+            for e in plans:
+                if e['block_key'] and began is None:began=e['time']
+                elif not e['block_key'] and began is not None:key_lengths.append(e['time']-began);began=None
             received = result['stats_' + side]['melee_hits_taken']
             result['blockhit_summary'] = {
                 'bot_side': side, 'opponent': opponent, 'won': result['winner'] == result[side],
                 'blocked': result['blocks_' + side], 'received_melee': received,
                 'block_rate': result['blocks_' + side] / received if received else None,
                 'native_block_duty': duty, 'bot_hp': result['health_' + side],
+                'key_block_duty': key_duty, 'key_hold_lengths_ms': key_lengths,
+                'server_blocking_time_ms': accuracy_checks[side]['blocking_time_verified_ms'],
                 'block_accuracy': result['stats_' + side]['block_accuracy'],
                 'opponent_hp': result['health_' + other],
                 'saved_hearts': result['stats_' + side]['damage_breakdown']['blocking_saved']['damage'] / 2,

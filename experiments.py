@@ -92,6 +92,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
                         intervals.extend(gaps)
                         if min(gaps,default=minimum_interval)<minimum_interval:issues.add(f'{side}: declared click cap violated')
                         if any(e.get('click_cps',click_cps)!=click_cps for e in clicks):issues.add(f'{side}: click rate differs from frozen policy')
+                        if parameters[result['policy_'+side]].get('click_mode')=='contact' and any(not e.get('native_target_in_range') for e in clicks):issues.add(f'{side}: contact click was queued without a native target')
                         ordered=sorted(gaps)
                         input_metrics[side]={'clicks':len(clicks),'declared_cps':click_cps,'minimum_interval_ns':minimum_interval,
                                              'mean_click_gap_ms':sum(gaps)/len(gaps)/1e6 if gaps else None,
@@ -190,7 +191,7 @@ def combat_metrics(result):
     all_probes={}
     for side,other in [('a','b'),('b','a')]:
         path=RUNTIME/'bots'/result[side].removeprefix('LabSlot')/'events.jsonl'
-        probes=[e for line in path.read_text().splitlines() if (e:=json.loads(line)).get('match')==result['id'] and e['type']=='reach_probe']
+        probes=[e for e in match_events(path,result['id']) if e['type']=='reach_probe']
         all_probes[side]=probes
         received=[h for h in hits if h['target']==result[side] and h.get('target_state',{}).get('hurtResistantTime')==20]
         if len(received)>=3:

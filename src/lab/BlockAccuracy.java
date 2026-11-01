@@ -7,12 +7,18 @@ import java.util.Map;
 public final class BlockAccuracy {
     int attempts,successful;
     boolean active,saved;
+    long activeSince,totalMs;
     public boolean update(boolean blocking){
+        return update(blocking,System.currentTimeMillis());
+    }
+    public boolean update(boolean blocking,long now){
         if(blocking==active)return false;
+        if(active)totalMs+=Math.max(0,now-activeSince);
         active=blocking;
-        if(blocking){attempts++;saved=false;}
+        if(blocking){attempts++;saved=false;activeSince=now;}
         return true;
     }
+    public long totalMillis(long now){return totalMs+(active?Math.max(0,now-activeSince):0);}
     public void damageReduced(){
         // Includes a guard already held when the duel countdown ended.
         update(true);

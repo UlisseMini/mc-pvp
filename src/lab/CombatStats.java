@@ -10,11 +10,17 @@ public final class CombatStats {
     final BlockAccuracy blockAccuracy=new BlockAccuracy();
     final BlockTiming blockTiming=new BlockTiming();
     Map<String,Object> state(int meleeHitsTaken){
+        return state(meleeHitsTaken,System.currentTimeMillis(),0);
+    }
+    Map<String,Object> state(int meleeHitsTaken,long now,long duration){
         Map<String,Object> state=new LinkedHashMap<>(Map.of("crits",crits,"rod_hits",rodHits,"damage_upgrades",upgrades,
             "regenerated",regenerated,"damage_dealt",damageDealt,"damage_taken",damageTaken,"other_damage",otherDamage));
         state.put("melee_hits_taken",meleeHitsTaken);state.put("damage_taken_per_hit",damageTakenPerHit(meleeHitsTaken));
         state.put("block_percent",blockPercent(meleeHitsTaken));
         state.put("damage_blocked_percent",damageBlockedPercent());
+        long blockedMs=blockAccuracy.totalMillis(now);
+        state.put("blocking_time_ms",blockedMs);state.put("blocking_uptime_percent",duration>0?100.0*blockedMs/duration:null);
+        state.put("blocking_saved_per_second",blockedMs>0?breakdown.blockingSaved.damage*1000/blockedMs:null);
         state.put("damage_breakdown",breakdown.state());state.put("block_accuracy",blockAccuracy.state());return state;
     }
     /** Actual opponent health loss, including native crit/block/armor effects and partial immunity upgrades.
@@ -51,8 +57,8 @@ public final class CombatStats {
         try{
             Referee.Match m=match(p);if(m==null||!m.winner.isEmpty())return;
             boolean blocking=(Boolean)R.call(p,"isBlocking");BlockAccuracy accuracy=m.stats(R.name(p)).blockAccuracy;
-            if(accuracy.update(blocking)){
-                long now=System.currentTimeMillis();
+            long now=System.currentTimeMillis();
+            if(accuracy.update(blocking,now)){
                 Referee.append(m.replay,Map.of("type","block_attempt","time",now,
                     "player",R.name(p),"blocking",blocking,"attempt",accuracy.attempts,"successful_attempts",accuracy.successful));
                 if(m.stats(R.name(p)).blockTiming.transition(blocking,now))Referee.timingFeedback(m,R.name(p),now);
@@ -93,11 +99,15 @@ public final class CombatStats {
             Referee.append(m.replay,Map.of("type","critical","time",System.currentTimeMillis(),"attacker",who,"target",victim));
         }catch(Throwable e){if(Referee.errors++<10)e.printStackTrace();}
     }
-    void summary(Object recipient,String name,int hits,int blocks,boolean rods,Number health,int meleeHitsTaken){
+    void summary(Object recipient,String name,int hits,int blocks,boolean rods,Number health,int meleeHitsTaken,long now,long duration){
         String hp=health==null?"§7HP: unavailable":String.format(Locale.ROOT,"§cHP: %.2f/10",health.doubleValue()/2);
         Referee.message(recipient,name+" §8| "+hp+" §8| §eHits: "+breakdown.damageHitsLanded+(rods?" §8| §7Rod contacts: "+rodHits:""));
         Referee.message(recipient,String.format(Locale.ROOT,"  §dCrits: %d §8| §bBlocks: %d §8| §aRegen: +%.2f",crits,blocks,regenerated/2));
         Referee.message(recipient,blockPercentText(meleeHitsTaken));
+        long blockedMs=blockAccuracy.totalMillis(now);
+        Referee.message(recipient,String.format(Locale.ROOT,"  §bBlocking time: §f%.2fs §7(%s of fight) §8| §bSaved/sec blocking: §f%s hearts",
+            blockedMs/1000.0,duration>0?String.format(Locale.ROOT,"%.1f%%",100.0*blockedMs/duration):"N/A",
+            blockedMs>0?String.format(Locale.ROOT,"%.2f",breakdown.blockingSaved.damage*500/blockedMs):"N/A"));
         Referee.message(recipient,String.format(Locale.ROOT,"  §6Damage dealt: %.2f §8| §cTaken: %.2f §8| §7Immunity upgrades: %d%s",
             damageDealt/2,damageTaken/2,upgrades,otherDamage>0?String.format(Locale.ROOT," §8| §7Other damage: %.2f",otherDamage/2):""));
         Referee.message(recipient,damageTakenPerHitText(meleeHitsTaken));

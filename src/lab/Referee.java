@@ -40,7 +40,8 @@ public final class Referee {
             m.put("hits_a",ha);m.put("hits_b",hb);m.put("goal",goal);m.put("ping_a",pingA);m.put("ping_b",pingB);
             m.put("damage_hits_a",sa.breakdown.damageHitsLanded);m.put("damage_hits_b",sb.breakdown.damageHitsLanded);
             m.put("mode",mode);m.put("blocks_a",ba);m.put("blocks_b",bb);
-            m.put("stats_a",sa.state(hb-sb.rodHits));m.put("stats_b",sb.state(ha-sa.rodHits));
+            long now=finish>0?finish:System.currentTimeMillis(),duration=Math.max(0,now-start);
+            m.put("stats_a",sa.state(hb-sb.rodHits,now,duration));m.put("stats_b",sb.state(ha-sa.rodHits,now,duration));
             m.put("food_policy","full_food_saturation_every_20_ticks");m.put("fishing_rods",rods());
             m.put("rod_knockback",rods()?"native_zero_damage_contacts_between_duel_opponents":"vanilla_zero_damage_rejection");
             m.put("start",start);m.put("finish",finish);m.put("winner",winner);m.put("arena",arena);m.put("request",request);m.put("scenario",scenario);m.put("duration_limit_ms",durationMs);
@@ -560,8 +561,8 @@ public final class Referee {
                 " §7• §f"+(isBot(m.winner)?(m.winner.equals(m.a)?m.pa:m.pb):m.winner);
             message(p,"§6§lFinished "+m.id+" §r§8["+m.mode+"] §7— "+outcome);
             if(DuelSettings.reach(m.configA)!=3||DuelSettings.reach(m.configB)!=3)message(p,"§dModified reach: "+DuelSettings.reach(m.configA)+" / "+DuelSettings.reach(m.configB)+" blocks (first / second player).");
-            m.sa.summary(p,summaryName(m.a,m.pa,who,"§b"),m.ha,m.ba,m.rods(),(Number)result.get("health_a"),m.hb-m.sb.rodHits);
-            m.sb.summary(p,summaryName(m.b,m.pb,who,"§6"),m.hb,m.bb,m.rods(),(Number)result.get("health_b"),m.ha-m.sa.rodHits);
+            m.sa.summary(p,summaryName(m.a,m.pa,who,"§b"),m.ha,m.ba,m.rods(),(Number)result.get("health_a"),m.hb-m.sb.rodHits,m.finish,Math.max(0,m.finish-m.start));
+            m.sb.summary(p,summaryName(m.b,m.pb,who,"§6"),m.hb,m.bb,m.rods(),(Number)result.get("health_b"),m.ha-m.sa.rodHits,m.finish,Math.max(0,m.finish-m.start));
             message(p,"§8Crits are included in hits. Rod contacts are separate. Health/damage in hearts.");
             message(p,"§8Per-hit damage uses actual HP lost to melee, including crits/blocks; excludes rods and other damage.");
             message(p,"§8Hits count HP loss; rod contacts are separate. Saved/extra damage keeps the same armor and Protection roll.");

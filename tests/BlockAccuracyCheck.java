@@ -11,6 +11,9 @@ public final class BlockAccuracyCheck {
         b.update(true); // An attempt interrupted by death/duel end still counts.
         check(b.state().get("attempts").equals(3));b.update(false);
         b.damageReduced();check(b.state().get("successful_attempts").equals(2));
+        var clock=new BlockAccuracy();clock.update(true,1000);clock.update(true,1025);
+        check(clock.totalMillis(1050)==50);clock.update(false,1100);check(clock.totalMillis(1300)==100);
+        clock.update(true,1400);check(clock.totalMillis(1450)==150);clock.update(false,1500);check(clock.totalMillis(2000)==200);
         System.out.println("PASS block attempts, misses, multiple hits per hold, interrupted guard and empty denominator");
     }
 }

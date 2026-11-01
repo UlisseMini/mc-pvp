@@ -1,5 +1,9 @@
 # Timed blocking and practice feedback — 2026-10-31
 
+**Historical first implementation.** The revised bot and subsequent validation
+are documented in [the linear-controller results](blockhit-linear-results.md).
+The results below describe the original implementation, before that replacement.
+
 `/duel blockhit_timing diamond` is available on the local 1.8.9 server.
 The first repeated batch beat hold-W 3/3, but won only 1/3 against each W-tap
 baseline. It blocks a majority of accepted incoming melee hits; it has **not**

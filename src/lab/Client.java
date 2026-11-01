@@ -36,6 +36,10 @@ public final class Client {
     static final CriticalClickController criticalClicks=new CriticalClickController();
     static boolean targetReady;
     static final BlockhitController blockhit=new BlockhitController();
+    static final LinearHitPredictor hitPredictor=new LinearHitPredictor();
+    static final TimedBlockController timedBlock=new TimedBlockController();
+    static final Deque<Long> blockTapCues=new ArrayDeque<>();
+    static long blockTapQueued;
     static boolean blockKey;
     static long freshHurtStatus;
 
@@ -149,7 +153,11 @@ public final class Client {
             long now=System.nanoTime();
             if(clickGate&&firstClickEligible==0)firstClickEligible=now;
             long firstDelay=(long)Math.max(0,Math.min(100,number("first_click_delay_ms",0)))*1_000_000L;
-            if(clickGate && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
+            // Contact-clicking is a normal input policy: begin the capped
+            // cadence when the native ray selects the opponent. It does not
+            // inspect immunity, accepted hits or any server-only state.
+            boolean contactClicks=controls.getProperty("click_mode","fixed").equals("contact");
+            if(clickGate && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 // A planned Ctrl pulse ends after the first queued click. Native
@@ -168,6 +176,7 @@ public final class Client {
                 issued.put("reaction_ms",(int)number("reaction_ms",150));
                 issued.put("click_cps",ClickRate.cps(controls));
                 issued.put("attack_reach",attackReach());
+                issued.put("native_target_in_range",selected==opponent);
                 issued.put("minimum_click_interval_ns",ClickRate.intervalNanos(controls));
                 if(controls.getProperty("click_mode","fixed").equals("reactive-burst")&&burstDecision!=null){
                     issued.put("burst_opening",burstDecision.opening());issued.put("burst_defensive",burstDecision.defensive());
@@ -250,6 +259,7 @@ public final class Client {
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 criticalClicks.reset();
                 blockhit.reset();blockKey=false;freshHurtStatus=0;
+                hitPredictor.reset();timedBlock.reset();blockTapCues.clear();blockTapQueued=0;
                 targetWatchdog.reset();targetReady=false;
             }
             opponent=null;
@@ -323,7 +333,10 @@ public final class Client {
             boolean timedBlockTap=kind.equals("blockhit")&&number("block_wtap",0)>0;
             if(kind.equals("wtap") || kind.equals("tradetap") || timedBlockTap){
                 // A landed-hit cue arms one reset. No periodic taps and no hidden server feedback.
-                if(lastObservedTargetHurt>handledTapCue)pendingTapCue=lastObservedTargetHurt;
+                if(timedBlockTap){
+                    if(lastObservedTargetHurt>blockTapQueued){blockTapCues.addLast(lastObservedTargetHurt);blockTapQueued=lastObservedTargetHurt;}
+                    while(!blockTapCues.isEmpty()&&now>=blockTapCues.peekFirst()+(long)number("block_tap_delay_ms",0))pendingTapCue=blockTapCues.removeFirst();
+                }else if(lastObservedTargetHurt>handledTapCue)pendingTapCue=lastObservedTargetHurt;
                 if(pendingTapCue>0){
                     boolean traded=lastObservedHurt>=pendingTapCue-number("trade_window_ms",200);
                     boolean waited=now-pendingTapCue>=reaction+number("reply_wait_ms",150)+oppPing/2;
@@ -456,19 +469,42 @@ public final class Client {
             }
             if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
             if(kind.equals("blockhit")){
-                BlockhitController.Decision decision=blockhit.decide(new BlockhitController.Input(now,obs.freshHurtCue,ping,obs.distance,obs.closing),BlockhitController.Settings.from(controls));
-                boolean block=number("block_enabled",1)>0&&decision.block();
+                boolean linear=controls.getProperty("block_model","legacy").equals("linear");
+                Map<String,Object> plan=new LinkedHashMap<>();boolean requested;String reason;
+                if(linear){
+                    // Poll the same capped native left-click input before the
+                    // block admission check, so left/right can share this tick.
+                    if(reaction==0){nativeInputPoll=true;try{frame(mc);}finally{nativeInputPoll=false;}}
+                    var prediction=hitPredictor.predict(new LinearHitPredictor.Sample(obs.time,obs.x,obs.y,obs.z,obs.tx,obs.ty,obs.tz),
+                        obs.freshHurtCue,ping,oppPing,LinearHitPredictor.Settings.from(controls));
+                    Object attack=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
+                    Object ray=R.get(mc,"objectMouseOver");
+                    boolean queued=R.num(attack,"pressTime")>0,inRange=ray!=null&&R.get(ray,"entityHit")==opponent;
+                    var decision=timedBlock.decide(new TimedBlockController.Input(now,ticks,obs.freshHurtCue,prediction.commandAt(),queued,inRange),TimedBlockController.Settings.from(controls));
+                    requested=decision.block();reason=decision.reason();
+                    plan.put("model","linear");plan.put("predicted_receipt_at",Double.isFinite(prediction.receiptAt())?prediction.receiptAt():null);
+                    plan.put("predicted_command_at",Double.isFinite(prediction.commandAt())?prediction.commandAt():null);
+                    plan.put("eligible_at",prediction.eligibleAt());plan.put("opponent_range",prediction.opponentRangeNow());
+                    plan.put("own_velocity",List.of(prediction.ownVx(),prediction.ownVy(),prediction.ownVz()));
+                    plan.put("target_velocity",List.of(prediction.targetVx(),prediction.targetVy(),prediction.targetVz()));
+                    plan.put("own_position",List.of(obs.x,obs.y,obs.z));plan.put("target_position",List.of(obs.tx,obs.ty,obs.tz));
+                    plan.put("attack_queued",queued);plan.put("in_range",inRange);plan.put("release_tick",decision.releaseTick());plan.put("native_tick",ticks);
+                }else{
+                    var decision=blockhit.decide(new BlockhitController.Input(now,obs.freshHurtCue,ping,obs.distance,obs.closing),BlockhitController.Settings.from(controls));
+                    requested=decision.block();reason=decision.reason();
+                    plan.put("ready_at",decision.readyAt());plan.put("window_start",decision.windowStart());plan.put("window_end",decision.windowEnd());
+                }
+                boolean block=number("block_enabled",1)>0&&requested;
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindUseItem");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"setKeyBindState",(int)R.call(key,"getKeyCode"),block);
                 // A real right-mouse press generates both key state and one press
                 // event. Vanilla itself starts/stops use and suppresses attacks.
                 if(block&&!blockKey)R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 blockKey=block;
-                Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","blockhit_plan");plan.put("time",now);plan.put("match",match);
+                plan.put("type","blockhit_plan");plan.put("time",now);plan.put("match",match);
                 plan.put("observation_time",obs.time);plan.put("incoming_cue",lastObservedHurt);plan.put("block_key",block);
                 plan.put("fresh_hurt_cue",obs.freshHurtCue);
-                plan.put("native_blocking",R.call(player,"isBlocking"));plan.put("reason",decision.reason());
-                plan.put("ready_at",decision.readyAt());plan.put("window_start",decision.windowStart());plan.put("window_end",decision.windowEnd());
+                plan.put("native_blocking",R.call(player,"isBlocking"));plan.put("reason",reason);plan.put("requested_block",requested);
                 plan.put("distance",obs.distance);plan.put("own_rtt",ping);log(plan);
             }else blockKey=false;
             if(kind.equals("scripted")){
@@ -547,7 +583,13 @@ public final class Client {
             if(((Number)R.call(packet,"getOpCode")).intValue()!=2)return;
             Object entity=R.call(packet,"getEntity",R.get(mc,"theWorld"));
             if(entity==player){freshHurtStatus=System.currentTimeMillis();
-                log(Map.of("type","fresh_hurt_status","time",freshHurtStatus,"match",match));}
+                log(Map.of("type","fresh_hurt_status","time",freshHurtStatus,"match",match));
+                if(Boolean.parseBoolean(controls.getProperty("block_adapt","false"))){
+                    var calibration=hitPredictor.hurt(freshHurtStatus,number("ping",0));
+                    if(calibration!=null)log(Map.of("type","prediction_calibration","time",freshHurtStatus,"match",match,
+                        "forecast_time",calibration.forecastTime(),"error_ms",calibration.error(),"correction_ms",calibration.correction(),"count",calibration.count()));
+                }
+            }
         }catch(Throwable e){fail(e);}
     }
     public static void velocityPacket(Object packet){
