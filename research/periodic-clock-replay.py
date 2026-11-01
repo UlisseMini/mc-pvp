@@ -4,7 +4,7 @@
 Later native poses, packets and attacks are comparison data only. No fresh-hit
 confirmations, observed impulses, or remote trajectory corrections are fed back.
 """
-import argparse,base64,collections,csv,gzip,hashlib,io,json,statistics,struct,subprocess,tempfile
+import argparse,base64,collections,csv,gzip,hashlib,io,json,math,statistics,struct,subprocess,tempfile
 from network_pipeline_audit import archive,wire as pipeline_wire,pair_payloads,signature,input_signature
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
@@ -94,6 +94,7 @@ def network_schedule(mid,data,game,offset,t0,seconds):
 
 def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
     game=json.loads((ROOT/'runtime/results'/f'{mid}.json').read_text());t0=game['start']
+    profile=game.get('combat_profile',{});combat=[profile.get('kb_horizontal',1.),profile.get('kb_vertical',1.),profile.get('fresh_hit_ticks',10)]
     data={side:load(mid,side)for side in ('a','b','server')}
     offsets=[e['monotonic_ns']/1e6-e['time'] for es in data.values()for e in es if 'monotonic_ns'in e and 'time'in e]
     offset=statistics.median(offsets)
@@ -156,7 +157,7 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
     if transport_trace:
         network,applies=network_schedule(mid,data,game,offset,t0,seconds);rows.extend(applies)
     rows.sort(key=lambda r:r[0])
-    lines=['\t'.join(map(str,['INIT',ax,bx,game['ping_a'],game['ping_b'],game['attack_reach_b'],tracker,*report_seeds,*initial_damage,*teleport_ages]))]
+    lines=['\t'.join(map(str,['INIT',ax,bx,game['ping_a'],game['ping_b'],game['attack_reach_b'],tracker,*report_seeds,*initial_damage,*teleport_ages,*combat]))]
     lines=['\t'.join(map(lambda x:'NaN'if isinstance(x,float)and x!=x else str(x),['NETWORK',*r]))for r in network]+lines
     for t,k,args,e in rows:
         lines.append('\t'.join(map(str,[t,k,*args])))
@@ -183,6 +184,22 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
             side=k[-1].lower();q=e['own'];target=e['target']
             pairs={f'{side}_{v}':q['pos'+v.upper()]for v in ('x','y','z')};pairs.update({f'{side}_view_{v}':target['pos'+v.upper()]for v in ('x','y','z')})
             contact=int(float(pred[side+'_ray'])<=(3 if side=='a'else game['attack_reach_b']));pred['ray_selected']=contact;pairs['ray_selected']=int(e['selected_target'])
+            # Independent geometry from native recorded boxes/raycast point.
+            # These are assertions only. Floating-point expression order differs
+            # from the compact model formula, so report numeric errors separately
+            # from the exact state/packet bit checks.
+            f32=lambda value:struct.unpack('>f',struct.pack('>f',value))[0]
+            eye=[q['posX'],q['posY']+f32(1.62),q['posZ']];box=target['box'];border=f32(.1)
+            native_nearest=math.sqrt(sum(max(0,box[i]-border-eye[i],eye[i]-box[i+3]-border)**2 for i in range(3)))
+            ranges={'nearest':{'predicted':float(pred['own_range'if side=='a'else'defender_range']),'native':native_nearest}}
+            if e['selected_target'] and e.get('ray_point'):
+                inside=all(box[i]-border<eye[i]<box[i+3]+border for i in range(3))
+                # EntityRenderer assigns selection distance zero inside the box;
+                # hitVec can still point to the far face and is not that distance.
+                native_ray=0.0 if inside else math.sqrt(sum((eye[i]-e['ray_point'][i])**2 for i in range(3)))
+                ranges['selected_ray']={'predicted':float(pred[side+'_ray']),'native':native_ray}
+            for value in ranges.values():value['absolute_error']=abs(value['predicted']-value['native'])
+            row['range_checks']=ranges
         row['predicted']={key:float(pred[key])for key in pairs};row['native']=pairs;row['absolute_error']={key:abs(float(pred[key])-value)for key,value in pairs.items()};row['bit_mismatches']=[key for key,value in pairs.items()if struct.pack('>d',float(pred[key]))!=struct.pack('>d',float(value))]
         scored.append(row)
     summary={}
@@ -192,17 +209,22 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
         failures=[e for e in selected if max(e['absolute_error'].values(),default=0)>.001]
         bits=[e for e in selected if e['bit_mismatches']]
         summary[category]={'n':len(selected),'bit_mismatch_rows':len(bits),'first_bit_mismatch':bits[0]if bits else None,'max_component_error':max(errors,default=0),'first_error_over_001':failures[0]if failures else None}
-    return {'match':mid,'rtt':[game['ping_a'],game['ping_b']],'seconds':seconds,'requested_seconds':requested_seconds,'unsupported':unsupported,'frame_drain':frame_drain,'exact_server_clocks':exact_clocks,'transport_trace':transport_trace,'replay_failure':replay_failure,
+    range_summary={}
+    for metric in ('nearest','selected_ray'):
+        errors=sorted(row['range_checks'][metric]['absolute_error'] for row in scored if metric in row.get('range_checks',{}))
+        range_summary[metric]={'n':len(errors),'max_absolute_error_blocks':max(errors,default=0),'p95_absolute_error_blocks':errors[min(len(errors)-1,int(.95*len(errors)))]if errors else None}
+    return {'range_summary':range_summary,'match':mid,'combat_profile':combat,'rtt':[game['ping_a'],game['ping_b']],'seconds':seconds,'requested_seconds':requested_seconds,'unsupported':unsupported,'frame_drain':frame_drain,'exact_server_clocks':exact_clocks,'transport_trace':transport_trace,'replay_failure':replay_failure,
             'initial_positions':[ax,bx],'initial_tracker_counter':tracker,'initial_teleport_ages':teleport_ages,'initial_report_state_from_prior_wire':report_seeds,'initial_last_damage_from_first_precontact_snapshot':initial_damage,
             'scope':'Recorded W/A/D/Ctrl/yaw/click inputs plus raw tick_start/end, local move/interpolation and server-tick clocks. Initial settled positions only; all later native states withheld. Transport mode uses click call-start plus measured packet dispatch/delivery schedules; other mode uses call-end and tick-end emission proxies. Exact server drain/entity/tracker hooks are used when present, otherwise server tick logs are end-of-tick proxies. Critical upgrades, reported fall state, native server pushes and 2D head-ray are modeled. Degenerate random KB is an explicit unsupported stop. All generated relevant packets are asserted by subtype and represented payload bits; initial C03 counters are reconstructed only from pre-start wire history. Initial lastDamage is taken from the first pre-contact server snapshot, with no preceding attack. Metadata checks cover own sprint flags, not unrelated watcher entries. The first divergence ends strict transport replay; requested/unexecuted tails are counted.',
             'completed_event_rows':len(predictions),'requested_event_rows':len(expected),'unexecuted_event_rows':len(expected)-len(predictions),'last_compared_ms':scored[-1]['t_ms']if scored else None,'summary':summary,'rows':scored}
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('matches',nargs='*',default=['m1187']);ap.add_argument('--frames',action='store_true');ap.add_argument('--transport-trace',action='store_true');ap.add_argument('--seconds',type=float,default=4);a=ap.parse_args()
+    source_hashes={s:hashlib.sha256((ROOT/s).read_bytes()).hexdigest()for s in SOURCES}
     with tempfile.TemporaryDirectory(prefix='periodic-replay-')as temp:
         subprocess.run([str(JAVA.with_name('javac')),'-proc:none','-d',temp,*[str(ROOT/s)for s in SOURCES]],capture_output=True,check=True)
         reports=[run(mid,temp,a.frames,a.seconds,a.transport_trace)for mid in a.matches]
-    output={'sources':{s:hashlib.sha256((ROOT/s).read_bytes()).hexdigest()for s in SOURCES},'reports':reports}
+    output={'sources':source_hashes,'reports':reports}
     name='research/periodic-clock-replay'+('-frames'if a.frames else '')+('-transport'if a.transport_trace else '')+'-'+ '-'.join(a.matches)+'.json'
     (ROOT/name).write_text(json.dumps(output,indent=2)+'\n')
     for d in reports:
