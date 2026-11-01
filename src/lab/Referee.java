@@ -4,8 +4,8 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
-/** Real server referee. Ordinary duels keep their combat rules; timed bot research
- * scenarios may freeze an explicitly recorded CombatProfile. */
+/** Real server referee. Vanilla by default; explicit match options may freeze a
+ * different, recorded CombatProfile for both players. */
 public final class Referee {
     static Object server;
     static final Path DATA=R.ROOT.resolve("runtime");
@@ -426,6 +426,7 @@ public final class Referee {
         if(!pa.equals("human")&&!policies.containsKey(pa)||!policies.containsKey(pb))throw new IllegalArgumentException("Unknown bot; use /bots.");
         Match m=new Match();m.mode=mode(selectedMode);m.goal=m.boxing()?100:0;m.request=request;if(duration>0){m.scenario=true;m.durationMs=duration;}
         if(m.scenario&&isBot(a)&&isBot(b)){m.combat=CombatTuning.nextScenario;m.goal=0;}
+        m.combat=CombatProfile.fromOverrides(overridesB,m.combat);
         if(m.sumo()&&duration==0)m.durationMs=SumoArena.DURATION_MS;
         m.startGap=m.sumo()?SumoArena.START_GAP:startGap;m.drillRound=round;m.drillPreset=preset;
         do{m.id=String.format("m%04d",++counter);}while(Files.exists(DATA.resolve("results/"+m.id+".json"))||Files.exists(DATA.resolve("replays/"+m.id+".jsonl")));
@@ -475,6 +476,8 @@ public final class Referee {
         String rules=m.sumo()?"Sumo: bare fists, full health; knock your opponent off the platform. Two-minute limit.":m.drillRound>0?"Entry drill #"+round+", "+startGap+" block gap. Rod diamond; automatic repeat.":m.boxing()?(m.scenario?"Timed research: "+duration/1000+" seconds, no hit-score limit.":"Boxing: first to 100 hits."):(m.box()?"Diamond box: 1x1, wooden swords":m.rods()?"Rod diamond: wooden swords and fishing rods with PvP knockback":"Diamond: wooden swords")+", unbreakable swords, unenchanted diamond armor, fight to death. Respawn, then /rematch.";
         message(player(a),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules+" §b/stop §7to exit.");
         message(player(b),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules);
+        if(!m.combat.vanilla())for(Object who:List.of(player(a),player(b)))
+            message(who,"§dModified combat for both players: §fKB ×"+m.combat.horizontal()+" horizontal, ×"+m.combat.vertical()+" vertical; fresh hit delay "+m.combat.freshTicks()+" ticks. §7Not an exact Hypixel profile.");
         if(pa.equals("human")){
             message(player(a),"§6Bot setup: §e"+ClickRate.cps(m.configB)+" CPS cap §8| §d"+DuelSettings.reach(m.configB)+" block reach §8| §bRTT: bot "+(int)pingB+", you "+(int)pingA+" ms");
             message(player(a),"§7Bot aim: "+m.configB.getProperty("aim_delay_ms","0")+" ms delay, "+m.configB.getProperty("aim_noise_deg","0")+"° noise, "+m.configB.getProperty("aim_turn_rate_dps","0")+"°/s cap (0=unlimited). W-tap delay: "+m.configB.getProperty("reaction_ms","150")+" ms.");

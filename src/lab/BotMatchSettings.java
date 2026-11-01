@@ -22,6 +22,8 @@ public final class BotMatchSettings {
             String key=pair[0].toLowerCase(Locale.ROOT);Map<String,String> dest=common;
             if(key.startsWith("a.")){dest=a;key=key.substring(2);}
             else if(key.startsWith("b.")){dest=b;key=key.substring(2);}
+            if(dest!=common&&(key.equals("kb")||key.equals("kb_horizontal")||key.equals("kb_vertical")||key.equals("hit_ticks")))
+                throw new IllegalArgumentException("Combat settings apply to the whole match; omit a./b. for "+key);
             if(key.equals("myping"))throw new IllegalArgumentException("Use a.ping= and b.ping= for bot matches");
             if(key.equals("botping"))key="ping";
             if(dest.put(key,pair[1])!=null)throw new IllegalArgumentException("Duplicate setting: "+pair[0]);

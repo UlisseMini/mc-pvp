@@ -13,8 +13,13 @@ public record CombatProfile(double horizontal, double vertical, int freshTicks) 
     public boolean vanilla(){return horizontal==1&&vertical==1&&freshTicks==10;}
     public Map<String,Object> state(){return Map.of("kb_horizontal",horizontal,"kb_vertical",vertical,
         "fresh_hit_ticks",freshTicks,"max_hurt_resistant_ticks",2*freshTicks,
-        "modified",!vanilla(),"scope","bot timed scenarios only",
+        "modified",!vanilla(),"scope","both players in this match",
         "kb_semantics","scale final native fresh melee velocity before S12 quantization; native restored server motion unchanged");}
+    public static CombatProfile fromOverrides(Properties p,CombatProfile fallback){
+        return new CombatProfile(Double.parseDouble(p.getProperty("combat_kb_horizontal",Double.toString(fallback.horizontal))),
+            Double.parseDouble(p.getProperty("combat_kb_vertical",Double.toString(fallback.vertical))),
+            Integer.parseInt(p.getProperty("combat_hit_ticks",Integer.toString(fallback.freshTicks))));
+    }
     public static CombatProfile parse(String[] args,int from){
         double horizontal=1,vertical=1;int ticks=10;Set<String> seen=new HashSet<>();
         for(int i=from;i<args.length;i++){

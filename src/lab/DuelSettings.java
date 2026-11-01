@@ -4,7 +4,7 @@ import java.util.*;
 
 /** Per-duel overrides. Parsing never changes a shared policy or player preference. */
 public final class DuelSettings {
-    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [reach=3.0] [cps=20] [ping=100] [myping=80] [aimdelay=150] [aimnoise=2] [aimrate=360] [tapdelay=150]";
+    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [reach=3.0] [cps=20] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks=10]";
     public final String mode;
     public final double botPing,humanPing;
     public final Properties overrides;
@@ -43,9 +43,23 @@ public final class DuelSettings {
                     overrides.setProperty("aim_turn_rate_dps",Double.toString(rate));break;
                 }
                 case "tapdelay": overrides.setProperty("reaction_ms",Double.toString(bounded(value,0,1000,"W-tap observation delay (ms)")));break;
+                case "kb":
+                    if(!value.equals("vanilla"))throw new IllegalArgumentException("Use kb=vanilla, or explicit kb_horizontal/kb_vertical/hit_ticks settings");
+                    overrides.setProperty("combat_kb_horizontal","1.0");
+                    overrides.setProperty("combat_kb_vertical","1.0");
+                    overrides.setProperty("combat_hit_ticks","10");break;
+                case "kb_horizontal": case "kb_vertical":
+                    overrides.setProperty("combat_"+key,Double.toString(bounded(value,0,2,"Knockback multiplier")));break;
+                case "hit_ticks":
+                    int ticks;
+                    try{ticks=Integer.parseInt(value);}catch(NumberFormatException e){throw new IllegalArgumentException("hit_ticks must be a whole number from 1 to 20");}
+                    if(ticks<1||ticks>20)throw new IllegalArgumentException("hit_ticks must be 1–20; vanilla is 10");
+                    overrides.setProperty("combat_hit_ticks",Integer.toString(ticks));break;
                 default: throw new IllegalArgumentException("Unknown setting '"+key+"'. Use /help settings for all options.");
             }
         }
+        if(seen.contains("kb")&&(seen.contains("kb_horizontal")||seen.contains("kb_vertical")||seen.contains("hit_ticks")))
+            throw new IllegalArgumentException("Use kb=vanilla alone to reset combat settings, or give explicit multipliers/delay");
         return new DuelSettings(mode,botPing,humanPing,overrides);
     }
     public static double ping(String value){return bounded(value,0,500,"Ping (added RTT in ms)");}

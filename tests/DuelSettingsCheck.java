@@ -19,6 +19,15 @@ public final class DuelSettingsCheck {
         DuelSettings aim=parse("/duel wtap aimdelay=150 aimnoise=2 aimrate=360 tapdelay=180",empty);
         check(aim.overrides.getProperty("aim_delay_ms").equals("150.0")&&aim.overrides.getProperty("aim_noise_deg").equals("2.0")&&aim.overrides.getProperty("aim_turn_rate_dps").equals("360.0")&&aim.overrides.getProperty("reaction_ms").equals("180.0"),"independent aim and tap settings");
         check(DuelSettings.parse(new String[]{"/rematch"},1,"boxing",0,0,aim.overrides).overrides.equals(aim.overrides),"aim settings retained by rematch");
+        DuelSettings combat=parse("/duel wtap kb_horizontal=0.95 kb_vertical=0.9 hit_ticks=9",empty);
+        check(combat.overrides.getProperty("combat_hit_ticks").equals("9"),"explicit combat override");
+        DuelSettings reset=DuelSettings.parse(new String[]{"/rematch","kb=vanilla"},1,"boxing",0,0,combat.overrides);
+        check(reset.overrides.getProperty("combat_kb_horizontal").equals("1.0")&&reset.overrides.getProperty("combat_kb_vertical").equals("1.0")&&reset.overrides.getProperty("combat_hit_ticks").equals("10"),"rematch vanilla resets all combat settings");
+        check(combat.overrides.getProperty("combat_hit_ticks").equals("9"),"combat rematch cannot mutate previous match");
+        for(String option:new String[]{"kb=hypixel","kb=vanilla kb_vertical=1","kb_vertical=NaN","kb_horizontal=2.1","hit_ticks=0","hit_ticks=10.5"}){
+            boolean rejected=false;try{parse("/duel wtap "+option,empty);}catch(IllegalArgumentException e){rejected=true;}
+            check(rejected,"reject combat option "+option);
+        }
         for(String option:new String[]{"reach=NaN","reach=Infinity","reach=0","reach=5.1","cps=0","cps=31","cps=10.5","ping=-1","myping=501","ping=NaN","oops=1","cps=","reach=3=4","ping=10 botping=20","20 ping=30","reach=3 reach=4","0 0 0","aimdelay=501","aimnoise=-1","aimnoise=NaN","aimrate=29","aimrate=1441","tapdelay=1001","tapdelay=NaN","aimdelay=10 aimdelay=20"}){
             boolean rejected=false;try{parse("/duel wtap "+option,empty);}catch(IllegalArgumentException e){rejected=true;}
             check(rejected,"reject "+option);

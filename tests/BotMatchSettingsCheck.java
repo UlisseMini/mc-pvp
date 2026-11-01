@@ -12,6 +12,12 @@ public final class BotMatchSettingsCheck {
         check(s.b.getProperty("reaction_ms").equals("200.0"),"tap setting");
         s=parse("lab match wtap wtap cps=20 b.cps=10");
         check(s.a.getProperty("click_cps").equals("20")&&s.b.getProperty("click_cps").equals("10"),"specific settings override shared settings");
+        s=parse("lab match wtap hold-w kb_horizontal=0.95 hit_ticks=9");
+        check(s.a.equals(s.b)&&s.b.getProperty("combat_hit_ticks").equals("9"),"combat profile shared by both players");
+        for(String value:new String[]{"a.kb_horizontal=0.9","b.hit_ticks=9","a.kb=vanilla"}){
+            boolean rejected=false;try{parse("lab match wtap hold-w "+value);}catch(IllegalArgumentException e){rejected=true;}
+            check(rejected,"reject asymmetric combat option "+value);
+        }
         for(String value:new String[]{"a.aimnoise=NaN","c.cps=20","cps=20 cps=10","b.cps=31","myping=20","0 0 req extra","a.ping=10 a.botping=20"}){
             boolean rejected=false;try{parse("lab match wtap wtap "+value);}catch(IllegalArgumentException e){rejected=true;}
             check(rejected,"reject "+value);
