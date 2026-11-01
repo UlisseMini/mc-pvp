@@ -104,8 +104,15 @@ Exact paired diagnosis finds inherited contact history at150/0 and a return
 click0.794ms before the first new-KB movement at120/120. A single shared W-tap
 opening alternative does not help: candidate/WT stays0/0 in the former and
 regresses2/2→0/0 in the latter. The full histories/default outputs are verified;
-do not expand that failed opening axis. The existing frozen H2 oracle is the
-next bounded diagnostic, on the original two seeds, not a new legal feature.
+do not expand that failed opening axis. The frozen H2 oracle now has a120/120
+conditional minute witness:119fresh versusWT2 (73normal/46sprint). Its unchanged
+six-draw spread is1,1,1/1,119,1 versusWT1,1,1/1,2,1, with no actualUNKNOWNs or
+resource stops. All five failures are early entries; robust qualification fails.
+The witness has12eligible Bclicks with nearest-box range<3 but selected-ray
+misses (minimum ray margin .000756); do not call it an aim-independent lock.
+Next diagnose inherited entry timing versus available control authority, not
+another legal feature or native controller promotion. Search access includes
+full current state/future host calendar; actual future jitter key stays hidden.
 Native component replay passes the first8s of both profile fixtures exactly;
 this is recorded-clock parity, not generalized timing or Hypixel identity.
 
