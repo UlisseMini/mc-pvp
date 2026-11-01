@@ -5,6 +5,9 @@ import java.util.*;
  * a supplied event tape is exogenous, never a prediction of future OS stalls. */
 public final class PeriodicComboClock {
     public enum InputMode { DIRECT, NATIVE_QUEUED }
+    /** Immutable, payload-blind exogenous overhead. Never selects recorded admissions.
+     * Called only for a newly eligible generated injection, with its actual poll time. */
+    public interface InjectionTiming {long completionDelayNanos(boolean fromA,long pollNanos);}
     public static final class Timing implements Cloneable {
         public Timing deepCopy(){try{return (Timing)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
         public double aTickPhase=0,bTickPhase=10,serverPhase=25;
@@ -15,6 +18,10 @@ public final class PeriodicComboClock {
         public InputMode inputMode=InputMode.DIRECT;
         /** Physical injection ceiling, not a processing cap. Native queued mode uses nanoseconds. */
         public long clickIntervalNanos=50_000_000L;
+        /** Tape-only: HEAD/FRAME refresh decisions/aim; separate POLL events admit. */
+        public boolean explicitPolls=false;
+        /** Null preserves historical instantaneous injection. Non-null requires a tape. */
+        public InjectionTiming injectionTiming;
         public boolean aRemoteBeforeMove=true,bRemoteBeforeMove=false,aimBeforeFrameDrain=true;
     }
     public record Observation(double time,long tick,ExactTravel.State own,double targetX,double targetY,double targetZ,
@@ -44,17 +51,19 @@ public final class PeriodicComboClock {
         default void consumed(Observation own,long admissionId){}
     }
     public interface Audit {void event(double time,String event,PeriodicComboFightModel.State state);}
-    /** Admission timestamps are instantaneous adapter opportunities, not measured native call starts. */
+    /** ADMIT time is completion; admittedNanos records the originating poll opportunity. */
     public record ClickEvent(double time,boolean fromA,String action,String source,long admissionId,
                              long admittedNanos,long tick,int queued,int missCounter,boolean eligible,boolean contact) {}
     public interface ClickAudit {void event(ClickEvent event);}
     /** A tape has explicit drains/interpolation and never automatically adds periodic events.
-     * TICK_HEAD selects keys/gate and polls; CONSUME drains the predicted queue, never a recorded count. */
+     * TICK_HEAD selects keys/gate and normally polls; explicitPolls separates those opportunities.
+     * CONSUME drains the predicted queue, never a recorded count. */
     public enum Kind { FRAME_ENTRY, CLIENT_DRAIN, TICK_HEAD, CONSUME, MOVE, INTERP, FLUSH,
-                       SERVER_DRAIN, SERVER_ENTITY, SERVER_TRACK, SERVER_END }
+                       SERVER_DRAIN, SERVER_ENTITY, SERVER_TRACK, SERVER_END, POLL_FRAME, POLL_NATIVE }
     public record Scheduled(long nanos,long sequence,Kind kind,boolean fromA) {}
     private record Event(double time,int kind,long order) {}
     private record Press(long id,long admittedNanos) {}
+    private record Injection(Press press,String source,long completedNanos) {}
     private static final class ClickQueue {
         final LinkedList<Press> presses=new LinkedList<>();
         long nextId,lastCompletedNanos=Long.MIN_VALUE;boolean gate;int missCounter;
@@ -69,6 +78,7 @@ public final class PeriodicComboClock {
     private final PriorityQueue<Event> events=new PriorityQueue<>(Comparator.comparingDouble(Event::time).thenComparingLong(Event::order));
     private final long[] ticks=new long[2];private final Control[] controls=new Control[2];private final double[] lastClick={-1e100,-1e100};
     private final ClickQueue[] clickQueues={new ClickQueue(),new ClickQueue()};
+    private final Injection[] injections=new Injection[2];
     private final boolean[] selectionReady=new boolean[2];
     private long order;private double now;private Audit audit;private ClickAudit clickAudit;
     public PeriodicComboClock(PeriodicComboFightModel.State state,PeriodicComboFightModel.Config config,Timing timing,Policy a,Policy b){this(state,config,timing,a,b,null);}
@@ -79,21 +89,24 @@ public final class PeriodicComboClock {
         state.extraLatency=new double[]{timing.uplinkA,timing.uplinkB,timing.downlinkA,timing.downlinkB};
         state.nominalHalfRtt=new double[]{config.ownRtt/2,config.otherRtt/2,config.ownRtt/2,config.otherRtt/2};
         if(timing.inputMode==InputMode.NATIVE_QUEUED&&timing.clickIntervalNanos<50_000_000L)throw new IllegalArgumentException("Physical injection ceiling exceeds20CPS");
+        if((timing.explicitPolls||timing.injectionTiming!=null)&&schedule==null)throw new IllegalArgumentException("Explicit polls/injection timing require an event tape");
         if(schedule==null){add(timing.aFramePhase,0);add(timing.bFramePhase,1);add(timing.aTickPhase,2);add(timing.bTickPhase,3);add(timing.serverPhase,8);}
         else{
             if(timing.inputMode!=InputMode.NATIVE_QUEUED)throw new IllegalArgumentException("Explicit event tapes require NATIVE_QUEUED mode");
             Set<Long> sequences=new HashSet<>();
             for(Scheduled e:List.copyOf(schedule)){
                 if(e.nanos<0||!sequences.add(e.sequence))throw new IllegalArgumentException("Tape requires nonnegative times and unique sequence values");
+                if((e.kind==Kind.POLL_FRAME||e.kind==Kind.POLL_NATIVE)&&!timing.explicitPolls)throw new IllegalArgumentException("POLL tape events require explicitPolls");
                 events.add(new Event(e.nanos/1_000_000.0,kind(e),e.sequence));
             }
         }
     }
-    private static int kind(Scheduled e){int side=e.fromA?0:1;return switch(e.kind){case FRAME_ENTRY->side;case TICK_HEAD->2+side;case MOVE->4+side;case FLUSH->6+side;case SERVER_DRAIN->8;case SERVER_ENTITY->9;case SERVER_TRACK->10;case SERVER_END->11;case INTERP->12+side;case CONSUME->14+side;case CLIENT_DRAIN->16+side;};}
+    private static int kind(Scheduled e){int side=e.fromA?0:1;return switch(e.kind){case FRAME_ENTRY->side;case TICK_HEAD->2+side;case MOVE->4+side;case FLUSH->6+side;case SERVER_DRAIN->8;case SERVER_ENTITY->9;case SERVER_TRACK->10;case SERVER_END->11;case INTERP->12+side;case CONSUME->14+side;case CLIENT_DRAIN->16+side;case POLL_FRAME->18+side;case POLL_NATIVE->20+side;};}
     private PeriodicComboClock(PeriodicComboClock source,Policy a,Policy b){
         state=source.state.deepCopy();config=source.config.deepCopy();timing=source.timing.deepCopy();policies=new Policy[]{Objects.requireNonNull(a),Objects.requireNonNull(b)};recordedSchedule=source.recordedSchedule;scheduleEnd=source.scheduleEnd;
         events.addAll(source.events);System.arraycopy(source.ticks,0,ticks,0,2);System.arraycopy(source.controls,0,controls,0,2);System.arraycopy(source.lastClick,0,lastClick,0,2);
         System.arraycopy(source.selectionReady,0,selectionReady,0,2);clickQueues[0]=source.clickQueues[0].copy();clickQueues[1]=source.clickQueues[1].copy();order=source.order;now=source.now;
+        System.arraycopy(source.injections,0,injections,0,2);
     }
     /** Policies must be fresh or immutable. All packet/input queues and scheduler state are copied;
      * audits are detached. An already admitted input survives a later gate/key change. */
@@ -125,8 +138,23 @@ public final class PeriodicComboClock {
         boolean ready=q.lastCompletedNanos==Long.MIN_VALUE||ns-q.lastCompletedNanos>=timing.clickIntervalNanos;
         if(!q.gate||!ready){clickEvent(a,"POLL",source,null,ready,false);return;}
         if(!policies[side].allowInjection(observation(a),source)){clickEvent(a,"DEFER",source,null,true,false);return;}
-        Press press=new Press(++q.nextId,ns);q.presses.addLast(press);q.lastCompletedNanos=ns;
-        q.gate=policies[side].injected(observation(a),now);clickEvent(a,"ADMIT",source,press,true,false);
+        long delay=timing.injectionTiming==null?0:timing.injectionTiming.completionDelayNanos(a,ns);
+        if(delay<0)throw new IllegalArgumentException("Negative injection completion overhead");
+        long completed=Math.addExact(ns,delay);
+        if(completed/1_000_000.0>scheduleEnd)throw new IllegalStateException("Injection completion exceeds tape coverage");
+        Press press=new Press(++q.nextId,ns);injections[side]=new Injection(press,source,completed);
+        if(delay==0)completeInjection(a);
+        else{
+            // A synchronous native call blocks this client. Other actor/server events may run.
+            // Completion is effective before a new same-nanosecond opportunity.
+            events.add(new Event(completed/1_000_000.0,22+side,Long.MIN_VALUE+order++));
+            clickEvent(a,"INJECTION_START",source,press,true,false);
+        }
+    }
+    private void completeInjection(boolean a){
+        int side=a?0:1;Injection injection=Objects.requireNonNull(injections[side],"No pending injection");ClickQueue q=clickQueues[side];
+        q.presses.addLast(injection.press);q.lastCompletedNanos=injection.completedNanos;injections[side]=null;
+        q.gate=policies[side].injected(observation(a),now);clickEvent(a,"ADMIT",injection.source,injection.press,true,false);
     }
     private void clickEvent(boolean a,String action,String source,Press press,boolean eligible,boolean contact){
         if(clickAudit==null)return;int side=a?0:1;ClickQueue q=clickQueues[side];
@@ -152,8 +180,9 @@ public final class PeriodicComboClock {
         if(end<now)throw new IllegalArgumentException("Cannot run a clock backwards");
         if(!Double.isFinite(end)||end>scheduleEnd)throw new IllegalArgumentException("Requested time exceeds supplied event-tape coverage");
         while(!events.isEmpty()&&events.peek().time<=end){Event e=events.remove();now=e.time;int k=e.kind;boolean a=(k&1)==0;int side=a?0:1;String name;
+            if((k<8||k>=12&&k<22)&&injections[side]!=null)throw new IllegalStateException("UNSUPPORTED_INJECTION_OVERLAP: same-client event before synchronous injection completion");
             if(k<2){
-                if(timing.inputMode==InputMode.NATIVE_QUEUED){aim(a);poll(a,"frame");if(!recordedSchedule){receive(a);selectionReady[side]=false;}}
+                if(timing.inputMode==InputMode.NATIVE_QUEUED){aim(a);if(!timing.explicitPolls)poll(a,"frame");if(!recordedSchedule){receive(a);selectionReady[side]=false;}}
                 else{if(timing.aimBeforeFrameDrain)aim(a);receive(a);if(!timing.aimBeforeFrameDrain)aim(a);}
                 if(!recordedSchedule)add(now+timing.framePeriod,k);name="FRAME"+(a?"A":"B");
             }
@@ -162,7 +191,7 @@ public final class PeriodicComboClock {
                 if(timing.inputMode==InputMode.NATIVE_QUEUED){
                     ClickQueue q=clickQueues[side];if(q.missCounter>0)q.missCounter--;q.gate=control.click;
                     // Reaction0 Client.tick calls Client.frame before native input consumption, even when cap-blocked.
-                    aim(a);poll(a,"native_tick");if(!recordedSchedule)consume(a);
+                    aim(a);if(!timing.explicitPolls)poll(a,"native_tick");if(!recordedSchedule)consume(a);
                 }else{
                     if(control.click){if(now-lastClick[side]<50-1e-9)throw new IllegalArgumentException("20 CPS native input cap violated");lastClick[side]=now;}
                     PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.replayInput(state,config,a,control.key,b.yaw,b.pitch,control.click,now);
@@ -187,7 +216,9 @@ public final class PeriodicComboClock {
             // Supported packets change velocity/sprint/cues or interpolation goals,
             // never current own/replica geometry. A cached selection survives this
             // drain (including S12 before consume); MOVE/INTERP still invalidate it.
-            else{receive(a);name="CLIENT_DRAIN"+(a?"A":"B");}
+            else if(k<18){receive(a);name="CLIENT_DRAIN"+(a?"A":"B");}
+            else if(k<22){poll(a,k<20?"frame":"native_tick");name="POLL"+(a?"A":"B");}
+            else{completeInjection(a);name="INJECTION_COMPLETE"+(a?"A":"B");}
             checkpoint(name);
         }
         now=end;
