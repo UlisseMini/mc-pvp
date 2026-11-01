@@ -38,6 +38,36 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Overnight mandate (2026-11-01)
 
+### Latest priority: search against calibrated schedules
+
+The user now requests robust oracle search first, then legal parameter search,
+then the closest-to-vanilla settings region. This supersedes the one-recovery-test
+limit below. Keep native trials paused until a candidate clears the model gate.
+
+Use the frozen empirical timing law, complete physical acquisition, native input
+opportunities and preserved queues. Test a fixed oracle algorithm across sampled
+futures and calendars; do not select a different favorable trajectory after
+seeing each outcome. The first conditional-calendar oracle may know full state
+and the future host opportunity calendar, but its planning jitter samples must
+not use the actual evaluation future seed. Label this privilege explicitly.
+Separate a per-schedule clairvoyant witness from a robust stochastic controller.
+A finite beam failure is a search limitation, never an impossibility proof.
+
+Primary metric stays fresh hits before first accepted return. Minute-lock
+qualification additionally requires zero returns, at least80% of nominal fresh
+capacity, and no fresh-free gap over800ms (including horizon boundaries), for
+both candidate and W-tap. UNKNOWN remains in the denominator, separately labeled.
+Develop on m1391/m1392, tune on m1395/m1396; freeze choices before evaluating new
+seeds1000–1019 on each m1397–m1400 calendar. Target at least16/20 minute-locks on
+each evaluation calendar, not80% pooled by hiding a failing calendar. These are
+conditional draws on four previously seen calendars, not80 native experiments.
+
+Only after an oracle witness survives that gate, search own-observation spacing,
+braking and hit-strength parameters. Every row includes identical-state W-tap.
+Sweep RTT and near-vanilla KB/hit delay under the same calibrated law, report its
+fixed-workload/coverage limitations and unknown mass, and promote only robust
+legal candidates. If the gate fails, diagnose before adding features.
+
 ### Latest priority: native schedule calibration, then robustness
 
 Current checkpoint: the frozen timing model passed a narrow fresh-failure check.
