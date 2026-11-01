@@ -34,9 +34,9 @@ public final class PeriodicComboFightModel {
         void step(){if(left>0){x+=(gx-x)/left;y+=(gy-y)/left;z+=(gz-z)/left;left--;}}
     }
     static final class Packet implements Cloneable {
-        int kind,packetId;boolean ground;double due,x,y,z,vx,vy,vz;boolean flag;long sequence;
+        int kind,packetId;boolean ground;double due,ready,x,y,z,vx,vy,vz;boolean flag;long sequence;
         public Packet deepCopy(){try{return (Packet)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
-        Packet(int k,double d,double x,double y,double vx,double vy,boolean f,long n){kind=k;due=d;this.x=x;this.y=y;this.vx=vx;this.vy=vy;flag=f;sequence=n;packetId=k>=12?0x1a:k==0||k==1?3:k==2||k==9?11:k==3||k==7?2:k==4||k==8?0x12:k==10||k==11?0x1c:0x15;}
+        Packet(int k,double d,double x,double y,double vx,double vy,boolean f,long n){kind=k;due=ready=d;this.x=x;this.y=y;this.vx=vx;this.vy=vy;flag=f;sequence=n;packetId=k>=12?0x1a:k==0||k==1?3:k==2||k==9?11:k==3||k==7?2:k==4||k==8?0x12:k==10||k==11?0x1c:0x15;}
     }
     // 0 A movement, 1 B movement, 2 sprint command, 3 attack, 4 B velocity, 5 A view, 6 B view.
     /** Payload-blind exogenous timing for generated packets. Returns network receipt,
@@ -45,8 +45,19 @@ public final class PeriodicComboFightModel {
         double arrival(int route,double generatedSendMs,double nominalHalfRttMs);
         PacketTiming deepCopy();
     }
+    /** Opt-in diagnostic queue eligibility, separate from raw wire receipt.
+     * This does NOT model queue monitors or handler service costs. Called once
+     * after transport resolves arrival; only route/generated protocol subtype
+     * metadata are supplied, never payloads or historical ordinals. Mutable
+     * implementations must copy their state. Null retains legacy ready=due. */
+    public interface PacketReadiness {
+        double ready(int route,int packetId,double wireArrivalMs);
+        PacketReadiness deepCopy();
+    }
     static final class State implements Cloneable {
-        double[] extraLatency={0,0,0,0},nominalHalfRtt={0,0,0,0};PacketTiming packetTiming;PeriodicComboTransport transport;long tick,seq,combatOrder,lastFreshOrderA,lastFreshOrderB,lastAcceptedOrderA,lastAcceptedOrderB;int serverTicks;Body a,b;View ab,ba;ExactTravel.State serverA,serverB;
+        double[] extraLatency={0,0,0,0},nominalHalfRtt={0,0,0,0};PacketTiming packetTiming;PacketReadiness packetReadiness;
+        double[] queueReadyWatermarks={Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY};
+        PeriodicComboTransport transport;long tick,seq,combatOrder,lastFreshOrderA,lastFreshOrderB,lastAcceptedOrderA,lastAcceptedOrderB;int serverTicks;Body a,b;View ab,ba;ExactTravel.State serverA,serverB;
         double serverAx,serverAy=4,serverAz,serverBx,serverBy=4,serverBz,trackedAx,trackedAy=4,trackedAz,trackedBx,trackedBy=4,trackedBz;
         boolean trackedGroundA=true,trackedGroundB=true;double sentAx,sentAy=4,sentAz,sentBx,sentBy=4,sentBz;
         int teleportAgeA,teleportAgeB;int trackedYawA=-64,trackedYawB=64,trackedPitchA,trackedPitchB;double serverPitchA,serverPitchB;
@@ -63,10 +74,10 @@ public final class PeriodicComboFightModel {
 
         /** Copies every scalar through Object.clone; mutable descendants are independently owned. */
         public State deepCopy(){
-            try{State copy=(State)super.clone();copy.extraLatency=extraLatency.clone();copy.nominalHalfRtt=nominalHalfRtt.clone();
+            try{State copy=(State)super.clone();copy.extraLatency=extraLatency.clone();copy.nominalHalfRtt=nominalHalfRtt.clone();copy.queueReadyWatermarks=queueReadyWatermarks.clone();
                 copy.a=a.deepCopy();copy.b=b.deepCopy();copy.ab=ab.deepCopy();copy.ba=ba.deepCopy();
                 copy.packets=copyPackets(packets);copy.outboundA=copyPackets(outboundA);copy.outboundB=copyPackets(outboundB);
-                copy.transport=transport==null?null:transport.deepCopy();copy.packetTiming=packetTiming==null?null:packetTiming.deepCopy();return copy;
+                copy.transport=transport==null?null:transport.deepCopy();copy.packetTiming=packetTiming==null?null:packetTiming.deepCopy();copy.packetReadiness=packetReadiness==null?null:packetReadiness.deepCopy();return copy;
             }catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}
         }
         private static ArrayList<Packet> copyPackets(List<Packet> source){ArrayList<Packet> result=new ArrayList<>(source.size());for(Packet p:source)result.add(p.deepCopy());return result;}
@@ -84,6 +95,16 @@ public final class PeriodicComboFightModel {
                 if(!Double.isFinite(arrival)||arrival<send)throw new IllegalStateException("Invalid generated packet arrival");
                 p.due=arrival;
             }else p.due+=extraLatency[route];
+            // Both recorded transport.emit and empirical timing have now resolved
+            // raw receipt. Keep due intact for own PacketObservation.arrivedAt.
+            p.ready=p.due;
+            if(packetReadiness!=null){
+                double eligible=packetReadiness.ready(route,p.packetId,p.due);
+                if(!Double.isFinite(eligible)||eligible<p.due)
+                    throw new IllegalStateException("Invalid packet queue readiness: must be finite and at/after wire receipt");
+                p.ready=Math.max(eligible,queueReadyWatermarks[route]);
+            }
+            queueReadyWatermarks[route]=Math.max(queueReadyWatermarks[route],p.ready);
             packets.add(p);
         }
     }
@@ -135,7 +156,7 @@ public final class PeriodicComboFightModel {
         if(dy<defenderReach)s.lowerOffset=Math.max(s.lowerOffset,HALF+Math.sqrt(defenderReach*defenderReach-dy*dy)-(s.b.q.x()-s.ba.x));
         s.lowerOffset=Math.max(s.lowerOffset,.6-(s.b.q.x()-s.a.q.x()));
     }
-    static List<Packet> due(State s,double time,int destination){ArrayList<Packet> out=new ArrayList<>();for(Iterator<Packet> it=s.packets.iterator();it.hasNext();){Packet p=it.next();int dst=p.kind<4||p.kind==7||p.kind==9?0:p.kind==5||p.kind==8||p.kind==10||p.kind==12||p.kind==14?1:2;if(dst==destination&&p.due<=time){out.add(p);it.remove();}}out.sort(Comparator.comparingDouble((Packet p)->p.due).thenComparingLong(p->p.sequence));return out;}
+    static List<Packet> due(State s,double time,int destination){ArrayList<Packet> out=new ArrayList<>();for(Iterator<Packet> it=s.packets.iterator();it.hasNext();){Packet p=it.next();int dst=p.kind<4||p.kind==7||p.kind==9?0:p.kind==5||p.kind==8||p.kind==10||p.kind==12||p.kind==14?1:2;if(dst==destination&&p.ready<=time){out.add(p);it.remove();}}out.sort(Comparator.comparingDouble((Packet p)->p.ready).thenComparingLong(p->p.sequence));return out;}
     static void receive(State s,double time,boolean a){receive(s,time,a,null);}
     /** Observer runs after this client's normal packet application. The clock adapter
      * sanitizes the packet into own-received data before exposing it to a policy. */
