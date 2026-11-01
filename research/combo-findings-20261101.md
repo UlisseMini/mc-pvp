@@ -1,6 +1,32 @@
 # Combo research — findings, November 1
 
-## Latest checkpoint: frozen Hypixel-hit9 native calibration
+## Latest checkpoint: physics-based body sets are not ready for control
+
+Forward-simulating post-hit physics from own packets is implemented as a frozen
+observer experiment. Conditional arithmetic matches all 5,124 held-out movement
+steps and 335 fresh native knockback vectors. Own C02/sprint history retains the
+correct hit origin and strength for 335/335 cues. Full observer parity does not
+follow: inferred source state, latent server motion and timing are approximate.
+
+Known-hold-W results on two candidate and two matched W-tap native recordings:
+
+| Current-body estimate | Candidate coverage; p95 horizontal diameter | Plain W-tap coverage; p95 horizontal diameter |
+|---|---|---|
+| At own hurt-cue receipt | 100%; 3.089 blocks (n=131) | 100%; 5.303 blocks (n=198) |
+| Updated with own packets through cue+150 ms | 72.9%; 1.052 blocks (70/134 eligible labels available) | 67.2%; 3.166 blocks (67/196 available) |
+| Updated through cue+300 ms | 50%; .083 blocks (12/132 available) | 40%; 5.499 blocks (5/197 available) |
+
+The later narrow sets frequently exclude truth or become empty. The gate fails;
+no controller feature, native rerun or deployment followed. This is a failure
+of the sampled observer, not proof that physics-based estimation or a combo is
+impossible. The implementation still needs correlated source/server-state and
+calibrated event-schedule propagation instead of sparse fixed-step trajectories.
+The validation recordings were held out from this implementation but previously
+exposed in the old observer audit; sealed m1415–m1418 were untouched here.
+See [full findings and limitations](hypixel-inference-20261101/reachable-body/findings.md)
+and [widths over time, availability and baseline tables](hypixel-inference-20261101/reachable-body/tables.md).
+
+## Previous checkpoint: frozen Hypixel-hit9 native calibration
 
 The frozen controller has **not** established a reliable native advantage.
 Three matched pairs scored **6/1/0 versus W-tap 1/2/2** fresh hits before the first

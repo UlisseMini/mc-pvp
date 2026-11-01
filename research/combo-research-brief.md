@@ -38,6 +38,29 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Current follow-up: broaden inference and build legal control
 
+LATEST CHECKPOINT — physics-based body hypotheses: the user's proposed
+post-hit reachable-set observer has a frozen native-recording audit in
+`hypixel-inference-20261101/reachable-body/`. Development m1419/m1420;
+validation m1422/m1423/m1421/m1424 (previously exposed to the older observer,
+not pristine prospective); m1415–m1418 remain sealed. Own packets only enter
+hypotheses; other POVs are labels. All 5,124 held-out travel steps and 335 fresh
+launch vectors are conditionally exact; all 335 true C02/sprint choices are
+retained. The forward observer itself is NOT exact: latent server motion,
+source/application schedule and contact behavior remain sampled/approximate.
+
+Known-hold-W cue-time coverage is broad but useless: p95 horizontal diameter
+3.089 candidate /5.303 W-tap blocks. Rolling own-packet conditioning at150ms
+shrinks p95 diameter to1.052 /3.166 but current-body coverage falls to72.9% /67.2%,
+available70/134 /67/196 eligible labels. At300ms many sets collapse; narrow
+survivors are not certified. This FAILS the>=99% coverage/useful-width gate.
+No controller changes or native reruns. Do not treat finite sampled hulls as
+exhaustive reachable sets or this failure as an impossibility proof. The next
+observer must preserve correlated feasible source state/server motion/schedule
+in the calibrated fight pipeline before using its margins for control. More
+inputs or narrower confidence bands are not a fix. Keep W-tap comparisons and
+count all unavailable/fallback states. See its findings/report for widths by
+time, coverage, availability, timing tails and exact limitations.
+
 LATEST USER FOLLOW-UP (after the clean7/2/3 prospective result): run a small
 native paired calibration at provisional preset=hypixel/hit9 with the frozen
 revised controller versus identically configured W-tap. This is a calibration
