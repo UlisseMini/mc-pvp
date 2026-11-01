@@ -9,6 +9,12 @@ or a robust feedback bot. It is evidence against declaring vanilla impossible.
 two-tick/zero-vertical demonstration remains only an anchor. The native ladder
 below maps the frozen controller's failures, not the limits of all controllers.
 
+The saved vanilla input sequence has now been tested natively over10s of
+maintenance: **0* /5 /5 versus matched W-tap3 /3 /3**. The star is a primary
+timing flag; both clean candidate trials return around3.74s. The short test
+confirms neither the modeled minute lock nor a robust controller. Input/flight
+transfer is under diagnosis before further changes.
+
 The desired neighborhood is fresh damage every9–10 ticks, horizontal and vertical
 knockback multipliers0.9–1.1. Those are the requested bounds, not claimed Hypixel
 constants. Reach is3 for both players and added RTTs are0/120ms unless stated.
@@ -52,7 +58,50 @@ See the [frame-contract findings](poc-20261101/anneal/mechanism/frame-prequeue-f
 [timing spread](poc-20261101/anneal/mechanism/frame-prequeue-timing-findings.md),
 and [one/two-release audit](poc-20261101/anneal/astra-boundary/late-gap-repair-findings.md).
 
-## Native comparisons
+## Native transfer of the vanilla input sequence
+
+This is a separate acquisition from the ladder below. Both A policies execute
+the same18-own-tick opening, with W-tap's cue history running throughout. The
+hold-W opponent starts clicking at900ms; score900–10900ms for both arms.
+Vanilla h/v1, immunity10, reach3/3, RTT0/120, same20CPS ceiling, perfect own aim,
+zero reaction delay. The candidate runs the saved ordinary keys and explicit
+queued consumption slots; this is an open-loop program, not a feedback bot.
+
+| Pair / native recordings | Candidate fresh before return | Plain W-tap | Candidate / W-tap first return | Candidate / W-tap zero10s |
+|---|---:|---:|---|---|
+|1: m1336 /m1337|0*|3|1047 /2344ms|no /no|
+|2: m1339 /m1338|5|3|3740 /2347ms|no /no|
+|3: m1340 /m1341|5|3|3741 /2344ms|no /no|
+
+The first candidate has primary and full-match >100ms clock flags, retained.
+The other five full matches have clean timing. All six pass the ordinary
+reach/CPS/build/target checks and have complete human-equivalent client POVs
+for both bots plus the server POV. No outcome-based replacement was run.
+Both clean candidates reproduce the planned consumption slots, including the
+source1250ms immune slowdown (native1288/1283ms, exact0.6 velocity multiplier).
+The own input anchor begins34/31ms after server start. No missed deadlines or
+consumption mismatches were recorded. The discrepancy is in flight state:
+native gives four grounded sprint launches followed by a grounded normal launch;
+the model's fifth launch was airborne.
+
+In both natives, B's movement packet is processed before A's attack in the same
+server task drain. In the nominal source, their order is reversed. This advances
+the server's latent vertical motion before knockback: the first scored vertical
+packet is0.311625 rather than0.34775. Later hops are lower too. The fifth normal
+packet then starts on the ground and loses horizontal velocity to ground friction.
+B catches up and contacts at3673/3674ms, returning at3740/3741. There was no B
+contact between any of these first five velocity packets and their first moves.
+W-tap also receives lower-than-nominal vertical impulses and still scores3.
+
+The coupled kernel reconstructs both native fights through10894ms using the
+measured inputs and packet service:3884/3908 events,1375/1374 compared rows,
+zero bit mismatches; both POVs' click and movement reach errors below9e−16 blocks.
+This validates the actual mechanics and event ordering, not the model's forecast
+of independent future clocks. `/replay m1339` shows the clean five-hit prefix;
+it is not a full-minute demo. A single-row Ctrl-extension test is now declared
+to choose a stronger fifth hit; its next two launch modes must also be measured.
+
+## Native continuation ladder
 
 Every new comparison uses the same20CPS ceiling, perfect own-client aim, zero
 reaction delay and four-second common acquisition. The maintenance horizon is
