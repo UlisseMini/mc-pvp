@@ -31,6 +31,37 @@ def wire(events,direction,player=None):
 def load(mid,side):
     with gzip.open(ROOT/'research/traces'/f'{mid}-{side}.jsonl.gz','rt')as f:return [json.loads(l)for l in f]
 
+def initial_tracker_state(events,game,clock):
+    """Use the replay clock boundary for both tracker counter and teleport age."""
+    seeds=[next(e for e in events if e['type']=='replication_tracker_before'
+                and e['tracker']['player']==game[side] and clock(e)>=0)
+           for side in ('a','b')]
+    counters=[int(e['tracker']['updateCounter'])for e in seeds]
+    if counters[0]!=counters[1]:
+        raise ValueError(('Unsupported unequal initial tracker counters',counters))
+    return counters[0],[int(e['tracker']['ticksSinceLastForcedTeleport'])for e in seeds]
+
+def server_snapshot_clocks(events,clock):
+    """Anchor wall-only snapshots to their preceding hook, using file order.
+
+    Agent inserts ServerReplicationTrace.clock(tick_end), then Referee.tick.
+    The former flushes its clock rows before the latter appends the snapshot.
+    No world/task step occurs between those calls in frozen active windows;
+    Referee administrative interventions still remain comparison mismatches.
+    A hook is consumed once;
+    missing hooks (including an extra finish snapshot) are unordered, not fitted.
+    """
+    anchors={};pending=None
+    for index,e in enumerate(events):
+        if e['type']=='replication_server_clock':
+            if e['phase']=='tick_start':pending=None
+            elif e['phase']=='tick_end':pending=e
+        elif e['type']=='tick':
+            if pending is not None:
+                anchors[index]=clock(pending)
+                pending=None
+    return anchors
+
 def network_schedule(mid,data,game,offset,t0,seconds):
     """Packet values assert predictions; only delivery times enter simulated state."""
     server=archive(mid,'server');records=[];applies=[]
@@ -104,9 +135,7 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
     unsupported=[] # Entity pushing and degenerate KB remain declared unsupported transitions.
     ax,bx=(moves[side][0]['before']['posX']for side in ('a','b'))
     assert all(moves[side][0]['before']['posY']==4 and moves[side][0]['before']['motionX']==0 for side in ('a','b'))
-    first_tracker=next(e for e in data['server']if e['type']=='replication_tracker_before' and e['time']>=t0)
-    tracker=int(first_tracker['tracker']['updateCounter'])
-    teleport_ages=[int(next(e for e in data['server']if e['type']=='replication_tracker_before'and e['time']>=t0 and e['tracker']['player']==game[side])['tracker']['ticksSinceLastForcedTeleport'])for side in ('a','b')]
+    tracker,teleport_ages=initial_tracker_state(data['server'],game,clock)
     rows=[];expected=[];report_seeds=[]
     initial_tick=next(e for e in data['server']if e['type']=='tick'and e['time']>=t0)
     assert not any(e['type']=='science_server_attack'and t0<=e['time']<=initial_tick['time']for e in data['server'])
@@ -150,17 +179,30 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
             if e['type']=='science_interpolation':rows.append((clock(e),f'INTERP{suffix}',[],e))
             elif frame_drain and e['type']=='replication_frame':rows.append((clock(e),f'FRAME{suffix}',[],None))
     exact_clocks=any(e['type']=='replication_server_clock'for e in data['server'])
-    for e in data['server']:
+    snapshot_clocks=server_snapshot_clocks(data['server'],clock)if exact_clocks else {}
+    snapshot_ordering={'method':'preceding_tick_end_file_order'if exact_clocks else'legacy_wall_proxy',
+                       'anchored':0,'unordered':0,'unordered_wall_times_ms':[]}
+    for index,e in enumerate(data['server']):
         if 'time'not in e and 'monotonic_ns'not in e:continue
-        if not 0<=clock(e)<seconds*1000:continue
+        event_time=clock(e)
+        if e['type']=='tick'and exact_clocks:
+            if index not in snapshot_clocks:
+                if 0<=event_time<seconds*1000:
+                    snapshot_ordering['unordered']+=1
+                    snapshot_ordering['unordered_wall_times_ms'].append(event_time)
+                continue
+            event_time=snapshot_clocks[index]
+        if not 0<=event_time<seconds*1000:continue
         if e['type']=='replication_server_clock':
             phase=e['phase'];kind=None
             if phase=='drain_start':kind='SERVER_DRAIN'
             elif phase=='entity_tick_start'and e['world_ordinal']==0:kind='SERVER_ENTITY'
             elif phase=='tracker_tick_start'and e['world_ordinal']==0:kind='SERVER_TRACK'
             elif phase=='tick_end':kind='SERVER_END'
-            if kind:rows.append((clock(e),kind,[],None))
-        elif e['type']=='tick':rows.append((clock(e),'SERVER_OBSERVE'if exact_clocks else'SERVER',[],e))
+            if kind:rows.append((event_time,kind,[],None))
+        elif e['type']=='tick':
+            rows.append((event_time,'SERVER_OBSERVE'if exact_clocks else'SERVER',[],e))
+            if exact_clocks:snapshot_ordering['anchored']+=1
     network=[]
     if transport_trace:
         network,applies=network_schedule(mid,data,game,offset,t0,seconds)
@@ -225,9 +267,9 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
     for metric in ('nearest','selected_ray'):
         errors=sorted(row['range_checks'][metric]['absolute_error'] for row in scored if metric in row.get('range_checks',{}))
         range_summary[metric]={'n':len(errors),'max_absolute_error_blocks':max(errors,default=0),'p95_absolute_error_blocks':errors[min(len(errors)-1,int(.95*len(errors)))]if errors else None}
-    return {'range_summary':range_summary,'match':mid,'combat_profile':combat,'rtt':[game['ping_a'],game['ping_b']],'seconds':seconds,'requested_seconds':requested_seconds,'unsupported':unsupported,'frame_drain':frame_drain,'exact_server_clocks':exact_clocks,'transport_trace':transport_trace,'replay_failure':replay_failure,
+    return {'range_summary':range_summary,'match':mid,'combat_profile':combat,'rtt':[game['ping_a'],game['ping_b']],'seconds':seconds,'requested_seconds':requested_seconds,'unsupported':unsupported,'frame_drain':frame_drain,'exact_server_clocks':exact_clocks,'server_snapshot_ordering':snapshot_ordering,'transport_trace':transport_trace,'replay_failure':replay_failure,
             'initial_positions':[ax,bx],'initial_tracker_counter':tracker,'initial_teleport_ages':teleport_ages,'initial_report_state_from_prior_wire':report_seeds,'initial_last_damage_from_first_precontact_snapshot':initial_damage,
-            'scope':'Recorded W/A/D/Ctrl/yaw/click inputs plus raw tick_start/end, local move/interpolation and server-tick clocks. Initial settled positions only; all later native states withheld. Transport mode uses click call-start plus measured packet dispatch/delivery schedules; other mode uses call-end and tick-end emission proxies. Exact server drain/entity/tracker hooks are used when present, otherwise server tick logs are end-of-tick proxies. Critical upgrades, reported fall state, native server pushes and 2D head-ray are modeled. Degenerate random KB is an explicit unsupported stop. All generated relevant packets are asserted by subtype and represented payload bits; initial C03 counters are reconstructed only from pre-start wire history. Initial lastDamage is taken from the first pre-contact server snapshot, with no preceding attack. Metadata checks cover own sprint flags, not unrelated watcher entries. The first divergence ends strict transport replay; requested/unexecuted tails are counted.',
+            'scope':'Recorded W/A/D/Ctrl/yaw/click inputs plus raw tick_start/end, local move/interpolation and server-tick clocks. Initial settled positions only; all later native states withheld. Transport mode uses click call-start plus measured packet dispatch/delivery schedules; other mode uses call-end and tick-end emission proxies. Exact server drain/entity/tracker hooks are used when present; wall-only snapshots are compared immediately after their one-to-one preceding tick_end hook in original file order, with unanchored snapshots explicitly unscored. Without exact hooks, server tick logs remain end-of-tick proxies. Initial tracker counters and teleport ages use the same monotonic-derived zero boundary as replay events. Critical upgrades, reported fall state, native server pushes and 2D head-ray are modeled. Degenerate random KB is an explicit unsupported stop. All generated relevant packets are asserted by subtype and represented payload bits; initial C03 counters are reconstructed only from pre-start wire history. Initial lastDamage is taken from the first pre-contact server snapshot, with no preceding attack. Metadata checks cover own sprint flags, not unrelated watcher entries. The first divergence ends strict transport replay; requested/unexecuted tails are counted.',
             'completed_event_rows':len(predictions),'requested_event_rows':len(expected),'unexecuted_event_rows':len(expected)-len(predictions),'last_compared_ms':scored[-1]['t_ms']if scored else None,'summary':summary,'rows':scored}
 
 def main():
