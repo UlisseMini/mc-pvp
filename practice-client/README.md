@@ -36,7 +36,7 @@ with all the same subcommands, for example `/p advantage on`:
 | `/practice metrics on` / `off` | Show observed speeds, target gap/height, and blocking time |
 | `/practice record on` / `off` | Start/stop local client-observation CSV recording |
 | `/p remote record on` / `off` | Opt in/out of remote-server recording (default off); local archive upload only |
-| `/p antiafk on [seconds]` / `off` | Session-only housing-idle movement pulses; default off, 60-second interval |
+| `/p antiafk on [seconds or MIN-MAX]` / `off` | Session-only housing-idle pulses; default off, randomized 30–90 seconds |
 | `/practice capture on` / `off` | Enable/disable the detailed localhost capture |
 | `/practice link on` / `off` | Enable/disable localhost coordination |
 | `/practice mark <text>` | Timestamp a named marker on client and server |
@@ -292,17 +292,24 @@ The local server's `/replay` match selector still requires a lab duel/server
 recording; this change does not turn a remote capture into an authoritative
 three-view match or a finished interactive remote replay player.
 
-For housing idling only, `/p antiafk on` opts into a brief normal forward then
-back pulse every 60 seconds. `/p antiafk on 90` chooses 90 seconds (allowed range
-10–3600); `/p antiafk off` releases only keys it owns. Each half lasts three game
-ticks, so it roughly returns toward the starting position; collisions, server
-movement rules and lag can produce drift. It never teleports or writes motion.
-It pauses and releases synthetic keys whenever any GUI/chat is open or the human
-holds a movement/jump/sneak/sprint key. Closing the GUI or releasing movement
-restarts the interval. ToggleSprint is temporarily suppressed during a synthetic
-pulse, preserving the user's toggle preference; human-held keys are never
-cancelled. Activation is **never saved** and automatically turns off on disconnect
-or connection change. Chat confirms on/off, and `/p status` reports it.
+For housing idling only, `/p antiafk on` opts into a randomly spaced pulse every
+30–90 seconds. `/p antiafk on 30-90` sets a range; `/p antiafk on 60` chooses a
+fixed interval (10–3600 seconds, with MIN ≤ MAX). Each pulse uses a randomly
+chosen WASD direction for 1–4 ticks, then the opposite direction for the same
+number of ticks, occasionally sneaking. Small smooth yaw/pitch drift returns
+toward the original view over 6–8 ticks. Inputs roughly cancel; collisions,
+server corrections and different forward/back acceleration can still cause drift.
+It never teleports, writes motion, clicks, or sends custom Minecraft packets.
+
+`/p antiafk off` releases only synthetic keys. Any GUI/chat, physical movement,
+jump/sneak/sprint, or mouse activity aborts a pulse and pauses the countdown;
+closing chat does not immediately cause movement. **Leave chat closed for idle
+pulses to run.** ToggleSprint is temporarily suppressed during a pulse without
+changing the user's preference; human-held keys are never cancelled. Activation
+is **never saved**. It stays on across same-connection proxy world changes and
+respawns (pausing while no world exists), and automatically turns off on a real
+socket disconnect/change. Chat confirms on/off, and `/p status` reports it.
+This is an input helper, not a guarantee against any server's idle policy.
 
 Bridge/API changes require one Minecraft restart after installation. The new
 settings and capture commands then apply immediately; no server restart or bot

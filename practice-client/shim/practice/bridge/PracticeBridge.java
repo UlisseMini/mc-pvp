@@ -35,6 +35,8 @@ public final class PracticeBridge {
     private long ticks;
     private boolean sprintPressed;
     private String lastStatus="";
+    private long afkManualLookAt;
+    private int previousAfkKeys;
     private final practice.core.AntiAfk antiAfk=new practice.core.AntiAfk();
     private final practice.core.AntiAfk.Ownership afkKeys=new practice.core.AntiAfk.Ownership();
 
@@ -62,6 +64,7 @@ public final class PracticeBridge {
     }
     @SubscribeEvent public void mouse(InputEvent.MouseInputEvent event) {
         Minecraft mc=Minecraft.func_71410_x();
+        if(Mouse.getEventDX()!=0||Mouse.getEventDY()!=0||Mouse.getEventButtonState())afkManualLookAt=System.nanoTime();
         if(mc.field_71462_r==null)capture.inputEvent("mouse",practice.core.JsonData.map("button",Mouse.getEventButton(),"down",Mouse.getEventButtonState(),"dx",Mouse.getEventDX(),"dy",Mouse.getEventDY(),"wheel",Mouse.getEventDWheel(),"event_ns",Mouse.getEventNanoseconds()));
         if(mc.field_71462_r==null && Mouse.getEventButtonState()
             && Mouse.getEventButton()-100==mc.field_71474_y.field_151444_V.func_151463_i())sprintPressed=true;
@@ -105,23 +108,30 @@ public final class PracticeBridge {
             mc.field_71462_r!=null,sprintPressed,playing?player(mc.field_71439_g):null,target==null?null:player(target),effects,capture.practiceAllowed());
         sprintPressed=false;frame=host.tick(snap);
         boolean manual=physical(mc.field_71474_y.field_74351_w.func_151463_i())||physical(mc.field_71474_y.field_74368_y.func_151463_i())||physical(mc.field_71474_y.field_74370_x.func_151463_i())||physical(mc.field_71474_y.field_74366_z.func_151463_i())||physical(mc.field_71474_y.field_74314_A.func_151463_i())||physical(mc.field_71474_y.field_74311_E.func_151463_i())||physical(mc.field_71474_y.field_151444_V.func_151463_i());
-        boolean wasAfk=antiAfk.enabled();int pulse=antiAfk.tick(System.nanoTime(),ConnectionScope.current(),playing,mc.field_71462_r!=null,manual);
+        long afkNow=System.nanoTime();manual|=afkNow-afkManualLookAt<150_000_000L;
+        boolean wasAfk=antiAfk.enabled();int pulse=antiAfk.tick(afkNow,ConnectionScope.current(),playing,mc.field_71462_r!=null,manual);
         if(wasAfk&&!antiAfk.enabled())say("Anti-AFK off: connection changed.");
         applyAfk(mc,pulse);
+        if(playing&&!manual&&mc.field_71462_r==null){
+            mc.field_71439_g.field_70177_z+=(float)antiAfk.yawDelta();
+            mc.field_71439_g.field_70125_A=Math.max(-90,Math.min(90,mc.field_71439_g.field_70125_A+(float)antiAfk.pitchDelta()));
+        }
+        if(pulse!=previousAfkKeys){capture.inputEvent("anti_afk",practice.core.JsonData.map("keys",pulse,"status",antiAfk.status()));previousAfkKeys=pulse;}
         KeyBinding sprint=mc.field_71474_y.field_151444_V;int key=sprint.func_151463_i();
         // Hold only the ordinary Sprint input. Vanilla still applies hunger, movement,
         // item-use, collision and sprint-reset rules; no setSprinting or motion writes.
-        if(!BotRuntime.enabled()&&key!=0)KeyBinding.func_74510_a(key,playing&&mc.field_71462_r==null&&((pulse==0&&frame.holdSprint)||physical(key)));
+        if(!BotRuntime.enabled()&&key!=0)KeyBinding.func_74510_a(key,playing&&mc.field_71462_r==null&&((!antiAfk.pulsing()&&frame.holdSprint)||physical(key)));
         String status=host.status();
         if(!status.equals(lastStatus)){System.out.println("[PracticeBridge] "+status);capture.inputEvent("module_status",practice.core.JsonData.map("status",status));lastStatus=status;}
     }
     private void applyAfk(Minecraft mc,int pulse){
-        KeyBinding forward=mc.field_71474_y.field_74351_w,back=mc.field_71474_y.field_74368_y;
-        int[] changes=afkKeys.apply(pulse,physical(forward.func_151463_i()),physical(back.func_151463_i()));
-        if((changes[1]&1)!=0)KeyBinding.func_74510_a(forward.func_151463_i(),false);
-        if((changes[1]&2)!=0)KeyBinding.func_74510_a(back.func_151463_i(),false);
-        if((changes[0]&1)!=0)KeyBinding.func_74510_a(forward.func_151463_i(),true);
-        if((changes[0]&2)!=0)KeyBinding.func_74510_a(back.func_151463_i(),true);
+        KeyBinding[] keys={mc.field_71474_y.field_74351_w,mc.field_71474_y.field_74368_y,mc.field_71474_y.field_74370_x,mc.field_71474_y.field_74366_z,mc.field_71474_y.field_74311_E};
+        int human=0;for(int i=0;i<keys.length;i++)if(physical(keys[i].func_151463_i()))human|=1<<i;
+        int[] changes=afkKeys.applyMask(pulse,human);
+        for(int i=0;i<keys.length;i++){
+            if((changes[1]&(1<<i))!=0)KeyBinding.func_74510_a(keys[i].func_151463_i(),false);
+            if((changes[0]&(1<<i))!=0)KeyBinding.func_74510_a(keys[i].func_151463_i(),true);
+        }
     }
     private void scope(){host.event(new PracticeEvent("connection_scope",0,System.currentTimeMillis(),System.nanoTime(),practice.core.JsonData.map("practice_allowed",capture.practiceAllowed())));}
     private static Snapshot.Player player(EntityPlayer p) {
@@ -174,7 +184,7 @@ public final class PracticeBridge {
     private final class Command extends CommandBase {
         public String func_71517_b(){return "practice";}
         @Override public List<String> func_71514_a(){return Collections.singletonList("p");}
-        public String func_71518_a(ICommandSender sender){return "/p remote record on/off | antiafk on [seconds]/off | opening on/off/large/small | advantage on/off | reach on/off | ghost bot/me on/off | debug on/off | reload | status | capture/link/metrics/potions/record/sprint on/off | mark <text> | ping";}
+        public String func_71518_a(ICommandSender sender){return "/p remote record on/off | antiafk on [seconds|MIN-MAX]/off | opening on/off/large/small | advantage on/off | reach on/off | ghost bot/me on/off | debug on/off | reload | status | capture/link/metrics/potions/record/sprint on/off | mark <text> | ping";}
         public int func_82362_a(){return 0;}
         public boolean func_71519_b(ICommandSender sender){return true;}
         public void func_71515_b(ICommandSender sender,String[] args) {
@@ -184,8 +194,8 @@ public final class PracticeBridge {
                 else if(args.length==3&&args[0].equals("remote")&&args[1].equals("record")&&Arrays.asList("on","off").contains(args[2])){capture.remoteRecording(args[2].equals("on"));say(capture.status());}
                 else if(args.length>=2&&args.length<=3&&args[0].equals("antiafk")){
                     if(args[1].equals("off")&&args.length==2){antiAfk.disable();applyAfk(Minecraft.func_71410_x(),0);}
-                    else if(args[1].equals("on")){int seconds=args.length==3?Integer.parseInt(args[2]):60;antiAfk.enable(System.nanoTime(),ConnectionScope.current(),seconds);}
-                    else throw new IllegalArgumentException("Use /p antiafk on [10–3600 seconds] or off");say(antiAfk.status());}
+                    else if(args[1].equals("on")){String interval=args.length==3?args[2]:"30-90";antiAfk.enable(System.nanoTime(),ConnectionScope.current(),interval);}
+                    else throw new IllegalArgumentException("Use /p antiafk on [seconds or MIN-MAX] or off");say(antiAfk.status());}
                 else if(args.length>=2 && args[0].equals("mark")){capture.marker(String.join(" ",Arrays.copyOfRange(args,1,args.length)));say("Marker recorded.");}
                 else if(args.length==1 && args[0].equals("ping")){say(capture.send("ping","manual")?"Clock probe sent.":"No local practice connection.");}
                 else if(args.length==3&&args[0].equals("ghost")&&Arrays.asList("bot","me").contains(args[1])&&Arrays.asList("on","off").contains(args[2]))set("ghost."+args[1]+".enabled",String.valueOf(args[2].equals("on")));
