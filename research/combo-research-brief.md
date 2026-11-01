@@ -81,6 +81,34 @@ client while they are on Hypixel: no reloads, commands or restarts. Read the
 archive and logs only; stage installation for a manual restart. If disk is
 tight, pause lab runs and deduplicate recordings before generating more.
 
+Current Hypixel checkpoint: the conditional packet/trajectory fit favors native
+base/horizontal behavior plus sprint extra Y .07 and effective fresh window9.
+The rough .36/.43075/.1 parameterization fails the settled packet comparison
+under vanilla-style recurrence; a universal final .43075 cap conflicts with16
+damage-associated packets. Source-context checks support melee for297/308
+hurt-associated own velocities, including all4settled cases. Other-player
+identified-set fits support .43075 launches in25/31 informative screened arcs,
+with hidden inputs/latency limits retained. See
+`research/hypixel-inference-20261101/findings.md`; this is an inferred Housing
+approximation, not an exact identified plugin implementation.
+
+`preset=hypixel` is installed on the local lab. Two native component scenarios
+verify normal/sprint packets and nine-tick immunity behavior; unchanged bot
+client artifacts were pinned, and the user's Hypixel client was untouched.
+First model transfer screen:18paired draws, existing legal controller ties
+W-tap on all12resolved paths (0–2fresh prefixes);6acquisition cue-service
+UNKNOWNs remain explicit. No minute-locks, no native controller promotion.
+The mandatory gate now requires diagnosing those shared first returns and the
+opening before adding controller features. Keep old lock8 results separate.
+Exact paired diagnosis finds inherited contact history at150/0 and a return
+click0.794ms before the first new-KB movement at120/120. A single shared W-tap
+opening alternative does not help: candidate/WT stays0/0 in the former and
+regresses2/2→0/0 in the latter. The full histories/default outputs are verified;
+do not expand that failed opening axis. The existing frozen H2 oracle is the
+next bounded diagnostic, on the original two seeds, not a new legal feature.
+Native component replay passes the first8s of both profile fixtures exactly;
+this is recorded-clock parity, not generalized timing or Hypixel identity.
+
 ## Earlier overnight mandate (2026-11-01)
 
 ### Latest priority: search against calibrated schedules
