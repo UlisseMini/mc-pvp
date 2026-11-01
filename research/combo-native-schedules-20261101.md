@@ -5,7 +5,45 @@ controller remains frozen while we replace that evaluation with measured timing
 opportunities and validate both it and plain W-tap. A physics replay with recorded
 inputs and packet timings is a different claim from predicting a new fight.
 
-## Current: native failure reconstruction passes; distribution calibration does not
+## Current: frozen joint-timing distribution goes to fresh validation
+
+The new timing sampler keeps each measured hit's hurt notification, knockback,
+enqueue delay and cue-publication cost together. It uses only the two development
+recordings, with no controller or physics change. The80 midpoint draws are done:
+
+| Recorded clock / native arm | Candidate fresh before first return | Matched complete-state W-tap | Native source outcome |
+|---|---|---|---|
+|m1391 /candidate|26 in16/20;6,9,20 once each;1 unknown after10|3 in17/20;2 twice;1 once|26|
+|m1392 /W-tap|93 in13/20;3 twice;9,18,52,55,92 once each|1 in20/20|1|
+|m1395 /candidate|19 in5/20;1 in12/20;4,15 once each;1 acquisition unknown|2 in12/20;1 in7/20;1 acquisition unknown|19|
+|m1396 /W-tap|4 in18/20;2 unknown after1|2 in20/20|2;277ms native gap retained|
+
+Each target is60s after the same4s quiet opening,150/0 RTT,H1.1/V1/hit8,
+3/3 reach,20CPS. Unknowns are unfinished prefixes, not losses. No completed
+sample sustains the full horizon. The sampler is no longer predicting universal
+locks, and both candidate native counts occur with substantial mass. One native
+observation per calendar cannot establish whether those frequencies are right;
+nor should we keep fitting until the native count becomes the mode.
+
+Freeze this version and use the two reserved native pairs to test it, without
+tuning. The pre-outcome equal-calendar mixture has completed-run candidate
+10th/50th/90th percentiles1/18/93 versus W-tap1/2/3, with4/80 candidate and1/80
+W-tap unknowns. These are scheduling sensitivities, not confidence intervals or
+80 independent native fights. Early/late cue bounds use the predeclared three
+seeds per calendar. Fresh host calendars will also be evaluated afterward; that
+is held-out conditional timing validation, separate from this advance mixture.
+
+The seed0 smoke matches all four native source scores, but m1395's sampled
+trajectory differs by up to0.219 blocks in paired own-view distances. This is
+not a failure of conditional exact physics: it is a different timing draw.
+Its ending still reproduces the important sequence: knockback arrives, the
+opponent clicks in range, then moves. Matching a score alone is not enough.
+
+Evidence: [frozen advance prediction](poc-20261101/native-schedules/joint-stage-generator/prospective-frozen-prediction.json),
+[trajectory and mechanism audit](poc-20261101/native-schedules/joint-stage-generator/smoke-native-audit/findings.md),
+[prospective criteria and acquisition crossover](poc-20261101/native-schedules/stage-field-validation/semantic/prospective-and-fork-review.md).
+
+## Previous: native failure reconstruction passes; distribution calibration does not
 
 Both candidate failures now regenerate their own inputs correctly under captured
 timing. Movement, views, key/range observations, click admissions/consumptions

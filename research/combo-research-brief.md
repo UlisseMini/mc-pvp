@@ -40,25 +40,23 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ### Latest priority: native schedule calibration, then robustness
 
-Current checkpoint: whole-donor queue fields plus the GENERAL C02 loop-source
-clock correction reproduce native26/19 failures, all35/27 launch vectors, and
-body/view/key/range rows within1e−12 through return. General traces equal the
-one-leg oracle repair byte-for-byte; no arrival override remains in that test.
-Native-source W-tap is1/2; same-seed counterfactual timing gaps stay unknown.
-Min/mean/max duplicate-loop timing reductions do not change these outcomes.
-This is conditional chronology, NOT predictive calibration. m1391 still has
-three extra immune clicks from S19 cue publication being too early; the optional
-delayed-publication engine is tested, but its exact-own-cue diagnostic is pending.
-Legacy replay remains24,683 events/9,243 states bit-exact. Frozen queue-only and
-queue+loop80-case ensembles are running, with unchanged policies/seeds/donors.
+Current checkpoint: conditional native reconstruction agrees through return,
+including inputs, views and launch vectors; legacy exact replay remains24,683
+events. Frozen joint raw/enqueue/cue timing MID ensemble now reproduces native
+candidate26 in16/20 draws and19 in5/20, with native-source W-tap1/2 in20/20.
+No completed draw sustains60s;4/80 candidate and1/80 W-tap prefixes are unknown.
+This is credible enough for fresh falsification, NOT a calibration pass. Do not
+keep fitting until a lone native outcome becomes modal. Finish declared cue
+bound sensitivities, then run the two reserved native pairs with heavy compute
+paused and controller/pools frozen. Report pre-outcome equal-calendar mixture
+separately from post-capture held-out-clock evaluation. Unknowns and timing flags
+stay visible. No controller optimization yet.
 
-Masked native-stage validation rejects a simple time-only interpolation fix:
-10–16% wrong client drains; even unmasked per-stage means collapse S19/S12 that
-belong to different batches. Next audit separates generated semantic classes in
-one joint stage tuple; no new generator or controller is authorized by that
-hypothesis alone. Preserve whole-calendar correlations, all unsupported cases,
-and matched W-tap. No new prospective native matches until the calibration gate
-passes; two reserved pairs remain unused. See
+A small causal diagnostic is planned afterward: m1395 complete4s acquisitions
+from seeds0/3 crossed with future timing seeds0/3, matched primed W-tap per cell.
+Preserve all pending packets/clicks/publications, FIFO, selected tuple caches and
+policy histories; do not splice poses or discard clock commitments. This tests
+whether the contrasting failures follow acquisition or future timing. See
 [current findings](combo-native-schedules-20261101.md).
 
 User requests that evaluation clocks use native-recorded packet jitter, client
