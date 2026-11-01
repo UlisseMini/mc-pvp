@@ -5,11 +5,15 @@ import java.util.*;
  * a supplied event tape is exogenous, never a prediction of future OS stalls. */
 public final class PeriodicComboClock {
     public enum InputMode { DIRECT, NATIVE_QUEUED }
-    /** Immutable, payload-blind exogenous overhead. Never selects recorded admissions.
+    /** Payload-blind exogenous overhead. Never selects recorded admissions.
      * Called only for a newly eligible generated injection, with its actual poll time. */
-    public interface InjectionTiming {long completionDelayNanos(boolean fromA,long pollNanos);}
+    public interface InjectionTiming {
+        long completionDelayNanos(boolean fromA,long pollNanos);
+        /** Stateful measured-cost models must isolate their generated-call history. */
+        default InjectionTiming deepCopy(){return this;}
+    }
     public static final class Timing implements Cloneable {
-        public Timing deepCopy(){try{return (Timing)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
+        public Timing deepCopy(){try{Timing copy=(Timing)super.clone();if(injectionTiming!=null)copy.injectionTiming=injectionTiming.deepCopy();return copy;}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
         public double aTickPhase=0,bTickPhase=10,serverPhase=25;
         public double tickPeriod=50,serverPeriod=50,framePeriod=2.5,aFramePhase=0,bFramePhase=1;
         public double moveAfterInput=.3,flushAfterInput=.6,entityAfterDrain=.4,trackAfterDrain=.8,endAfterDrain=1;
