@@ -1,0 +1,10 @@
+{
+  "asm-commons.jar": {
+    "url": "https://repo.maven.apache.org/maven2/org/ow2/asm/asm-commons/9.9.1/asm-commons-9.9.1.jar",
+    "sha256": "c2319e014ce7199f2b7f7d56d6bb991863168c3f4b6cd6c9f542a4937ef7ef88"
+  },
+  "forge.jar": {
+    "url": "https://maven.minecraftforge.net/net/minecraftforge/forge/1.8.9-11.15.1.2318-1.8.9/forge-1.8.9-11.15.1.2318-1.8.9-universal.jar",
+    "sha256": "596512ad5f12f95d8a3170321543d4455d23b8fe649c68580c5f828fe74f6668"
+  }
+}
