@@ -40,7 +40,7 @@ public final class PeriodicComboFightModel {
     }
     // 0 A movement, 1 B movement, 2 sprint command, 3 attack, 4 B velocity, 5 A view, 6 B view.
     static final class State implements Cloneable {
-        double[] extraLatency={0,0,0,0};PeriodicComboTransport transport;long tick,seq;int serverTicks;Body a,b;View ab,ba;ExactTravel.State serverA,serverB;
+        double[] extraLatency={0,0,0,0};PeriodicComboTransport transport;long tick,seq,combatOrder,lastFreshOrderA,lastFreshOrderB,lastAcceptedOrderA,lastAcceptedOrderB;int serverTicks;Body a,b;View ab,ba;ExactTravel.State serverA,serverB;
         double serverAx,serverAy=4,serverAz,serverBx,serverBy=4,serverBz,trackedAx,trackedAy=4,trackedAz,trackedBx,trackedBy=4,trackedBz;
         boolean trackedGroundA=true,trackedGroundB=true;double sentAx,sentAy=4,sentAz,sentBx,sentBy=4,sentBz;
         int teleportAgeA,teleportAgeB;int trackedYawA=-64,trackedYawB=64,trackedPitchA,trackedPitchB;double serverPitchA,serverPitchB;
@@ -93,11 +93,23 @@ public final class PeriodicComboFightModel {
         float cy=cos(-b.headYaw*.017453292f-(float)Math.PI),sy=sin(-b.headYaw*.017453292f-(float)Math.PI);
         float cp=-cos(-b.pitch*.017453292f),sp=sin(-b.pitch*.017453292f);
         double[] origin={b.q.x(),b.q.y()+EYE,b.q.z()},direction={(double)(sy*cp),(double)sp,(double)(cy*cp)};
-        double[] low={v.x-HALF,v.y-(double).1f,v.z-HALF},high={v.x+HALF,v.y+(double)1.8f+(double).1f,v.z+HALF};
-        double near=0,far=Double.POSITIVE_INFINITY;
-        for(int i=0;i<3;i++){if(Math.abs(direction[i])<1e-15){if(origin[i]<low[i]||origin[i]>high[i])return Double.POSITIVE_INFINITY;continue;}double a=(low[i]-origin[i])/direction[i],z=(high[i]-origin[i])/direction[i];near=Math.max(near,Math.min(a,z));far=Math.min(far,Math.max(a,z));}
-        return far>=near?near:Double.POSITIVE_INFINITY;
+        double width=(double)(.6f/2),border=(double).1f;
+        double[] low={(v.x-width)-border,v.y-border,(v.z-width)-border},high={(v.x+width)+border,(v.y+(double)1.8f)+border,(v.z+width)+border};
+        boolean inside=true;for(int i=0;i<3;i++)inside&=origin[i]>low[i]&&origin[i]<high[i];if(inside)return 0;
+        // Native Vec3 intermediate-plane intersections use the finite 4.5-block
+        // block ray. Its MathHelper look vector is not exactly unit length.
+        double[] delta=new double[3];for(int i=0;i<3;i++)delta[i]=(origin[i]+direction[i]*4.5)-origin[i];
+        double best=Double.POSITIVE_INFINITY;
+        for(int axis=0;axis<3;axis++)for(int face=0;face<2;face++){
+            if(delta[axis]*delta[axis]<1.0000000116860974E-7D)continue;
+            double fraction=((face==0?low[axis]:high[axis])-origin[axis])/delta[axis];if(fraction<0||fraction>1)continue;
+            double[] point={origin[0]+delta[0]*fraction,origin[1]+delta[1]*fraction,origin[2]+delta[2]*fraction};boolean contained=true;
+            for(int i=0;i<3;i++)if(i!=axis&&(point[i]<low[i]||point[i]>high[i]))contained=false;
+            if(contained){double dx=point[0]-origin[0],dy=point[1]-origin[1],dz=point[2]-origin[2];best=Math.min(best,dx*dx+dy*dy+dz*dz);}
+        }
+        return Math.sqrt(best);
     }
+
     static double defenderReach=1.5;
     static double vertical(double y,double ty){double ey=y+EYE;return Math.max(0,Math.max(ty-(double).1f-ey,ey-ty-(double)1.8f-(double).1f));}
     static void audit(State s){s.minDef=Math.min(s.minDef,their(s));s.maxOwn=Math.max(s.maxOwn,own(s));
@@ -118,7 +130,7 @@ public final class PeriodicComboFightModel {
         m=ExactTravel.predict(cutoff(m),new ExactTravel.Input(0,0,yaw,sprint?.13000001f:.1f,.026f),ENV);
         m=serverPush(s,m,fromA);
         double vx=m.vx(),vy=m.vy(),vz=m.vz();
-        if(m.onGround()&&!p.flag&&p.y>y){vy=(double).42f;if(sprint){float angle=yaw*.017453292f;vx-=(double)(sin(angle)*.2f);vz+=(double)(cos(angle)*.2f);}if(fromA)s.airborneA=true;else s.airborneB=true;}
+        if(m.onGround()&&!p.flag&&p.y>y){vy=(double).42f;if(sprint){float angle=(float)p.vx*.017453292f;vx-=(double)(sin(angle)*.2f);vz+=(double)(cos(angle)*.2f);}if(fromA)s.airborneA=true;else s.airborneB=true;}
         m=state(p.x,p.y,p.z,vx,vy,vz,p.flag);
         float fall=fromA?s.fallA:s.fallB;
         if(p.flag){int damage=Math.max(0,(int)Math.ceil(fall-3.0f));if(damage>0)fallDamage(s,fromA,damage,c,t);fall=0;}else if(p.y-y<0)fall=(float)((double)fall-(p.y-y));
@@ -171,6 +183,7 @@ public final class PeriodicComboFightModel {
             s.lastVx=vel(vx*(fresh?c.kbScale:1));s.lastVy=vel(vy*(fresh?c.verticalScale:1));
             s.add3(fromA?4:8,t+(fromA?c.otherRtt:c.ownRtt)/2,0,0,0,s.lastVx,s.lastVy,vel(vz*(fresh?c.kbScale:1)),false);
         }else victim=motion(victim,vx,vy,vz);
+        long acceptedOrder=++s.combatOrder;if(fromA){s.lastAcceptedOrderA=acceptedOrder;if(fresh)s.lastFreshOrderA=acceptedOrder;}else{s.lastAcceptedOrderB=acceptedOrder;if(fresh)s.lastFreshOrderB=acceptedOrder;}
         if(fromA){s.acceptedA++;s.lastDamageB=damage;s.dirtyB=true;s.serverA=attacker;s.serverB=victim;s.velocityChangedB=false;if(fresh){s.hits++;s.resistant=2*c.hitTicks;}if(fresh||sprint)s.airborneB=true;if(sprint){s.sprintHits++;s.dirtyA=true;s.sprintDirtyA=true;s.serverSprint=false;}}
         else{s.acceptedB++;s.lastDamageA=damage;s.dirtyA=true;s.serverB=attacker;s.serverA=victim;s.velocityChangedA=false;if(fresh){s.incomingHits++;s.ownResistant=2*c.hitTicks;}if(fresh||sprint)s.airborneA=true;if(sprint){s.dirtyB=true;s.sprintDirtyB=true;s.serverSprintB=false;}}
     }
