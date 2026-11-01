@@ -7,9 +7,10 @@ public final class DuelSettings {
     public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8] [reach=3.0] [cps=20] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks=10]";
     public final String mode;
     public final double botPing,humanPing;
+    public final boolean humanPingExplicit;
     public final Properties overrides;
-    private DuelSettings(String mode,double botPing,double humanPing,Properties overrides){
-        this.mode=mode;this.botPing=botPing;this.humanPing=humanPing;this.overrides=overrides;
+    private DuelSettings(String mode,double botPing,double humanPing,Properties overrides,boolean humanPingExplicit){
+        this.mode=mode;this.botPing=botPing;this.humanPing=humanPing;this.overrides=overrides;this.humanPingExplicit=humanPingExplicit;
     }
     public static DuelSettings parse(String[] args,int offset,String mode,double botPing,double humanPing,Properties inherited){
         Properties overrides=new Properties();overrides.putAll(inherited);
@@ -80,7 +81,7 @@ public final class DuelSettings {
             throw new IllegalArgumentException("Use kb=vanilla alone to reset combat settings, or give explicit multipliers/delay");
         String label=overrides.getProperty(PracticePresets.LABEL);
         if(label!=null&&!PracticePresets.combatMatches(label,overrides))overrides.remove(PracticePresets.LABEL);
-        return new DuelSettings(mode,botPing,humanPing,overrides);
+        return new DuelSettings(mode,botPing,humanPing,overrides,seen.contains("myping"));
     }
     public static double ping(String value){return bounded(value,0,500,"Ping (added RTT in ms)");}
     public static double reach(String value){return bounded(value,1,5,"Reach (blocks)");}
