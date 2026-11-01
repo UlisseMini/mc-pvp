@@ -14,7 +14,8 @@ underneath. Controls → Sprint changes the toggle key too. This holds the norma
 sprint input; vanilla decides whether the player can actually sprint. It does
 not press forward, attack, aim, alter reach, or bypass blocking slowdown.
 
-Client commands work without server permissions:
+Client commands work without server permissions. `/p` is an alias for `/practice`
+with all the same subcommands, for example `/p advantage on`:
 
 | Command | Action |
 | --- | --- |

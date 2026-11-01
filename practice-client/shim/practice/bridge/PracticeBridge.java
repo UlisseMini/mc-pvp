@@ -156,6 +156,7 @@ public final class PracticeBridge {
     }
     private final class Command extends CommandBase {
         public String func_71517_b(){return "practice";}
+        @Override public List<String> func_71514_a(){return Collections.singletonList("p");}
         public String func_71518_a(ICommandSender sender){return "/practice opening on/off/large/small | advantage on/off | reach on/off | ghost bot/me on/off | debug on/off | reload | status | capture/link/metrics/potions/record/sprint on/off | mark <text> | ping";}
         public int func_82362_a(){return 0;}
         public boolean func_71519_b(ICommandSender sender){return true;}
