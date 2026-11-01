@@ -89,7 +89,7 @@ public final class PeriodicComboClock {
     private final long[][] deferredCounts=new long[2][Kind.values().length];
     private final long[] deferredStages=new long[2],deferralAttempts=new long[2];
     private final double[] maxDeferral=new double[2];
-    private long order;private double now;private Audit audit;private ClickAudit clickAudit;
+    private long order;private double now;private boolean executionStarted;private Audit audit;private ClickAudit clickAudit;
     public PeriodicComboClock(PeriodicComboFightModel.State state,PeriodicComboFightModel.Config config,Timing timing,Policy a,Policy b){this(state,config,timing,a,b,null);}
     /** Own observations/policies generate inputs; the tape supplies event opportunities/order only.
      * Queued mode models zero-delay, short press/release, no GUI/block/use, flat-arena clicks. */
@@ -118,7 +118,7 @@ public final class PeriodicComboClock {
     private PeriodicComboClock(PeriodicComboClock source,Policy a,Policy b){
         state=source.state.deepCopy();config=source.config.deepCopy();timing=source.timing.deepCopy();policies=new Policy[]{Objects.requireNonNull(a),Objects.requireNonNull(b)};recordedSchedule=source.recordedSchedule;scheduleEnd=source.scheduleEnd;
         events=new PriorityQueue<>(source.events.comparator());
-        events.addAll(source.events);System.arraycopy(source.ticks,0,ticks,0,2);System.arraycopy(source.controls,0,controls,0,2);System.arraycopy(source.lastClick,0,lastClick,0,2);
+        events.addAll(source.events);System.arraycopy(source.ticks,0,ticks,0,2);System.arraycopy(source.controls,0,controls,0,2);System.arraycopy(source.lastClick,0,lastClick,0,2);executionStarted=source.executionStarted;
         System.arraycopy(source.selectionReady,0,selectionReady,0,2);clickQueues[0]=source.clickQueues[0].copy();clickQueues[1]=source.clickQueues[1].copy();order=source.order;now=source.now;
         System.arraycopy(source.injections,0,injections,0,2);
         System.arraycopy(source.headTimings,0,headTimings,0,2);
@@ -128,6 +128,17 @@ public final class PeriodicComboClock {
     /** Policies must be fresh or immutable. All packet/input queues and scheduler state are copied;
      * audits are detached. An already admitted input survives a later gate/key change. */
     public PeriodicComboClock fork(Policy a,Policy b){return new PeriodicComboClock(this,a,b);}
+    /** Explicit source-derived inactive input for a tick straddling activation.
+     * This is not a policy HEAD: no callback, aiming, cap update, queue reset or
+     * tick increment occurs. Retain the real residual INTERP/MOVE/FLUSH events.
+     * The caller must establish inactive/released input and empty startup queue
+     * from the capture; a missing mid-run HEAD cannot use this initializer. */
+    public void initializeReleasedStartup(boolean fromA){
+        int side=fromA?0:1;
+        if(executionStarted||ticks[side]!=0||controls[side]!=null)
+            throw new IllegalStateException("Released startup must precede execution with tick0 and no held control");
+        controls[side]=new Control(0,0,false);
+    }
     public void setAudit(Audit audit){this.audit=audit;}
     public void setClickAudit(ClickAudit audit){clickAudit=audit;}
     public double time(){return now;}
@@ -218,6 +229,7 @@ public final class PeriodicComboClock {
     public void runUntil(double end){
         if(end<now)throw new IllegalArgumentException("Cannot run a clock backwards");
         if(!Double.isFinite(end)||end>scheduleEnd)throw new IllegalArgumentException("Requested time exceeds supplied event-tape coverage");
+        executionStarted=true;
         while(!events.isEmpty()&&events.peek().time<=end){Event e=events.remove();now=e.time;int k=e.kind;boolean a=(k&1)==0;int side=a?0:1;String name;
             if((k<8||k>=12&&k<22)&&injections[side]!=null){
                 if(!timing.causalBackpressure)throw new IllegalStateException("UNSUPPORTED_INJECTION_OVERLAP: same-client event before synchronous injection completion");
