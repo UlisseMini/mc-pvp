@@ -9,7 +9,7 @@ final class PeriodicComboTransport {
     }
     final List<Expected>[] routes=new List[]{new ArrayList<>(),new ArrayList<>(),new ArrayList<>(),new ArrayList<>()};
     final int[] next=new int[4];
-    static int route(int k){return k==0||k==2||k==3?0:k==1||k==7||k==9?1:k==5||k==8||k==10?2:3;}
+    static int route(int k){return k==0||k==2||k==3?0:k==1||k==7||k==9?1:k==5||k==8||k==10||k==12||k==14?2:3;}
     PeriodicComboTransport deepCopy(){PeriodicComboTransport copy=new PeriodicComboTransport();for(int r=0;r<4;r++){copy.next[r]=next[r];for(Expected e:routes[r])copy.routes[r].add(e.deepCopy());}return copy;}
     void add(String[] p){Expected e=new Expected(p);routes[route(e.kind)].add(e);}
     void seal(){for(List<Expected> es:routes)es.sort(Comparator.comparingDouble(e->e.send));}

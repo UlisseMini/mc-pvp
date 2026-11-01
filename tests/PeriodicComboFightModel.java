@@ -10,7 +10,7 @@ public final class PeriodicComboFightModel {
     static final double HALF=(double)(.6f/2)+(double).1f, EYE=(double)1.62f;
     static final int R=0,W=1,S=2;
     static final class Body implements Cloneable {
-        long localContacts;double lastContactTime=Double.NEGATIVE_INFINITY;ExactTravel.State q; boolean sprint, lastSent, previousForward; int tap,reportAge;double reportX,reportY=4,reportZ;float yaw,pitch,headYaw,reportYaw,reportPitch,airAcceleration=.02f;
+        long localContacts;double lastHurtTime=Double.NEGATIVE_INFINITY;double lastContactTime=Double.NEGATIVE_INFINITY;ExactTravel.State q; boolean sprint, lastSent, previousForward; int tap,reportAge;double reportX,reportY=4,reportZ;float yaw,pitch,headYaw,reportYaw,reportPitch,airAcceleration=.02f;
         Body(double x){reportX=x;q=state(x,4,0,-.0784000015258789,true);}
         public Body deepCopy(){try{return (Body)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
         void velocity(double vx,double vy){velocity(vx,vy,q.vz());}
@@ -26,7 +26,7 @@ public final class PeriodicComboFightModel {
         }
     }
     static final class View implements Cloneable {
-        double x,y=4,z,gx,gy=4,gz;int left;
+        double lastHurtTime=Double.NEGATIVE_INFINITY;double x,y=4,z,gx,gy=4,gz;int left;
         View(double x){this.x=this.gx=x;}
         public View deepCopy(){try{return (View)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
         void receive(double x,double y){receive(x,y,0);}
@@ -36,14 +36,14 @@ public final class PeriodicComboFightModel {
     static final class Packet implements Cloneable {
         int kind,packetId;boolean ground;double due,x,y,z,vx,vy,vz;boolean flag;long sequence;
         public Packet deepCopy(){try{return (Packet)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
-        Packet(int k,double d,double x,double y,double vx,double vy,boolean f,long n){kind=k;due=d;this.x=x;this.y=y;this.vx=vx;this.vy=vy;flag=f;sequence=n;packetId=k==0||k==1?3:k==2||k==9?11:k==3||k==7?2:k==4||k==8?0x12:k==10||k==11?0x1c:0x15;}
+        Packet(int k,double d,double x,double y,double vx,double vy,boolean f,long n){kind=k;due=d;this.x=x;this.y=y;this.vx=vx;this.vy=vy;flag=f;sequence=n;packetId=k>=12?0x1a:k==0||k==1?3:k==2||k==9?11:k==3||k==7?2:k==4||k==8?0x12:k==10||k==11?0x1c:0x15;}
     }
     // 0 A movement, 1 B movement, 2 sprint command, 3 attack, 4 B velocity, 5 A view, 6 B view.
     static final class State implements Cloneable {
         double[] extraLatency={0,0,0,0};PeriodicComboTransport transport;long tick,seq;int serverTicks;Body a,b;View ab,ba;ExactTravel.State serverA,serverB;
         double serverAx,serverAy=4,serverAz,serverBx,serverBy=4,serverBz,trackedAx,trackedAy=4,trackedAz,trackedBx,trackedBy=4,trackedBz;
         boolean trackedGroundA=true,trackedGroundB=true;double sentAx,sentAy=4,sentAz,sentBx,sentBy=4,sentBz;
-        int trackedYawA=-64,trackedYawB=64,trackedPitchA,trackedPitchB;double serverPitchA,serverPitchB;
+        int teleportAgeA,teleportAgeB;int trackedYawA=-64,trackedYawB=64,trackedPitchA,trackedPitchB;double serverPitchA,serverPitchB;
         boolean serverSprint,serverSprintB,dirtyA,dirtyB,sprintDirtyA,sprintDirtyB,airborneA,airborneB;int freshThreshold=10,resistant,ownResistant,hits,sprintHits,incomingHits,immuneAttempts,acceptedA,acceptedB,lastDamageA,lastDamageB;float fallA,fallB;boolean velocityChangedA,velocityChangedB;double lastVx,lastVy,serverYawA=-90,serverYawB=90;
         double minDef=1e9,lastOwn,maxOwn,lowerOffset=-1e9,upperOffset=1e9;ArrayList<Packet> packets=new ArrayList<>(),outboundA=new ArrayList<>(),outboundB=new ArrayList<>();
         State(double gap){this(0,0,gap,0);}
@@ -105,11 +105,12 @@ public final class PeriodicComboFightModel {
         if(dy<defenderReach)s.lowerOffset=Math.max(s.lowerOffset,HALF+Math.sqrt(defenderReach*defenderReach-dy*dy)-(s.b.q.x()-s.ba.x));
         s.lowerOffset=Math.max(s.lowerOffset,.6-(s.b.q.x()-s.a.q.x()));
     }
-    static List<Packet> due(State s,double time,int destination){ArrayList<Packet> out=new ArrayList<>();for(Iterator<Packet> it=s.packets.iterator();it.hasNext();){Packet p=it.next();int dst=p.kind<4||p.kind==7||p.kind==9?0:p.kind==5||p.kind==8||p.kind==10?1:2;if(dst==destination&&p.due<=time){out.add(p);it.remove();}}out.sort(Comparator.comparingDouble((Packet p)->p.due).thenComparingLong(p->p.sequence));return out;}
-    static void receive(State s,double time,boolean a){for(Packet p:due(s,time,a?1:2)){if(p.kind==4)s.b.velocity(p.vx,p.vy,p.vz);else if(p.kind==8)s.a.velocity(p.vx,p.vy,p.vz);else if(p.kind==10||p.kind==11)(a?s.a:s.b).sprint=p.flag;else {View v=a?s.ab:s.ba;if(p.flag&&Math.abs(p.x-v.x)<.03125&&Math.abs(p.y-v.y)<.015625&&Math.abs(p.z-v.z)<.03125)v.receive(v.x,v.y,v.z);else v.receive(p.x,p.y,p.z);}audit(s);}}
+    static List<Packet> due(State s,double time,int destination){ArrayList<Packet> out=new ArrayList<>();for(Iterator<Packet> it=s.packets.iterator();it.hasNext();){Packet p=it.next();int dst=p.kind<4||p.kind==7||p.kind==9?0:p.kind==5||p.kind==8||p.kind==10||p.kind==12||p.kind==14?1:2;if(dst==destination&&p.due<=time){out.add(p);it.remove();}}out.sort(Comparator.comparingDouble((Packet p)->p.due).thenComparingLong(p->p.sequence));return out;}
+    static void receive(State s,double time,boolean a){for(Packet p:due(s,time,a?1:2)){if(p.kind>=12){if(p.kind==12)s.ab.lastHurtTime=time;else if(p.kind==13)s.ba.lastHurtTime=time;else if(p.kind==14)s.a.lastHurtTime=time;else s.b.lastHurtTime=time;}else if(p.kind==4)s.b.velocity(p.vx,p.vy,p.vz);else if(p.kind==8)s.a.velocity(p.vx,p.vy,p.vz);else if(p.kind==10||p.kind==11)(a?s.a:s.b).sprint=p.flag;else {View v=a?s.ab:s.ba;if(p.flag&&Math.abs(p.x-v.x)<.03125&&Math.abs(p.y-v.y)<.015625&&Math.abs(p.z-v.z)<.03125)v.receive(v.x,v.y,v.z);else v.receive(p.x,p.y,p.z);}audit(s);}}
     static void serverMoveB(State s,Packet p){serverMove(s,p,false);}
     static void serverMoveA(State s,Packet p){serverMove(s,p,true);}
-    static void serverMove(State s,Packet p,boolean fromA){
+    static void serverMove(State s,Packet p,boolean fromA){serverMove(s,p,fromA,null,0);}
+    static void serverMove(State s,Packet p,boolean fromA,Config c,double t){
         ExactTravel.State m=fromA?s.serverA:s.serverB;
         double x=fromA?s.serverAx:s.serverBx,y=fromA?s.serverAy:s.serverBy,z=fromA?s.serverAz:s.serverBz;
         boolean sprint=fromA?s.serverSprint:s.serverSprintB;float yaw=(float)(fromA?s.serverYawA:s.serverYawB);
@@ -120,7 +121,7 @@ public final class PeriodicComboFightModel {
         if(m.onGround()&&!p.flag&&p.y>y){vy=(double).42f;if(sprint){float angle=yaw*.017453292f;vx-=(double)(sin(angle)*.2f);vz+=(double)(cos(angle)*.2f);}if(fromA)s.airborneA=true;else s.airborneB=true;}
         m=state(p.x,p.y,p.z,vx,vy,vz,p.flag);
         float fall=fromA?s.fallA:s.fallB;
-        if(p.flag){int damage=Math.max(0,(int)Math.ceil(fall-3.0f));if(damage>0)fallDamage(s,fromA,damage);fall=0;}else if(p.y-y<0)fall=(float)((double)fall-(p.y-y));
+        if(p.flag){int damage=Math.max(0,(int)Math.ceil(fall-3.0f));if(damage>0)fallDamage(s,fromA,damage,c,t);fall=0;}else if(p.y-y<0)fall=(float)((double)fall-(p.y-y));
         if(fromA)s.fallA=fall;else s.fallB=fall;
         if(fromA){s.serverA=m;s.serverAx=p.x;s.serverAy=p.y;s.serverAz=p.z;s.serverYawA=p.vx;s.serverPitchA=p.vy;}
         else{s.serverB=m;s.serverBx=p.x;s.serverBy=p.y;s.serverBz=p.z;s.serverYawB=p.vx;s.serverPitchB=p.vy;}
@@ -136,9 +137,15 @@ public final class PeriodicComboFightModel {
         if(fromA)s.serverB=other;else s.serverA=other;s.airborneA=s.airborneB=true;return self;
     }
     static ExactTravel.State motion(ExactTravel.State q,double vx,double vy,double vz){return new ExactTravel.State(q.x(),q.y(),q.z(),vx,vy,vz,q.box(),q.onGround(),q.isCollidedHorizontally(),q.isCollidedVertically(),q.isCollided(),false,false,false);}
-    static void fallDamage(State s,boolean victimA,int damage){
+    static void hurtStatus(State s,Config c,boolean victimA,double t){
+        if(c==null)return; // Conditional server-motion helper has no packet clock.
+        s.add(victimA?14:12,t+c.ownRtt/2,2,0,0,0,false);
+        s.add(victimA?13:15,t+c.otherRtt/2,2,0,0,0,false);
+    }
+    static void fallDamage(State s,boolean victimA,int damage,Config c,double t){
         int h=victimA?s.ownResistant:s.resistant,last=victimA?s.lastDamageA:s.lastDamageB;
         if(h>s.freshThreshold&&damage<=last)return;
+        if(h<=s.freshThreshold)hurtStatus(s,c,victimA,t);
         if(victimA){s.lastDamageA=damage;s.dirtyA=true;if(h<=s.freshThreshold){s.ownResistant=2*s.freshThreshold;s.velocityChangedA=true;}}
         else{s.lastDamageB=damage;s.dirtyB=true;if(h<=s.freshThreshold){s.resistant=2*s.freshThreshold;s.velocityChangedB=true;}}
     }
@@ -157,6 +164,7 @@ public final class PeriodicComboFightModel {
             if(length<.01)throw new IllegalStateException("Unsupported degenerate knockback separation");
             vx=vx*.5+dx/length*(double).4f;vy=Math.min((double).4f,vy*.5+(double).4f);vz=vz*.5+dz/length*(double).4f;
         }
+        if(fresh)hurtStatus(s,c,!fromA,t);
         if(sprint){float angle=(float)(fromA?s.serverYawA:s.serverYawB)*(float)Math.PI/180f;vx+=(double)(-sin(angle)*.5f);vy+=.1;vz+=(double)(cos(angle)*.5f);attacker=motion(attacker,attacker.vx()*.6,attacker.vy(),attacker.vz()*.6);}
         boolean send=fresh||(fromA?s.velocityChangedB:s.velocityChangedA);
         if(send){
@@ -169,8 +177,8 @@ public final class PeriodicComboFightModel {
     static void serverDrain(State s,Config c,double t){
         s.freshThreshold=c.hitTicks;
         for(Packet p:due(s,t,0))switch(p.kind){
-            case 0:serverMoveA(s,p);break;
-            case 1:serverMoveB(s,p);s.serverYawB=p.vx;break;
+            case 0:serverMove(s,p,true,c,t);break;
+            case 1:serverMove(s,p,false,c,t);s.serverYawB=p.vx;break;
             case 2:s.sprintDirtyA|=s.serverSprint!=p.flag;s.dirtyA|=s.serverSprint!=p.flag;s.serverSprint=p.flag;break;
             case 3:hit(s,c,true,t);break;
             case 7:hit(s,c,false,t);break;
@@ -183,13 +191,15 @@ public final class PeriodicComboFightModel {
     static void track(State s,Config c,double t,boolean fromA){
         boolean dirty=fromA?s.dirtyA:s.dirtyB,air=fromA?s.airborneA:s.airborneB;
         if((s.serverTicks&1)!=0&&!dirty&&!air)return;
+        int teleportAge=fromA?++s.teleportAgeA:++s.teleportAgeB;
         double x=quant(fromA?s.serverAx:s.serverBx),y=quant(fromA?s.serverAy:s.serverBy),z=quant(fromA?s.serverAz:s.serverBz);
         int yaw=(int)Math.floor((float)(fromA?s.serverYawA:s.serverYawB)*256f/360f),pitch=(int)Math.floor((float)(fromA?s.serverPitchA:s.serverPitchB)*256f/360f);
         boolean moved=Math.abs(x-(fromA?s.trackedAx:s.trackedBx))>=.125||Math.abs(y-(fromA?s.trackedAy:s.trackedBy))>=.125||Math.abs(z-(fromA?s.trackedAz:s.trackedBz))>=.125||s.serverTicks%60==0;
         boolean turned=Math.abs(yaw-(fromA?s.trackedYawA:s.trackedYawB))>=4||Math.abs(pitch-(fromA?s.trackedPitchA:s.trackedPitchB))>=4;
         boolean ground=(fromA?s.serverA:s.serverB).onGround();
         double dx=x-(fromA?s.trackedAx:s.trackedBx),dy=y-(fromA?s.trackedAy:s.trackedBy),dz=z-(fromA?s.trackedAz:s.trackedBz);
-        boolean teleport=ground!=(fromA?s.trackedGroundA:s.trackedGroundB)||dx< -4||dx>=4||dy< -4||dy>=4||dz< -4||dz>=4;
+        boolean teleport=teleportAge>400||ground!=(fromA?s.trackedGroundA:s.trackedGroundB)||dx< -4||dx>=4||dy< -4||dy>=4||dz< -4||dz>=4;
+        if(teleport){if(fromA)s.teleportAgeA=0;else s.teleportAgeB=0;}
         if(moved||turned||teleport){
             double gx=teleport?x:(fromA?s.sentAx:s.sentBx)+(moved?dx:0),gy=teleport?y:(fromA?s.sentAy:s.sentBy)+(moved?dy:0),gz=teleport?z:(fromA?s.sentAz:s.sentBz)+(moved?dz:0);
             Packet update=new Packet(fromA?6:5,t+(fromA?c.otherRtt:c.ownRtt)/2,gx,gy,turned||teleport?(byte)yaw:0,turned||teleport?(byte)pitch:0,teleport,s.seq++);update.z=gz;update.ground=ground;update.packetId=teleport?0x18:moved?(turned?0x17:0x15):0x16;s.enqueue(update);

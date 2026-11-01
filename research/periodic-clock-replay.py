@@ -4,12 +4,29 @@
 Later native poses, packets and attacks are comparison data only. No fresh-hit
 confirmations, observed impulses, or remote trajectory corrections are fed back.
 """
-import argparse,collections,csv,gzip,hashlib,io,json,statistics,struct,subprocess,tempfile
-from network_pipeline_audit import archive,wire,pair_payloads,signature,input_signature
+import argparse,base64,collections,csv,gzip,hashlib,io,json,statistics,struct,subprocess,tempfile
+from network_pipeline_audit import archive,wire as pipeline_wire,pair_payloads,signature,input_signature
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 JAVA=Path('/opt/homebrew/opt/openjdk@17/bin/java')
 SOURCES=['src/lab/ExactTravel.java','src/lab/Json.java','tests/PeriodicComboFightModel.java','tests/PeriodicComboReplay.java','tests/PeriodicComboTransport.java']
+
+def wire(events,direction,player=None):
+    rows=pipeline_wire(events,direction,player)
+    # S19PacketEntityStatus has protocol47 ID 0x1a and a fixed int entity ID.
+    # Extend this adapter without changing the shared pipeline helper.
+    flow='c2s'if (player is None and direction=='out')or(player and direction=='in')else's2c'
+    if flow=='s2c':
+        for e in events:
+            if e['type']!='packet_wire'or(player and e.get('player')!=player):continue
+            d=e['data'];meta=d.get('packet',d)
+            if meta['direction']!=direction:continue
+            raw=base64.b64decode(d['base64'])
+            if len(raw)!=6 or raw[0]!=0x1a:continue
+            entity,status=struct.unpack('>ib',raw[1:])
+            if status!=2:continue
+            rows.append({'event':e,'ns':e['monotonic_ns'],'payload':d['base64'],'packet':{'id':0x1a,'entity_id':entity,'status':status},'packet_id':meta.get('packet_id')})
+    return sorted(rows,key=lambda r:r['ns'])
 
 def load(mid,side):
     with gzip.open(ROOT/'research/traces'/f'{mid}-{side}.jsonl.gz','rt')as f:return [json.loads(l)for l in f]
@@ -65,6 +82,8 @@ def network_schedule(mid,data,game,offset,t0,seconds):
                 kind=5 if side=='a'else 6;x,y,z=target
                 if'onGround'in q:flag=int(q['onGround'])
                 if'yaw'in q:vx,vy=q['yaw'],q['pitch']
+            elif pid==0x1a and q['entity_id']in(ids[player],ids[other]):
+                own=q['entity_id']==ids[player];kind=(14 if own else 12)if side=='a'else(15 if own else 13);x=q['status']
             elif pid==0x1c and q['entity_id']==ids[player]and'sprinting'in q:
                 kind=10 if side=='a'else 11;flag=int(q['sprinting'])
             if kind is None:continue
@@ -86,6 +105,7 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
     assert all(moves[side][0]['before']['posY']==4 and moves[side][0]['before']['motionX']==0 for side in ('a','b'))
     first_tracker=next(e for e in data['server']if e['type']=='replication_tracker_before' and e['time']>=t0)
     tracker=int(first_tracker['tracker']['updateCounter'])
+    teleport_ages=[int(next(e for e in data['server']if e['type']=='replication_tracker_before'and e['time']>=t0 and e['tracker']['player']==game[side])['tracker']['ticksSinceLastForcedTeleport'])for side in ('a','b')]
     rows=[];expected=[];report_seeds=[]
     initial_tick=next(e for e in data['server']if e['type']=='tick'and e['time']>=t0)
     assert not any(e['type']=='science_server_attack'and t0<=e['time']<=initial_tick['time']for e in data['server'])
@@ -136,7 +156,7 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
     if transport_trace:
         network,applies=network_schedule(mid,data,game,offset,t0,seconds);rows.extend(applies)
     rows.sort(key=lambda r:r[0])
-    lines=['\t'.join(map(str,['INIT',ax,bx,game['ping_a'],game['ping_b'],game['attack_reach_b'],tracker,*report_seeds,*initial_damage]))]
+    lines=['\t'.join(map(str,['INIT',ax,bx,game['ping_a'],game['ping_b'],game['attack_reach_b'],tracker,*report_seeds,*initial_damage,*teleport_ages]))]
     lines=['\t'.join(map(lambda x:'NaN'if isinstance(x,float)and x!=x else str(x),['NETWORK',*r]))for r in network]+lines
     for t,k,args,e in rows:
         lines.append('\t'.join(map(str,[t,k,*args])))
@@ -173,7 +193,7 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
         bits=[e for e in selected if e['bit_mismatches']]
         summary[category]={'n':len(selected),'bit_mismatch_rows':len(bits),'first_bit_mismatch':bits[0]if bits else None,'max_component_error':max(errors,default=0),'first_error_over_001':failures[0]if failures else None}
     return {'match':mid,'rtt':[game['ping_a'],game['ping_b']],'seconds':seconds,'requested_seconds':requested_seconds,'unsupported':unsupported,'frame_drain':frame_drain,'exact_server_clocks':exact_clocks,'transport_trace':transport_trace,'replay_failure':replay_failure,
-            'initial_positions':[ax,bx],'initial_tracker_counter':tracker,'initial_report_state_from_prior_wire':report_seeds,'initial_last_damage_from_first_precontact_snapshot':initial_damage,
+            'initial_positions':[ax,bx],'initial_tracker_counter':tracker,'initial_teleport_ages':teleport_ages,'initial_report_state_from_prior_wire':report_seeds,'initial_last_damage_from_first_precontact_snapshot':initial_damage,
             'scope':'Recorded W/A/D/Ctrl/yaw/click inputs plus raw tick_start/end, local move/interpolation and server-tick clocks. Initial settled positions only; all later native states withheld. Transport mode uses click call-start plus measured packet dispatch/delivery schedules; other mode uses call-end and tick-end emission proxies. Exact server drain/entity/tracker hooks are used when present, otherwise server tick logs are end-of-tick proxies. Critical upgrades, reported fall state, native server pushes and 2D head-ray are modeled. Degenerate random KB is an explicit unsupported stop. All generated relevant packets are asserted by subtype and represented payload bits; initial C03 counters are reconstructed only from pre-start wire history. Initial lastDamage is taken from the first pre-contact server snapshot, with no preceding attack. Metadata checks cover own sprint flags, not unrelated watcher entries. The first divergence ends strict transport replay; requested/unexecuted tails are counted.',
             'completed_event_rows':len(predictions),'requested_event_rows':len(expected),'unexecuted_event_rows':len(expected)-len(predictions),'last_compared_ms':scored[-1]['t_ms']if scored else None,'summary':summary,'rows':scored}
 

@@ -15,7 +15,7 @@ public final class PeriodicComboClock {
         public boolean aRemoteBeforeMove=true,bRemoteBeforeMove=false,aimBeforeFrameDrain=true;
     }
     public record Observation(double time,long tick,ExactTravel.State own,double targetX,double targetY,double targetZ,
-                              boolean sprint,float headYaw,double lastContactTime,long localContacts) {
+                              boolean sprint,float headYaw,double lastContactTime,long localContacts,double lastTargetHurtTime,double lastOwnHurtTime) {
         public double nearest(){PeriodicComboFightModel.View v=new PeriodicComboFightModel.View(targetX);v.y=targetY;v.z=targetZ;return PeriodicComboFightModel.nearest(own,v);}
     }
     /** strafe is native damped input: ordinary A/D are +/-.98f. */
@@ -46,7 +46,7 @@ public final class PeriodicComboClock {
     public void setAudit(Audit audit){this.audit=audit;}
     public double time(){return now;}
     private void add(double time,int kind){events.add(new Event(time,kind,order++));}
-    private Observation observation(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;return new Observation(now,ticks[a?0:1],b.q,v.x,v.y,v.z,b.sprint,b.headYaw,b.lastContactTime,b.localContacts);}
+    private Observation observation(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;return new Observation(now,ticks[a?0:1],b.q,v.x,v.y,v.z,b.sprint,b.headYaw,b.lastContactTime,b.localContacts,v.lastHurtTime,b.lastHurtTime);}
     private void aim(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;double dx=v.x-b.q.x(),dz=v.z-b.q.z(),eye=b.q.y()+PeriodicComboFightModel.EYE;double targetY=Math.max(v.y+.15,Math.min(v.y+1.65,eye));b.yaw=(float)Math.toDegrees(Math.atan2(-dx,dz));b.pitch=(float)-Math.toDegrees(Math.atan2(targetY-eye,Math.hypot(dx,dz)));}
     public void runUntil(double end){
         if(end<now)throw new IllegalArgumentException("Cannot run a clock backwards");
