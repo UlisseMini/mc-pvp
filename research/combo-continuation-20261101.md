@@ -1,19 +1,23 @@
 # Moving the combo demonstration toward vanilla
 
-Work in progress, November 1. **The vanilla model now has a 60-second,
-105-fresh-hit, zero-return input sequence, versus matched W-tap's 3 hits.** It is
-one nominal clock phase selected by an offline oracle, not a native demonstration
-or a robust feedback bot. It is evidence against declaring vanilla impossible.
+Work in progress, November 1. **No near-vanilla native60-second lock yet.**
+The two-tick/zero-vertical demonstration remains only an anchor. We tested the
+continuation ladder, then a model-derived vanilla input sequence and two
+mechanically motivated corrections, always with matched W-tap.
 
-**No new near-vanilla native 60-second lock has been established yet.** The old
-two-tick/zero-vertical demonstration remains only an anchor. The native ladder
-below maps the frozen controller's failures, not the limits of all controllers.
+The latest small-tweak native result uses ordinary ten-tick immunity with only
+5% less vertical knockback: **5 /10 /1 fresh hits before return versus W-tap
+3 /3 /2**, all timing-clean. The10-hit run is `/replay m1351`; it returns at6088ms.
+With fully vanilla KB, the one-row input correction gives7 /7 /2 versus3 /3 /3.
+These are short prefixes with phase sensitivity, not indefinite locks.
 
-The saved vanilla input sequence has now been tested natively over10s of
-maintenance: **0* /5 /5 versus matched W-tap3 /3 /3**. The star is a primary
-timing flag; both clean candidate trials return around3.74s. The short test
-confirms neither the modeled minute lock nor a robust controller. Input/flight
-transfer is under diagnosis before further changes.
+The full coupled model has a saved60-second105-hit zero-return vanilla sequence
+versus W-tap3 in a favorable nominal phase. Native traces now show exactly why
+that word does not transfer generally: packet processing order changes vertical
+impulses, landing phase, horizontal retention and the opponent's contact window.
+The kernel reconstructs measured native events bit-exactly; it does not predict
+independent future thread service. This is evidence against claiming vanilla
+impossible, but not evidence of a native minute-long controller.
 
 The desired neighborhood is fresh damage every9–10 ticks, horizontal and vertical
 knockback multipliers0.9–1.1. Those are the requested bounds, not claimed Hypixel
@@ -98,8 +102,72 @@ measured inputs and packet service:3884/3908 events,1375/1374 compared rows,
 zero bit mismatches; both POVs' click and movement reach errors below9e−16 blocks.
 This validates the actual mechanics and event ordering, not the model's forecast
 of independent future clocks. `/replay m1339` shows the clean five-hit prefix;
-it is not a full-minute demo. A single-row Ctrl-extension test is now declared
-to choose a stronger fifth hit; its next two launch modes must also be measured.
+it is not a full-minute demo. The next controlled experiment extended Ctrl for
+one own tick before the fifth contact, with every other source input unchanged.
+
+The follow-up is complete. The one-row extension makes the fifth hit a grounded
+sprint hit and initially restores separation. But the sixth starts airborne at
+height +0.171648 and retains too much horizontal velocity: the next scheduled
+click misses at roughly4 blocks. A separate early failure has perfectly executed
+inputs but misses a server task drain, delaying the second launch by one tick.
+B contacts before its first post-packet movement and applies0.6 drag to the new
+impulse. It occurs before the changed fifth-hit input.
+
+| Same10s native maintenance, new three-pair batches | Candidate fresh before return | Plain W-tap | Full-horizon locks candidate /W-tap |
+|---|---|---|---|
+|One extra W+Ctrl tick before fifth hit, vanilla, m1342–m1347|7 /7 /2|3 /3 /3|0 /0|
+|Same inputs, vertical0.95, all else vanilla, m1348–m1353|5 /10 /1|3 /3 /2|0 /0|
+
+All primary windows are timing-clean. The vanilla batch has later full-match
+flags in m1344/m1345; the0.95 batch is entirely clean. All three POVs are complete.
+The0.95 value was derived from the observed fifth launch: its0.384625 vertical
+packet lands on movement11, whereas a packet no larger than0.36575 lands by10.
+With the observed pre-hit state fixed, the exact quantized scaling threshold is
+about0.950976. This predicts a local landing transition, not the global fight:
+lowering the whole profile also changes earlier motion, launch values and spacing.
+The varied native results show why that qualification matters. `/replay m1351`
+shows the10-hit prefix with only a5% vertical reduction and ordinary ten-tick
+immunity, but it still returns at6088ms and does not establish a lock.
+
+The local prediction did succeed in that recording. The fifth velocity packet
+was0.365375; B landed on its tenth movement at3871ms, before the sixth launch's
+first movement at3921ms. Hits six through eight then started grounded, avoiding
+the previous outward escape. Later normal launches lost the safe gap: the tenth
+vertical packet was negative (−0.02075), and B contacted A between packet receipt
+and its next movement, braking the new horizontal impulse before returning.
+
+The shorter repeats expose why this is not yet a controller. In m1348 the fifth
+vertical packet was identical, but the fourth launch had already been weaker:
+movement-before-attack ordering gave0.365375 instead of0.40125. B's own reach
+distance before hit five was2.913 instead of3.155, enough for a contact before
+the first post-packet move. In m1352 the acquisition was delayed by one server
+tick and the first scored launch failed. Both are ordinary timing differences,
+with no >100ms clock fault. Reproducing a precomputed input word cannot correct
+these different observed states.
+
+Conditional reconstruction of m1351 covers3,852 recorded processing events and
+1,374 compared rows through10889ms, with zero bit mismatches and POV reach error
+below9e−16 blocks. All29 native launch vertical values match the formula, and all
+30 Y/velocity/ground values in the predicted fifth flight match. This confirms
+the landing mechanism; it does not validate a future service-time forecast.
+
+The original unchanged word was also tried at opponent RTT140 instead of120,
+with fully vanilla physics and the same10s horizon. This was motivated by measured
+packet-order margins, but actual acquisition and later packet history also change.
+
+| Original word, vanilla KB/immunity, RTT0/140 | Candidate fresh before return | Plain W-tap | Candidate /W-tap first return |
+|---|---:|---:|---|
+|Pair1, m1354 /m1355|0|3|1041 /2542ms|
+|Pair2, m1357 /m1356|1|3|1296 /2494ms|
+|Pair3, m1358 /m1359|1|3|1304 /2341ms|
+
+Neither arm locks for10s. All primary windows are timing-clean; later whole-match
+flags in m1355/m1357/m1359 are retained. All recordings have complete three-POV
+archives and pass ordinary input/build/reach/CPS checks. This branch loses the
+mandatory comparison and is stopped. A frozen-timestamp order counterfactual is
+not a complete forecast when changing actual latency. The next task is to explain
+why ordinary W-tap handles these entries better and what own-observation feedback
+can correct, before any further controller features or profile sweeps.
 
 ## Native continuation ladder
 
