@@ -267,6 +267,17 @@ Legal search waits for the oracle qualification gate. A model settings sweep may
 instead locate a robust oracle region if lock8 does not qualify. Native
 promotion waits for a robust legal model result.
 
+The [own-observation audit](poc-20261101/robust-search/oracle/own-observation-audit.md)
+separates information limits from restrictions in that prepared family. The
+oracle knows the complete remote/server state, committed queues and future host
+calendar; only its unselected future delay draws are resampled independently.
+The legal API already exposes handled packet history and own click callbacks,
+but the current small family ignores that history and cannot strafe while
+coasting. A local pending-input ledger and a coarse target-motion observer are
+possible next components, not validated improvements. A bad inherited opening
+and an unsupported timing overlap are also different from an observability
+failure. None of these distinctions removes a failed draw from qualification.
+
 Code and evidence:
 
 - [Search contract](poc-20261101/robust-search/oracle/contract.md)
