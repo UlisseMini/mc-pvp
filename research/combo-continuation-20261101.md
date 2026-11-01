@@ -60,6 +60,12 @@ contact comes8ms before the next velocity packet; in another the packet arrives
 first but the opponent attacks before its next movement step. Merely increasing
 click frequency cannot fix either event ordering.
 
+The+10% KB profile also has this inner-closure failure in m1312, but held-out
+m1316 first fails in the opposite direction: five real clicks miss, producing a
+12-tick fresh-hit gap. The opponent loses its stream of outgoing knockback and
+runs back in. Restoring contact with a grounded normal hit then cannot restore
+safe separation. More knockback does not simply repair the weaker-profile failure.
+
 **Sprint hits can fail in the opposite direction.** In a vanilla queued-clock
 oracle prefix, the first four sprint launches start their victim movement on the
 ground, retaining about0.38 blocks/tick after friction. The fifth starts airborne
@@ -99,21 +105,32 @@ The kernel reconstructs the fresh native six-tick failure m1306 through2,427
 recorded processing events: zero bit mismatches in movement, input, interpolation
 or server rows, and reach/ray errors below9e−16 blocks. This checks mechanics on
 fresh data **given measured inputs and processing times**. It does not validate
-a prediction that future clocks will remain perfectly periodic. That distinction
+a prediction that future clocks will remain perfectly periodic. A second fresh
+reconstruction, m1312 with+10% horizontal/vertical KB, passes2,441 events with
+zero bit mismatches and reach/ray error below5e−16 blocks. That distinction
 is necessary: nominal phase-specific minute locks have failed native transfer.
 
 ## Focused follow-ups
 
-Three small experiments are prepared, each preserving a matched W-tap reference:
+Three small experiments are complete, each preserving a matched W-tap reference:
 
 - Release W for two ticks when the existing slowdown saturates, with unchanged
-  gains/clicks. Check ordinary double-tap sprint so this cannot silently become a
-  stronger-hit controller.
+  gains/clicks. At6/1/1 the three-phase counts become1/200/8 versus the frozen
+  law's1/200/2 and W-tap's1/3/4. Native double-tap state is audited: no accidental
+  sprint movement or sprint-strength hits. This fixes some lost control authority
+  in one phase, but still does not establish reliable minute-long maintenance.
 - Delay one specific sprint click to move S12 application from airborne to
-  grounded; verify that the actual hit stays sprint-strength.
-- Allow ordinary acquisition trades at9–10 ticks. A successful defender sprint
-  attack changes server sprint state, which can change subsequent inferred-jump
-  motion and normal knockback. Test the physical sequence, not edited hidden state.
+  grounded. The actual fifth hit remains a sprint hit and becomes grounded, but
+  the vanilla prefix worsens from6 to5 fresh versus W-tap3 over the same10s horizon.
+  First return moves earlier, from4375ms to3575ms. The wait gives the opponent a
+  contact before its next movement, and that contact brakes its new velocity.
+  Landing alignment alone is insufficient; the intervening reach margin matters.
+- Allow ordinary acquisition trades at9–10 ticks. All12 tested openings really
+  consume the defender's server sprint state and restore the predicted normal
+  launch budget (about0.4 times the horizontal multiplier). Nevertheless, every
+  handoff is unsafe: the candidate is out of reach, the opponent can reach it, or
+  both. Candidate and W-tap remain at0–1 fresh before return. The hidden-state
+  mechanism is real, but this opening does not create a useful lock entry.
 
 These are causal tests, not a vanilla infeasibility proof. No bounded search has
 covered all allowed inputs, phases, acquisition states or pings.
