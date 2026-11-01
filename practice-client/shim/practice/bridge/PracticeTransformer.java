@@ -15,12 +15,22 @@ public final class PracticeTransformer implements IClassTransformer {
             decoder=transformed.equals("net.minecraft.util.MessageDeserializer"),
             encoder=transformed.equals("net.minecraft.util.MessageSerializer"),
             handler=transformed.equals("net.minecraft.client.network.NetHandlerPlayClient"),
-            minecraft=transformed.equals("net.minecraft.client.Minecraft");
-        if(!network&&!decoder&&!encoder&&!handler&&!minecraft)return bytes;
+            minecraft=transformed.equals("net.minecraft.client.Minecraft"),
+            player=transformed.equals("net.minecraft.entity.player.EntityPlayer");
+        if(!network&&!decoder&&!encoder&&!handler&&!minecraft&&!player)return bytes;
         ClassNode node=new ClassNode();new ClassReader(bytes).accept(node,0);int hooks=0;
         for(MethodNode m:node.methods){
             if((m.access&(Opcodes.ACC_SYNTHETIC|Opcodes.ACC_BRIDGE|Opcodes.ACC_STATIC))!=0)continue;
-            if(network&&m.name.equals("channelActive")){
+            if(player&&(m.name.equals("func_145748_c_")||m.name.equals("getDisplayName")||m.name.equals("f_"))&&m.desc.startsWith("()L")){
+                // Replace only the presentation component. Native getName, profiles,
+                // UUIDs, target lookup, telemetry and all original work stay intact.
+                for(AbstractInsnNode i:m.instructions.toArray())if(i.getOpcode()==Opcodes.ARETURN){
+                    InsnList alias=new InsnList();alias.add(new VarInsnNode(Opcodes.ALOAD,0));
+                    alias.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"practice/bridge/PlayerLabels","displayName","(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",false));
+                    alias.add(new TypeInsnNode(Opcodes.CHECKCAST,Type.getReturnType(m.desc).getInternalName()));
+                    m.instructions.insertBefore(i,alias);hooks++;
+                }
+            }else if(network&&m.name.equals("channelActive")){
                 for(AbstractInsnNode i:m.instructions.toArray())if(i.getOpcode()==Opcodes.RETURN){m.instructions.insertBefore(i,call("connected",0,1));hooks++;}
             }else if(decoder&&m.name.equals("decode")&&m.desc.contains("Lio/netty/buffer/ByteBuf;")){
                 m.instructions.insert(call("wireBefore",1,2));

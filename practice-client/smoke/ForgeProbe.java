@@ -20,6 +20,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 @Mod(modid="practiceprobe",name="Practice smoke test",version="1",clientSideOnly=true,dependencies="required-after:practicebridge")
 public final class ForgeProbe {
     private int ticks,draws,worldDraws,stopAt; private Object bridge;
+    private boolean playerLabelsChecked;
     private final Set<Double> drillGaps=new HashSet<>();
     private final Set<String> drillMatches=new LinkedHashSet<>();
     private boolean drillCountdownSeen,drillGoSeen,drillVisitedLobby;
@@ -44,6 +45,20 @@ public final class ForgeProbe {
             double measured=practice.math.ReachMath.distance(new double[]{0,5.62,0},practice.math.ReachMath.expand(new double[]{gap-.3,4,-.3,gap+.3,5.8,.3},.1));
             check(nativeHit==(measured<=3),"distance boundary matches vanilla ray-box intersection at gap "+gap);
         }
+    }
+    private void playerLabels(EntityPlayer target){
+        String name=target.func_70005_c_(),custom=target.func_95999_t(),display=target.func_145748_c_().func_150260_c();
+        java.util.UUID uuid=target.func_110124_au();int id=target.func_145782_y();
+        try{
+            String label="very-long-research-candidate-wtap-a";
+            target.func_96094_a(label);
+            check(label.equals(target.func_145748_c_().func_150260_c()),"native Forge player display honors full custom policy label");
+            check(name.equals(target.func_70005_c_())&&uuid.equals(target.func_110124_au())&&id==target.func_145782_y(),"display alias preserves account name, UUID and native entity");
+            target.func_96094_a("");
+            check(!label.equals(target.func_145748_c_().func_150260_c()),"cleared metadata restores native player display");
+        }finally{target.func_96094_a(custom);}
+        check(display.equals(target.func_145748_c_().func_150260_c()),"display smoke restores opponent metadata");
+        playerLabelsChecked=true;
     }
     private void checkHealth(Minecraft mc){if(mc.field_71439_g.func_110143_aJ()!=20)throw new AssertionError("sumo lost health");}
     private void sumoPlatform(double center,boolean present){
@@ -114,6 +129,7 @@ public final class ForgeProbe {
                     if(p==mc.field_71439_g||p.func_175149_v())continue;double d=p.func_70068_e(mc.field_71439_g);
                     if(d<distance){distance=d;closest=p;}}
                 if(closest!=null){
+                    if(!playerLabelsChecked)playerLabels(closest);
                     double dx=closest.field_70165_t-mc.field_71439_g.field_70165_t,dz=closest.field_70161_v-mc.field_71439_g.field_70161_v;
                     double dy=closest.field_70163_u+1.0-mc.field_71439_g.field_70163_u-mc.field_71439_g.func_70047_e();
                     mc.field_71439_g.field_70177_z=(float)Math.toDegrees(Math.atan2(-dx,dz));
@@ -125,6 +141,7 @@ public final class ForgeProbe {
                 }
             }
             if(ticks==310){
+                check(playerLabelsChecked,"native player-label check ran against a real opponent");
                 Map<?,?> state=linked();replayMatch=String.valueOf(state.get("match"));
                 check(state.get("match") instanceof String&&!state.get("match").equals(""),"live state identifies the current duel");
                 check(state.get("server") instanceof Map&&((Map<?,?>)state.get("server")).size()==2,"authoritative state covers both participants");

@@ -43,9 +43,10 @@ public final class ServerReplay {
     }
     static Object actor(Object viewer,String label,UUID uuid){
         Object world=R.get(viewer,"worldObj");
-        String name=label.replaceAll("[^A-Za-z0-9_]","_");if(name.length()>16)name=name.substring(0,16);
-        return R.construct("net.minecraft.entity.player.EntityPlayerMP",Referee.server,world,
+        String name=MatchLabels.profileName(label);
+        Object actor=R.construct("net.minecraft.entity.player.EntityPlayerMP",Referee.server,world,
             R.construct("com.mojang.authlib.GameProfile",uuid,name),R.construct("net.minecraft.server.management.ItemInWorldManager",world));
+        R.call(actor,"setCustomNameTag",label);return actor;
     }
     static void start(Object viewer,String match)throws Exception {
         String who=Referee.safeName(viewer);
@@ -144,7 +145,7 @@ public final class ServerReplay {
             List<Map<String,Object>> rows=ReplayData.recent(who,all);
             Referee.message(viewer,all?"§6Recent server recordings:":"§6Your recent recordings:");
             for(Map<String,Object> row:rows){String match=ReplayData.string(row,"id","");
-                Referee.button(viewer,match+" ["+row.get("mode")+"] "+row.get("a")+" vs "+row.get("policy_b"),"/replay "+match);}
+                Referee.button(viewer,match+" ["+row.get("mode")+"] "+ReplayData.label(row,"a")+" vs "+ReplayData.label(row,"b"),"/replay "+match);}
             if(rows.isEmpty())Referee.message(viewer,"No saved matches yet. /replay list all shows bot matches too.");return;
         }
         if(action.equals("latest")||action.matches("m[0-9]{4,9}")){

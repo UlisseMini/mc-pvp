@@ -86,5 +86,9 @@ final class ReplayData {
         pov=new PovReplayData(this,legacy);
     }
     Map<String,Object> frame(long ms){return frames.get(ReplayTimeline.floor(times,ms));}
-    String label(String side){String policy=string(result,"policy_"+side,side);return policy.equals("human")?string(result,side,side):policy;}
+    String label(String side){return label(result,side);}
+    static String label(Map<String,Object> result,String side){
+        String other=side.equals("a")?"b":"a";
+        return MatchLabels.label(string(result,side,side),string(result,"policy_"+side,side),string(result,"policy_"+other,other),side);
+    }
 }

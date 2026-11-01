@@ -55,6 +55,9 @@ def main():
         cp=os.pathsep.join([str(api),str(core),str(BUILD/'compile-api.jar'),str(ROOT/'.cache/asm.jar'),str(ROOT/'.cache/asm-tree.jar'),str(CACHE/'launchwrapper.jar'),*libs])
         bot_sources=[ROOT/'src/lab'/f'{name}.java' for name in json.loads((SRC/'bot-sources.json').read_text())]
         shim=BUILD/'shim';compile_to(shim,sorted((SRC/'shim').rglob('*.java'))+bot_sources,cp)
+        label_checks=BUILD/'label-checks';label_cp=os.pathsep.join([str(shim),cp])
+        compile_to(label_checks,[SRC/'tools/PlayerLabelsCheck.java'],label_cp)
+        run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'PlayerLabelsCheck',ROOT/'.cache/client.jar',BUILD/'compile-api.jar'])
         for folder in (api,core):
             shutil.copytree(folder,shim,dirs_exist_ok=True)
         with zipfile.ZipFile(ROOT/'.cache/mcp-names.zip') as names:

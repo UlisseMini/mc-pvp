@@ -5,6 +5,16 @@ localhost packet/input/view recording, and a diagnostic link between the human
 client, bot client and server. Practice displays and analysis live in a reloadable
 module. No third-party HUD mod is required.
 
+The bridge displays the server's bot policy labels above live and replay players.
+Two copies of the same policy are named `wtap-a` and `wtap-b`, for example. Full
+research policy names remain readable; real account names, UUIDs and recorded
+participant identities stay unchanged. Match lists, spectator follow controls
+and results use the same labels. Labels are cleared when a bot slot leaves a
+match. This bridge change needs one client restart after installation. Unmodded
+clients still show `LabSlotN` above live bots because vanilla player rendering
+ignores custom-name metadata; replay profiles have a readable 16-character
+fallback, preserving the side suffix for long names.
+
 ## Use
 
 Launch the **Forge 1.8.9** installation once after installing the bridge. The
