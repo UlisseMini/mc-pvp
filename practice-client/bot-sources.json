@@ -28,5 +28,6 @@
   "TickIndexedLegalCycleController",
   "InputWordController",
   "StrongRelaxationPolicy",
-  "HurtWindowCoastController"
+  "HurtWindowCoastController",
+  "ReferenceFeedbackController"
 ]

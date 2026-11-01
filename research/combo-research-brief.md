@@ -38,7 +38,39 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Current follow-up: broaden inference and build legal control
 
-LATEST PRIORITY: fix unsupported timing-service overlaps and validate the
+LATEST USER FOLLOW-UP (after the clean7/2/3 prospective result): run a small
+native paired calibration at provisional preset=hypixel/hit9 with the frozen
+revised controller versus identically configured W-tap. This is a calibration
+check, not a lock demo or permission to tune on those outcomes. In parallel,
+measure own-only estimates of the opponent's attack-ray distance using both
+native POVs as offline truth. Freeze estimator fit/validation sets, test own
+sent-position history/RTT/interpolation, and derive a safety margin larger than
+validated uncertainty if precision is insufficient. Keep m1415–m1418 sealed
+from controller examples and action/threshold diagnosis.
+
+Native frozen-reference calibration is now complete: three hit9/120–120ms pairs,
+candidate6/1/0 versus W-tap1/2/2 fresh hits before first return in4–64s. All six
+primary windows timing-clean; later whole-match stalls in m1419/m1421 retained.
+Reach/CPS/build/target checks passed. No minute lock. This does NOT clear the
+native improvement gate; no more controller features until a causal diagnosis.
+The zero-hit case was already inside the opponent's native reach at its first
+waking click (ray2.707). Shared opening ends3.5s; opponent wakes4s. New captures
+m1419–m1424 validate fixed own-only observer variants and margins calibrated on
+older data. See `hypixel-inference-20261101/native-reference-calibration/`.
+
+Observer checkpoint: own send history plus approximate tracker/interpolation
+reconstruction reduces candidate-prefix 3D error in the opponent's view of us
+from 0.813 to 0.116 blocks. Their current body remains the dominant uncertainty;
+simple extrapolation worsens the candidate's critical S12-to-first-MOVE subset.
+Frozen one-sided ray margins are about 1.9–2.9 blocks, too wide to certify the
+roughly 0.127-block action differences at issue. These are retrospective
+nowcast checks, not validated future bounds or proof of physical impossibility.
+Before a new control rule, validate opponent-body forecasts and require both
+return-hit denial across compatible states and our reach at the fresh window.
+Uncertified states/fallbacks still count as ordinary outcomes. Full candidate
+and W-tap errors are in `hypixel-inference-20261101/return-ray-estimator/`.
+
+Previous priority/checkpoint: fix unsupported timing-service overlaps and validate the
 scheduler against native recordings/fresh native calibration BEFORE more
 controller work. Preserve old UNKNOWN outcomes, use fixed completion-bound
 sensitivities rather than choosing by score, and retain genuine unsupported

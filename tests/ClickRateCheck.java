@@ -6,6 +6,18 @@ public final class ClickRateCheck {
     public static void main(String[] args){
         Properties p=new Properties();
         check(ClickRate.cps(p)==10&&ClickRate.intervalNanos(p)==100_000_000L,"legacy ceiling unchanged");
+        p.setProperty("click_cps","20");p.setProperty("click_min_interval_ms","51");
+        check(ClickRate.intervalNanos(p)==51_000_000L,"explicit model pacing floor");
+        check(!ClickRate.ready(151_000_000L-1,100_000_000L,p),"51ms boundary remains closed before floor");
+        check(ClickRate.ready(151_000_000L,100_000_000L,p),"51ms boundary opens exactly");
+        p.setProperty("click_min_interval_ms","1");
+        check(ClickRate.intervalNanos(p)==50_000_000L,"pacing cannot weaken physical CPS ceiling");
+        for(String bad:new String[]{"-1","NaN","Infinity","1001"}){
+            p.setProperty("click_min_interval_ms",bad);boolean rejected=false;
+            try{ClickRate.intervalNanos(p);}catch(IllegalArgumentException expected){rejected=true;}
+            check(rejected,"invalid pacing rejected");
+        }
+        p.remove("click_min_interval_ms");
         int[] rates={10,15,20,25,30};
         long[] periods={100_000_000L,66_666_667L,50_000_000L,40_000_000L,33_333_334L};
         for(int i=0;i<rates.length;i++){

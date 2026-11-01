@@ -1,5 +1,33 @@
 # Combo research — findings, November 1
 
+## Latest checkpoint: frozen Hypixel-hit9 native calibration
+
+The frozen controller has **not** established a reliable native advantage.
+Three matched pairs scored **6/1/0 versus W-tap 1/2/2** fresh hits before the first
+accepted return, counting 4–64 seconds. All six primary windows passed timing and native
+reach/CPS/identity checks; later stalls in two full matches remain flagged.
+Settings were provisional `hypixel`, hit delay 9 ticks, H/V 1/1, sprint extra Y 0.07, RTT 120/120 ms,
+reach 3, 20 CPS cap with the model's 51 ms pacing, shared 3.5-second acquisition and a 4-second
+opponent click handicap. The native improvement gate remains closed.
+
+The own-observation audit explains where precision is missing. On the new
+candidate prefixes, own sent positions plus approximate tracker/interpolation
+reconstruction reduced mean error in **the opponent's view of us** from 0.813 to
+0.116 blocks. Error in **the opponent's current body** remained 0.877 blocks. Simple
+extrapolation helped some averages but worsened the critical pre-first-MOVE
+candidate body error from 0.842 to 1.013 blocks (six samples). These are 3D position
+errors, not all attack-ray errors. Other POVs were used only for offline truth.
+
+Preserve the frozen controller and stop adding features. The next control design
+must validate a lower bound on opponent reach distance through the attack
+opportunity while preserving our own reach at the fresh window; uncertain
+states are not certified locks. See the
+[native paired findings](hypixel-inference-20261101/native-reference-calibration/findings.md),
+[observer audit](hypixel-inference-20261101/return-ray-estimator/findings.md) and
+[conservative control design](hypixel-inference-20261101/native-reference-calibration/margin-controller-design.md).
+
+## Earlier strongly modified proof of concept
+
 **There are now two clean native 60-second combo demonstrations: 527 and 535
 fresh hits without any return.** They use a simple own-distance feedback
 controller, both reaches 3.0, RTTs 0/120 ms, zero vertical knockback and a two-tick

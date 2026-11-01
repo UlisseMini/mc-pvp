@@ -46,6 +46,9 @@ public final class Client {
     static HurtWindowCoastController hurtWindowCoast=new HurtWindowCoastController();
     static double handledTargetHurtMs=Double.NaN;
     static boolean hurtWindowActive;
+    static ReferenceFeedbackController referenceFeedback;
+    static ReferenceFeedbackController.Snapshot referenceHead;
+    static boolean referenceActive;
     static final BurstClickController burstClicks=new BurstClickController();
     static BurstClickController.Decision burstDecision;
     static long burstObservedAt;
@@ -100,7 +103,8 @@ public final class Client {
         try {
             if(services!=null)services.frame();
             if(!match.equals(controls.getProperty("match","")) ||
-                    (controls.containsKey("input_word")&&inputWord==null))return;
+                    (controls.containsKey("input_word")&&inputWord==null)||
+                    (controls.getProperty("kind","").equals("reference-feedback")&&referenceFeedback==null))return;
             if(player==null || opponent==null || !targetReady || (Boolean)R.get(opponent,"isDead") || !active())return;
             // Tracking uses only this client's entity view; defaults preserve perfect aim.
             double dx=R.num(opponent,"posX")-R.num(player,"posX"), dz=R.num(opponent,"posZ")-R.num(player,"posZ");
@@ -200,7 +204,8 @@ public final class Client {
             // inspect immunity, accepted hits or any server-only state.
             boolean contactClicks=controls.getProperty("click_mode","fixed").equals("contact");
             boolean wordPermits=inputWord==null||inputWordDecision==null||!inputWordDecision.active||inputWord.allowInjection(ticks,nativeInputPoll);
-            if(clickGate && wordPermits && (!hurtWindowActive||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),(int)number("hurt_window_ticks",8))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
+            boolean referencePermits=!referenceActive||referenceFeedback.allowInjection(referencePoll(now/1_000_000.0),nativeInputPoll?"native_tick":"frame");
+            if(clickGate && wordPermits && referencePermits && (!hurtWindowActive||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),(int)number("hurt_window_ticks",8))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 if(controls.getProperty("kind","").equals("cycle")){cycle.queued(ticks);clickGate=false;}
@@ -214,6 +219,7 @@ public final class Client {
                 // Pace from completed input injection, not from before reflection/GC pauses.
                 // No catch-up inputs: wait the full declared interval after completion.
                 lastClick=System.nanoTime();
+                if(referenceActive)clickGate=referenceFeedback.injected(referencePoll(lastClick/1_000_000.0),lastClick/1_000_000.0);
                 pollAdmitted=true;
                 if(criticalOpportunity)criticalClicks.injected(lastObservedTargetHurt);
                 ModelController.click(System.currentTimeMillis());
@@ -325,6 +331,10 @@ public final class Client {
                 if(controls.containsKey("input_word"))inputWord=new InputWordController(R.ROOT.resolve(controls.getProperty("input_word")));
                 strongGap=new StrongRelaxationPolicy();freshTargetHurtStatus=0;
                 hurtWindowCoast=new HurtWindowCoastController();handledTargetHurtMs=Double.NaN;hurtWindowActive=false;
+                referenceFeedback=null;referenceHead=null;referenceActive=false;
+                if(controls.getProperty("kind","").equals("reference-feedback"))
+                    referenceFeedback=ReferenceFeedbackController.frozen(new String(Files.readAllBytes(R.ROOT.resolve(controls.getProperty("reference_table"))),java.nio.charset.StandardCharsets.UTF_8),
+                            (int)number("hurt_window_ticks",9));
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 criticalClicks.reset();
                 blockhit.reset();blockKey=false;freshHurtStatus=0;
@@ -336,6 +346,8 @@ public final class Client {
             // match identity has already advanced, so initialization is not retried.
             if(controls.containsKey("input_word")&&inputWord==null)
                 throw new IllegalStateException("Input word failed to load; start a new match after repairing it");
+            if(controls.getProperty("kind","").equals("reference-feedback")&&referenceFeedback==null)
+                throw new IllegalStateException("Frozen reference failed to load; start a new match after repairing it");
             opponent=null;
             for(Object entity:(List<?>)R.get(world,"playerEntities")){
                 if(!R.name(entity).equals(controls.getProperty("opponent","")))continue;
@@ -613,7 +625,8 @@ public final class Client {
             // W-tap's ordinary cue history keeps advancing above this override.
             hurtWindowActive=kind.equals("hurt-window-coast")||now-epoch<number("hurt_window_opening_ms",0);
             if(hurtWindowActive){
-                double inputMs=System.nanoTime()/1_000_000.0;
+                double inputMs=Boolean.parseBoolean(controls.getProperty("hurt_window_head_clock","false"))?
+                        decisionHeadNanos/1_000_000.0:System.nanoTime()/1_000_000.0;
                 HurtWindowCoastController.Decision d=hurtWindowCoast.input(ticks,inputMs,obs.localRange,handledTargetHurtMs);
                 int side=d.strafe>0?-1:d.strafe<0?1:0;
                 setKeys(d.key!=0,side,d.key==2);clickGate=d.click;
@@ -622,6 +635,24 @@ public final class Client {
                 plan.put("key",d.key);plan.put("native_strafe",d.strafe);plan.put("pulse_started",d.pulseStarted);
                 plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);
                 plan.put("handled_target_cue_ms",Double.isFinite(handledTargetHurtMs)?handledTargetHurtMs:null);log(plan);
+            }
+            if(referenceFeedback!=null){
+                referenceHead=new ReferenceFeedbackController.Snapshot(decisionHeadNanos/1_000_000.0,ticks,
+                        obs.x,obs.z,obs.vx,obs.vz,obs.tx,obs.ty,obs.tz,obs.localRange,obs.sprint,handledTargetHurtMs);
+                referenceActive=!hurtWindowActive;
+                if(referenceActive){
+                    ReferenceFeedbackController.Decision d=referenceFeedback.input(referenceHead);
+                    setKeys(d.key!=0,d.strafe>0?-1:d.strafe<0?1:0,d.key==2);clickGate=d.click;
+                }else{
+                    referenceFeedback.observeOpening(referenceHead,new ReferenceFeedbackController.Decision(
+                            forward?(sprintKey?2:1):0,strafe<0?.98f:strafe>0?-.98f:0,clickGate));
+                }
+                Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","reference_feedback_plan");
+                plan.put("time",now);plan.put("monotonic_ms",referenceHead.timeMs);plan.put("match",match);plan.put("native_tick",ticks);
+                plan.put("maintenance",referenceActive);plan.put("table_sha256",ReferenceFeedbackController.TABLE_SHA256);
+                plan.put("selected_index",referenceFeedback.selectedIndex());plan.put("selection_error",referenceFeedback.lastError());
+                plan.put("key",forward?(sprintKey?2:1):0);plan.put("native_strafe",strafe<0?.98f:strafe>0?-.98f:0);
+                plan.put("click_gate",clickGate);plan.put("local_range",obs.localRange);log(plan);
             }
             if(controls.getProperty("click_mode","fixed").equals("none"))clickGate=false;
             // Saved ordinary own-tick inputs, including a common acquisition for
@@ -728,6 +759,11 @@ public final class Client {
         }catch(Throwable e){fail(e);}
     }
     static Observation lastConsumed;
+    static ReferenceFeedbackController.Snapshot referencePoll(double timeMs){
+        ReferenceFeedbackController.Snapshot o=referenceHead;
+        return new ReferenceFeedbackController.Snapshot(timeMs,o.tick,o.ownX,o.ownZ,o.ownVx,o.ownVz,
+                o.targetX,o.targetY,o.targetZ,o.nearest,o.localSprint,handledTargetHurtMs);
+    }
     /** A local movement boundary, independent of optional scientific logging. */
     public static void inputWordMoved(Object self){
         if(self==player&&inputWord!=null&&inputWordDecision!=null&&inputWordDecision.active)
@@ -752,9 +788,13 @@ public final class Client {
         if(!Boolean.parseBoolean(p.getProperty("enabled","false")))return;
         if(!p.getProperty("match","").matches("m[0-9]{4,9}")||!p.getProperty("opponent","").matches("[A-Za-z0-9_]{1,16}"))
             throw new IllegalArgumentException("Enabled bot controls require a valid match and opponent");
-        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","frozen-cycle","tick-cycle","gap-strafe","hurt-window-coast","blockhit","scripted","input-word").contains(p.getProperty("kind","hold")))
+        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","frozen-cycle","tick-cycle","gap-strafe","hurt-window-coast","reference-feedback","blockhit","scripted","input-word").contains(p.getProperty("kind","hold")))
             throw new IllegalArgumentException("Unsupported bot strategy: "+p.getProperty("kind"));
-        ClickRate.cps(p);DuelSettings.reach(p);
+        ClickRate.cps(p);ClickRate.intervalNanos(p);DuelSettings.reach(p);
+        if(p.getProperty("kind","").equals("reference-feedback")&&(!p.containsKey("reference_table")||
+                Double.parseDouble(p.getProperty("hurt_window_opening_ms","0"))!=ReferenceFeedbackController.HANDOFF_MS||
+                Double.parseDouble(p.getProperty("reaction_ms","150"))!=0||!p.getProperty("click_mode","fixed").equals("fixed")))
+            throw new IllegalArgumentException("Frozen reference requires its table, 3500ms shared opening, zero reaction and fixed capped admission");
         AimController.Settings.from(p);
         if(p.getProperty("kind","").equals("cycle"))CycleController.Settings.from(p);
         double reaction=Double.parseDouble(p.getProperty("reaction_ms","150"));
