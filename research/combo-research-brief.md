@@ -36,7 +36,52 @@ or looser scoring than the oracle. The historical `combo-wtap20` policy defaults
 to150ms reaction; explicitly label it and include a zero-delay plain W-tap
 reference for zero-delay research controllers rather than silently changing it.
 
-## Overnight mandate (2026-11-01)
+## Current priorities: Hypixel recordings (2026-11-01, afternoon)
+
+These supersede the vanilla-first target and the earlier task order below:
+
+1. Anti-AFK work is **finished and stopped at the user's request**. They will
+   not use it on Hypixel or AFK there. Do not collect more AFK data or do more
+   anti-AFK work. The already installed fix was motivated by enable at 12:06:27 to
+   the Housing-to-lobby transfer at 12:14:15 local. Keep it enabled across
+   same-connection JOIN/respawn world changes; turn it off on a real disconnect.
+   Default randomized 30–90 second intervals, short randomized movement/sneak
+   and smooth small look pulses, approximately net-zero displacement. Preserve
+   GUI/chat/manual-input pauses. The user controls any client restart.
+2. Infer Hypixel combat from the local `runtime/pov/remote-index.json` archives
+   for `hypixel.net`. Establish packet observability from vanilla source and
+   FORMAL-MODEL before fitting. Most evidence is passive observation of nearby
+   fights: distinguish exact self S12, other-entity S12, tracker positions,
+   interpolation, hurt cues and missing attacker/victim inputs. Validate the
+   noise model (quantization, phase, jitter, randomness) and report uncertainty
+   or non-identifiability for every parameter rather than inventing precision.
+3. Build a clearly documented `hypixel` server preset from supported estimates
+   and validate predicted trajectories against held-out recorded situations.
+   Do not label arbitrary settings an exact Hypixel replica.
+4. Make that measured Hypixel preset the primary combo target; vanilla becomes
+   secondary. The tutorial at https://www.youtube.com/watch?v=mTeXebYfIIs supplies
+   mechanism hints, not authoritative exact timing. Keep calibrated clocks,
+   legal own-observation control and the matched W-tap gate above.
+
+Continue B/C/D from the already recorded data, including the 310 own S12 packets.
+Do not presume those 310 are all melee or AFK hits: check damage and nearby-player
+context. Most overall evidence is other players' position/hurt packets. Compare
+vanilla, a free fit with explicit identifiability limits, and the user's rough
+third-party hypothesis: horizontal .4, vertical .36, verticalLimit .43075,
+extraHorizontal .5, extraVertical .1 (native .4/.4/.4/.5/.1). The plugin was not
+identified and its parameter semantics are not established. Explicitly test
+retained-motion and cap-order interpretations against FORMAL-MODEL; do not adopt
+the numbers as measured truth. Preserve uncertainty in the preset and findings.
+If an identification gap genuinely needs more data, describe a short active-play
+recording task to the user (for example, taking hits in a real fight); never
+collect it through AFK automation.
+
+The replay viewer is lower priority. Never touch the user's live Minecraft
+client while they are on Hypixel: no reloads, commands or restarts. Read the
+archive and logs only; stage installation for a manual restart. If disk is
+tight, pause lab runs and deduplicate recordings before generating more.
+
+## Earlier overnight mandate (2026-11-01)
 
 ### Latest priority: search against calibrated schedules
 
