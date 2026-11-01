@@ -136,7 +136,7 @@ async def latency_proxy(port,configuration,upstream_port=25566):
     return await asyncio.start_server(connection,'127.0.0.1',port)
 
 
-def configure():
+def configure(port_offset=0):
     for name in ['server','logs','results','replays','proxy','manager/inbox','tmp']:(RUNTIME/name).mkdir(parents=True,exist_ok=True)
     config='''server-ip=127.0.0.1
 server-port=25566
@@ -163,7 +163,7 @@ motd=Local PvP Lab - /bots /matches /watch
 network-compression-threshold=-1
 max-tick-time=60000
 '''
-    (RUNTIME/'server/server.properties').write_text(config)
+    (RUNTIME/'server/server.properties').write_text(config.replace('server-port=25566',f'server-port={25566+port_offset}'))
     (RUNTIME/'server/eula.txt').write_text('eula=true\n')
     if not (RUNTIME/'proxy/human.properties').exists():(RUNTIME/'proxy/human.properties').write_text('rtt_ms=0\n')
     (RUNTIME/'proxy/observer.properties').write_text('rtt_ms=0\n')
@@ -175,23 +175,33 @@ max-tick-time=60000
     assets=CACHE/'assets';assets.mkdir(exist_ok=True)
 
 
-async def serve(frame_sleep_ms=10):
+async def serve(frame_sleep_ms=10,bot_backend='legacy',slot_backends='',bot_slots=8,port_offset=0):
+    global BOT_SLOTS
+    if bot_backend not in ('legacy','forge') or not 1<=bot_slots<=8:raise ValueError('Choose legacy/forge and 1–8 bot slots')
+    if not 0<=port_offset<=39000:raise ValueError('Invalid local port offset')
+    backends=slot_backends.split(',') if slot_backends else [bot_backend]*bot_slots
+    if len(backends)!=bot_slots or any(b not in ('legacy','forge') for b in backends):raise ValueError('One legacy/forge backend is required per slot')
+    BOT_SLOTS=bot_slots
     if not isinstance(frame_sleep_ms,int) or not 1<=frame_sleep_ms<=50:
         raise ValueError('Headless frame sleep must be 1 through 50 ms')
     lock_file=RUNTIME/'manager.lock';RUNTIME.mkdir(exist_ok=True)
     lock=open(lock_file,'w')
     try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     except BlockingIOError:raise RuntimeError('PvP Lab is already running')
-    verify_cache();sandbox_test();logging_test();configure()
+    verify_cache();sandbox_test();logging_test();configure(port_offset)
+    forge_classpath=None
+    if 'forge' in backends:
+        import forge_runtime
+        forge_classpath=forge_runtime.stage_dependencies();forge_runtime.verify_security()
     (RUNTIME/'status.json').unlink(missing_ok=True)
-    processes=[];logs=[];proxies=[]
+    processes=[];logs=[];proxies=[];bot_started_at={}
     stop=asyncio.Event()
     loop=asyncio.get_running_loop()
     for sig in (signal.SIGINT,signal.SIGTERM):loop.add_signal_handler(sig,stop.set)
-    def launch(role,args,cwd,replace=None):
+    def launch(role,args,cwd,replace=None,complete_command=False):
         log=open(RUNTIME/f'logs/{role}.log','w');logs.append(log)
         environment=clean_environment()
-        process=subprocess.Popen(sandbox_java(args),cwd=cwd,stdin=subprocess.PIPE,stdout=log,stderr=subprocess.STDOUT,text=True,env=environment)
+        process=subprocess.Popen(args if complete_command else sandbox_java(args),cwd=cwd,stdin=subprocess.PIPE,stdout=log,stderr=subprocess.STDOUT,text=True,env=environment)
         if replace is None:processes.append(process)
         else:processes[replace]=process
         return process
@@ -206,36 +216,51 @@ async def serve(frame_sleep_ms=10):
             if status.exists() and status.stat().st_mtime>time.time()-3:break
             await asyncio.sleep(.5)
         else:raise RuntimeError('Server did not become ready; see runtime/logs/server.log')
-        proxies.append(await latency_proxy(25565,RUNTIME/'proxy/human.properties'))
-        proxies.append(await latency_proxy(25569,RUNTIME/'proxy/observer.properties'))
+        proxies.append(await latency_proxy(25565+port_offset,RUNTIME/'proxy/human.properties',25566+port_offset))
+        proxies.append(await latency_proxy(25569+port_offset,RUNTIME/'proxy/observer.properties',25566+port_offset))
         libraries=json.loads((CACHE/'classpath.json').read_text())
         classpath=os.pathsep.join([str(CACHE/'client.jar'),*libraries])
         def start_bot(i,replace=None):
             name=f'LabSlot{i}';bot=RUNTIME/f'bots/{i}'
+            bot_started_at[i]=time.time()*1000
+            if backends[i]=='forge':
+                import forge_runtime
+                command=forge_runtime.bot_command(i,25570+port_offset+i,frame_sleep_ms,forge_classpath)
+                launch(f'bot{i}',command,bot,replace,complete_command=True)
+                return
             digest=hashlib.sha256((BUILD/'lab-agent.jar').read_bytes()).hexdigest()
-            launch(f'bot{i}',[*base,'-Dlab.agent_sha256='+digest,'-Dlab.role=client',f'-Dlab.slot={i}',f'-Dlab.port={25570+i}',
+            (bot/'client-runtime.json').write_text(json.dumps({'role':'bot','backend':'legacy','slot':i,'agent_sha256':digest}))
+            (bot/'runtime.properties').write_text(f'role=bot\nbackend=legacy\nslot={i}\nagent_sha256={digest}\n')
+            launch(f'bot{i}',[*base,'-Dlab.agent_sha256='+digest,'-Dlab.role=client','-Dlab.backend=legacy',f'-Dlab.slot={i}',f'-Dlab.port={25570+port_offset+i}',
                 f'-Dhmc.lwjgl.update_sleep={frame_sleep_ms}',
                 '-Dlog4j.configurationFile='+str(CACHE/'client-logging.xml'),'-Djoml.nounsafe=true',
                 '-cp',classpath,'net.minecraft.client.main.Main','--version','1.8.9','--gameDir',bot,
                 '--assetsDir',CACHE/'assets','--assetIndex','1.8','--username',name,'--uuid',uuid.uuid3(uuid.NAMESPACE_DNS,name).hex,
                 '--accessToken','0','--userProperties','{}','--userType','legacy','--width','320','--height','240'],bot,replace)
         for i in range(BOT_SLOTS):
-            proxies.append(await latency_proxy(25570+i,RUNTIME/f'proxy/slot{i}.properties'))
+            proxies.append(await latency_proxy(25570+port_offset+i,RUNTIME/f'proxy/slot{i}.properties',25566+port_offset))
             start_bot(i)
-        (RUNTIME/'manager.json').write_text(json.dumps({'pid':os.getpid(),'address':'127.0.0.1:25565','version':'1.8.9','started':time.time(),'frame_sleep_ms':frame_sleep_ms}))
-        print(f'Server address: 127.0.0.1:25565 (Minecraft Java 1.8.9). Waiting for {BOT_SLOTS} real clients.',flush=True)
-        initialized=False
+        (RUNTIME/'manager.json').write_text(json.dumps({'pid':os.getpid(),'address':f'127.0.0.1:{25565+port_offset}','version':'1.8.9','started':time.time(),'frame_sleep_ms':frame_sleep_ms,'bot_backends':backends,'bot_slots':BOT_SLOTS,'port_offset':port_offset}))
+        print(f'Server address: 127.0.0.1:{25565+port_offset} (Minecraft Java 1.8.9). Waiting for {BOT_SLOTS} real clients: {backends}.',flush=True)
+        initialized=False;client_deadline=time.time()+150
         while not stop.is_set():
             if server.poll() is not None:raise RuntimeError('Server exited')
             for i,p in enumerate(processes[1:]):
                 if p.poll() is not None:raise RuntimeError(f'Bot {i} exited; see runtime/logs/bot{i}.log')
             if not initialized:
                 status=json.loads((RUNTIME/'status.json').read_text())
-                if len([p for p in status['players'] if p.startswith('LabSlot')])==BOT_SLOTS:
+                healthy=True
+                for i in range(BOT_SLOTS):
+                    try:
+                        heartbeat=json.loads((RUNTIME/f'bots/{i}/heartbeat.json').read_text())
+                        healthy=healthy and heartbeat.get('time',0)>=bot_started_at[i] and time.time()*1000-heartbeat['time']<5000 and heartbeat.get('backend','legacy')==backends[i] and heartbeat.get('policy_errors',0)==0
+                    except (OSError,ValueError):healthy=False
+                if len([p for p in status['players'] if p.startswith('LabSlot')])==BOT_SLOTS and healthy:
                     # 1.8.9 has no doWeatherCycle rule; renew its maximum
                     # vanilla clear-weather duration on every startup.
                     server.stdin.write('gamerule naturalRegeneration true\ngamerule keepInventory true\nweather clear 1000000\n');server.stdin.flush()
                     initialized=True;print('All clients connected. /bots, /duel <bot>, /mode diamond, /blocksound, /matches, /watch.',flush=True)
+                elif time.time()>client_deadline:raise RuntimeError('Bot startup did not produce healthy native heartbeats; inspect slot logs (no backend fallback)')
             for request in sorted((RUNTIME/'manager/inbox').glob('*.json')):
                 payload=json.loads(request.read_text());request.unlink()
                 command=payload['command']
@@ -318,10 +343,10 @@ def verify_ux():
     if result.returncode or not all(checks.values()):raise RuntimeError('UX verification failed; inspect runtime/logs/observer.log')
 
 
-def run(command,extra,frame_sleep_ms=10):
+def run(command,extra,frame_sleep_ms=10,**options):
     if command=='sandbox-test':sandbox_test()
     elif command=='logging-test':logging_test()
-    elif command=='serve':asyncio.run(serve(frame_sleep_ms))
+    elif command=='serve':asyncio.run(serve(frame_sleep_ms,**options))
     elif command=='stop':send('shutdown')
     elif command=='reload-bots':send('reload-bots')
     elif command=='status':print((RUNTIME/'status.json').read_text())

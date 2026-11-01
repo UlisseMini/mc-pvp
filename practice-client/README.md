@@ -49,7 +49,7 @@ start repeated rod-diamond approaches against wtap, from center-to-center gaps o
 4.5, 6 and 9 blocks. Append another bot name to change opponents. Mixed cycles the
 three distances. Each attempt resets five seconds after the first accepted sword
 hit, or after twelve seconds without one. Repeats reset directly in the arena,
-with a visible one-second center-screen countdown (`1.0` → `GO!`), without a lobby
+with a visible two-second center-screen countdown (`1.0` → `GO!`), without a lobby
 detour. The same bot and arena are reused when available. Repeats only teleport,
 heal, and clear old rods/momentum: the existing player entities and kits stay
 loaded, so the bot does not disappear and respawn during each countdown. `/stop` or

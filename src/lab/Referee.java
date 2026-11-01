@@ -39,6 +39,7 @@ public final class Referee {
         Map<String,Object> state(){
             Map<String,Object> m=new LinkedHashMap<>();
             m.put("id",id);m.put("a",a);m.put("b",b);m.put("policy_a",pa);m.put("policy_b",pb);
+            m.put("client_a",clientRuntime(a));m.put("client_b",clientRuntime(b));
             m.put("hits_a",ha);m.put("hits_b",hb);m.put("goal",goal);m.put("ping_a",pingA);m.put("ping_b",pingB);
             m.put("damage_hits_a",sa.breakdown.damageHitsLanded);m.put("damage_hits_b",sb.breakdown.damageHitsLanded);
             m.put("mode",mode);m.put("blocks_a",ba);m.put("blocks_b",bb);
@@ -58,6 +59,14 @@ public final class Referee {
             m.put("armor_protection",0);m.put("weapon",sumo()?"fist":boxing()?"diamond_sword":"wooden_sword");
             m.put("arena_surface",sumo()?"raised_circular_sumo_platform":box()?"bedrock_1x1_interior_y4_5_barrier_ceiling_y6":"bedrock_y3_air_y4_19_radius128_verified_v3");return m;
         }
+    }
+
+    static Map<String,Object> clientRuntime(String name){
+        Map<String,Object> out=new LinkedHashMap<>();out.put("role",isBot(name)?"bot":"human");
+        if(isBot(name)){Properties p=R.properties(DATA.resolve("bots/"+name.substring(7)+"/runtime.properties"));
+            for(String key:List.of("backend","slot","minecraft","forge","bridge_sha256","module_sha256","headless_sha256","java_sha256","agent_sha256"))
+                if(p.containsKey(key))out.put(key,p.getProperty(key));}
+        return out;
     }
 
     public static void tick(Object instance) {

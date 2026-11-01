@@ -22,6 +22,7 @@ final class PovArchives {
         Path dir=Referee.DATA.resolve("pov/"+m.id);Files.createDirectories(dir);
         Map<String,Object> info=new LinkedHashMap<>();info.put("schema",1);info.put("match",m.id);info.put("start_ms",m.start);info.put("finish_ms",finished?m.finish:null);
         info.put("players",Map.of("a",Map.of("name",m.a,"policy",m.pa,"role",Referee.isBot(m.a)?"bot":"human"),"b",Map.of("name",m.b,"policy",m.pb,"role",Referee.isBot(m.b)?"bot":"human")));
+        info.put("client_runtime",Map.of("a",Referee.clientRuntime(m.a),"b",Referee.clientRuntime(m.b)));
         info.put("server_replay","../../replays/"+m.id+".jsonl");info.put("clock","same-host UNIX milliseconds; monotonic values process-local");
         info.put("files","*-poses.jsonl.gz: timestamped two-player POV; *-events.jsonl.gz: full recorded event/packet stream; segmented files linked by capture_end");
         info.put("integrity","Inspect every stream's capture_end. Missing source or footer is not complete; raw samples, rates and gaps remain explicit.");

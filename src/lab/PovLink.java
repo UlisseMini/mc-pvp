@@ -50,7 +50,7 @@ public final class PovLink {
                 Referee.Match m=Referee.find(name);String match=m==null?"":m.id;
                 if(type.equals("replay_control")){String action=String.valueOf(data.getOrDefault("value",""));if(action.length()<120&&action.matches("[a-zA-Z0-9_.:+ -]+")&&ServerReplay.sessions.containsKey(name))try{ServerReplay.command(player,("replay "+action).split(" +"));}catch(Exception e){Referee.message(player,"§c"+e.getMessage());}}
                 else if(type.equals("hello")||type.equals("ping")){
-                    if(Referee.isBot(name)&&data.get("fast_view") instanceof Map fast)peer.fast=fast;
+                    if(data.get("fast_view") instanceof Map fast)peer.fast=fast;
                     Map<String,Object> reply=new LinkedHashMap<>();reply.put("type",type.equals("hello")?"welcome":"pong");reply.put("version",1);
                     reply.put("match",match);reply.put("client_send_ms",sent);reply.put("server_receive_ms",incoming.received);reply.put("server_send_ms",System.currentTimeMillis());
                     reply.put("server_tick",Referee.ticks);reply.put("clock","same-host UNIX ms; delivery includes configured ping");send(player,reply);

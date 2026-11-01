@@ -53,13 +53,24 @@ def main():
         run([JAVA,'-cp',os.pathsep.join([str(tool),cp]),'Remap',ROOT/'.cache/joined.srg',BUILD/'compile-api.jar',ROOT/'.cache/client.jar',CACHE/'forge.jar'])
         libs=json.loads((ROOT/'.cache/classpath.json').read_text())
         cp=os.pathsep.join([str(api),str(core),str(BUILD/'compile-api.jar'),str(ROOT/'.cache/asm.jar'),str(ROOT/'.cache/asm-tree.jar'),str(CACHE/'launchwrapper.jar'),*libs])
-        shim=BUILD/'shim';compile_to(shim,sorted((SRC/'shim').rglob('*.java')),cp)
+        bot_sources=[ROOT/'src/lab'/f'{name}.java' for name in json.loads((SRC/'bot-sources.json').read_text())]
+        shim=BUILD/'shim';compile_to(shim,sorted((SRC/'shim').rglob('*.java'))+bot_sources,cp)
         for folder in (api,core):
             shutil.copytree(folder,shim,dirs_exist_ok=True)
         with zipfile.ZipFile(ROOT/'.cache/mcp-names.zip') as names:
             field_names='\n'.join(r['searge']+'='+r['name'] for r in csv.DictReader(io.StringIO(names.read('fields.csv').decode())))
+            names_by_srg={r['searge']:r['name'] for entry in ('fields.csv','methods.csv') for r in csv.DictReader(io.StringIO(names.read(entry).decode()))}
+        bot_mappings=[]
+        for line in (ROOT/'.cache/joined.srg').read_text().splitlines():
+            p=line.split()
+            if p[0]=='CL:':
+                bot_mappings.append(f'O.{p[2]}={p[1]}')
+            elif p[0]=='FD:':
+                owner,name=p[2].rsplit('/',1);bot_mappings.append(f'F.{owner}.{name}={names_by_srg.get(name,name)}')
+            elif p[0]=='MD:':
+                owner,name=p[3].rsplit('/',1);bot_mappings.append(f'M.{owner}.{name}{p[4]}={names_by_srg.get(name,name)}')
         manifest='Manifest-Version: 1.0\nFMLCorePlugin: practice.bridge.PracticeLoadingPlugin\nFMLCorePluginContainsFMLMod: true\n\n'
-        jar(BUILD/'practice-bridge.jar',shim,[{'modid':'practicebridge','name':'PvP Practice Bridge','description':'Local, reloadable practice HUD and telemetry.','version':'0.4.0','mcversion':'1.8.9','authorList':['PvP Lab']}],{'META-INF/MANIFEST.MF':manifest,'practice/field-names.properties':field_names})
+        jar(BUILD/'practice-bridge.jar',shim,[{'modid':'practicebridge','name':'PvP Practice Bridge','description':'Local, reloadable practice HUD and telemetry.','version':'0.4.0','mcversion':'1.8.9','authorList':['PvP Lab']}],{'META-INF/MANIFEST.MF':manifest,'practice/field-names.properties':field_names,'lab/mappings.properties':'\n'.join(bot_mappings)})
     tests=BUILD/'tests';compile_to(tests,sorted((SRC/'tests').rglob('*.java')),os.pathsep.join(map(str,[api,core,module])))
     run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.Check',BUILD/'practice-module.jar'])
     if args.install:

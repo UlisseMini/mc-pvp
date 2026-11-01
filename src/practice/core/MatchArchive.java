@@ -15,10 +15,12 @@ public final class MatchArchive implements AutoCloseable {
         if(root==null||!id.matches("m[0-9]{4,9}")||!source.matches("[ab]-client|server")){end();return;}
         if(match.equals(id)&&this.source.equals(source))return;end();match=id;this.source=source;
         String stem=source+"-"+System.currentTimeMillis()+"-"+UUID.randomUUID().toString().substring(0,8);
-        Path folder=root.resolve(id);raw=new CaptureLog(folder.resolve(stem+"-events.jsonl.gz"),128L*1024*1024,8);
-        if(!source.equals("server"))poses=new CaptureLog(folder.resolve(stem+"-poses.jsonl.gz"),32L*1024*1024,8);
+        Path folder=root.resolve(id);CaptureLog nextRaw=new CaptureLog(folder.resolve(stem+"-events.jsonl.gz"),128L*1024*1024,8);
+        CaptureLog nextPoses=source.equals("server")?null:new CaptureLog(folder.resolve(stem+"-poses.jsonl.gz"),32L*1024*1024,8);
         String header=JsonData.encode(JsonData.map("type","pov_archive_start","schema",1,"match",match,"source",source,"time_ms",System.currentTimeMillis(),"metadata",metadata));
-        raw.offer(header);if(poses!=null)poses.offer(header);
+        // Publish writers only after their identity header is queued. Netty observers
+        // can otherwise win this race and write a packet before source metadata.
+        nextRaw.offer(header);if(nextPoses!=null)nextPoses.offer(header);poses=nextPoses;raw=nextRaw;
         finishing.removeIf(l->{try{return l.awaitClosed(1);}catch(InterruptedException e){Thread.currentThread().interrupt();return false;}});
     }
     public void event(String line){CaptureLog r=raw;if(r!=null)r.offer(line);}

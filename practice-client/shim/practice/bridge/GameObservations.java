@@ -87,14 +87,14 @@ final class GameObservations {
         Map<String,Object> out=state(mc,false);
         if(names instanceof List && mc.field_71441_e!=null)for(Object object:mc.field_71441_e.field_73010_i){
             EntityPlayer p=(EntityPlayer)object;
-            if(p!=mc.field_71439_g&&((List<?>)names).contains(p.func_70005_c_())){out.put("opponent",entity(p));break;}
+            if(p!=mc.field_71439_g&&!p.field_70128_L&&mc.field_71441_e.func_73045_a(p.func_145782_y())==p&&((List<?>)names).contains(p.func_70005_c_())){out.put("opponent",entity(p));break;}
         }
         out.put("sample_end_ms",System.currentTimeMillis());out.put("sample_end_ns",System.nanoTime());return out;
     }
     static Map<String,Object> replayView(Minecraft mc,Object names,float partial){
         Map<String,Object> out=telemetry(mc,names);out.put("partial_ticks",partial);
         if(mc.field_71439_g!=null)renderPose(out.get("self"),mc.field_71439_g,partial);
-        if(names instanceof List&&mc.field_71441_e!=null)for(Object o:mc.field_71441_e.field_73010_i){EntityPlayer p=(EntityPlayer)o;if(p!=mc.field_71439_g&&((List<?>)names).contains(p.func_70005_c_())){renderPose(out.get("opponent"),p,partial);break;}}
+        if(names instanceof List&&mc.field_71441_e!=null)for(Object o:mc.field_71441_e.field_73010_i){EntityPlayer p=(EntityPlayer)o;if(p!=mc.field_71439_g&&!p.field_70128_L&&mc.field_71441_e.func_73045_a(p.func_145782_y())==p&&((List<?>)names).contains(p.func_70005_c_())){renderPose(out.get("opponent"),p,partial);break;}}
         return out;
     }
     @SuppressWarnings("unchecked") private static void renderPose(Object value,Entity e,float t){if(!(value instanceof Map))return;Map<String,Object> m=(Map<String,Object>)value;

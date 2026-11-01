@@ -194,11 +194,15 @@ def main():
     parser.add_argument('command', choices=['prepare', 'build','sandbox-test','logging-test','serve','stop','reload-bots','status','match','ping-match','verify-ux','console'])
     parser.add_argument('extra',nargs='*')
     parser.add_argument('--frame-sleep-ms',type=int,default=10,help='Headless display throttle for serve; 1 ms gives finer input scheduling')
+    parser.add_argument('--bot-backend',choices=['legacy','forge'],default='legacy',help='Explicit native bot backend; no automatic fallback')
+    parser.add_argument('--slot-backends',default='',help='Test-only comma-separated assignment, e.g. forge,legacy')
+    parser.add_argument('--bot-slots',type=int,default=8,help='Number of native bot processes (1–8)')
+    parser.add_argument('--port-offset',type=int,default=0,help='Isolated test instance offset; production uses 0')
     args = parser.parse_args()
     if args.command in ('prepare','build'):globals()[args.command]()
     else:
         import lab_runtime
-        lab_runtime.run(args.command,args.extra,frame_sleep_ms=args.frame_sleep_ms)
+        lab_runtime.run(args.command,args.extra,frame_sleep_ms=args.frame_sleep_ms,bot_backend=args.bot_backend,slot_backends=args.slot_backends,bot_slots=args.bot_slots,port_offset=args.port_offset)
 
 
 if __name__ == '__main__':

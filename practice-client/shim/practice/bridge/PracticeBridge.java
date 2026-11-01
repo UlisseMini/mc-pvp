@@ -42,7 +42,8 @@ public final class PracticeBridge {
         Path pendingModule=directory.resolve("practice-module-next.jar");if(Files.isRegularFile(pendingModule))Files.move(pendingModule,directory.resolve("practice-module.jar"),StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
         host=new ReloadHost(directory);
         capture=new PracticeCapture(host,directory);host.services(capture);ObserverHooks.sink=capture;settings();host.reload(true);
-        Runtime.getRuntime().addShutdownHook(new Thread(()->{host.close();capture.close();},"practice-close"));
+        BotRuntime.start(capture,event.getModConfigurationDirectory().toPath().getParent());
+        Runtime.getRuntime().addShutdownHook(new Thread(()->{if(BotRuntime.enabled())BotRuntime.instance.close();host.close();capture.close();},"practice-close"));
     }
     @Mod.EventHandler public void init(FMLInitializationEvent event) {
         FMLCommonHandler.instance().bus().register(this);
@@ -104,7 +105,7 @@ public final class PracticeBridge {
         KeyBinding sprint=mc.field_71474_y.field_151444_V;int key=sprint.func_151463_i();
         // Hold only the ordinary Sprint input. Vanilla still applies hunger, movement,
         // item-use, collision and sprint-reset rules; no setSprinting or motion writes.
-        if(key!=0)KeyBinding.func_74510_a(key,playing&&mc.field_71462_r==null&&(frame.holdSprint||physical(key)));
+        if(!BotRuntime.enabled()&&key!=0)KeyBinding.func_74510_a(key,playing&&mc.field_71462_r==null&&(frame.holdSprint||physical(key)));
         String status=host.status();
         if(!status.equals(lastStatus)){System.out.println("[PracticeBridge] "+status);capture.inputEvent("module_status",practice.core.JsonData.map("status",status));lastStatus=status;}
     }

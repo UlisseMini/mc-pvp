@@ -31,7 +31,7 @@ final class PracticeViews implements AutoCloseable {
             }
         }
         EntityPlayer target=null;String other=String.valueOf(names.get(1-side));
-        for(Object o:mc.field_71441_e.field_73010_i){EntityPlayer p=(EntityPlayer)o;if(p!=mc.field_71439_g&&other.equals(p.func_70005_c_())){target=p;break;}}
+        for(Object o:mc.field_71441_e.field_73010_i){EntityPlayer p=(EntityPlayer)o;if(p!=mc.field_71439_g&&!p.field_70128_L&&mc.field_71441_e.func_73045_a(p.func_145782_y())==p&&other.equals(p.func_70005_c_())){target=p;break;}}
         if(target==null)return map("match",match,"available",false);
         long now=System.currentTimeMillis(),ns=System.nanoTime();
         Map<String,Object> own=entity(mc.field_71439_g,partial),opponent=entity(target,partial);

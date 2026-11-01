@@ -10,6 +10,7 @@ public final class PracticeTransformer implements IClassTransformer {
     private static final String HOOK="practice/bridge/ObserverHooks";
     public byte[] transform(String name,String transformed,byte[] bytes){
         if(bytes==null)return null;
+        bytes=BotTransformer.transform(transformed,bytes);
         boolean network=transformed.equals("net.minecraft.network.NetworkManager"),
             decoder=transformed.equals("net.minecraft.util.MessageDeserializer"),
             encoder=transformed.equals("net.minecraft.util.MessageSerializer"),
