@@ -5,6 +5,96 @@ controller remains frozen while we replace that evaluation with measured timing
 opportunities and validate both it and plain W-tap. A physics replay with recorded
 inputs and packet timings is a different claim from predicting a new fight.
 
+## Latest: a proven queue-boundary error, not yet calibrated
+
+The controller is still frozen. New server task hooks are deployed, and a fresh
+paired recording exposed a specific remaining scheduling mistake: **a received
+packet is not necessarily enqueued before the next task drain**. A few
+microseconds can select a different drain and therefore a different movement
+tick. This is more useful than making the score range merely wide enough.
+
+| Fresh 64 s native check, excluding the same 4 s quiet opening | Candidate | Plain W-tap |
+|---|---:|---:|
+| Fresh hits before first accepted return |19 (m1395)|2 (m1396)|
+| First return from match start |11591.695 ms|5893.115 ms|
+| Timing qualification |Clean|Retained 277 ms client-gap flag|
+
+This is not a qualified new performance comparison: the W-tap timing flag stays
+attached. The candidate's return is particularly informative. After a fresh hit,
+the defender applies knockback at11540.650–11540.817 ms, selects a legal return
+at11551.173 ms (own ray2.88150 blocks), and only moves at11589.533 ms. Its click
+precedes movement by38.359 ms and reduces the newly received horizontal motion
+by the ordinary0.6 contact drag. Later movement cannot retract an already sent
+attack. The server accepts it at11591.695 ms.
+
+The conditional model's **first** discrepancy is much earlier:
+
+* A position packet's raw receipt is864.300209 ms in both model and recording.
+  A drain begins7.875 microseconds later. Native decoding/enqueue finishes at
+  864.521001 ms, so Minecraft handles it in the next drain at872.386126 ms.
+  The model incorrectly includes it in the earlier drain. Its first wrong view
+  appears at866.803501 ms, despite exactly matching the wire timestamp.
+* Later, a knockback packet arrives3.625 microseconds before a drain, but finishes
+  enqueueing after that drain unlocks. The model applies it before the defender's
+  next movement; Minecraft applies it afterward. This produces the first body
+  error at3541.836792 ms. The corresponding W-tap recording still has exact
+  body/view rows through the same3.6 s diagnostic window.
+
+The causal check now separates raw receipt from enqueue readiness and changes
+only those two identified timestamps. The first intervention removes the first
+view error; adding the second removes the first body error. Together they produce
+candidate19 and a return in the same server drain as native. The native W-tap
+calendar remains2. This is explicitly an oracle diagnostic: the same-seed
+counterfactual W-tap stops at an unsupported new source stage, and the candidate
+still develops a body error at5971.46 ms and an input error at7133.40 ms.
+Matching19 is therefore **not** trajectory parity or a calibration pass.
+
+The final failure mechanism agrees despite those errors: both native and model
+let the defender click after receiving knockback but before movement. The model
+ray is2.89048 blocks versus native2.88150. The model applies server effects at
+drain start; native accepts224 microseconds later inside that drain.
+
+The new packet-readiness option preserves raw arrival separately and passes the
+legacy six-recording replay regression:24683 events,9243 scored state rows,
+zero bit mismatches. This is a component regression, not new predictive evidence.
+The current next step is a whole-recording receipt→enqueue timing field, kept
+with that recording's joint clocks, with explicit interpolation uncertainty.
+Independent preparation-cost sampling is not justified: even an interval that
+does not cross a queue lock can contain a shared174 ms scheduling pause already
+represented in the calendar. Within-drain application/cue timing remains a
+separate unresolved approximation.
+
+A broader stage-delay/call-cost sensitivity already removes the universal750-hit
+prediction, but has not passed the calibration gate:
+
+| Captured clock, 20 seeds each | Candidate fresh prefix (frequency) | Complete-fork W-tap | Actually played native arm |
+|---|---|---|---|
+|m1391|69×18,26×1,87×1|3×20|Candidate26|
+|m1392|6×19,93×1|1×20|W-tap1|
+|m1395|1×16,19×3,4×1|2×16,1×4|Candidate19|
+|m1396|4×20|2×20|W-tap2, timing flag|
+
+These are v7 diagnostics using only m1391/m1392 donor costs and stage delays,
+with complete-state paired forks and generated inputs/packets. All80 cases
+resolve, but native candidate outcomes sit in small fractions of the spread,
+and the early queue chronology above is wrong. Score overlap is **not** a pass.
+A separately frozen first-two-call cost sensitivity (v8) is also complete:
+all80 resolve; only one candidate m1391 seed changes, from69 to32. Candidate
+m1391 is therefore69×17,26×1,87×1,32×1, with paired W-tap3×20; the other
+three rows are unchanged. This startup-cost distinction does not explain the
+gap and does not authorize controller tuning.
+
+The reserved prospective pairs remain unused. One warmup failed because its
+chunks were unloaded after a long floor-preparation stall; a later disk-reserve
+check prevented a match before it started. Both failures are retained. A loaded
+chunk preflight then passed, and the pair above ran serialized. Global combat
+defaults are restored to vanilla1/1/10; the server is idle and available.
+
+Evidence: [fresh boundary diagnostic](poc-20261101/native-schedules/diagnostic-stage-v6-fresh/findings.md),
+[server service and return audit](poc-20261101/native-schedules/service-task-audit/findings.md).
+
+The sections below preserve earlier checkpoints and their limitations.
+
 ## Fresh native check and the first wrong prediction
 
 Read-only input hooks are now deployed to the Forge bots. Two fresh64s matches,

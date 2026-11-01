@@ -40,6 +40,20 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ### Latest priority: native schedule calibration, then robustness
 
+Current checkpoint: exact receipt→enqueue boundary errors are proven in fresh
+m1395. Two explicitly oracle-conditioned readiness interventions remove the
+first replica/body mismatches and reproduce its19-hit failure in the same
+accepting drain; native-source W-tap remains2. Later body/input mismatches remain,
+and counterfactual same-seed W-tap lacks a sampled source stage. This is causal
+evidence, NOT calibration acceptance. Legacy recorded-timing replay still passes
+24683 events/9243 states bit-exact. Next frozen test is a whole-donor monotone
+receipt→enqueue field with central/lower/upper sensitivities, preserving paired
+calendars and exposing different drain selections. Do not independently sample
+wall preparation costs: observed174ms pauses can already be represented by
+calendar gaps. See [current findings](combo-native-schedules-20261101.md) and
+[field plan](poc-20261101/native-schedules/adapter/queue-readiness-field-plan.md).
+No controller changes or new prospective native matches until the gate passes.
+
 User requests that evaluation clocks use native-recorded packet jitter, client
 tick gaps, task-drain timing and opening variation, rather than the ideal
 periodic schedules that falsely predicted reliable750-hit locks. Freeze the
