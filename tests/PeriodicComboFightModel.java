@@ -36,6 +36,7 @@ public final class PeriodicComboFightModel {
     static final class Packet implements Cloneable {
         int kind,packetId;boolean ground;double due,ready,x,y,z,vx,vy,vz;boolean flag;long sequence;
         Long cueDelayNanos;
+        ServiceEnvelope service;
         public Packet deepCopy(){try{return (Packet)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
         Packet(int k,double d,double x,double y,double vx,double vy,boolean f,long n){kind=k;due=ready=d;this.x=x;this.y=y;this.vx=vx;this.vy=vy;flag=f;sequence=n;packetId=k>=12?0x1a:k==0||k==1?3:k==2||k==9?11:k==3||k==7?2:k==4||k==8?0x12:k==10||k==11?0x1c:0x15;}
     }
@@ -43,7 +44,17 @@ public final class PeriodicComboFightModel {
     public enum TimingSemantic { OTHER, OWN_HURT, TARGET_HURT, OWN_VELOCITY }
     /** One immutable generated-packet timing decision. Null optional fields retain
      * legacy readiness/publication; supplied ready is absolute, cue is drain-relative. */
-    public record PacketTimingPlan(double rawReceiptMs,Double readyMs,Long cueDelayNanos) {
+    /** A measured whole-drain completion envelope, relative to actual drain start.
+     * END is a lower bound on unlock, not an exact completion. Shared batch IDs
+     * must be deduplicated; these are not additive per-packet CPU costs. */
+    public record ServiceEnvelope(String batchId,long handlerReturnNanos,long completionLowerNanos,long completionUpperNanos) {
+        public ServiceEnvelope {
+            if(batchId==null||batchId.isBlank()||handlerReturnNanos<0||completionLowerNanos<handlerReturnNanos||completionUpperNanos<completionLowerNanos)
+                throw new IllegalArgumentException("Invalid native service envelope");
+        }
+    }
+    public record PacketTimingPlan(double rawReceiptMs,Double readyMs,Long cueDelayNanos,ServiceEnvelope service) {
+        public PacketTimingPlan(double rawReceiptMs,Double readyMs,Long cueDelayNanos){this(rawReceiptMs,readyMs,cueDelayNanos,null);}
         public PacketTimingPlan {
             if(!Double.isFinite(rawReceiptMs)||readyMs!=null&&(!Double.isFinite(readyMs)||readyMs<rawReceiptMs)
                     ||cueDelayNanos!=null&&cueDelayNanos<0)
@@ -127,7 +138,7 @@ public final class PeriodicComboFightModel {
                     throw new IllegalStateException("Cue delay is supported only on generated S19");
                 double arrival=plan.rawReceiptMs();
                 if(!Double.isFinite(arrival)||arrival<send)throw new IllegalStateException("Invalid generated packet arrival");
-                p.due=arrival;plannedReady=plan.readyMs();p.cueDelayNanos=plan.cueDelayNanos();
+                p.due=arrival;plannedReady=plan.readyMs();p.cueDelayNanos=plan.cueDelayNanos();p.service=plan.service();
             }else p.due+=extraLatency[route];
             // Both recorded transport.emit and empirical timing have now resolved
             // raw receipt. Keep due intact for own PacketObservation.arrivedAt.

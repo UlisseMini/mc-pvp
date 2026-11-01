@@ -17,6 +17,13 @@ metric definition.
 Check live status before deployment. Do not interrupt a human duel. Research
 policies use only their own client observations; other POVs are offline evidence.
 
+Keep controller examples and held-out calendars separate, with a frozen split
+recorded before evaluation. A new jitter seed on an example calendar is NOT
+held-out calendar transfer. Never add examples from a held-out calendar; after
+using a calendar to diagnose or tune a controller, label it development instead
+of silently retaining a pristine-held-out claim. Report previously exposed
+never-example calendars separately from prospective sealed validation.
+
 ## Mandatory W-tap comparison gate
 
 ALWAYS compare every controller/search result against plain W-tap under identical

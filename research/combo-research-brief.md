@@ -38,6 +38,47 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Current follow-up: broaden inference and build legal control
 
+LATEST PRIORITY: fix unsupported timing-service overlaps and validate the
+scheduler against native recordings/fresh native calibration BEFORE more
+controller work. Preserve old UNKNOWN outcomes, use fixed completion-bound
+sensitivities rather than choosing by score, and retain genuine unsupported
+timer/composition cases. Freeze example/diagnostic/held-out calendar sets. Never
+add examples from held-out calendars; report never-example transfer separately
+from same-calendar jitter. m1397 is now example/development; m1399 is diagnostic
+development. m1391/1392/1398/1400 supplied no controller examples but outcomes
+were already inspected, and1391/1392 are timing donors. New prospective native
+calendars must stay sealed from controller example/threshold selection.
+Derive the m1397/m1399 input distinction from mechanics and own observation
+history (including pending contacts/acknowledgments), not more example rows.
+
+Service-repair checkpoint: opt-in busy-client/monitor completion envelopes now
+defer overlapping stages/FIFO enqueues rather than throwing cue-overlap.880
+component assertions pass, including16 old/fresh native batches; legacy default
+semantics remain unchanged. Frozen revised controller continues the old38-hit
+prefix to41 before return (WT2 under LOWER/UPPER; MIDPOINT WT wall-phaseUNKNOWN).
+Historical hit9 comparison UNKNOWNs fall10/24→4/24 LOWER/MIDPOINT,7/24 UPPER;
+remaining cases are genuinely unmodeled merged task service or integer wall
+phase. Do not choose a favorable bound to clear the promotion gate. Fresh
+service spans exceed the old pool's range, so full generative calibration is
+still open. No controller/example changes or native promotion this step.
+
+Prospective controller holdouts m1415–m1418 are sealed from examples/action
+diagnosis/threshold fitting. Frozen tables tested at hit9/hit10, seeds8000–8002,
+all3 service bounds. Revised hit9 wins7/12,loses2,ties3,zeroUNKNOWN under every
+bound (oldtable0wins/8losses/4ties); no minute locks. Hit10 wins none. Timing
+capture donors were unchanged native lock8 vs WT (4/2 vs1/1 maintenancefresh);
+these are NOT native tests of the revised table. One donor has a late170.5ms
+stall retained/flagged. All native/client builds pinned, no human-client touch.
+
+Mechanical decision: minimum opponent return-ray slack before its first
+post-S12 MOVE. Same immediate hit times/strength: early W changes m1397's
+pre-MOVE ray3.124→2.876 (return), m1399's3.346→3.069 (miss), then changes
+downstream hit strength/spacing. Nearest-box margins are only~.0108/.0009;
+current own observer errors exceed them. Pending-contact ledger repairs452ms
+stale-cue error but is not yet a validated action selector. Next simulator
+capability is FIFO per-task service composition with native validation, not
+another controller patch. Findings: `hypixel-inference-20261101/service-backpressure/findings.md`.
+
 Latest user continuation: diagnose the38-hit m1397seed7000hit9 oracle rescue
 against the1-hit legal failure at matched states; widen the calibrated calendar
 set to measure transfer. Once the legal controller beats plain W-tap across

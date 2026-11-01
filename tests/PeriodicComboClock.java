@@ -5,6 +5,7 @@ import java.util.*;
  * a supplied event tape is exogenous, never a prediction of future OS stalls. */
 public final class PeriodicComboClock {
     public enum InputMode { DIRECT, NATIVE_QUEUED }
+    public enum ServiceMode { NONE, LOWER, MIDPOINT, UPPER }
     /** Payload-blind exogenous overhead. Never selects recorded admissions.
      * Called only for a newly eligible generated injection, with its actual poll time. */
     public interface InjectionTiming {
@@ -42,6 +43,9 @@ public final class PeriodicComboClock {
         /** Conditional reference-opportunity sensitivity only, NOT a calibrated
          * clock engine. Busy client stages wait; delays of a full tick reject. */
         public boolean causalBackpressure=false;
+        /** Separate cue publication from native main-thread/queue-monitor release.
+         * Explicit bound sensitivity, not an identified host-service duration. */
+        public ServiceMode serviceMode=ServiceMode.NONE;
         public boolean aRemoteBeforeMove=true,bRemoteBeforeMove=false,aimBeforeFrameDrain=true;
     }
     public record Observation(double time,long tick,ExactTravel.State own,double targetX,double targetY,double targetZ,
@@ -84,6 +88,8 @@ public final class PeriodicComboClock {
     private record Event(double time,int kind,long order,double originalTime) {}
     public record HeadTiming(long tick,double originalTime,double actualTime,long sequence) {}
     public record BackpressureStats(long deferredStages,long deferralAttempts,double maxDelayMillis,Map<Kind,Long> stageCounts) {}
+    public record ServiceStats(long drains,long deferredStages,long enqueueDeferrals,double maxDelayMillis) {}
+    private record ServiceLock(long start,long end) {}
     private record Press(long id,long admittedNanos) {}
     private record Injection(Press press,String source,long completedNanos) {}
     /** Exactly one of cue/callback is non-null. Cue packets have not applied yet;
@@ -116,6 +122,9 @@ public final class PeriodicComboClock {
     private final long[][] deferredCounts=new long[2][Kind.values().length];
     private final long[] deferredStages=new long[2],deferralAttempts=new long[2];
     private final double[] maxDeferral=new double[2];
+    private final long[] serviceUntil={Long.MIN_VALUE,Long.MIN_VALUE},serviceDrains=new long[2],serviceDeferred=new long[2],enqueueDeferred=new long[2];
+    private final double[] serviceMaxDelay=new double[2];
+    private final List<ArrayList<ServiceLock>> serviceLocks=List.of(new ArrayList<>(),new ArrayList<>());
     private long order;private double now;private boolean executionStarted;private Audit audit;private ClickAudit clickAudit;
     public PeriodicComboClock(PeriodicComboFightModel.State state,PeriodicComboFightModel.Config config,Timing timing,Policy a,Policy b){this(state,config,timing,a,b,null);}
     /** Own observations/policies generate inputs; the tape supplies event opportunities/order only.
@@ -130,6 +139,7 @@ public final class PeriodicComboClock {
         if(timing.inputMode==InputMode.NATIVE_QUEUED&&timing.clickIntervalNanos<50_000_000L)throw new IllegalArgumentException("Physical injection ceiling exceeds20CPS");
         if((timing.explicitPolls||timing.injectionTiming!=null)&&schedule==null)throw new IllegalArgumentException("Explicit polls/injection timing require an event tape");
         if(timing.causalBackpressure&&schedule==null)throw new IllegalArgumentException("Causal backpressure requires an event tape");
+        if(timing.serviceMode!=ServiceMode.NONE&&(schedule==null||!timing.causalBackpressure))throw new IllegalArgumentException("Service backpressure requires a tape and causalBackpressure");
         if((timing.cuePublicationTiming!=null||timing.packetCueDelays)&&schedule==null)throw new IllegalArgumentException("Cue publication timing requires an event tape");
         if(schedule==null){add(timing.aFramePhase,0);add(timing.bFramePhase,1);add(timing.aTickPhase,2);add(timing.bTickPhase,3);add(timing.serverPhase,8);}
         else{
@@ -154,6 +164,7 @@ public final class PeriodicComboClock {
         System.arraycopy(source.headTimings,0,headTimings,0,2);
         for(int side=0;side<2;side++)System.arraycopy(source.deferredCounts[side],0,deferredCounts[side],0,deferredCounts[side].length);
         System.arraycopy(source.deferredStages,0,deferredStages,0,2);System.arraycopy(source.deferralAttempts,0,deferralAttempts,0,2);System.arraycopy(source.maxDeferral,0,maxDeferral,0,2);
+        for(int side=0;side<2;side++){serviceUntil[side]=source.serviceUntil[side];serviceDrains[side]=source.serviceDrains[side];serviceDeferred[side]=source.serviceDeferred[side];enqueueDeferred[side]=source.enqueueDeferred[side];serviceMaxDelay[side]=source.serviceMaxDelay[side];serviceLocks.get(side).addAll(source.serviceLocks.get(side));}
     }
     /** Policies must be fresh or immutable. All packet/input queues and scheduler state are copied;
      * audits are detached. An already admitted input survives a later gate/key change. */
@@ -192,9 +203,16 @@ public final class PeriodicComboClock {
      * A ready HEAD is inspected but never popped by the boundary API. */
     private boolean prepareNext(){
         Event e=nextEvent();now=e.time;int k=e.kind,side=(k&1)==0?0:1;
+        boolean clientStage=k<8||k>=12&&k<22;
+        if(clientStage&&timing.serviceMode!=ServiceMode.NONE&&Math.round(now*1e6)<serviceUntil[side]){
+            removeEvent();serviceDeferred[side]++;serviceMaxDelay[side]=Math.max(serviceMaxDelay[side],serviceUntil[side]/1e6-e.originalTime);
+            deferUntil(e,side,serviceUntil[side]);return false;
+        }
         if((k<8||k>=12&&k<24)&&!publications.get(side).isEmpty()){
             removeEvent(); // Match legacy rejection state: the unsupported opportunity was popped.
-            throw new IllegalStateException("UNSUPPORTED_CUE_SERVICE_OVERLAP: same-client stage before FIFO publication completes");
+            String message="UNSUPPORTED_CUE_SERVICE_OVERLAP: same-client stage before FIFO publication completes";
+            if(timing.serviceMode!=ServiceMode.NONE)message+="; side="+side+" kind="+k+" actual="+now+" original="+e.originalTime+" publication="+publications.get(side).getLast().nanos/1e6+" busy_until="+serviceUntil[side]/1e6;
+            throw new IllegalStateException(message);
         }
         if((k<8||k>=12&&k<22)&&injections[side]!=null){
             if(!timing.causalBackpressure){
@@ -242,6 +260,8 @@ public final class PeriodicComboClock {
     public double time(){return now;}
     public int queuedClicks(boolean fromA){return clickQueues[fromA?0:1].presses.size();}
     public int missCounter(boolean fromA){return clickQueues[fromA?0:1].missCounter;}
+    public long serviceBusyUntil(boolean fromA){return serviceUntil[fromA?0:1];}
+    public ServiceStats serviceStats(boolean fromA){int s=fromA?0:1;return new ServiceStats(serviceDrains[s],serviceDeferred[s],enqueueDeferred[s],serviceMaxDelay[s]);}
     /** Set before this side's Policy.input callback; original time retains the
      * donor calendar's head/wall-label mapping when actual execution is delayed. */
     public HeadTiming headTiming(boolean fromA){return headTimings[fromA?0:1];}
@@ -257,7 +277,10 @@ public final class PeriodicComboClock {
         default->throw new AssertionError("Not a client stage: "+k);
     };}
     private void defer(Event e,int side){
-        long completion=injections[side].completedNanos,reference=Math.round(e.originalTime*1_000_000.0);
+        deferUntil(e,side,injections[side].completedNanos);
+    }
+    private void deferUntil(Event e,int side,long completion){
+        long reference=Math.round(e.originalTime*1_000_000.0);
         long delay=Math.subtractExact(completion,reference);
         if(delay>=50_000_000L)throw new IllegalStateException("UNSUPPORTED_BACKPRESSURE_DELAY: >=50ms from original client opportunity; timer/catch-up counts unknown");
         if(delay<0||completion/1_000_000.0<e.time)throw new AssertionError("Backpressure cannot advance a stage");
@@ -269,7 +292,10 @@ public final class PeriodicComboClock {
     private void receive(boolean a){
         int side=a?0:1;LinkedList<Publication> pending=publications.get(side);
         long drainNanos=Math.round(now*1_000_000.0);
-        for(PeriodicComboFightModel.Packet p:PeriodicComboFightModel.due(state,now,a?1:2)){
+        if(timing.serviceMode!=ServiceMode.NONE)deferBlockedEnqueues(side);
+        var batch=PeriodicComboFightModel.due(state,now,a?1:2);
+        if(timing.serviceMode!=ServiceMode.NONE)startService(side,drainNanos,batch);
+        for(PeriodicComboFightModel.Packet p:batch){
             if(p.cueDelayNanos!=null&&!timing.packetCueDelays)
                 throw new IllegalStateException("UNSUPPORTED_PACKET_CUE_MODE: stored delay requires explicit opt-in");
             if(p.kind>=12){
@@ -280,6 +306,7 @@ public final class PeriodicComboClock {
                 }else if(timing.cuePublicationTiming!=null)
                     publication=timing.cuePublicationTiming.publicationNanos(a?2:3,Math.round(p.due*1_000_000.0),Math.round(p.ready*1_000_000.0),drainNanos);
                 if(publication<drainNanos)throw new IllegalStateException("UNSUPPORTED_CUE_TIME: publication precedes selected drain");
+                if(timing.serviceMode!=ServiceMode.NONE&&publication>Math.max(drainNanos,serviceUntil[side]))throw new IllegalStateException("UNSUPPORTED_SERVICE_ENVELOPE: publication exceeds declared completion");
                 if(publication/1_000_000.0>scheduleEnd)throw new IllegalStateException("UNSUPPORTED_CUE_TIME: publication exceeds tape coverage");
                 if(!pending.isEmpty()&&publication<pending.getLast().nanos)
                     throw new IllegalStateException("UNSUPPORTED_CUE_ORDER: publication would invert client FIFO");
@@ -296,6 +323,37 @@ public final class PeriodicComboClock {
                 }
             }
         }
+    }
+    /** Native enqueues use the same monitor as the drain. Retained raw arrivals
+     * are unchanged; attempted readiness inside an extended lock waits until
+     * release. Equal-unlock enqueues precede the next drain in this explicit
+     * ordering convention and never join the already selected batch. */
+    private void deferBlockedEnqueues(int side){
+        int route=side+2;var packets=new ArrayList<PeriodicComboFightModel.Packet>();
+        for(var p:state.packets)if(PeriodicComboTransport.route(p.kind)==route)packets.add(p);
+        packets.sort(Comparator.comparingLong(p->p.sequence));double watermark=Double.NEGATIVE_INFINITY;
+        for(var p:packets){
+            double ready=Math.max(p.ready,watermark);long ns=Math.round(ready*1e6);
+            for(var lock:serviceLocks.get(side))if(ns>=lock.start&&ns<lock.end)ns=lock.end;
+            ready=Math.max(ready,ns/1e6);
+            if(ready>p.ready){enqueueDeferred[side]++;p.ready=ready;}
+            watermark=p.ready;
+        }
+        state.queueReadyWatermarks[route]=Math.max(state.queueReadyWatermarks[route],watermark);
+    }
+    private void startService(int side,long start,List<PeriodicComboFightModel.Packet> batch){
+        String id=null;long offset=0;boolean declared=false;
+        for(var p:batch){
+            var s=p.service;if(s==null)continue;
+            if(id!=null&&!id.equals(s.batchId()))throw new IllegalStateException("UNSUPPORTED_SERVICE_COMPOSITION: distinct native drain envelopes coalesced; first="+id+" next="+s.batchId());
+            id=s.batchId();declared=true;
+            long chosen=switch(timing.serviceMode){case LOWER->s.completionLowerNanos();case MIDPOINT->s.completionLowerNanos()+(s.completionUpperNanos()-s.completionLowerNanos())/2;case UPPER->s.completionUpperNanos();default->throw new AssertionError();};
+            offset=Math.max(offset,chosen);
+        }
+        if(!declared)return;
+        long completion=Math.addExact(start,offset);
+        if(completion/1e6>scheduleEnd)throw new IllegalStateException("UNSUPPORTED_SERVICE_TIME: completion exceeds supplied tape");
+        serviceUntil[side]=completion;serviceDrains[side]++;serviceLocks.get(side).add(new ServiceLock(start,completion));
     }
     private void enqueuePublication(boolean a,Publication publication){
         publications.get(a?0:1).addLast(publication);
