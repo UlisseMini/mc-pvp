@@ -206,6 +206,18 @@ operational assumption; a separate packet-age audit is next. See the preserved
 [V1](poc-20261101/anneal/mechanism/passive-landing-observer-findings.md) and
 [V2](poc-20261101/anneal/mechanism/passive-landing-observer-v2-findings.md).
 
+The source-age audit has since mapped303 endpoint sources uniquely across the
+paired recordings. An engineering upper excess of100ms above the sum of the
+one-way network delays covers all measured upper endpoints;50ms does not.
+Seven conservative timestamp brackets straddle the proposed lower bound, so
+this is not a universal timing guarantee. Changing only that bound in an
+immutable V3 yields10 correctly confident ground labels among23 held-out
+candidate fresh hits, versus3 among12 for W-tap. There are still no confident
+air predictions; the crucial fifth/sixth cases remain ambiguous and the remaining
+timing width is300ms. Source-age tightening alone does not solve the estimator.
+See the [packet-age audit](poc-20261101/anneal/astra-boundary/replica-source-age-findings.md)
+and [single-parameter V3 check](poc-20261101/anneal/mechanism/passive-landing-observer-v3-findings.md).
+
 We also isolated entry from maintenance without changing physics or the input
 word: both model arms run the same original word through4s while B does not
 click, then the candidate continues and the reference becomes primed W-tap.
@@ -460,6 +472,58 @@ normal pulse's horizontal component by10% adds about0.139 blocks by contact,
 insufficient to close this selected path's deficit. Whole-profile changes would
 also change earlier motion and remain untested by that local calculation.
 See the [coupled NS diagnostic](poc-20261101/anneal/mechanism/ns-coupled-stage2-findings.md).
+
+The subsequent single-input causal check releases W for50ms at5350ms, after
+the third hit has already registered. Everything else, including queued click
+consumptions, stays fixed. B's5860ms ray increases from2.740753 to2.996507,
+a0.255754-block gain, while the next5825 sprint hit and all earlier fresh
+strength/velocity packets remain intact. It still returns at5925ms, so primary
+scores stay10 versus W-tap3 (original window) and4 versus2 (conditional window).
+The early brake works as predicted but does not establish denial.
+
+Its side effect is also measured: the5550 immune contact becomes a miss, removing
+the usual0.6 attacker drag. A recovers some of the earlier movement reduction.
+B's delayed replica nevertheless retains roughly0.256 blocks of separation at
+the deadline. Counting just saved movement from the W release would miss this
+click/friction interaction. A read-only own-path analysis suggests braking only
+150ms before these failures is already late; roughly300ms of anticipation may
+be needed on these recorded legs. This is a frozen-trajectory component result,
+not a proof that all alternative trajectories need the same warning time.
+Details: [one-release test](poc-20261101/anneal/mechanism/ns-early-coast5350-findings.md)
+and [own-path delay analysis](poc-20261101/anneal/astra-boundary/own-path-denial-findings.md).
+
+One predeclared fine-control check adds a single A/D input at5400 to that coast,
+testing both directions. Both keep B outside reach at5860 (rays about3.068) and
+preserve the next own hit. Both nevertheless allow5910 contact immediately
+before the first movement under the new velocity. Return shifts to5975ms with
+no additional fresh hit: scores remain10 versus W-tap3, or4 versus2 conditionally.
+The actual B contact also brakes its newly received horizontal velocity by0.6
+before movement. Avoiding the first opportunity alone was insufficient.
+Both mirrors and their changed horizontal launch vectors are retained in the
+[fine-actuator diagnostic](poc-20261101/anneal/mechanism/ns-coast-ad5400-findings.md).
+
+That deadline motivated a nearby profile test, rather than an arbitrary KB
+change: nine-tick immunity could admit a normal hit at5775 and move B at5860.3,
+before its later contact. The actual test sets each profile **from rest**, with
+unchanged vanilla knockback, three physical phases and matched complete-state
+W-tap. Both AD mirrors are tested with their old gate and with only5750 enabled;
+the original NS word is an additional control. All queued inputs remain natural.
+
+| Fixed profile,900–10900ms model score | Candidate fresh before return, three phases | Plain W-tap | Full-horizon locks |
+|---|---|---|---|
+|10 ticks, vanilla KB|10 /1 /1|3 /2 /2|none|
+|9 ticks, vanilla KB|10 /1 /1|3 /3 /4|none|
+
+Every tested fixed word has the displayed primary spread. Only the canonical
+phase has a return-free4250ms conditional seed; prior returns are retained for
+the other phases. Nine ticks changes an earlier event: it already accepts a
+normal hit at5275, with vertical packet0.4, where ten ticks waits until5325 and
+gives0.36075. Consequently the actual added5750 click misses at3.107–3.111 blocks;
+the hypothetical5775 rescue never happens. In the ten-tick control it is immune
+and changes subsequent queued click timing. The branch fails the W-tap spread
+gate and is stopped without native promotion or more word patches. A local
+frozen-history timing opportunity does not establish a coupled profile solution.
+See the [fixed-profile nine-tick test](poc-20261101/anneal/mechanism/ns-hit9-deadline-findings.md).
 
 These are causal tests, not a vanilla infeasibility proof. No bounded search has
 covered all allowed inputs, phases, acquisition states or pings.
