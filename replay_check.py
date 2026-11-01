@@ -13,6 +13,41 @@ from lab import ROOT, CACHE, BUILD, RUNTIME
 from lab_runtime import sandbox_java, clean_environment
 
 
+def capture(script,duration,prefix="replay"):
+    """Run a real spectator client and capture both native client and server state."""
+    state=json.loads((RUNTIME/'status.json').read_text())
+    if time.time()-state['time']/1000>5 or 'LabObserver' in state['players']:
+        raise RuntimeError('Need a live server and an unused native observer client')
+    directory=RUNTIME/'bots/observer';directory.mkdir(exist_ok=True)
+    (directory/'control.properties').write_text('enabled=false\n')
+    (directory/'options.txt').write_text('renderDistance:6\nfancyGraphics:false\nparticles:2\nsoundCategory_master:0.0\n')
+    out=ROOT/'experiments'/(prefix+'-'+time.strftime('%Y%m%d-%H%M%S')+'-'+uuid.uuid4().hex[:6]);out.mkdir()
+    digest=hashlib.sha256((BUILD/'lab-agent.jar').read_bytes()).hexdigest()
+    cp=os.pathsep.join([str(CACHE/'client.jar'),*json.loads((CACHE/'classpath.json').read_text())])
+    args=['-Xmx768M','-XX:ActiveProcessorCount=2','-Dlab.root='+str(ROOT),'-Dlab.role=client',
+          '-Dlab.slot=observer','-Dlab.port=25569','-Dhmc.lwjgl.update_sleep=10',
+          '-Dlab.test_script='+script,'-Dlab.test_duration='+str(duration),'-Dlab.practice_block_windows=',
+          '-Dlab.replay_probe=true','-Dlog4j.configurationFile='+str(CACHE/'client-logging.xml'),
+          '-javaagent:'+str(BUILD/'lab-agent.jar'),'-cp',cp,'net.minecraft.client.main.Main','--version','1.8.9',
+          '--gameDir',str(directory),'--assetsDir',str(CACHE/'assets'),'--assetIndex','1.8','--username','LabObserver',
+          '--uuid',uuid.uuid3(uuid.NAMESPACE_DNS,'LabObserver').hex,'--accessToken','0','--userProperties','{}','--userType','legacy']
+    launched=time.time()*1000;samples=[]
+    print('Testing native replay viewer: '+prefix,flush=True)
+    with (out/'client.log').open('w') as log:
+        process=subprocess.Popen(sandbox_java(args),cwd=directory,stdout=log,stderr=subprocess.STDOUT,env=clean_environment())
+        deadline=time.time()+duration/1000+30
+        try:
+            while process.poll() is None and time.time()<deadline:
+                samples.append(json.loads((RUNTIME/'status.json').read_text()));time.sleep(.2)
+            if process.poll() is None:raise TimeoutError('Native replay viewer did not exit')
+        finally:
+            if process.poll() is None:process.terminate();process.wait(timeout=10)
+    path=directory/'replay-probe.jsonl'
+    client=[e for line in path.read_text().splitlines() if (e:=json.loads(line))['time']>=launched] if path.exists() else []
+    log=(out/'client.log').read_text()
+    return out,digest,samples,client,log,process.returncode
+
+
 def run():
     state=json.loads((RUNTIME/'status.json').read_text())
     if time.time()-state['time']/1000>5 or 'LabObserver' in state['players']:
@@ -29,33 +64,8 @@ def run():
             '19000:/replay stop|20500:/replay|25000:/replay pause|26000:/replay seek 0|28000:/replay play|'
             f'29000:/replay speed 2|35000:/replay seek 9999|37000:/replay {rod["id"]}|41000:/replay seek {rod_seek:.3f}|'
             '47000:/stop|49000:/duel standstill diamond|54000:/stop')
-    directory=RUNTIME/'bots/observer';directory.mkdir(exist_ok=True)
-    (directory/'control.properties').write_text('enabled=false\n')
-    (directory/'options.txt').write_text('renderDistance:6\nfancyGraphics:false\nparticles:2\nsoundCategory_master:0.0\n')
-    out=ROOT/'experiments'/('replay-'+time.strftime('%Y%m%d-%H%M%S')+'-'+uuid.uuid4().hex[:6]);out.mkdir()
-    digest=hashlib.sha256((BUILD/'lab-agent.jar').read_bytes()).hexdigest()
-    cp=os.pathsep.join([str(CACHE/'client.jar'),*json.loads((CACHE/'classpath.json').read_text())])
-    args=['-Xmx768M','-XX:ActiveProcessorCount=2','-Dlab.root='+str(ROOT),'-Dlab.role=client',
-          '-Dlab.slot=observer','-Dlab.port=25569','-Dhmc.lwjgl.update_sleep=10',
-          '-Dlab.test_script='+script,'-Dlab.test_duration=57000','-Dlab.practice_block_windows=',
-          '-Dlab.replay_probe=true','-Dlog4j.configurationFile='+str(CACHE/'client-logging.xml'),
-          '-javaagent:'+str(BUILD/'lab-agent.jar'),'-cp',cp,'net.minecraft.client.main.Main','--version','1.8.9',
-          '--gameDir',str(directory),'--assetsDir',str(CACHE/'assets'),'--assetIndex','1.8','--username','LabObserver',
-          '--uuid',uuid.uuid3(uuid.NAMESPACE_DNS,'LabObserver').hex,'--accessToken','0','--userProperties','{}','--userType','legacy']
-    launched=time.time()*1000;samples=[]
-    print('Testing native replay actors, paused positions, spectator cameras, seeking and cleanup...',flush=True)
-    with (out/'client.log').open('w') as log:
-        process=subprocess.Popen(sandbox_java(args),cwd=directory,stdout=log,stderr=subprocess.STDOUT,env=clean_environment())
-        deadline=time.time()+90
-        try:
-            while process.poll() is None and time.time()<deadline:
-                samples.append(json.loads((RUNTIME/'status.json').read_text()));time.sleep(.2)
-            if process.poll() is None:raise TimeoutError('Native replay viewer did not exit')
-        finally:
-            if process.poll() is None:process.terminate();process.wait(timeout=10)
-    path=directory/'replay-probe.jsonl'
-    client=[e for line in path.read_text().splitlines() if (e:=json.loads(line))['time']>=launched] if path.exists() else []
-    log=(out/'client.log').read_text();plain=re.sub(r'§[0-9a-fk-or]','',log,flags=re.I)
+    out,digest,samples,client,log,returncode=capture(script,57000)
+    plain=re.sub(r'§[0-9a-fk-or]','',log,flags=re.I)
     sessions=[(s['time'],r) for s in samples for r in s.get('replays',[]) if r['viewer']=='LabObserver']
     def session_at(t):
         return min(sessions,key=lambda r:abs(r[0]-t))[1] if sessions else {}
@@ -83,7 +93,7 @@ def run():
     slope=(half[-1][1]-half[0][1])/(half[-1][0]-half[0][0]) if len(half)>2 and half[-1][0]>half[0][0] else None
     latest={s['match'] for _,s in sessions if s['match']!=old}
     checks={
-        'native_client_clean_exit':process.returncode==0 and 'at lab.' not in log,
+        'native_client_clean_exit':returncode==0 and 'at lab.' not in log,
         'build_unchanged':hashlib.sha256((BUILD/'lab-agent.jar').read_bytes()).hexdigest()==digest,
         'old_recording_and_limit_notice':f'Server replay {old}' in plain and 'Older recording:' in plain,
         'spectator_mode_received':any(e['spectator'] for e in paused),

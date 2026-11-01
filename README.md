@@ -66,9 +66,12 @@ enabling RCON or opening another network port.
 | `/replay` | Watch your latest completed match using the server recording |
 | `/replay m0930` | Watch a specific recorded match |
 | `/replay list` | Click to watch one of your ten latest matches (`list all` includes bot matches) |
+| `/replay controls` | Show the clickable rewind/forward, pause/play, speed and camera controls again |
 | `/replay pause` / `/replay play` | Pause/resume; play restarts after the recording ends |
 | `/replay seek 12.5` | Jump to 12.5 seconds after the match started |
-| `/replay speed 0.5` | Slow motion; supported speeds are 0.25–2x |
+| `/replay back` / `/replay forward` | Jump back/forward 5 seconds; add a number for a different amount, e.g. `back 0.05` |
+| `/replay seek -5` / `/replay seek +5` | Jump back/forward relative to the current position; unsigned numbers are absolute timestamps |
+| `/replay speed 0.1` | Play at one tenth speed (10× slower); any finite positive multiplier works, e.g. `0.75`, `0.01` or `3` |
 | `/replay a` / `/replay b` / `/replay free` | Follow either recorded fighter or fly freely |
 | `/replay stop` | Remove the replay actors and return to the lobby (`/stop` also works) |
 | `/matches` | Clickable list of ongoing matches |
@@ -86,7 +89,12 @@ actors are private packet-only copies in a separate viewing area: they consume
 no bot slots, run no combat, and cannot affect another match. Starting a duel or
 watching a live match removes your replay; `/stop` exits it. Completed recordings
 remain available across server restarts. Pause, seek, speed and follow controls
-operate independently for each viewer.
+operate independently for each viewer. Open chat (T) to click the controls shown
+when a replay starts. **Custom...** fills in the speed command for you to type a
+number; **Go to...** fills in the seek command. Rewind/forward preserve your
+camera and pause state and stop at the recording's boundaries. You can pause
+and jump in small increments to inspect a hit. Playback changes the timing of
+recorded positions/events; normal client animations still run at client speed.
 
 This is a playback of **recorded server positions and accepted combat events**,
 not a rerun of bot decisions or either player's original screen. Your live client

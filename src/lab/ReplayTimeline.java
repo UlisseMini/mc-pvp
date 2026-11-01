@@ -15,13 +15,19 @@ public final class ReplayTimeline {
     }
     long position(){return (long)position;}
     void seek(long ms,long now){position=Math.max(0,Math.min(duration,ms));previous=now;}
+    void seekSeconds(double seconds,boolean relative,long now){
+        if(!Double.isFinite(seconds))throw new IllegalArgumentException("Seek needs a finite number of seconds.");
+        advance(now); // Relative jumps start at the current playhead, including elapsed playback.
+        seek((long)((relative?position:0)+seconds*1000),now);
+    }
     void pause(boolean value,long now){advance(now);paused=value;}
     boolean paused(){return paused;}
     void speed(double value,long now){
-        if(!Double.isFinite(value)||value<.25||value>2)throw new IllegalArgumentException("Replay speed must be 0.25–2.");
+        if(!Double.isFinite(value)||value<=0)throw new IllegalArgumentException("Replay speed must be a positive number, e.g. 0.1, 0.75 or 2. Use /replay pause to freeze.");
         advance(now);speed=value;
     }
     double speed(){return speed;}
+    String speedLabel(){return Double.toString(speed).replaceFirst("\\.0$","")+"x";}
     static int floor(List<Long> times,long time){
         int lo=0,hi=times.size();while(lo<hi){int mid=(lo+hi)>>>1;if(times.get(mid)<=time)lo=mid+1;else hi=mid;}
         return Math.max(0,lo-1);

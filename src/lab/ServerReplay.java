@@ -6,7 +6,7 @@ import java.util.*;
 public final class ServerReplay {
     static final Map<String,Session> sessions=new LinkedHashMap<>();
     static final Set<String> floorChunks=new HashSet<>();
-    static final String USAGE="/replay [match-id] | list [all] | pause | play | seek <seconds> | speed <0.25–2> | a | b | free | stop";
+    static final String USAGE="/replay [match-id] | controls | list [all] | pause | play | back/forward [seconds] | seek <seconds or +/-seconds> | speed <positive multiplier> | a | b | free | stop";
     static final class Session {
         final String viewer;
         final ReplayData data;
@@ -83,9 +83,20 @@ public final class ServerReplay {
         }
     }
     static void controls(Object p){
-        for(String[] b:new String[][]{{"Pause","pause"},{"Play","play"},{"0.5x","speed 0.5"},{"1x","speed 1"},{"Follow A","a"},{"Follow B","b"},{"Fly freely","free"},{"Exit replay","stop"}})
-            Referee.button(p,b[0],"/replay "+b[1]);
-        Referee.message(p,"§7/replay seek 12.5 jumps to 12.5 seconds; /replay list shows your recent matches.");
+        Referee.message(p,"§6Replay controls §7— open chat (T) and click. /replay controls shows these again.");
+        controlRow(p,"Time",new String[][]{{"-5s","back 5"},{"-1s","back 1"},{"Pause","pause"},{"Play","play"},{"+1s","forward 1"},{"+5s","forward 5"},{"Go to...","seek ","suggest_command"}});
+        controlRow(p,"Speed",new String[][]{{"0.1x","speed 0.1"},{"0.25x","speed 0.25"},{"0.5x","speed 0.5"},{"1x","speed 1"},{"2x","speed 2"},{"Custom...","speed ","suggest_command"}});
+        controlRow(p,"View",new String[][]{{"Follow A","a"},{"Follow B","b"},{"Fly freely","free"},{"Exit replay","stop"}});
+        Referee.message(p,"§7Any positive speed works. Seek: 12.5 = timestamp; -5 / +5 = relative seconds.");
+    }
+    static void controlRow(Object p,String label,String[][] buttons){
+        List<Map<String,Object>> extra=new ArrayList<>();
+        for(String[] b:buttons){String command="/replay "+b[1],action=b.length>2?b[2]:"run_command";
+            extra.add(Map.of("text","["+b[0]+"] ","color","aqua",
+                "clickEvent",Map.of("action",action,"value",command),
+                "hoverEvent",Map.of("action","show_text","value",action.equals("suggest_command")?"Type a number after "+command:command)));
+        }
+        Referee.vanilla("tellraw "+Referee.safeName(p)+" "+Json.encode(Map.of("text",label+": ","color","gray","extra",extra)));
     }
     public static void command(Object viewer,String[] args)throws Exception {
         String who=Referee.safeName(viewer);
@@ -113,17 +124,21 @@ public final class ServerReplay {
         Session s=sessions.get(who);if(s==null)throw new IllegalArgumentException("Start with /replay or /replay <match-id>.");
         long now=System.currentTimeMillis();
         if(action.equals("pause")&&args.length==2){s.startPlaying=false;s.clock.pause(true,now);}
-        else if(action.equals("play")&&args.length==2){s.startPlaying=true;if(s.clock.position()>=s.data.duration)seek(s,0,now);s.clock.pause(false,now);}
+        else if(action.equals("play")&&args.length==2){s.startPlaying=true;if(s.clock.position()>=s.data.duration)seek(s,0,false,now);s.clock.pause(false,now);}
+        else if(action.equals("controls")&&args.length==2)controls(viewer);
         else if(action.equals("speed")&&args.length==3)s.clock.speed(Double.parseDouble(args[2]),now);
         else if(action.equals("seek")&&args.length==3){
-            double seconds=Double.parseDouble(args[2]);if(!Double.isFinite(seconds))throw new IllegalArgumentException("Seek needs a finite number of seconds.");
-            seek(s,(long)(seconds*1000),now);
+            seek(s,Double.parseDouble(args[2]),args[2].startsWith("+")||args[2].startsWith("-"),now);
+        }else if(Set.of("back","forward").contains(action)&&(args.length==2||args.length==3)){
+            double seconds=args.length==3?Double.parseDouble(args[2]):5;
+            if(!Double.isFinite(seconds)||seconds<0)throw new IllegalArgumentException("Use /replay "+action+" [seconds], with a nonnegative number (default: 5).");
+            seek(s,action.equals("back")?-seconds:seconds,true,now);
         }else if(Set.of("a","b","free").contains(action)&&args.length==2){
             s.camera=action;if(s.spawned)camera(viewer,s);
         }else throw new IllegalArgumentException(USAGE);
     }
-    static void seek(Session s,long ms,long now){
-        s.clock.seek(ms,now);s.eventIndex=0;s.ended=false;s.lastEvent="";
+    static void seek(Session s,double seconds,boolean relative,long now){
+        s.clock.seekSeconds(seconds,relative,now);s.eventIndex=0;s.ended=false;s.lastEvent="";
         while(s.eventIndex<s.data.events.size()&&ReplayData.number(s.data.events.get(s.eventIndex),"time",0)<=s.data.start+s.clock.position())s.eventIndex++;
         Arrays.fill(s.swing,-1);
     }
@@ -193,8 +208,8 @@ public final class ServerReplay {
                 else if(type.equals("rod_trick")){s.lastEvent="Rod trick: "+s.data.label(attacker==0?"a":"b");s.eventUntil=now+1000;}
                 else if(type.equals("blocked_damage")){s.lastEvent=s.data.label(victim==0?"a":"b")+" blocked damage";s.eventUntil=now+700;}
             }
-            if(Referee.ticks%2==0)Referee.overlay(viewer,String.format(Locale.ROOT,"§6Replay %s §f%.1f/%.1fs §7%.2fx%s §8| §b%s %.1f♥ §7vs §6%s %.1f♥%s",
-                s.data.id,ms/1000.0,s.data.duration/1000.0,s.clock.speed(),s.clock.paused()?" PAUSED":"",s.data.label("a"),ReplayData.number(frame,"health_a",20)/2,
+            if(Referee.ticks%2==0)Referee.overlay(viewer,String.format(Locale.ROOT,"§6Replay %s §f%.2f/%.2fs §7%s%s §8| §b%s %.1f♥ §7vs §6%s %.1f♥%s",
+                s.data.id,ms/1000.0,s.data.duration/1000.0,s.clock.speedLabel(),s.clock.paused()?" PAUSED":"",s.data.label("a"),ReplayData.number(frame,"health_a",20)/2,
                 s.data.label("b"),ReplayData.number(frame,"health_b",20)/2,now<s.eventUntil?" §8| §e"+s.lastEvent:""));
             if(ms>=s.data.duration&&!s.ended){s.ended=true;Referee.message(viewer,"§6Replay finished. §7/replay play to restart; /replay seek <seconds> to review; /stop to leave.");}
         }catch(Throwable e){e.printStackTrace();Object viewer=Referee.player(s.viewer);close(s.viewer,true);if(viewer!=null)Referee.message(viewer,"§cReplay stopped: "+e.getMessage());}
