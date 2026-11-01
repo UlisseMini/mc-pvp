@@ -47,6 +47,7 @@ final class BotRuntime implements ClientServices,AutoCloseable {
             if(!mc.field_71439_g.func_70005_c_().equals("LabSlot"+slot))throw new IllegalStateException("Bot slot username mismatch");
             identified=true;
         }else if(identified){Client.releaseInputs();identified=false;}
+        System.setProperty("practice.module_sha256",capture.moduleSha256());
         capture.botRoute(Client.configuration());
     }
     public void frame(){capture.headlessFrame();}

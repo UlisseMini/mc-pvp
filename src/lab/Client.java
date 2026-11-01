@@ -258,6 +258,7 @@ public final class Client {
                 heartbeat.put("backend",System.getProperty("lab.backend","legacy"));heartbeat.put("role","bot");
                 heartbeat.put("policy_errors",errors);
                 heartbeat.put("bridge_sha256",System.getProperty("practice.bridge_sha256",""));
+                heartbeat.put("module_sha256",System.getProperty("practice.module_sha256",""));
                 heartbeat.put("frame_sleep_ms",Integer.getInteger("hmc.lwjgl.update_sleep",10));
                 heartbeat.put("target_ready",targetReady);
                 heartbeat.put("attack_reach",attackReach());heartbeat.put("click_cps",ClickRate.cps(controls));

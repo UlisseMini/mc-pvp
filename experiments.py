@@ -14,6 +14,7 @@ import re
 import time
 import uuid
 from lab import ROOT,RUNTIME
+from runtime_provenance import artifact_hashes, client_provenance, client_matches, cohort_provenance
 from lab_runtime import send,properties,match_events
 
 OUT=ROOT/'experiments'
@@ -38,7 +39,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
     if mode not in ('boxing','diamond','diamond_box','rod_diamond'):raise ValueError('Unknown combat mode')
     if mode!='boxing' and duration_ms is not None:raise ValueError('Timed scenarios currently use boxing; health duels run to death or timeout')
     parameters={name:properties(ROOT/'policies'/f'{name}.properties') for name in (a,b)}
-    expected_build=hashlib.sha256((ROOT/'build/lab-agent.jar').read_bytes()).hexdigest()
+    expected_build=artifact_hashes()
     # Preserve spare capacity for the user's challenges: three matches / eight bots.
     while True:
         with open(RUNTIME/'manager/scheduler.lock','a+') as lock:
@@ -49,7 +50,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
                 if not name.startswith('LabSlot') or name in occupied:continue
                 try:heartbeat=json.loads((RUNTIME/'bots'/name.removeprefix('LabSlot')/'heartbeat.json').read_text())
                 except (FileNotFoundError,json.JSONDecodeError):unready_free=True;continue
-                if time.time()-heartbeat['time']/1000<=4 and heartbeat.get('agent_sha256')==expected_build and not heartbeat.get('enabled'):free.append(name)
+                if time.time()-heartbeat['time']/1000<=4 and client_matches(heartbeat,expected_build) and not heartbeat.get('enabled'):free.append(name)
                 else:unready_free=True
             reservation_path=RUNTIME/'manager/reservations.json'
             reservations=json.loads(reservation_path.read_text()) if reservation_path.exists() else {}
@@ -64,7 +65,7 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
             reservation_path.write_text(json.dumps(reservations))
         await asyncio.sleep(1)
     print(f'Started {a} vs {b}, RTT {ping_a}/{ping_b}',flush=True)
-    deadline=time.monotonic()+220;issues=set();checks=0;client_builds={};client_frame_sleep={}
+    deadline=time.monotonic()+220;issues=set();checks=0;client_builds={};client_frame_sleep={};runtime_identities={}
     while time.monotonic()<deadline:
         for p in (RUNTIME/'results').glob('*.json'):
             if p.name in existing_results:continue
@@ -144,6 +145,9 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
                     r=replication[side]
                     if r['frozen_remote']:issues.add(f'{side}: frozen opponent replication')
                     if r['best']['samples']>=20 and r['best']['median_squared_residual']>.25:issues.add(f'{side}: large opponent replication residual')
+                if artifact_hashes()!=expected_build:issues.add('Build artifacts changed during frozen match')
+                result['client_provenance']=runtime_identities
+                result['expected_artifact_hashes']=expected_build
                 result['client_builds']=client_builds
                 result['client_frame_sleep_ms']=client_frame_sleep
                 result['input_metrics']=input_metrics
@@ -167,9 +171,10 @@ async def match(a,b,ping_a=20,ping_b=20,duration_ms=None,mode='boxing'):
                 except (FileNotFoundError,json.JSONDecodeError):continue
                 if time.time()-heartbeat['time']/1000>4:issues.add(f'{side}: client stopped ticking')
                 if heartbeat.get('match')==game['id']:
-                    client_builds[side]=heartbeat.get('agent_sha256','unknown')
+                    runtime_identities[side]=client_provenance(heartbeat)
+                    client_builds[side]=heartbeat.get('bridge_sha256' if heartbeat.get('backend')=='forge' else 'agent_sha256','unknown')
                     client_frame_sleep[side]=heartbeat.get('frame_sleep_ms',10)
-                    if client_builds[side]!='unknown' and client_builds[side]!=hashlib.sha256((ROOT/'build/lab-agent.jar').read_bytes()).hexdigest():issues.add(f'{side}: old client build; reload idle bots')
+                    if not client_matches(heartbeat,expected_build):issues.add(f'{side}: unknown or old client build/module; reload idle bots')
                     if game[other] not in heartbeat['visible_players']:issues.add(f'{side}: opponent missing from client world')
                     if not heartbeat['alive']:issues.add(f'{side}: client was dead')
                     if heartbeat.get('selected_target_dead'):issues.add(f'{side}: targeted a removed entity')
@@ -233,7 +238,7 @@ async def batch(fixtures,parallel=3):
 def record(name,results,metadata=None):
     OUT.mkdir(exist_ok=True)
     environment={'engine':'official Minecraft 1.8.9','reaction_ms':150,'click_cap_cps':10,'input_clock_version':2,'parallel_matches':3,
-                 'replication_version':2,'server_view_distance':8,'client_render_distance':6,
+                 'replication_version':2,'server_view_distance':8,'client_render_distance':6,'runtime_provenance':cohort_provenance(),
                  'agent_sha256':hashlib.sha256((ROOT/'build/lab-agent.jar').read_bytes()).hexdigest()}
     document={'name':name,'time':time.time(),'metadata':{**environment,**(metadata or {})},'results':results}
     (OUT/f'{name}.json').write_text(json.dumps(document,indent=2))
@@ -259,7 +264,7 @@ def record(name,results,metadata=None):
             if not n:continue
             for side in ('a','b'):
                 v=n[side];ratio=v['one_sided_fraction_given_attacker_can_hit'];percentage=f'{ratio:.1%}'if ratio is not None else '—'
-                lines.append(f'| {r["id"]} | {r["policy_"+side]} | {percentage} | {v["attacker_can_hit_ms"]/1000:.1f} | {r['combat_metrics'][side].get('sustained_native_combo',{}).get('duration_ms',0)/1000:.2f} | {v["longest_one_sided_window_ms"]/1000:.2f} | {n.get("paired_coverage_fraction",n["paired_time_ms"]/(r["finish"]-r["start"])):.1%} | {"passed"if r.get("validation",{}).get("passed")else "provisional"} |')
+                lines.append(f'| {r["id"]} | {r["policy_"+side]} | {percentage} | {v["attacker_can_hit_ms"]/1000:.1f} | {r["combat_metrics"][side].get("sustained_native_combo",{}).get("duration_ms",0)/1000:.2f} | {v["longest_one_sided_window_ms"]/1000:.2f} | {n.get("paired_coverage_fraction",n["paired_time_ms"]/(r["finish"]-r["start"])):.1%} | {"passed"if r.get("validation",{}).get("passed")else "provisional"} |')
     if any(r.get('combat_metrics',{}).get('a',{}).get('native_denial_contact_sequence') for r in results):
         lines+=['','The following contact sequences retain continuous measured defender reach denial and no accepted return hit, but remove the strict one-second contact-gap cutoff. Inspect both hit count and largest gap; a long retreat alone is not proof of a useful lock.','',
                 '| Match | Attacker | Denial contact sequence (s) | Fresh contacts | Largest contact gap (s) |',

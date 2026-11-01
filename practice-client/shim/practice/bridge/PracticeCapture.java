@@ -22,7 +22,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     static final String CHANNEL="PvpLab|v1";
     private final ReloadHost host;
     private final Path directory;
-    private final String bridgeSha256=bridgeHash();
+    private final String bridgeSha256;
     private final AtomicLong sequence=new AtomicLong(),packetSequence=new AtomicLong(),eventDrops=new AtomicLong();
     private final Map<Object,Long> packetIds=Collections.synchronizedMap(new WeakHashMap<>());
     private final Set<Channel> clients=Collections.newSetFromMap(new ConcurrentHashMap<Channel,Boolean>());
@@ -51,7 +51,8 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     private final MatchArchive archive=new MatchArchive();
     private long lastPose;
     private static final class Raw {Channel channel;byte[] bytes;long ms,ns;Raw(Channel c,byte[] b){channel=c;bytes=b;ms=System.currentTimeMillis();ns=System.nanoTime();}}
-    PracticeCapture(ReloadHost host,Path directory){this.host=host;this.directory=directory;}
+    PracticeCapture(ReloadHost host,Path directory,Path source){this.host=host;this.directory=directory;this.bridgeSha256=bridgeHash(source);}
+    String moduleSha256(){return host.moduleSha256();}
     void settings(Properties p){
         boolean next=Boolean.parseBoolean(p.getProperty("capture.enabled","true"));
         frames=Boolean.parseBoolean(p.getProperty("capture.frames","true"));coordination=Boolean.parseBoolean(p.getProperty("link.enabled","true"));
@@ -183,9 +184,8 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     private Map<String,Object> metadata(String player){return map("player",player,"session",session,"role",BotRuntime.role(),"backend",BotRuntime.enabled()?"forge":"human-forge","pose_hz",60,
         "minecraft","1.8.9","forge","11.15.1.2318","bridge_sha256",bridgeSha256,
         "module_sha256",host.moduleSha256(),"initial",GameObservations.state(Minecraft.func_71410_x(),true),"full_session_capture",log==null?null:log.path.toString());}
-    private static String bridgeHash(){
+    private static String bridgeHash(Path path){
         try{
-            Path path=Paths.get(PracticeCapture.class.getProtectionDomain().getCodeSource().getLocation().toURI());
             if(!Files.isRegularFile(path))return "unreported";
             byte[] digest=java.security.MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path));
             StringBuilder hex=new StringBuilder();for(byte b:digest)hex.append(String.format("%02x",b&255));return hex.toString();

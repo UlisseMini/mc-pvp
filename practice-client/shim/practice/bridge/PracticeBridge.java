@@ -41,7 +41,7 @@ public final class PracticeBridge {
         Files.createDirectories(directory);
         Path pendingModule=directory.resolve("practice-module-next.jar");if(Files.isRegularFile(pendingModule))Files.move(pendingModule,directory.resolve("practice-module.jar"),StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
         host=new ReloadHost(directory);
-        capture=new PracticeCapture(host,directory);host.services(capture);ObserverHooks.sink=capture;settings();host.reload(true);
+        capture=new PracticeCapture(host,directory,event.getSourceFile().toPath());host.services(capture);ObserverHooks.sink=capture;settings();host.reload(true);
         BotRuntime.start(capture,event.getModConfigurationDirectory().toPath().getParent());
         Runtime.getRuntime().addShutdownHook(new Thread(()->{if(BotRuntime.enabled())BotRuntime.instance.close();host.close();capture.close();},"practice-close"));
     }
