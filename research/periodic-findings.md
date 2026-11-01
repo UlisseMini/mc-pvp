@@ -4,18 +4,20 @@
 
 One active research fight kernel, `tests/PeriodicComboFightModel.java`, composes the verified `ExactTravel` component with client contact drag, local/server sprint state, packet generation, server motion and combat, tracking, and both replicated views. `FORMAL-MODEL.md` and pinned native evidence are the authority. `ComboModel` remains a legacy controller dependency; new feasibility research uses this kernel.
 
-Complete recorded-schedule replay passes the following fixtures. Every compared component has zero numeric error and zero bit-mismatch rows; all requested event rows execute. Generated relevant packet kinds, subtypes, represented payload fields and route order also match exactly.
+Complete recorded-schedule replay passes the following fixtures. Every compared state component has zero numeric error and zero bit-mismatch rows; all requested event rows execute. Generated relevant packet kinds, subtypes, represented payload fields and route order also match exactly.
 
-| Fixture | Native policies | RTT A/B | Horizon | Own movement rows | Replica rows | Click-selection rows | Server snapshots |
-|---|---|---|---:|---:|---:|---:|---:|
-| m1196 | hold W / still | 0/0 | 15 s | 600 | 600 | 548 | 300 |
-| m1197 | hold W / hold W | 0/0 | 15 s | 600 | 600 | 566 | 300 |
-| m1198 | Wtap / hold W | 0/0 | 15 s | 600 | 600 | 569 | 300 |
-| m1200 | angular movement / still, no clicks | 0/0 | 8.05 s | 322 | 322 | 0 | 161 |
-| m1203 | hold W / hold W | 0/120 | 15 s | 600 | 600 | 571 | 300 |
-| m1204 | Wtap / hold W | 0/120 | 15 s | 600 | 600 | 575 | 300 |
-| m1205 | fixed word / hold W, target reach2.5 | 0/120 | 30 s | 1201 | 1201 | 621 | 601 |
-| m1206 | fixed word / hold W, target reach3 | 0/120 | 30 s | 1200 | 1200 | 628 | 600 |
+| Fixture | Native policies | RTT A/B | Horizon | Own movement rows | Replica rows | Click-selection rows | Server snapshots | Plain W-tap comparison |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| m1196 | hold W / still | 0/0 | 15 s | 600 | 600 | 548 | 300 | Native trace reference; no policy ranking |
+| m1197 | hold W / hold W | 0/0 | 15 s | 600 | 600 | 566 | 300 | Native trace reference; no policy ranking |
+| m1198 | Wtap150ms / hold W | 0/0 | 15 s | 600 | 600 | 569 | 300 | Native trace reference; no policy ranking |
+| m1200 | angular movement / still, no clicks | 0/0 | 8.05 s | 322 | 322 | 0 | 161 | Native trace reference; no policy ranking |
+| m1203 | hold W / hold W | 0/120 | 15 s | 600 | 600 | 571 | 300 | Native trace reference; no policy ranking |
+| m1204 | Wtap150ms / hold W | 0/120 | 15 s | 600 | 600 | 575 | 300 | Native trace reference; no policy ranking |
+| m1205 | fixed word / hold W, target reach2.5 | 0/120 | 30 s | 1201 | 1201 | 621 | 601 | Native trace reference; no policy ranking |
+| m1206 | fixed word / hold W, target reach3 | 0/120 | 30 s | 1200 | 1200 | 628 | 600 | Native trace reference; no policy ranking |
+
+This table is a state/packet validation table, not a controller-performance ranking; its reference is the identical native trace. Performance results require the matched W-tap gate in `AGENTS.md`.
 
 The comparisons include own XYZ position and velocity, collision ground state, sprint and head yaw; replicated XYZ position; own/target coordinates and selected-target classification at clicks; server reported and latent XYZ position/velocity, hurt resistance, fall distance, last damage, sprint, and accepted scores. This is **recorded-schedule composition validation**, not a guarantee about untested future fights or a proof of combo feasibility.
 
@@ -24,6 +26,7 @@ The comparisons include own XYZ position and velocity, collision ground state, s
 ```sh
 python3 research/periodic-clock-replay.py m1196 m1197 m1198 m1200 m1203 m1204 --frames --transport-trace --seconds 15
 python3 research/periodic-clock-replay.py m1205 m1206 --frames --transport-trace --seconds 30
+python3 research/periodic-clock-replay.py m1212 m1215 m1216 --frames --transport-trace --seconds 14.9
 ```
 
 ## Conditioning and causal boundary
@@ -40,11 +43,25 @@ The independent fixed-clock adapter, `PeriodicComboClock`, calls the same transi
 
 ## Fresh windows and reach
 
-The goal is defender local reach denial throughout maintenance, with our local target reachable at the fresh-damage opportunity. It does not require our reach continuously during immunity. Actual immunity crosses the native threshold on server entity updates, not necessarily 500 wall-clock milliseconds after a local contact. Accepted stronger-damage upgrades and fall damage must be distinguished from fresh melee hits. The kernel represents these transitions, including the configurable immunity threshold for fall damage.
+The primary comparison gate is fresh hits before the first accepted return in a fixed horizon, plus whether the whole horizon has zero returns. Defender local reach denial throughout maintenance and our target being reachable at the first fresh-damage opportunity are additional, stricter diagnostics, scored identically for candidate and W-tap. Even that stricter diagnostic does not require our reach continuously during immunity. Actual immunity crosses the native threshold on server entity updates, not necessarily 500 wall-clock milliseconds after a local contact. Accepted stronger-damage upgrades and fall damage must be distinguished from fresh melee hits. The kernel represents these transitions, including the configurable immunity threshold for fall damage.
 
-The table verifies server immunity values at every recorded server snapshot and native selected-target decisions at the recorded click times. It does **not** separately claim exact timestamps for every first-ready opportunity between snapshots, numeric ray-intersection distances, or a counterfactual best send deadline under transport uncertainty. Those are separate evaluator obligations. A missed window at the end of a rollout must be counted or marked censored, rather than disappearing because no next hit completes.
+The table verifies server immunity values at every recorded server snapshot and native selected-target decisions at the recorded click times. It does **not** separately claim exact timestamps for every first-ready opportunity between snapshots, a counterfactual best send deadline under transport uncertainty. Those are separate evaluator obligations. A missed window at the end of a rollout must be counted or marked censored, rather than disappearing because no next hit completes.
 
 Native fixed-word testing additionally shows that a nominal ten-client-tick attack interval can arrive at server H=11, one tick early. Re-anchoring on local contact alone does not resolve this: immune contacts apply local drag but do not reset target immunity. Received fresh-hurt cues are a useful next observation mechanism, but the kernel now transports native S19 status2 cues to both recipients. `Observation.lastTargetHurtTime()` and `lastOwnHurtTime()` expose only delivered cue times, initially negative infinity. Fresh fall damage can also emit status2, so a cue is not an infallible melee-only confirmation.
+
+## Additional angular/profile validation and numeric reach
+
+The ray now reproduces native finite4.5-block Vec3 plane intersection, expanded-box expression order, the tiny-component rejection threshold, inside-box zero selection distance, and Euclidean distance to the selected point. The old slab parameter differed slightly because MathHelper's look vector is not exactly unit length. Across m1205/m1206, all963 selected rays agree within4.44e-16 blocks;1249 nearest-box checks agree within4.55e-13 blocks. The original eight fixtures still pass all state and represented packet checks after this correction.
+
+The first angular melee fixture exposed another omission: native `lm.a(ip)` installs the current C03 yaw at bytecode757 before invoking inferred jump at1112. The kernel had used previous yaw for that jump's horizontal sprint boost. Correcting this removes the first server-latent and subsequent S12 mismatch.
+
+Additional evidence, not controller comparisons:
+
+- m1215 vanilla angular melee,0/120RTT: all14.9 requested seconds pass exactly, including numeric ray distance. An earlier15s replay was exact through14997.781ms before its final movement generated a C03 whose native wire send fell outside the truncated transport horizon;10 event rows were unexecuted. The final100ms are excluded from the retained clean-prefix report, not silently treated as a full15s pass.
+- m1216 angular melee with horizontal.9, vertical.9, fresh ticks9 and0/60RTT: a15s replay passed; the current source-hashed combined artifact retains a14.9s rerun with all fields/packets exact and selected-ray maximum error4.44e-16 blocks. Profile values are read explicitly from match metadata.
+- m1212 vertical1.10, otherwise vanilla,0/120RTT: exact through8803.922ms, then explicit unsupported degenerate random knockback. The retained14.9s request has2307 unexecuted event rows. This is a valid exact prefix and an unsupported tail, not a full pass.
+
+The summary and compressed rows include these qualifications. Accepted melee also records monotonic `combatOrder`, `lastAcceptedOrderA/B` and `lastFreshOrderA/B` so evaluators can order a fresh hit and return processed within the same server drain. These counters do not change physics.
 
 ## Explicit limits
 
@@ -52,7 +69,7 @@ Native fixed-word testing additionally shows that a nominal ten-client-tick atta
 - S1C checks cover own sprint flags; unrelated metadata and S19 statuses other than hurt status2 are outside this version. Packet checks are exact for represented fields, not every byte of every native packet.
 - Tracker forced teleport is implemented: its age advances only inside the eligible update branch and resets when age exceeds 400 or another teleport trigger fires. Native bytecode `lh.a` offsets347–354,608–652 establish the rule; a focused check exercises the gated age400/401 boundary. Replay seeds its initial age once from the initial tracker snapshot. The long-age boundary itself has source/boundary-test evidence, rather than a dedicated long native fixture.
 - Flat open ground, two ordinary players, native walking/sprinting/strafe and modeled melee are the supported world. Arbitrary blocks, rods, inventory/world interactions and jumps supplied as controls are outside the current control adapter.
-- Modified KB and hurt-time profiles need native profile-specific validation. Baseline agreement alone does not validate every modification.
+- Modified profiles have the specific prefix/full-slice evidence above; untested combinations remain hypotheses. Baseline agreement alone does not validate every modification.
 - A finite search failure is neither physical impossibility nor limited-observation impossibility. A successful oracle branch is an existence hypothesis under its declared model/clock; it still needs native falsification and a legal observation-only controller.
 
 ## Branching API
