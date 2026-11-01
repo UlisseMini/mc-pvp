@@ -1,5 +1,10 @@
 # Deliberate strength and own-packet timing — November 1
 
+**Follow-up:** the [preset and robustness audit](combo-lock8-robustness-20261101.md)
+preserves these successful witnesses but finds fresh native failures, including
+a five-minute trial with only 2 fresh hits before return versus W-tap's 2.
+The original three successes do not establish a reliable lock across runs.
+
 **We now have a repeated native 60-second lock at horizontal KB ×1.1, vertical KB ×1, an eight-tick hit window and RTT 150/0 ms.**
 The candidate scored 150 / 150 / 150 fresh hits before a return; matched plain W-tap
 scored 2 / 2 / 2. Two candidate trials were entirely timing-clean; the first had one

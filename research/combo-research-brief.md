@@ -40,6 +40,26 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ### Current evidence after the strength/timing pass
 
+Latest follow-up: [lock8 robustness and boundary](combo-lock8-robustness-20261101.md).
+`/lab demo lock8` and `/duel lock8 boxing preset=lock8` are deployed. The frozen
+20-run native robustness batch is complete: equal RTT0/0,60/60,120/120 does not
+beat W-tap; the fresh300s150/0 pair is2 versus2 before first return, with clean
+primary/acquisition clocks. The healthy command smoke is5 versus3. No rerolls
+or controller changes. Existing150/150/150 native witnesses remain valid, but
+robustness is not established. The periodic model gives750 in all14 five-minute
+cases versus W-tap1–2, so actual timing/seed sensitivity needs causal explanation.
+Do not resume feature tuning from the periodic success alone. All matches ended;
+global combat defaults are restored1/1/10. Native logs and all failures retained.
+Fresh six-trace12s conditional replay now completes24683 events with9243 state
+rows bit-exact (nearest error≤4.52e−13), after fixing two adapter clock-boundary/
+snapshot-ordering bugs. No kernel or controller change. Native failures are
+contact before first knockback movement (m1368) or before next fresh (m1388),
+with earlier launch/replica histories differing. Late identical-launch8→9/10
+forks fail with no recorded missed fresh window: a scoped committed-view bound
+shows the frozen law brakes too late, but earlier braking has reach slack.
+This is NOT a proof against all vanilla controllers; no global empty corridor
+has been established. See the new findings before adding features or sweeping.
+
 See [combo-strength-phase-20261101.md](combo-strength-phase-20261101.md).
 A legal own-hurt-cued spacing controller now maintains60s natively at own/B
 RTT150/0,H1.1,V1,hit8:150/150/150 fresh versus W-tap2/2/2. Last two repeats are
