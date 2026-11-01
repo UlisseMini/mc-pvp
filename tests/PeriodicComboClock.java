@@ -25,6 +25,9 @@ public final class PeriodicComboClock {
     public record Control(int key,float strafe,boolean click) {}
     public interface Policy {
         Control input(Observation observation);
+        /** Own-observation admission permission, consulted only after gate/cap eligibility.
+         * A deferral leaves the physical cap timestamp, gate and admitted FIFO unchanged. */
+        default boolean allowInjection(Observation own,String source){return true;}
         /** Successful physical injection only; return the gate to retain until the next input decision. */
         default boolean injected(Observation own,double completedAt){return true;}
         /** Native clickMouse invocation, including a call suppressed by the native miss counter. */
@@ -96,6 +99,7 @@ public final class PeriodicComboClock {
         int side=a?0:1;ClickQueue q=clickQueues[side];long ns=Math.round(now*1_000_000.0);
         boolean ready=q.lastCompletedNanos==Long.MIN_VALUE||ns-q.lastCompletedNanos>=timing.clickIntervalNanos;
         if(!q.gate||!ready){clickEvent(a,"POLL",source,null,ready,false);return;}
+        if(!policies[side].allowInjection(observation(a),source)){clickEvent(a,"DEFER",source,null,true,false);return;}
         Press press=new Press(++q.nextId,ns);q.presses.addLast(press);q.lastCompletedNanos=ns;
         q.gate=policies[side].injected(observation(a),now);clickEvent(a,"ADMIT",source,press,true,false);
     }
