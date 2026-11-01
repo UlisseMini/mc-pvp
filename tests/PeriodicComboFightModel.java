@@ -160,7 +160,10 @@ public final class PeriodicComboFightModel {
     static void receive(State s,double time,boolean a){receive(s,time,a,null);}
     /** Observer runs after this client's normal packet application. The clock adapter
      * sanitizes the packet into own-received data before exposing it to a policy. */
-    static void receive(State s,double time,boolean a,java.util.function.Consumer<Packet> received){for(Packet p:due(s,time,a?1:2)){if(p.kind>=12){if(p.kind==12)s.ab.lastHurtTime=time;else if(p.kind==13)s.ba.lastHurtTime=time;else if(p.kind==14)s.a.lastHurtTime=time;else s.b.lastHurtTime=time;}else if(p.kind==4)s.b.velocity(p.vx,p.vy,p.vz);else if(p.kind==8)s.a.velocity(p.vx,p.vy,p.vz);else if(p.kind==10||p.kind==11)(a?s.a:s.b).sprint=p.flag;else {View v=a?s.ab:s.ba;if(p.flag&&Math.abs(p.x-v.x)<.03125&&Math.abs(p.y-v.y)<.015625&&Math.abs(p.z-v.z)<.03125)v.receive(v.x,v.y,v.z);else v.receive(p.x,p.y,p.z);}audit(s);if(received!=null)received.accept(p);}}
+    static void receive(State s,double time,boolean a,java.util.function.Consumer<Packet> received){for(Packet p:due(s,time,a?1:2)){applyReceived(s,time,a,p);if(received!=null)received.accept(p);}}
+    /** One canonical client application, shared by immediate legacy drains and
+     * the clock's opt-in delayed S19 cue publication. No transport selection. */
+    static void applyReceived(State s,double time,boolean a,Packet p){if(p.kind>=12){if(p.kind==12)s.ab.lastHurtTime=time;else if(p.kind==13)s.ba.lastHurtTime=time;else if(p.kind==14)s.a.lastHurtTime=time;else s.b.lastHurtTime=time;}else if(p.kind==4)s.b.velocity(p.vx,p.vy,p.vz);else if(p.kind==8)s.a.velocity(p.vx,p.vy,p.vz);else if(p.kind==10||p.kind==11)(a?s.a:s.b).sprint=p.flag;else {View v=a?s.ab:s.ba;if(p.flag&&Math.abs(p.x-v.x)<.03125&&Math.abs(p.y-v.y)<.015625&&Math.abs(p.z-v.z)<.03125)v.receive(v.x,v.y,v.z);else v.receive(p.x,p.y,p.z);}audit(s);}
     static void serverMoveB(State s,Packet p){serverMove(s,p,false);}
     static void serverMoveA(State s,Packet p){serverMove(s,p,true);}
     static void serverMove(State s,Packet p,boolean fromA){serverMove(s,p,fromA,null,0);}

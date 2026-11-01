@@ -12,8 +12,16 @@ public final class PeriodicComboClock {
         /** Stateful measured-cost models must isolate their generated-call history. */
         default InjectionTiming deepCopy(){return this;}
     }
+    /** Optional exogenous S19 publication time, queried only after a generated
+     * packet is selected by an actual client drain. Routes2/3 mean receiving A/B.
+     * All arguments/results are absolute clock-relative nanoseconds; no native
+     * packet identity, target/own label, count or historical ordinal is exposed. */
+    public interface CuePublicationTiming {
+        long publicationNanos(int clientRoute,long rawReceiptNanos,long taskReadyNanos,long actualDrainStartNanos);
+        default CuePublicationTiming deepCopy(){return this;}
+    }
     public static final class Timing implements Cloneable {
-        public Timing deepCopy(){try{Timing copy=(Timing)super.clone();if(injectionTiming!=null)copy.injectionTiming=injectionTiming.deepCopy();return copy;}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
+        public Timing deepCopy(){try{Timing copy=(Timing)super.clone();if(injectionTiming!=null)copy.injectionTiming=injectionTiming.deepCopy();if(cuePublicationTiming!=null)copy.cuePublicationTiming=cuePublicationTiming.deepCopy();return copy;}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
         public double aTickPhase=0,bTickPhase=10,serverPhase=25;
         public double tickPeriod=50,serverPeriod=50,framePeriod=2.5,aFramePhase=0,bFramePhase=1;
         public double moveAfterInput=.3,flushAfterInput=.6,entityAfterDrain=.4,trackAfterDrain=.8,endAfterDrain=1;
@@ -26,6 +34,9 @@ public final class PeriodicComboClock {
         public boolean explicitPolls=false;
         /** Null preserves historical instantaneous injection. Non-null requires a tape. */
         public InjectionTiming injectionTiming;
+        /** Null preserves exact immediate legacy cue/callback behavior. Tape-only.
+         * This is publication timing, not a general packet-handler service model. */
+        public CuePublicationTiming cuePublicationTiming;
         /** Conditional reference-opportunity sensitivity only, NOT a calibrated
          * clock engine. Busy client stages wait; delays of a full tick reject. */
         public boolean causalBackpressure=false;
@@ -73,6 +84,11 @@ public final class PeriodicComboClock {
     public record BackpressureStats(long deferredStages,long deferralAttempts,double maxDelayMillis,Map<Kind,Long> stageCounts) {}
     private record Press(long id,long admittedNanos) {}
     private record Injection(Press press,String source,long completedNanos) {}
+    /** Exactly one of cue/callback is non-null. Cue packets have not applied yet;
+     * other packets already applied, with an immutable FIFO-delayed callback. */
+    private record Publication(long nanos,PeriodicComboFightModel.Packet cue,PacketObservation callback) {
+        Publication deepCopy(){return new Publication(nanos,cue==null?null:cue.deepCopy(),callback);}
+    }
     private static final class ClickQueue {
         final LinkedList<Press> presses=new LinkedList<>();
         long nextId,lastCompletedNanos=Long.MIN_VALUE;boolean gate;int missCounter;
@@ -88,6 +104,7 @@ public final class PeriodicComboClock {
     private final long[] ticks=new long[2];private final Control[] controls=new Control[2];private final double[] lastClick={-1e100,-1e100};
     private final ClickQueue[] clickQueues={new ClickQueue(),new ClickQueue()};
     private final Injection[] injections=new Injection[2];
+    private final List<LinkedList<Publication>> publications=List.of(new LinkedList<>(),new LinkedList<>());
     private final boolean[] selectionReady=new boolean[2];
     private final HeadTiming[] headTimings=new HeadTiming[2];
     private final long[][] deferredCounts=new long[2][Kind.values().length];
@@ -100,13 +117,14 @@ public final class PeriodicComboClock {
     public PeriodicComboClock(PeriodicComboFightModel.State state,PeriodicComboFightModel.Config config,Timing timing,Policy a,Policy b,List<Scheduled> schedule){
         this.state=state;this.config=config;this.timing=timing;policies=new Policy[]{a,b};recordedSchedule=schedule!=null;scheduleEnd=schedule==null?Double.POSITIVE_INFINITY:schedule.stream().mapToLong(Scheduled::nanos).max().orElseThrow(()->new IllegalArgumentException("Empty event tape"))/1_000_000.0;config.deferMovementSend=true;state.transport=null;
         Comparator<Event> comparator=Comparator.comparingDouble(Event::time);
-        events=new PriorityQueue<>(timing.causalBackpressure?comparator.thenComparingInt(e->e.kind>=22?0:1)
+        events=new PriorityQueue<>(timing.causalBackpressure||timing.cuePublicationTiming!=null?comparator.thenComparingInt(e->e.kind>=22?0:1)
             .thenComparingDouble(Event::originalTime).thenComparingLong(Event::order):comparator.thenComparingLong(Event::order));
         state.extraLatency=new double[]{timing.uplinkA,timing.uplinkB,timing.downlinkA,timing.downlinkB};
         state.nominalHalfRtt=new double[]{config.ownRtt/2,config.otherRtt/2,config.ownRtt/2,config.otherRtt/2};
         if(timing.inputMode==InputMode.NATIVE_QUEUED&&timing.clickIntervalNanos<50_000_000L)throw new IllegalArgumentException("Physical injection ceiling exceeds20CPS");
         if((timing.explicitPolls||timing.injectionTiming!=null)&&schedule==null)throw new IllegalArgumentException("Explicit polls/injection timing require an event tape");
         if(timing.causalBackpressure&&schedule==null)throw new IllegalArgumentException("Causal backpressure requires an event tape");
+        if(timing.cuePublicationTiming!=null&&schedule==null)throw new IllegalArgumentException("Cue publication timing requires an event tape");
         if(schedule==null){add(timing.aFramePhase,0);add(timing.bFramePhase,1);add(timing.aTickPhase,2);add(timing.bTickPhase,3);add(timing.serverPhase,8);}
         else{
             if(timing.inputMode!=InputMode.NATIVE_QUEUED)throw new IllegalArgumentException("Explicit event tapes require NATIVE_QUEUED mode");
@@ -125,6 +143,7 @@ public final class PeriodicComboClock {
         events.addAll(source.events);System.arraycopy(source.ticks,0,ticks,0,2);System.arraycopy(source.controls,0,controls,0,2);System.arraycopy(source.lastClick,0,lastClick,0,2);executionStarted=source.executionStarted;
         System.arraycopy(source.selectionReady,0,selectionReady,0,2);clickQueues[0]=source.clickQueues[0].copy();clickQueues[1]=source.clickQueues[1].copy();order=source.order;now=source.now;
         System.arraycopy(source.injections,0,injections,0,2);
+        for(int side=0;side<2;side++)for(Publication p:source.publications.get(side))publications.get(side).addLast(p.deepCopy());
         System.arraycopy(source.headTimings,0,headTimings,0,2);
         for(int side=0;side<2;side++)System.arraycopy(source.deferredCounts[side],0,deferredCounts[side],0,deferredCounts[side].length);
         System.arraycopy(source.deferredStages,0,deferredStages,0,2);System.arraycopy(source.deferralAttempts,0,deferralAttempts,0,2);System.arraycopy(source.maxDeferral,0,maxDeferral,0,2);
@@ -173,7 +192,50 @@ public final class PeriodicComboClock {
     }
     private Observation observation(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;return new Observation(now,ticks[a?0:1],b.q,v.x,v.y,v.z,b.sprint,b.headYaw,b.lastContactTime,b.localContacts,v.lastHurtTime,b.lastHurtTime);}
     private void receive(boolean a){
-        PeriodicComboFightModel.receive(state,now,a,p->{
+        if(timing.cuePublicationTiming==null){
+            PeriodicComboFightModel.receive(state,now,a,p->policies[a?0:1].received(packetObservation(a,p,now)));
+            return;
+        }
+        int side=a?0:1;LinkedList<Publication> pending=publications.get(side);
+        long drainNanos=Math.round(now*1_000_000.0);
+        for(PeriodicComboFightModel.Packet p:PeriodicComboFightModel.due(state,now,a?1:2)){
+            if(p.kind>=12){
+                long publication=timing.cuePublicationTiming.publicationNanos(a?2:3,Math.round(p.due*1_000_000.0),Math.round(p.ready*1_000_000.0),drainNanos);
+                if(publication<drainNanos)throw new IllegalStateException("UNSUPPORTED_CUE_TIME: publication precedes selected drain");
+                if(publication/1_000_000.0>scheduleEnd)throw new IllegalStateException("UNSUPPORTED_CUE_TIME: publication exceeds tape coverage");
+                if(!pending.isEmpty()&&publication<pending.getLast().nanos)
+                    throw new IllegalStateException("UNSUPPORTED_CUE_ORDER: publication would invert client FIFO");
+                if(publication==drainNanos&&pending.isEmpty()){
+                    PeriodicComboFightModel.applyReceived(state,now,a,p);
+                    policies[side].received(packetObservation(a,p,now));
+                }else enqueuePublication(a,new Publication(publication,p.deepCopy(),null));
+            }else{
+                PeriodicComboFightModel.applyReceived(state,now,a,p);
+                if(pending.isEmpty())policies[side].received(packetObservation(a,p,now));
+                else{
+                    long publication=pending.getLast().nanos;
+                    enqueuePublication(a,new Publication(publication,null,packetObservation(a,p,publication/1_000_000.0)));
+                }
+            }
+        }
+    }
+    private void enqueuePublication(boolean a,Publication publication){
+        publications.get(a?0:1).addLast(publication);
+        double time=publication.nanos/1_000_000.0;
+        events.add(new Event(time,a?24:25,Long.MIN_VALUE+order++,time));
+    }
+    private String publish(boolean a){
+        int side=a?0:1;Publication p=publications.get(side).removeFirst();
+        if(p.nanos!=Math.round(now*1_000_000.0))throw new AssertionError("Cue publication queue/event mismatch");
+        if(p.cue!=null){
+            PeriodicComboFightModel.applyReceived(state,now,a,p.cue);
+            policies[side].received(packetObservation(a,p.cue,now));
+            return "CUE_PUBLICATION"+(a?"A":"B");
+        }
+        policies[side].received(p.callback);
+        return "RECEIVE_CALLBACK"+(a?"A":"B");
+    }
+    private PacketObservation packetObservation(boolean a,PeriodicComboFightModel.Packet p,double handledAt){
             ReceivedKind kind;double x=Double.NaN,y=Double.NaN,z=Double.NaN,vx=Double.NaN,vy=Double.NaN,vz=Double.NaN;boolean ground=false,sprint=false;
             if(p.kind==5||p.kind==6){
                 kind=p.packetId==0x16?ReceivedKind.TARGET_LOOK:ReceivedKind.TARGET_POSITION;
@@ -183,8 +245,7 @@ public final class PeriodicComboClock {
             else if(p.kind==12||p.kind==13)kind=ReceivedKind.TARGET_HURT;
             else if(p.kind==14||p.kind==15)kind=ReceivedKind.OWN_HURT;
             else throw new AssertionError("Unexpected own incoming packet kind "+p.kind);
-            policies[a?0:1].received(new PacketObservation(p.due,now,p.packetId,kind,x,y,z,ground,vx,vy,vz,sprint));
-        });
+            return new PacketObservation(p.due,handledAt,p.packetId,kind,x,y,z,ground,vx,vy,vz,sprint);
     }
     private void aim(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;double dx=v.x-b.q.x(),dz=v.z-b.q.z(),eye=b.q.y()+PeriodicComboFightModel.EYE;double targetY=Math.max(v.y+.15,Math.min(v.y+1.65,eye));b.yaw=(float)Math.toDegrees(Math.atan2(-dx,dz));b.pitch=(float)-Math.toDegrees(Math.atan2(targetY-eye,Math.hypot(dx,dz)));selectionReady[a?0:1]=true;}
     private void poll(boolean a,String source){
@@ -235,6 +296,8 @@ public final class PeriodicComboClock {
         if(!Double.isFinite(end)||end>scheduleEnd)throw new IllegalArgumentException("Requested time exceeds supplied event-tape coverage");
         executionStarted=true;
         while(!events.isEmpty()&&events.peek().time<=end){Event e=events.remove();now=e.time;int k=e.kind;boolean a=(k&1)==0;int side=a?0:1;String name;
+            if((k<8||k>=12&&k<24)&&!publications.get(side).isEmpty())
+                throw new IllegalStateException("UNSUPPORTED_CUE_SERVICE_OVERLAP: same-client stage before FIFO publication completes");
             if((k<8||k>=12&&k<22)&&injections[side]!=null){
                 if(!timing.causalBackpressure)throw new IllegalStateException("UNSUPPORTED_INJECTION_OVERLAP: same-client event before synchronous injection completion");
                 defer(e,side);continue;
@@ -277,7 +340,8 @@ public final class PeriodicComboClock {
             // drain (including S12 before consume); MOVE/INTERP still invalidate it.
             else if(k<18){receive(a);name="CLIENT_DRAIN"+(a?"A":"B");}
             else if(k<22){poll(a,k<20?"frame":"native_tick");name="POLL"+(a?"A":"B");}
-            else{completeInjection(a);name="INJECTION_COMPLETE"+(a?"A":"B");}
+            else if(k<24){completeInjection(a);name="INJECTION_COMPLETE"+(a?"A":"B");}
+            else{name=publish(a);}
             checkpoint(name);
         }
         now=end;
