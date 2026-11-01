@@ -1,5 +1,11 @@
 # Robust search on calibrated native clocks
 
+Latest: extending the oracle's forecast from1s to2s passes all8 fresh
+confirmation draws, versus7/8 for the1s oracle and0/8 for matched W-tap.
+The longer forecast is frozen for reserved qualification on four other calendars
+and new seeds3000–3019. That test is in progress; no legal-controller or native
+promotion follows from these tuning results alone.
+
 The first oracle passed all four development minute tests but failed the reserved
 robustness test. It achieved4 locks in23 evaluated draws;3 draws were UNKNOWN.
 Even if all57 unrun draws passed, it could not reach the planned64/80 target, so
@@ -84,18 +90,74 @@ not repair that scoring error. The retained suffix's late miss also depends on
 aim: nearest distance is2.992 while aimed-ray distance is3.060. Both must be
 reported, rather than calling all such escapes a robust spacing margin.
 
-The next development comparison changes one planning axis at a time: repair
+The controlled development comparison changes one planning axis at a time: repair
 failed-branch ordering and require active continuation before rewarding spacing;
 or extend lookahead; or increase the number of timing futures. This searches
 ordinary inputs against the same calibrated model, without adding a new bot
 rule. A failed restricted beam is not an upper bound on every possible policy.
 
-The16-case comparison is frozen on m1395/m1396 seeds10/11: unchanged version2,
+The16-case comparison is complete on m1395/m1396 seeds10/11: unchanged version2,
 objective-only, horizon-only2s, and particle-only9. Each gets the same240s budget
 and paired W-tap. The objective change is optional/default-off and passed403
 focused assertions; replay of the saved143-hit version2 word and its W-tap1
 control stays exact. Its new launch accounting avoids counting an inherited
 pending launch as completion of a new terminal hit.
+
+| Calendar / seed | Plain W-tap fresh | Version2 fresh | Objective-only fresh | Horizon2s fresh | Particles9 fresh |
+|---|---:|---:|---:|---:|---:|
+|m1395 / 10|2|149 lock|122 lock|150 lock|150 lock|
+|m1396 / 10|2|149 lock|4 return|149 lock|149 lock|
+|m1395 / 11|1|16 return|121 lock|149 lock|16 return|
+|m1396 / 11|2|1 UNKNOWN|4 return|1 UNKNOWN|1 UNKNOWN|
+|Minute locks / all4 draws|0/4|2/4|2/4|3/4|2/4|
+
+All four arms have identical timing-tape, acquisition-state and policy-history
+hashes, and exactly equal W-tap/unchanged-controller control outputs. UNKNOWN
+prefixes are not completed physical losses. No arm exhausted its resource cap.
+The objective change trades away both m1396 outcomes and is rejected; nine
+particles adds work without fixing either nonlock. Only the2s horizon is selected
+for fresh confirmation, with the original objective and three particles.
+
+The initial exploratory selection rule required improvement on both calendars.
+After seeing H2 and before inspecting K9, we explicitly relaxed it to improvement
+on at least one calendar with no regression on either. That is an adaptive
+selection decision, not a preregistered finding. All outcomes and the amendment
+are retained in the [selection review](poc-20261101/robust-search/legal/oracle-objective-review.md).
+Confirmation compares the frozen H2 and v2 on seeds12–15 on both tuning calendars;
+reserved qualification still requires16/20 on each m1397–m1400 calendar, using
+new seeds3000–3019. Selection and confirmation are not robustness qualification.
+
+Confirmation is complete, with no UNKNOWN or resource-censored outcome:
+
+| Calendar / seed | Plain W-tap fresh | Version2 fresh | Horizon2s fresh |
+|---|---:|---:|---:|
+|m1395 / 12|2|150 lock|150 lock|
+|m1396 / 12|2|149 lock|149 lock|
+|m1395 / 13|1|150 lock|150 lock|
+|m1396 / 13|2|149 lock|149 lock|
+|m1395 / 14|2|111 return|150 lock|
+|m1396 / 14|2|149 lock|149 lock|
+|m1395 / 15|2|150 lock|150 lock|
+|m1396 / 15|2|149 lock|149 lock|
+|Minute locks / all8 draws|0/8|7/8|8/8|
+
+All eight pairs have exactly equal source-state/history hashes, timing tapes
+and W-tap/old-controller outputs; both arms used the same source hashes. H2
+rescues a second distinct failure without a confirmation regression. This is
+enough to proceed with its frozen reserved test, not to claim80% reliability.
+The [recorded admission decision](poc-20261101/robust-search/confirmation-decision.json)
+keeps the configuration and untouched evaluation seeds explicit.
+
+On the rescued m1395seed11, H2 changes inputs about201ms earlier than H1.
+The first14 fresh-hit timestamps are identical; H2 then delays the15th by52.5ms
+and maintains149 fresh, versus H1's16 and W-tap's1. Its longer sampled tail
+reveals risk and prompts earlier release/strafe control. This does **not** show
+foreknowledge of the exact eventual return: planner futures differ from the
+evaluation future, and the1s horizon already included that actual return time.
+See the [paired decision audit](poc-20261101/robust-search/oracle/horizon-m1395-seed11-review/findings.md).
+The rejected objective instead rewards wider spacing after only two forecast
+completions, sacrificing a third available hit and then losing contact; see the
+[regression audit](poc-20261101/robust-search/oracle/objective-m1396-seed10-review/findings.md).
 
 All observed UNKNOWNs so far concern unsupported client-handler overlap, not
 missing packet-delay samples or accepted returns. Two examples have a client
@@ -123,6 +185,37 @@ transfer assumption. Unsupported acquisition or continuation remains UNKNOWN.
 The grid therefore separates supported failures from uncovered regions, and
 cannot establish that a controller is physically impossible in an uncovered
 region. Only a promising profile would proceed to fresh sampled confirmation.
+
+The72-profile screen is now complete: neither the frozen legal controller nor
+W-tap produces a minute lock in288 draws. Among203 pairs with completed outcomes
+on both arms, the controller wins24 fresh-count comparisons, ties152 and loses27.
+There are85 unresolved pairs; they are not discarded from qualification.
+
+| All72 profiles,4 draws each | Frozen legal controller | Plain W-tap |
+|---|---:|---:|
+|Active minute locks / all draws|0/288|0/288|
+|Shared acquisition UNKNOWN|75|75|
+|Continuation UNKNOWN|10|4|
+|Completed paths with an accepted return|203|209|
+
+The best fully supported four-draw profile is still the existing lock8 setting,
+not a new region. It beats W-tap in fresh count in all four draws but never locks:
+
+| lock8 calendar / seed | Frozen legal fresh before return | Plain W-tap fresh before return |
+|---|---:|---:|
+|m1395 / 20|118|1|
+|m1395 / 21|19|1|
+|m1396 / 20|4|2|
+|m1396 / 21|4|2|
+
+Both m1396 arms take their first return at the same time despite the fresh-count
+difference. The long118-hit sample is therefore not evidence of reliable
+maintenance, and other settings do not justify a native trial. The strong
+dependence on the full inherited opening/calendar remains. See the
+[full settings review](poc-20261101/robust-search/legal/fixed-settings-review/findings.md)
+for per-profile spread, support counts and baseline comparisons. This is a
+negative result for the frozen law under a conditional timing transfer, not a
+proof that other controllers or unsupported settings cannot work.
 
 The initial reserved test froze version1 over seeds1000–1019 on each calendar
 m1397–m1400. UNKNOWN and resource-censored cases remain in the denominator. The

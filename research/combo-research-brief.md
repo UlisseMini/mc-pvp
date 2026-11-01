@@ -66,13 +66,24 @@ Checkpoint: v1 passed4/4 development draws but only4/23 evaluated reserved draws
 (3 UNKNOWN), making64/80 impossible even if all57 unrun draws succeeded. Preserve
 that negative result. Version2 retains the prior plan suffix as an independently
 reevaluated candidate; its selected diagnostic78→143 versus WT1 is not a robust
-qualification. Its new reserved seeds are2000–2019, with a prespecified stop when
-16/20 on any calendar becomes unattainable. Exact failure replay also exposed a
+qualification. Its reserved test stopped with12/22 locks (2 UNKNOWN); m1398's
+five real returns made16/20 unattainable. Exact failure replay also exposed a
 return-truncated-gap tie-break that can reward earlier death, and safe forecasts
 with no active continuation. Compare objective repair, longer horizon, and more
 timing particles separately on development/tuning data before further reserved
-evaluation. Do not turn a finite beam's horizon/scoring failure into a physical
-impossibility argument. See [search findings](combo-robust-search-20261101.md).
+evaluation. The four-arm screen is complete: v2/objective/K9 each2/4 locks,
+horizon2s3/4, W-tap0/4. Objective-only regresses m1396 and is rejected; K9 adds
+cost without rescue. The exploratory selection rule was explicitly adapted after
+H2 outcomes, before K9 inspection; preserve that provenance. Frozen H2 then
+passes8/8 new tuning draws, versus v2's7/8 and W-tap0/8. It is now evaluating
+reserved seeds3000–3019 on m1397–m1400, unchanged16/20 gate in each calendar and
+futility stop, with UNKNOWN retained. No legal parameter/native promotion yet.
+The separate frozen-law72-setting sweep has0/288 minute locks versus W-tap0/288;
+75 acquisitions are UNKNOWN, with another10 candidate /4 W-tap continuations
+unsupported. Existing lock8 is still the best fully supported four-draw profile,
+but its4–118 spread is not robust. Do not turn a finite beam's horizon/scoring
+failure into a physical impossibility argument. See
+[search findings](combo-robust-search-20261101.md).
 
 Only after an oracle witness survives that gate, search own-observation spacing,
 braking and hit-strength parameters. Every row includes identical-state W-tap.
