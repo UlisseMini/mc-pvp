@@ -132,10 +132,25 @@ Three small experiments are complete, each preserving a matched W-tap reference:
   both. Candidate and W-tap remain at0–1 fresh before return. The hidden-state
   mechanism is real, but this opening does not create a useful lock entry.
 
+The coast transfer to6/1.1/1.1 fails:7/14/37 versus frozen200/190/38 and
+W-tap3/2/3, destroying both nominal minute locks. This branch is stopped without
+deployment. A correction helpful in one flight state is harmful in another.
+
+Astra's four-mode diagnostic finds a better vanilla handoff: change the fifth
+launch to **normal while airborne**, keep its timing, and coordinate braking and
+subsequent sprint pursuit. From the original900ms seed through4350ms it gives7
+fresh versus W-tap3 with zero candidate returns. Its new1.1s suffix contributes3
+fresh versus W-tap2 from exactly the same later state; both survive that short
+suffix. The minimum sampled defender distance is3.14765. This is a single-phase
+oracle prefix, not a legal controller or stable cycle. The final sprint's flight
+falls beyond the horizon and remains unresolved. The next extension branches
+before that hit and checks post-launch viability, preserving all earlier credit.
+
 These are causal tests, not a vanilla infeasibility proof. No bounded search has
 covered all allowed inputs, phases, acquisition states or pings.
 
 Detailed evidence: [full compensation grid](poc-20261101/anneal/continuation/horizontal-compensation-findings.md),
 [four-tick native audit](poc-20261101/anneal/legal/native-t4-acquisition-findings.md),
 [six-tick native audit](poc-20261101/anneal/legal/native-t6-phase-findings.md),
-[vanilla oracle/landing audit](poc-20261101/anneal/mechanism/findings.md).
+[vanilla oracle/landing audit](poc-20261101/anneal/mechanism/findings.md),
+[Astra's reach corridor and normal-airborne witness](poc-20261101/anneal/astra-boundary/findings.md).
