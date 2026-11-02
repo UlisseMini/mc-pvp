@@ -1,6 +1,48 @@
 # Combo research — findings, November 1
 
-## Latest checkpoint: structural observer fixes and direct policy search
+## Latest checkpoint: contact cycles and timed A/D
+
+The expanded family searches two-/three-contact W releases, per-contact or
+per-cycle A/D alternation, release/strafe timing, sprint rearming and click
+windows.128 proposal slots (109 unique) include82 with A/D,60 with alternating
+A/D. Same calibrated pipeline, provisional Hypixel/hit9, ownRTT120, opponent
+RTT90/120/140; matched plain W-tap throughout. Jump remains off because its
+client input-to-takeoff transition has not been validated in this fight clock.
+
+The selected two-contact strafe word fails to clearly beat W-tap across the
+transfer spread: MIDPOINT49wins/41losses/66ties/24UNKNOWN across180 rows.
+The selected three-contact word **does not strafe** and improves the short
+prefix, especially at90/120ms:
+
+| Three-contact word, MIDPOINT | Candidate fresh median [range] | Plain W-tap median [range] | Win/loss/tie/UNKNOWN |
+|---|---:|---:|---:|
+| Opponent90ms |3 [1–3]|1 [1–2]|48/0/8/4|
+| Opponent120ms |3 [1–24]|2 [1–2]|32/4/18/6|
+| Opponent140ms |2 [0–11]|2 [0–3]|20/4/22/14|
+
+Each row is30 calendar/seed schedules ×two mirror directions, not60 independent
+recordings; the no-strafe mirrors duplicate controls. Resolved-pair ranges are
+conditional on support; UNKNOWNs stay in denominators. Ten transfer calendars
+were excluded from this search's fitting/selection but previously exposed in
+other research. Sealed m1415–m1418 remain untouched. All3,240 frozen transfer
+rows (including no-A/D and W-tap-plus-A/D ablations, three timing bounds) contain
+zero minute locks. No native demo or robust lock is claimed.
+
+Training-only causal comparisons show both sides of strafing. One case gets
+5fresh versus the exact no-A/D ablation2 and matched W-tap2; the same A/D on
+W-tap gets1. At a critical opponent click, their own-view ray is3.695blocks
+with strafe versus2.910without. The benefit is separation, not a ray missing
+an otherwise in-range body. In another case, A/D leaves our target at3.03–3.12
+blocks when the next hit is due: full cycle1, no-A/D5, W-tap2. That missed window
+ends the continuation. Fixed alternation is insufficient; range at the next
+fresh window remains the useful control target.
+
+The longer three-contact trace produces roughly one sprint launch then two
+normal launches; a27-hit training prefix versus W-tap2 eventually fails when
+landing/server-motion phase shifts. It is a useful strength cycle, not a stable
+fixed point. [Full study, ablations, limitations and reproducible commands](hypixel-inference-20261101/zest-structure-search/findings.md).
+
+## Previous checkpoint: structural observer fixes and direct policy search
 
 Two tracks ran independently. The observer really did omit packet look and
 compare an incoming position with a potentially unrelated latest predicted

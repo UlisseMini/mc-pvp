@@ -14,10 +14,20 @@ instructions, not measured universal timings. See the contemporaneous
 track contained music recognition, not an instructional transcript. The current
 web fetch of the videos failed/throttled; no new transcript is being claimed.
 
-For the W-only study, the strong hint is a repeatable sequence of strong and weak
-launches with deliberately timed pursuit/coasting. The first native test uses
-the two-contact variant. The model, rather than the name “Zest”, determines the
-specific input durations. Strafe remains a separate future axis.
+For the earlier W-only study, the hint was a repeatable sequence of strong and
+weak launches with deliberately timed pursuit/coasting. That study did not
+resolve the tutorials' strafe hypothesis. A later simple parameter search used
+a constant A/D bias, still without contact-timed direction changes.
+
+The current [contact-cycle search](hypixel-inference-20261101/zest-structure-search/plan.md)
+adds A/D alternation per contact or cycle, including its start/duration relative
+to the predicted contact, with two- and three-contact W-release words. It tests
+opponent RTT90/120/140 at provisional Hypixel/hit9 against matched plain W-tap,
+with separate selection/transfer calendars and no-strafe ablations. A word's
+name does not establish its actual sprint/normal strength sequence: releasing
+W after a confirmation affects later contacts; it cannot change the confirmed
+launch retroactively. Jump awaits input-to-takeoff validation in the fight
+clock and is not included in this pass.
 
 ## Hypixel evidence is not an exact specification
 

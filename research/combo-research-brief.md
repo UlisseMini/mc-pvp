@@ -38,6 +38,32 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Current follow-up: broaden inference and build legal control
 
+LATEST USER DIRECTION — search contact-cycle strafing, following the failed
+simple family. The prior seven-parameter search included a constant strafe
+bias; it did NOT cover contact-timed direction changes. New bounded study:
+two-/three-contact W-release words, before/after release timing, alternating
+A/D per contact or cycle, at provisional Hypixel/hit9, own RTT120 and opponent
+RTT90/120/140. Preserve native51ms click spacing for both arms and acquisition.
+Use the same frozen training/selection/previously-exposed transfer split and
+matched plain W-tap; test mirror directions and no-strafe / W-tap-plus-strafe
+ablations after freezing finalists. No future-calendar or opponent-POV input.
+Jump remains off in this first pass because the canonical fight clock has no
+validated client jump transition (ExactTravel starts downstream of it).
+See `hypixel-inference-20261101/zest-structure-search/plan.md`.
+
+CONTACT-CYCLE CHECKPOINT:128 proposal slots/109unique,3,072 training pairs,
+288selection pairs and3,240 frozen transfer rows including mirrored orientations
+and ablations. Two-contact alternating-A/D finalist fails a clear transfer gate:
+MIDPOINT49wins/41losses/66ties/24UNKNOWN. Three-contact finalist selects no A/D;
+MIDPOINT median fresh prefixes3/3/2 at opponent90/120/140 versus W-tap1/2/2;
+best resolved transfer24, zero minute locks at any service bound. These are
+previously exposed transfer calendars, not pristine native confirmation.
+No native promotion. Training-only ablation identifies a real spacing tradeoff:
+A/D improves one case5vs no-A/D2/WT2, but hurts another1vs no-A/D5/WT2 by missing
+the next reach window. The benefit case denies via their own-view distance,
+not an angular ray miss. Do not add fixed input words blindly; any next strafe
+law should be motivated by this measured next-window range tradeoff.
+
 LATEST USER DIRECTION — two parallel tracks (after the correlated-filter result):
 first audit structural observer omissions before adding filter machinery. Use
 observed opponent body/head-look correctly, and treat a received position
