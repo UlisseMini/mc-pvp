@@ -90,6 +90,21 @@ search; do not optimize around unsupported schedules. No new controller or
 native matches during these calibrations. See seeded-maintenance native/
 actual-calendar and native/predictive-calendar; original m1415–18 remain SEALED.
 
+WHOLE-DRAIN FOLLOW-UP: optional exact-FIFO native service templates remove the
+distinct-envelope composition error; default/exact-recorded clock unchanged.
+The original gate fails at WT5/32 training,7/32 validation UNKNOWN. A frozen
+consensus-only wall-clock wrapper reduces these to3/32 and1/32 without choosing
+an ambiguous action; long-stall/real control ambiguity stays UNKNOWN. Fine
+service intervals still under-cover, confirmed prospectively by m1465–68.
+That new matched-base native batch gives plan2/1 versus WT2/2, allfour setup
+qualified and no first-return100ms timing warning. No lock or positive controller
+result. Preserve all earlier failed gates. Search may next perform only the
+bounded proposal-generation scope in seeded-maintenance native/robust-search/
+proposal-scope.md after cache parity and the frozen2x2 diagnostic: full observed
+service-support sensitivity, paired WT, no probability/fine-margin guarantee,
+then frozen native confirmation. New m1465–68 are sampler/seed validation,
+not training/example calendars. No real-time native oracle or human-client edits.
+
 LATEST USER DIRECTION — prioritize maintenance over entry. Characterize the
 provisional Hypixel preset and reference regimes lock8/m1364 and horizontal-only
 hit2/m1272 separately. Start by rescoring existing complete native streams and
