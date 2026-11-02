@@ -1185,3 +1185,11 @@ queues. Preserve all attempts and the earlier invalid m1472–77 comparison.
 All12 v11 client releases in this batch were input_HEAD; a separate native
 packet-first branch check is still required. Do not count no observed overwrites
 as native coverage of a branch that did not execute.
+
+Follow-up: fixed four6s coincident-deadline probes m1486–89 all pass separate
+causal state preservation; m1486B/m1488B exercise packet initialization before
+HEAD, with replica-update retention measured32–33ms later. No received hurt cue
+occurred in those gaps, so that native coverage is absent. The original strict
+empty-queue labels remain unchanged. Exact reconstruction must support separate
+initialization/control epochs and the containing drain before these calendars
+can be model prediction evidence.

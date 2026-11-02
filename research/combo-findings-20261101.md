@@ -8,8 +8,11 @@ initializes before the eligible main-thread packet handler, then starts controls
 at its next input HEAD without resetting the received state. Failed initialization
 cannot retry over live effects. The actual lifecycle passes101 assertions on
 Java8 and17; six fresh native games show no overwritten packet effects. All12
-client initializations in that batch occurred at HEAD, so the new packet-first
-branch still needs a dedicated native check.
+client initializations in that batch occurred at HEAD. A separate fixed four-game
+probe then exercised packet-first initialization in both candidate and W-tap:
+the received replica cache/interpolation updates survived unchanged at the first
+control HEAD32–33ms later. No incoming hurt cue occurred in those gaps, so live
+cue retention has fixture/source coverage rather than native coverage.
 
 | Fixed20s native calibration, RTT120/0 | Pursuit32 → W-tap | Plain W-tap, same literal seed |
 |---|---|---|
@@ -23,8 +26,8 @@ qualified wins. After the fix, all182 fields match and there are no cap/reach
 violations or scored clock gaps over100ms. The strict empty-queue check passes
 two games and rejects four only for newly emitted movement packets waiting at
 server initialization, then handled afterward. A separate causal-preservation
-audit distinguishes these queues from overwritten effects; the original labels
-remain. Independent native clocks are measured, not exact full-state clones.
+audit passes all six: each queued packet has one handler enter and return after
+initialization. The original strict labels remain. Independent native clocks are measured, not exact full-state clones.
 The unchanged pursuit candidate does not beat W-tap here.
 
 The separate RTT120/120 model diagnosis made progress on one transition. Moving
@@ -48,7 +51,10 @@ The additive service pool contains5,069 complete native drains (the old2,006
 unchanged plus3,063 new). Its four examples of the missing hurt/sprint/teleport
 word are landing transitions. This is sparse development support, not validated
 probability coverage; old UNKNOWNs stay recorded. Frozen unchanged-input rescoring
-is separate from tuning and held-out evaluation.
+resolves all56 arm/sample outcomes, with relocation7/7/7/6/6/6/5/5 versus
+same-pre30 W-tap5each. All still return; six improve and two tie. The new
+mixture also changes some already-supported draws, so this is not merely
+replacing UNKNOWN labels. All old outcomes remain; no held-out tuning occurred.
 
 [Native paired results and replay IDs](seeded-maintenance-20261101/native/pursuit120-0-calibration-v3-analysis/findings.md).
 [Fourth-hit mechanism and matched checkpoint controls](seeded-maintenance-20261101/native/robust-search/wt-tail/protected-prefix/fourth-release-relocation/findings.md).
