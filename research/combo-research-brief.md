@@ -105,6 +105,21 @@ service-support sensitivity, paired WT, no probability/fine-margin guarantee,
 then frozen native confirmation. New m1465–68 are sampler/seed validation,
 not training/example calendars. No real-time native oracle or human-client edits.
 
+CONTINUATION SEARCH CHECKPOINT: actual-clock reconstruction of m1465–68 matches
+all four observed hit counts,262 own MOVE and262 replica snapshots within2e-12
+blocks; conditional timing is supported, predictive fine margins remain uncertain.
+The frozen shared-word beam now yields3freshs on all eight development samples
+versus W-tap2–3 (four wins/four ties), but no fourth hit or lock. It delivers
+N/N/S; all fourth fresh-window rays miss after the sprint launch plus coasting.
+The5-lane frontier dies after51 HEADs/3996 proposals, so this is not a universal
+feasibility boundary. V1's terminal-retention bug is preserved; V2 changes only
+final retention and reproduces all51 lane logs, rescoring173 words. No validation
+or native promotion. Next diagnostic is a single ordinary-input suppression of
+the third sprint re-arm from the same complete prefix, with primed W-tap and
+confirmed delivered strength; no forced live sprint state. See native/
+robust-search/search-findings.md and theory/next-transition-notes.md under
+seeded-maintenance-20261101.
+
 LATEST USER DIRECTION — prioritize maintenance over entry. Characterize the
 provisional Hypixel preset and reference regimes lock8/m1364 and horizontal-only
 hit2/m1272 separately. Start by rescoring existing complete native streams and
