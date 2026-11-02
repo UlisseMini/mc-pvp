@@ -85,13 +85,15 @@ public final class ReplicationTrace {
         Map<String,Object> e=event(type);e.put("match",c.match);e.put("packet_id",packetId(packet));
         e.put("packet",packet(packet));e.put("client_tick",Client.ticks);e.put("frame",frames);return e;
     }
+    static void refreshContext(){
+        context=ScienceTrace.client()&&Client.opponent!=null&&Client.controls.getProperty("science_network_trace","0").equals("1")
+            ?new Context(Client.match,((Number)R.call(Client.player,"getEntityId")).intValue(),((Number)R.call(Client.opponent,"getEntityId")).intValue()):null;
+    }
     public static void frame(){
         if(!"client".equals(System.getProperty("lab.role")))return;
         try{
             frames++;
-            Context next=ScienceTrace.client()&&Client.opponent!=null&&Client.controls.getProperty("science_network_trace","0").equals("1")
-                ?new Context(Client.match,((Number)R.call(Client.player,"getEntityId")).intValue(),((Number)R.call(Client.opponent,"getEntityId")).intValue()):null;
-            context=next;
+            refreshContext();Context next=context;
             Map<String,Object> e;while((e=received.poll())!=null)Client.log(e);
             long lost=dropped.getAndSet(0);
             if(lost>0)Client.log(Compat.map("type","replication_trace_drop","time",System.currentTimeMillis(),"match",Client.match,"count",lost));

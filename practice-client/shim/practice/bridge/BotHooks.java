@@ -16,6 +16,7 @@ public final class BotHooks {
     public static void attack(Object self,Object target,boolean after){if(BotRuntime.enabled()){if(after)Client.attackAfter(self,target);else Client.attackBefore(self,target);}}
     public static void clearUse(Object self){if(BotRuntime.enabled())Client.blockUseClearing(self);}
     public static void apply(Object packet,boolean after){if(!BotRuntime.enabled())return;
+        if(!after)Client.beforeSeedPacket();
         ReplicationTrace.apply(packet,after);
         if(after){String name=packet.getClass().getSimpleName();
             if(name.equals("S19PacketEntityStatus"))Client.hurtStatus(packet);

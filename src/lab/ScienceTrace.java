@@ -7,7 +7,7 @@ public final class ScienceTrace {
     private static Map<String,Object> movement, interpolation, attack, click;
     private static long sequence;
     static boolean client() {
-        return "client".equals(System.getProperty("lab.role")) && Client.active()
+        return "client".equals(System.getProperty("lab.role")) && Client.observingActive()
             && Client.controls.getProperty("science_trace","0").equals("1");
     }
     static Map<String,Object> state(Object entity) {

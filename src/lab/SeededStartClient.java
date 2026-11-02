@@ -10,10 +10,10 @@ public final class SeededStartClient {
     private static Path directory;
     private static String side="",id="",seedHash="";
     private static double origin;
-    private static boolean ready,released;
+    private static boolean ready,released,controlStarted;
     private static long suppressed,releaseNs,readAt;
     public static void begin(Properties controls)throws Exception{
-        seed=null;canonical=null;ready=released=false;suppressed=releaseNs=readAt=0;id=controls.getProperty("match","");
+        seed=null;canonical=null;ready=released=controlStarted=false;suppressed=releaseNs=readAt=0;id=controls.getProperty("match","");
         if(!controls.containsKey("seed_file"))return;
         String relative=controls.getProperty("seed_file");
         if(!relative.equals("runtime/seed-starts/"+id+"/seed.properties"))throw new IllegalArgumentException("Invalid local seed path");
@@ -24,7 +24,9 @@ public final class SeededStartClient {
         if(!side.equals("a")&&!side.equals("b"))throw new IllegalArgumentException("Seed side required");
         origin=Double.parseDouble(controls.getProperty("seed_origin_x"));
     }
-    public static boolean active(){return seed==null||released;}
+    public static boolean active(){return seed==null||(released&&controlStarted);}
+    public static boolean initialized(){return seed!=null&&released;}
+    public static boolean awaitingInitialization(){return seed!=null&&!released&&ready&&releaseNs!=0;}
     public static boolean seeded(){return seed!=null;}
     public static boolean suppressPacket(Object packet){
         if(seed==null||released||!id.equals(Client.match)||!Boolean.parseBoolean(Client.controls.getProperty("enabled","false")))return false;
@@ -34,7 +36,8 @@ public final class SeededStartClient {
     }
     /** Runs before policy input selection, with canonical target resolution complete. */
     public static boolean head(long now,long ns)throws Exception{
-        if(seed==null||released)return false;
+        if(seed==null)return false;
+        if(released){startControls(now,ns);return false;}
         long hookStart=System.nanoTime();
         Client.clickGate=false;Client.blockKey=false;Client.setKeys(false);
         R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"unPressAllKeys");
@@ -64,6 +67,33 @@ public final class SeededStartClient {
             }
         }
         if(releaseNs==0||ns<releaseNs)return true;
+        initialize(now,ns,hookStart,"input_head");
+        startControls(now,ns);
+        return false;
+    }
+    /** Main-thread handler entry, before vanilla changes any field. Never holds
+     * or replays a packet. A later input HEAD must preserve these live effects.
+     * Ready/commit preparation and canonical target resolution occurred at HEAD.
+     */
+    public static boolean beforePacket(long now,long ns)throws Exception{
+        if(seed==null||released||!ready||releaseNs==0||ns<releaseNs
+                ||!id.equals(Client.match)||!Boolean.parseBoolean(Client.controls.getProperty("enabled","false")))return false;
+        if(!Client.targetReady)throw new IllegalStateException("Seed target lost at post-deadline packet; invalidate match");
+        Client.requireCanonicalSeedEntities();
+        initialize(now,ns,System.nanoTime(),"packet_handler");
+        return true;
+    }
+    private static void startControls(long now,long ns){
+        if(controlStarted)return;
+        controlStarted=true;
+        Map<String,Object> event=new LinkedHashMap<String,Object>();
+        event.put("type","client_seed_controls_started");event.put("match",id);event.put("side",side);
+        event.put("time",now);event.put("monotonic_ns",ns);event.put("native_tick",Client.ticks);
+        event.put("handled_target_cue_ms",Double.isFinite(Client.handledTargetHurtMs)?Client.handledTargetHurtMs:null);
+        event.put("last_click_ns",Client.lastClick);Client.log(event);
+    }
+    private static void initialize(long now,long ns,long hookStart,String stage)throws Exception{
+        if(released)throw new IllegalStateException("Seed already initialized");
         long applyStart=System.nanoTime();
         SeedState.Side s=side.equals("a")?seed.a:seed.b;
         SeededEntity.own(Client.player,s,canonical,side,origin);
@@ -84,6 +114,7 @@ public final class SeededStartClient {
         R.set(Client.mc,"leftClickCounter",0);
         Map<String,Object> event=new LinkedHashMap<String,Object>();event.put("type","client_seed_released");
         event.put("match",id);event.put("side",side);event.put("time",now);event.put("monotonic_ns",ns);
+        event.put("release_stage",stage);event.put("controls_started",false);
         event.put("native_tick",Client.ticks);event.put("seed_sha256",seedHash);event.put("target_release_ns",releaseNs);
         event.put("hook_entry_ns",hookStart);event.put("body_apply_start_ns",applyStart);
         Map<String,Object> fields=SeededEntity.clientSnapshot(Client.player,Client.opponent,side,origin);
@@ -101,6 +132,5 @@ public final class SeededStartClient {
         Client.log(event);released=true;
         Properties ack=new Properties();ack.setProperty("match",id);ack.setProperty("seed_sha256",seedHash);
         ack.setProperty("released_ns",Long.toString(ns));R.writeProperties(Client.DIR.resolve("seed-"+id+"-released.properties"),ack);
-        return false;
     }
 }

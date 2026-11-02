@@ -978,7 +978,7 @@ public final class Client {
     }
     /** Native hurt-status message: emitted for a fresh hit, unlike health updates for immunity upgrades. */
     public static void hurtStatus(Object packet){
-        if(!"client".equals(System.getProperty("lab.role"))||player==null||!active())return;
+        if(!"client".equals(System.getProperty("lab.role"))||player==null||!observingActive())return;
         try{
             if(((Number)R.call(packet,"getOpCode")).intValue()!=2)return;
             Object entity=R.call(packet,"getEntity",R.get(mc,"theWorld"));
@@ -1047,7 +1047,23 @@ public final class Client {
         return "client".equals(System.getProperty("lab.role"))&&SLOT.matches("[0-9]+")&&active()?DuelSettings.reach(controls):3.0;
     }
     public static float selectionRayLength(float vanilla){return (float)Math.max(vanilla,attackReach());}
+    /** Incoming native effects can precede the first policy HEAD after seeding. */
+    static void requireCanonicalSeedEntities(){
+        Object world=R.get(mc,"theWorld");
+        if(player==null||opponent==null||R.get(mc,"thePlayer")!=player||world==null
+                ||R.call(world,"getEntityByID",(int)R.call(opponent,"getEntityId"))!=opponent
+                ||(Boolean)R.get(opponent,"isDead")||!identityContains(R.get(world,"loadedEntityList"),opponent))
+            throw new IllegalStateException("Seed entities changed before packet initialization; invalidate match");
+    }
+    public static void beforeSeedPacket(){
+        if(!"client".equals(System.getProperty("lab.role"))||!matchInitialized||mc==null||!SeededStartClient.awaitingInitialization())return;
+        try{
+            if(!(Boolean)R.call(mc,"isCallingFromMinecraftThread"))return;
+            if(SeededStartClient.beforePacket(System.currentTimeMillis(),System.nanoTime()))ReplicationTrace.refreshContext();
+        }catch(Throwable error){matchInitialized=false;fail(error);}
+    }
     static boolean active(){return matchInitialized&&match.equals(controls.getProperty("match",""))&&Boolean.parseBoolean(controls.getProperty("enabled","false"))&&SeededStartClient.active()&&(SeededStartClient.seeded()||System.currentTimeMillis()>=Long.parseLong(controls.getProperty("start_at","0")));}
+    static boolean observingActive(){return active()||(matchInitialized&&match.equals(controls.getProperty("match",""))&&Boolean.parseBoolean(controls.getProperty("enabled","false"))&&SeededStartClient.initialized());}
     static double number(String name,double fallback){return Double.parseDouble(controls.getProperty(name,Double.toString(fallback)));}
     static void setKeys(boolean w){
         setKeys(w,0);
