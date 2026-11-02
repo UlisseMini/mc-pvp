@@ -47,6 +47,19 @@ ambiguous.
 [Actual attack-chain audit](seeded-maintenance-20261101/native/robust-search/wt-tail/protected-prefix/post-fourth/final-rescore/causal-audit/findings.md).
 [Six-game recorded and sampled timing calibration](seeded-maintenance-20261101/native/actual-calendar/head-v3-calibration/findings.md).
 
+A frozen hit9→8 setting check fails earlier, before that four-hit checkpoint:
+both fixed words get one fresh hit in every draw, versus full-seed W-tap's
+3,3,2,2,2,2,2,2. The same-checkpoint W-tap comparison is unavailable because the
+candidate never reaches it. All32 hit9 reference results and32 prefix replays
+match. This changes the known profile supplied to the same controller, including
+its click-admission timing; it does not hold physical click times fixed.
+In one exact pair, hit8 consumes the first click at223.859ms before the sprint
+stop, while hit9 consumes at266.919ms after it. The resulting first fresh hit
+switches from normal to sprint-strength, and the subsequent closed click gates
+lose the next opportunity. This is a failed unchanged-input-word transfer, not
+evidence that hit8 cannot lock. See
+[the one-setting diagnostic](seeded-maintenance-20261101/native/robust-search/setting-intervention/hit-window/findings.md).
+
 ## Latest checkpoint: initialization race fixed; no Hypixel-like lock yet
 
 The new zero-opponent-ping tests exposed a real setup bug: fresh server packets
