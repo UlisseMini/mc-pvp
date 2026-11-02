@@ -1,6 +1,40 @@
 # Combo research — findings, November 1
 
-## Latest checkpoint: feedback A/D fails transfer; jump step validated
+## Latest checkpoint: native controlled starts work; no Hypixel-like lock yet
+
+`/lab seed` now restores the declared client/server bodies, velocities, hurt
+state, facing, sprint, rendered opponents and relevant caches. Candidate and
+W-tap receive the same literal seed. Independent native clocks still differ;
+the command records actual release phases instead of claiming an atomic JVM
+snapshot. All four latest setups pass their state and packet-boundary checks.
+
+| Same-setting comparison | Candidate additional fresh hits before a return | Plain W-tap |
+|---|---|---|
+| New native matched-base pairs, m1465–68 |2,1 |2,2 |
+| New shared-word model search, eight development timing samples |3 in all8 |2–3 |
+
+Settings are provisional Hypixel-like H/V1, sprint vertical.07, hit9,
+RTT120/120, reach3,20s and51ms minimum click spacing. The newer searched word
+has **not** been run natively. Every searched trajectory still returns within
+2.55–2.75s; there is no watchable Hypixel-like lock to advertise yet.
+
+The measured-clock model reconstructs all four native outcomes and262 own
+movements plus262 rendered-opponent updates to below2e-12blocks. This is a
+conditional reconstruction result. Future timing remains less certain: the
+empirical service intervals still under-cover, so a tiny modeled reach margin
+cannot certify robust behavior.
+
+The search's useful improvement is normal/normal/sprint hits separated by
+roughly450ms. It retains reach through three hits, then misses the fourth window
+after the stronger launch plus coasting. A narrow beam is not a proof that a
+better continuation is impossible. Current work isolates delivered hit strength
+from pursuit and actual click delivery before expanding the search.
+
+[Controlled-start commands, limitations and replays](seeded-maintenance-20261101/README.md).
+[Full paired search results](seeded-maintenance-20261101/native/robust-search/search-findings.md).
+[Fresh native reconstruction](seeded-maintenance-20261101/native/actual-calendar/prospective-v1/README.md).
+
+## Previous checkpoint: feedback A/D fails transfer; jump step validated
 
 The new controller chooses A/D/none from its own predicted next-window range,
 wrapped around the frozen three-contact winner. W/Ctrl/click rules stay fixed.
