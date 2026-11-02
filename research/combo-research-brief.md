@@ -146,6 +146,17 @@ and known later-prefix words as terminal-only incumbents. Compare original-seed
 W-tap and separately primed same-checkpoint W-tap; retain its UNKNOWNs. No profile,
 ping or new control feature yet. See native/robust-search/wt-tail/capacity.
 
+EARLIER-BOUNDARY CHECK: pre17 width64 does not rediscover the known4–5-hit
+continuation; its best new resolved word has minimum3. Crucially, it prunes
+the known useful prefix when assigning HEAD20 while all proposals are still
+committed-safe. Its later return failure is therefore not evidence that the
+earlier history cannot improve. Preserve that negative run. Next correction
+protects the known FIXED32-input prefix as one branchable lane through32,
+within the same64 total slots, never constructing a shared word from an
+adaptive W-tap tail. Same ranks, controls, samples and budgets. Require full
+clock/queue/primed-WT parity and selector retention/release checks. No held-out
+or native promotion. See native/robust-search/wt-tail/early-boundary.
+
 LATEST USER DIRECTION — prioritize maintenance over entry. Characterize the
 provisional Hypixel preset and reference regimes lock8/m1364 and horizontal-only
 hit2/m1272 separately. Start by rescoring existing complete native streams and
