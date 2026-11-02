@@ -1,49 +1,67 @@
 # Combo research — findings, November 1
 
-## Latest checkpoint: native controlled starts work; no Hypixel-like lock yet
+## Latest checkpoint: controlled starts work; the Hypixel-like lock is still open
 
-`/lab seed` now restores the declared client/server bodies, velocities, hurt
+`/lab seed` restores the declared client/server positions, velocities, hurt
 state, facing, sprint, rendered opponents and relevant caches. Candidate and
 W-tap receive the same literal seed. Independent native clocks still differ;
-the command records actual release phases instead of claiming an atomic JVM
-snapshot. All four latest setups pass their state and packet-boundary checks.
+the command records release phases rather than claiming an atomic JVM snapshot.
+All four latest native setups qualify. These remain the latest native results;
+the later model candidates have not been promoted to native performance tests.
 
-| Same-setting comparison | Candidate additional fresh hits before a return | Plain W-tap |
+| Same-setting comparison | Candidate fresh hits after seed, before first return | Plain W-tap |
 |---|---|---|
-| New native matched-base pairs, m1465–68 |2,1 |2,2 |
-| Earlier shared-word model search, eight development timing samples |3 in all8 |2–3 |
-| Pre-hit W release plus ordinary W-tap continuation, same eight samples |5,5,4,4,4,4,4,4 |3,2,2,2,3,3,3,2 |
-| Wider continuation search (64 prefixes), same eight samples |5,5,4,4,4,4,4,4 |3,2,2,2,3,3,3,2 |
+| Native matched-base pairs, m1465–68 | 2,1 | 2,2 |
+| Model released third hit + W-tap tail, eight training timing samples | 5,5,4,4,4,4,4,4 | 3,2,2,2,3,3,3,2 |
+| Model protected-prefix search, same eight timing samples | 5,5,5,8,5,5,5,5 | 3,2,2,2,3,3,3,2 |
+| Same new search, ending also on a 1,000 ms fresh-hit gap | 4,4,4,7,4,4,5,5 | 2,2,1,1,2,2,2,1 |
 
-Settings are provisional Hypixel-like H/V1, sprint vertical.07, hit9,
-RTT120/120, reach3,20s and51ms minimum click spacing. The newer searched word
-has **not** been run natively. The wider search's selected trajectory returns
-within1.89–2.30s; there is no watchable Hypixel-like lock to advertise yet.
+Settings are provisional Hypixel-like H/V1, sprint vertical .07, hit9,
+RTT120/120, reach3, 20s and51ms minimum click spacing. The new49-input prefix
+returns in2.85–4.64s, and seven of eight cases exceed the inactivity limit.
+There is no watchable Hypixel-like lock to advertise. From the exact same
+pre-input17 state, primed W-tap is much stronger than the original-seed baseline:
+the new word has two resolved wins, one loss, three ties and two unsupported
+comparisons. That conditional comparison does not establish a maintenance win.
 
-The measured-clock model reconstructs all four native outcomes and262 own
-movements plus262 rendered-opponent updates to below2e-12blocks. This is a
-conditional reconstruction result. Future timing remains less certain: the
-empirical service intervals still under-cover, so a tiny modeled reach margin
-cannot certify robust behavior.
+The search initially discarded a known useful history before its benefit showed
+up. Protecting that fixed history in one of the existing64 lanes improved the
+short result above. A dead search frontier is therefore not an impossibility
+proof. No new observation channel, control axis or favorable timing retry was
+introduced; unavailable packet-service combinations remain UNKNOWN.
 
-The useful causal improvement is a one-tick W release **before** the third hit:
-STOP→attack→START gives a normal third hit without sacrificing the preceding
-pursuit. Ordinary W-tap afterward supplies the fourth hit that the old coasting,
-nonclicking tail missed. But the defender can still click before the new
-knockback arrives, or after it arrives and before their next movement. A velocity
-change alone has not yet moved their attack origin away. The controller needs
-separation through that entire interval, not just at the fresh-hit window.
+A separate causal experiment changes only opponent RTT120→0, keeping the prior
+32-input word and literal seed. Both that word and full-seed W-tap then get one
+hit in all eight samples. Earlier knockback moves the target out of the planned
+second click. Changing only two coasting inputs to W restores that second hit in
+all eight samples, confirming the spacing explanation:
 
-Widths4/16/64 all exhaust around the fourth cycle, with zero committed simulator
-UNKNOWNs in the wider searches. This is not a physical impossibility result:
-all keep the third-hit approach fixed through input23. The next single-axis
-comparison moves branching to input17, before its sprint re-arm, leaving the
-same actions, ranking, samples and settings unchanged.
+| RTT120/0, same pre-input7 complete checkpoint | Pursuit adjustment | Primed plain W-tap |
+|---|---|---|
+| Fresh hits, including the one shared hit | 2,2,4,≥3 UNKNOWN,≥3 UNKNOWN,≥3 UNKNOWN,2,2 | 2,2,2,2,2,2,2,2 |
 
-[Controlled-start commands, limitations and replays](seeded-maintenance-20261101/README.md).
-[Full paired search results](seeded-maintenance-20261101/native/robust-search/search-findings.md).
-[Third-hit causal comparison](seeded-maintenance-20261101/native/robust-search/third-strength/release22-findings.md).
-[Wider continuation search](seeded-maintenance-20261101/native/robust-search/wt-tail/capacity/findings.md).
+This is one resolved win, four ties and three unsupported comparisons—not a
+robust win. The unknown cases encounter a hurt/metadata/teleport packet grouping
+whose service time is absent from the frozen training pool. We are checking the
+capture coverage before treating those cases as combat failures or successes.
+
+The measured-clock model reconstructs the four latest native outcomes and262
+own movements plus262 rendered-opponent updates below2e-12blocks. That is a
+conditional reconstruction result. Future service intervals still under-cover,
+so a tiny modeled reach margin cannot certify robust behavior.
+
+The physical issue is separation through the entire return opportunity. The
+opponent can click before new knockback arrives, or after it arrives but before
+their next movement. Also, their rendered view of us may still depend on our
+position reports from150–300ms earlier. Late braking cannot rewrite that history.
+Stronger knockback can prevent a return yet leave the target beyond our next
+fresh-hit reach; preserving both sides of that constraint remains unresolved.
+
+[Controlled-start commands, limitations and native replays](seeded-maintenance-20261101/README.md).
+[Protected-prefix results and conditional W-tap comparison](seeded-maintenance-20261101/native/robust-search/wt-tail/protected-prefix/findings.md).
+[RTT intervention](seeded-maintenance-20261101/native/robust-search/setting-intervention/diagnostic-v1/findings.md).
+[Two-input pursuit test](seeded-maintenance-20261101/native/robust-search/setting-intervention/pursuit-v1/findings.md).
+[Geometric corridor and position-report history](seeded-maintenance-20261101/theory/reach-corridor-notes.md).
 [Fresh native reconstruction](seeded-maintenance-20261101/native/actual-calendar/prospective-v1/README.md).
 
 ## Previous checkpoint: feedback A/D fails transfer; jump step validated

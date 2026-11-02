@@ -157,6 +157,32 @@ adaptive W-tap tail. Same ranks, controls, samples and budgets. Require full
 clock/queue/primed-WT parity and selector retention/release checks. No held-out
 or native promotion. See native/robust-search/wt-tail/early-boundary.
 
+PROTECTED-PREFIX RESULT: the reserved fixed-history lane prevents the known
+pruning failure. New49-input prefix plus primed WT tail gives5/5/5/8/5/5/5/5
+freshs versus original-seed WT3/2/2/2/3/3/3/2. Activity-qualified4/4/4/7/4/4/5/5;
+all return2.85–4.64s, seven cross1000ms inactivity. Same-pre17 primed WT comparison
+has2wins/1loss/3ties/2UNKNOWN. Do not call this a maintenance lock or promote it.
+Saved-trace diagnosis examines actual S12 application versus MOVE and airborne
+sprint launches; no further feature search without a causal baseline comparison.
+See native/robust-search/wt-tail/protected-prefix under seeded-maintenance.
+
+LATENCY CAUSAL CHECK: frozen prior32 atRTT120/0 (only target latency changed)
+and full-seed WT both get1fresh on all8 training samples. Earlier target KB moves
+it out of the second click. Two ordinary W inputs atHEAD7/8 restore hit2 all8:
+2/2/4/3U/3U/3U/2/2 versus same-pre7 primed WT2all. Three UNKNOWNs request absent
+S19+own-metadata+S18 whole-drain support; never substitute/reroll these. Audit
+full training archives before any new calibration. Existing m1463–68 are not
+training; m1415–18 remain sealed. Native calibration for new service words is
+measurement, not performance promotion. No native runs since m1465–68 yet.
+
+NATIVE HANDOFF FIX: SeedPlanAdmission now ends with an explicit opening-only
+input-word handoff, allowing the ordinary WT tail's normal click gates to resume.
+Previously an out-of-range mask index suppressed all tail clicks. Full-word end
+remains closed, null decision fails closed, already queued clicks survive, and
+normal CPS/GUI/reach gates remain enforced.2024 admission and883 word checks
+pass; client-only Java8 bridge changes only two classes. This does not change
+old full-word experiments. Install only into idle lab bots, not the human client.
+
 LATEST USER DIRECTION — prioritize maintenance over entry. Characterize the
 provisional Hypixel preset and reference regimes lock8/m1364 and horizontal-only
 hit2/m1272 separately. Start by rescoring existing complete native streams and
