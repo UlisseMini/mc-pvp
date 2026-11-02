@@ -1,6 +1,50 @@
 # Combo research — findings, November 1
 
-## Latest checkpoint: contact cycles and timed A/D
+## Latest checkpoint: feedback A/D fails transfer; jump step validated
+
+The new controller chooses A/D/none from its own predicted next-window range,
+wrapped around the frozen three-contact winner. W/Ctrl/click rules stay fixed.
+72 proposal slots/59 unique vectors; freeze one after separate selection, then
+evaluate540 candidate cases across ten excluded-from-fit calendars, three seeds,
+both mirrors, three RTTs and three service bounds, plus540 disabled checks.
+The calendars were previously exposed in earlier studies, not pristine holdouts;
+m1415–m1418 remain sealed. No native feedback promotion.
+
+Selection looks good (50 wins/0 losses/12 ties/10 UNKNOWN versus the original
+word), but transfer does **not** improve it. Same provisional Hypixel/hit9,
+ownRTT120ms, full reach, common acquisition and51ms cap. Primary is fresh hits
+before the first accepted return in4–64s:
+
+| MIDPOINT opponent RTT | Feedback median [range] | Original three-contact median [range] | Plain W-tap median [range] | Feedback vs original W/L/T/U | Feedback vs W-tap W/L/T/U |
+|---|---:|---:|---:|---:|---:|
+|90ms|2 [1–18]|3 [1–3]|1 [1–2]|4/40/12/4|28/2/24/6|
+|120ms|2 [1–42]|3 [1–24]|2 [1–2]|14/34/6/6|26/14/14/6|
+|140ms|2 [0–13]|2 [0–11]|2 [0–3]|10/8/28/14|20/0/26/14|
+
+Each row is30 calendar/seed schedules ×two mirrors, not60 independent recordings.
+Ranges use the same resolved triple; pairwise counts retain UNKNOWNs. All three
+timing bounds have zero minute locks and the same broad failure at90/120ms.
+Retain the original word. A larger isolated maximum is not an improvement gate.
+
+Training-only traces identify the tradeoff: feedback31 versus original18/WT2
+keeps their ray at3.900 instead of2.963 at the critical click; feedback9 versus
+original27/WT2 misses a fresh window (own range3.277 instead of2.788), delaying
+the fifth fresh hit by97.297ms. Cancellation does not erase prior displacement.
+MIDPOINT nominal reach-forecast error is median0.399blocks, p95=1.072, against
+a0.2-block margin. These closed-loop residuals are not native-window safety
+coverage, and a reachable endpoint alone does not deny return hits en route.
+Stop feature expansion; the feedback predictor/control boundary failed.
+
+Jump now has a default-false input and copied cooldown, applied at native MOVE.
+480 scoped native arena steps, including11 takeoffs/8 sprint boosts, match
+exactly. This is conditional input/physics validation, not whole-fight raw-key
+replay; the documented unsupported cases remain excluded. All540 archived
+three-contact/W-tap transfer baselines reproduce exactly after the jump change.
+
+[Feedback study, full tables and reproduction](hypixel-inference-20261101/feedback-strafe/findings.md).
+[Native jump scope and checks](jump-validation-20261101/findings.md).
+
+## Previous checkpoint: contact cycles and timed A/D
 
 The expanded family searches two-/three-contact W releases, per-contact or
 per-cycle A/D alternation, release/strafe timing, sprint rearming and click

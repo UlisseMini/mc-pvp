@@ -38,7 +38,33 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Current follow-up: broaden inference and build legal control
 
-LATEST USER DIRECTION — search contact-cycle strafing, following the failed
+LATEST USER DIRECTION — turn A/D into own-observation feedback on top of the
+three-contact winner, and validate jump separately. Completed study:
+`hypixel-inference-20261101/feedback-strafe/findings.md`. Next-window range
+projection selects A/D/none and may cancel an unsafe strafe; original W/Ctrl/click
+rules remain fixed.72 proposal slots/59unique, separate selection,540 frozen
+transfer cases plus540 disabled controls, matched original word AND plain W-tap.
+Selection50wins/0losses versus original does not transfer: MIDPOINT90ms4/40,
+120ms14/34,140ms10/8 (ties/UNKNOWN in full tables). Median prefixes2/2/2 versus
+original3/3/2 and W-tap1/2/2. No minute lock or native promotion; retain original.
+Do not add features to this failed wrapper. Diagnose the estimate/control
+boundary: nominal future reach has median0.399/p95=1.072block error against a
+0.2block margin; ending in own reach does not ensure intervening return denial.
+Training-only causal cases31vs18/WT2 and9vs27/WT2 show separation benefit and
+late fresh-window failure respectively. Do not use transfer cases for examples.
+
+JUMP CHECKPOINT — `jump-validation-20261101/findings.md`: canonical Control has
+default-false jump; cooldown/decrement/release and native takeoff ordering exist
+at MOVE.480 scoped native steps/11takeoffs match exactly, including8sprint and
+3takeoffs after confirmed same-HEAD contact drag. Conditional living-entry and
+travel-entry state is granted; this is not whole-match raw-key replay. Unsupported
+flight/fluid/sneak/startup samples retained/excluded. Zero direct same-interval
+S12→takeoff examples, so that boundary retains source/synthetic coverage only.
+All540 archived no-jump C3/W-tap transfer baselines reproduce unchanged. Jump
+was not mixed into the failed feedback search; any future jump policy needs its
+own matched combat gate. No human/server restart; temporary probe removed.
+
+PREVIOUS USER DIRECTION — search contact-cycle strafing, following the failed
 simple family. The prior seven-parameter search included a constant strafe
 bias; it did NOT cover contact-timed direction changes. New bounded study:
 two-/three-contact W-release words, before/after release timing, alternating
