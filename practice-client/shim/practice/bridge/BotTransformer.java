@@ -11,10 +11,18 @@ final class BotTransformer {
         if(!"bot".equals(System.getProperty("practice.role","human")))return bytes;
         boolean minecraft=type.equals("net.minecraft.client.Minecraft"),renderer=type.equals("net.minecraft.client.renderer.EntityRenderer"),
             player=type.equals("net.minecraft.entity.player.EntityPlayer"),living=type.equals("net.minecraft.entity.EntityLivingBase"),
-            remote=type.equals("net.minecraft.client.entity.EntityOtherPlayerMP");
-        if(!minecraft&&!renderer&&!player&&!living&&!remote)return bytes;
+            remote=type.equals("net.minecraft.client.entity.EntityOtherPlayerMP"),handler=type.equals("net.minecraft.client.network.NetHandlerPlayClient");
+        if(!minecraft&&!renderer&&!player&&!living&&!remote&&!handler)return bytes;
         ClassNode node=new ClassNode();new ClassReader(bytes).accept(node,0);int hooks=0;
         for(MethodNode m:node.methods){
+            if(handler&&named(m,"func_147297_a","addToSendQueue","a")&&
+                    (m.desc.equals("(Lnet/minecraft/network/Packet;)V")||m.desc.equals("(Lff;)V"))){
+                InsnList setup=new InsnList();LabelNode normal=new LabelNode();
+                setup.add(new VarInsnNode(Opcodes.ALOAD,1));
+                setup.add(new MethodInsnNode(Opcodes.INVOKESTATIC,HOOK,"suppressSeedPacket","(Ljava/lang/Object;)Z",false));
+                setup.add(new JumpInsnNode(Opcodes.IFEQ,normal));setup.add(new InsnNode(Opcodes.RETURN));setup.add(normal);
+                setup.add(new FrameNode(Opcodes.F_SAME,0,null,0,null));m.instructions.insert(setup);hooks++;
+            }
             if(minecraft&&m.desc.equals("()V")){
                 if(named(m,"func_71407_l","runTick","s")){
                     hookAttackLoop(m,node.name);m.instructions.insert(call("tick",0));hooks+=2;
@@ -45,7 +53,7 @@ final class BotTransformer {
                 for(AbstractInsnNode ins:m.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)m.instructions.insertBefore(ins,call("remote",0));hooks++;
             }
         }
-        int expected=minecraft?4:renderer?1:player?2:living?1:2;
+        int expected=minecraft?4:renderer?1:player?2:living?1:handler?1:2;
         if(hooks!=expected)throw new IllegalStateException("Native bot hooks missing in "+type+": "+hooks+" / "+expected);
         ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS);node.accept(out);
         System.out.println("[PracticeBridge] Native bot hooks: "+type+" ("+hooks+")");return out.toByteArray();

@@ -91,6 +91,7 @@ public final class ServerReplicationTrace {
         if(!"server".equals(System.getProperty("lab.role")))return;
         try{
             if(phase.equals("tick_start")){
+                SeededStartServer.stage(server,phase);
                 clockEvents.clear();clockMatches.clear();clockWorld=-1;
                 for(Referee.Match m:Referee.matches.values())if(m.configA.getProperty("science_network_trace","0").equals("1")
                     ||m.configB.getProperty("science_network_trace","0").equals("1"))clockMatches.add(m);

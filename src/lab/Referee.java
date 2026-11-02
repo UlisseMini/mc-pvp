@@ -30,6 +30,7 @@ public final class Referee {
         String id,a,b,pa,pb,winner="",request="",mode="boxing",finishReason="100_hits"; int ha,hb,ba,bb,goal=100,arena,pingChanges; long start,finish,durationMs=180_000; boolean scenario,setupReseated; double pingA,pingB,initialPingA,initialPingB;
         boolean boxing(){return mode.equals("boxing");}
         CombatProfile combat=CombatProfile.VANILLA;
+        SeededStartServer.Session seed;
         boolean sumo(){return mode.equals("sumo");}
         boolean box(){return mode.equals("diamond_box");}
         boolean rods(){return mode.equals("rod_diamond");}
@@ -49,6 +50,7 @@ public final class Referee {
             m.put("damage_hits_a",sa.breakdown.damageHitsLanded);m.put("damage_hits_b",sb.breakdown.damageHitsLanded);
             m.put("mode",mode);m.put("blocks_a",ba);m.put("blocks_b",bb);
             m.put("combat_profile",combat.state());
+            if(seed!=null)m.put("seed",seed.state());
             String practicePreset=configB.getProperty(PracticePresets.LABEL,"");
             if(!practicePreset.isEmpty())m.put("practice_preset",practicePreset);
             long now=finish>0?finish:System.currentTimeMillis(),duration=Math.max(0,now-start);
@@ -116,6 +118,7 @@ public final class Referee {
                 }
             }
             for(Match m:new ArrayList<>(matches.values())){
+                SeededStartServer.tick(m);if(!matches.containsKey(m.id))continue;
                 Object a=player(m.a),b=player(m.b);
                 if(a==null||b==null){m.winner=a==null?m.b:m.a;finish(m,"disconnect");continue;}
                 long setupNow=System.currentTimeMillis();
@@ -402,6 +405,20 @@ public final class Referee {
                 if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}
                 BotMatchSettings setup=BotMatchSettings.parse(args,4,args[1]+"-"+System.nanoTime());
                 loadPolicies();start(a,b,args[2],args[3],setup.pingA,setup.pingB,setup.request,0,args[1],setup.a,setup.b,6,0,"");
+            }else if(cmd.equals("lab")&&args.length>=2&&args[1].equals("seed")){
+                if(args.length==3&&args[2].equals("list")){
+                    Path seeds=R.ROOT.resolve("seeds");if(!Files.exists(seeds)){message(sender,"No saved seeds.");return true;}
+                    try(var paths=Files.list(seeds)){message(sender,"Seeds: "+paths.filter(p->p.toString().endsWith(".properties")).map(p->p.getFileName().toString().replace(".properties","")).sorted().toList());}return true;
+                }
+                if(args.length!=5&&args.length!=9)throw new IllegalArgumentException("/lab seed <seed> <bot-a> <bot-b> [rtt-a rtt-b duration-ms request]");
+                SeededStartServer.named(args[2]);
+                long duration=args.length==9?Long.parseLong(args[7]):60_000;
+                if(duration<1000||duration>304_000)throw new IllegalArgumentException("Seed duration must be1000–304000ms");
+                String a=freeBot(Set.of()),b=a==null?null:freeBot(Set.of(a));if(b==null)throw new IllegalArgumentException("Need two free bot slots");
+                Properties config=new Properties();config.setProperty("seed_name",args[2]);loadPolicies();
+                start(a,b,args[3],args[4],args.length==9?ping(args[5]):120,args.length==9?ping(args[6]):120,
+                    args.length==9?args[8]:"seed-"+System.nanoTime(),duration,"boxing",config,config,6,0,"");
+                message(sender,"Seeded research "+find(a).id+": waiting for both clients, then a2.5s quiescence barrier. /watch "+find(a).id);
             }else if(cmd.equals("lab")&&args.length==8&&args[1].equals("scenario")){
                 long duration=Long.parseLong(args[6]);if(duration<1000||duration>304_000)throw new IllegalArgumentException("Scenario duration must be1000–304000ms");
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
@@ -463,6 +480,7 @@ public final class Referee {
         if(!pa.equals("human"))m.configA.putAll(overridesA);
         m.configB.putAll(policies.get(pb));
         m.configB.putAll(overridesB);
+        SeededStartServer.configure(m);
         ClickRate.cps(m.configA);ClickRate.cps(m.configB);DuelSettings.reach(m.configA);DuelSettings.reach(m.configB);
         Set<Integer> used=new HashSet<>();for(Match current:matches.values())used.add(current.arena);
         if(round>0)m.arena=EntryDrills.arena(a);
@@ -491,6 +509,7 @@ public final class Referee {
             seatPlayers(m,player(a),player(b));
         }
         if(round>0||m.sumo()){m.start=System.currentTimeMillis()+(m.sumo()?SumoArena.COUNTDOWN_MS:EntryDrills.COUNTDOWN_MS);PovArchives.manifest(m,false);}
+        SeededStartServer.prepare(m);
         botLabel(player(a),m.label("a"));botLabel(player(b),m.label("b"));
         CombatTuning.configurePlayer(player(a),m.combat);CombatTuning.configurePlayer(player(b),m.combat);
         control(a,pa,b,m,pingA,pingB);control(b,pb,a,m,pingB,pingA);

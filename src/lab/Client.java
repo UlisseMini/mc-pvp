@@ -42,6 +42,9 @@ public final class Client {
     static final TickIndexedLegalCycleController tickCycle=new TickIndexedLegalCycleController(true,false);
     static InputWordController inputWord;
     static InputWordController.Decision inputWordDecision;
+    static SeedPlanAdmission seedPlanAdmission;
+    static boolean matchInitialized=true;
+    static long seedPlanLastHeadNs;
     static StrongRelaxationPolicy strongGap=new StrongRelaxationPolicy();
     static HurtWindowCoastController hurtWindowCoast=new HurtWindowCoastController();
     static double handledTargetHurtMs=Double.NaN;
@@ -209,6 +212,8 @@ public final class Client {
             // inspect immunity, accepted hits or any server-only state.
             boolean contactClicks=controls.getProperty("click_mode","fixed").equals("contact");
             boolean wordPermits=inputWord==null||inputWordDecision==null||!inputWordDecision.active||inputWord.allowInjection(ticks,nativeInputPoll);
+            if(seedPlanAdmission!=null)wordPermits=wordPermits&&inputWordDecision!=null&&seedPlanAdmission.allow(
+                inputWordDecision.index,nativeInputPoll,now/1_000_000.0,seedPlanLastHeadNs/1_000_000.0,handledTargetHurtMs);
             boolean referencePermits=!referenceActive||referenceFeedback.allowInjection(referencePoll(now/1_000_000.0),nativeInputPoll?"native_tick":"frame");
             boolean coastAdmission=maintenanceCurrent()?maintenanceHandoff.coastAdmissionActive(hurtWindowActive,now):hurtWindowActive;
             if(clickGate && wordPermits && referencePermits && (!coastAdmission||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),(int)number("hurt_window_ticks",8))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
@@ -264,6 +269,7 @@ public final class Client {
         try {
             long now=System.currentTimeMillis();
             long decisionHeadNanos=System.nanoTime();
+            seedPlanLastHeadNs=decisionHeadNanos;
             if(now-readAt>100){
                 Properties nextControls=R.properties(DIR.resolve("control.properties"));
                 validateControls(nextControls);controls=nextControls;readAt=now;
@@ -326,6 +332,7 @@ public final class Client {
             if(services!=null&&services.probe(mc,player,now-scriptStarted))return;
             String next=controls.getProperty("match","");
             if(!next.equals(match)){
+                matchInitialized=false;
                 match=next;epoch=Long.parseLong(controls.getProperty("start_at",Long.toString(now)));history.clear();previous=null;lastConsumed=null;lastClick=firstClickEligible=0;
                 lastObservedHurt=lastObservedTargetHurt=0;
                 handledTapCue=pendingTapCue=tapUntil=0;tapReason="";
@@ -341,6 +348,12 @@ public final class Client {
                 tickCycle.reset();
                 inputWordDecision=null;inputWord=null;
                 if(controls.containsKey("input_word"))inputWord=new InputWordController(R.ROOT.resolve(controls.getProperty("input_word")));
+                seedPlanAdmission=null;
+                if(controls.containsKey("seed_plan_admission")){
+                    if(inputWord==null)throw new IllegalArgumentException("Seed plan admission requires input_word");
+                    seedPlanAdmission=new SeedPlanAdmission(R.ROOT.resolve(controls.getProperty("seed_plan_admission")),number("ping",0),(int)number("hurt_window_ticks",9));
+                    if(seedPlanAdmission.size()!=inputWord.size())throw new IllegalArgumentException("Plan and admission lengths differ");
+                }
                 strongGap=new StrongRelaxationPolicy();freshTargetHurtStatus=0;
                 hurtWindowCoast=new HurtWindowCoastController();handledTargetHurtMs=Double.NaN;hurtWindowActive=false;
                 maintenanceHandoff=new MaintenanceHandoff(MaintenanceHandoff.Settings.from(controls),epoch,now,decisionHeadNanos);
@@ -364,7 +377,10 @@ public final class Client {
                 hitPredictor.reset();timedBlock.reset();blockTapCues.clear();blockTapQueued=0;
                 targetWatchdog.reset();targetReady=false;
                 aim.reset();aimTarget=null;aimLogAt=0;
+                SeededStartClient.begin(controls);
+                matchInitialized=true;
             }
+            if(!matchInitialized)throw new IllegalStateException("Match initialization failed; start a new match after repairing it");
             // A rejected/missing recipe must remain disabled on subsequent ticks;
             // match identity has already advanced, so initialization is not retried.
             if(controls.containsKey("input_word")&&inputWord==null)
@@ -383,6 +399,7 @@ public final class Client {
             targetReady=opponent!=null&&targetWatchdog.update(opponent,now,
                 (long)R.num(opponent,"ticksExisted"),identityContains(R.get(world,"loadedEntityList"),opponent),
                 (Boolean)R.get(opponent,"addedToChunk"),regionLoaded(world,opponent));
+            if(SeededStartClient.head(now,decisionHeadNanos))return;
             if(!active() || !targetReady){
                 setKeys(false);clickGate=false;blockKey=false;
                 // Invalid world/setup: also discard an already queued physical
@@ -1030,7 +1047,7 @@ public final class Client {
         return "client".equals(System.getProperty("lab.role"))&&SLOT.matches("[0-9]+")&&active()?DuelSettings.reach(controls):3.0;
     }
     public static float selectionRayLength(float vanilla){return (float)Math.max(vanilla,attackReach());}
-    static boolean active(){return Boolean.parseBoolean(controls.getProperty("enabled","false"))&&System.currentTimeMillis()>=Long.parseLong(controls.getProperty("start_at","0"));}
+    static boolean active(){return matchInitialized&&match.equals(controls.getProperty("match",""))&&Boolean.parseBoolean(controls.getProperty("enabled","false"))&&SeededStartClient.active()&&(SeededStartClient.seeded()||System.currentTimeMillis()>=Long.parseLong(controls.getProperty("start_at","0")));}
     static double number(String name,double fallback){return Double.parseDouble(controls.getProperty(name,Double.toString(fallback)));}
     static void setKeys(boolean w){
         setKeys(w,0);

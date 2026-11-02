@@ -1,0 +1,27 @@
+{
+  "source": "research/seeded-maintenance-20261101/model/postlaunch-seed-v2/h2-head-seed.json",
+  "source_sha256": "376b759ca477aabb43a2ebc8ee95203cbdac6bb2fefa435266352db1595a2db9",
+  "cut_ms": 6346.664958,
+  "word_offset": 46,
+  "integer_translation": {
+    "x": 4086,
+    "z": 4
+  },
+  "past_fresh_ms": 6244.680374,
+  "explicit_synthetic_choices": [
+    "All transport/input/publication queues empty; no historical pending packets imported",
+    "DataWatcher dirty and playerEntitiesUpdated normalized false; they are different flags",
+    "Own render hurt timer/client resistance/fall distance0 (not represented by canonical body model)",
+    "Replica yaw/pitch from target current body, goal equal; model has no remote rotation state",
+    "Tracker velocity/current-position fields from server body; native caches not separately represented",
+    "Tracker head encoded rotation equal stored yaw; renderYaw equal body yaw",
+    "Native collision flags recomputed/applied by seed protocol; canonical travel seed uses exported onGround",
+    "SprintingTicks600 when sprinting; native countdown not represented separately",
+    "Wtap reset-until already expired at this source cut; handled cue identity retained separately"
+  ],
+  "pending_original_packets_discarded": 4,
+  "pending_original_clicks_discarded": [
+    1,
+    1
+  ]
+}

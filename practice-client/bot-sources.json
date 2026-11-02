@@ -1,5 +1,9 @@
 [
   "Client",
+  "SeedState",
+  "SeededEntity",
+  "SeededStartClient",
+  "SeedPlanAdmission",
   "ClientServices",
   "Compat",
   "R",

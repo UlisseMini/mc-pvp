@@ -22,7 +22,7 @@ def allowed_console_command(command):
     # explicit administration operations needed for this practice server.
     if not isinstance(command,str) or not command or not all(c.isalnum() or c in '-_ ./=?' for c in command):
         return False
-    return command in ('lab combat','lab prepare long') or command.startswith(('lab combat ','lab demo ','lab match ','lab diamond ','lab diamond_box ','lab rod_diamond ','lab sumo ','lab ping ','lab scenario ')) or bool(
+    return command in ('lab combat','lab prepare long') or command.startswith(('lab combat ','lab demo ','lab seed ','lab match ','lab diamond ','lab diamond_box ','lab rod_diamond ','lab sumo ','lab ping ','lab scenario ')) or bool(
         re.fullmatch(r'(?:op|deop) [A-Za-z0-9_]{1,16}|weather clear(?: 1000000)?|(?:help|\?|lab help)(?: (?:[1-6]|lab|all|play|settings|matches|replay|views|client))?',command))
 
 

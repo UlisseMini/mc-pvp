@@ -7,6 +7,7 @@ import lab.ScienceTrace;
 /** Native boundary adapter. Human processes never initialize the controller classes. */
 public final class BotHooks {
     public static void tick(Object mc){if(BotRuntime.enabled())Client.tick(mc);}
+    public static boolean suppressSeedPacket(Object packet){return BotRuntime.enabled()&&ConnectionScope.practice()&&lab.SeededStartClient.suppressPacket(packet);}
     public static void frame(Object mc){if(BotRuntime.enabled())Client.frame(mc);}
     public static void attackLoop(){if(BotRuntime.enabled())ReplicationTrace.attackLoop();}
     public static double reach(){return BotRuntime.enabled()?Client.attackReach():3.0;}

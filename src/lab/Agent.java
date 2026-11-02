@@ -296,13 +296,23 @@ public final class Agent implements ClassFileTransformer {
                         method.instructions.insertBefore(ins,callBoolean("tracker",0,true));
                     changed=true;
                 }else if(name.equals("lm")&&method.name.equals("a")&&method.desc.equals("(Lff;)V")){
-                    method.instructions.insert(callPair("lab/ServerReplicationTrace","send"));changed=true;
+                    method.instructions.insert(callPair("lab/ServerReplicationTrace","send"));
+                    InsnList setup=new InsnList();LabelNode normal=new LabelNode();
+                    setup.add(new VarInsnNode(Opcodes.ALOAD,0));setup.add(new VarInsnNode(Opcodes.ALOAD,1));
+                    setup.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/SeededStartServer","suppressOutput","(Ljava/lang/Object;Ljava/lang/Object;)Z",false));
+                    setup.add(new JumpInsnNode(Opcodes.IFEQ,normal));setup.add(new InsnNode(Opcodes.RETURN));setup.add(normal);
+                    method.instructions.insert(setup);changed=true;
                 }else if(name.equals("lm")&&method.name.equals("a")&&method.desc.equals("(Lim;)V")){
                     method.instructions.insert(callPair("lab/PovLink","receive"));changed=true;
                 }else if(name.equals("lm")&&method.name.equals("a")&&java.util.Set.of("(Lip;)V","(Lin;)V","(Lis;)V").contains(method.desc)){
                     method.instructions.insert(callPair("lab/ServerReplicationTrace","input"));
                     method.instructions.insert(serverHandler(false));
                     for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(ins,serverHandler(true));
+                    InsnList setup=new InsnList();LabelNode normal=new LabelNode();
+                    setup.add(new VarInsnNode(Opcodes.ALOAD,0));setup.add(new VarInsnNode(Opcodes.ALOAD,1));
+                    setup.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/SeededStartServer","suppressInput","(Ljava/lang/Object;Ljava/lang/Object;)Z",false));
+                    setup.add(new JumpInsnNode(Opcodes.IFEQ,normal));setup.add(new InsnNode(Opcodes.RETURN));setup.add(normal);
+                    method.instructions.insert(setup);
                     changed=true;
                 }else if(name.equals("ek")&&method.name.equals("a")&&method.desc.equals("(Lio/netty/channel/ChannelHandlerContext;Lff;)V")){
                     InsnList hook=new InsnList();hook.add(new VarInsnNode(Opcodes.ALOAD,2));

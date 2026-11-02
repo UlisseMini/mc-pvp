@@ -49,6 +49,32 @@ reference for zero-delay research controllers rather than silently changing it.
 
 ## Current follow-up: characterize established combo maintenance
 
+LATEST PRIORITY — reproducible native seeded maintenance. Add a bot-only lab
+command to declare and restore owning-client/server positions, velocities,
+hurt state, sprint/facing, and both rendered replicas/caches. Compare candidate
+and plain W-tap from the identical seed, with preparation traffic quiescence and
+actual release phases audited. A synthetic empty-queue seed is not an arbitrary
+saved JVM snapshot; do not claim copied OS scheduling or omitted pending work.
+Search robust precomputed continuations from one-sided-reach states, optimizing
+the worst denial margin over many timing samples while retaining fresh-window
+own reach. Keep held-out calendars, UNKNOWNs, timing spreads, matched W-tap and
+native replays. Native current-state real-time oracle is now DEPRIORITIZED;
+precomputed own-input plans from seeded starts are explicitly allowed. The task
+remains open until a watchable reproducible Hypixel-like lock is demonstrated,
+or a rigorously scoped robust boundary is characterized and its opening knob
+demonstrated. Work is under `seeded-maintenance-20261101/`.
+
+SEEDED CHECKPOINT: `/lab seed` now restores182 declared native fields/caches;
+six independent pairs-attempts m1459–m1464 pass literal, queue, packet-boundary
+and scoped source/build qualification. These are asynchronous synthetic empty-
+queue states, NOT original JVM snapshots. The frozen model plan gets2/2/2 freshs
+before a return versus plain W-tap3/3/3 (separate1000ms inactivity endpoint2each).
+Do not add controller features: reconstruct actual native clocks first. Defender
+HEAD release is48–50ms after A, versus model22.143ms; startup HEAD→MOVE stalls
+64–82ms warm down to7–20ms in later repeats without changing scores. Original
+bad gzip copies are preserved; completed source archives qualify allsix.
+No sealed calendars were opened. See seeded-maintenance native/paired-v1-findings.
+
 LATEST USER DIRECTION — prioritize maintenance over entry. Characterize the
 provisional Hypixel preset and reference regimes lock8/m1364 and horizontal-only
 hit2/m1272 separately. Start by rescoring existing complete native streams and
