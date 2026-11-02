@@ -1,5 +1,37 @@
 # Combo research — findings, November 1
 
+## Latest continuation: identify the deadline, then change the start
+
+There is still no new reproducible lock. Extending the selected plan after its
+49th input gives two wins, two losses and four ties against plain W-tap from
+that identical complete checkpoint. Every sample fails the fixed five-second
+maintenance gate. We therefore tested whether this checkpoint was already too
+late, rather than adding another controller rule.
+
+| Worst development sample, same complete pre49 state | All 5,832 three-input continuations | Plain W-tap |
+|---|---:|---:|
+| Survive until the next input after the three tested inputs | 0 | 0 |
+| Unresolved cases | 0 | 0 |
+| Opponent contact time / ray distance | 2516.527 ms / 2.774977 blocks, every case | Same |
+| Accepted return time | 2598.267 ms, every case | Same |
+| Server separation when handling that return | 1.812–2.227 blocks | 1.867 blocks |
+
+The fork is only52.859ms before the opponent's contact. None of these inputs can
+change its already-determined geometry, and their later server separation stays
+far inside the six-block server rejection threshold. This exhausts only the
+declared18-action family over those three inputs: current aim,51ms cap and
+own-cue click admission remain in place; backward movement, jumping and separate
+yaw control are outside this bound. It is not a global impossibility result.
+The next test moves the intervention earlier, checking whether a recovered
+in-range click can deliver knockback **and a victim movement** before that
+contact. Receiving velocity alone does not change position.
+
+A separate route uses a declared state from eight seconds into the old native
+lock8 example, with cold/warm controller memory and identical-state W-tap. It
+will not claim to clone unrecorded historical scheduler state or pending packets.
+See [the completed continuation and finite bound](seeded-maintenance-20261101/native/robust-search/wt-tail/protected-prefix/causal-extension/findings.md)
+and [the declared lock8 seed contract](seeded-maintenance-20261101/theory/lock8-declared-seed-contract.md).
+
 ## Current maintenance gate: still no reproducible Hypixel-like lock
 
 Controlled native starts now restore the declared state without overwriting

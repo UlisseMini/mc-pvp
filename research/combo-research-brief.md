@@ -1220,3 +1220,16 @@ packet order and explicit ambiguities; compare acceptance delay and contact
 margin against same-checkpoint WT. Separate inherited exposure from a failure
 only after the fixed word ends and its WT tail begins. No new controller feature
 or native promotion follows from the failed opening-snapshot score alone.
+
+CAUSAL CONTINUATION FOLLOW-UP: actual consume→C02→server attribution now feeds
+the continuation objective. Extending the49-row word gives two wins/two losses/
+four ties against same-pre49 W-tap and no five-second qualified sample. On the
+worst development checkpoint, all18^3 HEAD49–51 words return at2598.267ms after
+the same2516.527ms opponent contact. No UNKNOWNs or survivors. This finite family
+retains current aim, own-cue click admission and51ms cap; it excludes backward
+movement, jump and independent yaw. It is a checkpoint-specific late-control
+bound, not combat impossibility. Find the earlier causal deadline: S12 must
+affect a victim MOVE before the return CONSUME, not merely arrive before it.
+Keep the separate lock8-derived declared seed experiment distinct from an exact
+historical clone; missing old queues do not prevent testing a clearly declared,
+coherent empty-queue state with matched W-tap.
