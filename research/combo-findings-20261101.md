@@ -22,14 +22,21 @@ far inside the six-block server rejection threshold. This exhausts only the
 declared18-action family over those three inputs: current aim,51ms cap and
 own-cue click admission remain in place; backward movement, jumping and separate
 yaw control are outside this bound. It is not a global impossibility result.
-The next test moves the intervention earlier, checking whether a recovered
-in-range click can deliver knockback **and a victim movement** before that
-contact. Receiving velocity alone does not change position.
+The completed earlier-click check opens only the gate at input46,47 or48.
+All56 arms resolve; every gate-only change preserves the original count and
+return time. In the worst case, the first two early attempts miss at3.253 and
+3.060 blocks. The resulting earlier valid contact advances acceptance by46ms,
+but its S12 still arrives at2567.836ms, after the fatal2516.527ms click. It needed
+to affect the preceding2466.011ms movement. Receiving velocity alone does not
+change position. Plain W-tap from the earlier four-hit checkpoint instead gets
+S12 at2412.715ms and movement at2415.573ms, scoring eight fresh hits versus five.
+That provides a specific baseline-grounded reason to change the earlier approach.
 
 A separate route uses a declared state from eight seconds into the old native
 lock8 example, with cold/warm controller memory and identical-state W-tap. It
 will not claim to clone unrecorded historical scheduler state or pending packets.
 See [the completed continuation and finite bound](seeded-maintenance-20261101/native/robust-search/wt-tail/protected-prefix/causal-extension/findings.md)
+and [the earlier-click comparison and packet lineage](seeded-maintenance-20261101/native/robust-search/wt-tail/protected-prefix/earlier-click/findings.md),
 and [the declared lock8 seed contract](seeded-maintenance-20261101/theory/lock8-declared-seed-contract.md).
 
 ## Current maintenance gate: still no reproducible Hypixel-like lock

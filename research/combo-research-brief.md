@@ -1233,3 +1233,14 @@ affect a victim MOVE before the return CONSUME, not merely arrive before it.
 Keep the separate lock8-derived declared seed experiment distinct from an exact
 historical clone; missing old queues do not prevent testing a clearly declared,
 coherent empty-queue state with matched W-tap.
+
+EARLIER-CLICK CHECK: opening only gate46/47/48 preserves all eight fresh counts
+and return times (56 arms, zero UNKNOWN). Worst-case early attempts miss at3.253
+and3.060 blocks. The earlier valid contact sends S12 at2567.836ms, too late for
+the required2466.011ms MOVE or2516.527ms return consume. Fatal B's rendered A
+uses the report created after HEAD45; a newer report received before the click
+only changes its interpolation goal, with interpolation occurring afterward.
+These are exact observational packet chains, not a global earliest-control bound.
+Same-pre38 W-tap reaches contact earlier and gives eight fresh hits versus five.
+This motivates reusing the existing control family from that established state
+with the corrected causal-contact objective, not adding another late click rule.
