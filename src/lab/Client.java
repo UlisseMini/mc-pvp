@@ -212,8 +212,8 @@ public final class Client {
             // inspect immunity, accepted hits or any server-only state.
             boolean contactClicks=controls.getProperty("click_mode","fixed").equals("contact");
             boolean wordPermits=inputWord==null||inputWordDecision==null||!inputWordDecision.active||inputWord.allowInjection(ticks,nativeInputPoll);
-            if(seedPlanAdmission!=null)wordPermits=wordPermits&&inputWordDecision!=null&&seedPlanAdmission.allow(
-                inputWordDecision.index,nativeInputPoll,now/1_000_000.0,seedPlanLastHeadNs/1_000_000.0,handledTargetHurtMs);
+            if(seedPlanAdmission!=null)wordPermits=wordPermits&&seedPlanAdmission.allow(
+                inputWordDecision,nativeInputPoll,now/1_000_000.0,seedPlanLastHeadNs/1_000_000.0,handledTargetHurtMs);
             boolean referencePermits=!referenceActive||referenceFeedback.allowInjection(referencePoll(now/1_000_000.0),nativeInputPoll?"native_tick":"frame");
             boolean coastAdmission=maintenanceCurrent()?maintenanceHandoff.coastAdmissionActive(hurtWindowActive,now):hurtWindowActive;
             if(clickGate && wordPermits && referencePermits && (!coastAdmission||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),(int)number("hurt_window_ticks",8))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {

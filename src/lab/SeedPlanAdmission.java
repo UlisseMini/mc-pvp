@@ -42,6 +42,13 @@ public final class SeedPlanAdmission {
     }
     public int size(){return bypass.length;}
     public boolean bypasses(int index){return index>=0&&index<bypass.length&&bypass[index];}
+    /** Apply this mask only while the input word owns control. An explicit
+     * opening-only handoff restores ordinary policy admission; a full-word end
+     * remains active and closed. The caller still enforces CPS and normal gates.
+     */
+    public boolean allow(InputWordController.Decision decision,boolean nativeTickPoll,double pollMs,double lastHeadMs,double handledTargetHurtMs){
+        return decision!=null&&(!decision.active||allow(decision.index,nativeTickPoll,pollMs,lastHeadMs,handledTargetHurtMs));
+    }
     public boolean allow(int wordIndex,boolean nativeTickPoll,double pollMs,double lastHeadMs,double handledTargetHurtMs){
         if(wordIndex<0||wordIndex>=bypass.length)return false;
         if(!Double.isFinite(pollMs)||!Double.isFinite(lastHeadMs))throw new IllegalArgumentException("Finite local poll/HEAD clocks required");
