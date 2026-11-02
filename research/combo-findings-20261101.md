@@ -1,5 +1,45 @@
 # Combo research — findings, November 1
 
+## PAUSED — November 2, at the user’s request
+
+No further runs or searches are authorized until the user resumes the project.
+The server is being shut down by the user; do not restart it automatically.
+
+**Best current controlled result:** the legal coast controller with its brake
+threshold advanced by 0.1 blocks achieves the following fresh hits before the
+first accepted return. Both draws on each development calendar give these counts:
+
+| Host calendars m1459 / m1460 / m1461 / m1462 | Coast, earlier brake | Plain W-tap, identical complete start |
+|---|---|---|
+| Fresh hits before return | 14 / 7 / 8 / 8 | 2 / 2 / 1 / 1 |
+
+Settings: H1.1/V1, hit8, RTT150/0, reach3, 20CPS; eight samples over four host
+calendars. All72 threshold-study arms resolve, but **none maintains a20s lock**.
+The rescued attack misses by only0.010 blocks; the best run returns at5.947s.
+[Completed results and mechanism](seeded-maintenance-20261101/model/lock8-native-late/coast-thresholds/findings.md).
+
+**Finished native work:** `lock8-settled-8s` and its coast/W-tap/hold-W recipes
+provide the same182 declared physical/cache fields, with measured independent
+native clocks. Four20s calibration captures finished before the pause:
+m1490/m1493 coast, m1491/m1492 W-tap. Captures and batch ledger are preserved;
+post-capture qualification and maintenance scoring have **not** run. They are
+not lock demos. Existing historical lock8 successes still do not establish a
+reproducible robust Hypixel-like lock.
+
+**Unresolved:** sustained denial under realistic timing. Knockback can arrive
+before the opponent clicks yet move them only afterward; their rendered view
+also reflects our older movement. Fine timing-support uncertainty remains.
+No new held-out calendars were used.
+
+**Next, only after explicit resume:** qualify and score the four saved native
+captures first; no repeat games are needed for that step. Then implement/review
+the prepared constant-total-RTT comparison (150/0,60/90,30/120,10/140), with the
+three frozen coast variants and same-state W-tap. Its scope is saved but it has
+**not been implemented or executed**. Retain the synthetic cue-history caveat,
+actual-contact margins, UNKNOWNs and held-out separation. Native qualification
+scripts currently expect an idle live-status check; adapt that check explicitly
+for an offline audit if the server remains down.
+
 ## November 2: a better controlled start, still a short combo
 
 The declared state from eight seconds into native m1364 supports a clear
