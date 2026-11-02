@@ -11,12 +11,14 @@ snapshot. All four latest setups pass their state and packet-boundary checks.
 | Same-setting comparison | Candidate additional fresh hits before a return | Plain W-tap |
 |---|---|---|
 | New native matched-base pairs, m1465–68 |2,1 |2,2 |
-| New shared-word model search, eight development timing samples |3 in all8 |2–3 |
+| Earlier shared-word model search, eight development timing samples |3 in all8 |2–3 |
+| Pre-hit W release plus ordinary W-tap continuation, same eight samples |5,5,4,4,4,4,4,4 |3,2,2,2,3,3,3,2 |
+| Wider continuation search (64 prefixes), same eight samples |5,5,4,4,4,4,4,4 |3,2,2,2,3,3,3,2 |
 
 Settings are provisional Hypixel-like H/V1, sprint vertical.07, hit9,
 RTT120/120, reach3,20s and51ms minimum click spacing. The newer searched word
-has **not** been run natively. Every searched trajectory still returns within
-2.55–2.75s; there is no watchable Hypixel-like lock to advertise yet.
+has **not** been run natively. The wider search's selected trajectory returns
+within1.89–2.30s; there is no watchable Hypixel-like lock to advertise yet.
 
 The measured-clock model reconstructs all four native outcomes and262 own
 movements plus262 rendered-opponent updates to below2e-12blocks. This is a
@@ -24,14 +26,24 @@ conditional reconstruction result. Future timing remains less certain: the
 empirical service intervals still under-cover, so a tiny modeled reach margin
 cannot certify robust behavior.
 
-The search's useful improvement is normal/normal/sprint hits separated by
-roughly450ms. It retains reach through three hits, then misses the fourth window
-after the stronger launch plus coasting. A narrow beam is not a proof that a
-better continuation is impossible. Current work isolates delivered hit strength
-from pursuit and actual click delivery before expanding the search.
+The useful causal improvement is a one-tick W release **before** the third hit:
+STOP→attack→START gives a normal third hit without sacrificing the preceding
+pursuit. Ordinary W-tap afterward supplies the fourth hit that the old coasting,
+nonclicking tail missed. But the defender can still click before the new
+knockback arrives, or after it arrives and before their next movement. A velocity
+change alone has not yet moved their attack origin away. The controller needs
+separation through that entire interval, not just at the fresh-hit window.
+
+Widths4/16/64 all exhaust around the fourth cycle, with zero committed simulator
+UNKNOWNs in the wider searches. This is not a physical impossibility result:
+all keep the third-hit approach fixed through input23. The next single-axis
+comparison moves branching to input17, before its sprint re-arm, leaving the
+same actions, ranking, samples and settings unchanged.
 
 [Controlled-start commands, limitations and replays](seeded-maintenance-20261101/README.md).
 [Full paired search results](seeded-maintenance-20261101/native/robust-search/search-findings.md).
+[Third-hit causal comparison](seeded-maintenance-20261101/native/robust-search/third-strength/release22-findings.md).
+[Wider continuation search](seeded-maintenance-20261101/native/robust-search/wt-tail/capacity/findings.md).
 [Fresh native reconstruction](seeded-maintenance-20261101/native/actual-calendar/prospective-v1/README.md).
 
 ## Previous checkpoint: feedback A/D fails transfer; jump step validated

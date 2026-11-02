@@ -135,6 +135,17 @@ old default tail's missing pursuit/clicks; no new control axis or profile grid.
 See native/robust-search/third-strength/release22-findings.md. No native/validation
 promotion yet.
 
+WT-TAIL CAPACITY CHECK: the fixed-prefix plus primed W-tap tail gets4 freshs
+across eight training draws. Width-only16/64 searches retain4 and4–5 respectively,
+versus original-seed W-tap2–3. Both frontiers die at HEAD38; all terminal children
+have an accepted return, zero committed UNKNOWNs. Wider selection does not fix
+the worst1.889s survival. Their first mutable HEAD24 follows the third C02 already
+consumed at HEAD23. Next authorized single-axis test moves branching to preHEAD17,
+keeping the established NN prefix through16, same width64/actions/ranks/calendars,
+and known later-prefix words as terminal-only incumbents. Compare original-seed
+W-tap and separately primed same-checkpoint W-tap; retain its UNKNOWNs. No profile,
+ping or new control feature yet. See native/robust-search/wt-tail/capacity.
+
 LATEST USER DIRECTION — prioritize maintenance over entry. Characterize the
 provisional Hypixel preset and reference regimes lock8/m1364 and horizontal-only
 hit2/m1272 separately. Start by rescoring existing complete native streams and
