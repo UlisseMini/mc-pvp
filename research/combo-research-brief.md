@@ -1193,3 +1193,30 @@ occurred in those gaps, so that native coverage is absent. The original strict
 empty-queue labels remain unchanged. Exact reconstruction must support separate
 initialization/control epochs and the containing drain before these calendars
 can be model prediction evidence.
+
+RECORDED-CLOCK FOLLOW-UP: both packet-first examples reconstruct through the
+first return within1.34e-12 blocks. All six HEAD-first v3 native games
+also reconstruct (291 own/291 replica snapshots,2.41e-12 maximum); the unchanged
+conditional timing sampler includes all45 resolved observed-arm counts of48,
+retaining three UNKNOWNs. Across96 paired arms five long-stall UNKNOWNs remain.
+This conditions on actual host clocks and measured input/uplink costs, not a
+validated general future-clock distribution. Host-calendar differences change
+the same plan from1 to4 freshs. No native lock or new controller promotion.
+
+POST-FOURTH CHECKPOINT: completed all64 frozen final words plus incumbent;
+best local plan gives7/7/7/7/6/7/5/6 versus same-pre38 primed WT7/9/5/6/7/6/8/5,
+with four prior fresh hits shared. All outcomes resolve, all candidate arms
+return2.60–4.15s. Four wins/three losses/one tie is not clear maintenance
+improvement. Do not substitute original-seed WT2–3 for this much stronger
+same-checkpoint control. Preserve the earlier incomplete105/596 scoring pass.
+
+The current own-window aimed-ray score samples at SERVER immunity reopening;
+it is an instantaneous geometry diagnostic, not proof of a missed legal fresh
+attack. The C02 accepted then may have been consumed earlier, and local aim may
+refresh later. Likewise `own_ready_consumes` uses contemporaneous server state,
+not eventual packet acceptance. Frozen historical scores stay unchanged. Before
+another search, link actual selection/CONSUME→C02→server acceptance, with exact
+packet order and explicit ambiguities; compare acceptance delay and contact
+margin against same-checkpoint WT. Separate inherited exposure from a failure
+only after the fixed word ends and its WT tail begins. No new controller feature
+or native promotion follows from the failed opening-snapshot score alone.

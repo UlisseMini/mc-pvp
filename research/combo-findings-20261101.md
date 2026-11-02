@@ -1,5 +1,52 @@
 # Combo research — findings, November 1
 
+## Current maintenance gate: still no reproducible Hypixel-like lock
+
+Controlled native starts now restore the declared state without overwriting
+fresh packet effects. Recorded-clock reconstruction matches the latest six
+native calibration outcomes, including both owning clients and rendered views,
+within2.41e-12 blocks. The predictive timing check also includes every resolved
+observed-arm outcome, but retains five unsupported long-stall cases among96
+paired arms. This validates sampled packet/service timing conditional on the
+recorded host clocks, not a general future-clock distribution. Across those
+host clocks the unchanged plan gives1–4 fresh hits; it is not a lock.
+
+The completed post-fourth search changes only eleven ordinary input rows. It
+compares maintenance from an identical full four-hit checkpoint, including
+queues and primed W-tap history. Final rescoring covers all64 frozen finalists,
+the unchanged plan and both baseline conventions, with no unsupported cases:
+
+| Eight development timing samples, hit9 / RTT120–120 | Best local-margin plan | Plain W-tap from the identical four-hit checkpoint |
+|---|---|---|
+| Total fresh hits, including the four shared hits | 7,7,7,7,6,7,5,6 | 7,9,5,6,7,6,8,5 |
+| Activity-qualified total,1000ms maximum fresh gap | 6,6,7,6,6,7,5,6 | 6,8,5,6,7,6,7,5 |
+
+This is four wins, three losses and one tie by return-only fresh count, not
+clear maintenance domination. Every candidate run returns within2.60–4.15s.
+It advances the fifth protective movement enough to remove a packet-before-MOVE
+return in one case, but loses pursuit/reach elsewhere. No native promotion or
+held-out evaluation follows. The instantaneous own-ray values at server immunity
+reopening are diagnostics; they must be distinguished from the earlier client
+click whose packet can actually be accepted at that opening. The completed
+attack-chain audit confirms two supposed misses were already-contacting C02s
+accepted in the first available server drain. All24 outcome dictionaries remain
+unchanged, with2,406 selection/contact checks. Every candidate fatal return was
+emitted after the49-row plan handed control to W-tap. This leaves a concrete
+continuation horizon to investigate, not a proof that extending it will work.
+
+The audit also separates real failures. In the weakest case the plan misses,
+then keeps its click gate closed after range recovers; W-tap contacts earlier.
+In another loss, the candidate's sixth S12 applies while the opponent is0.594
+blocks airborne, whereas W-tap's later S12 applies after landing. The latter
+maintains more contacts. Faster acceptance is therefore not a universally useful
+objective; source contact margin, delivery timing and ground/air phase must stay
+distinct. One return drain has two possible source clicks and remains explicitly
+ambiguous.
+
+[Completed frozen-finalist comparison](seeded-maintenance-20261101/native/robust-search/wt-tail/protected-prefix/post-fourth/final-rescore/findings.md).
+[Actual attack-chain audit](seeded-maintenance-20261101/native/robust-search/wt-tail/protected-prefix/post-fourth/final-rescore/causal-audit/findings.md).
+[Six-game recorded and sampled timing calibration](seeded-maintenance-20261101/native/actual-calendar/head-v3-calibration/findings.md).
+
 ## Latest checkpoint: initialization race fixed; no Hypixel-like lock yet
 
 The new zero-opponent-ping tests exposed a real setup bug: fresh server packets
@@ -13,6 +60,16 @@ probe then exercised packet-first initialization in both candidate and W-tap:
 the received replica cache/interpolation updates survived unchanged at the first
 control HEAD32–33ms later. No incoming hurt cue occurred in those gaps, so live
 cue retention has fixture/source coverage rather than native coverage.
+
+An isolated recorded-clock reconstruction now reproduces both packet-first
+examples through their first return: candidate and W-tap each get two fresh
+hits, with 112 owning-client movement snapshots and 112 rendered-opponent
+snapshots agreeing within 1.34e-12 blocks. Return timestamps agree within
+1.02ms. This checks the initialization/first-control separation on those actual
+clocks; it is not a forecast of future timings. The opposite-policy replay
+branches remain explicitly unsupported where their generated packet sequence
+has no recorded service evidence. See
+[packet-first reconstruction](seeded-maintenance-20261101/native/actual-calendar/packet-stage-v1/findings.md).
 
 | Fixed20s native calibration, RTT120/0 | Pursuit32 → W-tap | Plain W-tap, same literal seed |
 |---|---|---|
@@ -66,8 +123,9 @@ replacing UNKNOWN labels. All old outcomes remain; no held-out tuning occurred.
 state, facing, sprint, rendered opponents and relevant caches. Candidate and
 W-tap receive the same literal seed. Independent native clocks still differ;
 the command records release phases rather than claiming an atomic JVM snapshot.
-All four latest native setups qualify. These remain the latest native results;
-the later model candidates have not been promoted to native performance tests.
+All four native setups in that earlier batch qualify. Later native calibration
+is reported above; the subsequent model candidates have not been promoted to
+native performance tests.
 
 | Same-setting comparison | Candidate fresh hits after seed, before first return | Plain W-tap |
 |---|---|---|
