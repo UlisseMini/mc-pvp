@@ -46,6 +46,7 @@ public final class Client {
     static HurtWindowCoastController hurtWindowCoast=new HurtWindowCoastController();
     static double handledTargetHurtMs=Double.NaN;
     static boolean hurtWindowActive;
+    static MaintenanceHandoff maintenanceHandoff;
     static ReferenceFeedbackController referenceFeedback;
     static ReferenceFeedbackController.Snapshot referenceHead;
     static boolean referenceActive;
@@ -262,9 +263,13 @@ public final class Client {
                 Properties nextControls=R.properties(DIR.resolve("control.properties"));
                 validateControls(nextControls);controls=nextControls;readAt=now;
             }
+            if(maintenanceHandoff!=null&&maintenanceHandoff.enabled()&&!maintenanceHandoff.ended()
+                    &&(!match.equals(controls.getProperty("match",""))||!Boolean.parseBoolean(controls.getProperty("enabled","false"))))
+                finishMaintenance(match.equals(controls.getProperty("match",""))?"disabled":"match_changed",now,decisionHeadNanos);
             player=R.get(mc,"thePlayer"); Object world=R.get(mc,"theWorld");
             if(services!=null)services.tick();
             if(player==null || world==null){
+                finishMaintenance("disconnected",now,decisionHeadNanos);
                 releaseInputs();opponent=null;
                 if(connecting&&now-connectAt>5000)connecting=false;
                 if(!connecting && ticks>30){
@@ -299,6 +304,8 @@ public final class Client {
                 heartbeat.put("target_ready",targetReady);
                 heartbeat.put("attack_reach",attackReach());heartbeat.put("click_cps",ClickRate.cps(controls));
                 heartbeat.put("native_ticks",ticks);
+                if(maintenanceHandoff!=null&&maintenanceHandoff.enabled()&&match.equals(controls.getProperty("match","")))
+                    heartbeat.put("maintenance",maintenanceHandoff.snapshot(decisionHeadNanos));
                 Object screen=R.get(mc,"currentScreen");heartbeat.put("screen",screen==null?null:screen.getClass().getName());
                 Files.createDirectories(DIR);Compat.writeString(DIR.resolve("heartbeat.json"),Json.encode(heartbeat));
                 Properties integrity=new Properties();integrity.setProperty("time",Long.toString(now));
@@ -331,6 +338,13 @@ public final class Client {
                 if(controls.containsKey("input_word"))inputWord=new InputWordController(R.ROOT.resolve(controls.getProperty("input_word")));
                 strongGap=new StrongRelaxationPolicy();freshTargetHurtStatus=0;
                 hurtWindowCoast=new HurtWindowCoastController();handledTargetHurtMs=Double.NaN;hurtWindowActive=false;
+                maintenanceHandoff=new MaintenanceHandoff(MaintenanceHandoff.Settings.from(controls),epoch,now,decisionHeadNanos);
+                if(maintenanceHandoff.enabled()){
+                    Map<String,Object> protocol=new LinkedHashMap<>();protocol.put("type","maintenance_protocol");
+                    protocol.put("time",now);protocol.put("monotonic_ns",decisionHeadNanos);protocol.put("match",match);
+                    protocol.put("native_tick",ticks);protocol.put("maintenance",maintenanceHandoff.snapshot(decisionHeadNanos));
+                    protocol.put("controls",new TreeMap<Object,Object>(controls));log(protocol);
+                }
                 referenceFeedback=null;referenceHead=null;referenceActive=false;
                 if(controls.getProperty("kind","").equals("reference-feedback"))
                     referenceFeedback=ReferenceFeedbackController.frozen(new String(Files.readAllBytes(R.ROOT.resolve(controls.getProperty("reference_table"))),java.nio.charset.StandardCharsets.UTF_8),
@@ -402,6 +416,15 @@ public final class Client {
                 lastConsumed=obs;
             }
             String kind=controls.getProperty("kind","hold");
+            boolean maintenanceMode=maintenanceCurrent();
+            Map<String,Object> maintenanceTransition=null;
+            if(maintenanceMode){
+                if(maintenanceHandoff.inputHead(now,decisionHeadNanos,ticks))
+                    maintenanceTransition=maintenanceSnapshot(now,decisionHeadNanos,obs);
+                // Both arms prime identical ordinary W-tap state. Acquisition
+                // below changes only the keys/click gate until the landmark.
+                kind="wtap";
+            }
             double age=(now-obs.time)/1000.0;
             double ping=number("ping",0), oppPing=number("opponent_ping",0);
             double horizon=age+number("horizon_ms",80)/1000.0;
@@ -609,7 +632,9 @@ public final class Client {
             if(now-epoch<number("hold_opening_ms",0)){
                 setKeys(true,0,true);clickGate=true;
             }
-            if(kind.equals("gap-strafe") || now-epoch<number("gap_opening_ms",0)){
+            boolean maintenanceAcquisition=maintenanceMode&&maintenanceHandoff.useAcquisition();
+            if(kind.equals("gap-strafe") || now-epoch<number("gap_opening_ms",0)
+                    ||maintenanceAcquisition&&maintenanceHandoff.settings.acquisition.equals("gap")){
                 StrongRelaxationPolicy.Control d=strongGap.step(obs.localRange);
                 int key=number("gap_sprint",0)>0 && d.key!=0?2:d.key;
                 // Native positive moveStrafe means Left; our key helper uses
@@ -623,7 +648,8 @@ public final class Client {
             }
             // Candidate and W-tap share the same physical four-second opening.
             // W-tap's ordinary cue history keeps advancing above this override.
-            hurtWindowActive=kind.equals("hurt-window-coast")||now-epoch<number("hurt_window_opening_ms",0);
+            hurtWindowActive=kind.equals("hurt-window-coast")||now-epoch<number("hurt_window_opening_ms",0)
+                    ||maintenanceAcquisition&&maintenanceHandoff.settings.acquisition.equals("lock8");
             if(hurtWindowActive){
                 double inputMs=Boolean.parseBoolean(controls.getProperty("hurt_window_head_clock","false"))?
                         decisionHeadNanos/1_000_000.0:System.nanoTime()/1_000_000.0;
@@ -740,6 +766,12 @@ public final class Client {
             // of runTick, after packet work and before vanilla input consumption.
             // Every fast baseline uses this same opportunity; no queued input is
             // canceled and no attack is called directly.
+            if(maintenanceTransition!=null){
+                maintenanceTransition.put("selected_forward",forward);maintenanceTransition.put("selected_strafe",strafe);
+                maintenanceTransition.put("selected_sprint_key",sprintKey);maintenanceTransition.put("selected_click_gate",clickGate);
+                maintenanceTransition.put("selected_hurt_window_gate",hurtWindowActive);
+                maintenanceTransition.put("selection_complete_monotonic_ns",System.nanoTime());log(maintenanceTransition);
+            }
             if(reaction==0){nativeInputPoll=true;try{frame(mc);}finally{nativeInputPoll=false;}}
             if(now-logAt>=50){
                 logAt=now;
@@ -759,6 +791,38 @@ public final class Client {
         }catch(Throwable e){fail(e);}
     }
     static Observation lastConsumed;
+    static boolean maintenanceCurrent(){
+        return maintenanceHandoff!=null&&maintenanceHandoff.enabled()&&!maintenanceHandoff.ended()
+                &&match.equals(controls.getProperty("match",""))&&active();
+    }
+    static void finishMaintenance(String reason,long wallMs,long monoNs){
+        if(maintenanceHandoff==null||!maintenanceHandoff.finish(reason))return;
+        Map<String,Object> event=new LinkedHashMap<>();event.put("type","maintenance_summary");
+        event.put("time",wallMs);event.put("monotonic_ns",monoNs);event.put("match",match);event.put("native_tick",ticks);
+        event.put("maintenance",maintenanceHandoff.snapshot(monoNs));log(event);
+    }
+    /** Read-only same-client snapshot. Other JVM/server queues are not cloned. */
+    static Map<String,Object> maintenanceSnapshot(long wallMs,long monoNs,Observation obs){
+        Map<String,Object> event=new LinkedHashMap<>();event.put("type","maintenance_handoff");
+        event.put("time",wallMs);event.put("monotonic_ns",monoNs);event.put("match",match);event.put("native_tick",ticks);
+        event.put("maintenance",maintenanceHandoff.snapshot(monoNs));event.put("observation_time",obs.time);
+        event.put("own",ScienceTrace.state(player));event.put("replica",ScienceTrace.state(opponent));
+        event.put("local_range",obs.localRange);event.put("own_health",R.call(player,"getHealth"));
+        Map<String,Object> ownCaches=new LinkedHashMap<>(),replicaCaches=new LinkedHashMap<>();
+        for(String field:Compat.list("serverSprintState","sprintToggleTimer","sprintingTicksLeft","jumpMovementFactor","jumpTicks",
+                "lastReportedPosX","lastReportedPosY","lastReportedPosZ","lastReportedYaw","lastReportedPitch","positionUpdateTicks"))
+            try{ownCaches.put(field,R.get(player,field));}catch(Throwable unavailable){ownCaches.put(field,null);}
+        for(String field:Compat.list("serverPosX","serverPosY","serverPosZ","otherPlayerMPPosRotationIncrements",
+                "otherPlayerMPX","otherPlayerMPY","otherPlayerMPZ","otherPlayerMPYaw","otherPlayerMPPitch"))
+            try{replicaCaches.put(field,R.get(opponent,field));}catch(Throwable unavailable){replicaCaches.put(field,null);}
+        event.put("own_caches",ownCaches);event.put("replica_caches",replicaCaches);
+        event.put("last_click_completed_monotonic_ns",lastClick);event.put("first_click_eligible_monotonic_ns",firstClickEligible);
+        event.put("queued_attack_presses",R.num(R.get(R.get(mc,"gameSettings"),"keyBindAttack"),"pressTime"));
+        event.put("left_click_counter",R.num(mc,"leftClickCounter"));event.put("previous_forward",forward);
+        event.put("previous_strafe",strafe);event.put("previous_sprint_key",sprintKey);event.put("previous_click_gate",clickGate);
+        event.put("wtap_handled_cue",handledTapCue);event.put("wtap_pending_cue",pendingTapCue);event.put("wtap_release_until",tapUntil);
+        event.put("snapshot_complete_monotonic_ns",System.nanoTime());return event;
+    }
     static ReferenceFeedbackController.Snapshot referencePoll(double timeMs){
         ReferenceFeedbackController.Snapshot o=referenceHead;
         return new ReferenceFeedbackController.Snapshot(timeMs,o.tick,o.ownX,o.ownZ,o.ownVx,o.ownVz,
@@ -791,6 +855,7 @@ public final class Client {
         if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","frozen-cycle","tick-cycle","gap-strafe","hurt-window-coast","reference-feedback","blockhit","scripted","input-word").contains(p.getProperty("kind","hold")))
             throw new IllegalArgumentException("Unsupported bot strategy: "+p.getProperty("kind"));
         ClickRate.cps(p);ClickRate.intervalNanos(p);DuelSettings.reach(p);
+        MaintenanceHandoff.Settings.from(p);
         if(p.getProperty("kind","").equals("reference-feedback")&&(!p.containsKey("reference_table")||
                 Double.parseDouble(p.getProperty("hurt_window_opening_ms","0"))!=ReferenceFeedbackController.HANDOFF_MS||
                 Double.parseDouble(p.getProperty("reaction_ms","150"))!=0||!p.getProperty("click_mode","fixed").equals("fixed")))
@@ -828,10 +893,12 @@ public final class Client {
             if(((Number)R.call(packet,"getOpCode")).intValue()!=2)return;
             Object entity=R.call(packet,"getEntity",R.get(mc,"theWorld"));
             if(entity==opponent){freshTargetHurtStatus=System.currentTimeMillis();
-                handledTargetHurtMs=System.nanoTime()/1_000_000.0;
+                long cueNs=System.nanoTime();handledTargetHurtMs=cueNs/1_000_000.0;
+                if(maintenanceCurrent())maintenanceHandoff.targetHurt(freshTargetHurtStatus,cueNs);
                 log(Compat.map("type","fresh_target_hurt_status","time",freshTargetHurtStatus,"match",match));
             }
             if(entity==player){freshHurtStatus=System.currentTimeMillis();
+                if(maintenanceCurrent())maintenanceHandoff.ownReturnCue(false,freshHurtStatus,System.nanoTime());
                 log(Compat.map("type","fresh_hurt_status","time",freshHurtStatus,"match",match));
                 if(Boolean.parseBoolean(controls.getProperty("block_adapt","false"))){
                     LinearHitPredictor.Calibration calibration=hitPredictor.hurt(freshHurtStatus,number("ping",0));
@@ -846,6 +913,8 @@ public final class Client {
         try{
             Map<String,Object> event=new LinkedHashMap<>();event.put("type","velocity_packet");event.put("time",System.currentTimeMillis());event.put("match",match);
             event.put("entity_id",R.num(packet,"entityID"));event.put("own_entity",(int)R.num(packet,"entityID")==((Number)R.call(player,"getEntityId")).intValue());
+            if(Boolean.TRUE.equals(event.get("own_entity"))&&maintenanceCurrent())
+                maintenanceHandoff.ownReturnCue(true,((Number)event.get("time")).longValue(),System.nanoTime());
             event.put("vx",R.num(packet,"motionX")/8000);event.put("vy",R.num(packet,"motionY")/8000);event.put("vz",R.num(packet,"motionZ")/8000);
             if(ScienceTrace.client() && Boolean.TRUE.equals(event.get("own_entity")))event.put("applied_motion",Compat.list(R.num(player,"motionX"),R.num(player,"motionY"),R.num(player,"motionZ")));
             log(event);

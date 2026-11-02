@@ -29,5 +29,6 @@
   "InputWordController",
   "StrongRelaxationPolicy",
   "HurtWindowCoastController",
+  "MaintenanceHandoff",
   "ReferenceFeedbackController"
 ]

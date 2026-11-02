@@ -34,11 +34,26 @@ runs and report the spread. Hold-W is an additional control, not a replacement
 for W-tap. Every results table MUST contain a W-tap baseline column; explicitly
 mark historical/unmatched evidence as unqualified until backfilled.
 
-The restricted task and primary improvement gate is: maximize fresh hits in a
-fixed time without taking a return hit. Report fresh hits before the first
-accepted return and whether the full horizon had zero returns; keep longest
-unanswered fresh runs and stricter POV/readiness checks as separate diagnostics.
-Use the same starting state and scoring window for the candidate and W-tap.
+The current primary task is MAINTENANCE AFTER ESTABLISHMENT, not acquisition.
+Use three consecutive unanswered fresh hits after the defender starts clicking
+as the default landmark; show sensitivity at five and ten. From that landmark,
+report completed hit-to-hit cycles, accepted-return failures (including damage
+upgrades), exposure and right-censoring, and the distribution of remaining fresh
+hits/time. Entry rate is a separate result, never the main promotion gate.
+Report return-only survival and a separate inactivity-qualified version; the
+latter ends at an inter-fresh gap greater than twice the declared native hurt
+window plus100ms. This is an activity proxy, not a POV reach certificate.
+
+Model candidate and W-tap must fork the SAME COMPLETE mid-combo state, queues,
+clock and primed observation history. Do not select survivors separately in each
+arm and claim a causal comparison. Native repeats share a declared acquisition
+protocol and measured seed-state/timing bins; independent runs are NOT identical
+full-state forks. Report that limitation. Historical results retain their
+original fixed-start/first-return metric; rescores must be explicitly labeled.
+Per-cycle failure fractions are descriptive; correlated cycles in one long run
+are not independent trials and zero observed failures is not proof of infinity.
+Privileged current-state/native and future-calendar/model oracles are authorized
+research diagnostics, clearly labeled; legal bots still use own observations.
 
 If a controller/search is not clearly beating W-tap on this task across the
 tested spread, STOP adding controller features. Diagnose why W-tap does as well:

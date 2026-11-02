@@ -13,13 +13,24 @@ opening handicap and metric. Include several seeds/tick phases or native repeats
 and show spread. Hold-W is an additional control, never a substitute for W-tap.
 Historical unmatched results remain explicitly unqualified until backfilled.
 
-The restricted task and primary gate is maximum fresh hits in a fixed time
-without getting hit. For a fixed start and horizon, count fresh hits before the
-first accepted return (including an accepted damage upgrade as a return), and
-report whether the entire horizon had zero returns. Also report the longest
-unanswered fresh-hit run, but do not substitute a lucky later run for success
-from the prescribed start. Preserve strict own-POV reach/readiness/denial metrics
-as additional diagnostics, scored identically for candidate and baseline.
+CURRENT PRIMARY GATE (user maintenance clarification): survival once a combo
+is established. Default landmark: three consecutive unanswered fresh hits AFTER
+the defender starts clicking; sensitivity landmarks five and ten. At that state,
+measure accepted-return failures per exposed hit-to-hit cycle, remaining fresh
+hits/time, horizon survival, and right-censoring. Damage upgrades are returns.
+Acquisition/entry probability is separate and secondary. Score return-only
+survival and inactivity-qualified survival separately: inactivity is an
+inter-fresh gap exceeding twice the native hurt window plus100ms. This is an
+activity proxy, not proof of reach at each fresh window. Apply identical scoring
+to W-tap; retain POV/readiness/missed-window diagnostics separately.
+
+Fork candidate and W-tap from the SAME complete model midstate with primed
+histories and queues. Native matched acquisition protocols do not reproduce
+identical OS timing or packet queues; measure seed states/phases and label that
+limitation. Separately conditioned survivor cohorts are descriptive, not causal
+comparisons. Report trajectory/calendar spread; cycles in one trajectory are
+correlated, and zero failures does not prove an infinite lock. Keep historical
+fixed-start first-return results under their original definitions.
 
 If the controller/search does not clearly beat plain W-tap on this task across
 the tested spread, STOP ADDING CONTROLLER FEATURES. Diagnose what W-tap gets
@@ -36,7 +47,47 @@ or looser scoring than the oracle. The historical `combo-wtap20` policy defaults
 to150ms reaction; explicitly label it and include a zero-delay plain W-tap
 reference for zero-delay research controllers rather than silently changing it.
 
-## Current follow-up: broaden inference and build legal control
+## Current follow-up: characterize established combo maintenance
+
+LATEST USER DIRECTION — prioritize maintenance over entry. Characterize the
+provisional Hypixel preset and reference regimes lock8/m1364 and horizontal-only
+hit2/m1272 separately. Start by rescoring existing complete native streams and
+model runs at established-combo landmarks; investigate the Hypixel H2 119-hit
+witness (m1396 calendar, seed4001), then exact model continuation forks and native
+matched-acquisition continuations. Distinguish full-information plus future-clock
+oracle, live current-information oracle, frozen action playback, and legal own-
+view control. They solve different information/timing problems. Target deliverable:
+a bounded map of launch/spacing/phase/ping/profile conditions, conditional break
+rates with spread, mechanism, and watchable native candidate/W-tap references.
+Freeze study scope and endpoints in `maintenance-20261101/plan.md` before results.
+Do not infer global impossibility from a bounded unsuccessful search. m1415–m1418
+remain SEALED; previously exposed transfer calendars are labeled accordingly.
+
+MAINTENANCE CHECKPOINT — `maintenance-20261101/findings.md`: exact H2 witness
+replay matches1199 HEAD states/119 fresh timestamps. Same-full-state forks after
+3/5/10 freshs give oracle116/114/109 remaining freshs, primed W-tap2/3/2,
+frozen legal4/5/4, C3 and feedback2/3/2. Changing only twelve future timing draws
+after the five-hit seed gives frozen controls+own admission8–81 (all return),
+WT3each; this is same-calendar sensitivity, not an oracle impossibility result.
+One-HEAD strafe/admission2x2 adds5 in all four variants versus WT2: gate changes
+coalesce into the same consume opportunity, lateral motion only delays return55ms.
+
+New native conditional-handoff pairs m1432–m1443 share acquisition until a guarded
+own third cue; all12 handoffs independently pass server certification. Actual
+handoff is after3 freshs at lock8 and4 at hit2. Lock8 adds8/4/16 vs WT1/2/1;
+none of the six first-return intervals crosses the100ms movement/server-tick
+warning gate (smaller jitter remains). Hit2/V0 adds587/584 (horizon),25
+(return) vs WT5/4/5. Long runs contain109–112ms tick gaps; short run has291ms
+attacker gap and is timing-contaminated. No tuning/retry selection. m1431 is a
+preserved invalid setup (arena preparation stall), not a combat result. New
+native states/clocks are independent, NOT exact forks. Accepted-return damage
+upgrades count; all fresh gaps/inactivity endpoints remain available. Native
+current-state oracle remains pending behind the causal-observer/deadline gates
+in `maintenance-20261101/native-oracle/prerequisite-plan.md`; do not substitute
+future-calendar H2 or a position-only state reset. Human client unchanged;
+server next-scenario profile restored to vanilla after the batch.
+
+## Earlier follow-up: broaden inference and build legal control
 
 LATEST USER DIRECTION — turn A/D into own-observation feedback on top of the
 three-contact winner, and validate jump separately. Completed study:
