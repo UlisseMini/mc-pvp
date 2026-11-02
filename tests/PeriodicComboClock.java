@@ -21,8 +21,27 @@ public final class PeriodicComboClock {
         long publicationNanos(int clientRoute,long rawReceiptNanos,long taskReadyNanos,long actualDrainStartNanos);
         default CuePublicationTiming deepCopy(){return this;}
     }
+    /** Predictive-only whole-drain timing. The already selected FIFO is the only
+     * workload input; recorded per-packet envelopes/default modes stay unchanged. */
+    public record DrainPacket(ReceivedKind kind,int packetId) {
+        public DrainPacket {Objects.requireNonNull(kind);if(packetId<0)throw new IllegalArgumentException("Negative packet ID");}
+    }
+    public record PacketService(long effectOffsetNanos,long callbackOffsetNanos) {
+        public PacketService {if(effectOffsetNanos<0||callbackOffsetNanos<effectOffsetNanos)throw new IllegalArgumentException("Invalid packet service offsets");}
+    }
+    public record DrainServicePlan(String templateId,List<PacketService> packets,long completionOffsetNanos) {
+        public DrainServicePlan {
+            if(templateId==null||templateId.isBlank()||completionOffsetNanos<0)throw new IllegalArgumentException("Invalid drain service plan");
+            packets=List.copyOf(packets);long previous=0;
+            for(var p:packets){if(p.effectOffsetNanos()<previous||p.callbackOffsetNanos()>completionOffsetNanos)throw new IllegalArgumentException("Drain service violates serial FIFO/completion");previous=p.callbackOffsetNanos();}
+        }
+    }
+    public interface DrainServiceTiming {
+        DrainServicePlan plan(int clientRoute,long actualDrainStartNanos,List<DrainPacket> selectedFifo);
+        default DrainServiceTiming deepCopy(){return this;}
+    }
     public static final class Timing implements Cloneable {
-        public Timing deepCopy(){try{Timing copy=(Timing)super.clone();if(injectionTiming!=null)copy.injectionTiming=injectionTiming.deepCopy();if(cuePublicationTiming!=null)copy.cuePublicationTiming=cuePublicationTiming.deepCopy();return copy;}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
+        public Timing deepCopy(){try{Timing copy=(Timing)super.clone();if(injectionTiming!=null)copy.injectionTiming=injectionTiming.deepCopy();if(cuePublicationTiming!=null)copy.cuePublicationTiming=cuePublicationTiming.deepCopy();if(drainServiceTiming!=null)copy.drainServiceTiming=drainServiceTiming.deepCopy();return copy;}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
         public double aTickPhase=0,bTickPhase=10,serverPhase=25;
         public double tickPeriod=50,serverPeriod=50,framePeriod=2.5,aFramePhase=0,bFramePhase=1;
         public double moveAfterInput=.3,flushAfterInput=.6,entityAfterDrain=.4,trackAfterDrain=.8,endAfterDrain=1;
@@ -46,6 +65,9 @@ public final class PeriodicComboClock {
         /** Separate cue publication from native main-thread/queue-monitor release.
          * Explicit bound sensitivity, not an identified host-service duration. */
         public ServiceMode serviceMode=ServiceMode.NONE;
+        /** Null preserves strict historical-envelope behavior, including rejection
+         * of unsupported coalescence. Non-null replaces service, not transport. */
+        public DrainServiceTiming drainServiceTiming;
         public boolean aRemoteBeforeMove=true,bRemoteBeforeMove=false,aimBeforeFrameDrain=true;
     }
     public record Observation(double time,long tick,ExactTravel.State own,double targetX,double targetY,double targetZ,
@@ -97,8 +119,9 @@ public final class PeriodicComboClock {
     private record Injection(Press press,String source,long completedNanos) {}
     /** Exactly one of cue/callback is non-null. Cue packets have not applied yet;
      * other packets already applied, with an immutable FIFO-delayed callback. */
-    private record Publication(long nanos,PeriodicComboFightModel.Packet cue,PacketObservation callback) {
-        Publication deepCopy(){return new Publication(nanos,cue==null?null:cue.deepCopy(),callback);}
+    private record Publication(long nanos,PeriodicComboFightModel.Packet cue,PacketObservation callback,boolean apply,boolean deliver) {
+        Publication(long nanos,PeriodicComboFightModel.Packet cue,PacketObservation callback){this(nanos,cue,callback,cue!=null,true);}
+        Publication deepCopy(){return new Publication(nanos,cue==null?null:cue.deepCopy(),callback,apply,deliver);}
     }
     private static final class ClickQueue {
         final LinkedList<Press> presses=new LinkedList<>();
@@ -147,6 +170,7 @@ public final class PeriodicComboClock {
         if((timing.explicitPolls||timing.injectionTiming!=null)&&schedule==null)throw new IllegalArgumentException("Explicit polls/injection timing require an event tape");
         if(timing.causalBackpressure&&schedule==null)throw new IllegalArgumentException("Causal backpressure requires an event tape");
         if(timing.serviceMode!=ServiceMode.NONE&&(schedule==null||!timing.causalBackpressure))throw new IllegalArgumentException("Service backpressure requires a tape and causalBackpressure");
+        if(timing.drainServiceTiming!=null&&(schedule==null||!timing.causalBackpressure||timing.serviceMode==ServiceMode.NONE))throw new IllegalArgumentException("Drain templates require tape, causalBackpressure and service mode");
         if((timing.cuePublicationTiming!=null||timing.packetCueDelays)&&schedule==null)throw new IllegalArgumentException("Cue publication timing requires an event tape");
         if(schedule==null){add(timing.aFramePhase,0);add(timing.bFramePhase,1);add(timing.aTickPhase,2);add(timing.bTickPhase,3);add(timing.serverPhase,8);}
         else{
@@ -400,6 +424,7 @@ public final class PeriodicComboClock {
         long drainNanos=Math.round(now*1_000_000.0);
         if(timing.serviceMode!=ServiceMode.NONE)deferBlockedEnqueues(side);
         var batch=PeriodicComboFightModel.due(state,now,a?1:2);
+        if(timing.drainServiceTiming!=null){receiveTemplate(a,drainNanos,batch);return;}
         if(timing.serviceMode!=ServiceMode.NONE)startService(side,drainNanos,batch);
         for(PeriodicComboFightModel.Packet p:batch){
             if(p.cueDelayNanos!=null&&!timing.packetCueDelays)
@@ -428,6 +453,25 @@ public final class PeriodicComboClock {
                     enqueuePublication(a,new Publication(publication,null,packetObservation(a,p,publication/1_000_000.0)));
                 }
             }
+        }
+    }
+    /** Native scheduledTasks monitor freezes membership at acquisition. Future
+     * enqueues wait for unlock; they are never dropped or admitted into this batch. */
+    private void receiveTemplate(boolean a,long start,List<PeriodicComboFightModel.Packet> batch){
+        if(batch.isEmpty())return; // Empty work retains the supplied host calendar.
+        int side=a?0:1;var word=new ArrayList<DrainPacket>();
+        for(var p:batch)word.add(new DrainPacket(receivedKind(p),p.packetId));
+        DrainServicePlan plan=Objects.requireNonNull(timing.drainServiceTiming.plan(side+2,start,List.copyOf(word)),"Missing drain service plan");
+        if(plan.packets().size()!=batch.size())throw new IllegalStateException("UNKNOWN_DRAIN_SERVICE_WORD: template packet count differs from selected FIFO");
+        long completion=Math.addExact(start,plan.completionOffsetNanos());
+        if(completion/1e6>scheduleEnd)throw new IllegalStateException("UNSUPPORTED_SERVICE_TIME: template completion exceeds supplied tape");
+        if(!publications.get(side).isEmpty())throw new IllegalStateException("UNSUPPORTED_SERVICE_OVERLAP: previous template still publishing");
+        serviceUntil[side]=completion;serviceDrains[side]++;serviceLocks.get(side).add(new ServiceLock(start,completion));
+        for(int i=0;i<batch.size();i++){
+            var p=batch.get(i);var service=plan.packets().get(i);
+            long effect=Math.addExact(start,service.effectOffsetNanos()),callback=Math.addExact(start,service.callbackOffsetNanos());
+            enqueuePublication(a,new Publication(effect,p.deepCopy(),null,true,false));
+            enqueuePublication(a,new Publication(callback,p.deepCopy(),null,false,true));
         }
     }
     /** Native enqueues use the same monitor as the drain. Retained raw arrivals
@@ -470,12 +514,20 @@ public final class PeriodicComboClock {
         int side=a?0:1;Publication p=publications.get(side).removeFirst();
         if(p.nanos!=Math.round(now*1_000_000.0))throw new AssertionError("Cue publication queue/event mismatch");
         if(p.cue!=null){
-            PeriodicComboFightModel.applyReceived(state,now,a,p.cue);
-            policies[side].received(packetObservation(a,p.cue,now));
-            return "CUE_PUBLICATION"+(a?"A":"B");
+            if(p.apply)PeriodicComboFightModel.applyReceived(state,now,a,p.cue);
+            if(p.deliver)policies[side].received(packetObservation(a,p.cue,now));
+            return (p.apply?(p.deliver?"CUE_PUBLICATION":"PACKET_APPLICATION"):"RECEIVE_CALLBACK")+(a?"A":"B");
         }
         policies[side].received(p.callback);
         return "RECEIVE_CALLBACK"+(a?"A":"B");
+    }
+    private static ReceivedKind receivedKind(PeriodicComboFightModel.Packet p){
+        if(p.kind==5||p.kind==6)return p.packetId==0x16?ReceivedKind.TARGET_LOOK:ReceivedKind.TARGET_POSITION;
+        if(p.kind==4||p.kind==8)return ReceivedKind.OWN_VELOCITY;
+        if(p.kind==10||p.kind==11)return ReceivedKind.OWN_SPRINT;
+        if(p.kind==12||p.kind==13)return ReceivedKind.TARGET_HURT;
+        if(p.kind==14||p.kind==15)return ReceivedKind.OWN_HURT;
+        throw new IllegalArgumentException("Unsupported client drain packet kind "+p.kind);
     }
     private PacketObservation packetObservation(boolean a,PeriodicComboFightModel.Packet p,double handledAt){
             ReceivedKind kind;double x=Double.NaN,y=Double.NaN,z=Double.NaN,vx=Double.NaN,vy=Double.NaN,vz=Double.NaN;boolean ground=false,sprint=false;
