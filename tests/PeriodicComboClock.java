@@ -110,7 +110,7 @@ public final class PeriodicComboClock {
     public final Timing timing;
     private final Policy[] policies;
     private final boolean recordedSchedule;
-    private final double scheduleEnd;
+    private double scheduleEnd;
     private final PriorityQueue<Event> events;
     // Opt-in immutable future opportunities; only dynamically generated events remain in the heap.
     private Event[] sharedCalendar;
@@ -178,6 +178,59 @@ public final class PeriodicComboClock {
     /** Policies must be fresh or immutable. All packet/input queues and scheduler state are copied;
      * audits are detached. An already admitted input survives a later gate/key change. */
     public PeriodicComboClock fork(Policy a,Policy b){return new PeriodicComboClock(this,a,b);}
+    /** Observer-only scheduler boundary for prospective-clock rollouts. This
+     * replaces only not-yet-attempted host opportunities strictly after now.
+     * Current/equal-time events, deferred stages and generated completions stay
+     * committed, as do every packet/input/publication queue and policy state.
+     * This is NOT by itself a causal timing adapter: packet-timing/readiness
+     * hooks and policy wall-clock mappings must also describe the new calendar.
+     * Mutation is atomic after validation and is intended for an isolated fork. */
+    public void replaceFutureHostOpportunities(List<Scheduled> replacement,double coverageEnd){
+        if(!recordedSchedule||!Double.isFinite(coverageEnd)||coverageEnd<now)
+            throw new IllegalArgumentException("Finite tape coverage at/after the current cut required");
+        List<Event> all=pendingEvents();List<Event> retained=new ArrayList<>();Set<Long> sequences=new HashSet<>();
+        for(Event e:all)if(!replaceableHost(e)){
+            if(e.time>coverageEnd)throw new IllegalArgumentException("Replacement would truncate committed work");
+            retained.add(e);sequences.add(e.order);
+        }
+        List<Event> proposed=new ArrayList<>();
+        for(Scheduled e:List.copyOf(replacement)){
+            double time=e.nanos/1_000_000.0;
+            if(e.nanos<0||e.sequence<0||time<=now||time>coverageEnd||!sequences.add(e.sequence))
+                throw new IllegalArgumentException("Replacement needs unique nonnegative sequences and strictly future covered times");
+            if((e.kind==Kind.POLL_FRAME||e.kind==Kind.POLL_NATIVE)&&!timing.explicitPolls)
+                throw new IllegalArgumentException("Replacement polls require explicitPolls");
+            proposed.add(new Event(time,kind(e),e.sequence,time));
+        }
+        proposed.sort(events.comparator());
+        events.clear();events.addAll(retained);sharedCalendar=proposed.toArray(Event[]::new);calendarCursor=0;
+        phaseCalendar=null;phaseCursors=null;phaseOffsets=null;nextSource=-1;shareableCalendar=true;scheduleEnd=coverageEnd;
+    }
+    /** Diagnostic export of the replaceable suffix. Deferred and equal-time
+     * opportunities are intentionally absent. Never expose this eventual tape
+     * to an allegedly causal policy. Nanosecond event precision is required. */
+    public List<Scheduled> futureHostOpportunities(){
+        if(!recordedSchedule)throw new IllegalStateException("Recorded opportunity tape required");
+        List<Scheduled> result=new ArrayList<>();
+        for(Event e:pendingEvents())if(replaceableHost(e)){
+            long nanos=Math.round(e.time*1_000_000.0);
+            if(nanos/1_000_000.0!=e.time)throw new IllegalStateException("Sub-nanosecond shifted opportunity cannot be exported exactly");
+            boolean client=e.kind<8||e.kind>=12;
+            Kind kind=client?clientKind(e.kind):switch(e.kind){case 8->Kind.SERVER_DRAIN;case 9->Kind.SERVER_ENTITY;case 10->Kind.SERVER_TRACK;case 11->Kind.SERVER_END;default->throw new AssertionError();};
+            result.add(new Scheduled(nanos,e.order,kind,!client||(e.kind&1)==0));
+        }
+        return List.copyOf(result);
+    }
+    private boolean replaceableHost(Event e){return e.kind<22&&e.originalTime==e.time&&e.time>now;}
+    private List<Event> pendingEvents(){
+        List<Event> all=new ArrayList<>(events);
+        if(sharedCalendar!=null)for(int i=calendarCursor;i<sharedCalendar.length;i++)all.add(sharedCalendar[i]);
+        if(phaseCalendar!=null)for(int side=0;side<3;side++)for(int i=phaseCursors[side];i<phaseCalendar[side].length;i++){
+            Event e=phaseCalendar[side][i];double delta=phaseOffsets[side];
+            all.add(delta==0?e:new Event(e.time+delta,e.kind,e.order,e.originalTime+delta));
+        }
+        all.sort(events.comparator());return all;
+    }
     /** Observer-only timing proposal on a fork. Retain all executed state,
      * packets, publications and in-progress injection/service completions.
      * Only unattempted future client opportunities move; an already deferred

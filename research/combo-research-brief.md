@@ -104,6 +104,39 @@ unqualified view/wrong-packaged-cap attempts; v2 fixes ClickRate packaging only,
 with unchanged policy and51ms settings. See maintenance-20261101/findings.md and
 native-feedback/v2. No sealed calendar was read.
 
+MAINTENANCE STATE MAP — all 134 established transfer cuts now reconstruct with
+identical full-state and primed-policy hashes (`maintenance-20261101/oracle-mechanism/state-map`).
+At the third server fresh hit, every resolved BOTH-nearest-reach state (64 C3,
+4 feedback) returns before another fresh under BOTH candidate and W-tap.
+For A_ONLY feedback states, remaining fresh median6 [2,37] versus W-tap2 [1,3];
+descriptive cycle failures20/254=7.9% versus20/60=33.3% across10 dependent-mirror
+families. Keep22UNKNOWNs; these are exposed privileged labels, not a legal
+classifier or iid risk estimate. Ground/descending phase alone does not separate
+success. Moving the positive model cuts to received-cue/HEAD landmarks retains
+5/31/37 versusWT2/1/2; H2 fifth-cue retains114 versusWT3, so handoff delay alone
+does not explain the native gap. All later episodes in the six native feedback
+games also stop by five fresh hits. Native m1451 is causally too late at handoff:
+return begins35.23ms later, before any new input can traverse the fixed60ms
+uplink; bound assumes the recorded processing schedule and ordinary controls.
+
+Native oracle prerequisite now includes an executable causal-prefix ledger:
+11 tests/72 suffix mutation checks, actual m1451 in-flight C02 and m1452
+S12-before-MOVE cases recovered without future data. It explicitly rejects full
+kernel import: incomplete server/service state and capture-start FIFO ambiguity
+remain. See `maintenance-20261101/native-oracle/causal-prefix/README.md`.
+
+PROSPECTIVE ORACLE BUDGET CHECK — canonical clock replacement preserves all
+committed work and exact original candidate/W-tap suffixes at four checkpoints;
+17 new scheduler tests and standard model regressions pass. Historical donor
+splicing is independent of the poisoned eventual suffix on eight bindable
+samples, but conditional native coverage is NOT validated. All128 bounded8ms
+attempts use W-tap:64 deadline fallbacks during future binding (zero completed
+rollouts),64 no-compatible-donor UNKNOWNs. All32 evaluation draws retained:
+14 resolved identical W-tap pairs,18 UNKNOWNs. This is a compute/import/sampler
+prerequisite failure, not oracle combat infeasibility or a reason to run native.
+See `maintenance-20261101/native-oracle/budget/findings.md`; full native oracle
+and exact native midstate reset remain pending.
+
 LATEST USER DIRECTION — turn A/D into own-observation feedback on top of the
 three-contact winner, and validate jump separately. Completed study:
 `hypixel-inference-20261101/feedback-strafe/findings.md`. Next-window range
