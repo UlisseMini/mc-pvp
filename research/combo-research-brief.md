@@ -1244,3 +1244,18 @@ These are exact observational packet chains, not a global earliest-control bound
 Same-pre38 W-tap reaches contact earlier and gives eight fresh hits versus five.
 This motivates reusing the existing control family from that established state
 with the corrected causal-contact objective, not adding another late click rule.
+
+NOVEMBER2 CONTROLLED LOCK8 PROJECTION: one declared state from m1364's8025.994ms
+policy marker, empty queues and matched wire bases, yields cold/warm coast
+6/7/8/8 freshs versus same-complete-state WT2/2/1/1 across four development host
+calendars, two draws each. All24 arms resolve through first return in a20s test;
+all coast returns occur by3.053s. Old3s outcomes/event prefixes reproduce exactly.
+Cold memory is sufficient for this bounded gain. Every coast fresh is normal;
+all failures have S12 effect→B consume→B MOVE. Last own source ray is roughly
+2.20–2.25, while B receives our older advancing positions after we already coast.
+This is a promising declared start, not a native/indefinite-lock demonstration.
+Use the identified earlier brake/resume history to justify only small control
+changes; retain matched WT and the four-calendar rather than eight-independent-
+phase interpretation. The corrected H2 pre38 search did not clearly beat WT and
+is stopped; its discarded known-good prefix proves pruning failure, not combat
+infeasibility. No held-out calendars were used by either new experiment.

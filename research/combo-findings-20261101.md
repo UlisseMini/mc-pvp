@@ -1,5 +1,42 @@
 # Combo research — findings, November 1
 
+## November 2: a better controlled start, still a short combo
+
+The declared state from eight seconds into native m1364 supports a clear
+maintenance advantage for the existing, legal coast controller. It starts with
+empty queues and coherent relative-position bases; it is a new synthetic start,
+not an exact clone of the old run. All policies receive the same complete state
+and timing sample. The unchanged20s extension gives:
+
+| Development host calendar, two timing draws each | Cold coast fresh hits / first return | History-warmed coast | Plain W-tap, identical start |
+|---|---:|---:|---:|
+| m1459 | 6 / 2.347s | Same count and return | 2 / 0.698s |
+| m1460 | 7 / 2.638s | Same count and return | 2 / 1.538s |
+| m1461 | 8 / 3.053s | Same count and return | 1 / 1.257s |
+| m1462 | 8 / 3.051s | Same count and return | 1 / 1.307s |
+
+Settings: H1.1/V1, hit8, sprint extra Y.1, RTT150/0, reach3/3 and50ms click cap.
+All24 arms resolve. Every original three-second result and trace prefix remains
+exact. The two draws per host yield the same combat outcomes; these are four
+distinct host schedules, not eight independent phase outcomes. Policy memory
+restoration is unnecessary for this measured gain. All coast fresh hits are
+normal-strength; W-tap's stronger launches disrupt its next-hit continuity.
+
+Every coast failure is a velocity update followed by the opponent's click
+**before its next movement**. The final outgoing fresh contact still has ample
+range (roughly2.20–2.25 blocks), but the opponent sees our old advancing positions
+after we have begun braking. Those contributing inputs are roughly196–248ms
+older. This supports adjusting the preceding brake/resume cycle, not another
+last-moment click fix. No case is a20s lock and no new native demo is claimed.
+See [the declared-seed experiment](seeded-maintenance-20261101/model/lock8-native-late/findings.md).
+
+The separate corrected H2 pre38 search remains negative: three wins/two losses/
+three ties by fresh count, one/two/five by activity, against identical-state
+W-tap. All eight selected candidates return. Its dead frontier is a pruning
+failure: a known longer continuation was discarded at input40. That branch is
+stopped; it provides no impossibility claim. See
+[the frozen search](seeded-maintenance-20261101/native/robust-search/wt-tail/protected-prefix/causal-pre38/findings.md).
+
 ## Latest continuation: identify the deadline, then change the start
 
 There is still no new reproducible lock. Extending the selected plan after its
