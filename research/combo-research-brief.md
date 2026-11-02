@@ -75,6 +75,21 @@ HEAD release is48–50ms after A, versus model22.143ms; startup HEAD→MOVE stal
 bad gzip copies are preserved; completed source archives qualify allsix.
 No sealed calendars were opened. See seeded-maintenance native/paired-v1-findings.
 
+ACTUAL-CLOCK CALIBRATION: importing m1459–62 native host ordering and conditional
+stage/semantic service timings reproduces all four observed2/3/3/2 outcomes,
+fresh/return stamps within2ms. Seven of eight client MOVE streams differ only
+by arena-translation floating precision; warm WT defender max scalar error is
+0.000376. Wire-only residuals put its first S12 one drain too early; measured
+attack-to-emission/task timing fixes that. Strict opposite-policy counterfactuals
+retain missing-cell UNKNOWNs. The separate73-tuple empirical sampler reproduces
+native counts on development and timeline-unused m1463/64 (outcomes already
+exposed), with3/32 UNKNOWN per arm in both splits. No redraw or hidden fallback.
+Matching replica position-counter/goals leavesWTcounts unchanged and fails to
+rescue the plan. Resolve/bound distinct-drain service-envelope composition before
+search; do not optimize around unsupported schedules. No new controller or
+native matches during these calibrations. See seeded-maintenance native/
+actual-calendar and native/predictive-calendar; original m1415–18 remain SEALED.
+
 LATEST USER DIRECTION — prioritize maintenance over entry. Characterize the
 provisional Hypixel preset and reference regimes lock8/m1364 and horizontal-only
 hit2/m1272 separately. Start by rescoring existing complete native streams and

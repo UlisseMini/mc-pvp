@@ -1,0 +1,61 @@
+{
+  "scope": "Untested position-counter ablation. No lock claim; paired evaluation required.",
+  "source": "seeds/hypixel-h2.properties",
+  "source_sha256": "53f3d126ea5b1baf421d97f7918457b9a93cd44188af595558842821be3e113b",
+  "output_sha256": "1191fe71e7afcbbd50bdcfee41864ffa323c45ade72de1eeb4129edfef74c9a5",
+  "changes": {
+    "a.view.server_x": {
+      "before": "-11",
+      "after": "-9"
+    },
+    "a.view.goal_x": {
+      "before": "-0.34375",
+      "after": "-0.28125"
+    },
+    "a.view.server_y": {
+      "before": "132",
+      "after": "128"
+    },
+    "a.view.goal_y": {
+      "before": "4.125",
+      "after": "4.0"
+    },
+    "a.view.server_z": {
+      "before": "94",
+      "after": "92"
+    },
+    "a.view.goal_z": {
+      "before": "2.9375",
+      "after": "2.875"
+    },
+    "b.view.server_x": {
+      "before": "31",
+      "after": "26"
+    },
+    "b.view.goal_x": {
+      "before": "0.96875",
+      "after": "0.8125"
+    },
+    "b.view.server_y": {
+      "before": "128",
+      "after": "128"
+    },
+    "b.view.goal_y": {
+      "before": "4.0",
+      "after": "4.0"
+    },
+    "b.view.server_z": {
+      "before": "7",
+      "after": "10"
+    },
+    "b.view.goal_z": {
+      "before": "0.21875",
+      "after": "0.3125"
+    }
+  },
+  "limitations": [
+    "Does not restore original pending packets",
+    "Does not establish full-state reachability",
+    "Vanilla absolute updates can themselves leave a small base mismatch"
+  ]
+}
