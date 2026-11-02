@@ -10,18 +10,31 @@ public final class PeriodicComboFightModel {
     static final double HALF=(double)(.6f/2)+(double).1f, EYE=(double)1.62f;
     static final int R=0,W=1,S=2;
     static final class Body implements Cloneable {
-        long localContacts;double lastHurtTime=Double.NEGATIVE_INFINITY;double lastContactTime=Double.NEGATIVE_INFINITY;ExactTravel.State q; boolean sprint, lastSent, previousForward; int tap,reportAge;double reportX,reportY=4,reportZ;float yaw,pitch,headYaw,reportYaw,reportPitch,airAcceleration=.02f;
+        long localContacts;double lastHurtTime=Double.NEGATIVE_INFINITY;double lastContactTime=Double.NEGATIVE_INFINITY;ExactTravel.State q; boolean sprint, lastSent, previousForward; int tap,reportAge,jumpTicks;double reportX,reportY=4,reportZ;float yaw,pitch,headYaw,reportYaw,reportPitch,airAcceleration=.02f;
         Body(double x){reportX=x;q=state(x,4,0,-.0784000015258789,true);}
         public Body deepCopy(){try{return (Body)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
         void velocity(double vx,double vy){velocity(vx,vy,q.vz());}
         void velocity(double vx,double vy,double vz){q=new ExactTravel.State(q.x(),q.y(),q.z(),vx,vy,vz,q.box(),q.onGround(),q.isCollidedHorizontally(),q.isCollidedVertically(),q.isCollided(),false,false,false);}
         void move(int key,float yaw){move(key,0,yaw);}
-        void move(int key,float strafe,float yaw){
+        void move(int key,float strafe,float yaw){move(key,strafe,yaw,false);}
+        void move(int key,float strafe,float yaw,boolean jump){
+            // EntityLivingBase.onLivingUpdate decrements jumpTicks before its
+            // cutoff/input/jump/travel sequence. A released key clears it below.
+            if(jumpTicks>0)jumpTicks--;
             headYaw=yaw;
             if(tap>0)tap--;
             if(q.onGround()&&!previousForward&&key!=R&&!sprint){if(tap>0||key==S)sprint=true;else tap=7;}
             if(key==S)sprint=true;if(key==R)sprint=false;previousForward=key!=R;
-            q=cutoff(q);q=ExactTravel.predict(q,new ExactTravel.Input(strafe,key==R?0:.98f,yaw,sprint?.13000001f:.1f,airAcceleration),ENV);
+            q=cutoff(q);
+            // Native pr.bF runs immediately before pr.g, not at the input HEAD.
+            // Preserve onGround here: the takeoff travel uses ground friction.
+            // Ordinary dry player only: no jump boost, fluid, mount or flight.
+            if(jump&&q.onGround()&&jumpTicks==0){
+                double vx=q.vx(),vz=q.vz();
+                if(sprint){float angle=yaw*.017453292f;vx-=(double)(sin(angle)*.2f);vz+=(double)(cos(angle)*.2f);}
+                q=motion(q,vx,(double).42f,vz);jumpTicks=10;
+            }else if(!jump)jumpTicks=0;
+            q=ExactTravel.predict(q,new ExactTravel.Input(strafe,key==R?0:.98f,yaw,sprint?.13000001f:.1f,airAcceleration),ENV);
             airAcceleration=.02f;if(sprint)airAcceleration=(float)((double)airAcceleration+(double).02f*.3D);
         }
     }
@@ -343,8 +356,9 @@ public final class PeriodicComboFightModel {
         }
     }
     static void replayMove(State s,Config c,boolean fromA,int key,float yaw,double t){replayMove(s,c,fromA,key,0,yaw,t);}
-    static void replayMove(State s,Config c,boolean fromA,int key,float strafe,float yaw,double t){
-        Body b=fromA?s.a:s.b;b.move(key,strafe,yaw);audit(s);double rtt=fromA?c.ownRtt:c.otherRtt;
+    static void replayMove(State s,Config c,boolean fromA,int key,float strafe,float yaw,double t){replayMove(s,c,fromA,key,strafe,yaw,false,t);}
+    static void replayMove(State s,Config c,boolean fromA,int key,float strafe,float yaw,boolean jump,double t){
+        Body b=fromA?s.a:s.b;b.move(key,strafe,yaw,jump);audit(s);double rtt=fromA?c.ownRtt:c.otherRtt;
         ArrayList<Packet> out=fromA?s.outboundA:s.outboundB;
         if(b.sprint!=b.lastSent){out.add(new Packet(fromA?2:9,t+rtt/2,0,0,0,0,b.sprint,s.seq++));b.lastSent=b.sprint;}
         double dx=b.q.x()-b.reportX,dy=b.q.y()-b.reportY,dz=b.q.z()-b.reportZ;

@@ -53,7 +53,10 @@ public final class PeriodicComboClock {
         public double nearest(){PeriodicComboFightModel.View v=new PeriodicComboFightModel.View(targetX);v.y=targetY;v.z=targetZ;return PeriodicComboFightModel.nearest(own,v);}
     }
     /** Native A/D are +/-.98f. In NATIVE_QUEUED, click holds an admission gate until updated. */
-    public record Control(int key,float strafe,boolean click) {}
+    public record Control(int key,float strafe,boolean click,boolean jump) {
+        /** Historical policies retain exactly the no-jump action space. */
+        public Control(int key,float strafe,boolean click){this(key,strafe,click,false);}
+    }
     public enum ReceivedKind { TARGET_POSITION, TARGET_LOOK, TARGET_HURT, OWN_HURT, OWN_VELOCITY, OWN_SPRINT }
     /** Immutable data available from this client's own incoming packets, delivered
      * only after local handling. arrivedAt is a local network receipt timestamp,
@@ -509,7 +512,7 @@ public final class PeriodicComboClock {
                 Control control=Objects.requireNonNull(controls[side],"MOVE before TICK_HEAD");boolean first=a?timing.aRemoteBeforeMove:timing.bRemoteBeforeMove;
                 PeriodicComboFightModel.View v=a?state.ab:state.ba;
                 if(!recordedSchedule&&first){v.step();checkpoint("INTERP"+(a?"A":"B"));}
-                PeriodicComboFightModel.replayMove(state,config,a,control.key,control.strafe,(a?state.a:state.b).yaw,now);checkpoint("MOVE"+(a?"A":"B"));
+                PeriodicComboFightModel.replayMove(state,config,a,control.key,control.strafe,(a?state.a:state.b).yaw,control.jump,now);checkpoint("MOVE"+(a?"A":"B"));
                 if(!recordedSchedule&&!first)v.step();ticks[side]++;selectionReady[side]=false;name=recordedSchedule||first?"AFTER_MOVE":"INTERP"+(a?"A":"B");
             }
             else if(k<8){PeriodicComboFightModel.replayFlush(state,config,a,now);name="FLUSH"+(a?"A":"B");}
