@@ -1,6 +1,60 @@
 # Combo research — findings, November 1
 
-## Latest checkpoint: controlled starts work; the Hypixel-like lock is still open
+## Latest checkpoint: initialization race fixed; no Hypixel-like lock yet
+
+The new zero-opponent-ping tests exposed a real setup bug: fresh server packets
+could apply before a bot's final seed reset and get overwritten. The bot now
+initializes before the eligible main-thread packet handler, then starts controls
+at its next input HEAD without resetting the received state. Failed initialization
+cannot retry over live effects. The actual lifecycle passes101 assertions on
+Java8 and17; six fresh native games show no overwritten packet effects. All12
+client initializations in that batch occurred at HEAD, so the new packet-first
+branch still needs a dedicated native check.
+
+| Fixed20s native calibration, RTT120/0 | Pursuit32 → W-tap | Plain W-tap, same literal seed |
+|---|---|---|
+| Before fix, m1472–77 | 1,5,4 | 1,1,1 |
+| After fix, m1480–85 | 1,1,2 | 2,1,1 |
+
+Numbers are fresh hits after the seed before the first accepted return, including
+upgrade returns. These are calibration results, not locks. Before the fix, five
+of six games failed the strict packet-boundary qualification, so5/4 are not
+qualified wins. After the fix, all182 fields match and there are no cap/reach
+violations or scored clock gaps over100ms. The strict empty-queue check passes
+two games and rejects four only for newly emitted movement packets waiting at
+server initialization, then handled afterward. A separate causal-preservation
+audit distinguishes these queues from overwritten effects; the original labels
+remain. Independent native clocks are measured, not exact full-state clones.
+The unchanged pursuit candidate does not beat W-tap here.
+
+The separate RTT120/120 model diagnosis made progress on one transition. Moving
+an existing W release to just before the fourth hit makes it normal-strength
+and restores all eight fourth contacts. Next-window own reach improves from1/8
+to7/8 samples, but later returns remain:
+
+| Eight training timing samples, original measured service pool | Relocated release | Primed W-tap from the same pre-input30 checkpoint |
+|---|---|---|
+| Total fresh hits including three shared hits | 6U,7,6U,6,6,6,5,5 | 5,5,5,5,5,5,5,5 |
+
+U means unresolved simulation, not a win. Two causal changes alone do not make
+a lock. A particularly clear break is an opponent click1.823ms after S12 changes
+velocity but before movement changes position: receiving KB does not itself
+remove reach. Other samples still miss our next window after a strong relaunch.
+The next bounded test targets that timing/spacing transition rather than adding
+controller features.
+
+The native calibration also supplies a previously unmeasured packet grouping.
+The additive service pool contains5,069 complete native drains (the old2,006
+unchanged plus3,063 new). Its four examples of the missing hurt/sprint/teleport
+word are landing transitions. This is sparse development support, not validated
+probability coverage; old UNKNOWNs stay recorded. Frozen unchanged-input rescoring
+is separate from tuning and held-out evaluation.
+
+[Native paired results and replay IDs](seeded-maintenance-20261101/native/pursuit120-0-calibration-v3-analysis/findings.md).
+[Fourth-hit mechanism and matched checkpoint controls](seeded-maintenance-20261101/native/robust-search/wt-tail/protected-prefix/fourth-release-relocation/findings.md).
+[Expanded measured service pool](seeded-maintenance-20261101/native/predictive-calendar/service-composition-review/expansion-v2/README.md).
+
+## Earlier checkpoint: controlled starts at RTT120/120
 
 `/lab seed` restores the declared client/server positions, velocities, hurt
 state, facing, sprint, rendered opponents and relevant caches. Candidate and

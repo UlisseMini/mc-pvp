@@ -1163,3 +1163,25 @@ interrupt a human duel to deploy/reload research code.
 - `research/launch-envelope-20261101.json`: conditional native-launch envelopes.
 - `research/launch-phase-model-20261101.json`: simple visible-height predictor
   benchmark; failed transfer must be resolved before relying on it in control.
+
+## Current setup boundary correction (v11)
+
+The RTT120/0 calibration exposed client seed reset after fresh packet effects.
+Initialize once before an eligible main-thread handler or HEAD, then keep
+initialization distinct from first control HEAD. A later HEAD must preserve
+received positions, velocities, hurt cues, click history and input queues.
+Partial initialization failure is terminal for that match. Keep original strict
+empty-queue qualification and separate causal-preservation evidence; newly emitted
+packets queued before server initialization but handled afterward are not the
+same failure as overwritten live effects. Do not import packet-stage releases
+with an extractor that assumes release==HEAD or hardcodes RTT/seed.
+
+Six v11 native calibration games m1480–85 show candidate1/1/2 versus WT2/1/1,
+all182 fields exact, no overwritten effects, no cap/reach violations or scored
+>100ms clock gaps. They are DEVELOPMENT, not held-out, and not a lock. The strict
+empty-queue audit still rejects four for ordinary newly generated server-bound
+queues. Preserve all attempts and the earlier invalid m1472–77 comparison.
+
+All12 v11 client releases in this batch were input_HEAD; a separate native
+packet-first branch check is still required. Do not count no observed overwrites
+as native coverage of a branch that did not execute.
