@@ -120,6 +120,21 @@ confirmed delivered strength; no forced live sprint state. See native/
 robust-search/search-findings.md and theory/next-transition-notes.md under
 seeded-maintenance-20261101.
 
+THIRD-HIT CAUSAL CHECK: removing Ctrl at HEAD17 also slows pursuit and loses
+the third hit in4/8 samples. A one-tick W release at HEAD22 instead gives
+STOP→C02→START and a normal third hit in all8. Crossing this release with a
+primed W-tap continuation afterHEAD23 yields4–5 freshs versus original-seed
+plain W-tap2–3 (eight training wins, both arms resolved), but all return within
+3.40s. Same-pre22-checkpoint W-tap has6/8 missing-service-word UNKNOWNs; report
+that separate continuation comparison as unresolved, not a win. Own fourth-
+window reach is ample but return-denial margin is small; four early returns
+are emitted before fourth-hit S12 applies. Next bounded search keeps the proven
+released prefix through23 and branches ordinary inputs from24, with primed
+own-observation W-tap as unassigned lookahead/final fallback. This addresses the
+old default tail's missing pursuit/clicks; no new control axis or profile grid.
+See native/robust-search/third-strength/release22-findings.md. No native/validation
+promotion yet.
+
 LATEST USER DIRECTION — prioritize maintenance over entry. Characterize the
 provisional Hypixel preset and reference regimes lock8/m1364 and horizontal-only
 hit2/m1272 separately. Start by rescoring existing complete native streams and
