@@ -12,10 +12,11 @@ public final class MaintenanceHandoff {
         public final int hits;
         public final long defenderWakeMs;
         public final long cueGuardMs;
+        public final int feedbackMirror;
 
-        private Settings(boolean enabled,String acquisition,String arm,int hits,long wake,long guard) {
+        private Settings(boolean enabled,String acquisition,String arm,int hits,long wake,long guard,int mirror) {
             this.enabled=enabled;this.acquisition=acquisition;this.arm=arm;
-            this.hits=hits;this.defenderWakeMs=wake;this.cueGuardMs=guard;
+            this.hits=hits;this.defenderWakeMs=wake;this.cueGuardMs=guard;this.feedbackMirror=mirror;
         }
 
         public static Settings from(Properties p) {
@@ -23,10 +24,16 @@ public final class MaintenanceHandoff {
             if(acquisition.isEmpty()) {
                 for(String name:p.stringPropertyNames())if(name.startsWith("maintenance_"))
                     throw new IllegalArgumentException("maintenance_acquisition is required with maintenance settings");
-                return new Settings(false,"","",3,4000,100);
+                return new Settings(false,"","",3,4000,100,1);
             }
-            if(!acquisition.equals("lock8")&&!acquisition.equals("gap"))
-                throw new IllegalArgumentException("maintenance_acquisition must be lock8 or gap");
+            if(!acquisition.equals("lock8")&&!acquisition.equals("gap")&&!acquisition.equals("feedback"))
+                throw new IllegalArgumentException("maintenance_acquisition must be lock8, gap or feedback");
+            int mirror=Integer.parseInt(p.getProperty("maintenance_feedback_mirror","1"));
+            if(Math.abs(mirror)!=1)throw new IllegalArgumentException("maintenance_feedback_mirror must be -1 or 1");
+            if(acquisition.equals("feedback")&&(Integer.parseInt(p.getProperty("click_cps","10"))!=20
+                    ||Double.parseDouble(p.getProperty("click_min_interval_ms","0"))!=51
+                    ||Double.parseDouble(p.getProperty("click_start_ms","0"))!=0))
+                throw new IllegalArgumentException("Frozen feedback requires 20 CPS, 51ms minimum spacing and no attack opening delay");
             String arm=p.getProperty("maintenance_arm","");
             if(!arm.equals("continue")&&!arm.equals("wtap"))
                 throw new IllegalArgumentException("maintenance_arm must be continue or wtap");
@@ -52,7 +59,7 @@ public final class MaintenanceHandoff {
                 if(Double.parseDouble(p.getProperty(name,"0"))!=0)
                     throw new IllegalArgumentException("Maintenance research cannot combine with "+name);
             if(p.containsKey("input_word"))throw new IllegalArgumentException("Maintenance research cannot combine with an input word");
-            return new Settings(true,acquisition,arm,hits,wake,guard);
+            return new Settings(true,acquisition,arm,hits,wake,guard,mirror);
         }
     }
 
@@ -76,6 +83,13 @@ public final class MaintenanceHandoff {
     public boolean ended(){return ended;}
     public boolean handed(){return handed;}
     public boolean useAcquisition(){return enabled()&&!ended&&(!handed||settings.arm.equals("continue"));}
+    public double elapsedMs(long monoNs){return (monoNs-(wakeMonoNs-settings.defenderWakeMs*1000000L))/1000000.0;}
+    /** Matches the frozen model seed ending at 3499.999ms; first HEAD >=3500 uses feedback. */
+    public boolean feedbackOpening(long monoNs){return settings.acquisition.equals("feedback")&&elapsedMs(monoNs)<3500;}
+    /** Admission changes at3500ms even between HEADs; retained keys/queued presses do not. */
+    public boolean coastAdmissionActive(boolean requested,long monoNs){
+        return requested&&(!settings.acquisition.equals("feedback")||feedbackOpening(monoNs));
+    }
 
     /** Called once per handled target S19(status=2), not once per sampled hurtTime. */
     public void targetHurt(long wallMs,long monoNs) {
@@ -116,6 +130,10 @@ public final class MaintenanceHandoff {
         Map<String,Object> out=new LinkedHashMap<>();
         out.put("enabled",enabled());out.put("acquisition",settings.acquisition);out.put("arm",settings.arm);
         out.put("required_hits",settings.hits);out.put("defender_wake_ms",settings.defenderWakeMs);
+        if(settings.acquisition.equals("feedback")){
+            out.put("feedback_mirror",settings.feedbackMirror);out.put("feedback_opening_ms",3500);
+            out.put("feedback_opening",feedbackOpening(monoNs));out.put("elapsed_ms",elapsedMs(monoNs));
+        }
         out.put("cue_guard_ms",settings.cueGuardMs);out.put("eligible_monotonic_ns",eligibleMonoNs);
         out.put("epoch_wall_ms",epochWallMs);out.put("wake_wall_ms",wakeWallMs);out.put("wake_monotonic_ns",wakeMonoNs);
         out.put("status",!enabled()?"disabled":ended?(handed?"ended_after_handoff":"ended_no_handoff"):

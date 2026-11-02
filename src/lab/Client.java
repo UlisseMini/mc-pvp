@@ -47,6 +47,10 @@ public final class Client {
     static double handledTargetHurtMs=Double.NaN;
     static boolean hurtWindowActive;
     static MaintenanceHandoff maintenanceHandoff;
+    static MaintenanceStrafeFeedback maintenanceFeedback;
+    static long maintenanceLocalContacts;
+    static long maintenanceComputeCount,maintenanceComputeTotalNs,maintenanceComputeMaxNs;
+    static double maintenanceContactMs=Double.NaN,maintenanceOwnHurtMs=Double.NaN;
     static ReferenceFeedbackController referenceFeedback;
     static ReferenceFeedbackController.Snapshot referenceHead;
     static boolean referenceActive;
@@ -206,7 +210,8 @@ public final class Client {
             boolean contactClicks=controls.getProperty("click_mode","fixed").equals("contact");
             boolean wordPermits=inputWord==null||inputWordDecision==null||!inputWordDecision.active||inputWord.allowInjection(ticks,nativeInputPoll);
             boolean referencePermits=!referenceActive||referenceFeedback.allowInjection(referencePoll(now/1_000_000.0),nativeInputPoll?"native_tick":"frame");
-            if(clickGate && wordPermits && referencePermits && (!hurtWindowActive||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),(int)number("hurt_window_ticks",8))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
+            boolean coastAdmission=maintenanceCurrent()?maintenanceHandoff.coastAdmissionActive(hurtWindowActive,now):hurtWindowActive;
+            if(clickGate && wordPermits && referencePermits && (!coastAdmission||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),(int)number("hurt_window_ticks",8))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 if(controls.getProperty("kind","").equals("cycle")){cycle.queued(ticks);clickGate=false;}
@@ -339,6 +344,10 @@ public final class Client {
                 strongGap=new StrongRelaxationPolicy();freshTargetHurtStatus=0;
                 hurtWindowCoast=new HurtWindowCoastController();handledTargetHurtMs=Double.NaN;hurtWindowActive=false;
                 maintenanceHandoff=new MaintenanceHandoff(MaintenanceHandoff.Settings.from(controls),epoch,now,decisionHeadNanos);
+                maintenanceFeedback=maintenanceHandoff.settings.acquisition.equals("feedback")?
+                        MaintenanceStrafeFeedback.frozen(maintenanceHandoff.settings.feedbackMirror):null;
+                maintenanceLocalContacts=0;maintenanceContactMs=maintenanceOwnHurtMs=Double.NaN;
+                maintenanceComputeCount=maintenanceComputeTotalNs=maintenanceComputeMaxNs=0;
                 if(maintenanceHandoff.enabled()){
                     Map<String,Object> protocol=new LinkedHashMap<>();protocol.put("type","maintenance_protocol");
                     protocol.put("time",now);protocol.put("monotonic_ns",decisionHeadNanos);protocol.put("match",match);
@@ -417,6 +426,8 @@ public final class Client {
             }
             String kind=controls.getProperty("kind","hold");
             boolean maintenanceMode=maintenanceCurrent();
+            MaintenanceStrafeFeedback.Observation maintenanceFeedbackHead=maintenanceMode&&maintenanceFeedback!=null?
+                    maintenanceFeedbackObservation(decisionHeadNanos,obs):null;
             Map<String,Object> maintenanceTransition=null;
             if(maintenanceMode){
                 if(maintenanceHandoff.inputHead(now,decisionHeadNanos,ticks))
@@ -633,6 +644,10 @@ public final class Client {
                 setKeys(true,0,true);clickGate=true;
             }
             boolean maintenanceAcquisition=maintenanceMode&&maintenanceHandoff.useAcquisition();
+            boolean maintenanceFeedbackOpening=maintenanceAcquisition&&maintenanceFeedback!=null
+                    &&maintenanceHandoff.feedbackOpening(decisionHeadNanos);
+            MaintenanceStrafeFeedback.Control maintenanceFeedbackProposal=null;
+            long maintenanceComputeNs=0;
             if(kind.equals("gap-strafe") || now-epoch<number("gap_opening_ms",0)
                     ||maintenanceAcquisition&&maintenanceHandoff.settings.acquisition.equals("gap")){
                 StrongRelaxationPolicy.Control d=strongGap.step(obs.localRange);
@@ -646,12 +661,12 @@ public final class Client {
                 plan.put("key",key);plan.put("native_strafe",d.strafe);plan.put("lateral_key",side);plan.put("click_gate",d.click);
                 plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);log(plan);
             }
-            // Candidate and W-tap share the same physical four-second opening.
-            // W-tap's ordinary cue history keeps advancing above this override.
+            // Both arms share the declared coast acquisition/opening. W-tap's
+            // ordinary cue history keeps advancing above this override.
             hurtWindowActive=kind.equals("hurt-window-coast")||now-epoch<number("hurt_window_opening_ms",0)
-                    ||maintenanceAcquisition&&maintenanceHandoff.settings.acquisition.equals("lock8");
+                    ||maintenanceAcquisition&&maintenanceHandoff.settings.acquisition.equals("lock8")||maintenanceFeedbackOpening;
             if(hurtWindowActive){
-                double inputMs=Boolean.parseBoolean(controls.getProperty("hurt_window_head_clock","false"))?
+                double inputMs=maintenanceFeedbackOpening||Boolean.parseBoolean(controls.getProperty("hurt_window_head_clock","false"))?
                         decisionHeadNanos/1_000_000.0:System.nanoTime()/1_000_000.0;
                 HurtWindowCoastController.Decision d=hurtWindowCoast.input(ticks,inputMs,obs.localRange,handledTargetHurtMs);
                 int side=d.strafe>0?-1:d.strafe<0?1:0;
@@ -661,6 +676,14 @@ public final class Client {
                 plan.put("key",d.key);plan.put("native_strafe",d.strafe);plan.put("pulse_started",d.pulseStarted);
                 plan.put("local_sprint",obs.sprint);plan.put("sent_sprint",obs.sentSprint);
                 plan.put("handled_target_cue_ms",Double.isFinite(handledTargetHurtMs)?handledTargetHurtMs:null);log(plan);
+            }
+            if(maintenanceFeedbackHead!=null&&!maintenanceFeedbackOpening){
+                long computeStart=System.nanoTime();
+                MaintenanceStrafeFeedback.Control d=maintenanceFeedback.input(maintenanceFeedbackHead);
+                maintenanceComputeNs=System.nanoTime()-computeStart;maintenanceFeedbackProposal=d;
+                // Post-handoff W-tap retains the same forecast workload as an
+                // inactive shadow; only the selected physical inputs differ.
+                if(maintenanceAcquisition){setKeys(d.key()!=0,d.strafe()>0?-1:d.strafe()<0?1:0,d.key()==2);clickGate=d.click();}
             }
             if(referenceFeedback!=null){
                 referenceHead=new ReferenceFeedbackController.Snapshot(decisionHeadNanos/1_000_000.0,ticks,
@@ -766,6 +789,18 @@ public final class Client {
             // of runTick, after packet work and before vanilla input consumption.
             // Every fast baseline uses this same opportunity; no queued input is
             // canceled and no attack is called directly.
+            if(maintenanceFeedbackHead!=null){
+                MaintenanceStrafeFeedback.Control actual=new MaintenanceStrafeFeedback.Control(
+                        forward?(sprintKey?2:1):0,strafe<0?.98f:strafe>0?-.98f:0,clickGate);
+                // Prime from final issued opening keys, never from the policy's hypothetical keys.
+                if(maintenanceFeedbackOpening){long computeStart=System.nanoTime();
+                    maintenanceFeedback.observeOpening(maintenanceFeedbackHead,actual);maintenanceComputeNs=System.nanoTime()-computeStart;}
+                maintenanceComputeCount++;maintenanceComputeTotalNs+=maintenanceComputeNs;
+                maintenanceComputeMaxNs=Math.max(maintenanceComputeMaxNs,maintenanceComputeNs);
+                logMaintenanceFeedback(now,decisionHeadNanos,maintenanceFeedbackHead,actual,
+                        maintenanceFeedbackOpening?"coast_opening":maintenanceAcquisition?"feedback":"wtap",
+                        maintenanceFeedbackProposal,maintenanceComputeNs);
+            }
             if(maintenanceTransition!=null){
                 maintenanceTransition.put("selected_forward",forward);maintenanceTransition.put("selected_strafe",strafe);
                 maintenanceTransition.put("selected_sprint_key",sprintKey);maintenanceTransition.put("selected_click_gate",clickGate);
@@ -799,7 +834,45 @@ public final class Client {
         if(maintenanceHandoff==null||!maintenanceHandoff.finish(reason))return;
         Map<String,Object> event=new LinkedHashMap<>();event.put("type","maintenance_summary");
         event.put("time",wallMs);event.put("monotonic_ns",monoNs);event.put("match",match);event.put("native_tick",ticks);
-        event.put("maintenance",maintenanceHandoff.snapshot(monoNs));log(event);
+        event.put("maintenance",maintenanceHandoff.snapshot(monoNs));
+        if(maintenanceFeedback!=null){event.put("feedback_diagnostics",maintenanceFeedback.diagnostics());
+            event.put("feedback_compute_count",maintenanceComputeCount);event.put("feedback_compute_total_ns",maintenanceComputeTotalNs);
+            event.put("feedback_compute_max_ns",maintenanceComputeMaxNs);event.put("feedback_wtap_shadow_enabled",true);}log(event);
+    }
+    /** Only this client's current body and rendered opponent; no server/other-client state. */
+    static MaintenanceStrafeFeedback.Observation maintenanceFeedbackObservation(long headNs,Observation o){
+        Object box=R.call(player,"getEntityBoundingBox");
+        MaintenanceTravel.State own=new MaintenanceTravel.State(o.x,o.y,o.z,o.vx,o.vy,o.vz,
+                new MaintenanceTravel.Box(R.num(box,"minX"),R.num(box,"minY"),R.num(box,"minZ"),
+                        R.num(box,"maxX"),R.num(box,"maxY"),R.num(box,"maxZ")),o.ground,
+                (Boolean)R.get(player,"isCollidedHorizontally"),(Boolean)R.get(player,"isCollidedVertically"),
+                (Boolean)R.get(player,"isCollided"),(Boolean)R.get(player,"noClip"),(Boolean)R.get(player,"isInWeb"),
+                (Boolean)R.call(player,"isSneaking"));
+        // The frozen forecast overwrites headYaw with its predicted aim before travel.
+        return new MaintenanceStrafeFeedback.Observation(headNs/1000000.0,ticks,own,o.tx,o.ty,o.tz,o.sprint,
+                (float)R.num(player,"rotationYaw"),maintenanceContactMs,maintenanceLocalContacts,handledTargetHurtMs,maintenanceOwnHurtMs);
+    }
+    static void logMaintenanceFeedback(long wallMs,long headNs,MaintenanceStrafeFeedback.Observation o,
+                                       MaintenanceStrafeFeedback.Control u,String phase,
+                                       MaintenanceStrafeFeedback.Control proposal,long computeNs){
+        MaintenanceTravel.State own=o.own();MaintenanceTravel.Box box=own.box();
+        Map<String,Object> e=new LinkedHashMap<>();e.put("type","maintenance_feedback_plan");
+        e.put("time",wallMs);e.put("monotonic_ns",headNs);e.put("match",match);e.put("native_tick",ticks);
+        e.put("elapsed_ms",maintenanceHandoff.elapsedMs(headNs));e.put("phase",phase);
+        e.put("mirror",maintenanceHandoff.settings.feedbackMirror);
+        e.put("own",Compat.list(own.x(),own.y(),own.z(),own.vx(),own.vy(),own.vz()));
+        e.put("box",Compat.list(box.minX(),box.minY(),box.minZ(),box.maxX(),box.maxY(),box.maxZ()));
+        e.put("flags",Compat.list(own.onGround(),own.isCollidedHorizontally(),own.isCollidedVertically(),own.isCollided(),own.noClip(),own.isInWeb(),own.sneaking()));
+        e.put("target",Compat.list(o.targetX(),o.targetY(),o.targetZ()));e.put("sprint",o.sprint());e.put("head_yaw",o.headYaw());
+        e.put("local_contacts",o.localContacts());e.put("contact_ms",Double.isFinite(o.lastContactTime())?o.lastContactTime():null);
+        e.put("target_hurt_ms",Double.isFinite(o.lastTargetHurtTime())?o.lastTargetHurtTime():null);
+        e.put("own_hurt_ms",Double.isFinite(o.lastOwnHurtTime())?o.lastOwnHurtTime():null);
+        e.put("key",u.key());e.put("native_strafe",u.strafe());e.put("click_gate",u.click());e.put("hurt_window_gate",hurtWindowActive);
+        e.put("feedback_compute_ns",computeNs);e.put("feedback_compute_max_ns",maintenanceComputeMaxNs);
+        e.put("feedback_wtap_shadow_enabled",true);e.put("feedback_shadow",phase.equals("wtap"));
+        e.put("proposed_key",proposal==null?null:proposal.key());e.put("proposed_native_strafe",proposal==null?null:proposal.strafe());
+        e.put("proposed_click_gate",proposal==null?null:proposal.click());
+        e.put("selection_complete_monotonic_ns",System.nanoTime());log(e);
     }
     /** Read-only same-client snapshot. Other JVM/server queues are not cloned. */
     static Map<String,Object> maintenanceSnapshot(long wallMs,long monoNs,Observation obs){
@@ -898,7 +971,8 @@ public final class Client {
                 log(Compat.map("type","fresh_target_hurt_status","time",freshTargetHurtStatus,"match",match));
             }
             if(entity==player){freshHurtStatus=System.currentTimeMillis();
-                if(maintenanceCurrent())maintenanceHandoff.ownReturnCue(false,freshHurtStatus,System.nanoTime());
+                long cueNs=System.nanoTime();maintenanceOwnHurtMs=cueNs/1000000.0;
+                if(maintenanceCurrent())maintenanceHandoff.ownReturnCue(false,freshHurtStatus,cueNs);
                 log(Compat.map("type","fresh_hurt_status","time",freshHurtStatus,"match",match));
                 if(Boolean.parseBoolean(controls.getProperty("block_adapt","false"))){
                     LinearHitPredictor.Calibration calibration=hitPredictor.hurt(freshHurtStatus,number("ping",0));
@@ -928,6 +1002,9 @@ public final class Client {
     }
     public static void attackAfter(Object self,Object target){
         if(!"client".equals(System.getProperty("lab.role")))return;
+        if(maintenanceCurrent()&&maintenanceFeedback!=null&&self==player&&target==opponent){
+            maintenanceLocalContacts++;maintenanceContactMs=System.nanoTime()/1000000.0;
+        }
         if(controls.getProperty("kind","").equals("cycle")){cycle.contact(ticks);clickGate=false;}
         if(controls.getProperty("kind","").equals("frozen-cycle") || number("frozen_cycle_opening_ms",0)>0)frozenCycle.contact(ticks);
         if(controls.getProperty("kind","").equals("tick-cycle"))clickGate=tickCycle.contact(ticks);

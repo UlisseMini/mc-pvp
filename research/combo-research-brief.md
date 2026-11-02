@@ -89,6 +89,21 @@ server next-scenario profile restored to vanilla after the batch.
 
 ## Earlier follow-up: broaden inference and build legal control
 
+FROZEN FEEDBACK NATIVE MAINTENANCE CHECK — new v2 m1448–m1453, Hypixel-like
+hit9/RTT120: additional fresh hits2/0/2 versus primed plain W-tap2/1/1; all six
+guarded native landmarks server-certified. No post-handoff interval exceeds100ms;
+m1448 has earlier timing warnings and re-establishes only at30.505s after66
+accepted returns. Stop adding controller features: no maintenance improvement.
+All7,685 actual native policy proposals replay exactly on Java8. m1451's return
+C02 was emitted45ms BEFORE handoff, then accepted36ms afterward. A three-hit
+count alone does not certify a safe/viable state. Existing model forks occur at
+third fresh SERVER_DRAIN; native handoffs follow own S19/nextHEAD64–110ms later.
+Diagnose that checkpoint/queue distinction before interpreting model/native
+differences. No score retiming or failed-run deletion. v1 m1444/m1445 remain
+unqualified view/wrong-packaged-cap attempts; v2 fixes ClickRate packaging only,
+with unchanged policy and51ms settings. See maintenance-20261101/findings.md and
+native-feedback/v2. No sealed calendar was read.
+
 LATEST USER DIRECTION — turn A/D into own-observation feedback on top of the
 three-contact winner, and validate jump separately. Completed study:
 `hypixel-inference-20261101/feedback-strafe/findings.md`. Next-window range
