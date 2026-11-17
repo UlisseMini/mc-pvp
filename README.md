@@ -66,6 +66,7 @@ enabling RCON or opening another network port.
 | `/drill jumpreset` | Repeated jump-reset practice against W-tap with large, centered timing results on a vanilla client |
 | `/drill jumpreset preset=mmc` | Jump-reset practice on the same sumo platform, using Minemen-like knockback |
 | `/duel jump-reset` | Fight the test bot that uses ordinary W-tap and taps Jump on incoming knockback while grounded |
+| `/duel jump-reset-walk` | Fight a bot that sprints toward you and jump-resets grounded hits without swinging |
 | `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full unenchanted diamond armor; successful blocks play your block sound |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
 | `/duel wtap rod_diamond reach=3.5 cps=15 ping=100` | Custom practice bot: 3.5-block reach, 15 CPS ceiling, 100 ms added bot RTT; keeps your saved ping |
@@ -163,6 +164,10 @@ check holding the incoming velocity fixed gave 0.875 blocks back when the jump
 took off one tick before the hit, 0.773 for plain W-tap, and 0.573 for an
 impact-tick jump. Jumping one movement step after the hit was ignored because
 the player had left the ground.
+
+The [boxing comparison](research/jump-reset-boxing/README.md) tests both
+attack-free pursuit and W-tap with impact jumps across the three knockback
+profiles. It includes replay IDs and commands to repeat the tests.
 
 ### Forge combat coaches
 

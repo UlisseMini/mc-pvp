@@ -76,6 +76,28 @@ public final class PeriodicComboFightModel {
     }
     /** Immutable diagnostic, never an input to physics or a legal policy. */
     public record FreshImpulse(double time,ExactTravel.State victimBefore,double x,double y,double z) {}
+    // Flat-arena MMC approximation. This tracks the accepted C03/C0B history
+    // separately from sprint cleared by an attack and server-side gravity.
+    record MmcMovement(double floor,double y,double dy,boolean moved,boolean hasDy,
+                       boolean grounded,boolean capped,boolean sprint) {
+        static MmcMovement initial(){return new MmcMovement(4,0,0,false,false,false,false,false);}
+        MmcMovement move(Packet p){
+            boolean moving=p.packetId==4||p.packetId==6;
+            return new MmcMovement(p.flag?p.y:floor,p.y,p.y-y,moving,moving&&moved,p.flag,capped&&!p.flag,sprint);
+        }
+        MmcMovement withSprint(boolean next){return new MmcMovement(floor,y,dy,moved,hasDy,grounded,capped,next);}
+        MmcMovement cap(double height){return height>.675&&!capped?new MmcMovement(floor,y,dy,moved,hasDy,grounded,true,sprint):this;}
+        boolean landing(double height,double rtt){
+            if(!hasDy||grounded||height<=0||height>1.3||rtt<=25)return false;
+            double vy=dy;
+            for(int tick=0;tick<(int)Math.ceil((rtt-25)/50);tick++){
+                vy=(vy-.08)*.9800000190734863;
+                height+=vy;
+                if(height<=0)return true;
+            }
+            return false;
+        }
+    }
     static TimingSemantic timingSemantic(int kind){
         return switch(kind){
             case 12,13 -> TimingSemantic.TARGET_HURT;
@@ -108,6 +130,7 @@ public final class PeriodicComboFightModel {
         PacketReadiness deepCopy();
     }
     static final class State implements Cloneable {
+        MmcMovement mmcA=MmcMovement.initial(),mmcB=MmcMovement.initial();
         double[] extraLatency={0,0,0,0},nominalHalfRtt={0,0,0,0};PacketTiming packetTiming;PacketReadiness packetReadiness;
         int plannedReadinessRoutes;
         double[] queueReadyWatermarks={Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY};
@@ -176,10 +199,10 @@ public final class PeriodicComboFightModel {
         double ownRtt=20,otherRtt=20,defenderReach=1.5,kbScale=1,verticalScale=1,sprintVertical=.1;
         /** Explicit profile import keeps model/native options identical; omitted fields retain defaults. */
         void applyCombat(Properties p){
-            lab.CombatProfile q=lab.CombatProfile.fromOverrides(p,new lab.CombatProfile(kbScale,verticalScale,hitTicks,sprintVertical));
-            kbScale=q.horizontal();verticalScale=q.vertical();hitTicks=q.freshTicks();sprintVertical=q.sprintVertical();
+            lab.CombatProfile q=lab.CombatProfile.fromOverrides(p,new lab.CombatProfile(kbScale,verticalScale,hitTicks,sprintVertical,mmc));
+            kbScale=q.horizontal();verticalScale=q.vertical();hitTicks=q.freshTicks();sprintVertical=q.sprintVertical();mmc=q.mmc();
         }
-        int bPhase=10,serverPhase=25,hitTicks=10;boolean quantize=true,nativeNormalization=true,forceContacts=true,deferMovementSend=false;
+        int bPhase=10,serverPhase=25,hitTicks=10;boolean quantize=true,nativeNormalization=true,forceContacts=true,deferMovementSend=false,mmc=false;
     }
     static ExactTravel.State state(double x,double y,double vx,double vy,boolean ground){
         return state(x,y,0,vx,vy,0,ground);
@@ -236,6 +259,9 @@ public final class PeriodicComboFightModel {
     static void serverMoveA(State s,Packet p){serverMove(s,p,true);}
     static void serverMove(State s,Packet p,boolean fromA){serverMove(s,p,fromA,null,0);}
     static void serverMove(State s,Packet p,boolean fromA,Config c,double t){
+        if(c!=null&&c.mmc){
+            if(fromA)s.mmcA=s.mmcA.move(p);else s.mmcB=s.mmcB.move(p);
+        }
         ExactTravel.State m=fromA?s.serverA:s.serverB;
         double x=fromA?s.serverAx:s.serverBx,y=fromA?s.serverAy:s.serverBy,z=fromA?s.serverAz:s.serverBz;
         boolean sprint=fromA?s.serverSprint:s.serverSprintB;float yaw=(float)(fromA?s.serverYawA:s.serverYawB);
@@ -284,7 +310,7 @@ public final class PeriodicComboFightModel {
         if(immunity>c.hitTicks&&damage<=last){s.immuneAttempts++;return;}
         boolean fresh=immunity<=c.hitTicks,sprint=fromA?s.serverSprint:s.serverSprintB;
         double vx=victim.vx(),vy=victim.vy(),vz=victim.vz();
-        if(fresh){
+        if(fresh&&!c.mmc){
             double length=(double)(float)Math.sqrt(dx*dx+dz*dz);
             if(length<.01)throw new IllegalStateException("Unsupported degenerate knockback separation");
             vx=vx*.5+dx/length*(double).4f;vy=Math.min((double).4f,vy*.5+(double).4f);vz=vz*.5+dz/length*(double).4f;
@@ -295,7 +321,18 @@ public final class PeriodicComboFightModel {
         if(send){
             // Match the native pre-S12 intervention, including double arithmetic order.
             // Damage upgrades and unpacketized server motion retain native sprint lift.
-            if(fresh&&sprint&&c.sprintVertical!=.1)vy+=c.sprintVertical-.1;
+            if(fresh&&c.mmc){
+                MmcMovement source=fromA?s.mmcA:s.mmcB,target=fromA?s.mmcB:s.mmcA;
+                double yaw=Math.toRadians(fromA?s.serverYawA:s.serverYawB);
+                double facingX=-Math.sin(yaw),facingZ=Math.cos(yaw),length=Math.hypot(dx,dz);
+                double extra=source.sprint()?.327:0;
+                vx=(length<.01?facingX:dx/length)*.5274+facingX*extra;
+                vz=(length<.01?facingZ:dz/length)*.5274+facingZ*extra;
+                double height=ty-target.floor();
+                target=target.cap(height);
+                if(fromA)s.mmcB=target;else s.mmcA=target;
+                vy=target.capped()&&!target.landing(height,fromA?c.otherRtt:c.ownRtt)?0:.361375+(source.sprint()?c.sprintVertical:0);
+            }else if(fresh&&sprint&&c.sprintVertical!=.1)vy+=c.sprintVertical-.1;
             s.lastVx=vel(vx*(fresh?c.kbScale:1));s.lastVy=vel(vy*(fresh?c.verticalScale:1));
             s.add3(fromA?4:8,t+(fromA?c.otherRtt:c.ownRtt)/2,0,0,0,s.lastVx,s.lastVy,vel(vz*(fresh?c.kbScale:1)),false);
             if(fresh){FreshImpulse impulse=new FreshImpulse(t,victim,s.lastVx,s.lastVy,vel(vz*c.kbScale));if(fromA)s.lastFreshB=impulse;else s.lastFreshA=impulse;}
@@ -309,10 +346,10 @@ public final class PeriodicComboFightModel {
         for(Packet p:due(s,t,0))switch(p.kind){
             case 0:serverMove(s,p,true,c,t);break;
             case 1:serverMove(s,p,false,c,t);s.serverYawB=p.vx;break;
-            case 2:s.sprintDirtyA|=s.serverSprint!=p.flag;s.dirtyA|=s.serverSprint!=p.flag;s.serverSprint=p.flag;break;
+            case 2:s.sprintDirtyA|=s.serverSprint!=p.flag;s.dirtyA|=s.serverSprint!=p.flag;s.serverSprint=p.flag;if(c.mmc)s.mmcA=s.mmcA.withSprint(p.flag);break;
             case 3:hit(s,c,true,t);break;
             case 7:hit(s,c,false,t);break;
-            case 9:s.sprintDirtyB|=s.serverSprintB!=p.flag;s.dirtyB|=s.serverSprintB!=p.flag;s.serverSprintB=p.flag;break;
+            case 9:s.sprintDirtyB|=s.serverSprintB!=p.flag;s.dirtyB|=s.serverSprintB!=p.flag;s.serverSprintB=p.flag;if(c.mmc)s.mmcB=s.mmcB.withSprint(p.flag);break;
             default:throw new AssertionError();
         }
     }
