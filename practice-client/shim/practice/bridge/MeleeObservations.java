@@ -1,9 +1,11 @@
 package practice.bridge;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -15,8 +17,11 @@ import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
+import net.minecraft.entity.projectile.EntityFishHook;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemSword;
+import net.minecraft.item.ItemFishingRod;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 
@@ -29,11 +34,16 @@ final class MeleeObservations {
         final int id;
         final double awayX, awayZ;
         final Set<Float> damage = new LinkedHashSet<>();
+        final Set<Float> critical = new LinkedHashSet<>();
+        boolean sword, rod, hiddenSharpness;
+        boolean grounded;
+        float base, visibleBonus, rodBase;
+        String weaponKey;
 
         Candidate(EntityPlayerSP self, EntityPlayer attacker) {
             this(attacker.func_145782_y(), self.field_70165_t - attacker.field_70165_t,
                 self.field_70161_v - attacker.field_70161_v);
-            addDamage(damage, attacker);
+            addDamage(this, attacker);
         }
 
         Candidate(int id, double awayX, double awayZ) {
@@ -62,9 +72,39 @@ final class MeleeObservations {
     }
 
     static Set<Float> damage(List<Candidate> candidates, int only) {
+        return damage(candidates, only, false, false);
+    }
+
+    static Set<Float> damage(List<Candidate> candidates, int only, boolean critical, boolean swordOnly) {
+        return damage(candidates, only, critical, swordOnly, Collections.emptyMap());
+    }
+
+    static Set<Float> damage(List<Candidate> candidates, int only, boolean critical, boolean swordOnly,
+                             Map<String, Set<Float>> learned) {
         Set<Float> damage = new LinkedHashSet<>();
-        for (Candidate c : candidates) if (only == -1 || only == c.id) damage.addAll(c.damage);
+        for (Candidate c : candidates) {
+            if ((only != -1 && only != c.id) || swordOnly && !c.sword) continue;
+            Set<Float> bonuses = learned.get(c.weaponKey);
+            if (bonuses != null) {
+                for (float bonus : bonuses) {
+                    addStrike(damage, c.base, bonus, critical);
+                    if (swordOnly) addStrike(damage, c.rodBase, bonus, critical);
+                }
+            } else {
+                damage.addAll(critical ? c.critical : c.damage);
+                if (!swordOnly) continue;
+                // A fast slot change can apply the sword's enchantments before
+                // the server updates the attack attribute from the held rod.
+                addStrike(damage, c.rodBase, c.visibleBonus, critical);
+                if (c.hiddenSharpness) addStrike(damage, c.rodBase, c.visibleBonus + 1.25f, critical);
+            }
+        }
         return damage;
+    }
+
+    private static void addStrike(Set<Float> damage, float base, float bonus, boolean critical) {
+        damage.add(base * 1.5f + bonus);
+        if (!critical) damage.add(base + bonus);
     }
 
     static int fromDirection(List<Candidate> candidates, double x, double z) {
@@ -87,29 +127,50 @@ final class MeleeObservations {
         return aligned;
     }
 
-    private static void addDamage(Set<Float> damage, EntityPlayer opponent) {
+    private static void addDamage(Candidate candidate, EntityPlayer opponent) {
         ItemStack weapon = opponent.func_70694_bm();
+        candidate.sword = weapon != null && weapon.func_77973_b() instanceof ItemSword;
+        candidate.rod = weapon != null && weapon.func_77973_b() instanceof ItemFishingRod;
+        candidate.hiddenSharpness = candidate.sword && weapon.func_77986_q() == null;
+        candidate.grounded = opponent.field_70122_E;
+        if (candidate.sword) candidate.weaponKey = candidate.id + ":" +
+            Item.func_150891_b(weapon.func_77973_b()) + ":" + weapon.func_77978_p();
         double[] modifiers = {0, 0, 1};
-        String name = SharedMonsterAttributes.field_111264_e.func_111108_a();
-        if (weapon != null) {
-            for (AttributeModifier mod : weapon.func_111283_C().get(name)) add(modifiers, mod, mod.func_111164_d());
-        }
         for (PotionEffect effect : (Collection<PotionEffect>) opponent.func_70651_bq()) {
             Potion potion = Potion.field_76425_a[effect.func_76456_a()];
             if (potion == null) continue;
             AttributeModifier mod = potion.func_111186_k().get(SharedMonsterAttributes.field_111264_e);
             if (mod != null) add(modifiers, mod, potion.func_111183_a(effect.func_76458_c(), mod));
         }
-        float base = (float) Math.max(0, (1 + modifiers[0]) * (1 + modifiers[1]) * modifiers[2]);
+        candidate.rodBase = baseDamage(modifiers);
+        if (weapon != null) {
+            String name = SharedMonsterAttributes.field_111264_e.func_111108_a();
+            for (AttributeModifier mod : weapon.func_111283_C().get(name)) add(modifiers, mod, mod.func_111164_d());
+        }
+        float base = baseDamage(modifiers);
         float enchantment = EnchantmentHelper.func_152377_a(weapon, EnumCreatureAttribute.UNDEFINED);
-        damage.add(base + enchantment);
-        damage.add(base * 1.5f + enchantment);
-        if (weapon != null && weapon.func_77973_b() instanceof ItemSword && weapon.func_77986_q() == null) {
+        candidate.base = base;
+        candidate.visibleBonus = enchantment;
+        candidate.damage.add(base + enchantment);
+        candidate.critical.add(base * 1.5f + enchantment);
+        if (candidate.hiddenSharpness) {
             // Some servers send a plain rendered sword. Allow hidden Sharpness I
             // as well as its visible base stats.
-            damage.add(base + 1.25f);
-            damage.add(base * 1.5f + 1.25f);
+            candidate.damage.add(base + 1.25f);
+            candidate.critical.add(base * 1.5f + 1.25f);
         }
+        candidate.damage.addAll(candidate.critical);
+    }
+
+    private static float baseDamage(double[] modifiers) {
+        return (float) Math.max(0, (1 + modifiers[0]) * (1 + modifiers[1]) * modifiers[2]);
+    }
+
+    static boolean nearbyRod(Minecraft mc, EntityPlayerSP self) {
+        for (Entity entity : mc.field_71441_e.func_72839_b(self, self.func_174813_aQ().func_72314_b(2.5, 1, 2.5))) {
+            if (entity instanceof EntityFishHook && ((EntityFishHook) entity).field_146042_b != self) return true;
+        }
+        return false;
     }
 
     private static void add(double[] modifiers, AttributeModifier modifier, double amount) {

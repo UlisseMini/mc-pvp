@@ -166,21 +166,34 @@ the player had left the ground.
 
 ### Forge combat coaches
 
-In Forge 1.8.9, you can turn on either centered trainer during ordinary
-multiplayer combat. The client reads its own movement and incoming game packets.
+In Forge 1.8.9, you can turn on either trainer during ordinary multiplayer
+combat. The client reads its own movement and incoming game packets.
 
 | Client command | Feedback |
 |---|---|
-| `/p jumpreset on` | Early or late by a number of movement ticks and approximate milliseconds, plus the measured first step back. |
-| `/p blockhit on` | Blocked, unblocked or uncertain for incoming player melee, with the health lost in hearts. |
-| `/p oldblock off` | Restore the 1.8 first-person sword animation. The 1.7-style animation starts enabled. |
+| `/p jumpreset on` | XP orb ping that grows louder with the estimated reduction, plus early or late timing and the measured first step back. |
+| `/p blockhit on` | Anvil chime for definite blocks and a result above the hotbar for incoming player melee. |
+| `/p oldblock off` | Restore 1.8 first-person item-use animations. The 1.7-style swing during blocking, bow draw, eating and drinking starts enabled. |
 
 Use `off` to disable either trainer. The blockhit trainer tests health loss
 against nearby players' plausible weapons and your visible mitigation. If the
 verdict depends on the attacker, a clear knockback direction can narrow the
 candidates and the result is marked **Likely**. The game does not send the
 attacker's identity for ordinary hits. Confidence can drop with custom damage,
-hidden equipment stats, or several overlapping hits.
+hidden equipment stats, or several overlapping hits. The client uses the lab's
+anvil cue if it already arrived for the hit.
+
+Both trainers show text above the hotbar by default. Use `/p jumpreset hud center`
+or `/p blockhit hud center` for larger centered text. Use `hud off` to hide the
+text or `hud hotbar` to restore it. `/p jumpreset sound orb` selects the XP orb
+ping. The other choices are `harp`, `pling`, and `levelup`.
+
+The Forge trainer uses critical-hit animations when it receives them. It can
+grade the sword follow-up to a visible zero-damage rod contact, and it can
+account for a critical hit that increases earlier melee damage during immunity.
+It learns a sword's effective damage bonus from clear unguarded hits and keeps
+the possibilities that fit when Protection or gear is ambiguous. The Forge
+heart bar shows current health without the old-heart damage flash.
 
 The jump-reset trainer scores against the movement step that used the incoming
 velocity. A timely sideways jump can save no distance. The measured distance is
@@ -189,6 +202,12 @@ step without the jump's horizontal boost. **Perfect** requires at least 0.18
 blocks of estimated reduction. Obstacles or overlapping impulses can make the
 comparison unclear. The animation and trainers leave combat inputs and network
 traffic alone.
+
+To rerun the native blockhit suite, build the lab and Forge client, then run
+`python3 practice-client/blockhit_smoke.py`. It uses an isolated loopback
+server and saves the client logs and server verdicts under `build/blockhit-smoke`.
+The hidden-gear case strips the observed sword's enchantment data while the
+server still applies it.
 
 ### Minemen-like knockback
 

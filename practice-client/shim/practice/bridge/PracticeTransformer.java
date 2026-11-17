@@ -6,13 +6,13 @@ import org.objectweb.asm.tree.*;
 
 /** Read-only packet/input observers; preserves original instructions and return values.
  * Observation takes time; capture timestamps bracket work rather than promising zero overhead.
- * Restores the first-person sword swing during the render pose separately. */
+ * Restores first-person swings during item use in the renderer separately. */
 public final class PracticeTransformer implements IClassTransformer {
     private static final String HOOK="practice/bridge/ObserverHooks";
     public byte[] transform(String name,String transformed,byte[] bytes){
         if(bytes==null)return null;
         bytes=BotTransformer.transform(transformed,bytes);
-        if(transformed.equals("net.minecraft.client.renderer.ItemRenderer"))return firstPersonBlock(bytes);
+        if(transformed.equals("net.minecraft.client.renderer.ItemRenderer"))return firstPersonUse(bytes);
         boolean network=transformed.equals("net.minecraft.network.NetworkManager"),
             decoder=transformed.equals("net.minecraft.util.MessageDeserializer"),
             encoder=transformed.equals("net.minecraft.util.MessageSerializer"),
@@ -91,32 +91,29 @@ public final class PracticeTransformer implements IClassTransformer {
     private static boolean named(MethodNode m,String srg,String mcp,String obf){
         return m.name.equals(srg)||m.name.equals(mcp)||m.name.equals(obf);
     }
-    private static AbstractInsnNode nextCode(AbstractInsnNode instruction){
-        do{instruction=instruction.getNext();}while(instruction!=null&&instruction.getOpcode()<0);
-        return instruction;
-    }
     private static AbstractInsnNode previousCode(AbstractInsnNode instruction){
         do{instruction=instruction.getPrevious();}while(instruction!=null&&instruction.getOpcode()<0);
         return instruction;
     }
-    private static byte[] firstPersonBlock(byte[] bytes){
+    private static byte[] firstPersonUse(byte[] bytes){
         ClassNode node=new ClassNode();new ClassReader(bytes).accept(node,0);
         int sites=0;
         for(MethodNode m:node.methods){
             if(!m.desc.equals("(F)V")||!named(m,"func_78440_a","renderItemInFirstPerson","a"))continue;
+            // 1.8 supplies zero swing to the common pose for each item-use
+            // branch: none, eat/drink, block and bow. Ordinary swings already
+            // pass their progress and keep their original transformation.
             for(AbstractInsnNode i:m.instructions.toArray()){
                 if(!(i instanceof MethodInsnNode))continue;
                 MethodInsnNode transform=(MethodInsnNode)i;
                 if(!node.name.equals(transform.owner)||!transform.desc.equals("(FF)V")||
                         !(transform.name.equals("func_178096_b")||transform.name.equals("transformFirstPersonItem")||transform.name.equals("b")))continue;
-                AbstractInsnNode zero=previousCode(i),load=nextCode(i);
-                if(zero==null||zero.getOpcode()!=Opcodes.FCONST_0||!(load instanceof VarInsnNode)||
-                        load.getOpcode()!=Opcodes.ALOAD||((VarInsnNode)load).var!=0)continue;
-                AbstractInsnNode pose=nextCode(load);
-                if(!(pose instanceof MethodInsnNode))continue;
-                MethodInsnNode block=(MethodInsnNode)pose;
-                if(!node.name.equals(block.owner)||!block.desc.equals("()V")||
-                        !(block.name.equals("func_178103_d")||block.name.equals("doBlockTransformations")||block.name.equals("d")))continue;
+                AbstractInsnNode zero=previousCode(i);
+                if(zero==null||zero.getOpcode()!=Opcodes.FCONST_0)continue;
+                AbstractInsnNode equip=previousCode(zero);
+                if(equip==null||equip.getOpcode()!=Opcodes.FLOAD)continue;
+                AbstractInsnNode receiver=previousCode(equip);
+                if(!(receiver instanceof VarInsnNode)||receiver.getOpcode()!=Opcodes.ALOAD||((VarInsnNode)receiver).var!=0)continue;
                 InsnList swing=new InsnList();
                 swing.add(new VarInsnNode(Opcodes.FLOAD,1));
                 swing.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"practice/bridge/OldBlockAnimation","swing","(FF)F",false));
@@ -124,12 +121,12 @@ public final class PracticeTransformer implements IClassTransformer {
                 sites++;
             }
         }
-        if(sites!=1){
-            System.out.println("[PracticeBridge] 1.7 sword block pose unavailable for this renderer");
+        if(sites!=4){
+            System.out.println("[PracticeBridge] 1.7 item-use swing unavailable for this renderer ("+sites+"/4 poses)");
             return bytes;
         }
         ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS);node.accept(out);
-        System.out.println("[PracticeBridge] 1.7 sword block pose hooked");
+        System.out.println("[PracticeBridge] 1.7 item-use swing hooked ("+sites+" poses)");
         return out.toByteArray();
     }
     private static InsnList call(String name,int... locals){

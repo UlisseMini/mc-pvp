@@ -3,10 +3,12 @@ package practice.bridge;
 import practice.api.*;
 import practice.core.ReloadHost;
 import java.io.*;
+import java.lang.reflect.Field;
 import java.nio.file.*;
 import java.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiIngame;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.command.*;
@@ -28,6 +30,7 @@ import org.lwjgl.opengl.GL11;
 @Mod(modid="practicebridge",name="PvP Practice Bridge",version="0.4.0",
      clientSideOnly=true,acceptedMinecraftVersions="[1.8.9]",acceptableRemoteVersions="*")
 public final class PracticeBridge {
+    private static final Field HEART_FLASH = heartFlashField();
     private ReloadHost host;
     private PracticeCapture capture;
     private Path directory;
@@ -148,6 +151,20 @@ public final class PracticeBridge {
     @SubscribeEvent public void chat(ClientChatReceivedEvent event){host.chat(event.message.func_150260_c(),event.type);}
     @SubscribeEvent public void renderTick(TickEvent.RenderTickEvent event){if(event.phase==TickEvent.Phase.END)capture.render(event.renderTickTime);else capture.replayRender();}
     @SubscribeEvent public void world(RenderWorldLastEvent event){scope();capture.viewFrame(event.partialTicks);if(capture.practiceAllowed())WorldDrawing.draw(host.world(event.partialTicks),event.partialTicks);}
+    private static Field heartFlashField() {
+        for(String name:new String[]{"field_175191_F","healthUpdateCounter"}) {
+            try {
+                Field field=GuiIngame.class.getDeclaredField(name);
+                field.setAccessible(true);
+                return field;
+            } catch(NoSuchFieldException ignored) {}
+        }
+        return null;
+    }
+    @SubscribeEvent public void hearts(RenderGameOverlayEvent.Pre event) throws IllegalAccessException {
+        if(event.type==RenderGameOverlayEvent.ElementType.HEALTH && HEART_FLASH!=null)
+            HEART_FLASH.setLong(Minecraft.func_71410_x().field_71456_v,0);
+    }
     @SubscribeEvent public void overlay(RenderGameOverlayEvent.Post event) {
         if(event.type!=RenderGameOverlayEvent.ElementType.ALL)return;
         Minecraft mc=Minecraft.func_71410_x();
@@ -187,13 +204,15 @@ public final class PracticeBridge {
         Files.move(tmp,config,StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
         settings();host.reload(true);
         String coach=key.equals("jumpreset.enabled")?"Jump reset trainer":key.equals("blockhit.enabled")?"Blockhit trainer":
-            key.equals("oldblock.enabled")?"1.7 blockhit animation":null;
-        say(coach==null?host.status():coach+(Boolean.parseBoolean(value)?" on.":" off."));
+            key.equals("oldblock.enabled")?"1.7 item-use animation":null;
+        if(key.equals("jumpreset.sound"))say("Jump-reset sound set to "+value+".");
+        else if(key.endsWith(".hud"))say((key.startsWith("jumpreset")?"Jump reset":"Blockhit")+" HUD set to "+value+".");
+        else say(coach==null?host.status():coach+(Boolean.parseBoolean(value)?" on.":" off."));
     }
     private final class Command extends CommandBase {
         public String func_71517_b(){return "practice";}
         @Override public List<String> func_71514_a(){return Collections.singletonList("p");}
-        public String func_71518_a(ICommandSender sender){return "/p jumpreset/blockhit/oldblock on/off | remote record on/off | antiafk on [seconds|MIN-MAX]/off | opening on/off/large/small | advantage on/off | reach on/off | ghost bot/me on/off | debug on/off | reload | status | capture/link/metrics/potions/record/sprint on/off | mark <text> | ping";}
+        public String func_71518_a(ICommandSender sender){return "/p jumpreset/blockhit on/off or hud hotbar/center/off | jumpreset sound orb/harp/pling/levelup | oldblock on/off | remote record on/off | antiafk on [seconds|MIN-MAX]/off | opening on/off/large/small | advantage on/off | reach on/off | ghost bot/me on/off | debug on/off | reload | status | capture/link/metrics/potions/record/sprint on/off | mark <text> | ping";}
         public int func_82362_a(){return 0;}
         public boolean func_71519_b(ICommandSender sender){return true;}
         public void func_71515_b(ICommandSender sender,String[] args) {
@@ -207,6 +226,14 @@ public final class PracticeBridge {
                     else throw new IllegalArgumentException("Use /p antiafk on [seconds or MIN-MAX] or off");say(antiAfk.status());}
                 else if(args.length>=2 && args[0].equals("mark")){capture.marker(String.join(" ",Arrays.copyOfRange(args,1,args.length)));say("Marker recorded.");}
                 else if(args.length==1 && args[0].equals("ping")){say(capture.send("ping","manual")?"Clock probe sent.":"No local practice connection.");}
+                else if(args.length==3 && Arrays.asList("jumpreset","blockhit").contains(args[0]) && args[1].equals("hud")){
+                    if(!Arrays.asList("hotbar","center","off").contains(args[2]))throw new IllegalArgumentException("Use hud hotbar, center or off");
+                    set(args[0]+".hud",args[2]);
+                }
+                else if(args.length==3 && args[0].equals("jumpreset") && args[1].equals("sound")){
+                    if(!Arrays.asList("orb","harp","pling","levelup").contains(args[2]))throw new IllegalArgumentException("Use sound orb, harp, pling or levelup");
+                    set("jumpreset.sound",args[2]);
+                }
                 else if(args.length==3&&args[0].equals("ghost")&&Arrays.asList("bot","me").contains(args[1])&&Arrays.asList("on","off").contains(args[2]))set("ghost."+args[1]+".enabled",String.valueOf(args[2].equals("on")));
                 else if(args.length==2&&args[0].equals("opening")&&Arrays.asList("large","small").contains(args[1]))set("opening.large",String.valueOf(args[1].equals("large")));
                 else if(args.length==2 && Arrays.asList("metrics","potions","record","sprint","capture","link","opening","reach","debug","advantage","jumpreset","blockhit","oldblock").contains(args[0])
