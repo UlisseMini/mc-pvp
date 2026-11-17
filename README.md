@@ -118,9 +118,9 @@ experiment scheduler uses at most six so human challenges have spare slots.
 ### Jump reset practice
 
 `/drill jumpreset` starts on the sumo platform from a 4.5-block gap, with a
-two-second countdown. A fall starts the next round automatically. The drill
-also resets five seconds after the first fresh hit you take, or after twelve
-seconds without one. Use `/stop` to finish. Watch the center of the screen
+two-second countdown. Each round plays to a ring-out. The result appears
+in chat and the next round starts automatically. Use `/stop` to finish.
+Watch the center of the screen
 for **PERFECT**, **EARLY** with the number of ticks, or **MISSED**. Results also
 show approximate first-step pushback. **PERFECT** confirms a takeoff on the hit
 tick. A missed hit can include a late press, since vanilla movement packets

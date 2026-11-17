@@ -37,7 +37,7 @@ public final class EntryDrills {
         if(jumpReset&&args.length==3)s.overrides.putAll(PracticePresets.defaults(PracticePresets.MMC));
         sessions.put(name,s);
         Referee.message(sender,jumpReset
-            ?"§bJump Reset: §fSprint toward W-tap and tap Jump as its hit lands. Rounds repeat. §7Watch the center of your screen for the result. §b/stop §7exits."
+            ? "§bJump Reset: §fSprint toward W-tap and tap Jump as its hit lands. Play each round to a ring-out. §7Watch the center of your screen for timing. §b/stop §7exits."
             :"§bDrills enabled: "+s.preset+" vs "+s.bot+". Reset five seconds after the first sword hit, then a two-second countdown. /stop exits.");
     }
     static void cancel(String name){if(sessions.remove(name)!=null&&Referee.player(name)!=null)Referee.vanilla("title "+name+" clear");}
@@ -57,15 +57,16 @@ public final class EntryDrills {
             String bot=previous!=null&&Referee.find(s.slot)==null&&(Boolean)R.call(previous,"isEntityAlive")?s.slot:Referee.freeBot(Set.of());if(bot==null)continue;
             double distance=gap(s.preset,s.rounds);s.rounds++;
             ServerReplay.close(s.name,false);
-            String mode=JUMP_RESET.equals(s.preset)?"sumo":"rod_diamond";
-            try{Referee.start(s.name,bot,"human",s.bot,Referee.preferredPing(s.name),s.botPing,"drill-"+System.nanoTime(),12000,mode,s.overrides,distance,s.rounds,s.preset);}
+            boolean jumpReset=JUMP_RESET.equals(s.preset);
+            String mode=jumpReset?"sumo":"rod_diamond";
+            try{Referee.start(s.name,bot,"human",s.bot,Referee.preferredPing(s.name),s.botPing,"drill-"+System.nanoTime(),jumpReset?0:12000,mode,s.overrides,distance,s.rounds,s.preset);}
             catch(Exception e){cancel(s.name);Referee.Match m=Referee.find(s.name);if(m!=null)Referee.finish(m,"drill_setup_failed");Referee.message(player,"§cDrill setup failed: "+e.getMessage());}
         }
     }
     static boolean finished(Referee.Match m,String reason){
         Session s=sessions.get(m.a);if(s==null||m.drillRound==0)return false;
-        boolean repeat=Set.of("drill_completed","death","scenario_completed").contains(reason)||
-            m.jumpReset()&&(reason.equals("ring_out")||reason.equals("double_ring_out"));
+        boolean repeat=m.jumpReset()?reason.equals("ring_out")||reason.equals("double_ring_out"):
+            Set.of("drill_completed","death","scenario_completed").contains(reason);
         if(!repeat){cancel(m.a);return false;}
         s.botPing=m.pingB;s.slot=m.b;s.arena=m.arena;
         // The next round starts at the end of this server tick. Keep living

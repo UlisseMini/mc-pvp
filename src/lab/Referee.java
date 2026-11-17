@@ -149,11 +149,11 @@ public final class Referee {
                     m.winner=aliveA==aliveB?"":aliveA?m.a:m.b;finish(m,"death");continue;
                 }
                 if(!m.winner.isEmpty()){finish(m,m.finishReason);continue;}
-                if(m.drillRound>0&&m.drillFirstHit>0&&setupNow>=m.drillFirstHit+5000){finish(m,"drill_completed");continue;}
+                if(m.drillRound>0&&!m.jumpReset()&&m.drillFirstHit>0&&setupNow>=m.drillFirstHit+5000){finish(m,"drill_completed");continue;}
                 if(ticks%10==0&&System.currentTimeMillis()>m.start+2000&&!validBotViews(m)){
                     finish(m,"invalid_client_view");continue;
                 }
-                if(System.currentTimeMillis()>m.start+m.durationMs){finish(m,m.drillRound>0?"drill_completed":m.scenario?"scenario_completed":"timeout_draw");continue;}
+                if(m.durationMs>0&&System.currentTimeMillis()>m.start+m.durationMs){finish(m,m.drillRound>0?"drill_completed":m.scenario?"scenario_completed":"timeout_draw");continue;}
                 Map<String,Object> trace=new LinkedHashMap<>();trace.put("type","tick");trace.put("time",System.currentTimeMillis());
                 trace.put("a",replayPosition(a));trace.put("b",replayPosition(b));trace.put("hits_a",m.ha);trace.put("hits_b",m.hb);
                 trace.put("health_a",R.call(a,"getHealth"));trace.put("health_b",R.call(b,"getHealth"));
@@ -478,8 +478,9 @@ public final class Referee {
         Match m=new Match();m.mode=mode(selectedMode);m.goal=m.boxing()?100:0;m.request=request;if(duration>0){m.scenario=true;m.durationMs=duration;}
         if(m.scenario&&isBot(a)&&isBot(b)){m.combat=CombatTuning.nextScenario;m.goal=0;}
         m.combat=CombatProfile.fromOverrides(overridesB,m.combat);
-        if(m.sumo()&&duration==0)m.durationMs=SumoArena.DURATION_MS;
         m.startGap=m.sumo()&&round==0?SumoArena.START_GAP:startGap;m.drillRound=round;m.drillPreset=preset;
+        if(m.jumpReset())m.durationMs=0;
+        else if(m.sumo()&&duration==0)m.durationMs=SumoArena.DURATION_MS;
         do{m.id=String.format("m%04d",++counter);}while(Files.exists(DATA.resolve("results/"+m.id+".json"))||Files.exists(DATA.resolve("replays/"+m.id+".jsonl")));
         m.a=a;m.b=b;m.pa=pa;m.pb=pb;m.pingA=m.initialPingA=pingA;m.pingB=m.initialPingB=pingB;m.start=System.currentTimeMillis()+3000;
         if(!pa.equals("human"))m.configA.putAll(policies.get(pa));else m.configA.setProperty("kind","human");
@@ -529,7 +530,7 @@ public final class Referee {
         initial.put("bot_click_cap_cps",caps);
         append(m.replay,Map.of("type","start","match",initial));
         EntryDrills.countdown(m,System.currentTimeMillis());
-        String rules=m.jumpReset()?"Jump Reset round "+round+". Reset on a fall, five seconds after your first incoming hit, or after twelve seconds without one.":
+        String rules=m.jumpReset()?"Jump Reset round "+round+". Knock your opponent off to win the round.":
             m.sumo()?"Sumo: bare fists, full health; knock your opponent off the platform. Two-minute limit.":
             m.drillRound>0?"Entry drill #"+round+", "+startGap+" block gap. Rod diamond; automatic repeat.":
             m.boxing()?(m.scenario?"Timed research: "+duration/1000+" seconds, no hit-score limit.":"Boxing: first to 100 hits."):
@@ -737,15 +738,15 @@ public final class Referee {
         Set<String> recipients=new LinkedHashSet<>(List.of(m.a,m.b));
         for(var watcher:watching.entrySet())if(watcher.getValue().equals(m.id))recipients.add(watcher.getKey());
         for(String who:recipients){Object p=player(who);if(p!=null){
+            String outcome=m.winner.isEmpty()?"§e"+reason.replace('_',' '):
+                (m.winner.equals(who)?"§aYOU WON":(who.equals(m.a)||who.equals(m.b)?"§cYOU LOST":"§aWinner"))+
+                " §7• §f"+(isBot(m.winner)?m.label(m.winner.equals(m.a)?"a":"b"):m.winner);
             if(m.drillRound>0){
-                String stats=m.jumpReset()?"§bJump Reset #"+m.drillRound+" §8| §eHits taken: "+m.hb:
+                String stats=m.jumpReset()?"§bJump Reset #"+m.drillRound+" §8| "+outcome+" §8| §eHits taken: "+m.hb:
                     "§bDrill #"+m.drillRound+" §7("+m.startGap+" blocks) §8| §eSword hits: "+m.sa.breakdown.damageHitsLanded+"–"+m.sb.breakdown.damageHitsLanded;
                 message(p,stats+" §8| §b/stop §7exits; §b/replay "+m.id);
                 continue;
             }
-            String outcome=m.winner.isEmpty()?"§e"+reason.replace('_',' '):
-                (m.winner.equals(who)?"§aYOU WON":(who.equals(m.a)||who.equals(m.b)?"§cYOU LOST":"§aWinner"))+
-                " §7• §f"+(isBot(m.winner)?m.label(m.winner.equals(m.a)?"a":"b"):m.winner);
             message(p,"§6§lFinished "+m.id+" §r§8["+m.mode+"] §7— "+outcome);
             if(DuelSettings.reach(m.configA)!=3||DuelSettings.reach(m.configB)!=3)message(p,"§dModified reach: "+DuelSettings.reach(m.configA)+" / "+DuelSettings.reach(m.configB)+" blocks (first / second player).");
             if(m.sumo()){
