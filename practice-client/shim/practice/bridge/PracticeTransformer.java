@@ -6,14 +6,14 @@ import org.objectweb.asm.tree.*;
 
 /** Read-only packet/input observers; preserves original instructions and return values.
  * Observation takes time; capture timestamps bracket work rather than promising zero overhead.
- * Restores the old first-person item swing and sneak camera in the renderers. */
+ * Applies client presentation options inside the renderers. */
 public final class PracticeTransformer implements IClassTransformer {
     private static final String HOOK="practice/bridge/ObserverHooks";
     public byte[] transform(String name,String transformed,byte[] bytes){
         if(bytes==null)return null;
         bytes=BotTransformer.transform(transformed,bytes);
         if(transformed.equals("net.minecraft.client.renderer.ItemRenderer"))return firstPersonUse(bytes);
-        if(transformed.equals("net.minecraft.client.renderer.EntityRenderer"))return sneakCamera(bytes);
+        if(transformed.equals("net.minecraft.client.renderer.EntityRenderer"))return hurtCamera(sneakCamera(bytes));
         boolean network=transformed.equals("net.minecraft.network.NetworkManager"),
             decoder=transformed.equals("net.minecraft.util.MessageDeserializer"),
             encoder=transformed.equals("net.minecraft.util.MessageSerializer"),
@@ -95,6 +95,43 @@ public final class PracticeTransformer implements IClassTransformer {
     private static AbstractInsnNode previousCode(AbstractInsnNode instruction){
         do{instruction=instruction.getPrevious();}while(instruction!=null&&instruction.getOpcode()<0);
         return instruction;
+    }
+    private static byte[] hurtCamera(byte[] bytes) {
+        ClassNode node = new ClassNode();
+        new ClassReader(bytes).accept(node, 0);
+        for (MethodNode method : node.methods) {
+            if (!"(F)V".equals(method.desc)
+                    || !named(method, "func_78482_e", "hurtCameraEffect", "d")) continue;
+            AbstractInsnNode timer = null;
+            for (AbstractInsnNode instruction : method.instructions.toArray()) {
+                if (instruction.getOpcode() != Opcodes.FSUB) continue;
+                AbstractInsnNode partial = previousCode(instruction);
+                if (!(partial instanceof VarInsnNode) || partial.getOpcode() != Opcodes.FLOAD
+                        || ((VarInsnNode) partial).var != 1) continue;
+                AbstractInsnNode cast = previousCode(partial);
+                if (cast == null || cast.getOpcode() != Opcodes.I2F) continue;
+                AbstractInsnNode read = previousCode(cast);
+                if (!(read instanceof FieldInsnNode) || read.getOpcode() != Opcodes.GETFIELD) continue;
+                FieldInsnNode field = (FieldInsnNode) read;
+                if (!"I".equals(field.desc)
+                        || !(field.owner.equals("net/minecraft/entity/EntityLivingBase") || field.owner.equals("pr"))
+                        || !(field.name.equals("field_70737_aN") || field.name.equals("hurtTime") || field.name.equals("au"))) continue;
+                if (timer != null) {
+                    timer = null;
+                    break;
+                }
+                timer = instruction;
+            }
+            if (timer == null) continue;
+            method.instructions.insert(timer, new MethodInsnNode(Opcodes.INVOKESTATIC,
+                    "practice/bridge/HurtCamera", "damageTime", "(F)F", false));
+            ClassWriter out = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            node.accept(out);
+            System.out.println("[PracticeBridge] Damage camera toggle hooked");
+            return out.toByteArray();
+        }
+        System.out.println("[PracticeBridge] Damage camera toggle unavailable for this renderer");
+        return bytes;
     }
     private static byte[] sneakCamera(byte[] bytes) {
         ClassNode node = new ClassNode();
