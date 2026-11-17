@@ -18,7 +18,12 @@ public final class ObserverHooks {
     public static void wireBefore(Object c,Object b){try{if(sink!=null)sink.wireBefore(c,b);}catch(Exception|LinkageError e){errors++;}}
     public static void wireAfter(Object p){try{if(sink!=null)sink.wireAfter(p);}catch(Exception|LinkageError e){errors++;}}
     public static void wireOut(Object c,Object p,Object b){try{if(sink!=null)sink.wireOut(c,p,b);}catch(Exception|LinkageError e){errors++;}}
-    public static void apply(Object p,boolean a){try{if(sink!=null)sink.apply(p,a);}catch(Exception|LinkageError e){errors++;}}
+    public static void apply(Object p,boolean a){
+        try{CombatCoach.packet(p,a);}catch(Exception|LinkageError e){errors++;}
+        try{if(sink!=null)sink.apply(p,a);}catch(Exception|LinkageError e){errors++;}
+    }
+    public static void jump(Object player,boolean after){try{CombatCoach.jump(player,after);}catch(Exception|LinkageError e){errors++;}}
+    public static void travel(Object player,boolean after){try{CombatCoach.travel(player,after);}catch(Exception|LinkageError e){errors++;}}
     public static void input(String k,boolean a){try{if(sink!=null)sink.input(k,a);}catch(Exception|LinkageError e){errors++;}}
     public static void clock(String phase){try{if(sink!=null)sink.clock(phase);}catch(Exception|LinkageError e){errors++;}}
     public static void queued(){try{if(sink!=null)sink.queued();}catch(Exception|LinkageError e){errors++;}}

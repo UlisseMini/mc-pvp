@@ -56,10 +56,11 @@ def main():
         bot_sources=[ROOT/'src/lab'/f'{name}.java' for name in json.loads((SRC/'bot-sources.json').read_text())]
         shim=BUILD/'shim';compile_to(shim,sorted((SRC/'shim').rglob('*.java'))+bot_sources,cp)
         label_checks=BUILD/'label-checks';label_cp=os.pathsep.join([str(shim),cp])
-        compile_to(label_checks,[SRC/'tools/PlayerLabelsCheck.java',SRC/'tools/ClockHooksCheck.java',SRC/'tools/RemoteSafetyCheck.java'],label_cp)
+        compile_to(label_checks,[SRC/'tools/PlayerLabelsCheck.java',SRC/'tools/ClockHooksCheck.java',SRC/'tools/RemoteSafetyCheck.java',SRC/'tools/CombatDirectionCheck.java'],label_cp)
         run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'PlayerLabelsCheck',ROOT/'.cache/client.jar',BUILD/'compile-api.jar'])
         run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'ClockHooksCheck',ROOT/'.cache/client.jar',BUILD/'compile-api.jar'])
         run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'practice.bridge.RemoteSafetyCheck',shim])
+        run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'practice.bridge.CombatDirectionCheck'])
         for folder in (api,core):
             shutil.copytree(folder,shim,dirs_exist_ok=True)
         with zipfile.ZipFile(ROOT/'.cache/mcp-names.zip') as names:
@@ -78,6 +79,7 @@ def main():
         jar(BUILD/'practice-bridge.jar',shim,[{'modid':'practicebridge','name':'PvP Practice Bridge','description':'Local, reloadable practice HUD and telemetry.','version':'0.4.0','mcversion':'1.8.9','authorList':['PvP Lab']}],{'META-INF/MANIFEST.MF':manifest,'practice/field-names.properties':field_names,'lab/mappings.properties':'\n'.join(bot_mappings)})
     tests=BUILD/'tests';compile_to(tests,sorted((SRC/'tests').rglob('*.java')),os.pathsep.join(map(str,[api,core,module])))
     run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.Check',BUILD/'practice-module.jar'])
+    run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.CombatCoachChecks'])
     if args.install:
         if not args.module_only:
             backup=args.game_dir/'settings-backups'/('practice-bridge-'+str(time.time_ns()))

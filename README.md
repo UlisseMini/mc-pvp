@@ -164,6 +164,32 @@ took off one tick before the hit, 0.773 for plain W-tap, and 0.573 for an
 impact-tick jump. Jumping one movement step after the hit was ignored because
 the player had left the ground.
 
+### Forge combat coaches
+
+In Forge 1.8.9, you can turn on either centered trainer during ordinary
+multiplayer combat. The client reads its own movement and incoming game packets.
+
+| Client command | Feedback |
+|---|---|
+| `/p jumpreset on` | Early or late by a number of movement ticks and approximate milliseconds, plus the measured first step back. |
+| `/p blockhit on` | Blocked, unblocked or uncertain for incoming player melee, with the health lost in hearts. |
+| `/p oldblock off` | Restore the 1.8 first-person sword animation. The 1.7-style animation starts enabled. |
+
+Use `off` to disable either trainer. The blockhit trainer tests health loss
+against nearby players' plausible weapons and your visible mitigation. If the
+verdict depends on the attacker, a clear knockback direction can narrow the
+candidates and the result is marked **Likely**. The game does not send the
+attacker's identity for ordinary hits. Confidence can drop with custom damage,
+hidden equipment stats, or several overlapping hits.
+
+The jump-reset trainer scores against the movement step that used the incoming
+velocity. A timely sideways jump can save no distance. The measured distance is
+the first step in the push direction, with an estimated comparison to the same
+step without the jump's horizontal boost. **Perfect** requires at least 0.18
+blocks of estimated reduction. Obstacles or overlapping impulses can make the
+comparison unclear. The animation and trainers leave combat inputs and network
+traffic alone.
+
 ### Minemen-like knockback
 
 Use `preset=mmc` in any duel kit or in `/drill jumpreset preset=mmc`.

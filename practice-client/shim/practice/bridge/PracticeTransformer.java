@@ -5,23 +5,35 @@ import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
 /** Read-only packet/input observers; preserves original instructions and return values.
- * Observation takes time; capture timestamps bracket work rather than promising zero overhead. */
+ * Observation takes time; capture timestamps bracket work rather than promising zero overhead.
+ * Restores the first-person sword swing during the render pose separately. */
 public final class PracticeTransformer implements IClassTransformer {
     private static final String HOOK="practice/bridge/ObserverHooks";
     public byte[] transform(String name,String transformed,byte[] bytes){
         if(bytes==null)return null;
         bytes=BotTransformer.transform(transformed,bytes);
+        if(transformed.equals("net.minecraft.client.renderer.ItemRenderer"))return firstPersonBlock(bytes);
         boolean network=transformed.equals("net.minecraft.network.NetworkManager"),
             decoder=transformed.equals("net.minecraft.util.MessageDeserializer"),
             encoder=transformed.equals("net.minecraft.util.MessageSerializer"),
             handler=transformed.equals("net.minecraft.client.network.NetHandlerPlayClient"),
             minecraft=transformed.equals("net.minecraft.client.Minecraft"),
-            player=transformed.equals("net.minecraft.entity.player.EntityPlayer");
-        if(!network&&!decoder&&!encoder&&!handler&&!minecraft&&!player)return bytes;
+            player=transformed.equals("net.minecraft.entity.player.EntityPlayer"),
+            living=transformed.equals("net.minecraft.entity.EntityLivingBase");
+        if(!network&&!decoder&&!encoder&&!handler&&!minecraft&&!player&&!living)return bytes;
         ClassNode node=new ClassNode();new ClassReader(bytes).accept(node,0);int hooks=0;
         for(MethodNode m:node.methods){
             if((m.access&(Opcodes.ACC_SYNTHETIC|Opcodes.ACC_BRIDGE|Opcodes.ACC_STATIC))!=0)continue;
-            if(player&&(m.name.equals("func_145748_c_")||m.name.equals("getDisplayName")||m.name.equals("f_"))&&m.desc.startsWith("()L")){
+            if(living){
+                String kind=m.desc.equals("()V")&&named(m,"func_70664_aZ","jump","bF")?"jump":
+                    m.desc.equals("(FF)V")&&named(m,"func_70612_e","moveEntityWithHeading","g")?"travel":null;
+                if(kind!=null){
+                    m.instructions.insert(flag(kind,0,false));
+                    for(AbstractInsnNode i:m.instructions.toArray())if(i.getOpcode()==Opcodes.RETURN)
+                        m.instructions.insertBefore(i,flag(kind,0,true));
+                    hooks++;
+                }
+            }else if(player&&(m.name.equals("func_145748_c_")||m.name.equals("getDisplayName")||m.name.equals("f_"))&&m.desc.startsWith("()L")){
                 // Replace only the presentation component. Native getName, profiles,
                 // UUIDs, target lookup, telemetry and all original work stay intact.
                 for(AbstractInsnNode i:m.instructions.toArray())if(i.getOpcode()==Opcodes.ARETURN){
@@ -75,6 +87,50 @@ public final class PracticeTransformer implements IClassTransformer {
         if(hooks==0)throw new IllegalStateException("Practice observer hooks missing for "+transformed);
         ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS);node.accept(out);
         System.out.println("[PracticeBridge] Observer hooks: "+transformed+" ("+hooks+")");return out.toByteArray();
+    }
+    private static boolean named(MethodNode m,String srg,String mcp,String obf){
+        return m.name.equals(srg)||m.name.equals(mcp)||m.name.equals(obf);
+    }
+    private static AbstractInsnNode nextCode(AbstractInsnNode instruction){
+        do{instruction=instruction.getNext();}while(instruction!=null&&instruction.getOpcode()<0);
+        return instruction;
+    }
+    private static AbstractInsnNode previousCode(AbstractInsnNode instruction){
+        do{instruction=instruction.getPrevious();}while(instruction!=null&&instruction.getOpcode()<0);
+        return instruction;
+    }
+    private static byte[] firstPersonBlock(byte[] bytes){
+        ClassNode node=new ClassNode();new ClassReader(bytes).accept(node,0);
+        int sites=0;
+        for(MethodNode m:node.methods){
+            if(!m.desc.equals("(F)V")||!named(m,"func_78440_a","renderItemInFirstPerson","a"))continue;
+            for(AbstractInsnNode i:m.instructions.toArray()){
+                if(!(i instanceof MethodInsnNode))continue;
+                MethodInsnNode transform=(MethodInsnNode)i;
+                if(!node.name.equals(transform.owner)||!transform.desc.equals("(FF)V")||
+                        !(transform.name.equals("func_178096_b")||transform.name.equals("transformFirstPersonItem")||transform.name.equals("b")))continue;
+                AbstractInsnNode zero=previousCode(i),load=nextCode(i);
+                if(zero==null||zero.getOpcode()!=Opcodes.FCONST_0||!(load instanceof VarInsnNode)||
+                        load.getOpcode()!=Opcodes.ALOAD||((VarInsnNode)load).var!=0)continue;
+                AbstractInsnNode pose=nextCode(load);
+                if(!(pose instanceof MethodInsnNode))continue;
+                MethodInsnNode block=(MethodInsnNode)pose;
+                if(!node.name.equals(block.owner)||!block.desc.equals("()V")||
+                        !(block.name.equals("func_178103_d")||block.name.equals("doBlockTransformations")||block.name.equals("d")))continue;
+                InsnList swing=new InsnList();
+                swing.add(new VarInsnNode(Opcodes.FLOAD,1));
+                swing.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"practice/bridge/OldBlockAnimation","swing","(FF)F",false));
+                m.instructions.insertBefore(i,swing);
+                sites++;
+            }
+        }
+        if(sites!=1){
+            System.out.println("[PracticeBridge] 1.7 sword block pose unavailable for this renderer");
+            return bytes;
+        }
+        ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS);node.accept(out);
+        System.out.println("[PracticeBridge] 1.7 sword block pose hooked");
+        return out.toByteArray();
     }
     private static InsnList call(String name,int... locals){
         InsnList out=new InsnList();String desc="(";
