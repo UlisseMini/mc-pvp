@@ -2,16 +2,17 @@ package lab;
 
 import java.util.*;
 
-/** Repeated ordinary rod-diamond approaches with controlled setup, never mid-fight movement edits. */
+/** Repeated native combat drills with controlled starting positions. */
 public final class EntryDrills {
     static final long COUNTDOWN_MS=2000;
+    static final String JUMP_RESET="jumpreset";
     static final Map<String,Session> sessions=new HashMap<>();
     static final class Session {
         String name,preset,bot,slot;int rounds,arena;double botPing;
         Session(String n,String p,String b,double ping){name=n;preset=p;bot=b;botPing=ping;}
     }
     static double gap(String preset,int round){
-        return switch(preset){case "near"->4.5;case "medium"->6;case "far"->9;case "mixed"->new double[]{4.5,6,9}[round%3];default->throw new IllegalArgumentException("Choose near, medium, far, or mixed.");};
+        return switch(preset){case "near",JUMP_RESET->4.5;case "medium"->6;case "far"->9;case "mixed"->new double[]{4.5,6,9}[round%3];default->throw new IllegalArgumentException("Choose near, medium, far, mixed, or jumpreset.");};
     }
     static void command(Object sender,String[] args)throws Exception{
         String name=Referee.safeName(sender);
@@ -19,16 +20,20 @@ public final class EntryDrills {
         if(args.length==1){
             Referee.message(sender,"§bEntry drills: rod diamond vs wtap; automatic repeats. Gaps are player-center distances. /drill stop exits.");
             for(String preset:List.of("near","medium","far","mixed"))Referee.button(sender,preset+" — "+(preset.equals("mixed")?"cycle 4.5 / 6 / 9 blocks":gap(preset,0)+" blocks"),"/drill "+preset);
+            Referee.button(sender,"Jump Reset — time your jump as W-tap hits you","/drill "+JUMP_RESET);
             return;
         }
         if(args[1].equals("stop")){cancel(name);Referee.Match m=Referee.find(name);if(m!=null)Referee.finish(m,"stopped");Referee.message(sender,"§bDrills stopped.");return;}
-        if(args.length>3)throw new IllegalArgumentException("/drill near|medium|far|mixed [bot]");
+        boolean jumpReset=JUMP_RESET.equals(args[1]);
+        if(args.length>(jumpReset?2:3))throw new IllegalArgumentException("Use /drill jumpreset or /drill near|medium|far|mixed [bot]");
         gap(args[1],0);String bot=args.length==3?args[2]:"wtap";Referee.loadPolicies();
         if(!Referee.policies.containsKey(bot))throw new IllegalArgumentException("Unknown bot. /bots lists them.");
         if(Referee.find(name)!=null)throw new IllegalArgumentException("Use /stop to finish your current duel first.");
         if(!(Boolean)R.call(sender,"isEntityAlive"))throw new IllegalArgumentException("Respawn first.");
         Session s=new Session(name,args[1],bot,Referee.lastPings.getOrDefault(name,new double[]{0,0})[0]);sessions.put(name,s);
-        Referee.message(sender,"§bDrills enabled: "+s.preset+" vs "+s.bot+". Reset five seconds after the first sword hit, then a two-second countdown. /stop exits.");
+        Referee.message(sender,jumpReset
+            ?"§bJump Reset: §fSprint toward W-tap and tap Jump as its hit lands. Rounds repeat. §7The Forge practice mod shows timing and pushback. §b/stop §7exits."
+            :"§bDrills enabled: "+s.preset+" vs "+s.bot+". Reset five seconds after the first sword hit, then a two-second countdown. /stop exits.");
     }
     static void cancel(String name){if(sessions.remove(name)!=null&&Referee.player(name)!=null)Referee.vanilla("title "+name+" clear");}
     static int arena(String name){Session s=sessions.get(name);return s==null?0:s.arena;}
@@ -46,7 +51,8 @@ public final class EntryDrills {
             String bot=previous!=null&&Referee.find(s.slot)==null&&(Boolean)R.call(previous,"isEntityAlive")?s.slot:Referee.freeBot(Set.of());if(bot==null)continue;
             double distance=gap(s.preset,s.rounds);s.rounds++;
             ServerReplay.close(s.name,false);
-            try{Referee.start(s.name,bot,"human",s.bot,Referee.preferredPing(s.name),s.botPing,"drill-"+System.nanoTime(),12000,"rod_diamond",new Properties(),distance,s.rounds,s.preset);}
+            String mode=JUMP_RESET.equals(s.preset)?"boxing":"rod_diamond";
+            try{Referee.start(s.name,bot,"human",s.bot,Referee.preferredPing(s.name),s.botPing,"drill-"+System.nanoTime(),12000,mode,new Properties(),distance,s.rounds,s.preset);}
             catch(Exception e){cancel(s.name);Referee.Match m=Referee.find(s.name);if(m!=null)Referee.finish(m,"drill_setup_failed");Referee.message(player,"§cDrill setup failed: "+e.getMessage());}
         }
     }
@@ -70,7 +76,9 @@ public final class EntryDrills {
             if(Referee.isBot(who)||Referee.player(who)==null)continue;
             if(first||tenths==0){
                 Referee.vanilla("title "+who+" times 0 "+(tenths==0?8:6)+" "+(tenths==0?4:0));
-                Referee.vanilla("title "+who+" subtitle "+Json.encode(Map.of("text",tenths==0?"":m.sumo()?"Sumo · knock your opponent off":"Round "+m.drillRound+" · "+m.startGap+" blocks","color","gray")));
+                String subtitle=m.sumo()?"Sumo · knock your opponent off":
+                    m.jumpReset()?"Jump Reset · Round "+m.drillRound:"Round "+m.drillRound+" · "+m.startGap+" blocks";
+                Referee.vanilla("title "+who+" subtitle "+Json.encode(Map.of("text",tenths==0?"":subtitle,"color","gray")));
             }
             Referee.vanilla("title "+who+" title "+Json.encode(Map.of("text",tenths==0?"GO!":String.format(Locale.ROOT,"%.1f",tenths/10.0),"color",tenths==0?"green":"yellow","bold",true)));
         }

@@ -24,8 +24,15 @@ public final class PracticeModule implements PracticeExtension {
     private final ReplayOverlay replay=new ReplayOverlay();
     private final RangeIndicators ranges=new RangeIndicators();
     private final RangeCommands rangeCommands=new RangeCommands();
+    private final JumpResetHud jumpReset=new JumpResetHud();
     private long liveReceived;
-    public void event(PracticeEvent e){if(e.type.equals("connection_scope"))practiceAllowed=Boolean.TRUE.equals(e.data.get("practice_allowed"));if(e.type.equals("replay_frame"))replay.state=e.data;if(e.type.equals("link_state")){linked=e.data;linkReceived=e.timeMillis;}if(e.type.equals("practice_views")){overlays.views=e.data;liveReceived=System.nanoTime();}}
+    public void event(PracticeEvent e){
+        if(e.type.equals("connection_scope"))practiceAllowed=Boolean.TRUE.equals(e.data.get("practice_allowed"));
+        if(e.type.equals("replay_frame"))replay.state=e.data;
+        if(e.type.equals("link_state")){linked=e.data;linkReceived=e.timeMillis;}
+        if(e.type.equals("practice_views")){overlays.views=e.data;liveReceived=System.nanoTime();}
+        jumpReset.event(e);
+    }
     public Frame render(float partial,int width,int height){if(!practiceAllowed)return remoteBase;Frame hud=replay.active()?replay.hud(base,width,height):overlays.hud(base,width,height);return rangeCommands.feedback(ranges.render(hud,width,height,overlays.views,replay.state,liveReceived));}
     public WorldFrame world(float partial){if(!practiceAllowed)return new WorldFrame(Collections.emptyList(),Collections.emptyList(),Collections.emptyList());return replay.active()?replay.world():overlays.world();}
     public boolean command(String[] args){return rangeCommands.handle(args,ranges);}
@@ -57,6 +64,7 @@ public final class PracticeModule implements PracticeExtension {
         practiceAllowed=s.practiceAllowed;
         if(s.sprintPressed && s.playing && !s.screenOpen)sprint=!sprint;
         List<Frame.Line> lines=new ArrayList<>();
+        if(!s.playing||!s.practiceAllowed)jumpReset.clear();
         if(!s.playing){close();previousHurt=0;blockedTicks=playingTicks=0;overlays.views=Collections.emptyMap();replay.state=Collections.emptyMap();remoteBase=Frame.empty();return base=Frame.empty();}
         if(enabled && sprint)lines.add(new Frame.Line(label,inset,top,color,true));
         if(potions){int y=potionY;for(String effect:s.effects){lines.add(new Frame.Line(effect,inset,y,0xFFFFFF,true));y+=11;}}
@@ -78,7 +86,9 @@ public final class PracticeModule implements PracticeExtension {
             }
             if(record&&practiceAllowed)write(s);
         }
-        return base=new Frame(enabled&&sprint&&!s.screenOpen,lines,practiceAllowed&&hurtFlash&&s.timeMillis<flashUntil?0x40FF4444:0,5);
+        base=new Frame(enabled&&sprint&&!s.screenOpen,lines,practiceAllowed&&hurtFlash&&s.timeMillis<flashUntil?0x40FF4444:0,5);
+        if(practiceAllowed&&!s.screenOpen&&!replay.active())base=jumpReset.hud(base,s.timeMillis);
+        return base;
     }
     private void write(Snapshot s) throws IOException {
         if(writer==null){

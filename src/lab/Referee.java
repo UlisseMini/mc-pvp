@@ -34,6 +34,7 @@ public final class Referee {
         boolean sumo(){return mode.equals("sumo");}
         boolean box(){return mode.equals("diamond_box");}
         boolean rods(){return mode.equals("rod_diamond");}
+        boolean jumpReset(){return EntryDrills.JUMP_RESET.equals(drillPreset);}
         final CombatStats sa=new CombatStats(),sb=new CombatStats();
         CombatStats stats(String name){return name.equals(a)?sa:name.equals(b)?sb:null;}
         String label(String side){return side.equals("a")?MatchLabels.label(a,pa,pb,"a"):MatchLabels.label(b,pb,pa,"b");}
@@ -162,7 +163,9 @@ public final class Referee {
                         m.label("a")+" "+hearts(a)+" hearts  |  "+hearts(b)+" "+m.label("b"));
                     String ba=m.sa.blockRatioText(m.hb-m.sb.rodHits),bb=m.sb.blockRatioText(m.ha-m.sa.rodHits);
                     String ping=" §8| §7RTT "+(int)m.pingA+"/"+(int)m.pingB+" ms";
-                    overlay(a,timedBar(m,m.a,score+(m.sumo()?"":" §8| "+m.sa.blockBarText(m.hb-m.sb.rodHits))+ping,System.currentTimeMillis()));
+                    String humanBar=m.jumpReset()&&left<=0?"§bJump Reset §8| §fSprint in and tap Jump on impact"+ping:
+                        timedBar(m,m.a,score+(m.sumo()?"":" §8| "+m.sa.blockBarText(m.hb-m.sb.rodHits))+ping,System.currentTimeMillis());
+                    overlay(a,humanBar);
                     overlay(b,timedBar(m,m.b,score+(m.sumo()?"":" §8| "+m.sb.blockBarText(m.ha-m.sa.rodHits))+ping,System.currentTimeMillis()));
                     for(var watcher:watching.entrySet())if(watcher.getValue().equals(m.id)&&player(watcher.getKey())!=null)
                         overlay(player(watcher.getKey()),score+(m.sumo()?"":" §8| §bBlocks: §f"+ba+" dmg "+m.sa.damageBlockedText()+" §7vs §f"+bb+" dmg "+m.sb.damageBlockedText())+ping);
@@ -253,7 +256,8 @@ public final class Referee {
             else if(who.equals(m.b)&&victim.equals(m.a))m.hb++;else return;
             Object direct=R.call(source,"getSourceOfDamage");
             boolean rod=direct!=null&&R.cls("net.minecraft.entity.projectile.EntityFishHook").isInstance(direct);
-            if(!rod&&m.drillRound>0&&m.drillFirstHit==0)m.drillFirstHit=System.currentTimeMillis();
+            if(!rod&&m.drillRound>0&&m.drillFirstHit==0&&(!m.jumpReset()||victim.equals(m.a)&&!immuneBefore))
+                m.drillFirstHit=System.currentTimeMillis();
             CombatStats stats=m.stats(who);if(rod)stats.rodHits++;if(immuneBefore)stats.upgrades++;
             if(rod)stats.rodTricks.rod(m.ha+m.hb);
             if(!rod)DamageBreakdown.accepted(target,source,m.ha+m.hb);
@@ -521,7 +525,11 @@ public final class Referee {
         initial.put("bot_click_cap_cps",caps);
         append(m.replay,Map.of("type","start","match",initial));
         EntryDrills.countdown(m,System.currentTimeMillis());
-        String rules=m.sumo()?"Sumo: bare fists, full health; knock your opponent off the platform. Two-minute limit.":m.drillRound>0?"Entry drill #"+round+", "+startGap+" block gap. Rod diamond; automatic repeat.":m.boxing()?(m.scenario?"Timed research: "+duration/1000+" seconds, no hit-score limit.":"Boxing: first to 100 hits."):(m.box()?"Diamond box: 1x1, wooden swords":m.rods()?"Rod diamond: wooden swords and fishing rods with PvP knockback":"Diamond: wooden swords")+", unbreakable swords, unenchanted diamond armor, fight to death. Respawn, then /rematch.";
+        String rules=m.sumo()?"Sumo: bare fists, full health; knock your opponent off the platform. Two-minute limit.":
+            m.jumpReset()?"Jump Reset round "+round+". Reset five seconds after your first incoming hit, or after twelve seconds without one.":
+            m.drillRound>0?"Entry drill #"+round+", "+startGap+" block gap. Rod diamond; automatic repeat.":
+            m.boxing()?(m.scenario?"Timed research: "+duration/1000+" seconds, no hit-score limit.":"Boxing: first to 100 hits."):
+            (m.box()?"Diamond box: 1x1, wooden swords":m.rods()?"Rod diamond: wooden swords and fishing rods with PvP knockback":"Diamond: wooden swords")+", unbreakable swords, unenchanted diamond armor, fight to death. Respawn, then /rematch.";
         message(player(a),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules+" §b/stop §7to exit.");
         message(player(b),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules);
         if(!m.combat.vanilla())for(Object who:List.of(player(a),player(b)))
@@ -719,7 +727,9 @@ public final class Referee {
         for(var watcher:watching.entrySet())if(watcher.getValue().equals(m.id))recipients.add(watcher.getKey());
         for(String who:recipients){Object p=player(who);if(p!=null){
             if(m.drillRound>0){
-                message(p,"§bDrill #"+m.drillRound+" §7("+m.startGap+" blocks) §8| §eSword hits: "+m.sa.breakdown.damageHitsLanded+"–"+m.sb.breakdown.damageHitsLanded+" §8| §b/stop §7exits; §b/replay "+m.id);
+                String stats=m.jumpReset()?"§bJump Reset #"+m.drillRound+" §8| §eHits taken: "+m.hb:
+                    "§bDrill #"+m.drillRound+" §7("+m.startGap+" blocks) §8| §eSword hits: "+m.sa.breakdown.damageHitsLanded+"–"+m.sb.breakdown.damageHitsLanded;
+                message(p,stats+" §8| §b/stop §7exits; §b/replay "+m.id);
                 continue;
             }
             String outcome=m.winner.isEmpty()?"§e"+reason.replace('_',' '):

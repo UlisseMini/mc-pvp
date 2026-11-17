@@ -71,6 +71,7 @@ public final class Client {
     static boolean blockKey;
     static long freshHurtStatus;
     static long freshTargetHurtStatus;
+    static boolean jumpResetPending;
     static final AimController aim=new AimController();
     static Object aimTarget;
     static long aimLogAt;
@@ -266,6 +267,8 @@ public final class Client {
     public static void tick(Object minecraft) {
         if(!"client".equals(System.getProperty("lab.role")))return;
         mc=minecraft; ticks++;
+        boolean jumpOnImpact=jumpResetPending;
+        jumpResetPending=false;
         try {
             long now=System.currentTimeMillis();
             long decisionHeadNanos=System.nanoTime();
@@ -332,6 +335,7 @@ public final class Client {
             if(services!=null&&services.probe(mc,player,now-scriptStarted))return;
             String next=controls.getProperty("match","");
             if(!next.equals(match)){
+                jumpOnImpact=false;
                 matchInitialized=false;
                 match=next;epoch=Long.parseLong(controls.getProperty("start_at",Long.toString(now)));history.clear();previous=null;lastConsumed=null;lastClick=firstClickEligible=0;
                 lastObservedHurt=lastObservedTargetHurt=0;
@@ -825,6 +829,14 @@ public final class Client {
                 maintenanceTransition.put("selection_complete_monotonic_ns",System.nanoTime());log(maintenanceTransition);
             }
             if(reaction==0){nativeInputPoll=true;try{frame(mc);}finally{nativeInputPoll=false;}}
+            // S12 changes velocity while the previous movement's ground flag
+            // still holds. Read Jump in the next native living update.
+            if(jumpOnImpact&&Boolean.parseBoolean(controls.getProperty("jump_reset","false"))
+                    &&(Boolean)R.get(player,"onGround")&&R.get(mc,"currentScreen")==null){
+                Object binding=R.get(R.get(mc,"gameSettings"),"keyBindJump");
+                R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"setKeyBindState",(int)R.call(binding,"getKeyCode"),true);
+                log(Compat.map("type","jump_reset_input","time",now,"match",match,"native_tick",ticks));
+            }
             if(now-logAt>=50){
                 logAt=now;
                 Map<String,Object> entry=new LinkedHashMap<>();
@@ -1007,6 +1019,8 @@ public final class Client {
             if(Boolean.TRUE.equals(event.get("own_entity"))&&maintenanceCurrent())
                 maintenanceHandoff.ownReturnCue(true,((Number)event.get("time")).longValue(),System.nanoTime());
             event.put("vx",R.num(packet,"motionX")/8000);event.put("vy",R.num(packet,"motionY")/8000);event.put("vz",R.num(packet,"motionZ")/8000);
+            if(Boolean.TRUE.equals(event.get("own_entity"))&&Boolean.parseBoolean(controls.getProperty("jump_reset","false"))&&active())
+                jumpResetPending=R.num(packet,"motionX")!=0||R.num(packet,"motionZ")!=0;
             if(ScienceTrace.client() && Boolean.TRUE.equals(event.get("own_entity")))event.put("applied_motion",Compat.list(R.num(player,"motionX"),R.num(player,"motionY"),R.num(player,"motionZ")));
             log(event);
         }catch(Throwable e){fail(e);}

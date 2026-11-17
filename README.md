@@ -62,6 +62,8 @@ enabling RCON or opening another network port.
 | `/duel wtap rod_diamond` | Same unenchanted diamond armor / wooden sword kit, plus a fishing rod in hotbar slot 2 for both players; existing bots keep using their sword |
 | `/drill near` / `/drill medium` / `/drill far` | Repeated rod-diamond entries vs wtap from 4.5 / 6 / 9 blocks; append another bot name to change opponents |
 | `/drill mixed` | Cycle all three distances; reset directly in the arena five seconds after first sword contact (12-second limit without one), with a visible two-second countdown; `/stop` exits |
+| `/drill jumpreset` | Repeated jump-reset practice against W-tap. Sprint toward the bot and tap Jump as the hit lands. The Forge practice mod grades the timing and shows pushback |
+| `/duel jump-reset` | Fight the test bot that uses ordinary W-tap and taps Jump on incoming knockback while grounded |
 | `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full unenchanted diamond armor; successful blocks play your block sound |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
 | `/duel wtap rod_diamond reach=3.5 cps=15 ping=100` | Custom practice bot: 3.5-block reach, 15 CPS ceiling, 100 ms added bot RTT; keeps your saved ping |
@@ -110,6 +112,51 @@ In spectator mode, fly around normally. Sneak exits a followed bot's camera.
 The action bar shows the current score. Finished matches are saved automatically.
 Spectators cannot interfere with combat. There are eight real bot clients; the
 experiment scheduler uses at most six so human challenges have spare slots.
+
+### Jump reset practice
+
+`/drill jumpreset` starts from a 4.5-block gap, with a two-second countdown.
+Each round resets five seconds after the first fresh hit you take, or after
+twelve seconds without one. Use `/stop` to finish. The Forge practice mod's
+timing display uses your own client's knockback and movement observations. It
+shows whether you took off on the impact tick and how far back you moved during
+that first step. If you disabled the practice link, run `/practice link on`.
+
+In this lab's 1.8.9, a knockback packet replaces your client's velocity
+while the ground flag still reflects the previous movement. The next
+movement update can take off if Jump is down, you're grounded and the jump
+cooldown is clear. A sprint jump sets upward velocity to 0.42 blocks per tick
+and adds 0.20 blocks per tick in the direction you're facing. Facing the
+opponent puts that boost against the hit. An earlier takeoff can leave you
+airborne and its velocity can be overwritten by the packet. Once the hit has
+lifted you, a later Jump press cannot take off until you land. The window
+tracks when the client applies the packet, so the visible hit and network
+timing can shift when you need to press. [1.8.9 packet handler](https://raw.githubusercontent.com/Marcelektro/MavenMCP-1.8.9/master/src/main/java/net/minecraft/client/network/NetHandlerPlayClient.java),
+[1.8.9 jump and movement code](https://raw.githubusercontent.com/Marcelektro/MavenMCP-1.8.9/master/src/main/java/net/minecraft/entity/EntityLivingBase.java).
+
+In six native 9-second runs against W-tap (three per policy), the test bot
+jumped on all 16 grounded sprint hits it received. The runs matched vanilla
+combat, 3-block reach, 10 CPS, default aim and 150 ms W-tap reaction, 6-block
+starts, and added RTTs of 0/0 or 80/80 ms within each pair. Ranges below use
+grounded sprint hits with incoming horizontal velocity within 0.001 of
+0.90 blocks per tick. Each range measures first-step movement in the push
+direction, in blocks.
+
+| Same-tick attack by the player taking the hit | Plain W-tap | W-tap with jump reset |
+|---|---:|---:|
+| No sprint-hit slowdown | 0.772–0.773 (8 hits) | 0.572–0.573 (5 hits) |
+| Sprint hit applied 0.6× horizontal slowdown before movement | 0.413 (11 hits) | 0.213 (8 hits) |
+
+These are independent rounds with the same setup and measured impact states.
+The comparison measures pushback on the first movement step. Spacing and
+follow-up hits vary over the rest of the exchange. The native recordings are
+`m1511`–`m1516`. Six paired model runs forked both policies from the same
+pre-movement state with the same applied knockback and W-tap history. Each
+sprint takeoff reduced the first step back by 0.20 blocks. A separate model
+check holding the incoming velocity fixed gave 0.875 blocks back when the jump
+took off one tick before the hit, 0.773 for plain W-tap, and 0.573 for an
+impact-tick jump. Jumping one movement step after the hit was ignored because
+the player had left the ground.
 
 Finished-match chat includes a clickable **Watch server replay** button. Replay
 actors are private packet-only copies in a separate viewing area: they consume
