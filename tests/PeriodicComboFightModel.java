@@ -7,6 +7,7 @@ import java.util.*;
  * Recorded-schedule scope and remaining limits: see research/periodic-findings.md. */
 public final class PeriodicComboFightModel {
     static final ExactTravel.Environment ENV=new ExactTravel.Environment(4,.6f,true,true,false,false,false);
+    private static final ExactTravel.Environment BELOW_SUMO=new ExactTravel.Environment(-4,.6f,true,true,false,false,false);
     static final double HALF=(double)(.6f/2)+(double).1f, EYE=(double)1.62f;
     static final int R=0,W=1,S=2;
     static final class Body implements Cloneable {
@@ -17,7 +18,8 @@ public final class PeriodicComboFightModel {
         void velocity(double vx,double vy,double vz){q=new ExactTravel.State(q.x(),q.y(),q.z(),vx,vy,vz,q.box(),q.onGround(),q.isCollidedHorizontally(),q.isCollidedVertically(),q.isCollided(),false,false,false);}
         void move(int key,float yaw){move(key,0,yaw);}
         void move(int key,float strafe,float yaw){move(key,strafe,yaw,false);}
-        void move(int key,float strafe,float yaw,boolean jump){
+        void move(int key,float strafe,float yaw,boolean jump){move(key,strafe,yaw,jump,ENV);}
+        void move(int key,float strafe,float yaw,boolean jump,ExactTravel.Environment floor){
             // EntityLivingBase.onLivingUpdate decrements jumpTicks before its
             // cutoff/input/jump/travel sequence. A released key clears it below.
             if(jumpTicks>0)jumpTicks--;
@@ -34,7 +36,7 @@ public final class PeriodicComboFightModel {
                 if(sprint){float angle=yaw*.017453292f;vx-=(double)(sin(angle)*.2f);vz+=(double)(cos(angle)*.2f);}
                 q=motion(q,vx,(double).42f,vz);jumpTicks=10;
             }else if(!jump)jumpTicks=0;
-            q=ExactTravel.predict(q,new ExactTravel.Input(strafe,key==R?0:.98f,yaw,sprint?.13000001f:.1f,airAcceleration),ENV);
+            q=ExactTravel.predict(q,new ExactTravel.Input(strafe,key==R?0:.98f,yaw,sprint?.13000001f:.1f,airAcceleration),floor);
             airAcceleration=.02f;if(sprint)airAcceleration=(float)((double)airAcceleration+(double).02f*.3D);
         }
     }
@@ -202,7 +204,24 @@ public final class PeriodicComboFightModel {
             lab.CombatProfile q=lab.CombatProfile.fromOverrides(p,new lab.CombatProfile(kbScale,verticalScale,hitTicks,sprintVertical,mmc));
             kbScale=q.horizontal();verticalScale=q.vertical();hitTicks=q.freshTicks();sprintVertical=q.sprintVertical();mmc=q.mmc();
         }
-        int bPhase=10,serverPhase=25,hitTicks=10;boolean quantize=true,nativeNormalization=true,forceContacts=true,deferMovementSend=false,mmc=false;
+        int bPhase=10,serverPhase=25,hitTicks=10,sumoDiameter=10;
+        boolean quantize=true,nativeNormalization=true,forceContacts=true,deferMovementSend=false,mmc=false,sumo=false;
+    }
+    // Same tile-center disk and footprint as the native sumo platform, with
+    // Y translated from 12 to 4. No block side-face collision below the top.
+    static boolean sumoSupport(ExactTravel.Box box,int diameter){
+        double radius=diameter/2.0;
+        for(int x=(int)Math.floor(box.minX()-4096);x<box.maxX()-4096;x++)
+            for(int z=(int)Math.floor(box.minZ());z<box.maxZ();z++)
+                if((x+.5)*(x+.5)+(z+.5)*(z+.5)<=radius*radius)return true;
+        return false;
+    }
+    static int sumoOutcome(State s){
+        boolean a=s.serverAy<3.5,b=s.serverBy<3.5;
+        return a?(b?0:2):b?1:-1;
+    }
+    private static ExactTravel.Environment floor(Config c,ExactTravel.State q){
+        return c!=null&&c.sumo&&(q.y()<4||!sumoSupport(q.box(),c.sumoDiameter))?BELOW_SUMO:ENV;
     }
     static ExactTravel.State state(double x,double y,double vx,double vy,boolean ground){
         return state(x,y,0,vx,vy,0,ground);
@@ -266,13 +285,13 @@ public final class PeriodicComboFightModel {
         double x=fromA?s.serverAx:s.serverBx,y=fromA?s.serverAy:s.serverBy,z=fromA?s.serverAz:s.serverBz;
         boolean sprint=fromA?s.serverSprint:s.serverSprintB;float yaw=(float)(fromA?s.serverYawA:s.serverYawB);
         m=state(x,y,z,m.vx(),m.vy(),m.vz(),m.onGround());
-        m=ExactTravel.predict(cutoff(m),new ExactTravel.Input(0,0,yaw,sprint?.13000001f:.1f,.026f),ENV);
+        m=ExactTravel.predict(cutoff(m),new ExactTravel.Input(0,0,yaw,sprint?.13000001f:.1f,.026f),floor(c,m));
         m=serverPush(s,m,fromA);
         double vx=m.vx(),vy=m.vy(),vz=m.vz();
         if(m.onGround()&&!p.flag&&p.y>y){vy=(double).42f;if(sprint){float angle=(float)p.vx*.017453292f;vx-=(double)(sin(angle)*.2f);vz+=(double)(cos(angle)*.2f);}if(fromA)s.airborneA=true;else s.airborneB=true;}
         m=state(p.x,p.y,p.z,vx,vy,vz,p.flag);
         float fall=fromA?s.fallA:s.fallB;
-        if(p.flag){int damage=Math.max(0,(int)Math.ceil(fall-3.0f));if(damage>0)fallDamage(s,fromA,damage,c,t);fall=0;}else if(p.y-y<0)fall=(float)((double)fall-(p.y-y));
+        if(p.flag){int damage=Math.max(0,(int)Math.ceil(fall-3.0f));if(damage>0)fallDamage(s,fromA,c!=null&&c.sumo?2*damage:damage,c,t);fall=0;}else if(p.y-y<0)fall=(float)((double)fall-(p.y-y));
         if(fromA)s.fallA=fall;else s.fallB=fall;
         if(fromA){s.serverA=m;s.serverAx=p.x;s.serverAy=p.y;s.serverAz=p.z;s.serverYawA=p.vx;s.serverPitchA=p.vy;}
         else{s.serverB=m;s.serverBx=p.x;s.serverBy=p.y;s.serverBz=p.z;s.serverYawB=p.vx;s.serverPitchB=p.vy;}
@@ -305,7 +324,8 @@ public final class PeriodicComboFightModel {
         double sx=fromA?s.serverAx:s.serverBx,sy=fromA?s.serverAy:s.serverBy,sz=fromA?s.serverAz:s.serverBz;
         double tx=fromA?s.serverBx:s.serverAx,ty=fromA?s.serverBy:s.serverAy,tz=fromA?s.serverBz:s.serverAz;
         double dx=tx-sx,dz=tz-sz;if(dx*dx+(ty-sy)*(ty-sy)+dz*dz>=36)return;
-        int damage=(fromA?s.fallA:s.fallB)>0&&!attacker.onGround()?12:8;
+        boolean critical=(fromA?s.fallA:s.fallB)>0&&!attacker.onGround();
+        int damage=c.sumo?(critical?3:2):(critical?12:8);
         int immunity=fromA?s.resistant:s.ownResistant,last=fromA?s.lastDamageB:s.lastDamageA;
         if(immunity>c.hitTicks&&damage<=last){s.immuneAttempts++;return;}
         boolean fresh=immunity<=c.hitTicks,sprint=fromA?s.serverSprint:s.serverSprintB;
@@ -331,7 +351,8 @@ public final class PeriodicComboFightModel {
                 double height=ty-target.floor();
                 target=target.cap(height);
                 if(fromA)s.mmcB=target;else s.mmcA=target;
-                vy=target.capped()&&!target.landing(height,fromA?c.otherRtt:c.ownRtt)?0:.361375+(source.sprint()?c.sprintVertical:0);
+                boolean landing=(!c.sumo||sumoSupport(victim.box(),c.sumoDiameter))&&target.landing(height,fromA?c.otherRtt:c.ownRtt);
+                vy=target.capped()&&!landing?0:.361375+(source.sprint()?c.sprintVertical:0);
             }else if(fresh&&sprint&&c.sprintVertical!=.1)vy+=c.sprintVertical-.1;
             s.lastVx=vel(vx*(fresh?c.kbScale:1));s.lastVy=vel(vy*(fresh?c.verticalScale:1));
             s.add3(fromA?4:8,t+(fromA?c.otherRtt:c.ownRtt)/2,0,0,0,s.lastVx,s.lastVy,vel(vz*(fresh?c.kbScale:1)),false);
@@ -395,7 +416,7 @@ public final class PeriodicComboFightModel {
     static void replayMove(State s,Config c,boolean fromA,int key,float yaw,double t){replayMove(s,c,fromA,key,0,yaw,t);}
     static void replayMove(State s,Config c,boolean fromA,int key,float strafe,float yaw,double t){replayMove(s,c,fromA,key,strafe,yaw,false,t);}
     static void replayMove(State s,Config c,boolean fromA,int key,float strafe,float yaw,boolean jump,double t){
-        Body b=fromA?s.a:s.b;b.move(key,strafe,yaw,jump);audit(s);double rtt=fromA?c.ownRtt:c.otherRtt;
+        Body b=fromA?s.a:s.b;b.move(key,strafe,yaw,jump,floor(c,b.q));audit(s);double rtt=fromA?c.ownRtt:c.otherRtt;
         ArrayList<Packet> out=fromA?s.outboundA:s.outboundB;
         if(b.sprint!=b.lastSent){out.add(new Packet(fromA?2:9,t+rtt/2,0,0,0,0,b.sprint,s.seq++));b.lastSent=b.sprint;}
         double dx=b.q.x()-b.reportX,dy=b.q.y()-b.reportY,dz=b.q.z()-b.reportZ;
