@@ -326,18 +326,23 @@ public final class Agent implements ClassFileTransformer {
                     changed=true;
                 }else if(name.equals("lm")&&method.name.equals("a")&&method.desc.equals("(DDDFFLjava/util/Set;)V")){
                     method.instructions.insert(callThis("lab/JumpResetFeedback","corrected"));changed=true;
+                    method.instructions.insert(callThis("lab/MmcKnockback","corrected"));
                 }else if(name.equals("lm")&&method.name.equals("a")&&java.util.Set.of("(Lip;)V","(Lin;)V","(Lis;)V").contains(method.desc)){
                     if(method.desc.equals("(Lip;)V")){
                         int accepted=0;
                         for(AbstractInsnNode ins:method.instructions.toArray())if(ins instanceof MethodInsnNode call &&
                                 call.owner.equals("lf")&&call.name.equals("a")&&call.desc.equals("(DZ)V")){
                             method.instructions.insert(ins,callPair("lab/JumpResetFeedback","moved"));accepted++;
+                            method.instructions.insert(ins,callPair("lab/MmcKnockback","playerMove"));
                         }
                         if(accepted!=1)throw new IllegalStateException("Pinned accepted player movement site changed: "+accepted);
                     }
                     method.instructions.insert(callPair("lab/ServerReplicationTrace","input"));
                     method.instructions.insert(serverHandler(false));
-                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(ins,serverHandler(true));
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN){
+                        method.instructions.insertBefore(ins,serverHandler(true));
+                        if(method.desc.equals("(Lis;)V"))method.instructions.insertBefore(ins,callPair("lab/MmcKnockback","playerAction"));
+                    }
                     InsnList setup=new InsnList();LabelNode normal=new LabelNode();
                     setup.add(new VarInsnNode(Opcodes.ALOAD,0));setup.add(new VarInsnNode(Opcodes.ALOAD,1));
                     setup.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/SeededStartServer","suppressInput","(Ljava/lang/Object;Ljava/lang/Object;)Z",false));

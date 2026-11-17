@@ -3,20 +3,35 @@ package lab;
 import java.util.*;
 
 /** Explicit experimental server settings. Vanilla is an exact no-op. */
-public record CombatProfile(double horizontal, double vertical, int freshTicks, double sprintVertical) {
+public record CombatProfile(double horizontal, double vertical, int freshTicks, double sprintVertical, boolean mmc) {
+    static final double MMC_HORIZONTAL=.5274, MMC_VERTICAL=.361375, MMC_SPRINT_EXTRA=.327, MMC_HEIGHT_LIMIT=.675;
     public static final CombatProfile VANILLA = new CombatProfile(1,1,10);
     /** Preserve every existing three-argument caller's native sprint lift. */
     public CombatProfile(double horizontal,double vertical,int freshTicks){this(horizontal,vertical,freshTicks,.1);}
+    public CombatProfile(double horizontal,double vertical,int freshTicks,double sprintVertical){
+        this(horizontal,vertical,freshTicks,sprintVertical,false);
+    }
     public CombatProfile {
         if(!Double.isFinite(horizontal)||horizontal<0||horizontal>2 ||
            !Double.isFinite(vertical)||vertical<0||vertical>2 || freshTicks<1||freshTicks>20 || !Double.isFinite(sprintVertical)||sprintVertical<0||sprintVertical>1)
             throw new IllegalArgumentException("KB multipliers must be 0–2; hit_ticks must be 1–20 (vanilla 10); sprint_vertical must be 0–1 (vanilla .1)");
     }
-    public boolean vanilla(){return horizontal==1&&vertical==1&&freshTicks==10&&sprintVertical==.1;}
-    public Map<String,Object> state(){return Map.of("kb_horizontal",horizontal,"kb_vertical",vertical,
+    public boolean vanilla(){return !mmc&&horizontal==1&&vertical==1&&freshTicks==10&&sprintVertical==.1;}
+    public Map<String,Object> state(){
+        Map<String,Object> state=Map.of("kb_horizontal",horizontal,"kb_vertical",vertical,
         "sprint_vertical",sprintVertical,"fresh_hit_ticks",freshTicks,"max_hurt_resistant_ticks",2*freshTicks,
         "modified",!vanilla(),"scope","both players in this match",
-        "kb_semantics","replace pre-attack sprint extra Y, then scale native fresh melee velocity before S12 quantization; restored server motion unchanged");}
+        "kb_semantics",mmc?"MMC-style replacement fresh melee velocity with height cap and predicted landing":
+            "replace pre-attack sprint extra Y, then scale native fresh melee velocity before S12 quantization; restored server motion unchanged");
+        if(!mmc)return state;
+        Map<String,Object> details=new LinkedHashMap<>(state);
+        details.put("knockback_model","mmc_community_first_hit");
+        details.put("mmc_base_horizontal",MMC_HORIZONTAL);
+        details.put("mmc_base_vertical",MMC_VERTICAL);
+        details.put("mmc_sprint_horizontal",MMC_SPRINT_EXTRA);
+        details.put("mmc_height_threshold",MMC_HEIGHT_LIMIT);
+        return details;
+    }
     /** For captured sprint attacks, native velocity already contains .1; replace that contribution. */
     public double freshVertical(double nativeY,boolean preAttackSprint){
         double adjusted=preAttackSprint&&sprintVertical!=.1?nativeY+(sprintVertical-.1):nativeY;
@@ -26,7 +41,8 @@ public record CombatProfile(double horizontal, double vertical, int freshTicks, 
         return new CombatProfile(Double.parseDouble(p.getProperty("combat_kb_horizontal",Double.toString(fallback.horizontal))),
             Double.parseDouble(p.getProperty("combat_kb_vertical",Double.toString(fallback.vertical))),
             Integer.parseInt(p.getProperty("combat_hit_ticks",Integer.toString(fallback.freshTicks))),
-            Double.parseDouble(p.getProperty("combat_sprint_vertical",Double.toString(fallback.sprintVertical))));
+            Double.parseDouble(p.getProperty("combat_sprint_vertical",Double.toString(fallback.sprintVertical))),
+            "mmc".equals(p.getProperty("combat_kb_model",fallback.mmc?"mmc":"vanilla")));
     }
     public static CombatProfile parse(String[] args,int from){
         double horizontal=1,vertical=1,sprintVertical=.1;int ticks=10;Set<String> seen=new HashSet<>();

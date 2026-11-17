@@ -5,7 +5,7 @@ import java.util.*;
 /** Server-only, match-scoped research intervention; default path changes nothing. */
 public final class CombatTuning {
     static CombatProfile nextScenario=CombatProfile.VANILLA;
-    private static Object target;
+    private static Object target, source;
     private static Referee.Match match;
     private static int previousScore;
     private static boolean fresh,preAttackSprint;
@@ -15,13 +15,17 @@ public final class CombatTuning {
         Referee.Match m=Referee.find(R.name(attacker));
         if(m==null||m.combat.vanilla()||m.finish!=0||System.currentTimeMillis()<m.start||
                 !(R.name(victim).equals(m.a)||R.name(victim).equals(m.b)))return;
-        target=victim;match=m;previousScore=m.ha+m.hb;
+        target=victim;source=attacker;match=m;previousScore=m.ha+m.hb;
         preAttackSprint=Boolean.TRUE.equals(R.call(attacker,"isSprinting"));
         fresh=R.num(victim,"hurtResistantTime")<=R.num(victim,"maxHurtResistantTime")/2;
     }
     /** Called at the single vanilla player-hit S12 construction site. */
     public static void outgoing(Object victim){
         if(victim!=target||match==null||!fresh||match.ha+match.hb==previousScore)return;
+        if(match.mmcKnockback!=null){
+            match.mmcKnockback.outgoing(source,victim);
+            return;
+        }
         CombatProfile p=match.combat;
         if(p.horizontal()==1&&p.vertical()==1&&(!preAttackSprint||p.sprintVertical()==.1))return;
         double x=R.num(victim,"motionX"),y=R.num(victim,"motionY"),z=R.num(victim,"motionZ");
@@ -31,7 +35,7 @@ public final class CombatTuning {
             "after",List.of(x*p.horizontal(),p.freshVertical(y,preAttackSprint),z*p.horizontal()),
             "pre_attack_server_sprint",preAttackSprint,"sprint_vertical",p.sprintVertical()));
     }
-    public static void after(){target=null;match=null;}
+    public static void after(){target=null;source=null;match=null;}
     static void configurePlayer(Object player,CombatProfile profile){
         R.set(player,"maxHurtResistantTime",profile.freshTicks()*2);
         R.set(player,"hurtResistantTime",0);

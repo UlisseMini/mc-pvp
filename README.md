@@ -56,13 +56,15 @@ enabling RCON or opening another network port.
 | `/bots` | Clickable roster, including saved search candidates |
 | `/bots all` | Include every saved tuning candidate |
 | `/duel wtap sumo` | Bare fists, no armor, full health; knock the bot off the circular platform. Ping/CPS/reach overrides and replays work as usual |
+| `/duel wtap sumo preset=mmc` | Sumo with the lab's Minemen-like melee knockback preset. The same preset works in boxing and diamond modes |
 | `/duel hold-w` | Fight the simplest baseline |
 | `/duel wtap diamond` | Full unenchanted diamond armor and an unbreakable wooden sword; real health and regeneration; fight to death |
 | `/duel blockhit_timing diamond` | Timed sword-block bot; native controls, 10 CPS ceiling, 3-block reach, zero artificial reaction delay |
 | `/duel wtap rod_diamond` | Same unenchanted diamond armor / wooden sword kit, plus a fishing rod in hotbar slot 2 for both players; existing bots keep using their sword |
 | `/drill near` / `/drill medium` / `/drill far` | Repeated rod-diamond entries vs wtap from 4.5 / 6 / 9 blocks; append another bot name to change opponents |
 | `/drill mixed` | Cycle all three distances; reset directly in the arena five seconds after first sword contact (12-second limit without one), with a visible two-second countdown; `/stop` exits |
-| `/drill jumpreset` | Repeated jump-reset practice against W-tap with timing and pushback shown above the hotbar on a vanilla client |
+| `/drill jumpreset` | Repeated jump-reset practice against W-tap with large, centered timing results on a vanilla client |
+| `/drill jumpreset preset=mmc` | Jump-reset practice on the same sumo platform, using Minemen-like knockback |
 | `/duel jump-reset` | Fight the test bot that uses ordinary W-tap and taps Jump on incoming knockback while grounded |
 | `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full unenchanted diamond armor; successful blocks play your block sound |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
@@ -115,13 +117,16 @@ experiment scheduler uses at most six so human challenges have spare slots.
 
 ### Jump reset practice
 
-`/drill jumpreset` starts from a 4.5-block gap, with a two-second countdown.
-Each round resets five seconds after the first fresh hit you take, or after
-twelve seconds without one. Use `/stop` to finish. The server grades the takeoff
-from vanilla movement packets and shows approximate first-step pushback above
-the hotbar. "Timing unclear" means the packet order or movement was ambiguous.
-The grounded-hit tally counts impacts the server could grade. The optional
-Forge display also uses the client's own observations to give timing feedback.
+`/drill jumpreset` starts on the sumo platform from a 4.5-block gap, with a
+two-second countdown. A fall starts the next round automatically. The drill
+also resets five seconds after the first fresh hit you take, or after twelve
+seconds without one. Use `/stop` to finish. Watch the center of the screen
+for **PERFECT**, **EARLY** with the number of ticks, or **MISSED**. Results also
+show approximate first-step pushback. **PERFECT** confirms a takeoff on the hit
+tick. A missed hit can include a late press, since vanilla movement packets
+contain positions and ground state. The optional Forge HUD reads local Jump
+input and can report **Late by N ticks** for a press up to four ticks after a
+missed impact. "Timing unclear" means the server skipped an ambiguous hit.
 
 In this lab's 1.8.9, a knockback packet replaces your client's velocity
 while the ground flag still reflects the previous movement. The next
@@ -148,7 +153,7 @@ direction, in blocks.
 | No sprint-hit slowdown | 0.772–0.773 (8 hits) | 0.572–0.573 (5 hits) |
 | Sprint hit applied 0.6× horizontal slowdown before movement | 0.413 (11 hits) | 0.213 (8 hits) |
 
-These are independent rounds with the same setup and measured impact states.
+These were pre-sumo boxing runs with the same setup and measured impact states.
 The comparison measures pushback on the first movement step. Spacing and
 follow-up hits vary over the rest of the exchange. The native recordings are
 `m1511`–`m1516`. Six paired model runs forked both policies from the same
@@ -158,6 +163,28 @@ check holding the incoming velocity fixed gave 0.875 blocks back when the jump
 took off one tick before the hit, 0.773 for plain W-tap, and 0.573 for an
 impact-tick jump. Jumping one movement step after the hit was ignored because
 the player had left the ground.
+
+### Minemen-like knockback
+
+Use `preset=mmc` in any duel kit or in `/drill jumpreset preset=mmc`.
+This preset uses a community fit dated October 30, 2025. It applies a base
+horizontal impulse of 0.5274, adds 0.327 for a sprint hit, and sends 0.361375
+upward with no extra lift for sprint. Once a hit happens more than 0.675 blocks
+above the player's last standing height, subsequent hits suppress upward
+knockback until landing. The author describes the horizontal figures as a
+first-hit fit, and reported that combo knockback could differ.
+[Knockback Manager reference profile](https://www.spigotmc.org/resources/1-7-10-26-3-knockback-manager-best-free-custom-knockback-plugin.134924/),
+[author's follow-up](https://www.spigotmc.org/members/dw1e.980462/).
+
+The lab estimates whether the victim will land before the hit's velocity
+arrives using their movement reports, configured added ping and a 25 ms
+offset from the public plugin. If it predicts landing, the hit sends the
+grounded lift. The preset uses the lab's normal tracking, projectiles and
+damage rules. The reference profile's three-tick position-update delay
+belongs to the third-party configuration. MMC's live settings and private
+implementation remain unverified.
+[Public Knockback Sync landing code](https://github.com/ramune7/knockback-sync/blob/3b13e277f7710b3392289f6b05aa0d8ba7e7538b/common/src/main/java/me/caseload/knockbacksync/player/PlayerData.java),
+[Knockback Manager default configuration](https://github.com/dw1e/KnockbackManager/blob/453e126f932445b01baac54f21abd2f01cb1c125/src/main/resources/knockback/default.yml).
 
 Finished-match chat includes a clickable **Watch server replay** button. Replay
 actors are private packet-only copies in a separate viewing area: they consume

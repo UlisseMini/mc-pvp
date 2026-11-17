@@ -9,15 +9,26 @@ public final class PracticePresets {
     public static final String LOCK8="lock8";
     /** Provisional passive Housing fit; not an exact Hypixel implementation. */
     public static final String HYPIXEL="hypixel";
+    public static final String MMC="mmc";
+    public static final String KB_MODEL="combat_kb_model";
     private PracticePresets() {}
 
     public static String normalize(String name){
-        if(name!=null){String n=name.toLowerCase(Locale.ROOT);if(LOCK8.equals(n)||HYPIXEL.equals(n))return n;}
-        throw new IllegalArgumentException("Unknown practice preset '"+name+"'. Available: lock8, hypixel (provisional Housing fit)");
+        if(name!=null){String n=name.toLowerCase(Locale.ROOT);if(LOCK8.equals(n)||HYPIXEL.equals(n)||MMC.equals(n))return n;}
+        throw new IllegalArgumentException("Unknown practice preset '"+name+"'. Available: lock8, hypixel, mmc");
     }
     public static Properties defaults(String name){
         String preset=normalize(name);Properties p=new Properties();
         p.setProperty(LABEL,preset);
+        if(MMC.equals(preset)){
+            p.setProperty(KB_MODEL,MMC);
+            p.setProperty("combat_kb_horizontal","1.0");
+            p.setProperty("combat_kb_vertical","1.0");
+            p.setProperty("combat_sprint_vertical","0.0");
+            p.setProperty("combat_hit_ticks","10");
+            p.setProperty("hurt_window_ticks","10");
+            return p;
+        }
         p.setProperty("combat_kb_horizontal",preset.equals(LOCK8)?"1.1":"1.0");
         p.setProperty("combat_kb_vertical","1.0");
         p.setProperty("combat_sprint_vertical",preset.equals(HYPIXEL)?"0.07":"0.1");
@@ -37,6 +48,7 @@ public final class PracticePresets {
     public static double defaultOpponentRtt(String name){normalize(name);return 0;}
     public static boolean combatMatches(String name,Properties values){
         Properties expected=defaults(name);
+        if(!expected.getProperty(KB_MODEL,"vanilla").equals(values.getProperty(KB_MODEL,"vanilla")))return false;
         try{
             for(String key:new String[]{"combat_kb_horizontal","combat_kb_vertical","combat_hit_ticks","combat_sprint_vertical"}){
                 String actual=values.getProperty(key,key.equals("combat_sprint_vertical")?"0.1":null);

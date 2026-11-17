@@ -9,6 +9,14 @@ final class SumoArena {
     static final double TOP_Y=FLOOR_Y+1, START_GAP=6, LOSS_Y=TOP_Y-.5;
     static final long COUNTDOWN_MS=2000, DURATION_MS=120_000;
     static boolean cell(int x,int z){return Math.pow(x+.5,2)+Math.pow(z+.5,2)<=DIAMETER*DIAMETER/4.0;}
+    static boolean supports(int arena,double x,double z){
+        // A native player can stand with part of its 0.6-wide box over an edge.
+        double localX=x-4096.0*(arena+1);
+        for(int bx=(int)Math.floor(localX-.3);bx<localX+.3;bx++)
+            for(int bz=(int)Math.floor(z-.3);bz<z+.3;bz++)
+                if(cell(bx,bz))return true;
+        return false;
+    }
     static boolean fallen(double y){return y<LOSS_Y;}
     /** -1: neither; 0: both fell in this server tick; 1/2: winning side. */
     static int outcome(double aY,double bY){boolean a=fallen(aY),b=fallen(bY);return !a&&!b?-1:a&&b?0:a?2:1;}

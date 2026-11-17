@@ -4,7 +4,7 @@ import java.util.*;
 
 /** Per-duel overrides. Parsing never changes a shared policy or player preference. */
 public final class DuelSettings {
-    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8|hypixel] [reach=3.0] [cps=20] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks=10] [sprint_vertical=.1]";
+    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8|hypixel|mmc] [reach=3.0] [cps=20] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks=10] [sprint_vertical=.1]";
     public final String mode;
     public final double botPing,humanPing;
     public final boolean humanPingExplicit;
@@ -24,6 +24,7 @@ public final class DuelSettings {
             }
         }
         if(preset!=null){
+            overrides.remove(PracticePresets.KB_MODEL);
             overrides.putAll(PracticePresets.defaults(preset));
             if(PracticePresets.overridesDuelRtt(preset)){
                 botPing=PracticePresets.defaultControllerRtt(preset);
@@ -67,6 +68,7 @@ public final class DuelSettings {
                     overrides.setProperty("combat_kb_vertical","1.0");
                     overrides.setProperty("combat_hit_ticks","10");
                     overrides.setProperty("combat_sprint_vertical","0.1");
+                    overrides.setProperty(PracticePresets.KB_MODEL,"vanilla");
                     if(overrides.containsKey("hurt_window_ticks"))overrides.setProperty("hurt_window_ticks","10");
                     break;
                 case "sprint_vertical":

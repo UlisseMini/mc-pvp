@@ -13,9 +13,11 @@ import java.util.Map;
 
 /** Scores native takeoffs against velocity applied on the owning client's game thread. */
 final class JumpResetHud {
+    private static final int LATE_WINDOW_TICKS = 4;
+
     private static final class Step {
         final int id, jumpTicks;
-        final boolean grounded, sprinting;
+        final boolean grounded, sprinting, jumping;
         final double x, y, z;
 
         Step(Map<?, ?> self, List<?> pos) {
@@ -24,6 +26,8 @@ final class JumpResetHud {
             jumpTicks = cooldown instanceof Number ? ((Number) cooldown).intValue() : -1;
             grounded = Boolean.TRUE.equals(self.get("ground"));
             sprinting = Boolean.TRUE.equals(self.get("sprinting"));
+            Object movement = self.get("movement_input");
+            jumping = movement instanceof Map && Boolean.TRUE.equals(((Map<?, ?>) movement).get("jump"));
             x = ((Number) pos.get(0)).doubleValue();
             y = ((Number) pos.get(1)).doubleValue();
             z = ((Number) pos.get(2)).doubleValue();
@@ -41,10 +45,10 @@ final class JumpResetHud {
     }
 
     private final Map<Long, Velocity> packets = new LinkedHashMap<>();
-    private String match = "", result = "";
+    private String match = "", result = "", distance = "";
     private int round, attempts, timed, color, selfId = -1;
-    private long startedAt, lastLink;
-    private boolean jumpedBeforeHit;
+    private int movementTick, takeoffTick, missedTick;
+    private long startedAt, lastLink, lateUntil;
     private Step before;
     private Velocity hit;
 
@@ -66,8 +70,9 @@ final class JumpResetHud {
                 hit = null;
                 before = null;
                 selfId = -1;
-                jumpedBeforeHit = false;
-                result = "";
+                movementTick = takeoffTick = missedTick = 0;
+                lateUntil = 0;
+                result = distance = "";
             }
             startedAt = ((Number) data.get("combat_start")).longValue();
             lastLink = event.timeMillis;
@@ -88,7 +93,8 @@ final class JumpResetHud {
                 if ("S08PacketPlayerPosLook".equals(data.get("kind"))) {
                     hit = null;
                     before = null;
-                    jumpedBeforeHit = false;
+                    takeoffTick = missedTick = 0;
+                    lateUntil = 0;
                 } else if ("S12PacketEntityVelocity".equals(data.get("kind"))) {
                     Velocity velocity = packets.remove(((Number) data.get("packet_id")).longValue());
                     if (velocity != null && selfId == velocity.id) {
@@ -102,7 +108,7 @@ final class JumpResetHud {
                 if (before != null) selfId = before.id;
                 break;
             case "tick_end":
-                finishStep(step(data));
+                finishStep(step(data), event.timeMillis);
                 break;
             default:
                 break;
@@ -137,38 +143,65 @@ final class JumpResetHud {
         return pos instanceof List && ((List<?>) pos).size() == 3 ? new Step(self, (List<?>) pos) : null;
     }
 
-    private void finishStep(Step after) {
+    private void finishStep(Step after, long now) {
         if (before != null && after != null && before.id == after.id && after.jumpTicks >= 0) {
+            movementTick++;
             // Vanilla sets jumpTicks to 10 on takeoff. Its unboosted arena jump moves Y by .42F.
             boolean takeoff = before.grounded && after.jumpTicks == 10 && Math.abs(after.y - before.y - .42f) < 1e-6;
             if (hit != null && hit.id == before.id) {
-                if (before.grounded) attempts++;
+                missedTick = 0;
+                lateUntil = 0;
+                if (before.grounded || takeoffTick > 0) attempts++;
                 if (takeoff) {
                     timed++;
-                    result = after.sprinting ? "On time" : "On time · sprint toward the bot";
+                    result = after.sprinting ? "Perfect timing" : "Perfect timing · sprint into the hit";
                     color = 0x77FFAA;
                 } else {
-                    result = before.grounded ? "Missed · tap Jump as the hit lands" :
-                        jumpedBeforeHit ? "Early · wait for the hit" : "Airborne · land before trying again";
+                    if (before.grounded) {
+                        result = after.jumping ? "Jump didn't take off" : "Missed impact tick";
+                        if (!after.grounded && !after.jumping) missedTick = movementTick;
+                    } else {
+                        result = takeoffTick > 0 ? offset("Early", movementTick - takeoffTick) : "Airborne at impact";
+                    }
                     color = 0xFFBB66;
                 }
                 double back = ((after.x - before.x) * hit.x + (after.z - before.z) * hit.z) / Math.hypot(hit.x, hit.z);
-                result += String.format(Locale.ROOT, " · %.2f blocks back", Math.max(0, back));
+                distance = String.format(Locale.ROOT, " · %.2f blocks back", Math.max(0, back));
+                takeoffTick = 0;
+            } else {
+                if (missedTick > 0) {
+                    int late = movementTick - missedTick;
+                    if (!before.grounded && after.jumping && !before.jumping && late <= LATE_WINDOW_TICKS) {
+                        result = offset("Late", late);
+                        missedTick = 0;
+                        lateUntil = now + 1000;
+                    } else if (after.grounded || late >= LATE_WINDOW_TICKS) missedTick = 0;
+                }
+                if (takeoff) takeoffTick = movementTick;
+                else if (after.grounded) takeoffTick = 0;
             }
-            jumpedBeforeHit = takeoff || (!after.grounded && jumpedBeforeHit);
-        } else {
-            jumpedBeforeHit = false;
-        }
+        } else takeoffTick = missedTick = 0;
         hit = null;
         before = null;
+    }
+
+    private static String offset(String kind, int ticks) {
+        return kind + " by " + ticks + (ticks == 1 ? " tick" : " ticks");
     }
 
     Frame hud(Frame base, long now) {
         if (match.isEmpty() || now - lastLink > 1500) return base;
         List<Frame.Line> lines = new ArrayList<>(base.lines);
-        lines.add(new Frame.Line("Jump Reset · " + timed + "/" + attempts + " grounded hits timed", 0, 14, 0xFFFFFF, false, 1, true));
-        String cue = now < startedAt ? "Get ready" : result.isEmpty() ? "Sprint toward W-tap and jump on impact" : result;
+        lines.add(new Frame.Line("Jump Reset · " + timed + "/" + attempts + " on time", 0, 14, 0xFFFFFF, false, 1, true));
+        String cue = now < startedAt ? "Get ready" : result.isEmpty() ? "Sprint toward W-tap and jump on impact" : result + distance;
         lines.add(new Frame.Line(cue, 0, 26, result.isEmpty() ? 0xAAAAAA : color, false, 1, true));
+        return new Frame(base.holdSprint, lines, base.edgeColor, base.edgeWidth, base.rectangles);
+    }
+
+    Frame renderLate(Frame base, int height, long now) {
+        if (match.isEmpty() || now - lastLink > 1500 || now >= lateUntil) return base;
+        List<Frame.Line> lines = new ArrayList<>(base.lines);
+        lines.add(new Frame.Line(result.toUpperCase(Locale.ROOT), 0, height / 2 + 34, 0xFFBB66, false, 2, true));
         return new Frame(base.holdSprint, lines, base.edgeColor, base.edgeWidth, base.rectangles);
     }
 
@@ -179,6 +212,7 @@ final class JumpResetHud {
         before = null;
         hit = null;
         packets.clear();
-        jumpedBeforeHit = false;
+        movementTick = takeoffTick = missedTick = 0;
+        lateUntil = 0;
     }
 }

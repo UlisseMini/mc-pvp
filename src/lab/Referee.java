@@ -36,6 +36,7 @@ public final class Referee {
         boolean rods(){return mode.equals("rod_diamond");}
         boolean jumpReset(){return EntryDrills.JUMP_RESET.equals(drillPreset);}
         JumpResetFeedback jumpFeedback;
+        MmcKnockback mmcKnockback;
         final CombatStats sa=new CombatStats(),sb=new CombatStats();
         CombatStats stats(String name){return name.equals(a)?sa:name.equals(b)?sb:null;}
         String label(String side){return side.equals("a")?MatchLabels.label(a,pa,pb,"a"):MatchLabels.label(b,pb,pa,"b");}
@@ -478,7 +479,7 @@ public final class Referee {
         if(m.scenario&&isBot(a)&&isBot(b)){m.combat=CombatTuning.nextScenario;m.goal=0;}
         m.combat=CombatProfile.fromOverrides(overridesB,m.combat);
         if(m.sumo()&&duration==0)m.durationMs=SumoArena.DURATION_MS;
-        m.startGap=m.sumo()?SumoArena.START_GAP:startGap;m.drillRound=round;m.drillPreset=preset;
+        m.startGap=m.sumo()&&round==0?SumoArena.START_GAP:startGap;m.drillRound=round;m.drillPreset=preset;
         do{m.id=String.format("m%04d",++counter);}while(Files.exists(DATA.resolve("results/"+m.id+".json"))||Files.exists(DATA.resolve("replays/"+m.id+".jsonl")));
         m.a=a;m.b=b;m.pa=pa;m.pb=pb;m.pingA=m.initialPingA=pingA;m.pingB=m.initialPingB=pingB;m.start=System.currentTimeMillis()+3000;
         if(!pa.equals("human"))m.configA.putAll(policies.get(pa));else m.configA.setProperty("kind","human");
@@ -498,14 +499,15 @@ public final class Referee {
         prepareArena(arenaWorld,m.arena);
         if(duration>64_000)prepareLongArena(arenaWorld,m.arena);
         if(m.box())prepareBox(arenaWorld,m.arena);
-        if(m.sumo())SumoArena.build(arenaWorld,m.arena);
+        boolean continuousDrill=EntryDrills.sameArena(m);
+        if(m.sumo()&&!continuousDrill)SumoArena.build(arenaWorld,m.arena);
         m.start=System.currentTimeMillis()+3000;
         m.replay=DATA.resolve("replays/"+m.id+".jsonl");matches.put(m.id,m);
         if(m.jumpReset())m.jumpFeedback=new JumpResetFeedback(m,player(a),player(b));
+        if(m.combat.mmc())m.mmcKnockback=new MmcKnockback(m,player(a),player(b));
         PovArchives.begin(m);
         configureProxy(a,pingA);configureProxy(b,pingB);
         // At normal speed even a full 180-second pursuit cannot reach another arena.
-        boolean continuousDrill=EntryDrills.sameArena(m);
         if(continuousDrill){
             // These entities already exist in both clients. A normal teleport
             // keeps them visible; destroying/retracking would create a blank gap.
@@ -527,14 +529,16 @@ public final class Referee {
         initial.put("bot_click_cap_cps",caps);
         append(m.replay,Map.of("type","start","match",initial));
         EntryDrills.countdown(m,System.currentTimeMillis());
-        String rules=m.sumo()?"Sumo: bare fists, full health; knock your opponent off the platform. Two-minute limit.":
-            m.jumpReset()?"Jump Reset round "+round+". Reset five seconds after your first incoming hit, or after twelve seconds without one.":
+        String rules=m.jumpReset()?"Jump Reset round "+round+". Reset on a fall, five seconds after your first incoming hit, or after twelve seconds without one.":
+            m.sumo()?"Sumo: bare fists, full health; knock your opponent off the platform. Two-minute limit.":
             m.drillRound>0?"Entry drill #"+round+", "+startGap+" block gap. Rod diamond; automatic repeat.":
             m.boxing()?(m.scenario?"Timed research: "+duration/1000+" seconds, no hit-score limit.":"Boxing: first to 100 hits."):
             (m.box()?"Diamond box: 1x1, wooden swords":m.rods()?"Rod diamond: wooden swords and fishing rods with PvP knockback":"Diamond: wooden swords")+", unbreakable swords, unenchanted diamond armor, fight to death. Respawn, then /rematch.";
         message(player(a),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules+" §b/stop §7to exit.");
         message(player(b),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules);
-        if(!m.combat.vanilla())for(Object who:List.of(player(a),player(b)))
+        if(m.combat.mmc())for(Object who:List.of(player(a),player(b)))
+            message(who,"§dMMC-like melee knockback §7(community first-hit fit, local landing prediction).");
+        else if(!m.combat.vanilla())for(Object who:List.of(player(a),player(b)))
             message(who,"§dModified combat for both players: §fKB ×"+m.combat.horizontal()+" horizontal, ×"+m.combat.vertical()+" vertical; sprint extra Y "+m.combat.sprintVertical()+"; fresh hit delay "+m.combat.freshTicks()+" ticks. §7Not an exact Hypixel profile.");
         if(pa.equals("human")){
             message(player(a),"§6Bot setup: §e"+ClickRate.cps(m.configB)+" CPS cap §8| §d"+DuelSettings.reach(m.configB)+" block reach §8| §bRTT: bot "+(int)pingB+", you "+(int)pingA+" ms");
@@ -719,6 +723,7 @@ public final class Referee {
             m.jumpFeedback.close();
             if(finalA!=null)overlay(finalA,"");
         }
+        if(m.mmcKnockback!=null)m.mmcKnockback.close();
         if(finalA!=null&&finalB!=null)append(m.replay,Map.of("type","tick","time",m.finish,"a",replayPosition(finalA),"b",replayPosition(finalB),
             "hits_a",m.ha,"hits_b",m.hb,"health_a",R.call(finalA,"getHealth"),"health_b",R.call(finalB,"getHealth")));
         for(String side:List.of("a","b")){Object p=player(side.equals("a")?m.a:m.b);result.put("health_"+side,p==null?null:R.call(p,"getHealth"));}
@@ -767,7 +772,7 @@ public final class Referee {
             if((Boolean)R.call(p,"isEntityAlive"))returnToLobby(p);else pendingLobby.add(who);
         }
         if(m.box())clearBox(m.world,m.arena);
-        if(m.sumo())SumoArena.clear(m.world,m.arena);
+        if(m.sumo()&&!repeatInArena)SumoArena.clear(m.world,m.arena);
         PovArchives.finished(m);
         System.out.println("[PvP Lab] RESULT "+Json.encode(result));
     }

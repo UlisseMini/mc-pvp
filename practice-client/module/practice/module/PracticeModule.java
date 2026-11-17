@@ -33,7 +33,12 @@ public final class PracticeModule implements PracticeExtension {
         if(e.type.equals("practice_views")){overlays.views=e.data;liveReceived=System.nanoTime();}
         jumpReset.event(e);
     }
-    public Frame render(float partial,int width,int height){if(!practiceAllowed)return remoteBase;Frame hud=replay.active()?replay.hud(base,width,height):overlays.hud(base,width,height);return rangeCommands.feedback(ranges.render(hud,width,height,overlays.views,replay.state,liveReceived));}
+    public Frame render(float partial,int width,int height){
+        if(!practiceAllowed)return remoteBase;
+        Frame hud=replay.active()?replay.hud(base,width,height):
+            jumpReset.renderLate(overlays.hud(base,width,height),height,System.currentTimeMillis());
+        return rangeCommands.feedback(ranges.render(hud,width,height,overlays.views,replay.state,liveReceived));
+    }
     public WorldFrame world(float partial){if(!practiceAllowed)return new WorldFrame(Collections.emptyList(),Collections.emptyList(),Collections.emptyList());return replay.active()?replay.world():overlays.world();}
     public boolean command(String[] args){return rangeCommands.handle(args,ranges);}
 
