@@ -11,7 +11,7 @@ public final class LabHelp {
          "/rematch [mode] [options] — repeat with saved bot settings",
          "/mode boxing|diamond|diamond_box|rod_diamond|sumo",
          "/drill near|medium|far|mixed [bot] — repeated entries, 2s countdown",
-         "/drill jumpreset — practice jumping on impact against W-tap",
+         "/drill jumpreset — practice jumping on impact against W-tap, with hotbar feedback",
          "/drill stop; /stop — exit your drill, duel, replay or spectating",
          "/ping; /ping me <ms>; /ping bot <ms>; /ping <your RTT> <bot RTT>",
          "/blocksound on|off|test; /blocktiming on|off",

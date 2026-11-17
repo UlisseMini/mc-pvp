@@ -32,7 +32,7 @@ public final class EntryDrills {
         if(!(Boolean)R.call(sender,"isEntityAlive"))throw new IllegalArgumentException("Respawn first.");
         Session s=new Session(name,args[1],bot,Referee.lastPings.getOrDefault(name,new double[]{0,0})[0]);sessions.put(name,s);
         Referee.message(sender,jumpReset
-            ?"§bJump Reset: §fSprint toward W-tap and tap Jump as its hit lands. Rounds repeat. §7The Forge practice mod shows timing and pushback. §b/stop §7exits."
+            ?"§bJump Reset: §fSprint toward W-tap and tap Jump as its hit lands. Rounds repeat. §7Timing and pushback appear above the hotbar. §b/stop §7exits."
             :"§bDrills enabled: "+s.preset+" vs "+s.bot+". Reset five seconds after the first sword hit, then a two-second countdown. /stop exits.");
     }
     static void cancel(String name){if(sessions.remove(name)!=null&&Referee.player(name)!=null)Referee.vanilla("title "+name+" clear");}

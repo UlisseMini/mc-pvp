@@ -35,6 +35,7 @@ public final class Referee {
         boolean box(){return mode.equals("diamond_box");}
         boolean rods(){return mode.equals("rod_diamond");}
         boolean jumpReset(){return EntryDrills.JUMP_RESET.equals(drillPreset);}
+        JumpResetFeedback jumpFeedback;
         final CombatStats sa=new CombatStats(),sb=new CombatStats();
         CombatStats stats(String name){return name.equals(a)?sa:name.equals(b)?sb:null;}
         String label(String side){return side.equals("a")?MatchLabels.label(a,pa,pb,"a"):MatchLabels.label(b,pb,pa,"b");}
@@ -163,7 +164,7 @@ public final class Referee {
                         m.label("a")+" "+hearts(a)+" hearts  |  "+hearts(b)+" "+m.label("b"));
                     String ba=m.sa.blockRatioText(m.hb-m.sb.rodHits),bb=m.sb.blockRatioText(m.ha-m.sa.rodHits);
                     String ping=" §8| §7RTT "+(int)m.pingA+"/"+(int)m.pingB+" ms";
-                    String humanBar=m.jumpReset()&&left<=0?"§bJump Reset §8| §fSprint in and tap Jump on impact"+ping:
+                    String humanBar=m.jumpFeedback!=null&&left<=0?m.jumpFeedback.text(System.currentTimeMillis()):
                         timedBar(m,m.a,score+(m.sumo()?"":" §8| "+m.sa.blockBarText(m.hb-m.sb.rodHits))+ping,System.currentTimeMillis());
                     overlay(a,humanBar);
                     overlay(b,timedBar(m,m.b,score+(m.sumo()?"":" §8| "+m.sb.blockBarText(m.ha-m.sa.rodHits))+ping,System.currentTimeMillis()));
@@ -500,6 +501,7 @@ public final class Referee {
         if(m.sumo())SumoArena.build(arenaWorld,m.arena);
         m.start=System.currentTimeMillis()+3000;
         m.replay=DATA.resolve("replays/"+m.id+".jsonl");matches.put(m.id,m);
+        if(m.jumpReset())m.jumpFeedback=new JumpResetFeedback(m,player(a),player(b));
         PovArchives.begin(m);
         configureProxy(a,pingA);configureProxy(b,pingB);
         // At normal speed even a full 180-second pursuit cannot reach another arena.
@@ -713,6 +715,10 @@ public final class Referee {
     static void finish(Match m,String reason){
         m.finish=System.currentTimeMillis();Map<String,Object> result=m.state();result.put("reason",reason);
         Object finalA=player(m.a),finalB=player(m.b);
+        if(m.jumpFeedback!=null){
+            m.jumpFeedback.close();
+            if(finalA!=null)overlay(finalA,"");
+        }
         if(finalA!=null&&finalB!=null)append(m.replay,Map.of("type","tick","time",m.finish,"a",replayPosition(finalA),"b",replayPosition(finalB),
             "hits_a",m.ha,"hits_b",m.hb,"health_a",R.call(finalA,"getHealth"),"health_b",R.call(finalB,"getHealth")));
         for(String side:List.of("a","b")){Object p=player(side.equals("a")?m.a:m.b);result.put("health_"+side,p==null?null:R.call(p,"getHealth"));}

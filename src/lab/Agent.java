@@ -236,16 +236,32 @@ public final class Agent implements ClassFileTransformer {
                 } else if(name.equals("wn")&&method.name.equals("f")&&method.desc.equals("(Lpk;)V")){
                     if("server".equals(System.getProperty("lab.role"))){
                         method.instructions.insert(callPair("lab/CombatTuning","before"));
-                        int velocitySites=0;
+                        int velocitySites=0, velocitySends=0;
                         for(AbstractInsnNode ins:method.instructions.toArray()){
                             if(ins instanceof TypeInsnNode allocation&&allocation.getOpcode()==Opcodes.NEW&&allocation.desc.equals("hm")){
                                 InsnList tune=new InsnList();tune.add(new VarInsnNode(Opcodes.ALOAD,1));
                                 tune.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/CombatTuning","outgoing","(Ljava/lang/Object;)V",false));
                                 method.instructions.insertBefore(ins,tune);velocitySites++;
                             }
+                            if(ins instanceof MethodInsnNode call && call.owner.equals("lm") &&
+                                    call.name.equals("a") && call.desc.equals("(Lff;)V")){
+                                // Keep the original vanilla send. The same handler and S12
+                                // are visible to the two drill-only callbacks around it.
+                                InsnList bracket=new InsnList();
+                                bracket.add(new InsnNode(Opcodes.DUP2));
+                                bracket.add(new VarInsnNode(Opcodes.ALOAD,0));
+                                bracket.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/JumpResetFeedback","beforeVelocity",
+                                    "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V",false));
+                                bracket.add(new InsnNode(Opcodes.DUP2));
+                                method.instructions.insertBefore(ins,bracket);
+                                method.instructions.insert(ins,new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/JumpResetFeedback","afterVelocity",
+                                    "(Ljava/lang/Object;Ljava/lang/Object;)V",false));
+                                velocitySends++;
+                            }
                             if(ins.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(ins,new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/CombatTuning","after","()V",false));
                         }
-                        if(velocitySites!=1)throw new IllegalStateException("Pinned player fresh velocity site changed: "+velocitySites);
+                        if(velocitySites!=1||velocitySends!=1)
+                            throw new IllegalStateException("Pinned player fresh velocity sites changed: "+velocitySites+"/"+velocitySends);
                     }
                     int damageContext=method.maxLocals++;
                     int critBaseSites=0,plannedSites=0;
@@ -304,7 +320,21 @@ public final class Agent implements ClassFileTransformer {
                     method.instructions.insert(setup);changed=true;
                 }else if(name.equals("lm")&&method.name.equals("a")&&method.desc.equals("(Lim;)V")){
                     method.instructions.insert(callPair("lab/PovLink","receive"));changed=true;
+                }else if(name.equals("lm")&&method.name.equals("a")&&method.desc.equals("(Lii;)V")){
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)
+                        method.instructions.insertBefore(ins,callPair("lab/JumpResetFeedback","confirm"));
+                    changed=true;
+                }else if(name.equals("lm")&&method.name.equals("a")&&method.desc.equals("(DDDFFLjava/util/Set;)V")){
+                    method.instructions.insert(callThis("lab/JumpResetFeedback","corrected"));changed=true;
                 }else if(name.equals("lm")&&method.name.equals("a")&&java.util.Set.of("(Lip;)V","(Lin;)V","(Lis;)V").contains(method.desc)){
+                    if(method.desc.equals("(Lip;)V")){
+                        int accepted=0;
+                        for(AbstractInsnNode ins:method.instructions.toArray())if(ins instanceof MethodInsnNode call &&
+                                call.owner.equals("lf")&&call.name.equals("a")&&call.desc.equals("(DZ)V")){
+                            method.instructions.insert(ins,callPair("lab/JumpResetFeedback","moved"));accepted++;
+                        }
+                        if(accepted!=1)throw new IllegalStateException("Pinned accepted player movement site changed: "+accepted);
+                    }
                     method.instructions.insert(callPair("lab/ServerReplicationTrace","input"));
                     method.instructions.insert(serverHandler(false));
                     for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(ins,serverHandler(true));

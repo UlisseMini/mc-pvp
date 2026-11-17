@@ -63,7 +63,7 @@ public final class R {
         for (int i = 0; i < types.length; i++) {
             if (args[i] == null) { if (types[i].isPrimitive()) return false; continue; }
             Class<?> t = types[i];
-            if (t.isPrimitive()) t = t == int.class ? Integer.class : t == float.class ? Float.class : t == double.class ? Double.class : t == boolean.class ? Boolean.class : t == long.class ? Long.class : t == byte.class ? Byte.class : t;
+            if (t.isPrimitive()) t = t == int.class ? Integer.class : t == float.class ? Float.class : t == double.class ? Double.class : t == boolean.class ? Boolean.class : t == long.class ? Long.class : t == byte.class ? Byte.class : t == short.class ? Short.class : t;
             if (!t.isInstance(args[i])) return false;
         }
         return true;

@@ -62,7 +62,7 @@ enabling RCON or opening another network port.
 | `/duel wtap rod_diamond` | Same unenchanted diamond armor / wooden sword kit, plus a fishing rod in hotbar slot 2 for both players; existing bots keep using their sword |
 | `/drill near` / `/drill medium` / `/drill far` | Repeated rod-diamond entries vs wtap from 4.5 / 6 / 9 blocks; append another bot name to change opponents |
 | `/drill mixed` | Cycle all three distances; reset directly in the arena five seconds after first sword contact (12-second limit without one), with a visible two-second countdown; `/stop` exits |
-| `/drill jumpreset` | Repeated jump-reset practice against W-tap. Sprint toward the bot and tap Jump as the hit lands. The Forge practice mod grades the timing and shows pushback |
+| `/drill jumpreset` | Repeated jump-reset practice against W-tap with timing and pushback shown above the hotbar on a vanilla client |
 | `/duel jump-reset` | Fight the test bot that uses ordinary W-tap and taps Jump on incoming knockback while grounded |
 | `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full unenchanted diamond armor; successful blocks play your block sound |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
@@ -117,10 +117,11 @@ experiment scheduler uses at most six so human challenges have spare slots.
 
 `/drill jumpreset` starts from a 4.5-block gap, with a two-second countdown.
 Each round resets five seconds after the first fresh hit you take, or after
-twelve seconds without one. Use `/stop` to finish. The Forge practice mod's
-timing display uses your own client's knockback and movement observations. It
-shows whether you took off on the impact tick and how far back you moved during
-that first step. If you disabled the practice link, run `/practice link on`.
+twelve seconds without one. Use `/stop` to finish. The server grades the takeoff
+from vanilla movement packets and shows approximate first-step pushback above
+the hotbar. "Timing unclear" means the packet order or movement was ambiguous.
+The grounded-hit tally counts impacts the server could grade. The optional
+Forge display also uses the client's own observations to give timing feedback.
 
 In this lab's 1.8.9, a knockback packet replaces your client's velocity
 while the ground flag still reflects the previous movement. The next
