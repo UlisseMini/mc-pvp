@@ -23,6 +23,7 @@ public final class DuelSettingsCheck {
         check(DuelSettings.parse(new String[]{"/rematch"},1,"boxing",0,0,aim.overrides).overrides.equals(aim.overrides),"aim settings retained by rematch");
         DuelSettings combat=parse("/duel wtap kb_horizontal=0.95 kb_vertical=0.9 hit_ticks=9",empty);
         check(combat.overrides.getProperty("combat_hit_ticks").equals("9"),"explicit combat override");
+        check(combat.overrides.getProperty("hurt_window_ticks").equals("9"),"explicit combat override synchronizes bot timing");
         DuelSettings reset=DuelSettings.parse(new String[]{"/rematch","kb=vanilla"},1,"boxing",0,0,combat.overrides);
         check(reset.overrides.getProperty("combat_kb_horizontal").equals("1.0")&&reset.overrides.getProperty("combat_kb_vertical").equals("1.0")&&reset.overrides.getProperty("combat_hit_ticks").equals("10"),"rematch vanilla resets all combat settings");
         check(combat.overrides.getProperty("combat_hit_ticks").equals("9"),"combat rematch cannot mutate previous match");

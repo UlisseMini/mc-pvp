@@ -4,7 +4,8 @@ import java.util.*;
 
 /** Per-duel overrides. Parsing never changes a shared policy or player preference. */
 public final class DuelSettings {
-    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8|hypixel|mmc] [reach=3.0] [cps=20] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks=10] [sprint_vertical=.1]";
+    static final int DEFAULT_HIT_TICKS=9, VANILLA_HIT_TICKS=10;
+    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8|hypixel|mmc] [reach=3.0] [cps=20] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks="+DEFAULT_HIT_TICKS+"] [sprint_vertical=.1]";
     public final String mode;
     public final double botPing,humanPing;
     public final boolean humanPingExplicit;
@@ -66,10 +67,10 @@ public final class DuelSettings {
                     if(!value.equals("vanilla"))throw new IllegalArgumentException("Use kb=vanilla, or explicit kb_horizontal/kb_vertical/hit_ticks/sprint_vertical settings");
                     overrides.setProperty("combat_kb_horizontal","1.0");
                     overrides.setProperty("combat_kb_vertical","1.0");
-                    overrides.setProperty("combat_hit_ticks","10");
+                    overrides.setProperty("combat_hit_ticks",Integer.toString(VANILLA_HIT_TICKS));
                     overrides.setProperty("combat_sprint_vertical","0.1");
                     overrides.setProperty(PracticePresets.KB_MODEL,"vanilla");
-                    if(overrides.containsKey("hurt_window_ticks"))overrides.setProperty("hurt_window_ticks","10");
+                    overrides.setProperty("hurt_window_ticks",Integer.toString(VANILLA_HIT_TICKS));
                     break;
                 case "sprint_vertical":
                     overrides.setProperty("combat_sprint_vertical",Double.toString(bounded(value,0,1,"Sprint extra Y")));break;
@@ -80,7 +81,7 @@ public final class DuelSettings {
                     try{ticks=Integer.parseInt(value);}catch(NumberFormatException e){throw new IllegalArgumentException("hit_ticks must be a whole number from 1 to 20");}
                     if(ticks<1||ticks>20)throw new IllegalArgumentException("hit_ticks must be 1–20; vanilla is 10");
                     overrides.setProperty("combat_hit_ticks",Integer.toString(ticks));
-                    if(overrides.containsKey("hurt_window_ticks"))overrides.setProperty("hurt_window_ticks",Integer.toString(ticks));
+                    overrides.setProperty("hurt_window_ticks",Integer.toString(ticks));
                     break;
                 default: throw new IllegalArgumentException("Unknown setting '"+key+"'. Use /help settings for all options.");
             }
@@ -90,6 +91,10 @@ public final class DuelSettings {
         String label=overrides.getProperty(PracticePresets.LABEL);
         if(label!=null&&!PracticePresets.combatMatches(label,overrides))overrides.remove(PracticePresets.LABEL);
         return new DuelSettings(mode,botPing,humanPing,overrides,seen.contains("myping"));
+    }
+    static int hurtWindowTicks(Properties p){
+        String ticks=p.getProperty("hurt_window_ticks");
+        return ticks==null?DEFAULT_HIT_TICKS:(int)Double.parseDouble(ticks);
     }
     public static double ping(String value){return bounded(value,0,500,"Ping (added RTT in ms)");}
     public static double reach(String value){return bounded(value,1,5,"Reach (blocks)");}

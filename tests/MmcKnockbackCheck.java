@@ -10,7 +10,8 @@ public final class MmcKnockbackCheck {
     public static void main(String[] args) {
         DuelSettings mmc = DuelSettings.parse(new String[]{"sumo", "preset=mmc"}, 0, "boxing", 20, 120, new Properties());
         CombatProfile profile = CombatProfile.fromOverrides(mmc.overrides, CombatProfile.VANILLA);
-        check(profile.mmc() && profile.sprintVertical() == 0 && profile.freshTicks() == 10, "MMC combat config");
+        check(profile.mmc() && profile.sprintVertical() == 0 && profile.freshTicks() == 9, "MMC combat config");
+        check(DuelSettings.hurtWindowTicks(mmc.overrides) == 9, "MMC bot timing follows the combat profile");
         check(mmc.botPing == 20 && mmc.humanPing == 120 && !mmc.overrides.containsKey("click_cps"), "KB-only preset");
         DuelSettings reset = DuelSettings.parse(new String[]{"kb=vanilla"}, 0, "sumo", 20, 120, mmc.overrides);
         check(CombatProfile.fromOverrides(reset.overrides, profile).vanilla(), "Explicit reset clears custom impulses");

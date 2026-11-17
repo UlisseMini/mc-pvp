@@ -15,6 +15,7 @@ public final class BurstClickControllerCheck {
         check(!c.decide(at(1300,1000,1000,20),s).click(),"same incoming cue cannot extend burst");
         check(!c.decide(at(1404,1000,1000,20),s).click(),"coast through nonessential clicking interval");
         check(c.decide(at(1405,1000,1000,20),s).attackWindow(),"predicted damage window opens");
+        check(c.decide(at(1355,1000,1000,20),s,9).attackWindow(),"nine-tick match opens one tick sooner");
         check(c.decide(at(2200,1000,1000,20),s).click(),"a miss cannot restart an invented immunity timer");
         check(!c.decide(at(2350,2200,1000,20),s).click(),"new delayed outgoing cue starts new quiet interval");
         check(c.decide(at(2400,2200,2250,20),s).defensive(),"another received hit can rearm defense");

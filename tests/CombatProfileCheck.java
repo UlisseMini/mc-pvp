@@ -2,7 +2,9 @@ import lab.CombatProfile;
 
 public final class CombatProfileCheck {
     public static void main(String[] args){
-        check(CombatProfile.parse(new String[0],0).vanilla());
+        check(CombatProfile.parse(new String[0],0).equals(CombatProfile.DEFAULT));
+        check(CombatProfile.DEFAULT.freshTicks()==9&&!CombatProfile.DEFAULT.vanilla());
+        check(CombatProfile.fromOverrides(new java.util.Properties(),CombatProfile.DEFAULT).freshTicks()==9);
         check(new CombatProfile(1,1,10).sprintVertical()==.1&&new CombatProfile(1,1,10).vanilla());
         CombatProfile housing=new CombatProfile(1,1,9,.07);
         check(housing.freshVertical(.46,true)==.46+(.07-.1));

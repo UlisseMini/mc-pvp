@@ -8,12 +8,12 @@ import java.util.Properties;
  */
 public final class CycleController {
     public static final class Settings {
-        public int hitTicks=10,coastStart=6,coastShort=7,coastLong=8;
+        public int hitTicks=DuelSettings.DEFAULT_HIT_TICKS,coastStart=6,coastShort=7,coastLong=8;
         public double switchRange=2.70;
         public String word="";public int burst=1,strafe=0;
         public boolean syncCue=false,syncMovement=false;public double cueLeadMs=75;
         public static Settings from(Properties p){
-            Settings s=new Settings();s.hitTicks=Integer.parseInt(p.getProperty("cycle_hit_ticks","10"));
+            Settings s=new Settings();s.hitTicks=Integer.parseInt(p.getProperty("cycle_hit_ticks",Integer.toString(s.hitTicks)));
             s.coastStart=Integer.parseInt(p.getProperty("cycle_coast_start","6"));
             s.coastShort=Integer.parseInt(p.getProperty("cycle_coast_short","7"));
             s.coastLong=Integer.parseInt(p.getProperty("cycle_coast_long","8"));

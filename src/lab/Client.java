@@ -179,7 +179,8 @@ public final class Client {
                 localSprint=(Boolean)R.call(player,"isSprinting");
                 localContactReady=selected==opponent&&R.num(mc,"leftClickCounter")<=0;
                 motionClick=MotionClickController.decide(new MotionClickController.Input(wall,lastObservedTargetHurt,
-                        number("ping",0),radialMotion,localSprint,nativeInputPoll,localContactReady),MotionClickController.Settings.from(controls));
+                        number("ping",0),radialMotion,localSprint,nativeInputPoll,localContactReady),MotionClickController.Settings.from(controls),
+                        DuelSettings.hurtWindowTicks(controls));
                 if(number("burst_critical",0)>0&&nativeInputPoll&&localContactReady){
                     // Native 1.8 critical predicates, using only our current local
                     // body. The server can still disagree at a movement boundary.
@@ -217,7 +218,7 @@ public final class Client {
                 inputWordDecision,nativeInputPoll,now/1_000_000.0,seedPlanLastHeadNs/1_000_000.0,handledTargetHurtMs);
             boolean referencePermits=!referenceActive||referenceFeedback.allowInjection(referencePoll(now/1_000_000.0),nativeInputPoll?"native_tick":"frame");
             boolean coastAdmission=maintenanceCurrent()?maintenanceHandoff.coastAdmissionActive(hurtWindowActive,now):hurtWindowActive;
-            if(clickGate && wordPermits && referencePermits && (!coastAdmission||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),(int)number("hurt_window_ticks",8))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
+            if(clickGate && wordPermits && referencePermits && (!coastAdmission||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),DuelSettings.hurtWindowTicks(controls))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 if(controls.getProperty("kind","").equals("cycle")){cycle.queued(ticks);clickGate=false;}
@@ -355,7 +356,7 @@ public final class Client {
                 seedPlanAdmission=null;
                 if(controls.containsKey("seed_plan_admission")){
                     if(inputWord==null)throw new IllegalArgumentException("Seed plan admission requires input_word");
-                    seedPlanAdmission=new SeedPlanAdmission(R.ROOT.resolve(controls.getProperty("seed_plan_admission")),number("ping",0),(int)number("hurt_window_ticks",9));
+                    seedPlanAdmission=new SeedPlanAdmission(R.ROOT.resolve(controls.getProperty("seed_plan_admission")),number("ping",0),DuelSettings.hurtWindowTicks(controls));
                     if(seedPlanAdmission.size()!=inputWord.size())throw new IllegalArgumentException("Plan and admission lengths differ");
                 }
                 strongGap=new StrongRelaxationPolicy();freshTargetHurtStatus=0;
@@ -374,7 +375,7 @@ public final class Client {
                 referenceFeedback=null;referenceHead=null;referenceActive=false;
                 if(controls.getProperty("kind","").equals("reference-feedback"))
                     referenceFeedback=ReferenceFeedbackController.frozen(new String(Files.readAllBytes(R.ROOT.resolve(controls.getProperty("reference_table"))),java.nio.charset.StandardCharsets.UTF_8),
-                            (int)number("hurt_window_ticks",9));
+                            DuelSettings.hurtWindowTicks(controls));
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 criticalClicks.reset();
                 blockhit.reset();blockKey=false;freshHurtStatus=0;
@@ -466,7 +467,7 @@ public final class Client {
             if(kind.equals("phase")){
                 // Predict next ordinary equal-damage hit window from delayed visible cues.
                 // This changes movement only. All nominal clicks still reach the engine.
-                double nextServerWindow=lastObservedTargetHurt-ping/2.0+500;
+                double nextServerWindow=lastObservedTargetHurt-ping/2.0+DuelSettings.hurtWindowTicks(controls)*50;
                 double untilLocalClick=Math.max(0,nextServerWindow-ping/2.0-now)/1000.0;
                 gap=obs.distance-Math.max(-8,Math.min(8,obs.closing))*(age+Math.min(.5,untilLocalClick));
             }
@@ -746,7 +747,7 @@ public final class Client {
                     // block admission check, so left/right can share this tick.
                     if(reaction==0){nativeInputPoll=true;try{frame(mc);}finally{nativeInputPoll=false;}}
                     LinearHitPredictor.Prediction prediction=hitPredictor.predict(new LinearHitPredictor.Sample(obs.time,obs.x,obs.y,obs.z,obs.tx,obs.ty,obs.tz),
-                        obs.freshHurtCue,ping,oppPing,LinearHitPredictor.Settings.from(controls));
+                        obs.freshHurtCue,ping,oppPing,LinearHitPredictor.Settings.from(controls),DuelSettings.hurtWindowTicks(controls));
                     Object attack=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                     Object ray=R.get(mc,"objectMouseOver");
                     boolean queued=R.num(attack,"pressTime")>0,inRange=ray!=null&&R.get(ray,"entityHit")==opponent;
@@ -796,7 +797,7 @@ public final class Client {
             if(controls.getProperty("click_mode","fixed").equals("reactive-burst")){
                 burstObservedAt=obs.time;
                 burstDecision=burstClicks.decide(new BurstClickController.Input(now,obs.time,lastObservedTargetHurt,lastObservedHurt,ping),
-                        BurstClickController.Settings.from(controls));
+                        BurstClickController.Settings.from(controls),DuelSettings.hurtWindowTicks(controls));
                 clickGate &= burstDecision.click();
                 Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","burst_plan");plan.put("time",now);
                 plan.put("monotonic_ns",System.nanoTime());plan.put("match",match);plan.put("native_tick",ticks);

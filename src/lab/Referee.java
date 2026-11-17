@@ -4,8 +4,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
-/** Real server referee. Vanilla by default; explicit match options may freeze a
- * different, recorded CombatProfile for both players. */
+/** Real server referee. Each match records one CombatProfile for both players. */
 public final class Referee {
     static Object server;
     static final Path DATA=R.ROOT.resolve("runtime");
@@ -29,7 +28,7 @@ public final class Referee {
     static final class Match {
         String id,a,b,pa,pb,winner="",request="",mode="boxing",finishReason="100_hits"; int ha,hb,ba,bb,goal=100,arena,pingChanges; long start,finish,durationMs=180_000; boolean scenario,setupReseated; double pingA,pingB,initialPingA,initialPingB;
         boolean boxing(){return mode.equals("boxing");}
-        CombatProfile combat=CombatProfile.VANILLA;
+        CombatProfile combat=CombatProfile.DEFAULT;
         SeededStartServer.Session seed;
         boolean sumo(){return mode.equals("sumo");}
         boolean box(){return mode.equals("diamond_box");}
@@ -114,6 +113,7 @@ public final class Referee {
                 String name=R.name(p);
                 if(greeted.add(name)){
                     fullFood(p);
+                    CombatTuning.configurePlayer(p,CombatProfile.DEFAULT);
                     if(isBot(name)){botLabel(p,"");vanilla("gamemode 3 "+name);teleport(p,-40-Integer.parseInt(name.substring(7))*6,4,0);disable(name);}
                     else {double ping=preferredPing(name);rememberPing(name,ping);configureProxy(name,ping);
                         teleport(p,0,4,0);message(p,"PvP Lab: /bots; /mode diamond or rod_diamond for health duels; /mode diamond_box for 1x1 blockhitting; /mode boxing for 100 hits; /mode sumo for ring-outs. Successful blocks play a chime (/blocksound). /help lab for controls.");
@@ -487,6 +487,9 @@ public final class Referee {
         if(!pa.equals("human"))m.configA.putAll(overridesA);
         m.configB.putAll(policies.get(pb));
         m.configB.putAll(overridesB);
+        String hitTicks=Integer.toString(m.combat.freshTicks());
+        if(isBot(a))m.configA.putIfAbsent("hurt_window_ticks",hitTicks);
+        if(isBot(b))m.configB.putIfAbsent("hurt_window_ticks",hitTicks);
         SeededStartServer.configure(m);
         ClickRate.cps(m.configA);ClickRate.cps(m.configB);DuelSettings.reach(m.configA);DuelSettings.reach(m.configB);
         Set<Integer> used=new HashSet<>();for(Match current:matches.values())used.add(current.arena);
@@ -539,7 +542,7 @@ public final class Referee {
         message(player(b),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules);
         if(m.combat.mmc())for(Object who:List.of(player(a),player(b)))
             message(who,"§dMMC-like melee knockback §7(community first-hit fit, local landing prediction).");
-        else if(!m.combat.vanilla())for(Object who:List.of(player(a),player(b)))
+        else if(!m.combat.equals(CombatProfile.DEFAULT)&&!m.combat.vanilla())for(Object who:List.of(player(a),player(b)))
             message(who,"§dModified combat for both players: §fKB ×"+m.combat.horizontal()+" horizontal, ×"+m.combat.vertical()+" vertical; sprint extra Y "+m.combat.sprintVertical()+"; fresh hit delay "+m.combat.freshTicks()+" ticks. §7Not an exact Hypixel profile.");
         if(pa.equals("human")){
             message(player(a),"§6Bot setup: §e"+ClickRate.cps(m.configB)+" CPS cap §8| §d"+DuelSettings.reach(m.configB)+" block reach §8| §bRTT: bot "+(int)pingB+", you "+(int)pingA+" ms");
@@ -733,8 +736,6 @@ public final class Referee {
         result.put("duration_seconds",Math.max(0,(m.finish-m.start)/1000.0));
         writeJson(DATA.resolve("results/"+m.id+".json"),result);append(m.replay,Map.of("type","finish","result",result));
         matches.remove(m.id);
-        if(finalA!=null)CombatTuning.configurePlayer(finalA,CombatProfile.VANILLA);
-        if(finalB!=null)CombatTuning.configurePlayer(finalB,CombatProfile.VANILLA);
         Set<String> recipients=new LinkedHashSet<>(List.of(m.a,m.b));
         for(var watcher:watching.entrySet())if(watcher.getValue().equals(m.id))recipients.add(watcher.getKey());
         for(String who:recipients){Object p=player(who);if(p!=null){
@@ -785,6 +786,7 @@ public final class Referee {
     }
     static void returnToLobby(Object p){
         String who=safeName(p);R.call(p,"clearItemInUse");R.call(p,"setHealth",20.0f);
+        CombatTuning.configurePlayer(p,CombatProfile.DEFAULT);
         fullFood(p);
         if(isBot(who)){vanilla("gamemode 3 "+who);teleport(p,-40-Integer.parseInt(who.substring(7))*6,4,0);}else{configureProxy(who,preferredPing(who));vanilla("gamemode 0 "+who);teleport(p,0,4,0);}
     }

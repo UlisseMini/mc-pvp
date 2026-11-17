@@ -4,7 +4,7 @@ import java.util.*;
 
 /** Server-only, match-scoped research intervention; default path changes nothing. */
 public final class CombatTuning {
-    static CombatProfile nextScenario=CombatProfile.VANILLA;
+    static CombatProfile nextScenario=CombatProfile.DEFAULT;
     private static Object target, source;
     private static Referee.Match match;
     private static int previousScore;

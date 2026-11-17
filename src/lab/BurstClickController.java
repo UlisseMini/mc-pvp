@@ -35,6 +35,10 @@ public final class BurstClickController {
     public void reset(){handledIncoming=defensiveUntil=0;}
 
     public Decision decide(Input in,Settings settings) {
+        return decide(in,settings,DuelSettings.VANILLA_HIT_TICKS);
+    }
+
+    public Decision decide(Input in,Settings settings,int hitWindowTicks) {
         if(in.now-in.observedAt<150||in.landedCue>in.observedAt||in.incomingCue>in.observedAt
                 ||in.landedCue<0||in.incomingCue<0||!Double.isFinite(in.ownRtt)||in.ownRtt<0||in.ownRtt>500)
             throw new IllegalArgumentException("Burst schedule requires delayed visible cues and a valid RTT");
@@ -47,11 +51,11 @@ public final class BurstClickController {
         // The cue travels down our connection; the next attack travels up it.
         // A configurable early margin covers uncertain tick/consumption phase.
         // This estimates a fresh-damage opportunity; there is no immunity oracle.
-        long ready=opening?0:in.landedCue+500-Math.round(in.ownRtt);
+        long ready=opening?0:in.landedCue+hitWindowTicks*50L-Math.round(in.ownRtt);
         long start=opening?0:ready-settings.windowLeadMs;
         boolean defensive=in.now<defensiveUntil;
         // Keep trying after the predicted window opens until another visible
-        // landed cue arrives. A missed attempt must not silently rearm a 500ms timer.
+        // landed cue arrives. A missed attempt does not restart the estimate.
         boolean attack=!opening&&in.now>=start;
         return new Decision(opening||defensive||attack,opening,defensive,attack,defensiveUntil,ready,start);
     }

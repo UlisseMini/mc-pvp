@@ -20,20 +20,19 @@ public final class PracticePresets {
     public static Properties defaults(String name){
         String preset=normalize(name);Properties p=new Properties();
         p.setProperty(LABEL,preset);
+        String hitTicks=Integer.toString(preset.equals(LOCK8)?8:DuelSettings.DEFAULT_HIT_TICKS);
+        p.setProperty("combat_hit_ticks",hitTicks);
+        p.setProperty("hurt_window_ticks",hitTicks);
         if(MMC.equals(preset)){
             p.setProperty(KB_MODEL,MMC);
             p.setProperty("combat_kb_horizontal","1.0");
             p.setProperty("combat_kb_vertical","1.0");
             p.setProperty("combat_sprint_vertical","0.0");
-            p.setProperty("combat_hit_ticks","10");
-            p.setProperty("hurt_window_ticks","10");
             return p;
         }
         p.setProperty("combat_kb_horizontal",preset.equals(LOCK8)?"1.1":"1.0");
         p.setProperty("combat_kb_vertical","1.0");
         p.setProperty("combat_sprint_vertical",preset.equals(HYPIXEL)?"0.07":"0.1");
-        p.setProperty("combat_hit_ticks",preset.equals(LOCK8)?"8":"9");
-        p.setProperty("hurt_window_ticks",preset.equals(LOCK8)?"8":"9");
         p.setProperty("click_cps","20");
         p.setProperty("attack_reach","3.0");
         p.setProperty("reaction_ms","0");

@@ -12,6 +12,8 @@ public final class LinearHitPredictorCheck {
         check(r.receiptAt()>=1160&&r.receiptAt()<=1165,"linear approach reaches expanded box in 60 ms");
         var immune=p.predict(new LinearHitPredictor.Sample(1100,.5,4,0,4.5,4,0),1000,0,0,settings);
         check(!Double.isFinite(immune.receiptAt()),"no prediction outside short horizon while immune");
+        var nine=new LinearHitPredictor().predict(new LinearHitPredictor.Sample(1100,.5,4,0,4.5,4,0),1000,0,0,settings,9);
+        check(nine.eligibleAt()==1450,"eligibility follows configured hit window");
         var network=p.predict(new LinearHitPredictor.Sample(1100,.5,4,0,4.5,4,0),0,100,100,settings);
         check(Math.abs(network.receiptAt()-r.receiptAt()-100)<6,"symmetric RTT shifts cue arrival");
         check(Math.abs(network.commandAt()-r.commandAt())<6,"same outbound delay cancels for guard command");

@@ -16,6 +16,9 @@ public final class MotionClickControllerCheck {
         check(at(1329,-.2,true,true,true).recoil(),"recoil leaves more than100ms before attack window");
         check(at(1330,-.2,true,true,true).reserved()&&!at(1330,-.2,true,true,true).click(),"reserve next input slot conservatively");
         check(at(1430,.2,true,true,true).attackWindow(),"attack window overrides forward-motion preference");
+        var faster=MotionClickController.decide(new MotionClickController.Input(1380,1000,20,.2,true,true,true),
+                new MotionClickController.Settings(50,true),9);
+        check(faster.readyAt()==1430&&faster.attackWindow(),"nine-tick match opens one tick sooner");
         check(at(2500,.2,false,false,true).click(),"misses keep attack window open pending visible cue");
         var opening=MotionClickController.decide(new MotionClickController.Input(500,0,20,.2,true,false,false),new MotionClickController.Settings(50,true));
         check(opening.click()&&opening.opening(),"normal opening acquisition");

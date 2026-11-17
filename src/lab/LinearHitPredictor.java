@@ -80,11 +80,15 @@ default: return s.tz;
         return Math.sqrt(dx*dx+dy*dy+dz*dz);
     }
     public Prediction predict(Sample s,long freshHurt,double ownRtt,double opponentRtt,Settings settings){
+        return predict(s,freshHurt,ownRtt,opponentRtt,settings,DuelSettings.VANILLA_HIT_TICKS);
+    }
+
+    public Prediction predict(Sample s,long freshHurt,double ownRtt,double opponentRtt,Settings settings,int hitWindowTicks){
         if(history.isEmpty()||s.time>history.getLast().time)history.addLast(s);
         while(history.size()>Math.max(2,Math.min(5,settings.samples))||history.size()>1&&s.time-history.getFirst().time>250)history.removeFirst();
         double[] v=new double[6];for(int k=0;k<6;k++)v[k]=velocity(k);
         double transit=(ownRtt+opponentRtt)/2,lag=(settings.viewLag+transit)/1000;
-        double eligible=freshHurt>0?freshHurt+500:s.time;
+        double eligible=freshHurt>0?freshHurt+hitWindowTicks*50L:s.time;
         // Search only a few future client ticks. Longer linear extrapolation is
         // inappropriate across knockback reversals. Transit maps enemy click
         // time into the future time when its fresh-hurt cue reaches this client.

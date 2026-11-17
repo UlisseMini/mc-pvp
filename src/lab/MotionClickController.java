@@ -36,10 +36,14 @@ public final class MotionClickController {
 }
 
     public static Decision decide(Input in,Settings s) {
+        return decide(in,s,DuelSettings.VANILLA_HIT_TICKS);
+    }
+
+    public static Decision decide(Input in,Settings s,int hitWindowTicks) {
         if(in.landedCue<0||in.landedCue>in.now||!Double.isFinite(in.ownRtt)||in.ownRtt<0||in.ownRtt>500
                 ||!Double.isFinite(in.radialMotion))throw new IllegalArgumentException("Invalid local click observation");
         boolean opening=in.landedCue==0;
-        long ready=opening?0:in.landedCue+500-Math.round(in.ownRtt),start=opening?0:ready-s.windowLeadMs;
+        long ready=opening?0:in.landedCue+hitWindowTicks*50L-Math.round(in.ownRtt),start=opening?0:ready-s.windowLeadMs;
         boolean attack=!opening&&in.now>=start;
         boolean opportunity=in.sprint&&in.radialMotion<-.005;
         // Optional recoil cancellation must not occupy the physical click slot

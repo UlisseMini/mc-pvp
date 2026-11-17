@@ -268,6 +268,10 @@ policy's normal reach/CPS, zero added bot ping, and your saved ping. The older
 numeric syntax remains valid: `/duel wtap diamond 20 100` explicitly sets bot
 RTT to 20 and saves your RTT as 100. `/ping me 0` clears your added delay.
 
+Across duels and drills, a new full-damage hit is eligible after **9 server
+ticks** (450 ms at 20 TPS). `hit_ticks=10` in a duel restores the original
+Minecraft hit window. `kb=vanilla` restores both original timing and knockback.
+
 Tracking is configurable on existing bots: `aimdelay=150` uses a target view
 150 ms old (0–500 ms), `aimnoise=2` adds smoothly varying angular error
 (0–10 degrees), and `aimrate=360` limits turning to 360 degrees/second
@@ -613,7 +617,7 @@ The public `wtap-tick-burst` bot retains the same one-update W release as
 `wtap-tick`. It clicks during acquisition, for 150 ms after a legally delayed
 incoming hurt cue, and from 75 ms before its estimated next fresh-hit window
 until another landed-hit cue arrives. The estimate is visible cue time plus
-500 ms minus its own configured RTT. A 150 ms tactical delay applies to every
+the match's hit window minus its own configured RTT. A 150 ms tactical delay applies to every
 new observation. The physical click limiter persists across quiet intervals;
 all issued clicks retain ordinary Minecraft raycasts, misses and contact drag.
 This is an approximate visible-cue schedule, not exact server immunity access.

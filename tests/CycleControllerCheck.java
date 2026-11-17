@@ -3,7 +3,10 @@ import java.util.Properties;
 
 public class CycleControllerCheck {
     public static void main(String[]args){
-        CycleController c=new CycleController();CycleController.Settings s=CycleController.Settings.from(new Properties());
+        CycleController c=new CycleController();
+        check(CycleController.Settings.from(new Properties()).hitTicks==9);
+        Properties p=new Properties();p.setProperty("cycle_hit_ticks","10");
+        CycleController.Settings s=CycleController.Settings.from(p);
         check(c.decide(99,4,s).forward&&c.decide(99,4,s).click);
         c.queued(100);c.contact(100);check(!c.decide(100,2.8,s).click);
         for(int i=1;i<20;i++){
@@ -14,7 +17,7 @@ public class CycleControllerCheck {
         check(!c.decide(133,3,s).forward&&c.decide(134,3,s).forward);
         check(c.decide(140,2.9,s).coastTicks==7);
         c.reset();check(!c.decide(200,3,s).anchored);
-        Properties p=new Properties();p.setProperty("cycle_word","SSSSSSSSSRRRRWWWWWWW");p.setProperty("cycle_burst","2");
+        p.setProperty("cycle_word","SSSSSSSSSRRRRWWWWWWW");p.setProperty("cycle_burst","2");
         s=CycleController.Settings.from(p);c.contact(200);
         for(int i=0;i<40;i++){
             CycleController.Decision d=c.decide(200+i,3,s);char key=s.word.charAt(i%20);
