@@ -6,13 +6,14 @@ import org.objectweb.asm.tree.*;
 
 /** Read-only packet/input observers; preserves original instructions and return values.
  * Observation takes time; capture timestamps bracket work rather than promising zero overhead.
- * Restores first-person swings during item use in the renderer separately. */
+ * Restores the old first-person item swing and sneak camera in the renderers. */
 public final class PracticeTransformer implements IClassTransformer {
     private static final String HOOK="practice/bridge/ObserverHooks";
     public byte[] transform(String name,String transformed,byte[] bytes){
         if(bytes==null)return null;
         bytes=BotTransformer.transform(transformed,bytes);
         if(transformed.equals("net.minecraft.client.renderer.ItemRenderer"))return firstPersonUse(bytes);
+        if(transformed.equals("net.minecraft.client.renderer.EntityRenderer"))return sneakCamera(bytes);
         boolean network=transformed.equals("net.minecraft.network.NetworkManager"),
             decoder=transformed.equals("net.minecraft.util.MessageDeserializer"),
             encoder=transformed.equals("net.minecraft.util.MessageSerializer"),
@@ -94,6 +95,46 @@ public final class PracticeTransformer implements IClassTransformer {
     private static AbstractInsnNode previousCode(AbstractInsnNode instruction){
         do{instruction=instruction.getPrevious();}while(instruction!=null&&instruction.getOpcode()<0);
         return instruction;
+    }
+    private static byte[] sneakCamera(byte[] bytes) {
+        ClassNode node = new ClassNode();
+        new ClassReader(bytes).accept(node, 0);
+        boolean cameraHooked = false;
+        for (MethodNode method : node.methods) {
+            if (!"(F)V".equals(method.desc)) continue;
+            boolean camera = named(method, "func_78467_g", "orientCamera", "f");
+            boolean directions = named(method, "func_175067_i", "renderWorldDirections", "h");
+            if (!camera && !directions) continue;
+            MethodInsnNode eyeHeight = null;
+            for (AbstractInsnNode instruction : method.instructions.toArray()) {
+                if (!(instruction instanceof MethodInsnNode)) continue;
+                MethodInsnNode call = (MethodInsnNode) instruction;
+                if (call.getOpcode() != Opcodes.INVOKEVIRTUAL || !"()F".equals(call.desc)
+                        || !(call.owner.equals("net/minecraft/entity/Entity") || call.owner.equals("pk"))
+                        || !(call.name.equals("func_70047_e") || call.name.equals("getEyeHeight") || call.name.equals("aS"))) continue;
+                if (eyeHeight != null) {
+                    eyeHeight = null;
+                    break;
+                }
+                eyeHeight = call;
+            }
+            if (eyeHeight == null) continue;
+            method.instructions.insertBefore(eyeHeight, new InsnNode(Opcodes.DUP));
+            InsnList hook = new InsnList();
+            hook.add(new VarInsnNode(Opcodes.FLOAD, 1));
+            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "practice/bridge/OldSneakAnimation",
+                    "eyeHeight", "(Ljava/lang/Object;FF)F", false));
+            method.instructions.insert(eyeHeight, hook);
+            cameraHooked |= camera;
+        }
+        if (!cameraHooked) {
+            System.out.println("[PracticeBridge] 1.7 sneak camera unavailable for this renderer");
+            return bytes;
+        }
+        ClassWriter out = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+        node.accept(out);
+        System.out.println("[PracticeBridge] 1.7 sneak camera hooked");
+        return out.toByteArray();
     }
     private static byte[] firstPersonUse(byte[] bytes){
         ClassNode node=new ClassNode();new ClassReader(bytes).accept(node,0);

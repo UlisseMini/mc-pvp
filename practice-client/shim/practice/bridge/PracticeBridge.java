@@ -82,7 +82,11 @@ public final class PracticeBridge {
         return false;
     }
     @SubscribeEvent public void tick(TickEvent.ClientTickEvent event) {
-        if(event.phase!=TickEvent.Phase.START){capture.tick(ticks,true);return;}
+        if(event.phase!=TickEvent.Phase.START){
+            OldSneakAnimation.tick(Minecraft.func_71410_x(),false);
+            capture.tick(ticks,true);
+            return;
+        }
         Minecraft mc=Minecraft.func_71410_x();ticks++;
         CombatCoach.tick(mc,false);
         if(ticks%20==0){settings();host.reload(false);}
@@ -192,7 +196,7 @@ public final class PracticeBridge {
             Gui.func_73734_a(0,edge,edge,height-edge,display.edgeColor);Gui.func_73734_a(width-edge,edge,width,height-edge,display.edgeColor);
         }
     }
-    private void settings(){try{Properties p=new Properties();try(InputStream in=Files.newInputStream(directory.resolve("settings.properties"))){p.load(in);}capture.settings(p);CombatCoach.settings(p);}catch(IOException ignored){}}
+    private void settings(){try{Properties p=new Properties();try(InputStream in=Files.newInputStream(directory.resolve("settings.properties"))){p.load(in);}capture.settings(p);CombatCoach.settings(p);OldSneakAnimation.settings(p);}catch(IOException ignored){}}
     private void say(String text){
         Minecraft mc=Minecraft.func_71410_x();if(mc.field_71439_g!=null)mc.field_71439_g.func_145747_a(new ChatComponentText("\u00a7b[Practice] \u00a7f"+text));
     }
@@ -204,7 +208,7 @@ public final class PracticeBridge {
         Files.move(tmp,config,StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
         settings();host.reload(true);
         String coach=key.equals("jumpreset.enabled")?"Jump reset trainer":key.equals("blockhit.enabled")?"Blockhit trainer":
-            key.equals("oldblock.enabled")?"1.7 item-use animation":null;
+            key.equals("oldblock.enabled")?"1.7 item-use animation":key.equals("oldsneak.enabled")?"1.7 sneak animation":null;
         if(key.equals("jumpreset.sound"))say("Jump-reset sound set to "+value+".");
         else if(key.endsWith(".hud"))say((key.startsWith("jumpreset")?"Jump reset":"Blockhit")+" HUD set to "+value+".");
         else say(coach==null?host.status():coach+(Boolean.parseBoolean(value)?" on.":" off."));
@@ -212,7 +216,7 @@ public final class PracticeBridge {
     private final class Command extends CommandBase {
         public String func_71517_b(){return "practice";}
         @Override public List<String> func_71514_a(){return Collections.singletonList("p");}
-        public String func_71518_a(ICommandSender sender){return "/p jumpreset/blockhit on/off or hud hotbar/center/off | jumpreset sound orb/harp/pling/levelup | oldblock on/off | remote record on/off | antiafk on [seconds|MIN-MAX]/off | opening on/off/large/small | advantage on/off | reach on/off | ghost bot/me on/off | debug on/off | reload | status | capture/link/metrics/potions/record/sprint on/off | mark <text> | ping";}
+        public String func_71518_a(ICommandSender sender){return "/p jumpreset/blockhit on/off or hud hotbar/center/off | jumpreset sound orb/harp/pling/levelup | oldblock/oldsneak on/off | remote record on/off | antiafk on [seconds|MIN-MAX]/off | opening on/off/large/small | advantage on/off | reach on/off | ghost bot/me on/off | debug on/off | reload | status | capture/link/metrics/potions/record/sprint on/off | mark <text> | ping";}
         public int func_82362_a(){return 0;}
         public boolean func_71519_b(ICommandSender sender){return true;}
         public void func_71515_b(ICommandSender sender,String[] args) {
@@ -236,7 +240,7 @@ public final class PracticeBridge {
                 }
                 else if(args.length==3&&args[0].equals("ghost")&&Arrays.asList("bot","me").contains(args[1])&&Arrays.asList("on","off").contains(args[2]))set("ghost."+args[1]+".enabled",String.valueOf(args[2].equals("on")));
                 else if(args.length==2&&args[0].equals("opening")&&Arrays.asList("large","small").contains(args[1]))set("opening.large",String.valueOf(args[1].equals("large")));
-                else if(args.length==2 && Arrays.asList("metrics","potions","record","sprint","capture","link","opening","reach","debug","advantage","jumpreset","blockhit","oldblock").contains(args[0])
+                else if(args.length==2 && Arrays.asList("metrics","potions","record","sprint","capture","link","opening","reach","debug","advantage","jumpreset","blockhit","oldblock","oldsneak").contains(args[0])
                     && Arrays.asList("on","off").contains(args[1]))set(args[0]+".enabled",String.valueOf(args[1].equals("on")));
                 else if(!host.command(args))say(func_71518_a(sender));
             }catch(Exception e){say("Could not update settings: "+e.getMessage());}

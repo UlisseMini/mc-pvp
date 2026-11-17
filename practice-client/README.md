@@ -32,6 +32,7 @@ with all the same subcommands, for example `/p advantage on`:
 | `/practice reload` | Reload the module and its configuration immediately |
 | `/practice status` | Show reload, capture and server-link status |
 | `/practice sprint on` / `off` | Enable/disable ToggleSprint |
+| `/p oldsneak on` / `off` | Smooth the camera as you sneak and stand back up (on by default) |
 | `/practice potions on` / `off` | Show/hide potion timers |
 | `/practice metrics on` / `off` | Show observed speeds, target gap/height, and blocking time |
 | `/practice record on` / `off` | Start/stop local client-observation CSV recording |
