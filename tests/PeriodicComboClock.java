@@ -71,7 +71,12 @@ public final class PeriodicComboClock {
         public boolean aRemoteBeforeMove=true,bRemoteBeforeMove=false,aimBeforeFrameDrain=true;
     }
     public record Observation(double time,long tick,ExactTravel.State own,double targetX,double targetY,double targetZ,
-                              boolean sprint,float headYaw,double lastContactTime,long localContacts,double lastTargetHurtTime,double lastOwnHurtTime) {
+                              boolean sprint,float headYaw,double lastContactTime,long localContacts,double lastTargetHurtTime,double lastOwnHurtTime,
+                              float reportedYaw) {
+        public Observation(double time,long tick,ExactTravel.State own,double targetX,double targetY,double targetZ,
+                           boolean sprint,float headYaw,double lastContactTime,long localContacts,double lastTargetHurtTime,double lastOwnHurtTime) {
+            this(time,tick,own,targetX,targetY,targetZ,sprint,headYaw,lastContactTime,localContacts,lastTargetHurtTime,lastOwnHurtTime,headYaw);
+        }
         public double nearest(){PeriodicComboFightModel.View v=new PeriodicComboFightModel.View(targetX);v.y=targetY;v.z=targetZ;return PeriodicComboFightModel.nearest(own,v);}
     }
     /** Native A/D are +/-.98f. In NATIVE_QUEUED, click holds an admission gate until updated. */
@@ -91,6 +96,8 @@ public final class PeriodicComboClock {
     public interface Policy {
         Control input(Observation observation);
         default void received(PacketObservation packet){}
+        default float aimYaw(float trackingYaw){return trackingYaw;}
+        default boolean contactOnly(){return false;}
         /** Own-observation admission permission, consulted only after gate/cap eligibility.
          * A deferral leaves the physical cap timestamp, gate and admitted FIFO unchanged. */
         default boolean allowInjection(Observation own,String source){return true;}
@@ -418,7 +425,7 @@ public final class PeriodicComboClock {
         deferralAttempts[side]++;maxDeferral[side]=Math.max(maxDeferral[side],delay/1_000_000.0);
         events.add(new Event(completion/1_000_000.0,e.kind,e.order,e.originalTime));
     }
-    private Observation observation(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;return new Observation(now,ticks[a?0:1],b.q,v.x,v.y,v.z,b.sprint,b.headYaw,b.lastContactTime,b.localContacts,v.lastHurtTime,b.lastHurtTime);}
+    private Observation observation(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;return new Observation(now,ticks[a?0:1],b.q,v.x,v.y,v.z,b.sprint,b.headYaw,b.lastContactTime,b.localContacts,v.lastHurtTime,b.lastHurtTime,b.reportYaw);}
     private void receive(boolean a){
         int side=a?0:1;LinkedList<Publication> pending=publications.get(side);
         long drainNanos=Math.round(now*1_000_000.0);
@@ -541,12 +548,14 @@ public final class PeriodicComboClock {
             else throw new AssertionError("Unexpected own incoming packet kind "+p.kind);
             return new PacketObservation(p.due,handledAt,p.packetId,kind,x,y,z,ground,vx,vy,vz,sprint);
     }
-    private void aim(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;double dx=v.x-b.q.x(),dz=v.z-b.q.z(),eye=b.q.y()+PeriodicComboFightModel.EYE;double targetY=Math.max(v.y+.15,Math.min(v.y+1.65,eye));b.yaw=(float)Math.toDegrees(Math.atan2(-dx,dz));b.pitch=(float)-Math.toDegrees(Math.atan2(targetY-eye,Math.hypot(dx,dz)));selectionReady[a?0:1]=true;}
+    private void aim(boolean a){int side=a?0:1;PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;double dx=v.x-b.q.x(),dz=v.z-b.q.z(),eye=b.q.y()+PeriodicComboFightModel.EYE;double targetY=Math.max(v.y+.15,Math.min(v.y+1.65,eye));b.yaw=policies[side].aimYaw((float)Math.toDegrees(Math.atan2(-dx,dz)));b.pitch=(float)-Math.toDegrees(Math.atan2(targetY-eye,Math.hypot(dx,dz)));selectionReady[side]=true;}
     private void poll(boolean a,String source){
         int side=a?0:1;ClickQueue q=clickQueues[side];long ns=Math.round(now*1_000_000.0);
         boolean ready=q.lastCompletedNanos==Long.MIN_VALUE||ns-q.lastCompletedNanos>=timing.clickIntervalNanos;
         if(!q.gate||!ready){clickEvent(a,"POLL",source,null,ready,false);return;}
         if(!policies[side].allowInjection(observation(a),source)){clickEvent(a,"DEFER",source,null,true,false);return;}
+        if(policies[side].contactOnly()&&!(PeriodicComboFightModel.ray(a?state.a:state.b,a?state.ab:state.ba)
+                <=(a?3:config.defenderReach))){clickEvent(a,"DEFER",source,null,true,false);return;}
         long delay=timing.injectionTiming==null?0:timing.injectionTiming.completionDelayNanos(a,ns);
         if(delay<0)throw new IllegalArgumentException("Negative injection completion overhead");
         long completed=Math.addExact(ns,delay);

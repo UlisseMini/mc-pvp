@@ -67,6 +67,8 @@ enabling RCON or opening another network port.
 | `/drill jumpreset preset=mmc` | Jump-reset practice on the same sumo platform, using Minemen-like knockback |
 | `/duel jump-reset` | Fight the test bot that uses ordinary W-tap and taps Jump on incoming knockback while grounded |
 | `/duel jump-reset-walk` | Fight a bot that sprints toward you and jump-resets grounded hits without swinging |
+| `/duel kb-displace-edge sumo` | Fight a W-tapper that flicks to steer the sprint part of knockback toward the nearest platform edge |
+| `/duel kb-displace-pull sumo kb=vanilla` | Fight a bot that tries to jump-reset the opening trade, pass through, and flick back before returning to W-tap |
 | `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full unenchanted diamond armor; successful blocks play your block sound |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
 | `/duel wtap rod_diamond reach=3.5 cps=15 ping=100` | Custom practice bot: 3.5-block reach, 15 CPS ceiling, 100 ms added bot RTT; keeps your saved ping |

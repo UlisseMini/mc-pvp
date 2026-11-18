@@ -72,6 +72,8 @@ public final class Client {
     static long freshHurtStatus;
     static long freshTargetHurtStatus;
     static boolean jumpResetPending;
+    static KnockbackDisplacement displacement;
+    static KnockbackDisplacement.Decision displacementTurn;
     static final AimController aim=new AimController();
     static Object aimTarget;
     static long aimLogAt;
@@ -124,9 +126,10 @@ public final class Client {
             AimController.Result tracking=aim.aim(aimNow,R.num(player,"posX"),eye,R.num(player,"posZ"),
                 R.num(opponent,"posX"),R.num(opponent,"posY"),R.num(opponent,"posZ"),
                 (float)R.num(player,"rotationYaw"),(float)R.num(player,"rotationPitch"),aimSettings);
-            R.set(player,"rotationYaw",tracking.yaw); R.set(player,"rotationPitch",tracking.pitch);
+            float yaw=displacementTurn!=null&&!Float.isNaN(displacementTurn.yaw)?displacementTurn.yaw:tracking.yaw;
+            R.set(player,"rotationYaw",yaw); R.set(player,"rotationPitch",tracking.pitch);
             if(aimNow-aimLogAt>=50){aimLogAt=aimNow;Map<String,Object> a=new LinkedHashMap<>();
-                a.put("type","aim_plan");a.put("time",aimNow);a.put("match",match);a.put("applied",Compat.list(tracking.yaw,tracking.pitch));
+                a.put("type","aim_plan");a.put("time",aimNow);a.put("match",match);a.put("applied",Compat.list(yaw,tracking.pitch));
                 a.put("ideal",Compat.list(tracking.idealYaw,tracking.idealPitch));a.put("error_deg",tracking.errorDegrees);
                 a.put("sample_age_ms",tracking.sampleAge);a.put("noise",Compat.list(tracking.noiseYaw,tracking.noisePitch));
                 a.put("delay_ms",aimSettings.delayMs);a.put("noise_deg",aimSettings.noiseDegrees);a.put("turn_rate_dps",aimSettings.turnRate);a.put("seed",aimSettings.seed);log(a);}
@@ -217,8 +220,10 @@ public final class Client {
             if(seedPlanAdmission!=null)wordPermits=wordPermits&&seedPlanAdmission.allow(
                 inputWordDecision,nativeInputPoll,now/1_000_000.0,seedPlanLastHeadNs/1_000_000.0,handledTargetHurtMs);
             boolean referencePermits=!referenceActive||referenceFeedback.allowInjection(referencePoll(now/1_000_000.0),nativeInputPoll?"native_tick":"frame");
+            boolean displacementPermits=displacementTurn==null||!displacementTurn.headOnly()
+                ||nativeInputPoll&&selected==opponent;
             boolean coastAdmission=maintenanceCurrent()?maintenanceHandoff.coastAdmissionActive(hurtWindowActive,now):hurtWindowActive;
-            if(clickGate && wordPermits && referencePermits && (!coastAdmission||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),DuelSettings.hurtWindowTicks(controls))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
+            if(clickGate && wordPermits && referencePermits && displacementPermits && (!coastAdmission||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),DuelSettings.hurtWindowTicks(controls))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 if(controls.getProperty("kind","").equals("cycle")){cycle.queued(ticks);clickGate=false;}
@@ -379,6 +384,7 @@ public final class Client {
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 criticalClicks.reset();
                 blockhit.reset();blockKey=false;freshHurtStatus=0;
+                displacement=null;displacementTurn=null;
                 hitPredictor.reset();timedBlock.reset();blockTapCues.clear();blockTapQueued=0;
                 targetWatchdog.reset();targetReady=false;
                 aim.reset();aimTarget=null;aimLogAt=0;
@@ -829,10 +835,11 @@ public final class Client {
                 maintenanceTransition.put("selected_hurt_window_gate",hurtWindowActive);
                 maintenanceTransition.put("selection_complete_monotonic_ns",System.nanoTime());log(maintenanceTransition);
             }
-            if(reaction==0){nativeInputPoll=true;try{frame(mc);}finally{nativeInputPoll=false;}}
+            boolean displacementJump=displacementInput(world,obs,sample,jumpOnImpact,ping);
+            if(reaction==0||displacementTurn!=null&&displacementTurn.headOnly()){nativeInputPoll=true;try{frame(mc);}finally{nativeInputPoll=false;}}
             // S12 changes velocity while the previous movement's ground flag
             // still holds. Read Jump in the next native living update.
-            if(jumpOnImpact&&Boolean.parseBoolean(controls.getProperty("jump_reset","false"))
+            if((displacementJump||jumpOnImpact&&Boolean.parseBoolean(controls.getProperty("jump_reset","false")))
                     &&(Boolean)R.get(player,"onGround")&&R.get(mc,"currentScreen")==null){
                 Object binding=R.get(R.get(mc,"gameSettings"),"keyBindJump");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"setKeyBindState",(int)R.call(binding,"getKeyCode"),true);
@@ -854,6 +861,35 @@ public final class Client {
                 log(entry);
             }
         }catch(Throwable e){fail(e);}
+    }
+    private static boolean displacementInput(Object world, Observation obs, Observation sample,
+                                             boolean impact, double ping) {
+        String mode=controls.getProperty("knockback_displacement","");
+        if(mode.isEmpty())return false;
+        if(displacement==null){
+            double center=Math.rint(sample.x/4096)*4096;
+            // Read the local floor. Both supported sumo platforms have the same
+            // top, and only the wider court has the floor tile six blocks west.
+            if(Math.abs(sample.y-12)>.05||Math.abs(sample.x-center)>6||Math.abs(sample.z)>6)return false;
+            if((Boolean)R.call(world,"isAirBlock",R.construct("net.minecraft.util.BlockPos",(int)center,11,0)))return false;
+            boolean wide=!(Boolean)R.call(world,"isAirBlock",R.construct("net.minecraft.util.BlockPos",(int)center-6,11,0));
+            displacement=new KnockbackDisplacement(KnockbackDisplacement.Mode.valueOf(mode.toUpperCase(Locale.ROOT)),
+                new KnockbackDisplacement.Arena(center,wide?12:10),
+                PracticePresets.MMC.equals(controls.getProperty(PracticePresets.KB_MODEL)),
+                Boolean.parseBoolean(controls.getProperty("displacement_jump_reset","true")));
+        }
+        float reported=(float)R.num(player,"lastReportedYaw");
+        double cue=obs.targetFreshHurtCue==0?Double.NEGATIVE_INFINITY:obs.targetFreshHurtCue;
+        displacementTurn=displacement.decide(ticks,sample.time,cue,ping,DuelSettings.hurtWindowTicks(controls),
+            sample.x,sample.z,obs.tx,obs.tz,attackReach(),reported,sample.ground,impact);
+        if(displacementTurn.forceForward())setKeys(true,displacementTurn.lateral,true);
+        clickGate=clickGate&&displacementTurn.click;
+        if(displacementTurn.phase!=KnockbackDisplacement.Phase.NORMAL)
+            log(Compat.map("type","knockback_displacement","time",sample.time,"match",match,"native_tick",ticks,
+                "phase",displacementTurn.phase.name(),"reported_yaw",reported,
+                "turn_yaw",Float.isNaN(displacementTurn.yaw)?"target":displacementTurn.yaw,
+                "x",sample.x,"z",sample.z,"target_x",obs.tx,"target_z",obs.tz));
+        return displacementTurn.jump;
     }
     static Observation lastConsumed;
     static boolean maintenanceCurrent(){
@@ -1020,7 +1056,9 @@ public final class Client {
             if(Boolean.TRUE.equals(event.get("own_entity"))&&maintenanceCurrent())
                 maintenanceHandoff.ownReturnCue(true,((Number)event.get("time")).longValue(),System.nanoTime());
             event.put("vx",R.num(packet,"motionX")/8000);event.put("vy",R.num(packet,"motionY")/8000);event.put("vz",R.num(packet,"motionZ")/8000);
-            if(Boolean.TRUE.equals(event.get("own_entity"))&&Boolean.parseBoolean(controls.getProperty("jump_reset","false"))&&active())
+            if(Boolean.TRUE.equals(event.get("own_entity"))&&
+                    (Boolean.parseBoolean(controls.getProperty("jump_reset","false"))
+                     ||"pull".equals(controls.getProperty("knockback_displacement")))&&active())
                 jumpResetPending=R.num(packet,"motionX")!=0||R.num(packet,"motionZ")!=0;
             if(ScienceTrace.client() && Boolean.TRUE.equals(event.get("own_entity")))event.put("applied_motion",Compat.list(R.num(player,"motionX"),R.num(player,"motionY"),R.num(player,"motionZ")));
             log(event);
@@ -1034,6 +1072,9 @@ public final class Client {
     }
     public static void attackAfter(Object self,Object target){
         if(!"client".equals(System.getProperty("lab.role")))return;
+        if(displacementTurn!=null&&displacementTurn.phase==KnockbackDisplacement.Phase.STRIKE
+                &&self==player&&target==opponent)
+            displacement.localContact(ticks,freshTargetHurtStatus);
         if(maintenanceCurrent()&&maintenanceFeedback!=null&&self==player&&target==opponent){
             maintenanceLocalContacts++;maintenanceContactMs=System.nanoTime()/1000000.0;
         }
