@@ -27,7 +27,10 @@ public final class PeriodicComboFightModel {
             if(tap>0)tap--;
             boolean forward=key==W||key==S;
             if(q.onGround()&&!previousForward&&forward&&!sprint){if(tap>0||key==S)sprint=true;else tap=7;}
-            if(key==S)sprint=true;if(!forward)sprint=false;previousForward=forward;
+            if(key==S)sprint=true;
+            // EntityPlayerSP.onLivingUpdate checks the preceding travel collision after processing Ctrl.
+            if(!forward||q.isCollidedHorizontally())sprint=false;
+            previousForward=forward;
             q=cutoff(q);
             // Native pr.bF runs immediately before pr.g, not at the input HEAD.
             // Preserve onGround here: the takeoff travel uses ground friction.

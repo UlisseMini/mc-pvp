@@ -48,6 +48,10 @@ final class NetworkChecks {
         }
         var body=new PeriodicComboFightModel.Body(0);body.sprint=true;
         body.move(3,0,0,false);if(body.q.z()>=0||body.sprint||body.previousForward)throw new AssertionError("S did not walk backwards");
+        var q=body.q;
+        body.q=new lab.ExactTravel.State(q.x(),q.y(),q.z(),q.vx(),q.vy(),q.vz(),q.box(),false,true,false,true,false,false,false);
+        body.sprint=true;body.move(2,0,0,false);
+        if(body.sprint||body.airAcceleration!=.02f)throw new AssertionError("Previous horizontal collision must cancel sprint even with Ctrl pressed");
         System.out.println(checks+" action, serialization, translation, seat reversal and policy fork checks plus backward input passed");
     }
 }
