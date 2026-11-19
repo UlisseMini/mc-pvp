@@ -54,6 +54,8 @@ def publish(folder):
     champions.install('boxing-regulation',champions.POLICIES/(winner+'.properties'),
                       'Native first-to-100 boxing tournament winner ('+winner+')','boxing-regulation',mode='boxing')
     dump(folder/'tournament.json',dict(winner=winner,native=physical,model=forecast,native_sha256=sha(actual),model_sha256=sha(model)))
+    from boxing_scorecard import publish as publish_scorecard
+    publish_scorecard(folder)
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('out',type=Path);p.add_argument('--clocks',type=Path);p.add_argument('--publish',action='store_true');a=p.parse_args()
