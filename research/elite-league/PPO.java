@@ -72,7 +72,9 @@ final class PPO {
     static Batch trajectory(Arena.Scenario sc,float[] weights,double[] critic,double temp,long seed){
         DuelEnv e=sc.env();boolean first=sc.first();
         var p=new Collector(weights,critic,temp,seed,first?e.rtt:e.otherRtt);
-        var g=e.new Game(first,p,sc.opponent().create(first?e.otherRtt:e.rtt,0));g.finish();
+        var config=e.initial.config;
+        var rival=sc.opponent().create(first?e.otherRtt:e.rtt,first?e.rtt:e.otherRtt,0,config.mmc,config.sumoDiameter,config.hitTicks);
+        var g=e.new Game(first,p,rival);g.finish();
         double reward=g.reward()*2-1,nextAdv=0,nextValue=0;
         for(int i=p.steps.size()-1;i>=0;i--){
             var step=p.steps.get(i);
@@ -139,7 +141,14 @@ final class PPO {
     public static void main(String[] args)throws Exception{
         var dest=Path.of(args[0]);int steps=Integer.parseInt(args[1]),pairs=Integer.parseInt(args[2]),seed=Integer.parseInt(args[3]);
         var initial=Arena.Model.decode(Files.readString(Path.of(args[4])).trim());if(initial.family()!=DuelNetwork.Family.MLP)throw new IllegalArgumentException("MLP actor required");
-        var field=new RobustField(Arrays.stream(args,7,args.length).map(Path::of).toList(),Path.of(args[5]),Path.of(args[6]));
+        boolean fittedField=args[7].equals("--mouse-league");
+        var field=new RobustField(Arrays.stream(args,fittedField?9:7,args.length).map(Path::of).toList(),Path.of(args[5]),Path.of(args[6]));
+        if(fittedField){
+            var groups=new TreeMap<String,List<Arena.Fighter>>();
+            for(var opp:Ladder.readField(Path.of(args[8])))groups.computeIfAbsent(opp.group(),name->new ArrayList<>()).add(opp.f());
+            field.groups.clear();field.groups.addAll(groups.values());
+            for(var domains:List.of(field.standard,field.shifted))for(var variant:domains)variant.env().initial.timing.mouseInput=true;
+        }
         float[] w=initial.weights().clone();double[] critic=new double[IN+1];var opt=new Adam(w.length);
         var rng=new Random(seed);var pool=Executors.newFixedThreadPool(2);var past=new ArrayList<Arena.Fighter>();long bouts=0,heads=0;
         Files.createDirectories(dest);

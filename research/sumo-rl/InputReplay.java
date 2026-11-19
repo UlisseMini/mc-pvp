@@ -132,7 +132,17 @@ public final class InputReplay {
         if(shape!=null)st.packetTiming=shape;
         var clock=new PeriodicComboClock(st,cfg,timing,a,b,tape);
         var moves=new ArrayList<Object>();var hits=new DuelEnv.Hits();
+        var sprintHistory=new ArrayList<Object>();boolean[] sprint={st.a.sprint,st.b.sprint};
         clock.setAudit((t,event,state)->{
+            if(a.diagnose){
+                for(int side=0;side<2;side++){
+                    var body=side==0?state.a:state.b;
+                    if(sprint[side]!=body.sprint){
+                        sprint[side]=body.sprint;
+                        sprintHistory.add(List.of(Math.round(t*1e6),side==0?"a":"b",event,body.sprint));
+                    }
+                }
+            }
             if(event.equals("MOVEA")||event.equals("MOVEB")){
                 var q=event.equals("MOVEA")?state.a.q:state.b.q;
                 moves.add(List.of(Math.round(t*1e6),event.equals("MOVEA")?"a":"b",q.x(),q.y(),q.z(),q.vx(),q.vy(),q.vz()));
@@ -149,6 +159,7 @@ public final class InputReplay {
         var result=new LinkedHashMap<String,Object>();result.put("moves",moves);result.put("admissions",List.of(admits[0],admits[1]));
         result.put("hits",hits.list.stream().map(h->List.of(h.at(),h.sideA(),h.upgrade())).toList());
         if(a.diagnose){result.put("velocity",Map.of("a",a.velocities,"b",b.velocities));result.put("contacts",contacts);}
+        if(a.diagnose)result.put("sprint_history",sprintHistory);
         if(clock.state.packetTiming instanceof ObservedDrains observed)result.put("observed_drain_coverage",observed.coverage());
         System.out.println(Json.encode(result));
     }

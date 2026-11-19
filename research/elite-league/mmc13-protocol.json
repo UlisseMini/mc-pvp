@@ -1,0 +1,12 @@
+{
+  "platform": "mmc_recorded_13_v1",
+  "source": "../mmc-arena/evidence/platform.json",
+  "profile": "provisional MMC sprint reset, 9 ticks, regulation sumo, 3 block reach, balanced seats, 0/80 ms symmetric RTT, 20 CPS ceiling, integer mouse input",
+  "split": "Re-use the registered training and development calendars solely as development. After finalist weights are frozen, generate eight new W-tap mirror calendars without selecting outcomes. Development-only Nomophobia never enters the elite human score.",
+  "opening": "Grade the defending continuation, historical population champion and plain W-tap in the first native cohort against W-tap and adapt-01-pair. Sixteen games per matchup. Also grade on the new arena using development clocks. This is a baseline, without a W-tap dominance claim.",
+  "hard_opponent": "Before training, measure the incumbent against every distinct contemporary controller on all eight development calendars. Choose its lowest scoring distinct rival excluding W-tap and the incumbent's own exact weights. Break ties by name. Freeze this target.",
+  "training": "Screen the full field on training clocks. Fit rules, nearest-state tables, explicit search and direct neural control in at least two 64-generation rounds. Include W-tap, the incumbent and its weakest distinct rival as training strata. Preserve feedback from lost own-POV states and keep W-tap in each comparison. Publish the winner and both track winners after each round.",
+  "confirmation": "Freeze winning and best new challengers before prospective clocks. Compare each with W-tap and the defending population/continuation references. Against W-tap use 12 independent runs in each seat and RTT. Require at least 90% outright wins overall and at least 10/12 outright wins in each native cell, plus at least 90% outright wins across the 32 simulator cells. Score the separate weakest matchup using points and retain draws. No elite-human conclusion follows from bot results.",
+  "generalization": "Also test W-tap, Hold-W, historical tactics, adaptive opponents and changing movement. Report modern and archived fields separately. Evaluate Hypixel-like combat separately using the same physical platform. All new native result IDs are run on the measured default. Former lab disk results retain their original geometry.",
+  "boxing": "Separate flat arena, first-to-100 and established-combo K3/K5/K10 trials, both matched to W-tap. Existing frozen challengers are tested without new boxing controller features."
+}

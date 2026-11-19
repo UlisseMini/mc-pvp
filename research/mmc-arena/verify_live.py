@@ -1,9 +1,7 @@
 """Play a normal default sumo duel, a legacy override, and a return to default. Compare the live world with the captured block states."""
 from pathlib import Path
-import gzip
 import hashlib
 import json
-import math
 import struct
 import sys
 ROOT=Path(__file__).resolve().parents[2];HERE=Path(__file__).resolve().parent
@@ -28,6 +26,8 @@ def run(work,out):
         t.update(diameter=diameter,start_gap=8 if diameter==13 else 6)
         run_batch({q:t},manifest)
         mid=json.loads(manifest.read_text())['matches'][q];g=json.loads((ROOT/'runtime/results'/(mid+'.json')).read_text());arena=g['sumo_arena']
+        if g.get('request')!=q or g['mode']!='sumo' or g['reason'] not in ('ring_out','double_ring_out','timeout_draw'):
+            raise ValueError('Live check did not complete a regulation sumo match: '+mid)
         if (arena['diameter'],arena['start_gap'],arena['observed_floor_sha256'])!=(diameter,t['start_gap'],expected(compare,diameter)):raise ValueError('Native surface differs from recording: '+mid)
         with (ROOT/'runtime/replays'/(mid+'.jsonl')).open() as f:
             frames=[e for line in f if (e:=json.loads(line))['type']=='tick' and e['time']<g['start']]

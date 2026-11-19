@@ -62,13 +62,21 @@ def main(cmd):
                 desired=credit>=0
                 if desired!=running and child.poll() is None:
                     try:os.killpg(child.pid,signal.SIGCONT if desired else signal.SIGSTOP)
-                    except ProcessLookupError:pass
-                    running=desired
+                    except (ProcessLookupError,PermissionError):
+                        # Darwin can return EPERM during the exec/exit transition of /usr/bin/nice.
+                        # Leave the current state unchanged and retry on the next sample if still alive.
+                        child.poll()
+                    else:running=desired
                 now=end;prev=cur
             return child.returncode
         finally:
             if child.poll() is None:
-                os.killpg(child.pid,signal.SIGCONT);os.killpg(child.pid,signal.SIGTERM);child.wait()
+                for sig in (signal.SIGCONT,signal.SIGTERM):
+                    if child.poll() is not None:break
+                    try:os.killpg(child.pid,sig)
+                    except (ProcessLookupError,PermissionError):
+                        if child.poll() is None:child.send_signal(sig)
+                child.wait()
 
 def supervise_script():
     if not supervised():
@@ -77,5 +85,8 @@ def supervise_script():
 if __name__=='__main__':
     if len(sys.argv)>2 and sys.argv[1]=='--child':
         os.environ['ELITE_GOVERNED_GROUP']=str(os.getpgrp())
+        if sys.argv[2:5]==['nice','-n','8']:
+            os.nice(8)
+            del sys.argv[2:5]
         os.execvp(sys.argv[2],sys.argv[2:])
     sys.exit(main(sys.argv[1:]))

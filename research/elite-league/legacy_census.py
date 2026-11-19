@@ -69,7 +69,7 @@ def summarize(trials,manifest,expected):
         g=json.loads((ROOT/f'runtime/results/{mid}.json').read_text())
         if g['policy_'+side]!=t['arm'] or g['policy_'+other]!=t['opponent'] or g['practice_preset']!='mmc' or g['reason'] not in ('ring_out','double_ring_out','timeout_draw'):
             raise ValueError('Unexpected native match '+mid)
-        if g['combat_profile']['knockback_model']!='mmc_pre_attack_sprint_v2' or g['sumo_arena']['diameter']!=10 or g['sumo_arena']['start_gap']!=6:
+        if g['combat_profile']['knockback_model']!='mmc_pre_attack_sprint_v2' or g['sumo_arena']['diameter']!=t.get('diameter',10) or g['sumo_arena']['start_gap']!=t.get('start_gap',6):
             raise ValueError('Historical ring or knockback differs')
         checks={}
         for s in 'ab':
@@ -79,13 +79,18 @@ def summarize(trials,manifest,expected):
                 raise ValueError('Historical court controls differ in '+mid)
             source=ROOT/'policies'/(g['policy_'+s]+'.properties')
             if s==other and sha(source)!=expected[t['opponent']]['sha256']:raise ValueError('Historical policy changed')
-            if 'duel_network' in p and p['duel_network']!=properties(source)['duel_network']:raise ValueError('Weights differ in '+mid)
+            config=properties(source)
+            for key,setting in config.items():
+                if key not in COMMON and not key.startswith('league_') and p.get(key)!=setting:
+                    raise ValueError('Native policy field differs in '+mid+'/'+s+': '+key)
             f,=(ROOT/'runtime/pov'/mid).glob(s+'-client-*-events.jsonl.gz')
-            audit=MouseAudit();last=None;presses=0;minimum=None;footer=None
+            audit=MouseAudit();last=None;presses=0;minimum=None;footer=None;heads=0
+            head_type='duel_network' if 'duel_network' in config else 'legacy_head'
             for e in captures.events(f):
                 if e['type']=='capture_end':footer=e
                 if not g['start']<=e.get('time',0)<=g['finish']:continue
                 audit.record(e)
+                if e['type']==head_type and e.get('match')==mid:heads+=1
                 if e['type']=='click':
                     now=e['monotonic_ns'];presses+=1
                     if last is not None:
@@ -93,7 +98,8 @@ def summarize(trials,manifest,expected):
                         minimum=now-last if minimum is None else min(minimum,now-last)
                     last=now
             if not footer or not footer['writer_complete'] or any(footer[k] for k in ('dropped','size_capped','continues')):raise ValueError('Incomplete POV '+mid)
-            checks[s]=dict(mouse=audit.summary(),presses=presses,minimum_interval_ns=minimum)
+            if not heads:raise ValueError('Missing executed policy inputs in '+mid+'/'+s)
+            checks[s]=dict(mouse=audit.summary(),heads=heads,head_type=head_type,presses=presses,minimum_interval_ns=minimum)
         rows.append(dict(mid=mid,arm=t['arm'],opponent=t['opponent'],side=side,rtt=t['rtt'],rep=0,
                          win=g['winner']==g[side],draw=not g['winner'],checks=checks,end=g['reason']))
     return rows

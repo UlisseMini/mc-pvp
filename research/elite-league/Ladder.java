@@ -90,10 +90,12 @@ final class Ladder {
     }
     static Arena.Fighter fighter(String name,Arena.Model m){return new Arena.Fighter(name,m);}
     static void train(Path out,int season,int generations,int population,Path fieldPath,Path warmPath,
-                      Path frames,Path feedback,List<Path> tapes,int drawsPerGroup)throws Exception{
+                      Path frames,Path feedback,List<Path> tapes,int drawsPerGroup,boolean mouse)throws Exception{
         var rng=new Random(719033L+season*101113);var pool=Executors.newFixedThreadPool(3);
         var base=Path.of("research/elite-league");
         var domains=new RobustField(tapes,base.resolve("frozen"),base.resolve("challenge-frozen"));
+        if(mouse)for(var variants:List.of(domains.standard,domains.shifted))
+            for(var v:variants)v.env().initial.timing.mouseInput=true;
         var field=readField(fieldPath);int ng=(int)field.stream().map(Opp::group).distinct().count();
         var bank=new HeadBank(frames,feedback);var warm=Matches.roster(warmPath);var elites=new LinkedHashMap<String,List<Arena.Fighter>>();
         Files.createDirectories(out);
@@ -147,10 +149,11 @@ final class Ladder {
             var c=policy.input(o);HeadBank.add(heads,policy.net.features());return c;
         }
     }
-    static void misses(Path arms,Path field,Path out,List<Path> tapes)throws Exception{
+    static void misses(Path arms,Path field,Path out,List<Path> tapes,boolean mouse)throws Exception{
         var rng=new Random(10277);var fighters=Matches.roster(arms);var opponents=readField(field);
+        var envs=Arena.envs(tapes,"mmc",true);for(var env:envs)env.initial.timing.mouseInput=mouse;
         try(var text=Files.newBufferedWriter(out,StandardOpenOption.CREATE_NEW)){
-            for(var e:Arena.envs(tapes,"mmc",true))for(var f:fighters)for(var opp:opponents)for(boolean seat:new boolean[]{true,false}){
+            for(var e:envs)for(var f:fighters)for(var opp:opponents)for(boolean seat:new boolean[]{true,false}){
                 var p=new Trace(f.model(),e.rtt);var g=e.new Game(seat,p,opp.f.create(e.rtt,0));g.finish();
                 if(g.reward()>=1 || p.heads.isEmpty())continue;
                 // Sample the opening, the body of the exchange, and the final six heads.
@@ -161,8 +164,8 @@ final class Ladder {
         }
     }
     public static void main(String[] a)throws Exception{
-        if(a[0].equals("misses")){misses(Path.of(a[1]),Path.of(a[2]),Path.of(a[3]),Arrays.stream(a,4,a.length).map(Path::of).toList());return;}
+        if(a[0].equals("misses")||a[0].equals("mouse-misses")){misses(Path.of(a[1]),Path.of(a[2]),Path.of(a[3]),Arrays.stream(a,4,a.length).map(Path::of).toList(),a[0].equals("mouse-misses"));return;}
         train(Path.of(a[1]),Integer.parseInt(a[2]),Integer.parseInt(a[3]),Integer.parseInt(a[4]),Path.of(a[5]),Path.of(a[6]),
-              Path.of(a[7]),Path.of(a[8]),Arrays.stream(a,9,a.length).map(Path::of).toList(),a[0].equals("response")?16:2);
+              Path.of(a[7]),Path.of(a[8]),Arrays.stream(a,9,a.length).map(Path::of).toList(),a[0].equals("response")?16:a[0].equals("focus")?4:2,a[0].equals("focus"));
     }
 }

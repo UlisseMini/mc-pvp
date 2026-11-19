@@ -76,6 +76,9 @@ def train(work):
                               ranking=ranked,teacher=json.loads(label.with_suffix('.json').read_text())))
             print(name,winner,ranked[0]['merit'],new,next(r['merit'] for r in ranked if r['name']==new),flush=True)
         active=pinned/'pair.net';past[name+'-fit']=pinned/'contender.net';foes[name+'-fit']=pinned/'contender.net'
+        if label.exists():
+            evidence=HERE/'evidence/continuation-development';evidence.mkdir(exist_ok=True,parents=True)
+            freeze(evidence/(name+'.tsv.gz'),label.read_bytes())
     picks=CONTROLS|past
     pub=DEST/'selection.json'
     if not pub.exists():

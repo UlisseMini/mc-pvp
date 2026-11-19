@@ -1,0 +1,6 @@
+{
+  "objective": "Train an MLP to emit forward/back, sprint, left/right, jump and click admission from its own view, directly optimizing terminal sumo ring-outs by clipped PPO. The opponent's name never enters the policy.",
+  "exposure": "16 registered training calendars, scrambled seats, regulation majority plus the established shifted arena/RTT training domains. The measured MMC surface is the regulation arena. Use integer mouse control in both domains. Reserve the eight existing development calendars for contender selection. Validate the chosen frozen controller on fresh W-tap mirror calendars and native fights.",
+  "rounds": "Two sequential 512-update fits with 32 paired-seat trajectories per update. Train from the historical population MLP and the best selected raw MLP. Rotate W-tap, weakest distinct, incumbent, scripted, learned, switching, and the policy's own past weights across training fixtures. Score independent W-tap and Hold-W controls on every generation's exact settings. Give each round a directly playable overall winner and direct-control specialist.",
+  "gate": "Use the same focused multi-opponent ranking and W-tap outright-win criterion as the measured-map ladder. Preserve ring-outs, draws, each seat and RTT. No boxing or elite-human claims from this fit."
+}

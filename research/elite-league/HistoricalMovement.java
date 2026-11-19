@@ -48,16 +48,19 @@ final class HistoricalMovement extends DuelEnv.Player {
     private long incoming,landed;
     private boolean forward,pulse=true;
     private double oldX,oldZ,oldTx,oldTz,oldDistance,tvx,tvz;
-    private final int ownRtt,otherRtt;
+    private final int ownRtt,otherRtt,freshTicks;
     HistoricalMovement(String n,int r,int other){
-        super("historical",0,r,0);name=n;p=settings(n);kind=p.getProperty("kind");ownRtt=r;otherRtt=other;
+        this(n,r,other,9);
+    }
+    HistoricalMovement(String n,int r,int other,int freshTicks){
+        super("historical",0,r,0);name=n;p=settings(n);kind=p.getProperty("kind");ownRtt=r;otherRtt=other;this.freshTicks=freshTicks;
         movement=MomentumController.Settings.from(p);zest=new HistoricalZest(p);
         script=Arrays.stream(p.getProperty("input_script","0:0:0:0").split("\\|"))
                 .map(row->Arrays.stream(row.split(":")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
     }
     private HistoricalMovement(HistoricalMovement s){
         super("historical",0,s.rtt,0);name=s.name;p=s.p;kind=s.kind;ownRtt=s.ownRtt;otherRtt=s.otherRtt;movement=s.movement;
-        zest=s.zest.copy();script=s.script;momentum=s.momentum.copy();tapUntil=s.tapUntil;handledCue=s.handledCue;lastHead=s.lastHead;lastClickWall=s.lastClickWall;
+        freshTicks=s.freshTicks;zest=s.zest.copy();script=s.script;momentum=s.momentum.copy();tapUntil=s.tapUntil;handledCue=s.handledCue;lastHead=s.lastHead;lastClickWall=s.lastClickWall;
         lastClickAt=s.lastClickAt;seenIn=s.seenIn;seenOut=s.seenOut;incoming=s.incoming;landed=s.landed;forward=s.forward;pulse=s.pulse;
         oldX=s.oldX;oldZ=s.oldZ;oldTx=s.oldTx;oldTz=s.oldTz;oldDistance=s.oldDistance;tvx=s.tvx;tvz=s.tvz;firstClick=s.firstClick;
     }
@@ -84,7 +87,7 @@ final class HistoricalMovement extends DuelEnv.Player {
             }
             case "spacing","predictive","phase" -> {
                 double horizon=(h.now-h.observed+val("horizon_ms",80))/1000.;
-                if(kind.equals("phase"))horizon=(h.now-h.observed+Math.min(500,Math.max(0,h.landed-ownRtt+450-h.now)))/1000.;
+                if(kind.equals("phase"))horizon=(h.now-h.observed+Math.min(500,Math.max(0,h.landed-ownRtt+freshTicks*50L-h.now)))/1000.;
                 double projected=distance-Math.max(-8,Math.min(8,h.closing))*horizon-Math.max(0,motion)/(1-.546);
                 if(kind.equals("predictive"))projected-=(ownRtt+otherRtt)*Math.max(0,h.closing)/4000.;
                 go=projected>val("gap",2.9)+(forward?-1:1)*val("margin",.10);

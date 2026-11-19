@@ -12,7 +12,7 @@ def compare(mid,delay_pairs=None,mouse='generated',diagnose=False):
     if mouse not in ('generated','recorded'):raise ValueError('Unknown physical mouse replay')
     start=g['start'];end=min(start+2000,g['finish'])
     rows=[];refs={};counts={};native_hits=[];clock_origins=[];trackers={}
-    interventions={'a':[],'b':[]};velocity_drains={'a':[],'b':[]}
+    interventions={'a':[],'b':[]};velocity_drains={'a':[],'b':[]};sprint_evidence={'a':[],'b':[]}
     use_drains=delay_pairs is not None and 'observed-velocity-drains' in delay_pairs
     for side in 'ab':
         raw=[]
@@ -54,6 +54,10 @@ def compare(mid,delay_pairs=None,mouse='generated',diagnose=False):
             if diagnose and typ=='replication_apply_after' and e['packet']['kind']=='hm':
                 p=e['packet'];interventions[side].append((ns,'velocity',p['entity_id'],[p['motion'+a]/8000 for a in 'XYZ']))
             if diagnose and typ=='engine_attack':interventions[side].append((ns,'contact',None,None))
+            if diagnose and typ=='engine_attack':
+                sprint_evidence[side].append((ns,'contact',None,e['sprint_before'],e['sprint_after'],e['vx_before'],e['vx_after']))
+            if diagnose and typ=='replication_apply_after' and e['packet']['kind']=='hk' and 'sprint' in (e.get('state') or {}):
+                sprint_evidence[side].append((ns,'metadata',e['packet']['entity_id'],e['state']['sprint']))
             if typ=='click':kind='POLL_NATIVE' if e['input_poll']=='native_tick' else 'POLL_FRAME';counts[side]+=1
             if typ=='client_task_drain' and e['data']['phase']=='start':kind='CLIENT_DRAIN'
             if typ=='native_input_head':
@@ -107,6 +111,10 @@ def compare(mid,delay_pairs=None,mouse='generated',diagnose=False):
                     lo=previous[side] if previous[side] is not None else -1
                     ledger=dict(previous_travel_ns=lo,travel_ns=ns,native_in_step=[e for e in physical if lo<e[0]<=ns],
                                 sim_in_step=[e for e in simulated if lo<e[0]<=ns],
+                                native_sprint=[(at-origin,kind,*v) for at,kind,entity,*v in sprint_evidence[side]
+                                               if entity in (None,own_id) and abs(at-origin-ns)<100_000_000],
+                                sim_sprint=[(at,kind,value) for at,s,kind,value in pred['sprint_history']
+                                            if s==side and abs(at-ns)<100_000_000],
                                 native_near=[e for e in physical if abs(e[0]-ns)<150_000_000],
                                 sim_near=[e for e in simulated if abs(e[0]-ns)<150_000_000])
             previous[side]=ns

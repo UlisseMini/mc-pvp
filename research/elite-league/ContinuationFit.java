@@ -40,7 +40,15 @@ final class ContinuationFit {
     public static void main(String[] args)throws Exception{
         var prior=DuelNetwork.decode(Files.readString(Path.of(args[0])).trim());Path out=Path.of(args[1]);Files.createDirectories(out);
         int k=PairedExperts.GATE;var rows=new ArrayList<Sample>();var by=new HashMap<String,Integer>();
-        for(int a=2;a<args.length;a++)try(var in=new BufferedReader(new InputStreamReader(new GZIPInputStream(Files.newInputStream(Path.of(args[a])))))){
+        int first=2;var groups=new HashMap<String,String>();
+        if(args[2].equals("--groups")){
+            for(String line:Files.readAllLines(Path.of(args[3]))){
+                String[] pair=line.split(" ");
+                if(pair.length!=2||groups.put(pair[0],pair[1])!=null)throw new IllegalArgumentException("Invalid opponent league");
+            }
+            first=4;
+        }
+        for(int a=first;a<args.length;a++)try(var in=new BufferedReader(new InputStreamReader(new GZIPInputStream(Files.newInputStream(Path.of(args[a])))))){
             String line;while((line=in.readLine())!=null){
                 var r=line.split(" ");if(!r[6].equals("ok"))continue;
                 double[] x=new double[k];if(r.length!=14+k)throw new IllegalArgumentException("Missing teaching feature");
@@ -50,9 +58,14 @@ final class ContinuationFit {
             }
         }
         if(rows.isEmpty())throw new IllegalArgumentException("Empty teacher set");
+        var sizes=new HashMap<String,Integer>();
+        for(String opponent:by.keySet()){
+            if(!groups.isEmpty()&&!groups.containsKey(opponent))throw new IllegalArgumentException("Missing group for "+opponent);
+            sizes.merge(groups.getOrDefault(opponent,"all"),1,Integer::sum);
+        }
         double[][] cov=new double[k][k];double[] rhs=new double[k];
         for(var s:rows){
-            double scale=1./(by.size()*by.get(s.opponent));
+            double scale=1./((double)sizes.size()*sizes.get(groups.getOrDefault(s.opponent,"all"))*by.get(s.opponent));
             for(int i=0;i<k;i++){
                 double v=scale*s.x[i];rhs[i]+=v*s.delta;
                 for(int j=0;j<=i;j++)cov[i][j]+=v*s.x[j];

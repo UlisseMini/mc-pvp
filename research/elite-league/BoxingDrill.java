@@ -61,7 +61,10 @@ final class BoxingDrill {
         }
     }
     static List<Checkpoint> acquire(DuelEnv e,boolean first,boolean sensitivities){
-        var p=new Recorder(e.rtt);var g=e.new Game(first,p,new DuelEnv.Player("wtap",0,e.rtt,2000));
+        return acquire(e,first,sensitivities,new DuelEnv.Player("wtap",0,e.rtt,2000));
+    }
+    static List<Checkpoint> acquire(DuelEnv e,boolean first,boolean sensitivities,DuelEnv.Player opponent){
+        var p=new Recorder(e.rtt);var g=e.new Game(first,p,opponent);
         g.trace();int seen=0,chain=0;Set<Integer> used=new HashSet<>();var entries=new ArrayList<Checkpoint>();
         while(g.advance()){
             var hs=g.hits.list;double wake=Math.max(g.a.firstClick,g.b.firstClick);

@@ -2,6 +2,7 @@
 import argparse
 from collections import defaultdict
 import gzip
+import fcntl
 import json
 from pathlib import Path
 import sys
@@ -57,12 +58,20 @@ def model_aliases(field):
     return {inverse.get(n,n):p for n,p in field.items()}
 
 def mirrors(tag,work):
+    with (work/(tag+'-export.lock')).open('a') as lock:
+        fcntl.flock(lock.fileno(),fcntl.LOCK_EX)
+        return _mirrors(tag,work)
+
+def _mirrors(tag,work):
     # Donor mirrors are new independent matches after all contender weights are frozen.
     from importlib.util import spec_from_file_location,module_from_spec
     module=spec_from_file_location('history_mirrors',ROOT/'research/sumo-rl/native.py')
     donor=module_from_spec(module);module.loader.exec_module(donor)
     src=work/(tag+'-clocks.json');out=work/(tag+'-clocks')
-    run_batch(donor.plan('elite-'+tag+'-sealed',True),src)
+    trials=donor.plan('elite-'+tag+'-sealed',True)
+    if tag.startswith('mmc13-'):
+        for t in trials.values():t.update(diameter=13,start_gap=8,aim_input='mouse',command=t['command']+' aiminput=mouse')
+    run_batch(trials,src)
     if len(list(out.glob('*.txt.gz')))!=8:
         import subprocess
         subprocess.run([sys.executable,str(ROOT/'research/sumo-rl/calendars.py'),str(out),'--frozen-manifest',str(src)],check=True)

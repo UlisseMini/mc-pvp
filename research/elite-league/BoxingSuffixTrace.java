@@ -65,13 +65,20 @@ final class BoxingSuffixTrace {
     }
     public static void main(String[] args)throws Exception{
         var model=Arena.Model.decode(Files.readString(Path.of(args[0])).trim());
-        for(var file:Arrays.stream(args,1,args.length).map(Path::of).toList()){
+        boolean breadth=args.length>2 && args[1].equals("--mouse-defenders");
+        var foes=breadth?Matches.roster(Path.of(args[2])):List.of(Evolve.WT);
+        for(var file:Arrays.stream(args,breadth?3:1,args.length).map(Path::of).toList()){
             var tape=DuelEnv.Tape.read(file,20000);
-            for(int ping:new int[]{0,80})for(boolean seat:new boolean[]{true,false}){
+            for(var foe:foes)for(int ping:new int[]{0,80})for(boolean seat:new boolean[]{true,false}){
                 var env=new DuelEnv(tape,"mmc",ping,false);
-                for(var cp:BoxingDrill.acquire(env,seat,false)){
-                    System.out.println(Json.encode(Map.of("clock",env.clockId,"side",seat?"a":"b","rtt",ping,"k",cp.k,
-                        "landmark",cp.landmark,"wtap",new Ledger(cp,null).run(),"specialist",new Ledger(cp,model).run())));
+                env.initial.timing.mouseInput=breadth;
+                var starts=breadth?BoxingDrill.acquire(env,seat,false,new BoxingBreadth.Defender(foe,ping)):BoxingDrill.acquire(env,seat,false);
+                for(var cp:starts){
+                    var row=new LinkedHashMap<String,Object>();
+                    row.put("clock",env.clockId);row.put("side",seat?"a":"b");row.put("rtt",ping);row.put("k",cp.k);
+                    row.put("landmark",cp.landmark);row.put("wtap",new Ledger(cp,null).run());row.put("specialist",new Ledger(cp,model).run());
+                    if(breadth)row.put("opponent",foe.name());
+                    System.out.println(Json.encode(row));
                 }
             }
         }

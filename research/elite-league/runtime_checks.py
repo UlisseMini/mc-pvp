@@ -20,6 +20,8 @@ def run(d,frozen):
         paths.extend(sorted((HERE/group).glob('*.net')))
     paths.extend(sorted((HERE/'adaptive-field/nets').glob('*.net')))
     paths.extend(sorted((HERE/'adaptive-frozen').rglob('*.net')))
+    for group in ('cadence-frozen','continuation-frozen','breadth-frozen','focus-frozen'):
+        paths.extend(sorted((HERE/group).rglob('*.net')))
     if len(paths)<22:raise ValueError('Incomplete final roster')
     cp=os.pathsep.join(map(str,(classes,d/'bridge.jar')))
     command=['-Xms20m','-Xmx128m','-XX:+UseSerialGC','-cp',cp,'RuntimeParity',*map(str,paths)]

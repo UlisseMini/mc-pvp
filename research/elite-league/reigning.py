@@ -11,6 +11,8 @@ def publish(alias,source,reason,evidence):
     evidence=Path(evidence).resolve()
     dest=ROOT/'policies'/(alias+'.properties');original=ROOT/'policies'/(source+'.properties')
     stage={'robust':1,'confirmation':2,'history-cup':3}.get(evidence.parent.name,0)
+    if evidence.parent.parent.name=='mmc13':
+        stage={'opening':4,'final':5}.get(evidence.parent.name,stage)
     if dest.exists():
         previous=dict(s.split('=',1) for s in dest.read_text().splitlines() if '=' in s)
         if int(previous.get('title_stage','0'))>stage:return

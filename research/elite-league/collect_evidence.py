@@ -51,6 +51,9 @@ def archive(tag,work,evidence):
             put(paired,compact(summarize(rows)));files.add(paired)
     hashes={str(p.relative_to(d)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(files)}
     put(d/'collected.json',(json.dumps(hashes,indent=2)+'\n').encode())
+    if tag=='boxing100':
+        from boxing_regulation import publish
+        publish(d)
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('tag',choices=PANELS);p.add_argument('work',type=Path);p.add_argument('evidence',type=Path)
