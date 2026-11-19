@@ -1,0 +1,8 @@
+{
+  "purpose": "Measure exploitability. A new opponent explicitly trains to beat the frozen v1 hybrid. A second trains to beat plain Hold-W, as an elite human is expected to. Neither is a surrogate human grade.",
+  "training_data": "Only the original 16 training clock donors. No prospective v1 calendars, live scores or human evidence.",
+  "attackers": "Independent MLP and recurrent best responses for each target. Random restarts plus warm starts from frozen v1 networks of the same architecture. Optimize wins against the target over varied starting side, host clock, RTT and opening behavior. All actions are legal own-view decisions.",
+  "selection": "Before new native games or challenge validation, rank checkpoints for each target by development score against that target; break ties by average against plain W-tap, Hold-W and the v1 hybrid, then lexical order. Keep one per target. Measure both directions against base fighters including W-tap and Hold-W. Diagnose a counterstrategy by intervention before any new controller changes.",
+  "later_validation": "Freeze chosen best responses then collect eight additional W-tap native mirror clocks with prefix elite-br-sealed. Reserve these for the separate challenge experiment.",
+  "native": "Each challenge opponent plays W-tap, Hold-W, pressure and v1 hybrid, balanced over 0/80ms and both seats at 20 CPS. Two independent repetitions per cell. Keep W-tap and Hold-W visible in results."
+}
