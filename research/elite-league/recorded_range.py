@@ -40,7 +40,9 @@ def main():
     incumbent=ranks[0]['name'];publish('minemen-v4-incumbents',incumbent,entrants)
     weak=[n for n in ranks[0]['weakest'] if n!=incumbent][:3]
     league=focus.unique(pool);groups={n:(n if n in ['wtap',*weak,incumbent,rnn,parent,*students] else 'legacy-rule' if p is None else 'archive') for n,p in league.items()}
-    roster_fields(tmp/'opponents',league,groups,{})
+    with tempfile.TemporaryDirectory(dir=tmp) as name:
+        path=Path(name)/'opponents';roster_fields(path,league,groups,{})
+        freeze(tmp/'opponents',path.read_bytes())
     updates=tmp/'updates'
     if not updates.is_dir():
         with tempfile.TemporaryDirectory(dir=tmp) as name:

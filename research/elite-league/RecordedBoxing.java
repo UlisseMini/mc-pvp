@@ -6,7 +6,8 @@ import lab.Json;
 /** The regulation and established-combo scoring protocols share only the measured hit physics. */
 final class RecordedBoxing {
     public static void main(String[] args)throws Exception{
-        boolean regulation=args[0].equals("regulation");
+        boolean regulation=args[0].endsWith("regulation");
+        String profile=args[0].startsWith("range-")?"mmc-range":"mmc-recorded";
         var arms=Matches.roster(Path.of(args[1]));
         var opponents=Matches.roster(Path.of(args[2]));
         var workers=Executors.newFixedThreadPool(3);
@@ -15,7 +16,7 @@ final class RecordedBoxing {
                 int limit=regulation?180000:20000;
                 var t=DuelEnv.Tape.read(Path.of(args[i]),limit);
                 for(int rtt:new int[]{0,80}){
-                    var e=new DuelEnv(t,"mmc-recorded",rtt,rtt,false,29,true,10,6,0,limit);
+                    var e=new DuelEnv(t,profile,rtt,rtt,false,29,true,10,6,0,limit);
                     e.initial.timing.mouseInput=true;
                     var jobs=new ArrayList<Callable<String>>();
                     for(var arm:arms)for(var opponent:opponents)for(boolean seat:new boolean[]{true,false})jobs.add(()->{

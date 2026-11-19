@@ -41,6 +41,7 @@ final class BoxingDrill {
         Result run(Arena.Model model,List<Object> trace){
             var g=suffix(model);
             int seen=0,cycles=0;double last=landmark;
+            final double inactivityMs=2*50*g.clock.config.hitTicks+100;
             do{
                 var plant=g.clock.state;
                 while(seen<g.hits.list.size()){
@@ -51,11 +52,11 @@ final class BoxingDrill {
                             Math.hypot(plant.serverAx-plant.serverBx,plant.serverAz-plant.serverBz),
                             h.upgrade()||impulse==null||impulse.time()!=h.at()?null:List.of(impulse.x(),impulse.y(),impulse.z())));
                     }
-                    if(h.at()-last>1000)return new Result(cycles,last+1000-landmark,"inactive");
+                    if(h.at()-last>inactivityMs)return new Result(cycles,last+inactivityMs-landmark,"inactive");
                     if(h.sideA()!=g.first)return new Result(cycles,h.at()-landmark,"return");
                     if(!h.upgrade()){cycles++;last=h.at();}
                 }
-                if(g.clock.time()-last>1000)return new Result(cycles,last+1000-landmark,"inactive");
+                if(g.clock.time()-last>inactivityMs)return new Result(cycles,last+inactivityMs-landmark,"inactive");
             }while(g.advance());
             return new Result(cycles,g.clock.time()-landmark,"censored");
         }

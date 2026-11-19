@@ -97,9 +97,15 @@ def native(mid,setup,network=None):
             yaw=math.radians(source['rotationYaw']);f=(-math.sin(yaw),math.cos(yaw))
             delta=(victim['posX']-source['posX'],victim['posZ']-source['posZ']);l=math.hypot(*delta)
             unit=f if l<.01 else [v/l for v in delta]
-            recorded=setup.get('knockback_model')=='mmc_recorded_sumo_v3'
-            base,extra=(.5275,.422) if recorded else (.5274,.327)
-            assert math.dist([base*u+extra*v*bonus for u,v in zip(unit,f)],k['velocity'][::2])<1e-9
+            model=g['combat_profile']['knockback_model']
+            recorded=model in ('mmc_recorded_range_v4','mmc_recorded_sumo_v3')
+            if model=='mmc_recorded_range_v4':
+                strength=(.5275+.422*bonus)*(1-(min(.4,.35*max(0,l-3)) if bonus else 0))
+                expected_xz=[.5*strength*(u+v) for u,v in zip(unit,f)]
+            else:
+                base,extra=(.5275,.422) if recorded else (.5274,.327)
+                expected_xz=[base*u+extra*v*bonus for u,v in zip(unit,f)]
+            assert math.dist(expected_xz,k['velocity'][::2])<1e-9
             if recorded:assert k['velocity'][1]==.361375 and not k['height_capped']
             assert [int(v*8000)/8000 for v in k['velocity']]==h['velocity_packet']
             sprint_bonus['all_fresh']+=1

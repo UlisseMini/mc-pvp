@@ -39,7 +39,10 @@ def fit():
             lines.append(' '.join(map(str,[int(r['rtt']),*[v for lane in ('aup','bup','adown','bdown') for v in r['lanes'][lane]['quantiles']]])))
         path=tmp/name;freeze(path,('\n'.join(lines)+'\n').encode());return path
     train=donors('training-donors',train_ids);dev=donors('development-donors',dev_ids)
-    roster(tmp/'opponents',foes);roster(tmp/'source',{parent:pool[parent]})
+    def saved_roster(name, field):
+        with tempfile.TemporaryDirectory(dir=tmp) as directory:
+            path=Path(directory)/name;roster(path,field);freeze(tmp/name,path.read_bytes())
+    saved_roster('opponents',foes);saved_roster('source',{parent:pool[parent]})
     compile_model();saved=tmp/'trained'
     if not saved.is_dir():
         with tempfile.TemporaryDirectory(dir=tmp) as sub:
@@ -50,7 +53,7 @@ def fit():
     for f in sorted(saved.glob('*.net')):
         n='v3-link-'+f.stem;arms[n]=d/(n+'.net');freeze(arms[n],f.read_bytes())
     freeze(d/'training.jsonl', (saved/'training.jsonl').read_bytes())
-    roster(tmp/'entrants',arms);raw=d/'development.jsonl.gz'
+    saved_roster('entrants',arms);raw=d/'development.jsonl.gz'
     if not raw.exists():
         with tempfile.TemporaryFile() as f:
             subprocess.run(java('RecordedTransportLeague','score',dev,tmp/'opponents',tmp/'entrants',tmp,*calendars('development_selection_clocks')),cwd=ROOT,stdout=f,check=True)

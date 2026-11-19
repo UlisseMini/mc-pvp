@@ -227,6 +227,8 @@ public final class PeriodicComboFightModel {
             kbScale=q.horizontal();verticalScale=q.vertical();hitTicks=q.freshTicks();sprintVertical=q.sprintVertical();mmc=q.mmc();recordedMmc=q.recordedMmc();rangeMmc=q.rangeMmc();
         }
         int bPhase=10,serverPhase=25,hitTicks=10,sumoDiameter=10;
+        // Research interventions apply only to newly generated range-model impulses on a fork.
+        boolean omitRangeAttenuation, omitRangeDirectionBlend;
         boolean quantize=true,nativeNormalization=true,forceContacts=true,deferMovementSend=false,mmc=false,sumo=false,recordedMmc=false,rangeMmc=false;
     }
     // Same tile-center disk and footprint as the native sumo platform, with
@@ -379,9 +381,16 @@ public final class PeriodicComboFightModel {
                 double base=c.recordedMmc?lab.CombatProfile.RECORDED_BASE:.5274;
                 double extra=sprint?(c.recordedMmc?lab.CombatProfile.RECORDED_EXTRA:.327):0;
                 if(c.rangeMmc){
-                    double half=.5*lab.CombatProfile.rangeHorizontal(length,sprint?1:0);
-                    vx=half*((length<.01?facingX:dx/length)+facingX);
-                    vz=half*((length<.01?facingZ:dz/length)+facingZ);
+                    double strength=lab.CombatProfile.rangeHorizontal(c.omitRangeAttenuation?0:length,sprint?1:0);
+                    if(c.omitRangeDirectionBlend){
+                        double factor=strength/(base+extra);
+                        vx=factor*((length<.01?facingX:dx/length)*base+facingX*extra);
+                        vz=factor*((length<.01?facingZ:dz/length)*base+facingZ*extra);
+                    }else{
+                        double half=.5*strength;
+                        vx=half*((length<.01?facingX:dx/length)+facingX);
+                        vz=half*((length<.01?facingZ:dz/length)+facingZ);
+                    }
                 }else{
                     vx=(length<.01?facingX:dx/length)*base+facingX*extra;
                     vz=(length<.01?facingZ:dz/length)*base+facingZ*extra;

@@ -50,7 +50,8 @@ final class AdaptationFit {
         Path out=Path.of(args[0]);Files.createDirectories(out);
         int seed=Integer.parseInt(args[1]);
         var field=Matches.roster(Path.of(args[2]));var warm=Matches.roster(Path.of(args[3]));
-        var envs=Arena.envs(Arrays.stream(args,4,args.length).map(Path::of).toList(),"mmc",true);
+        boolean rangeProfile=args[4].equals("--mmc-range");
+        var envs=Arena.envs(Arrays.stream(args,rangeProfile?5:4,args.length).map(Path::of).toList(),rangeProfile?"mmc-range":"mmc",true);
         for(var e:envs)e.initial.timing.mouseInput=true;
         var pairs=warm.stream().filter(f->f.model().family()==DuelNetwork.Family.PAIR).toList();
         if(pairs.isEmpty() || warm.stream().noneMatch(f->f.model().family()==DuelNetwork.Family.RECURRENT))
