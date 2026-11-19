@@ -13,6 +13,7 @@ def config_hash(name):
     return hashlib.sha256((ROOT/'policies'/(name+'.properties')).read_bytes()).hexdigest()
 
 def register(players, pairs, seed, rtt, challenger=ARMS[1]):
+    if any(n.casefold()=="nomophobia" for n in players):raise ValueError("Nomophobia is registered as development only")
     if challenger==ARMS[0]:raise ValueError("Challenger must differ from W-tap")
     arms=(ARMS[0],challenger)
     if pairs<1 or rtt<0:raise ValueError('Positive pair count and nonnegative RTT required')
