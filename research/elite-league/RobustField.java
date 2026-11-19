@@ -7,13 +7,16 @@ final class RobustField{
     final List<Variant> standard=new ArrayList<>(),shifted=new ArrayList<>();
     final List<List<Arena.Fighter>> groups=new ArrayList<>();
     RobustField(List<Path> tapes,Path frozen,Path responses)throws Exception{
+        this(tapes,frozen,responses,"mmc");
+    }
+    RobustField(List<Path> tapes,Path frozen,Path responses,String profile)throws Exception{
         for(int i=0;i<tapes.size();i++){
             var tape=DuelEnv.Tape.read(tapes.get(i),DuelEnv.LIMIT);
-            for(int ping:new int[]{0,80})standard.add(new Variant(new DuelEnv(tape,"mmc",ping,true),true));
+            for(int ping:new int[]{0,80})standard.add(new Variant(new DuelEnv(tape,profile,ping,true),true));
             int[][] pings={{0,65},{75,15},{40,110},{105,30}};
             var p=pings[i%pings.length];
             int[] diameters={8,10,12,14};double[] gaps={4.5,5.5,6.5,7.0};
-            shifted.add(new Variant(new DuelEnv(tape,"mmc",p[0],p[1],true,24+i%11,true,
+            shifted.add(new Variant(new DuelEnv(tape,profile,p[0],p[1],true,24+i%11,true,
                 diameters[i%4],gaps[(i/4)%4],new double[]{-.75,0,.85,.4}[(i+i/4)%4]),false));
         }
         groups.add(List.of(Evolve.WT,Evolve.HOLD,Arena.Fighter.named("pressure"),Arena.Fighter.named("trade")));
