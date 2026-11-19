@@ -8,7 +8,9 @@ import lab.Json;
 
 /** Fork before the first actual disagreement between a click selector and its own PPO expert. */
 final class ContactTimingStudy {
-    static boolean observeOnly;
+    static boolean observeOnly, footwork, singleCoast;
+    static final String[] KEYS={"coast","walk","sprint","back"};
+    static final int[] DURATIONS={1,3,6};
     record Word(String name, int delay, int burst, boolean wtap) {}
     static final List<Word> WORDS = List.of(new Word("unchanged",0,0,false), new Word("wtap",0,0,true),
             new Word("defer-1",1,0,false),new Word("defer-3",3,0,false),new Word("defer-6",6,0,false),
@@ -47,10 +49,17 @@ final class ContactTimingStudy {
                         f[10],f[11],(double)(o.sprint()?1:0),(double)c.key(),(double)c.strafe(),(double)(c.jump()?1:0));
             }
             if(choice>0 && heads>=start) {
-                var word=WORDS.get(choice);int age=heads-start;
-                if(word.wtap)c=w;
-                else if(age<word.delay+word.burst)
-                    c=new PeriodicComboClock.Control(c.key(),c.strafe(),age>=word.delay,c.jump());
+                int age=heads-start;
+                if(choice==1)c=w;
+                else if(footwork){
+                    int key=(choice-2)/DURATIONS.length;
+                    if(age<DURATIONS[(choice-2)%DURATIONS.length])
+                        c=new PeriodicComboClock.Control(key,c.strafe(),c.click(),c.jump());
+                }else{
+                    var word=WORDS.get(choice);
+                    if(age<word.delay+word.burst)
+                        c=new PeriodicComboClock.Control(c.key(),c.strafe(),age>=word.delay,c.jump());
+                }
             }
             int action=DuelNetwork.pack(c.key(),(int)Math.signum(c.strafe()),c.click(),c.jump());
             raw.net.applied(action);candidate.net.applied(action);
@@ -92,19 +101,28 @@ final class ContactTimingStudy {
             String prefix=TradeWords.stateHash(g);
             row.put("fork_sha256",prefix);
             var branches=new LinkedHashMap<String,Object>();
-            for(int i=0;i<WORDS.size();i++){
+            int n=singleCoast?3:footwork?2+KEYS.length*DURATIONS.length:WORDS.size();
+            for(int i=0;i<n;i++){
                 var b=e.new Game(g,g.a.copy(),g.b.copy());
-                if(i==0&&!prefix.equals(TradeWords.stateHash(b)))throw new AssertionError("Changed first input prefix");
+                if(!prefix.equals(TradeWords.stateHash(b)))throw new AssertionError("Changed first input prefix");
                 var q=(Probe)b.our();
                 if(i>0){q.choice=i;q.start=player.firstExtra;}
-                b.trace();b.finish();
+                RecoilClickStudy.Ledger ledger=null;
+                if(footwork)ledger=new RecoilClickStudy.Ledger(b,player.at);
+                else b.trace();
+                b.finish();
                 if(!player.view.equals(q.view))throw new AssertionError("Different visible decision");
                 if(i==0){
                     String hash=TradeWords.stateHash(b);
                     if(!hash.equals(TradeWords.stateHash(scout)))throw new AssertionError("No-op changed terminal state");
                     row.put("unchanged_terminal_sha256",hash);
                 }
-                branches.put(WORDS.get(i).name,outcome(b,player.at));
+                String name=footwork&&i>=2?KEYS[(i-2)/DURATIONS.length]+"-"+DURATIONS[(i-2)%DURATIONS.length]:WORDS.get(i).name;
+                var result=new LinkedHashMap<>(outcome(b,player.at));
+                if(ledger!=null){
+                    result.put("own_contacts",ledger.contacts);result.put("own_moves",ledger.moves);
+                }
+                branches.put(name,result);
             }
             if(!prefix.equals(TradeWords.stateHash(g)))throw new AssertionError("Shared prefix mutated");
             row.put("branches",branches);
@@ -134,8 +152,10 @@ final class ContactTimingStudy {
     public static void main(String[] args)throws Exception{
         if(args[0].equals("--native-heads")){replayInputs(args);return;}
         observeOnly=args[2].equals("--observe");
+        singleCoast=args[2].equals("--single-coast");
+        footwork=singleCoast||args[2].equals("--footwork");
         var arms=Matches.roster(Path.of(args[0]));var foes=Matches.roster(Path.of(args[1]));
-        for(var e:Arena.envs(Arrays.stream(args,observeOnly?3:2,args.length).map(Path::of).toList(),"mmc",true)){
+        for(var e:Arena.envs(Arrays.stream(args,observeOnly||footwork?3:2,args.length).map(Path::of).toList(),"mmc",true)){
             e.initial.timing.mouseInput=true;
             for(var foe:foes)for(boolean seat:new boolean[]{true,false})run(e,arms.get(0),arms.get(1),foe,seat);
         }
