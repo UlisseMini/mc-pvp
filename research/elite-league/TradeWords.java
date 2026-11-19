@@ -7,6 +7,7 @@ import lab.Json;
  * primed controller, or use W-tap/Hold-W for the rest of the bout. No future state enters the legal bot. */
 final class TradeWords {
     static int exchange=1;
+    static boolean auditForks;
     static final String[] WORDS={"continue","release-ctrl","release-w","back","recoil-click","late-click","jump","left","right","wtap","hold"};
     static final class Probe extends DuelEnv.Player{
         Arena.Neural base;
@@ -43,17 +44,27 @@ final class TradeWords {
             return use;
         }
     }
-    static void run(DuelEnv env,boolean first,Arena.Fighter f,Arena.Fighter opp){
+    static String stateHash(DuelEnv.Game game)throws Exception{
+        return FullClockHash.digest(List.of(FullClockHash.digest(game.clock),game.a,game.b,game.step,game.winner()));
+    }
+    static void run(DuelEnv env,boolean first,Arena.Fighter f,Arena.Fighter opp)throws Exception{
         var p=new Probe(f.model(),env.rtt);var g=env.new Game(first,p,opp.create(env.rtt,0));
         while(g.step<env.serverEnds.length && g.winner()<0 && !p.marked)
             if(!g.clock.runHeadInterval(first,env.serverEnds[g.step]))g.step++;
         Map<String,Object> result=new LinkedHashMap<>();result.put("prefix",f.name());result.put("opponent",opp.name());
         result.put("clock",env.clockId);result.put("side",first?"a":"b");result.put("rtt",env.rtt);
+        String noChange=null;
         if(p.marked){
             double start=g.clock.time();result.put("at",start);result.put("x",p.x);
             var scores=new LinkedHashMap<String,Object>();result.put("continuations",scores);
+            if(auditForks)result.put("fork_sha256",stateHash(g));
             for(int i=0;i<WORDS.length;i++){
-                var b=env.new Game(g,g.a.copy(),g.b.copy());var q=(Probe)b.our();q.choice=i;q.remaining=3;b.trace();
+                var b=env.new Game(g,g.a.copy(),g.b.copy());
+                if(i==0 && auditForks && !stateHash(b).equals(result.get("fork_sha256")))
+                    throw new AssertionError("Trade fork changed the plant or primed policies");
+                var q=(Probe)b.our();
+                if(i!=0){q.choice=i;q.remaining=3;}
+                b.trace();
                 while(b.clock.time()<start+900&&b.advance()){}
                 var s=b.clock.state;var own=first?s.serverA:s.serverB;var other=first?s.serverB:s.serverA;
                 double offset=lab.SumoFootprint.centerOffset(env.initial.config.sumoDiameter);
@@ -61,12 +72,17 @@ final class TradeWords {
                 var early=b.hits.list.stream().map(v->List.of(v.at()-start,v.sideA()==first,v.upgrade())).toList();
                 double gap=Math.hypot(own.x()-other.x(),own.z()-other.z());
                 b.finish();scores.put(WORDS[i],List.of(b.reward(),gap,radial,early));
+                if(i==0 && auditForks)noChange=stateHash(b);
             }
         }
         g.finish();result.put("base",g.reward());
         if(p.marked){
             List<?> retained=(List<?>)((Map<?,?>)result.get("continuations")).get("continue");
             if((double)retained.get(0)!=g.reward())throw new AssertionError("No-op trade continuation diverged");
+            if(auditForks){
+                if(!stateHash(g).equals(noChange))throw new AssertionError("No-op continuation changed terminal state");
+                result.put("unchanged_terminal_sha256",noChange);
+            }
         }
         System.out.println(Json.encode(result));
     }
@@ -74,6 +90,7 @@ final class TradeWords {
         var arms=Matches.roster(Path.of(args[0]));var opponents=Matches.roster(Path.of(args[1]));
         int start=2;if(args[start].equals("--second-trade")){exchange=2;start++;}
         boolean mouse=args[start].equals("--mouse");if(mouse)start++;
+        auditForks=args[start].equals("--audit-forks");if(auditForks)start++;
         boolean shifted=args[start].equals("--phase-fit");
         var tapes=Arrays.stream(args,shifted?start+1:start,args.length).map(Path::of).toList();
         var envs=Arena.envs(tapes,"mmc",true);
