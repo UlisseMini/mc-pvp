@@ -40,18 +40,49 @@ public final class InputReplay {
         }
         public TransportShape deepCopy(){var t=new TransportShape(values);System.arraycopy(last,0,t.last,0,4);return t;}
     }
-    /** Offline diagnostic. The model computes every impulse; the trace supplies only the
-     * native client-drain starts at which own-velocity packets were applied, in FIFO order. */
-    static final class ObservedDrains implements PeriodicComboFightModel.PacketTiming {
+    /** Forecast two packet-family overheads using only generated packets. Preserve wire FIFO. */
+    static final class FamilyTiming implements PeriodicComboFightModel.PacketTiming {
+        final double velocity,flags;
+        final double[] last=new double[4];
+        FamilyTiming(double velocity,double flags){
+            if(!Double.isFinite(velocity)||!Double.isFinite(flags)||velocity<0||flags<0)
+                throw new IllegalArgumentException("Invalid packet overhead");
+            this.velocity=velocity;this.flags=flags;
+        }
+        public double arrival(int route,double sent,double half){return sent+half+.35;}
+        public PeriodicComboFightModel.PacketTimingPlan planForPacket(int route,double sent,double half,
+                PeriodicComboFightModel.TimingSemantic kind,int packetId){
+            double extra=.35;
+            if(route>=2 && packetId==0x1c)extra=flags;
+            if(route>=2 && kind==PeriodicComboFightModel.TimingSemantic.OWN_VELOCITY)extra=velocity;
+            last[route]=Math.max(last[route],sent+half+extra);
+            return new PeriodicComboFightModel.PacketTimingPlan(last[route],null,null);
+        }
+        public FamilyTiming deepCopy(){
+            var copy=new FamilyTiming(velocity,flags);
+            System.arraycopy(last,0,copy.last,0,last.length);
+            return copy;
+        }
+    }
+    /** FIFO times for a single generated packet family, independently on each client. */
+    static final class DrainTimes {
         final List<List<Long>> drains;
         final int[] next=new int[2],assigned=new int[2],impossible=new int[2],absent=new int[2];
-        ObservedDrains(List<List<Long>> rows){drains=rows;}
-        public double arrival(int route,double sent,double half){return sent+half+.35;}
-        public PeriodicComboFightModel.PacketTimingPlan plan(int route,double sent,double half,PeriodicComboFightModel.TimingSemantic kind){
-            double raw=arrival(route,sent,half);
-            if(route<2||kind!=PeriodicComboFightModel.TimingSemantic.OWN_VELOCITY)
-                return new PeriodicComboFightModel.PacketTimingPlan(raw,null,null);
-            int side=route-2;
+        DrainTimes(List<String> lines,String family){
+            drains=List.of(new ArrayList<>(),new ArrayList<>());
+            for(String line:lines)if(line.startsWith(family+" ")){
+                String[] v=line.split(" ");
+                drains.get(v[1].equals("a")?0:1).add(Long.parseLong(v[2]));
+            }
+        }
+        private DrainTimes(DrainTimes other){
+            drains=other.drains;
+            for(int i=0;i<2;i++){
+                next[i]=other.next[i];assigned[i]=other.assigned[i];
+                impossible[i]=other.impossible[i];absent[i]=other.absent[i];
+            }
+        }
+        PeriodicComboFightModel.PacketTimingPlan apply(int side,double sent,double raw){
             if(next[side]>=drains.get(side).size())absent[side]++;
             else{
                 double drain=drains.get(side).get(next[side]++)/1e6;
@@ -63,30 +94,45 @@ public final class InputReplay {
             }
             return new PeriodicComboFightModel.PacketTimingPlan(raw,null,null);
         }
-        public ObservedDrains deepCopy(){
-            var c=new ObservedDrains(drains);
-            for(int i=0;i<2;i++){c.next[i]=next[i];c.assigned[i]=assigned[i];c.impossible[i]=impossible[i];c.absent[i]=absent[i];}
-            return c;
-        }
         Map<String,Object> coverage(){
             return Map.of("assigned",assigned,"native_drain_before_generated_send",impossible,"no_native_drain",absent,
                           "unused_native_drains",new int[]{drains.get(0).size()-next[0],drains.get(1).size()-next[1]});
+        }
+    }
+    /** Only packet-family ordinal and native drain times cross this offline diagnostic boundary. */
+    static final class ObservedDrains implements PeriodicComboFightModel.PacketTiming {
+        final DrainTimes velocity,flags;
+        ObservedDrains(DrainTimes velocity,DrainTimes flags){this.velocity=velocity;this.flags=flags;}
+        public double arrival(int route,double sent,double half){return sent+half+.35;}
+        public PeriodicComboFightModel.PacketTimingPlan planForPacket(int route,double sent,double half,
+                PeriodicComboFightModel.TimingSemantic kind,int packetId){
+            double raw=arrival(route,sent,half);
+            if(route>=2 && flags!=null && packetId==0x1c)return flags.apply(route-2,sent,raw);
+            if(route>=2 && velocity!=null && kind==PeriodicComboFightModel.TimingSemantic.OWN_VELOCITY)
+                return velocity.apply(route-2,sent,raw);
+            return new PeriodicComboFightModel.PacketTimingPlan(raw,null,null);
+        }
+        public ObservedDrains deepCopy(){
+            return new ObservedDrains(velocity==null?null:new DrainTimes(velocity), flags==null?null:new DrainTimes(flags));
         }
     }
     public static void main(String[] args)throws Exception{
         var lines=new BufferedReader(new InputStreamReader(System.in)).lines().toList();
         if(args.length==0){run(lines,.35,.35,null);return;}
         for(String pair:args){
-            if(pair.equals("observed-velocity-drains")){
-                var drains=List.of(new ArrayList<Long>(),new ArrayList<Long>());
-                for(String line:lines)if(line.startsWith("@velocity ")){
-                    String[] v=line.split(" ");drains.get(v[1].equals("a")?0:1).add(Long.parseLong(v[2]));
-                }
-                run(lines,0,0,new ObservedDrains(List.of(drains.get(0),drains.get(1))));continue;
+            if(Set.of("observed-velocity-drains","observed-sprint-drains","observed-velocity-and-sprint-drains").contains(pair)){
+                var velocity=pair.contains("velocity")?new DrainTimes(lines,"@velocity"):null;
+                var flags=pair.contains("sprint")?new DrainTimes(lines,"@flags"):null;
+                run(lines,0,0,new ObservedDrains(velocity,flags));continue;
             }
             if(pair.startsWith("shape=")){
                 double[] v=Arrays.stream(pair.substring(6).split(",")).mapToDouble(Double::parseDouble).toArray();
                 run(lines,0,0,new TransportShape(v));continue;
+            }
+            if(pair.startsWith("family=")){
+                String[] times=pair.substring(7).split(",",-1);
+                if(times.length!=2)throw new IllegalArgumentException("Expected velocity and metadata overheads");
+                run(lines,0,0,new FamilyTiming(Double.parseDouble(times[0]),Double.parseDouble(times[1])));continue;
             }
             String[] legs=pair.split(",",-1);
             if(legs.length!=2)throw new IllegalArgumentException("Expected uplink,downlink milliseconds");
@@ -114,7 +160,7 @@ public final class InputReplay {
         var tape=new ArrayList<PeriodicComboClock.Scheduled>();
         String line;long end=0;
         while(input.hasNext()){
-            line=input.next();if(line.startsWith("@velocity "))continue;
+            line=input.next();if(line.startsWith("@velocity ")||line.startsWith("@flags "))continue;
             var v=line.split(" ");boolean first=v[1].equals("a");long ns=Long.parseLong(v[0]);
             var kind=PeriodicComboClock.Kind.valueOf(v[2]);
             if(a.recordedMouse && kind==PeriodicComboClock.Kind.FRAME_ENTRY)
@@ -160,7 +206,10 @@ public final class InputReplay {
         result.put("hits",hits.list.stream().map(h->List.of(h.at(),h.sideA(),h.upgrade())).toList());
         if(a.diagnose){result.put("velocity",Map.of("a",a.velocities,"b",b.velocities));result.put("contacts",contacts);}
         if(a.diagnose)result.put("sprint_history",sprintHistory);
-        if(clock.state.packetTiming instanceof ObservedDrains observed)result.put("observed_drain_coverage",observed.coverage());
+        if(clock.state.packetTiming instanceof ObservedDrains observed){
+            if(observed.velocity!=null)result.put("observed_drain_coverage",observed.velocity.coverage());
+            if(observed.flags!=null)result.put("observed_flag_coverage",observed.flags.coverage());
+        }
         System.out.println(Json.encode(result));
     }
 }

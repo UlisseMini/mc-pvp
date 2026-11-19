@@ -122,6 +122,9 @@ public final class PeriodicComboFightModel {
         default PacketTimingPlan plan(int route,double generatedSendMs,double nominalHalfRttMs,TimingSemantic semantic){
             return new PacketTimingPlan(arrival(route,generatedSendMs,nominalHalfRttMs,semantic),null,null);
         }
+        default PacketTimingPlan planForPacket(int route,double send,double half,TimingSemantic semantic,int packetId){
+            return plan(route,send,half,semantic);
+        }
         PacketTiming deepCopy();
     }
     /** Opt-in diagnostic queue eligibility, separate from raw wire receipt.
@@ -188,7 +191,7 @@ public final class PeriodicComboFightModel {
                 if(extraLatency[route]!=0)throw new IllegalStateException("Empirical residual replaces extraLatency; configured RTT only");
                 double send=p.due-nominalHalfRtt[route];
                 TimingSemantic semantic=timingSemantic(p.kind);
-                PacketTimingPlan plan=packetTiming.plan(route,send,nominalHalfRtt[route],semantic);
+                PacketTimingPlan plan=packetTiming.planForPacket(route,send,nominalHalfRtt[route],semantic,p.packetId);
                 if(plan==null)throw new IllegalStateException("Missing generated packet timing plan");
                 if(plan.cueDelayNanos()!=null&&semantic!=TimingSemantic.OWN_HURT&&semantic!=TimingSemantic.TARGET_HURT)
                     throw new IllegalStateException("Cue delay is supported only on generated S19");

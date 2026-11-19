@@ -4,6 +4,50 @@ from run import ROOT, compile_model, java
 from calendars import server_stage, CLIENT
 from pathlib import Path
 
+def sprint_flag_drains(events, first, last, start):
+    # Read the wire's metadata index to exclude health-only S1C packets. Both wire
+    # and main-thread handler IDs come from the same instrumentation namespace.
+    import sys
+    from bisect import bisect_right
+    research = str(ROOT / 'research')
+    if research not in sys.path:
+        sys.path.append(research)
+    from network_pipeline_audit import decode
+    received = {}
+    intervals = []
+    handlers = []
+    for e in sorted(events, key=lambda e: e.get('monotonic_ns', -1)):
+        typ = e['type']
+        if typ == 'packet_wire':
+            data = e['data']; packet = data.get('packet', data)
+            if packet['direction'] == 'in' and packet['kind'] == 'S1CPacketEntityMetadata':
+                decoded = decode(data['base64'], 's2c')
+                if decoded['id'] != 0x1c or ('metadata_decode_stopped_at' in decoded and 'flags' not in decoded):
+                    raise ValueError('Could not identify metadata flags in packet ' + str(packet['packet_id']))
+                received[packet['packet_id']] = decoded
+        elif typ == 'client_task_drain':
+            if e['data']['phase'] == 'start':
+                intervals.append([e['monotonic_ns'], None])
+            elif intervals:
+                intervals[-1][1] = e['monotonic_ns']
+        elif typ == 'packet_handler_enter' and e['data']['main_thread'] and e['data']['kind'] == 'S1CPacketEntityMetadata':
+            if first <= e['monotonic_ns'] <= last and e['time_ms'] >= start:
+                handlers.append((e['data']['packet_id'], e['monotonic_ns']))
+    starts = [entry[0] for entry in intervals]
+    flags = []
+    for packet_id, at in handlers:
+        if packet_id not in received:
+            raise ValueError(f'Missing wire for metadata handler {packet_id}')
+        packet = received[packet_id]
+        if 'flags' not in packet:
+            continue
+        index = bisect_right(starts, at) - 1
+        if index < 0 or (intervals[index][1] is not None and at > intervals[index][1]):
+            raise ValueError(f'Metadata handler {packet_id} outside client task drain')
+        # The generated model supplies the actual flag value.
+        flags.append((packet['entity_id'], starts[index]))
+    return flags
+
 def compare(mid,delay_pairs=None,mouse='generated',diagnose=False):
     g=json.loads((ROOT/f'runtime/results/{mid}.json').read_text())
     modes={g['parameters_'+s].get('aim_input','ideal') for s in 'ab'}
@@ -13,7 +57,10 @@ def compare(mid,delay_pairs=None,mouse='generated',diagnose=False):
     start=g['start'];end=min(start+2000,g['finish'])
     rows=[];refs={};counts={};native_hits=[];clock_origins=[];trackers={}
     interventions={'a':[],'b':[]};velocity_drains={'a':[],'b':[]};sprint_evidence={'a':[],'b':[]}
-    use_drains=delay_pairs is not None and 'observed-velocity-drains' in delay_pairs
+    settings_set={v for v in delay_pairs or () if isinstance(v,str)}
+    use_drains=bool({'observed-velocity-drains','observed-velocity-and-sprint-drains'} & settings_set)
+    use_flags=bool({'observed-sprint-drains','observed-velocity-and-sprint-drains'} & settings_set)
+    flag_drains={}
     for side in 'ab':
         raw=[]
         with gzip.open(next((ROOT/f'runtime/pov/{mid}').glob(f'{side}-client-*-events.jsonl.gz')),'rt') as f:
@@ -31,6 +78,8 @@ def compare(mid,delay_pairs=None,mouse='generated',diagnose=False):
         moves={e['tick']:e for e in raw if e['type']=='science_move' and e['tick'] in heads}
         if not moves:return dict(mid=mid,unsupported='No native travel on '+side)
         first=heads[min(moves)]['monotonic_ns'];last=max(e['monotonic_ns'] for e in moves.values())
+        if use_flags:
+            flag_drains[side]=sprint_flag_drains(raw,first,last,start)
         frame=None;deltas={}
         if aim=='recorded':
             for e in raw:
@@ -91,6 +140,10 @@ def compare(mid,delay_pairs=None,mouse='generated',diagnose=False):
         for side,observed in velocity_drains.items():
             own_id=trackers[g[side]][1]['entity_id']
             query.extend(f'@velocity {side} {ns-origin}' for entity,ns in observed if entity==own_id)
+    if use_flags:
+        for side,observed in flag_drains.items():
+            own_id=trackers[g[side]][1]['entity_id']
+            query.extend(f'@flags {side} {ns-origin}' for entity,ns in observed if entity==own_id)
     query+=[' '.join(map(str,[ns-origin,side,kind,*keys])) for ns,side,kind,keys in rows]
     settings=[] if delay_pairs is None else [v if isinstance(v,str) else f'{v[0]},{v[1]}' for v in delay_pairs]
     proc=subprocess.run(java('InputReplay',*settings),input='\n'.join(query)+'\n',text=True,capture_output=True,check=True)
@@ -123,6 +176,7 @@ def compare(mid,delay_pairs=None,mouse='generated',diagnose=False):
         result=dict(mid=mid,aim_input=aim,moves=len(errors),clicks=sum(counts.values()),exact=first_bad is None,
                     first_difference=first_bad,max_position_error=max(errors),native_hits=native_hits,model_hits=sim_hits)
         if 'observed_drain_coverage' in pred:result['observed_drain_coverage']=pred['observed_drain_coverage']
+        if 'observed_flag_coverage' in pred:result['observed_flag_coverage']=pred['observed_flag_coverage']
         if diagnose:result['first_step_ledger']=ledger
         return result
     results=[measure(json.loads(line)) for line in proc.stdout.splitlines()]
