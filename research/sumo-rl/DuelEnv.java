@@ -138,7 +138,10 @@ final class DuelEnv {
         this(tape,profile,rtt,rtt,sumo,trackerStart,solidRim,10,6,0);
     }
     DuelEnv(Tape tape,String profile,int rtt,int otherRtt,boolean sumo,int trackerStart,boolean solidRim,int diameter,double gap,double lateralOffset){
-        this.clockId=tape.id;this.profile=profile;this.rtt=rtt;this.otherRtt=otherRtt;this.sumo=sumo;limit=sumo?LIMIT:20000;serverEnds=tape.serverEnds;
+        this(tape,profile,rtt,otherRtt,sumo,trackerStart,solidRim,diameter,gap,lateralOffset,sumo?LIMIT:20000);
+    }
+    DuelEnv(Tape tape,String profile,int rtt,int otherRtt,boolean sumo,int trackerStart,boolean solidRim,int diameter,double gap,double lateralOffset,int duration){
+        this.clockId=tape.id;this.profile=profile;this.rtt=rtt;this.otherRtt=otherRtt;this.sumo=sumo;limit=duration;serverEnds=tape.serverEnds;
         var config=BoxingModel.config(profile,rtt);config.otherRtt=otherRtt;config.sumo=sumo;config.sumoDiameter=diameter;
         if(sumo){
             config.sumoArena(4096,12);
