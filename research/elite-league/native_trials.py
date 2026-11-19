@@ -1,0 +1,93 @@
+"""Play frozen architecture finalists on the main Forge lab under matched gameplay settings."""
+import argparse
+import hashlib
+import importlib.util
+import itertools
+import json
+from pathlib import Path
+import random
+import sys
+import time
+from run import HERE,ROOT,FAMILIES
+
+def load_batch():
+    spec=importlib.util.spec_from_file_location('lab_batch',ROOT/'research/sumo-strategies/native.py')
+    batch=importlib.util.module_from_spec(spec);spec.loader.exec_module(batch)
+    return batch
+
+def installed():
+    return hashlib.sha256((ROOT/'build/practice-client/practice-bridge.jar').read_bytes()).hexdigest()
+
+def ready():
+    expected=installed();status=json.loads((ROOT/'runtime/status.json').read_text())
+    return time.time()-status['time']/1000<5 and all(
+        f'LabSlot{i}' in status['players'] and
+        (lambda d:d['bridge_sha256']==expected and time.time()-d['time']/1000<6)(
+         json.loads((ROOT/f'runtime/bots/{i}/heartbeat.json').read_text()))
+        for i in range(json.loads((ROOT/'runtime/manager.json').read_text())['bot_slots']))
+
+def install(selected,tag):
+    result=json.loads((selected/'selection.json').read_text())
+    champion=next(f.lower() for f,n in result['selected'].items() if n==result['champion'])
+    for fam in (f.lower() for f in FAMILIES):
+        net=selected/(fam+'.net');assert hashlib.sha256(net.read_bytes()).hexdigest()==result['fit_sha256'][result['selected'][fam.upper()]]
+        for box in (False,True):
+            if box and fam!=champion:continue
+            name=f'{tag}-{fam}'+('-box' if box else '')
+            base='research-wtap20' if box else 'research-hold20'
+            template=(ROOT/'policies'/f'{base}.properties').read_text().splitlines()
+            content='\n'.join([r for r in template if not r.startswith('description=')]+[
+                f'description={fam.title()} tournament finalist. Normal movement and capped attack controls.',
+                f'duel_network={net.read_text().strip()}',f'duel_network_landmark={3 if box else 0}'])+'\n'
+            dest=ROOT/'policies'/(name+'.properties')
+            if dest.exists() and dest.read_text()!=content:raise ValueError(f'Policy conflict at {dest}')
+            dest.write_text(content)
+    return champion
+
+def plan(tag,champion):
+    arms=[tag+'-'+f.lower() for f in FAMILIES];winner=tag+'-'+champion
+    wt='research-wtap20';hold='research-hold20';pressure='sumo-rl-pressure'
+    groups=[('sumo','mmc',opp,[wt,hold,pressure,*arms],2) for opp in (wt,hold)]
+    groups += [('sumo','mmc',opp,[wt,hold,winner],3) for opp in ('trade-wtap','jump-reset','research-zest-strafe',pressure)]
+    groups += [('sumo','hypixel',opp,[wt,hold,winner],2) for opp in (wt,hold)]
+    groups += [('boxing','mmc','combo-wake-2000',[wt,winner+'-box'],4)]
+    rows=[]
+    for mode,profile,opp,entries,n in groups:
+        for rep,rtt,side,arm in itertools.product(range(n),(0,80),'ab',entries):
+            req=f'{tag}-t-{mode}-{profile}-{opp}-{rep}-{rtt}-{side}-{arm}'
+            a,b=(arm,opp) if side=='a' else (opp,arm)
+            base=f'lab sumo {a} {b} {rtt} {rtt}' if mode=='sumo' else f'lab scenario {a} {b} {rtt} {rtt} 20000'
+            rows.append((req,dict(mode=mode,profile=profile,opponent=opp,arm=arm,rep=rep,rtt=rtt,side=side,
+                command=f'{base} {req} preset={profile} reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0')))
+    random.Random(982177).shuffle(rows)
+    return dict(rows)
+
+def run_batch(trials,out):
+    batch=load_batch()
+    # A recovered process reconciles by immutable request ID before issuing any further rounds.
+    found={}
+    for path in (ROOT/'runtime/results').glob('m*.json'):
+        g=json.loads(path.read_text());req=g.get('request')
+        if req in trials:
+            if req in found:raise RuntimeError('Duplicate trial '+req)
+            found[req]=g['id']
+    if out.exists() and json.loads(out.read_text())['plan']!=trials:raise ValueError('Existing manifest has different protocol')
+    batch.save(out,trials,found)
+    part=out.with_suffix('.partial.json')
+    pending={k:v for k,v in trials.items() if k not in found}
+    if pending:
+        batch.run(pending,2,part,reserve=2,share_with_players=True)
+        found.update(json.loads(part.read_text())['matches'])
+    batch.save(out,trials,found)
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser();p.add_argument('selected',type=Path);p.add_argument('out',type=Path);p.add_argument('--tag',default='elite-v1')
+    p.add_argument('--install-only',action='store_true')
+    args=p.parse_args()
+    champion=install(args.selected,args.tag)
+    if not args.install_only:
+        until=time.monotonic()+150
+        while not ready():
+            if time.monotonic()>until:raise RuntimeError('Expected current Forge bot bridge on all slots')
+            time.sleep(2)
+        run_batch(plan(args.tag,champion),args.out)

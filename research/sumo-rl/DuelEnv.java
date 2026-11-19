@@ -154,14 +154,18 @@ final class DuelEnv {
         final Player a,b; final boolean first; final PeriodicComboClock clock;
         Hits hits; int step;
         Game(boolean first,String opponent,int mask){
+            this(first, legacy(mask), opponent.equals("zest-strafe") ? new StrafeOpponent(rtt) : new Player(opponent,0,rtt,sumo?0:2000));
+        }
+        Game(boolean first,Player our,Player other){
             this.first=first;
-            var our=new Player("wtap",0,rtt,0);our.select(mask);
-            var other=opponent.equals("zest-strafe") ? new StrafeOpponent(rtt) : new Player(opponent,0,rtt,sumo?0:2000);
             a=first?our:other;b=first?other:our;
             clock=initial.fork(a,b);
         }
         Game(Game prefix,int mask){
-            first=prefix.first;a=prefix.a.copy();b=prefix.b.copy();our().select(mask);
+            this(prefix,prefix.a.copy(),prefix.b.copy());our().select(mask);
+        }
+        Game(Game prefix,Player sideA,Player sideB){
+            first=prefix.first;a=sideA;b=sideB;
             clock=prefix.clock.fork(a,b);step=prefix.step;
             if(prefix.hits!=null){
                 hits=new Hits(clock.state);
@@ -189,5 +193,6 @@ final class DuelEnv {
                 "active",Math.max(a.firstClick,b.firstClick),"fresh_windows",(first?hits.a:hits.b).result(clock.time()),"hits",hits.list.stream().map(h->List.of(h.at,h.sideA,h.upgrade)).toList());
         }
     }
+    Player legacy(int code){Player p=new Player("wtap",0,rtt,0);p.select(code);return p;}
     Game start(boolean first,String opponent,int mask){return new Game(first,opponent,mask);}
 }

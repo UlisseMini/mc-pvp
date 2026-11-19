@@ -8,7 +8,7 @@ sys.path.insert(0,str(ROOT/'research/recoil-drill'))
 import score
 import captures
 
-def native(mid,setup):
+def native(mid,setup,network=None):
     g=score.record(ROOT/f'runtime/results/{mid}.json')
     side=setup['side'];other='b' if side=='a' else 'a';start=g['start'];end=g['finish']
     assert g['policy_'+side]==setup['arm'] and g['policy_'+other]==setup['opponent']
@@ -18,9 +18,12 @@ def native(mid,setup):
     if g['mode']=='sumo':assert g['sumo_arena']['diameter']==10 and g['sumo_arena']['start_gap']==6
     if setup['profile']=='mmc':assert g['combat_profile']['knockback_model']=='mmc_pre_attack_sprint_v2'
     p=g['parameters_'+side]
-    expected=0 if setup['arm'] in ('research-wtap20','research-hold20') else score.record(HERE/{'sumo-rl-jump':'v1/fit.json','sumo-rl':'fit.json','sumo-rl-pressure':'league-fit.json'}[setup['arm']])['mask']
+    expected=0 if network is not None or setup['arm'] in ('research-wtap20','research-hold20') else score.record(HERE/{'sumo-rl-jump':'v1/fit.json','sumo-rl':'fit.json','sumo-rl-pressure':'league-fit.json'}[setup['arm']])['mask']
     assert int(p.get('sumo_jump_mask',0))==expected
-    if setup['arm']=='sumo-rl-pressure':
+    if network is not None:
+        assert p['duel_network']==network and p['kind']==('wtap' if g['mode']=='boxing' else 'hold')
+        assert int(p.get('duel_network_landmark',0))==(3 if g['mode']=='boxing' else 0)
+    elif setup['arm']=='sumo-rl-pressure':
         fit=score.record(HERE/'league-fit.json')
         assert p['kind']=={'hold':'hold','wtap':'wtap','trade':'tradetap'}[fit['style']]
         if fit['style']=='trade':assert int(p['trade_window_ms'])==fit['window'] and int(p['reply_wait_ms'])==fit['wait']
@@ -43,6 +46,7 @@ def native(mid,setup):
             if s==side:
                 if typ=='sumo_rl_jump':
                     assert expected & (1<<e['state']);jumps.append([e['native_tick'],e['state'],e['time']-start])
+                if typ=='duel_network_jump':jumps.append([e['native_tick'],-1,e['time']-start])
                 if typ=='science_move':
                     moves[e['tick']]=e
                     if e['before']['ground'] and e['before']['motionY']==0.41999998688697815:takes.add(e['tick'])

@@ -60,6 +60,10 @@ public final class Client {
     static final BurstClickController burstClicks=new BurstClickController();
     static BurstClickController.Decision burstDecision;
     static int sumoJumpMask;
+    static DuelNetwork duelNetwork;
+    static int networkLandmark,networkStreak;
+    static long networkIncoming,networkOutgoing;
+    static boolean networkReleased;
     static ClickPause clickPause;
     static ClickPause.Tree pauseTree;
     static long burstObservedAt;
@@ -348,6 +352,10 @@ public final class Client {
                 matchInitialized=false;
                 match=next;epoch=Long.parseLong(controls.getProperty("start_at",Long.toString(now)));history.clear();previous=null;lastConsumed=null;lastClick=firstClickEligible=0;
                 lastObservedHurt=lastObservedTargetHurt=0;
+                duelNetwork=null;networkIncoming=networkOutgoing=0;networkStreak=0;
+                networkLandmark=Integer.parseInt(controls.getProperty("duel_network_landmark","0"));
+                networkReleased=networkLandmark==0;
+                if(controls.containsKey("duel_network"))duelNetwork=DuelNetwork.decode(controls.getProperty("duel_network"));
                 sumoJumpMask=Integer.parseInt(controls.getProperty("sumo_jump_mask","0"));
                 if(sumoJumpMask<0||sumoJumpMask>65535)throw new IllegalArgumentException("Invalid sumo jump policy");
                 clickPause=controls.containsKey("pause_tree")?new ClickPause():null;
@@ -802,6 +810,37 @@ public final class Client {
                 if(Math.abs(sa)>1)throw new IllegalArgumentException("Invalid scripted strafe");
                 setKeys(sw,sa,sc);
             }
+            boolean networkJump=false;
+            if(duelNetwork!=null){
+                double ownAge=obs.freshHurtCue==0?Double.POSITIVE_INFINITY:obs.time-obs.freshHurtCue;
+                double targetAge=obs.targetFreshHurtCue==0?Double.POSITIVE_INFINITY:obs.time-obs.targetFreshHurtCue;
+                int proposed=duelNetwork.step(obs.x,obs.y,obs.z,obs.tx,obs.ty,obs.tz,obs.vx,obs.vy,obs.vz,
+                        obs.ground,obs.sprint,ownAge,targetAge,ping);
+                if(!networkReleased && obs.time-epoch>=2000){
+                    if(obs.freshHurtCue>networkIncoming){networkIncoming=obs.freshHurtCue;networkStreak=0;}
+                    if(obs.targetFreshHurtCue>networkOutgoing){
+                        networkOutgoing=obs.targetFreshHurtCue;
+                        if(networkOutgoing>=epoch+2000 && networkOutgoing>networkIncoming)networkStreak++;
+                    }
+                    if(networkStreak>=networkLandmark)networkReleased=true;
+                }
+                int action=networkReleased?proposed:DuelNetwork.pack(forward?(sprintKey?2:1):0,-strafe,clickGate,false);
+                int key=DuelNetwork.key(action);
+                setKeys(key==1||key==2,-DuelNetwork.side(action),key==2);
+                if(key==3){
+                    Object back=R.get(R.get(mc,"gameSettings"),"keyBindBack");
+                    R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"setKeyBindState",(int)R.call(back,"getKeyCode"),true);
+                }
+                clickGate=DuelNetwork.click(action);networkJump=DuelNetwork.jump(action);
+                duelNetwork.applied(action);
+                Map<String,Object> decision=new LinkedHashMap<>();
+                decision.put("type","duel_network");decision.put("time",now);decision.put("match",match);
+                decision.put("tick",ticks);decision.put("action",action);decision.put("proposed",proposed);
+                decision.put("released",networkReleased);
+                decision.put("observation",Compat.list(obs.x,obs.y,obs.z,obs.tx,obs.ty,obs.tz,obs.vx,obs.vy,obs.vz,
+                        obs.ground,obs.sprint,Double.isFinite(ownAge)?ownAge:-1,Double.isFinite(targetAge)?targetAge:-1,ping));
+                log(decision);
+            }
             // A declared opening handicap tests combo acquisition separately from maintenance.
             if(controls.containsKey("click_start_ms") && now<Long.parseLong(controls.getProperty("start_at","0"))+(long)number("click_start_ms",0))clickGate=false;
             // Deliberate burst cadence is a policy choice. No immunity-based click filtering.
@@ -861,11 +900,11 @@ public final class Client {
             // still holds. Read Jump in the next native living update.
             int jumpState=sumoJumpMask==0?-1:SumoJumpPolicy.state(obs.ground,forward,obs.tx-obs.x,obs.tz-obs.z,obs.ty-obs.y,obs.vx,obs.vz);
             boolean learnedJump=SumoJumpPolicy.jump(sumoJumpMask,jumpState);
-            if((learnedJump||displacementJump||jumpOnImpact&&Boolean.parseBoolean(controls.getProperty("jump_reset","false")))
+            if((networkJump||learnedJump||displacementJump||jumpOnImpact&&Boolean.parseBoolean(controls.getProperty("jump_reset","false")))
                     &&(Boolean)R.get(player,"onGround")&&R.get(mc,"currentScreen")==null){
                 Object binding=R.get(R.get(mc,"gameSettings"),"keyBindJump");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"setKeyBindState",(int)R.call(binding,"getKeyCode"),true);
-                log(Compat.map("type",learnedJump?"sumo_rl_jump":"jump_reset_input","time",now,"match",match,"native_tick",ticks,"state",jumpState));
+                log(Compat.map("type",networkJump?"duel_network_jump":learnedJump?"sumo_rl_jump":"jump_reset_input","time",now,"match",match,"native_tick",ticks,"state",jumpState));
             }
             if(now-logAt>=50){
                 logAt=now;

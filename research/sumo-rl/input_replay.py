@@ -14,7 +14,8 @@ def compare(mid):
             for l in f:
                 e=json.loads(l)
                 if start<=e.get('time',e.get('time_ms',0))<=end:raw.append(e)
-        jump={e['native_tick'] for e in raw if e['type'] in ('sumo_rl_jump','jump_reset_input')}
+        jump={e['native_tick'] for e in raw if e['type'] in ('sumo_rl_jump','jump_reset_input','duel_network_jump')}
+        network_keys={e['tick']:e['action']%4 for e in raw if e['type']=='duel_network'}
         heads={e['native_tick']:e for e in raw if e['type']=='native_input_head'}
         if not heads:return dict(mid=mid,unsupported='No native heads on '+side)
         moves={e['tick']:e for e in raw if e['type']=='science_move' and e['tick'] in heads}
@@ -30,7 +31,7 @@ def compare(mid):
             if typ=='native_input_head':
                 tick=e['native_tick'];m=moves[tick]
                 if m['forward']<0:return dict(mid=mid,unsupported='Backward input')
-                keys=[2 if m['forward'] else 0,str(tick in jump).lower(),m['strafe']]
+                keys=[network_keys.get(tick,3 if m['forward']<0 else 2 if m['forward'] else 0),str(tick in jump).lower(),m['strafe']]
             if not kind:continue
             rows.append((ns,side,kind,keys))
             if typ=='science_move':refs[ns,side]=[e['after'][p+a] for p in ('pos','motion') for a in 'XYZ']

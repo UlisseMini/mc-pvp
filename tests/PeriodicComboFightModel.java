@@ -9,7 +9,7 @@ public final class PeriodicComboFightModel {
     static final ExactTravel.Environment ENV=new ExactTravel.Environment(4,.6f,true,true,false,false,false);
     private static final ExactTravel.Environment BELOW_SUMO=new ExactTravel.Environment(-4,.6f,true,true,false,false,false);
     static final double HALF=(double)(.6f/2)+(double).1f, EYE=(double)1.62f;
-    static final int R=0,W=1,S=2;
+    static final int R=0,W=1,S=2,BACK=3;
     static final class Body implements Cloneable {
         long localContacts;double lastHurtTime=Double.NEGATIVE_INFINITY;double lastContactTime=Double.NEGATIVE_INFINITY;ExactTravel.State q; boolean sprint, lastSent, previousForward; int tap,reportAge,jumpTicks;double reportX,reportY=4,reportZ;float yaw,pitch,headYaw,reportYaw,reportPitch,airAcceleration=.02f;
         Body(double x){reportX=x;q=state(x,4,0,-.0784000015258789,true);}
@@ -25,8 +25,9 @@ public final class PeriodicComboFightModel {
             if(jumpTicks>0)jumpTicks--;
             headYaw=yaw;
             if(tap>0)tap--;
-            if(q.onGround()&&!previousForward&&key!=R&&!sprint){if(tap>0||key==S)sprint=true;else tap=7;}
-            if(key==S)sprint=true;if(key==R)sprint=false;previousForward=key!=R;
+            boolean forward=key==W||key==S;
+            if(q.onGround()&&!previousForward&&forward&&!sprint){if(tap>0||key==S)sprint=true;else tap=7;}
+            if(key==S)sprint=true;if(!forward)sprint=false;previousForward=forward;
             q=cutoff(q);
             // Native pr.bF runs immediately before pr.g, not at the input HEAD.
             // Preserve onGround here: the takeoff travel uses ground friction.
@@ -36,7 +37,7 @@ public final class PeriodicComboFightModel {
                 if(sprint){float angle=yaw*.017453292f;vx-=(double)(sin(angle)*.2f);vz+=(double)(cos(angle)*.2f);}
                 q=motion(q,vx,(double).42f,vz);jumpTicks=10;
             }else if(!jump)jumpTicks=0;
-            q=ExactTravel.predict(q,new ExactTravel.Input(strafe,key==R?0:.98f,yaw,sprint?.13000001f:.1f,airAcceleration),floor);
+            q=ExactTravel.predict(q,new ExactTravel.Input(strafe,key==BACK?-.98f:key==R?0:.98f,yaw,sprint?.13000001f:.1f,airAcceleration),floor);
             airAcceleration=.02f;if(sprint)airAcceleration=(float)((double)airAcceleration+(double).02f*.3D);
         }
     }

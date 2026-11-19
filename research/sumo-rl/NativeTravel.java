@@ -28,7 +28,7 @@ public final class NativeTravel {
                     var env=PeriodicComboFightModel.floor(config,before);
                     var step=ExactTravel.predict(before,new ExactTravel.Input(strafe,forward,yaw,
                         Float.parseFloat(p[4]),Float.parseFloat(p[5])),env);
-                    body.move(forward==0?0:2,strafe,yaw,b(p,6),PeriodicComboFightModel.floor(config,body.q));
+                    body.move(p.length>39?Integer.parseInt(p[39]):forward<0?3:forward==0?0:2,strafe,yaw,b(p,6),PeriodicComboFightModel.floor(config,body.q));
                     System.out.println((step.equals(expected)?1:0)+" "+(body.q.equals(expected)?1:0)+" "+
                         (PeriodicComboFightModel.sumoSupport(before.box(),10,config.centerX)?1:0)+" "+
                         (body.q.x()-expected.x())+" "+(body.q.y()-expected.y()));

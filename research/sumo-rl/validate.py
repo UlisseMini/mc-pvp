@@ -16,10 +16,11 @@ def client(mid,side):
              and e['tracker']['player']==g[side]}
     if len(ids)!=1:raise ValueError((mid,side,'velocity ID',ids))
     path=next((ROOT/f'runtime/pov/{mid}').glob(f'{side}-client-*-events.jsonl.gz'))
-    rows=[];jump=set()
+    rows=[];jump=set();network_keys={}
     for e in captures.events(path):
         if not g['start']<=e.get('time',0)<=g['finish']:continue
-        if e['type'] in ('sumo_rl_jump','jump_reset_input'):jump.add(e['native_tick'])
+        if e['type']=='duel_network':network_keys[e['tick']]=e['action']%4
+        if e['type'] in ('sumo_rl_jump','jump_reset_input','duel_network_jump'):jump.add(e['native_tick'])
         if 'monotonic_ns' in e and e['type'] in ('science_move','engine_attack','replication_apply_after'):rows.append(e)
     rows.sort(key=lambda x:x['monotonic_ns'])
     moves=[e for e in rows if e['type']=='science_move']
@@ -29,7 +30,7 @@ def client(mid,side):
         if e['monotonic_ns']<start['monotonic_ns']:continue
         if e['type']=='science_move':
             inputs.append(['MOVE',e['before']['rotationYaw'],e['strafe'],e['forward'],e['ground_acceleration'],e['air_acceleration'],
-                           e['tick'] in jump,*state(e['before']),*state(e['after'])])
+                           e['tick'] in jump,*state(e['before']),*state(e['after']),network_keys.get(e['tick'],3 if e['forward']<0 else 2 if e['forward'] else 0)])
         elif e['type']=='engine_attack':inputs.append(['CONTACT',e['sprint_before']])
         elif e['packet']['kind']=='hm' and e['packet']['entity_id'] in ids:
             inputs.append(['S12',*[e['packet']['motion'+a]/8000 for a in 'XYZ']])

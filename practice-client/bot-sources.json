@@ -17,6 +17,7 @@
   "MotionClickController",
   "ClickPause",
   "SumoJumpPolicy",
+  "DuelNetwork",
   "CriticalClickController",
   "BlockhitController",
   "LinearHitPredictor",
