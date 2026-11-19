@@ -98,6 +98,9 @@ public final class PeriodicComboClock {
         Control input(Observation observation);
         default void received(PacketObservation packet){}
         default float aimYaw(float trackingYaw){return trackingYaw;}
+        default lab.MouseLook mouseLook(float yaw,float pitch,float targetYaw,float targetPitch,double elapsedMs){
+            return lab.MouseLook.plan(yaw,pitch,targetYaw,targetPitch,.5f,false,elapsedMs);
+        }
         default boolean contactOnly(){return false;}
         /** Own-observation admission permission, consulted only after gate/cap eligibility.
          * A deferral leaves the physical cap timestamp, gate and admitted FIFO unchanged. */
@@ -567,7 +570,7 @@ public final class PeriodicComboClock {
         if(!timing.mouseInput){b.yaw=yaw;b.pitch=pitch;}
         else if(render){
             double dt=Double.isNaN(mouseFrameAt[side])?0:now-mouseFrameAt[side];
-            var delta=lab.MouseLook.plan(b.yaw,b.pitch,yaw,pitch,.5f,false,dt);
+            var delta=policies[side].mouseLook(b.yaw,b.pitch,yaw,pitch,dt);
             b.yaw=delta.yawAfter(b.yaw);b.pitch=delta.pitchAfter(b.pitch);
             mouseFrameAt[side]=now;
         }

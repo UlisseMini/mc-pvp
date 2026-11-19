@@ -61,8 +61,7 @@ def schedule(tag,arms,field):
     random.Random(tag).shuffle(rows);return dict(rows)
 
 def summarize(trials,manifest,expected):
-    from mouse_audit import MouseAudit
-    import captures
+    from audit import MouseAudit,captures
     rows=[];m=json.loads(manifest.read_text())
     if m['plan']!=trials or m['matches'].keys()!=trials.keys():raise ValueError('Incomplete historical slice')
     for req,mid in m['matches'].items():
@@ -100,21 +99,24 @@ def summarize(trials,manifest,expected):
     return rows
 
 def run(work,index,champion):
+    from historical_model import head_replay
     record=json.loads(index.read_text());remaining=record['order'];destination=CUP/'legacy';destination.mkdir(exist_ok=True,parents=True)
     if champion==WT:raise ValueError('Legacy census needs a distinct challenger and W-tap')
     dump(destination/'title.json',dict(champion=champion,config=sha(ROOT/'policies'/(champion+'.properties')),index_sha256=sha(index)))
     for i in range(0,len(remaining),12):
         n=i//12;tag=f'eold{n:02d}';dest=destination/(tag+'.json.gz')
-        if dest.exists():continue
+        heads=destination/(tag+'-input-replay.json')
+        if dest.exists() and heads.exists():continue
         field={op:record['field'][op] for op in remaining[i:i+12]}
         manifest=work/(tag+'-native.json');trials=schedule(tag,[WT,champion],field)
         run_batch(trials,manifest)
+        if not heads.exists():head_replay(manifest,heads)
+        if dest.exists():continue
         rows=summarize(trials,manifest,field)
         with dest.open('xb') as f:f.write(gzip.compress(json.dumps(dict(rows=rows,results=counts(rows),trials=trials),separators=(',',':')).encode(),mtime=0))
         print('Historical slice',n+1,len(rows),'native games audited',flush=True)
 
 if __name__=='__main__':
-    from audit import bindings  # load the same audited POV reader path as the other cohorts
     p=argparse.ArgumentParser(description=__doc__);s=p.add_subparsers(dest='cmd',required=True)
     k=s.add_parser('freeze');k.add_argument('index',type=Path)
     k=s.add_parser('run');k.add_argument('work',type=Path);k.add_argument('index',type=Path);k.add_argument('champion')

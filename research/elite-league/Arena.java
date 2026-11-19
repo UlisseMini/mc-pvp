@@ -19,6 +19,7 @@ final class Arena {
         DuelEnv.Player create(int rtt,int wake){return create(rtt,wake,true,10);}
         DuelEnv.Player create(int rtt,int wake,boolean mmc,int diameter){
             if(model!=null)return new Neural(model,rtt);
+            if(name.startsWith("legacy-"))return new HistoricalMovement(name.substring(7),rtt,rtt);
             if(NATIVE_STYLES.contains(name))
                 return new StrafeOpponent(name,rtt,mmc,diameter);
             if(name.equals("select")||name.equals("counterstrafe"))return new Sparring(name,rtt);

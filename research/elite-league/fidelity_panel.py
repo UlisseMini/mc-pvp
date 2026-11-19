@@ -50,5 +50,7 @@ def measure(manifest,names,out):
     with out.open('xb') as f:f.write(gzip.compress(json.dumps(summary,separators=(',',':')).encode(),mtime=0))
 
 if __name__=='__main__':
+    from cpu_limit import supervise_script
+    supervise_script()
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('manifest',type=Path);p.add_argument('out',type=Path);p.add_argument('arms',nargs='+')
     a=p.parse_args();measure(a.manifest,a.arms,a.out)

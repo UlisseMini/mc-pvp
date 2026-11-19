@@ -4,8 +4,12 @@ from run import ROOT, compile_model, java
 from calendars import server_stage, CLIENT
 from pathlib import Path
 
-def compare(mid,delay_pairs=None):
+def compare(mid,delay_pairs=None,mouse='generated'):
     g=json.loads((ROOT/f'runtime/results/{mid}.json').read_text())
+    modes={g['parameters_'+s].get('aim_input','ideal') for s in 'ab'}
+    if len(modes)!=1:raise ValueError('Mixed mouse modes in physical-input panel')
+    aim=mouse if modes=={'mouse'} else 'ideal'
+    if mouse not in ('generated','recorded'):raise ValueError('Unknown physical mouse replay')
     start=g['start'];end=min(start+2000,g['finish'])
     rows=[];refs={};counts={};native_hits=[];clock_origins=[];trackers={}
     for side in 'ab':
@@ -13,14 +17,29 @@ def compare(mid,delay_pairs=None):
         with gzip.open(next((ROOT/f'runtime/pov/{mid}').glob(f'{side}-client-*-events.jsonl.gz')),'rt') as f:
             for l in f:
                 e=json.loads(l)
-                if start<=e.get('time',e.get('time_ms',0))<=end:raw.append(e)
+                earliest=start-250 if aim!='ideal' else start
+                if earliest<=e.get('time',e.get('time_ms',0))<=end:raw.append(e)
         jump={e['native_tick'] for e in raw if e['type'] in ('sumo_rl_jump','jump_reset_input','duel_network_jump')}
         network_keys={e['tick']:e['action']%4 for e in raw if e['type']=='duel_network'}
+        for e in raw:
+            if e['type']=='legacy_head':
+                w,ctrl,_,_=e['keys'];network_keys[e['tick']]=(2 if ctrl else 1) if w else 0
         heads={e['native_tick']:e for e in raw if e['type']=='native_input_head'}
         if not heads:return dict(mid=mid,unsupported='No native heads on '+side)
         moves={e['tick']:e for e in raw if e['type']=='science_move' and e['tick'] in heads}
         if not moves:return dict(mid=mid,unsupported='No native travel on '+side)
         first=heads[min(moves)]['monotonic_ns'];last=max(e['monotonic_ns'] for e in moves.values())
+        frame=None;deltas={}
+        if aim=='recorded':
+            for e in raw:
+                if e['type']=='replication_frame':frame=e['monotonic_ns']
+                if e['type']!='mouse_input':continue
+                if frame is None:
+                    if e['monotonic_ns']>=first and e['counts']!=[0,0]:raise ValueError('Unanchored physical mouse delta')
+                    continue
+                if frame in deltas:raise ValueError('Two mouse movements on one native frame')
+                if frame<first and e['counts']!=[0,0]:raise ValueError('Nonzero physical mouse input before settled opening')
+                deltas[frame]=[*e['counts'],e['sensitivity'],str(e['inverted']).lower()]
         counts[side]=0
         for e in raw:
             ns=e.get('monotonic_ns',-1)
@@ -31,6 +50,7 @@ def compare(mid,delay_pairs=None):
             if typ=='native_input_head':
                 tick=e['native_tick'];m=moves[tick]
                 keys=[network_keys.get(tick,3 if m['forward']<0 else 2 if m['forward'] else 0),str(tick in jump).lower(),m['strafe']]
+            if typ=='replication_frame' and aim=='recorded':keys=deltas.get(ns,[0,0,.5,'false'])
             if not kind:continue
             rows.append((ns,side,kind,keys))
             if typ=='science_move':refs[ns,side]=[e['after'][p+a] for p in ('pos','motion') for a in 'XYZ']
@@ -52,7 +72,7 @@ def compare(mid,delay_pairs=None):
     query=[' '.join(map(str,[(g['arena']+1)*4096,int(g['initial_ping_a']),g['practice_preset'],
            int(seeds[0]['updateCounter'])-prefix_ends,*[int(v['ticksSinceLastForcedTeleport']) for v in seeds],
            *[int(v['encodedRotationYaw']) for v in seeds],*[int(v['encodedRotationPitch']) for v in seeds],int(trackers[g['a']][0]<trackers[g['b']][0]),
-           int(g['initial_ping_b']),g['sumo_arena']['diameter'],g['sumo_arena']['start_gap']]))]
+           int(g['initial_ping_b']),g['sumo_arena']['diameter'],g['sumo_arena']['start_gap'],aim]))]
     query+=[' '.join(map(str,[ns-origin,side,kind,*keys])) for ns,side,kind,keys in rows]
     settings=[] if delay_pairs is None else [v if isinstance(v,str) else f'{v[0]},{v[1]}' for v in delay_pairs]
     proc=subprocess.run(java('InputReplay',*settings),input='\n'.join(query)+'\n',text=True,capture_output=True,check=True)
@@ -67,7 +87,7 @@ def compare(mid,delay_pairs=None):
                 first_bad={'side':side,'ms':ns/1e6+origin/1e6+statistics.median(clock_origins)-start,'pred':values,'native':native}
         shift=origin/1e6+statistics.median(clock_origins)-start
         sim_hits=[[round(t+shift,2),a,u] for t,a,u in pred['hits']]
-        return dict(mid=mid,moves=len(errors),clicks=sum(counts.values()),exact=first_bad is None,
+        return dict(mid=mid,aim_input=aim,moves=len(errors),clicks=sum(counts.values()),exact=first_bad is None,
                     first_difference=first_bad,max_position_error=max(errors),native_hits=native_hits,model_hits=sim_hits)
     results=[measure(json.loads(line)) for line in proc.stdout.splitlines()]
     if delay_pairs is None:return results[0]

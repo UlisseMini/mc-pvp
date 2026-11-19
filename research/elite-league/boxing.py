@@ -9,6 +9,15 @@ from pathlib import Path
 from run import HERE,ROOT,calendars,compile_model,java
 from tournament import grid,read
 
+def publish(folder):
+    from champions import install
+    d=json.loads((folder/'selection.json').read_text());n=d['chosen'];net=folder/'specialist.net'
+    if hashlib.sha256(net.read_bytes()).hexdigest()!=d['sha256']:raise ValueError('Changed boxing weights')
+    improvement=sum(math.log1p(candidate)-math.log1p(wtap)+.15*((candidate>wtap)-(candidate<wtap))
+                    for wtap,candidate in d['scores'][n])
+    source=net if improvement>0 else ROOT/'policies/research-wtap20.properties'
+    install('boxing-01',source,'First established-combo tournament winner','boxing-01',mode='boxing')
+
 def duration(cut,arm,first):
     t=cut['landmark'];last=t;cycles=0
     for at,side_a,upgrade in cut['committed']+cut[arm]['hits']:
@@ -31,6 +40,7 @@ def select(out,models):
     ranks=sorted(scores,key=lambda k:(-sum(merit(x) for x in scores[k])/len(scores[k]),k))
     chosen=ranks[0];net=out/'specialist.net';shutil.copyfile(arms[chosen],net)
     (out/'selection.json').write_text(json.dumps(dict(chosen=chosen,sha256=hashlib.sha256(net.read_bytes()).hexdigest(),rank=ranks,scores=scores),indent=2)+'\n')
+    publish(out)
     print('Selected',chosen,'W-tap and specialist cycles',list(map(sum,zip(*scores[chosen]))))
 
 if __name__=='__main__':

@@ -22,8 +22,8 @@ def native(out):
     wt='research-wtap20';hold='research-hold20';rows=[]
     for arm,opp,n,rtt,side in itertools.product((wt,hold,'elite-boxing','elite-population'),(wt,hold),range(2),(0,80),'ab'):
         req=f'eb100-{arm}-{opp}-{n}-{rtt}-{side}';a,b=(arm,opp) if side=='a' else (opp,arm)
-        rows.append((req,dict(mode='boxing',match_format='first-to-100',profile='mmc',arm=arm,opponent=opp,rep=n,rtt=rtt,side=side,
-                command=f'lab match {a} {b} {rtt} {rtt} {req} preset=mmc cps=20 reach=3 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0')))
+        rows.append((req,dict(mode='boxing',match_format='first-to-100',profile='mmc',arm=arm,opponent=opp,rep=n,rtt=rtt,side=side,aim_input='mouse',
+                command=f'lab match {a} {b} {rtt} {rtt} {req} preset=mmc cps=20 reach=3 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse')))
     random.Random(470081).shuffle(rows);run_batch(dict(rows),out)
 
 if __name__=='__main__':

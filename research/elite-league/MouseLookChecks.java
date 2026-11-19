@@ -11,6 +11,9 @@ final class MouseLookChecks {
             boolean inv=random.nextBoolean();
             double dt=i%31==0?0:random.nextDouble()*90;
             var m=MouseLook.plan(yaw,pitch,ty,tp,s,inv,dt);
+            var recorded=MouseLook.fromCounts(m.dx,m.dy,s,inv);
+            if(recorded.yawAfter(yaw)!=m.yawAfter(yaw) || recorded.pitchAfter(pitch)!=m.pitchAfter(pitch))
+                throw new AssertionError("Recorded integer input did not reproduce the planned movement");
             float f=s*.6f+.2f,scale=f*f*f*8;
             if(dt==0&&(m.dx!=0||m.dy!=0))throw new AssertionError("Mouse moved in zero time");
             float ax=(float)(yaw+(double)(m.dx*scale)*.15);

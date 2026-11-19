@@ -25,7 +25,7 @@ def run(d,frozen):
     command=['-Xms20m','-Xmx128m','-XX:+UseSerialGC','-cp',cp,'RuntimeParity',*map(str,paths)]
     digest=[]
     for runtime in (str(JAVA8),'java'):
-        result=subprocess.run([runtime,*command],capture_output=True,text=True,check=True)
+        result=subprocess.run([sys.executable,str(HERE/'cpu_limit.py'),runtime,*command],capture_output=True,text=True,check=True)
         digest.append(result.stdout)
     if digest[0]!=digest[1]:raise ValueError('Java 8 and Java 17 disagree; see policy action digests')
     (d/'java8-java17.txt').write_text(digest[0]);compile_model()

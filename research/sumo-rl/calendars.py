@@ -3,6 +3,8 @@ import argparse
 import gzip
 import json
 from pathlib import Path
+import tempfile
+import time
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -31,11 +33,12 @@ def timeline(mid, side, game):
     path = (ROOT/'runtime/replays'/f'{mid}.jsonl' if side=='s' else
             next((ROOT/'runtime/pov'/mid).glob(f'{side}-client-*-events.jsonl.gz')))
     reader = gzip.open if path.suffix == '.gz' else open
-    result = []
+    result = [];footer=None
     with reader(path,'rt') as stream:
         for line in stream:
             e = json.loads(line)
             typ = e['type']
+            if typ=='capture_end':footer=e
             if side=='s':
                 kind = server_stage(e)
             else:
@@ -44,6 +47,8 @@ def timeline(mid, side, game):
                     kind='CLIENT_DRAIN'
             if kind and game['start'] <= e.get('time',e.get('time_ms',0)) < game['finish']:
                 result.append((e['monotonic_ns'],kind))
+    if side!='s' and (not footer or not footer['writer_complete'] or any(footer[k] for k in ('dropped','size_capped','continues'))):
+        raise ValueError(f'{mid}/{side}: incomplete recorded POV')
     return sorted(result)
 
 def tape(mid):
@@ -79,5 +84,18 @@ if __name__=='__main__':
     a.out.mkdir(parents=True,exist_ok=True)
     for mid in mids:
         path=a.out/(mid+'.txt.gz')
-        path.write_bytes(gzip.compress(tape(mid).encode(),mtime=0))
+        # Results precede the asynchronous capture writer's footer. Wait for the original
+        # scheduled match, including its last POV block, without changing the donor roster.
+        finish=json.loads((ROOT/'runtime/results'/f'{mid}.json').read_text())['finish']/1000
+        while True:
+            try:
+                encoded=gzip.compress(tape(mid).encode(),mtime=0);break
+            except (StopIteration,FileNotFoundError,EOFError,json.JSONDecodeError,ValueError):
+                if time.time()-finish>60:raise
+                time.sleep(1)
+        if path.exists() and gzip.decompress(path.read_bytes())!=gzip.decompress(encoded):
+            raise ValueError(f'{mid}: previously exported clock has changed')
+        if not path.exists():
+            with tempfile.NamedTemporaryFile(dir=a.out,delete=False) as f:f.write(encoded)
+            Path(f.name).replace(path)
         print(mid,flush=True)

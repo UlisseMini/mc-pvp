@@ -79,8 +79,10 @@ def plan(tag,champion):
     return dict(rows)
 
 def cohort_priority(name):
-    if name.startswith(('ladder-','confirmation-','mouse-smoke','gate-smoke')):return 0
-    if name.startswith(('history-','novel-','empirical-','final-','boxing100','box-student','gate-native')):return 10
+    if name.startswith(('ladder-','confirmation-','mouse-smoke','gate-smoke','port-smoke')):return 0
+    if name.startswith('history-'):return 5
+    if name.startswith(('continuation-','cadence-','box-breadth-','box-student','gate-native','boxing100')):return 8
+    if name.startswith(('novel-','empirical-','final-')):return 10
     if name.startswith('eold'):return 20
     return 30
 
@@ -160,8 +162,15 @@ def _run_locked(trials,out,found=None):
             resume(folder,out)
             print('Main lab recovered at',folder,flush=True)
             return True
+        manager_boot=json.loads((ROOT/'runtime/manager.json').read_text())['started']
+        def capacity_limit():
+            # Forge finalizes renderer/JIT work after connecting. Leave headroom while it settles.
+            age=time.time()-manager_boot
+            if age<220:return 2
+            if age<250:return 3
+            return jobs
         batch.run(trials,jobs,part,reserve=2,share_with_players=True,finished=found,
-                  empty_lab_reserve=0 if jobs==4 else 2,recover=recover,only_requests=list(pending)[:64])
+                  empty_lab_reserve=0 if jobs==4 else 2,recover=recover,only_requests=list(pending)[:64],capacity_limit=capacity_limit)
         found.update(json.loads(part.read_text())['matches'])
     else:batch.save(part,trials,found)
     batch.save(out,trials,found)

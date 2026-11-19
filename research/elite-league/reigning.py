@@ -8,8 +8,9 @@ import tempfile
 from run import HERE,ROOT
 
 def publish(alias,source,reason,evidence):
+    evidence=Path(evidence).resolve()
     dest=ROOT/'policies'/(alias+'.properties');original=ROOT/'policies'/(source+'.properties')
-    stage={'confirmation':1,'history-cup':2}.get(evidence.parent.name,0)
+    stage={'robust':1,'confirmation':2,'history-cup':3}.get(evidence.parent.name,0)
     if dest.exists():
         previous=dict(s.split('=',1) for s in dest.read_text().splitlines() if '=' in s)
         if int(previous.get('title_stage','0'))>stage:return
@@ -26,10 +27,25 @@ def publish(alias,source,reason,evidence):
     os.replace(f.name,dest);name.write_text(json.dumps(entry,indent=2)+'\n')
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('stage',choices=['opening','historical']);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('stage',choices=['opening','robust','historical']);a=p.parse_args()
     if a.stage=='opening':
         publish('best-sumo','elite-v1-hybrid','Sumo title holder from the first native transfer',HERE/'evidence/v1/native.json.gz')
         publish('best-boxing','research-wtap20','Boxing W-tap reference after the native maintenance trials',HERE/'evidence/boxing/native.json.gz')
+    elif a.stage=='robust':
+        import gzip
+        evidence=HERE/'evidence/robust/native.json.gz'
+        with gzip.open(evidence,'rt') as f:bundle=json.load(f)
+        if len(bundle['matches'])!=496 or bundle['summary']['binding_disagreements']:raise ValueError('Incomplete cross-play cohort')
+        per={}
+        for name in ('research-wtap20','elite-population'):
+            rows=[r for r in bundle['matches'] if r['arm']==name and r['profile']=='mmc' and r['rtt']==r.get('opponent_rtt',r['rtt'])]
+            if len(rows)!=80:raise ValueError('Expected ten matched opponents')
+            groups={}
+            for r in rows:groups.setdefault(r['opponent'],[]).append(r['win']+.5*r['draw'])
+            per[name]=groups
+        for n,c in per['elite-population'].items():
+            if len(c)!=8 or sum(c)<sum(per['research-wtap20'][n]) or sum(c)<7:raise ValueError('Historical score qualification failed')
+        publish('best-sumo','elite-population','Sumo title holder from the ten-opponent native tournament',evidence)
     else:
-        evidence=HERE/'evidence/history-cup/title.json';d=json.loads(evidence.read_text())
+        evidence=HERE/'evidence/history-cup/title.json' ;d=json.loads(evidence.read_text())
         publish('best-sumo',d['recommended'],'Sumo title holder after the historical tournament and confirmation',evidence)

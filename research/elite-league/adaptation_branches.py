@@ -5,15 +5,16 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import tempfile
 from run import HERE,compile_model,java,calendars
 
 def study(foes,tapes,out):
     compile_model();out.parent.mkdir(exist_ok=True,parents=True)
-    targets=out.with_suffix('.opponents.txt')
-    targets.write_text(''.join(str(p.resolve())+'\n' for p in foes))
-    with subprocess.Popen(java('AdaptationBranches',HERE/'adaptive-frozen/challenger.net',targets,*tapes),stdout=subprocess.PIPE) as run,gzip.open(out,'xb') as f:
-        shutil.copyfileobj(run.stdout,f)
-        if run.wait():raise ValueError('Adaptive continuation diverged')
+    with tempfile.NamedTemporaryFile(mode='w') as targets:
+        targets.write(''.join(str(p.resolve())+'\n' for p in foes));targets.flush()
+        with subprocess.Popen(java('AdaptationBranches',HERE/'adaptive-frozen/challenger.net',targets.name,*tapes),stdout=subprocess.PIPE) as run,gzip.open(out,'xb') as f:
+            shutil.copyfileobj(run.stdout,f)
+            if run.wait():raise ValueError('Adaptive continuation diverged')
     with gzip.open(out,'rt') as f:rows=list(map(json.loads,f))
     if len(rows)!=4*len(foes)*len(tapes):raise ValueError('Missing switch forks')
     return rows

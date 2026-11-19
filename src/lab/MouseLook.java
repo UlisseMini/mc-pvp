@@ -15,6 +15,12 @@ public final class MouseLook {
         pitchInput=(dy*scale)*(inverted?-1:1);
     }
 
+    public static MouseLook fromCounts(int dx,int dy,float sensitivity,boolean inverted){
+        if(!(sensitivity>=0 && sensitivity<=1))throw new IllegalArgumentException("Invalid mouse sensitivity");
+        float f=sensitivity*.6f+.2f;
+        return new MouseLook(dx,dy,f*f*f*8f,inverted);
+    }
+
     public static MouseLook plan(float yaw,float pitch,float targetYaw,float targetPitch,
                                  float sensitivity,boolean inverted,double elapsedMs) {
         if(!(sensitivity>=0 && sensitivity<=1) || !Double.isFinite(elapsedMs))

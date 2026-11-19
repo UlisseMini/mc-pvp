@@ -12,8 +12,12 @@ from statistics import median
 import sys
 HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
-sys.path.insert(0,str(ROOT/'research/sumo-rl'))
-from report import collect_maintenance,model_game,K,METHODS,score
+paths=list(sys.path)
+try:
+    sys.path.insert(0,str(ROOT/'research/sumo-rl'))
+    from report import collect_maintenance,model_game,K,METHODS,score
+finally:
+    sys.path[:]=paths
 
 def read(path):return json.loads(path.read_text())
 def gzip_json(path,data):

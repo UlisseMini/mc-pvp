@@ -114,6 +114,8 @@ def fit(out):
                 counts=cover,donor_quantiles={mid:{k:[len(v),*[quantile(v,q) for q in (.25,.5,.75)]] for k,v in d.items()} for mid,d in donors.items()})
 
 if __name__=='__main__':
+    from cpu_limit import supervise_script
+    supervise_script()
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('out',type=Path);p.add_argument('--manifest',type=Path);p.add_argument('--frozen',type=Path);a=p.parse_args();compile_model()
     if a.manifest:
         ids=pick(a.manifest,['research-wtap20','research-hold20','elite-v1-hybrid','elite-ppo','elite-population'])

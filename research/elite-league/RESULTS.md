@@ -13,6 +13,43 @@ Each round measured the historical field, solved a game over the observed head-t
 
 The lookup table came from round six and the neural fighter from round four. The weakest-five average still permits considerable losses to individual opponents. These are simulator development scores with the original ideal-angle tracker. [Individual matchup results](empirical-game-frozen/selection.json) · [Round-by-round games](evidence/empirical-development)
 
+## The population champion against ten historical opponents
+
+The 496-bout native tournament tested symmetric and asymmetric latency, the two combat profiles, PPO and population training. On the common MMC regulation subset, the frozen population champion scored **78/80** against ten distinct opponents. It scored **39/40 at each RTT**. Plain W-tap scored **45/80**, split 20/40 at 0 ms and 25/40 at 80 ms. Both sides had the same original ideal-angle tracker, a 20 CPS ceiling, normal reach and the same independent seat/repeat schedule. The model used eight additional real mirror calendars.
+
+| MMC regulation opponent | Model W-tap /32 | Model population /32 | Native W-tap /8 | Native population /8 |
+|---|---:|---:|---:|---:|
+| W-tap | 16 | 32 | 6 | 8 |
+| Hold-W | 7 | 30.5 | 1 | 8 |
+| First hybrid | 1 | 28 | 1 | 8 |
+| Hold-W counter | 2 | 31 | 0 | 7 |
+| Hybrid counter | 4 | 29 | 1 | 7 |
+| Zest strafe | 32 | 32 | 8 | 8 |
+| Timed W-tap | 22 | 31 | 8 | 8 |
+| Phase spacing | 31 | 32 | 7 | 8 |
+| Pull displacement | 32 | 32 | 8 | 8 |
+| Edge displacement | 23 | 25.5 | 5 | 8 |
+
+The two native losses were to separately trained adversaries. Eight native games per opponent leave considerable uncertainty about each individual win rate. The frozen bot is `/duel league-robust sumo preset=mmc`. [All native games and binding checks](evidence/robust/native.json.gz) · [Model outcomes by donor and seat](evidence/robust/regulation-paired.json.gz)
+
+## Repeated adaptation within a fight
+
+Four more league rounds trained a recurrent movement policy and a feedback selector between two primed experts. On the common exposed field of 87 individual opponents, the best feedback selector used the population leader and the round-six spacing table. Its average points were .742, its weakest-five average was .509 and its weakest individual matchup was .453 against round four's empirical-game neural bot. Plain W-tap scored .131, .000 and .000 on the same schedule. The population component alone scored .730, .388 and .281. These bouts used the integer virtual mouse. [Per-opponent simulator scores](adaptive-frozen/selection.json)
+
+In 256 trials against eight training styles, 255 opponents reached their first change of tactics. Just before the change, the full simulation state and all primed policy histories were copied. Unchanged copies produced the original terminal state. W-tap from the landmark earned 29.5/255, the learned selector 183/255, always choosing its population component 192/255, and always choosing the table 169/255. Against one switching style the selector gained three points over its population component. Against another it lost five. This prompted an isolated test of the minimum time committed to one expert. [All causal branches](evidence/adaptive-development/switch-forks.jsonl.gz) · [Timing experiment](cadence-protocol.json)
+
+## Learning from alternative continuations
+
+For each surviving training position, continue the same fight with the population or spacing expert controlling the next 3, 8 or 20 input decisions. The other fighter keeps reacting to what actually happens. After that short intervention, return control to the current gate. Play two further branches with W-tap and the unchanged gate. The three rounds produced 72,366 positions with an ensuing decision. Fit the next gate to the difference in ring-out points between the two expert branches using only the local observation available for that decision. At inference it reads 22 current features and 14 terms summarizing recent movements and hurt cues. It receives neither the opponent ID nor any branch outcome. The three playable titles are `continuation-01`, `continuation-02` and `continuation-03`. The first bot defended its title in round two. [Training protocol](continuation-protocol.json) · [Matched state labels](evidence/continuation-development)
+
+| Simulator development field | W-tap mean / worst | Population mean / worst | Earlier adaptive mean / worst | Continuation winner mean / worst |
+|---|---:|---:|---:|---:|
+| 90 contemporary and switching fighters | .127 / .000 | .715 / .250 | .733 / .453 | .766 / .484 |
+| 85 older configurations | .669 / .031 | .938 / .672 | .941 / .750 | .944 / .688 |
+| 65 additional historical configurations | .798 / .359 | .974 / .672 | .979 / .906 | .967 / .844 |
+
+Each opponent contributed 32 model bouts on the same eight exposed timing calendars. Some older configurations are fixed-control drills. The older fighter fields include hit selection, periodic sprint releases, burst clicking and Zest timing variants. The continuation winner's weakest contemporary opponent was `adapt-01-pair`. Its weakest on the 85-opponent field was `trade-wtap-late`. Scores against someone who can change tactics within a fight also include bouts ending before the change. [Individual contemporary and legacy scores](continuation-frozen/selection.json) · [Additional historical scores](evidence/history-cup/legacy-model-expanded-development/results.json)
+
 ## The first native transfer
 
 The first registered tournament played 336 native rounds, including boxing and the separate Hypixel-like preset. The MMC cells below have symmetric 0 or 80 ms RTT, both seats, an ordinary 3-block reach and a 20 CPS ceiling. The simulator used eight previously unseen donor calendars. The pairs of columns show points earned against the same opponent.
@@ -112,3 +149,10 @@ In development fight **m2150**, the 10-CPS Hold-W opponent landed the first of f
 The initial transfer experiments and all six empirical-game training rounds used a shared tracker that assigned the desired local yaw and pitch directly. The joint native selection and later title panels use one integer mouse movement per render frame, actual vanilla sensitivity and the native look function. A native input tick can refresh the ray without turning the camera again. Both players use the same tracking settings in each comparison. [Mouse control amendment](ladder-transfer-protocol.json)
 
 On the earlier Hypixel-like transfer panel, the model reproduced all three velocity components for 4,170 ordinary fresh native hits when supplied the measured attack state. Eleven native impacts with almost coincident positions matched the fallback's random-direction magnitude and vertical law. The exact hidden native random angles were unavailable. On 448 simulated bouts, the four registered randomness seeds gave the same outcomes on the 418 unaffected bouts. Sixteen of the 30 bouts that reached a coincidence changed outcome across seeds. [Native impulses](evidence/v1/native-knockback-check.json) · [Seed-by-seed outcomes](evidence/robust/hypixel-random-directions.json.gz)
+
+
+On a second independent Hypixel-like cohort the impulse check reproduced all three wire components on 3,737 ordinary fresh hits and the fallback magnitude and vertical component on nine coincident hits. The population champion earned 15/16 native points across W-tap and Hold-W, against 12/16 for plain W-tap. The matched model scores were 46/64 and 37/64. On the asymmetric MMC panel, combining 40/100 ms and 100/40 ms, population scored 15/16 against W-tap and the anti-hybrid fighter, against 5/16 for W-tap. The model scored 59/64 and 21/64. [Independent impulse check](evidence/robust/native-knockback-post-freeze.json) · [Native bout records](evidence/robust/native.json.gz)
+
+In the 16-bout integer-mouse smoke test, 32 player recordings yielded 1,700 verified count-to-angle updates. Across eight selected bouts all 1,908 isolated movement updates and all 1,908 continuously integrated updates matched with the measured local contact and velocity inputs. An initial analysis had misclassified the first movement in m3805 as sprinting. Its input head began one millisecond before the server's declared start and its travel occurred afterward. Reading the originating input head recovered the actual walk key. Supplying measured packet timings completed all 9,181 requested replay events. With only physical inputs and host-stage times and 0.35 ms estimated transport, just **one of eight** openings matched every movement for the first two seconds, both with recorded integer mouse counts and with the tracker generating them. The first divergence was often the tick on which a knockback arrived. [Mouse and click audit](evidence/mouse-smoke/native.json.gz) · [Movement and packet timing](evidence/mouse-smoke/conditional-with-opening-head.json.gz) · [Open-loop physical controls](evidence/mouse-smoke/openings-with-opening-head.json)
+
+The earlier 20-stratum native timing test had 17 scorable openings. A training-fitted stage-dependent transport estimate matched six of 17, the same number as the fixed 0.35 ms model. Its mean maximum position error across those fights was 1.202 blocks versus 1.067 for the fixed estimate. Three recordings lacked the inputs needed to score them. [Per-opening forecasts](evidence/robust/transport-shape.json)

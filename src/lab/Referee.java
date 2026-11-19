@@ -469,11 +469,16 @@ public final class Referee {
         int page=args.length>offset?Integer.parseInt(args[offset]):1;
         var entries=policies.entrySet().stream()
             .filter(e->e.getValue().containsKey("league_stage"))
-            .filter(e->tracks!=e.getValue().getProperty("league_track","winner").equals("winner"))
-            .sorted(Map.Entry.<String,Properties>comparingByKey().reversed()).toList();
+            .filter(e->e.getValue().getProperty("league_track","winner").equals("winner")==!tracks)
+            .sorted(Comparator.<Map.Entry<String,Properties>>comparingInt(e->tournamentOrder(e.getKey()))
+                .thenComparing(Map.Entry.<String,Properties>comparingByKey().reversed())).toList();
         int pages=Math.max(1,(entries.size()+7)/8);
         if(args.length>offset+1 || page<1 || page>pages)throw new IllegalArgumentException("Choose a page from 1 to "+pages);
         message(sender,(tracks?"Tournament track winners":"Tournament winners")+" ("+page+"/"+pages+"). Click to duel on the MMC preset.");
+        if(page==1 && !tracks){
+            if(policies.containsKey("best-sumo"))button(sender,"Play the current sumo title holder","/duel best-sumo sumo preset=mmc");
+            if(policies.containsKey("best-boxing"))button(sender,"Play the current boxing reference","/duel best-boxing boxing preset=mmc");
+        }
         for(var entry:entries.subList((page-1)*8,Math.min(page*8,entries.size()))){
             Properties p=entry.getValue();
             button(sender,entry.getKey()+" — "+p.getProperty("description"),"/duel "+entry.getKey()+" "+p.getProperty("league_mode","sumo")+" preset=mmc");
@@ -481,7 +486,16 @@ public final class Referee {
         String command=tracks?"/bots winners tracks ":"/bots winners ";
         if(page>1)button(sender,"Previous page",command+(page-1));
         if(page<pages)button(sender,"Next page",command+(page+1));
-        button(sender,tracks?"Overall winners":"Explicit and neural track winners",tracks?"/bots winners":"/bots winners tracks");
+        button(sender,tracks?"Overall winners":"Division winners",tracks?"/bots winners":"/bots winners tracks");
+    }
+
+    static int tournamentOrder(String name){
+        if(name.startsWith("league-history")||name.startsWith("league-native"))return 0;
+        if(name.startsWith("adapt-"))return 1;
+        if(name.startsWith("game-"))return 2;
+        if(name.startsWith("season-"))return 3;
+        if(name.startsWith("population-"))return 4;
+        return 5;
     }
 
     static void loadPolicies() throws IOException {

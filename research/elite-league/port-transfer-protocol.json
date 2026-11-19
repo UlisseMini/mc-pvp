@@ -1,0 +1,6 @@
+{
+  "objective": "Test the three-round continuation challenger in real Minecraft after freezing its weights. Validate additional historical Zest controllers against their own recorded inputs.",
+  "field": ["research-wtap20","research-hold20","elite-population","zest-model-03","zest-pulse-06"],
+  "setup": "Freeze plain W-tap and the continuation champion before any match. Give each arm both seats at 0 and 80 ms symmetric RTT per opponent, plus the same simulator field on eight development donors. Use a 10-block ring, six-block separation, MMC pre-attack sprint knockback, 3-block reach, zero added delay/noise and an integer mouse under the 20 CPS ceiling. Retain all ring-outs and draws. Show each matchup; four independent native bouts per cell are preliminary. Keep these exposed opponents separate from future sealed switching probes.",
+  "publication": "Publish the tournament winner according to equal-weight average, bottom-five average and weakest individual matchup, breaking ties by mean then name. The current best-sumo title continues to require the separate full tournament and confirmation."
+}

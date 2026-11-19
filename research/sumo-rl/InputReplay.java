@@ -7,8 +7,13 @@ import lab.Json;
 public final class InputReplay {
     static final class Keyboard implements PeriodicComboClock.Policy {
         final List<PeriodicComboClock.Control> words=new ArrayList<>();
+        final ArrayDeque<lab.MouseLook> counts=new ArrayDeque<>();
+        boolean recordedMouse;
         int index;
         public PeriodicComboClock.Control input(PeriodicComboClock.Observation unused){return words.get(index++);}
+        public lab.MouseLook mouseLook(float y,float p,float targetY,float targetP,double elapsed){
+            return recordedMouse?counts.removeFirst():PeriodicComboClock.Policy.super.mouseLook(y,p,targetY,targetP,elapsed);
+        }
     }
     /** Training-derived stage-to-wire overhead and queue readiness. Route FIFO order is preserved. */
     static final class TransportShape implements PeriodicComboFightModel.PacketTiming {
@@ -55,6 +60,9 @@ public final class InputReplay {
         cfg.sumoArena(center,12);cfg.solidEdge();
         cfg.trackerAFirst=header.length<=10 || header[10].equals("1");
         var timing=new PeriodicComboClock.Timing();timing.inputMode=PeriodicComboClock.InputMode.NATIVE_QUEUED;
+        String aim=header.length>14?header[14]:"ideal";
+        if(!Set.of("ideal","recorded","generated").contains(aim))throw new IllegalArgumentException("Unknown aim input");
+        timing.mouseInput=!aim.equals("ideal");a.recordedMouse=b.recordedMouse=aim.equals("recorded");
         timing.explicitPolls=true;timing.uplinkA=timing.uplinkB=up;timing.downlinkA=timing.downlinkB=down;
         var tape=new ArrayList<PeriodicComboClock.Scheduled>();
         String line;long end=0;
@@ -62,6 +70,9 @@ public final class InputReplay {
             line=input.next();
             var v=line.split(" ");boolean first=v[1].equals("a");long ns=Long.parseLong(v[0]);
             var kind=PeriodicComboClock.Kind.valueOf(v[2]);
+            if(a.recordedMouse && kind==PeriodicComboClock.Kind.FRAME_ENTRY)
+                (first?a:b).counts.add(lab.MouseLook.fromCounts(Integer.parseInt(v[3]),Integer.parseInt(v[4]),
+                        Float.parseFloat(v[5]),Boolean.parseBoolean(v[6])));
             if(kind==PeriodicComboClock.Kind.TICK_HEAD)(first?a:b).words.add(
                 new PeriodicComboClock.Control(Integer.parseInt(v[3]),Float.parseFloat(v[5]),true,Boolean.parseBoolean(v[4])));
             tape.add(new PeriodicComboClock.Scheduled(ns,tape.size(),kind,first||v[1].equals("s")));end=Math.max(end,ns);
@@ -83,6 +94,7 @@ public final class InputReplay {
         int[] admits=new int[2];
         clock.setClickAudit(e->{if(e.action().equals("ADMIT"))admits[e.fromA()?0:1]++;});
         clock.runUntil(end/1e6);
+        if(!a.counts.isEmpty()||!b.counts.isEmpty())throw new IllegalStateException("Unconsumed raw mouse controls");
         System.out.println(Json.encode(Map.of("moves",moves,"admissions",List.of(admits[0],admits[1]),
             "hits",hits.list.stream().map(h->List.of(h.at(),h.sideA(),h.upgrade())).toList())));
     }

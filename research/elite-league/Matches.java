@@ -14,11 +14,14 @@ final class Matches {
         return list;
     }
     static Map<String,Object> boxing(DuelEnv env,boolean first,Arena.Fighter arm){
+        return boxing(env,first,arm,Arena.Fighter.named("wtap"));
+    }
+    static Map<String,Object> boxing(DuelEnv env,boolean first,Arena.Fighter arm,Arena.Fighter defender){
         Arena.Neural shadow=(Arena.Neural)arm.create(env.rtt,0);
         shadow.shadow=true;
-        var game=env.new Game(first,shadow,new DuelEnv.Player("wtap",0,env.rtt,2000));
+        var game=env.new Game(first,shadow,new BoxingBreadth.Defender(defender,env.rtt));
         game.trace();
-        var plain=env.start(first,"wtap",0);plain.trace();plain.finish();
+        var plain=env.new Game(first,new DuelEnv.Player("wtap",0,env.rtt,0),new BoxingBreadth.Defender(defender,env.rtt));plain.trace();plain.finish();
         var forks=new TreeMap<Integer,Object>();int seen=0,chain=0;
         while(game.advance()){
             var hs=game.hits.list;
@@ -41,11 +44,11 @@ final class Matches {
             }
         }
         if(!plain.hits.list.equals(game.hits.list))throw new AssertionError("Shadow changed opening inputs");
-        return Map.of("mode","boxing","profile",env.profile,"side",first?"a":"b","opponent","wtap","clock",env.clockId,
+        return Map.of("mode","boxing","profile",env.profile,"aim_input",env.initial.timing.mouseInput?"mouse":"ideal","side",first?"a":"b","opponent",defender.name(),"clock",env.clockId,
             "rtt",env.rtt,"arm",arm.name(),"forks",forks);
     }
     public static void main(String[] args)throws Exception{
-        String mode=args[0],profile=args[1];boolean sumo=!mode.equals("boxing");
+        String mode=args[0],profile=args[1];boolean sumo=!mode.equals("boxing")&&!mode.equals("boxing-mouse");
         var arms=roster(Path.of(args[2]));var opponents=roster(Path.of(args[3]));
         var files=Arrays.stream(args,4,args.length).map(Path::of).toList();
         var envs=new ArrayList<DuelEnv>();
@@ -63,7 +66,7 @@ final class Matches {
                     envs.add(new DuelEnv(tape,profile,ping,ping,true,29,true,diameter,6,0));
             }
         }else envs.addAll(Arena.envs(files,profile,sumo));
-        if(mode.equals("mouse"))for(var env:envs)env.initial.timing.mouseInput=true;
+        if(mode.equals("mouse")||mode.equals("boxing-mouse"))for(var env:envs)env.initial.timing.mouseInput=true;
         if(mode.startsWith("coincidence-")){
             int seed=Integer.parseInt(mode.substring("coincidence-".length()));
             for(var env:envs)env.initial.state.seedCoincidence(((long)seed<<32)^env.clockId.hashCode());

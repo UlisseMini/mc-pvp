@@ -39,7 +39,11 @@ def publish(frozen,evidence,dest,receipt):
     model=ROOT/'build/elite-league/confirmation-validation/regulation.jsonl.gz'
     with gzip.open(model,'rt') as f:simulation=counts(list(map(json.loads,f)),True)
     actual=counts(d['matches'])
-    if arm!=WT and actual[arm]['merit']>actual[WT]['merit'] and simulation[arm]['merit']>simulation[WT]['merit'] and actual[arm]['opponents'][WT]['points']>12:
+    best=min(actual,key=lambda n:(-actual[n]['merit'],-actual[n]['mean'],n))
+    champions.install('league-confirmation',ROOT/'policies'/(best+'.properties'),'Independent seven-opponent confirmation tournament winner','league-confirmation')
+    competitive=(actual[arm]['merit']>=actual[REFERENCE]['merit'] and actual[arm]['mean']>=actual[REFERENCE]['mean']
+                 and simulation[arm]['merit']>=simulation[REFERENCE]['merit'])
+    if arm!=WT and competitive and actual[arm]['merit']>actual[WT]['merit'] and simulation[arm]['merit']>simulation[WT]['merit'] and actual[arm]['opponents'][WT]['points']>12:
         title('best-sumo',arm,'Sumo title holder from the confirmed Minecraft selection',evidence)
 
 if __name__=='__main__':

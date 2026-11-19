@@ -43,6 +43,8 @@ def replay(old,clocks,model,out):
     with out.open('xb') as f:f.write(gzip.compress(json.dumps(raw,separators=(',',':')).encode(),mtime=0))
 
 if __name__=='__main__':
+    from cpu_limit import supervise_script
+    supervise_script()
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('out',type=Path);p.add_argument('--native',type=Path)
     p.add_argument('--model',type=Path);p.add_argument('--clocks',type=Path);p.add_argument('--after-id',type=int,default=0);a=p.parse_args();compile_model()
     if a.native:

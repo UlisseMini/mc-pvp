@@ -27,10 +27,10 @@ def install(alias, source, title, stage, track='winner', mode='sumo'):
     if not re.fullmatch(r'[a-z0-9_-]{1,64}', alias):
         raise ValueError('Invalid duel name ' + alias)
     policy = source.suffix == '.properties'
-    base = source if policy else POLICIES/'research-hold20.properties'
+    base = source if policy else POLICIES/('research-wtap20.properties' if mode=='boxing' else 'research-hold20.properties')
     lines = [line for line in base.read_text().splitlines() if not line.startswith(('description=', 'league_'))]
     if not policy:
-        lines.extend(['duel_network=' + source.read_text().strip(), 'duel_network_landmark=0'])
+        lines.extend(['duel_network=' + source.read_text().strip(), 'duel_network_landmark='+('3' if mode=='boxing' else '0')])
     lines.extend(['description=' + title, 'league_stage=' + stage, 'league_track=' + track,
                   'league_mode=' + mode, 'league_source_sha256=' + hashlib.sha256(source.read_bytes()).hexdigest()])
     data = ('\n'.join(lines) + '\n').encode()

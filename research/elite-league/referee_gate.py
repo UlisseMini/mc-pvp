@@ -20,8 +20,9 @@ def native(out,smoke=False):
         path.write_text(text)
         for arm,rep,rtt,side in itertools.product(arms,range(repeats),(0,80),'ab'):
             req=f'{prefix}-{k}-{arm}-{rep}-{rtt}-{side}';a,b=(arm,name) if side=='a' else (name,arm)
-            rows.append((req,dict(mode='boxing',gate_k=k,profile='mmc',arm=arm,opponent=name,rep=rep,rtt=rtt,side=side,
-                command=f'lab scenario {a} {b} {rtt} {rtt} 20000 {req} preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0')))
+            aim={} if smoke else {'aim_input':'mouse'}
+            rows.append((req,dict(mode='boxing',gate_k=k,profile='mmc',arm=arm,opponent=name,rep=rep,rtt=rtt,side=side,**aim,
+                command=f'lab scenario {a} {b} {rtt} {rtt} 20000 {req} preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0'+('' if smoke else ' aiminput=mouse'))))
     random.Random(551909).shuffle(rows);run_batch(dict(rows),out)
 
 if __name__=='__main__':

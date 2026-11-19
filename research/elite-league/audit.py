@@ -10,9 +10,13 @@ import sys
 import time
 from run import ROOT,HERE,class_path
 
-sys.path.insert(0,str(ROOT/'research/sumo-rl'))
-import captures
-from score_runs import native
+paths=list(sys.path)
+try:
+    sys.path.insert(0,str(ROOT/'research/sumo-rl'))
+    import captures
+    from score_runs import native,MouseAudit
+finally:
+    sys.path[:]=paths
 
 def bindings(mid,side,weights,start,end):
     path,=list((ROOT/'runtime/pov'/mid).glob(side+'-client-*-events.jsonl.gz'))

@@ -46,6 +46,7 @@ final class BoxingRegulation {
             var t=DuelEnv.Tape.read(p,180000);
             for(int ping:new int[]{0,80}){
                 var e=new DuelEnv(t,"mmc",ping,ping,false,29,true,10,6,0,180000);
+                e.initial.timing.mouseInput=true;
                 for(var f:arms)for(var opp:List.of(Evolve.WT,Evolve.HOLD))for(boolean seat:new boolean[]{true,false})
                     System.out.println(Json.encode(play(e,seat,f,opp)));
             }

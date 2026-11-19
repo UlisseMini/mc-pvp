@@ -6,7 +6,7 @@ import lab.Json;
 
 /** Causal switch/no-switch comparisons at the last server boundary before the opponent changes tactics. */
 final class AdaptationBranches {
-    static final class Pilot extends DuelEnv.Player {
+    static class Pilot extends DuelEnv.Player {
         DuelNetwork brain;
         DuelNetwork[] parts=new DuelNetwork[2];
         DuelEnv.Player wt;

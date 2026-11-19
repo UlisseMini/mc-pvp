@@ -4,10 +4,14 @@ from pathlib import Path
 
 HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
-sys.path.insert(0,str(ROOT/'research/recoil-drill'))
-import score
-import captures
 from mouse_audit import MouseAudit
+import captures
+paths=list(sys.path)
+try:
+    sys.path.insert(0,str(ROOT/'research/recoil-drill'))
+    import score
+finally:
+    sys.path[:]=paths
 
 def native(mid,setup,network=None):
     g=score.record(ROOT/f'runtime/results/{mid}.json')

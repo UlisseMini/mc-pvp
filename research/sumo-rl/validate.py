@@ -18,9 +18,14 @@ def client(mid,side):
     path=next((ROOT/f'runtime/pov/{mid}').glob(f'{side}-client-*-events.jsonl.gz'))
     rows=[];jump=set();network_keys={}
     for e in captures.events(path):
+        # The server start can fall between a client's input-head timestamp and that
+        # tick's travel. Its key still drives the first in-bout movement.
+        if e.get('match')==mid:
+            if e['type']=='duel_network':network_keys[e['tick']]=e['action']%4
+            if e['type']=='legacy_head':
+                w,ctrl,_,_=e['keys'];network_keys[e['tick']]=(2 if ctrl else 1) if w else 0
+            if e['type'] in ('sumo_rl_jump','jump_reset_input','duel_network_jump'):jump.add(e['native_tick'])
         if not g['start']<=e.get('time',0)<=g['finish']:continue
-        if e['type']=='duel_network':network_keys[e['tick']]=e['action']%4
-        if e['type'] in ('sumo_rl_jump','jump_reset_input','duel_network_jump'):jump.add(e['native_tick'])
         if 'monotonic_ns' in e and e['type'] in ('science_move','engine_attack','replication_apply_after'):rows.append(e)
     rows.sort(key=lambda x:x['monotonic_ns'])
     moves=[e for e in rows if e['type']=='science_move']

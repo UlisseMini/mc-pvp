@@ -8,7 +8,7 @@ import sys
 from adaptation import BASELINES,fields,properties,dump,freeze,sha
 from audit import collect
 import champions
-from ladder_transfer import WT,HOLD,models,native_install,plan
+from ladder_transfer import WT,HOLD,REFERENCE,models,native_install,plan
 from native_trials import run_batch
 from results import native
 from run import HERE,ROOT,compile_model
@@ -30,17 +30,27 @@ def strength(points):
 def candidates():
     frozen=HERE/'ladder-frozen';_,paths=models(frozen);winner=read(frozen/'native-choice.json')['winner']
     adaptive=read(FROZEN/'selection.json')['challenger']
-    return {WT:None,winner:paths.get(winner),adaptive:FROZEN/'challenger.net'}
+    return {WT:None,REFERENCE:paths[REFERENCE],winner:paths.get(winner),adaptive:FROZEN/'challenger.net'}
 
-def rosters():
-    arms=candidates();mapped=fields(FIELD,'all');spec=read(FIELD/'field.json');opps={}
+def rosters(arms=None):
+    arms=candidates() if arms is None else arms
+    mapped=fields(FIELD,'all');spec=read(FIELD/'field.json');opps={}
     for n,p in mapped.items():opps[spec[n]['native']]=p
     for i in range(1,5):
         for track in ('pair','recurrent'):
             opps[f'adapt-{i:02d}-{track}']=FROZEN/f'round-{i:02d}/{track}.net'
     # Include all arms as opponents even if a later tournament promotes a previously unpublished strategy.
-    opps.update(arms)
-    return arms,opps
+    # Prefer the actual entrant name so that the head-to-head cells survive deduplication.
+    # A non-network opponent is identified by its controller name, never by an empty weight hash.
+    seen={};unique={};aliases={}
+    for name,path in (arms|opps).items():
+        identity=('network',sha(path)) if path else ('builtin',name)
+        representative=seen.setdefault(identity,name)
+        aliases[name]=representative
+        if representative==name:unique[name]=path
+    for settings in spec.values():
+        for alias in settings.get('aliases',[]):aliases.setdefault(alias,aliases[settings['native']])
+    return arms,unique,aliases
 
 def model_aliases(field):
     inverse={v:k for k,v in BASELINES.items()}
@@ -53,7 +63,7 @@ def mirrors(tag,work):
     donor=module_from_spec(module);module.loader.exec_module(donor)
     src=work/(tag+'-clocks.json');out=work/(tag+'-clocks')
     run_batch(donor.plan('elite-'+tag+'-sealed',True),src)
-    if not out.exists():
+    if len(list(out.glob('*.txt.gz')))!=8:
         import subprocess
         subprocess.run([sys.executable,str(ROOT/'research/sumo-rl/calendars.py'),str(out),'--frozen-manifest',str(src)],check=True)
     files=sorted(out.glob('*.txt.gz'))
@@ -65,15 +75,18 @@ def mirrors(tag,work):
 
 def counts(rows,model=False):
     groups=defaultdict(lambda:defaultdict(list))
+    strata=defaultdict(lambda:defaultdict(lambda:defaultdict(list)))
     for r in rows:
         a=r['arm'];o=r['opponent']
         if model:a=BASELINES.get(a,a);o=BASELINES.get(o,o)
         score=r['score'] if model else (1 if r['win'] else .5 if r['draw'] else 0)
         groups[a][o].append(score)
+        strata[a][o][f"{r['rtt']}/{r['side']}"].append(score)
     result={}
     for a,vs in groups.items():
         rates={o:sum(s)/len(s) for o,s in vs.items()}
-        result[a]=dict(**strength(rates),opponents={o:dict(points=sum(s),n=len(s)) for o,s in vs.items()})
+        result[a]=dict(**strength(rates),opponents={o:dict(points=sum(s),n=len(s),
+            strata={k:[sum(values),len(values)] for k,values in strata[a][o].items()}) for o,s in vs.items()})
     return result
 
 def summarize_bundle(bundle,model):
@@ -98,7 +111,8 @@ def execute(tag,arms,opps,trials,files,work):
     return ranking
 
 def stage(work):
-    arms,opps=rosters();CUP.mkdir(exist_ok=True,parents=True)
+    arms,opps,aliases=rosters();CUP.mkdir(exist_ok=True,parents=True)
+    dump(CUP/'opponents.json',dict(opponents=list(opps),aliases=aliases))
     dump(CUP/'entrants.json',{n:(sha(p) if p else sha(ROOT/'policies'/(n+'.properties'))) for n,p in arms.items()})
     tapes=mirrors('history',work)
     ranking=execute('history',arms,opps,plan('ehist',list(arms),list(opps),1),tapes,work)
@@ -110,23 +124,28 @@ def stage(work):
     selected=challengers[0]
     cells=by[selected]['opponents']
     weakest=sorted(cells,key=lambda n:(cells[n]['points']/cells[n]['n'],n))
-    test=list(dict.fromkeys([WT,HOLD,*arms,*weakest[:5],'shift-sealed-01','shift-sealed-02','shift-sealed-03','shift-sealed-04']))
+    test=list(dict.fromkeys(aliases[n] for n in [WT,HOLD,*arms,*weakest[:5],'shift-sealed-01','shift-sealed-02','shift-sealed-03','shift-sealed-04']))
     dump(CUP/'selection.json',dict(winner=best,challenger=selected,opponents=test,source=sha(CUP/'history/results.json')))
 
 def tour_final(work):
-    decision=read(CUP/'selection.json');arms,field=rosters();opps={n:field[n] for n in decision['opponents']}
+    decision=read(CUP/'selection.json');arms,field,aliases=rosters();opps={n:field[n] for n in decision['opponents']}
     tapes=mirrors('history-final',work)
     ranks=execute('history-final',arms,opps,plan('ehfinal',list(arms),list(opps),4),tapes,work)
-    candidate=decision['challenger'];inc=read(HERE/'ladder-frozen/native-choice.json')['winner']
+    candidate=decision['challenger']
+    # Both possible prior title holders played this tournament. Read the published title at confirmation.
+    incumbent=properties(ROOT/'policies/best-sumo.properties')['title_source']
+    if incumbent not in arms:raise ValueError('Reigning champion missing from the frozen comparison: '+incumbent)
+    inc=incumbent
     by=ranks['native'];dev=read(CUP/'history/results.json')['native'];actual=ranks['model']
     ordered=sorted(by,key=lambda n:(-by[n]['merit'],-by[n]['mean'],n));winner=ordered[0]
     champions.install('league-history-final',arms[winner] or ROOT/'policies'/(winner+'.properties'),
                       'Historical roster confirmation tournament winner','league-history-final')
     def rate(a,n):
-        s=by[a]['opponents'][n];return s['points']/s['n']
+        s=by[a]['opponents'][aliases[n]];return s['points']/s['n']
     passes=(candidate==winner and dev[candidate]['merit']>dev[WT]['merit'] and by[candidate]['merit']>by[WT]['merit']
             and actual[candidate]['merit']>actual[WT]['merit'] and rate(candidate,WT)>.5
-            and (candidate==inc or (by[candidate]['mean']>=by[inc]['mean'] and rate(candidate,inc)>=.5)))
+            and (candidate==inc or (by[candidate]['mean']>=by[inc]['mean'] and by[candidate]['merit']>=by[inc]['merit']
+                 and actual[candidate]['merit']>=actual[inc]['merit'] and rate(candidate,inc)>=.5)))
     dump(CUP/'title.json',dict(winner=winner,challenger=candidate,incumbent=inc,advanced=passes,
                                recommended=candidate if passes else inc,field=decision['opponents'],source=sha(CUP/'history-final/results.json')))
 

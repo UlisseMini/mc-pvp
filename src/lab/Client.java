@@ -938,6 +938,14 @@ public final class Client {
                 maintenanceTransition.put("selection_complete_monotonic_ns",System.nanoTime());log(maintenanceTransition);
             }
             boolean displacementJump=displacementInput(world,obs,sample,jumpOnImpact,ping);
+            if(duelNetwork==null && DuelSettings.mouseInput(controls)){
+                Map<String,Object> h=new LinkedHashMap<>();h.put("type","legacy_head");h.put("match",match);h.put("time",now);
+                h.put("tick",ticks);h.put("epoch",epoch);h.put("observed",obs.time);h.put("kind",kind);
+                h.put("own",Compat.list(obs.x,obs.y,obs.z,obs.vx,obs.vy,obs.vz,obs.ground,obs.sprint));
+                h.put("target",Compat.list(obs.tx,obs.ty,obs.tz));h.put("speeds",Compat.list(obs.ux,obs.uz,obs.tvx,obs.tvz,obs.closing));
+                h.put("cues",Compat.list(lastObservedHurt,lastObservedTargetHurt));h.put("last_click",ModelController.lastInjection);
+                h.put("range",obs.localRange);h.put("keys",Compat.list(forward,sprintKey,strafe,clickGate));log(h);
+            }
             if(reaction==0||displacementTurn!=null&&displacementTurn.headOnly()){nativeInputPoll=true;try{frame(mc);}finally{nativeInputPoll=false;}}
             // S12 changes velocity while the previous movement's ground flag
             // still holds. Read Jump in the next native living update.

@@ -3,7 +3,12 @@ package lab;
 import java.util.Properties;
 
 /** Small visible-only W/Ctrl controller. It never controls or suppresses clicks. */
-public final class MomentumController {
+public final class MomentumController implements Cloneable {
+    public MomentumController copy(){
+        // All controller state is primitive. Settings and observations are passed into decide.
+        try{return (MomentumController)super.clone();}
+        catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}
+    }
     public static final class Settings {
         public int resetEvery=1, resetDelayMs=0, pauseMs=50, pauseTicks=0;
         public int reactionMs=150;
