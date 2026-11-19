@@ -4,6 +4,8 @@ A working local practice server and research ladder using the official **Minecra
 Java 1.8.9** server and real clients through **basic HeadlessMC**. The game performs
 movement, collision, raycasting, attacks, knockback and damage immunity.
 
+Read the [illustrated movement and knockback guide](docs/movement-and-knockback.html) for the native tick order, a runnable travel example, and an annotated sumo trade.
+
 Current research: [physics validation before policy search](research/README.md).
 The [double-hit investigation](research/double-hit-mechanisms.md) records W-tap
 versus hold-W trials and the native timing differences behind their exchanges.

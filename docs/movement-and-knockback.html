@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Movement &amp; knockback, one tick at a time · Java 1.8.9</title>
+<style>
+:root{color-scheme:light dark;--page:#faf9f4;--ink:#202c29;--muted:#50605b;--line:#cad2cb;--wash:#e9eee7;--accent:#09664e;--alt:#85461c;--code:#eef1eb;--paper:#fffefa}
+@media(prefers-color-scheme:dark){:root{--page:#19211f;--ink:#edefe6;--muted:#b5c3b9;--line:#45554c;--wash:#26382f;--accent:#8adabb;--alt:#ffbd8d;--code:#233029;--paper:#1e2923}}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:1rem}body{margin:0;color:var(--ink);background:var(--page);font:17px/1.58 "Source Sans 3",system-ui,sans-serif}main{max-width:920px;margin:auto;padding:clamp(1rem,5vw,4rem) clamp(1rem,4vw,3rem) 5rem}header{border-bottom:2px solid var(--ink);padding-bottom:1.4rem}.meta,dt,figcaption,.source{font-size:.86rem;color:var(--muted)}h1,h2,h3{line-height:1.13;text-wrap:balance}h1,h2{font-family:"Source Serif 4","Iowan Old Style",Georgia,serif;font-weight:500}h1{font-size:clamp(2.7rem,7vw,4.8rem);letter-spacing:-.045em;margin:.4rem 0 1rem}h2{font-size:clamp(1.9rem,4.2vw,2.65rem);letter-spacing:-.035em;margin:0 0 .8rem}h3{font-size:1.15rem;margin:1.65rem 0 .55rem}p,ul,ol{margin:.55rem 0 1rem}section{border-bottom:1px solid var(--line);padding:2.1rem 0}a{color:var(--accent);text-underline-offset:.18em}nav{display:flex;flex-wrap:wrap;gap:.25rem 1.1rem;margin-top:1.3rem;font-size:.88rem}pre{padding:1rem 1.2rem;background:var(--code);border-left:3px solid var(--line);overflow:auto;font-size:.86rem;line-height:1.55;tab-size:4}code,output,.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}p code,li code,td code{font-size:.87em}summary{cursor:pointer;color:var(--accent);font-weight:620}details{margin:1rem 0}.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.flow{list-style:none;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem}.flow li,.example{padding:.8rem 1rem;background:var(--wash)}.flow strong,.flow span{display:block}.flow span{font-size:.9rem}.source{margin-top:1rem}figure{margin:1rem 0}figcaption{margin:.6rem 0}label{font-weight:600}select,button{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:.35rem;padding:.48rem .75rem}button{cursor:pointer}button:disabled{opacity:.45}select{max-width:100%}.controls{display:flex;gap:.55rem 1rem;align-items:center;flex-wrap:wrap}.controls label{font-size:.9rem}.controls input{accent-color:var(--accent)}.slider{flex:1 1 140px;min-width:60px}.chart{display:block;width:100%;height:130px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;margin:1rem 0}.stats div{border-top:1px solid var(--line);padding-top:.4rem}.stats dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums}table{border-collapse:collapse;width:100%;font-size:.91rem}td,th{padding:.5rem .65rem;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted)}.scroll{overflow:auto}.ticks td,.ticks th{white-space:nowrap;font-variant-numeric:tabular-nums}.focus{background:var(--wash)}.formula{font-family:ui-monospace,monospace;color:var(--accent);font-size:.95rem}.experiment{background:var(--paper);padding:clamp(.7rem,3vw,1.5rem);border:1px solid var(--line)}.legend{margin-bottom:0;font-weight:600;font-size:.9rem}.note{border-left:3px solid var(--accent);padding-left:1rem}button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:620px){.cols,.flow{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}main{padding-left:1rem;padding-right:1rem}.experiment{margin:0 -.25rem}pre{padding:.7rem}.flow{gap:.4rem}.flow li{padding:.5rem .8rem}}@media print{body{background:white;color:black;font-size:10pt}main{max-width:none;padding:0}.controls,nav{display:none}pre{white-space:pre-wrap}section{break-inside:auto}.example,figure{break-inside:avoid}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.edgeview{height:64px;position:relative;border-bottom:1px solid var(--line);margin-top:.7rem}.edgeview:after{content:"";position:absolute;left:38.4615%;top:0;bottom:0;border-left:1px dashed var(--ink)}.foot{position:absolute;left:var(--foot);width:46.1538%;height:26px;bottom:22px;background:var(--accent)}.foot:after{content:"";position:absolute;left:50%;top:0;height:100%;border-left:2px solid var(--paper)}.platform{position:absolute;left:0;bottom:0;height:22px;width:38.4615%;background:var(--muted)}
+</style></head><body><main>
+<header><div class="meta">Minecraft Java Edition · 1.8.9 · PvP Lab</div><h1>Movement &amp; knockback,<br>one tick at a time</h1>
+<p>At 6.988 seconds in your sumo match, both clients received the same vertical speed and equal, opposite X speeds. Your first step carried you back <b>0.189025</b> blocks. Hold-W’s carried it back <b>0.501895</b>. To reproduce that difference, follow the assignments in order. A packet sets velocity, an attack can scale it, and a movement tick spends it.</p>
+<nav aria-label="Contents"><a href="#clocks">Three clocks</a><a href="#input">Keys &amp; sprint</a><a href="#travel">Travel loop</a><a href="#explore">Tick explorer</a><a href="#collision">Collisions</a><a href="#combat">Melee &amp; immunity</a><a href="#profiles">KB profiles</a><a href="#trace">Your trade</a><a href="#reach">Reach &amp; replay</a><a href="#source">Source map</a></nav></header>
+
+<section id="clocks"><h2>Whose tick?</h2>
+<p>A local player owns a position, a bounding box, and three stored motion components. Position is in blocks. Motion is in blocks per movement tick. An ordinary game tick targets 50 ms. The server and the two clients each advance their own counters. Two events called “tick 100” on different machines have no shared timing guarantee, even on localhost.</p>
+<ol class="flow"><li><strong>Attacker’s client</strong><span>Picks an entity with the current ray, consumes attack presses, sends an attack, and runs the local attack response.</span></li><li><strong>Server</strong><span>Processes movement, sprint actions and attacks in queue order. Its view of both players determines damage and outgoing velocity.</span></li><li><strong>Victim’s client</strong><span>Applies the velocity packet on its game thread. The next local move can spend it immediately, or a local action can modify it first.</span></li></ol>
+<h3>An ordinary local tick, zoomed in</h3>
+<pre><code>game loop: drain scheduled game-thread tasks (incoming velocity can land here)
+for each due client tick:
+    refresh objectMouseOver from the local world
+    process input events and queued attack/use presses
+    update world entities:
+        local player samples movement keys and resolves sprint
+        living update runs jump, acceleration, collision, gravity and drag
+        local player sends changed sprint/sneak state, then movement report
+        remote players advance their own interpolation when updated
+render using the partial tick between completed local updates</code></pre>
+<p>The render loop can also refresh the ray. A frame can run zero, one, or several logic ticks. A packet’s wire arrival, its main-thread handler return, and the first movement using its value are three different timestamps. On the server, accepted position reports move and validate a player. Other entities, server timers and tracking have their own updates. Replaying one client’s key schedule as if it were the server’s clock gives a different exchange.</p></section>
+
+<section id="input"><h2>From keys to acceleration</h2>
+<pre><code>forward = down(W) - down(S)           # +1 forward, −1 backward
+strafe  = down(A) - down(D)           # +1 left
+if sneak:                  (strafe, forward) *= 0.30
+if usingItem and unmounted: (strafe, forward) *= 0.20
+resolveSprint(forward, hunger, collision, heldSprintKey, tapHistory)
+# Later, just before travel:
+(strafe, forward) *= 0.98</code></pre>
+<p>In an ordinary survival duel, forward input of at least <code>0.8</code>, food above 6, and no item use or Blindness allow the sprint key to start sprinting. The alternate double-tap branch uses a rising forward input on the ground and a seven-tick timer. The held sprint-key branch can re-arm in the air. Falling below the forward threshold, insufficient food, or a horizontal collision cancels an active sprint. The flight permission bypasses the hunger gate. Releasing the sprint key alone can leave an existing sprint active.</p>
+<p>The client’s sprint-duration timer is set to 600 ticks on sprint start and counts down. At expiry the flag clears; holding the eligible sprint bind can start it again. Sprint eligibility uses the sampled forward amount before the later 0.98 input multiplier.</p>
+<p><b>Three sprint states matter.</b> Your local flag changes local speed and attack drag. Your client also remembers the last flag it sent to the server. The server has its own flag, which an accepted sprint attack can clear. At the walking-report phase, the client sends START or STOP only when its local flag differs from its remembered value. A contact can clear local sprint and held Ctrl can restore it before this comparison. That sequence can send neither transition. A W-tap works when the released and re-pressed inputs survive sampling and the renewed START reaches the server before the intended attack.</p>
+<p>On ground, a player reads the current movement-speed attribute on that tick, ordinarily <code>0.1</code> walking and about <code>0.13</code> sprinting. Speed effects and attribute modifiers change this value. In air, travel reads <code>jumpMovementFactor</code>. The player refreshes this <em>after</em> travel, ordinarily to <code>0.02</code> or about <code>0.026</code>. Starting a sprint in midair can give walking air acceleration for one more movement.</p></section>
+
+<section id="travel"><h2>The dry-land travel loop</h2>
+<p>Track both <strong>displacement on this move</strong> and <strong>motion saved for the next move</strong>. The player first accelerates and moves. Horizontal friction and vertical drag usually change the value carried out of that move.</p>
+<pre><code># Ordinary local survival player in a loaded world.
+# v and position use doubles. Many acceleration/friction intermediates use floats.
+for axis in (x, y, z):
+    if abs(v[axis]) &lt; 0.005: v[axis] = 0
+if jumpHeld and onGround and jumpTicks == 0:
+    v.y = 0.42 + jumpBoostBonus
+    if sprinting: v.xz += 0.20 * facing(yaw)
+    jumpTicks = 10
+
+groundAtEntry = onGround
+f = groundAtEntry ? 0.91 * blockBelow.slipperiness : 0.91
+a = groundAtEntry ? groundSpeed * 0.16277136 / (f*f*f) : jumpMovementFactor
+u = (strafe, forward)                    # already damped by 0.98
+if dot(u, u) >= 0.0001:
+    (s, w) = u * (a / max(1, length(u)))
+    v.x += s*cos(yaw) - w*sin(yaw)
+    v.z += w*cos(yaw) + s*sin(yaw)
+
+f = readRetentionAgainBeforeMovement()    # still based on entry ground/block
+requested = v
+actual = moveBoxAndClip(requested)        # writes position and collision flags
+onGround = requested.y &lt; 0 and requested.y != actual.y
+# Blocked X/Z zero that motion component. Ordinary floor landing zeros v.y.
+v.y = (v.y - 0.08) * 0.9800000190734863
+v.x *= f
+v.z *= f</code></pre>
+<p><b>Yaw 0 faces +Z; yaw −90° faces +X.</b> W alone enters at 0.98, below the normalization threshold, giving about 0.098 ground acceleration walking or 0.1274 sprinting on ordinary blocks. W+A exceeds length 1 and gets normalized to length 1. Diagonal input therefore gives a small magnitude difference versus cardinal input; it also splits the acceleration across different axes. Mouse yaw rotates the new acceleration. Existing momentum keeps its world direction.</p>
+<p><b>Friction is a retention factor.</b> Ordinary block slipperiness is <code>0.6f</code>, so ground retains about <code>0.54600006</code> of horizontal motion per move. Air retains about <code>0.91</code>. Ice slipperiness is <code>0.98f</code>, giving about <code>0.8918</code> ground retention. Ice also reduces the input acceleration through <code>1/f³</code>. Both effects belong in an ice calculation. On solid ground the lookup uses the block at <code>(floor(x), floor(box.minY)−1, floor(z))</code>. The block under the center can differ from the block supporting one corner at a ledge.</p>
+<p><b>Three sprint steps from rest.</b> On an ordinary floor with W and sprint held, the first displacement is 0.127400 and the stored speed is 0.069560. The second displacement is about 0.196960 and stored speed is about 0.10754. The third displacement is about 0.23494. Eventually displacement approaches <code>0.1274 / (1−0.546) ≈ 0.28062</code> blocks/tick, about 5.61 blocks/second at 20 TPS. Releasing W removes subsequent forward acceleration. Existing speed still moves you and then decays. Values below the 0.005 per-axis cutoff are cleared before travel.</p>
+<p><b>Jump and land on different branches.</b> Jump sets Y speed to the widened float near 0.42, plus 0.1 per Jump Boost level. Sprint-jump adds 0.2 horizontally in the facing direction. A held jump has a ten-tick repeat gate; the counter decrements on living updates, and releasing jump clears it. The launch can start with <code>onGround=true</code>, so its first horizontal move uses ground acceleration and retention. A landing move begins in the air and uses air retention even after the floor clips Y. The <em>following</em> move gets ground control. Standing still on a solid floor repeatedly ends with about <code>−0.0784</code> stored Y. Next time, the floor clips that attempted downward motion to zero again.</p></section>
+
+<section id="explore"><h2>Walk a single tick</h2>
+<p>Positive X points in the direction you face. In the two hit examples the packet pushes toward −X while W accelerates toward +X. Change the starting state, then step once. Watch <em>move X</em> alongside <em>saved X</em>.</p>
+<div class="experiment" id="experiment"><div class="controls"><label>Starting state <select id="scenario"><option value="ground">Hit from the floor</option><option value="air">Hit in midair</option><option value="walk">Walk from rest</option><option value="sprint">Sprint from rest</option><option value="release">Release W at sprint speed</option><option value="jump">Sprint-jump</option><option value="ice">Start sprinting on ice</option></select></label><label id="dragLabel"><input id="contact" type="checkbox" checked> Sprint contact before first move</label></div>
+<figure><p class="legend">Horizontal position · X, blocks</p><canvas class="chart" id="xchart" aria-label="Signed horizontal position versus tick"></canvas><p class="legend">Feet above the floor · Y, blocks</p><canvas class="chart" id="ychart" aria-label="Height above the floor versus tick"></canvas><figcaption>The dot identifies the selected tick. Both plots and the numeric ledger show the same run on a uniform, infinite floor.</figcaption></figure>
+<div class="controls"><button type="button" id="prev">← Previous</button><label for="tick">Tick <output id="tickno">1</output></label><input id="tick" class="slider" type="range" min="0" max="20" value="1"><button type="button" id="next">Next →</button></div>
+<dl class="stats" id="stats" aria-live="polite"></dl>
+<details><summary>See all 20 moves</summary><div class="scroll"><table class="ticks"><thead><tr><th>Tick</th><th>Entry → exit</th><th>Move X</th><th>Saved X</th><th>Move Y</th><th>Saved Y</th><th>Height</th></tr></thead><tbody id="ledger"></tbody></table></div></details>
+<details><summary>Read the code running this example</summary><pre><code id="exampleCode"></code></pre></details>
+<noscript>Enable JavaScript to step the example. The dry-land pseudocode above and the measured exchange below also work as a static guide.</noscript></div>
+<p class="source">The explorer is a one-dimensional horizontal slice of dry travel with a fixed facing direction and no side obstacles. The hit starts after S12 decoding with X = −0.527375 and Y = +0.361375. The airborne preset begins 0.586973 blocks above the floor. “Contact” applies one eligible ×0.6 and assumes sprint is re-armed before movement. Air acceleration is already primed in these sprinting cases. The actual two-player exchange is below.</p></section>
+
+<section id="collision"><h2>How the box meets the floor</h2>
+<p>The normal standing player has an axis-aligned box about 0.6 blocks wide and 1.8 tall. Position is the midpoint of the box in X/Z and the bottom in Y. The collision routine gathers solid boxes intersecting the player’s swept volume. For ordinary movement it reduces the requested Y offset to whatever fits, offsets the box in Y, and repeats for X, then Z. Resolving axes in sequence lets you slide along a wall and makes corners sensitive to the axis order.</p>
+<pre><code>obstacles = world.collisionBoxes(box.sweptBy(dx, dy, dz))
+for axis in [Y, X, Z]:
+    allowed[axis] = nearestPermittedOffset(box, obstacles, requested[axis])
+    box.offset(axis, allowed[axis])
+if eligibleToStepUp and horizontalPathClipped:
+    try raised paths up to stepHeight and settle back down
+    keep the path with greater horizontal distance if it improves on the original
+position = (box.centerX, box.minY, box.centerZ)
+collidedHorizontally = dx != allowed.x or dz != allowed.z
+collidedVertically   = dy != allowed.y</code></pre>
+<p>A normal player can step up about 0.6 blocks. A half slab can therefore be traversed without an explicit jump. The floor can support any overlapping part of the footprint. On the last platform block, a player’s center can pass the edge by almost 0.3 blocks and still have support. In this lab’s 10-block sumo arena, the top is Y=12 and the referee declares a fall once feet fall below Y=11.5. Crossing the last block’s center, losing support, starting to descend, and scoring the ring-out can all happen at different times.</p>
+<figure aria-label="Side-by-side footprint overlap at the platform edge"><div class="cols">
+<div><b>Center 0.20 past edge</b><div class="edgeview" style="--foot:30.769%"><span class="foot"></span><span class="platform"></span></div><small>Inner foot edge −0.10 · 0.10 blocks supported</small></div>
+<div><b>Center 0.31 past edge</b><div class="edgeview" style="--foot:39.231%"><span class="foot"></span><span class="platform"></span></div><small>Inner foot edge +0.01 · entirely over air</small></div></div><figcaption>Side view of the 0.6-wide footprint. The line marks the outer face of the final block. Both cases assume a straight edge with overlap along Z.</figcaption></figure>
+<details><summary>Branches that change the dry-floor calculation</summary>
+<div class="scroll"><table><thead><tr><th>Condition</th><th>Where the calculation changes</th></tr></thead><tbody>
+<tr><td>Sneaking at a ledge</td><td>Grounded player movement reduces unsupported horizontal requests in 0.05-block increments, including the diagonal case. Ordinary walking can carry the box right off the same edge.</td></tr>
+<tr><td>Web</td><td>Inside <code>moveEntity</code>, web contact scales the requested displacement by approximately (0.25, 0.05, 0.25) and clears stored motion. Gravity can build Y motion again afterward.</td></tr>
+<tr><td>Ladder or vine</td><td>Before collision, X and Z are each clamped to ±0.15, downward Y is limited to −0.15, and fall distance resets. A sneaking player can stop descending. Horizontal collision on a ladder sets Y to 0.2 before gravity/drag.</td></tr>
+<tr><td>Water and lava</td><td>Without flight, water uses input acceleration 0.02 and nominal retention 0.8, then subtracts 0.02 from Y. Depth Strider modifies horizontal acceleration and retention, with reduced effect in midwater. Lava uses 0.02 acceleration, halves all motion, then subtracts 0.02 from Y. Both have a conditional wall-exit lift. Fluid flow and swim input can also change motion.</td></tr>
+<tr><td>Slime and soul sand</td><td>Landing invokes the block callback. Slime can reverse downward Y into a bounce, with sneak taking the ordinary landing path. Slime also has a special low-bounce horizontal slowdown. Soul sand has a lower collision surface and multiplies X/Z motion by 0.4 on block contact. Support geometry and speed loss are distinct effects.</td></tr>
+<tr><td>Flight, mounts, missing chunks</td><td>Flight has a player-specific travel wrapper and vertical controls. A mount supplies its own movement. In the dry client branch an unloaded column can substitute vertical motion (−0.1 above Y=0, otherwise 0) before Y drag. Reconstruct the branch before applying the ordinary equations.</td></tr>
+<tr><td>Entity pushing</td><td>Living updates on the server can process overlapping nearby pushable entities after travel. The horizontal separation routine can add speed to both entities. This is separate from melee, block clipping and the client’s attack drag. Eligibility, mounts, no-clip, server motion and subsequent packets matter.</td></tr>
+</tbody></table></div></details></section>
+
+<section id="combat"><h2>What a click actually does</h2>
+<p>There are three counts worth keeping separately: physical presses, local entity contacts, and accepted server hits. Minecraft can consume several queued presses before one move. Aiming through air, aiming at a block, the miss counter, and aiming at a player take different branches.</p>
+<pre><code>client, when consuming an eligible attack press:
+    swing()
+    if ray.type == ENTITY:
+        send(C02_ATTACK, ray.entityId)
+        attackLocally(the remote-player replica)
+    elif survivalMiss:
+        leftClickCounter = 10
+
+local attack on ordinary remote player:
+    levels = knockbackEnchantment + int(self.sprinting)
+    if damageAttemptSucceedsLocally and levels > 0:
+        add facing bonus to local target replica
+        self.motion.xz *= 0.6
+        self.setSprinting(false)</code></pre>
+<p>The remote player class in 1.8.9 returns true from its local damage handler. The attack code can therefore slow the attacker before the server decides whether the target is immune. A hit with no knockback levels skips this drag branch. Repeating raw clicks while sprint remains false cannot produce a second sprint drag. If sprint is re-armed and the ray still hits, another eligible contact can scale X/Z again. Two qualifying contacts with nothing else between the multiplications retain 0.36; three retain 0.216. On real ticks insert acceleration, friction, collision and any replacement velocity between them. Braking a negative X recoil can help hold space; braking positive X pursuit can give it away. Y is unchanged by attacker drag.</p>
+<p>Vanilla’s survival MISS branch can set a ten-tick click delay. The block-controller path can clear <code>leftClickCounter</code> when attack is released. An unconditional half-second penalty on every miss gives incorrect timing for short press/release inputs. Read the actual counter at click consumption.</p>
+<h3>The victim’s damage window</h3>
+<pre><code># Server, ordinary melee. D is incoming damage at the resistance check.
+H = victim.hurtResistantTime
+limit = victim.maxHurtResistantTime / 2
+if H > limit:
+    if D &lt;= victim.lastDamage: return REJECTED
+    damageThroughNormalMitigation(D - victim.lastDamage)
+    victim.lastDamage = D
+    return ACCEPTED_UPGRADE
+else:
+    victim.lastDamage = D
+    victim.hurtResistantTime = victim.maxHurtResistantTime
+    damageThroughNormalMitigation(D)
+    victim.hurtTime = victim.maxHurtTime = 10
+    runFreshHurtResponseAndBaseKnockback()
+    return ACCEPTED_FRESH</code></pre>
+<p>The upgrade is the excess damage. It neither renews H nor runs the fresh base-knockback branch. The enclosing attacker code still sees success and may apply the sprint/enchantment bonus, consume sprint and brake the attacker. A new velocity packet depends on the victim’s server <code>velocityChanged</code> flag. An accepted upgrade can send none. The equal-damage fresh window reopens at <b>H ≤ 10</b> for vanilla (maximum 20), and <b>H ≤ 9</b> for this lab’s MMC preset (maximum 18). Those are server updates. A red flash or 450 ms on a client clock is an imperfect proxy.</p>
+<p>With an ordinary living target, a 1.8.9 critical requires positive attacker fall distance, airborne state, and no ladder, water, Blindness or mount. Sprinting is allowed. The critical multiplies positive base attack damage by 1.5 before enchantment damage is added. For ordinary unenchanted sumo punches this can turn 1 into 1.5 during immunity and explain a damage upgrade. Armor, blocking and other mitigation affect health after acceptance. The training referee can preserve health while recording hits. Receiving a hit starts the <em>victim’s</em> timer; it can still return an attack immediately.</p></section>
+
+<section id="profiles"><h2>Where knockback comes from</h2>
+<h3>Vanilla 1.8.9</h3>
+<p>Use two horizontal unit vectors. <code>away</code> is the server position direction from attacker to victim. <code>facing</code> is the direction of the attacker’s server yaw. On a glancing hit these point in different directions. For an ordinary fresh melee hit on a player with zero knockback resistance, the main code path is:</p>
+<pre><code>saved = victim.serverMotion
+away = normalize(victim.posXZ - attacker.posXZ)
+facing = (-sin(attacker.yaw), cos(attacker.yaw))
+levels = knockbackEnchantment + int(attacker.sprintingAtAttackEntry)
+
+# Inside the victim's fresh damage response
+victim.vXZ = saved.xz / 2 + 0.4 * away
+victim.vY  = min(0.4, saved.y / 2 + 0.4)
+
+# Back in the attacker's method, when damage was accepted
+if levels > 0:
+    victim.vXZ += 0.5 * levels * facing
+    victim.vY  += 0.1                 # once, regardless of level
+    attacker.vXZ *= 0.6
+    attacker.setSprinting(false)
+if victim is serverPlayer and victim.velocityChanged:
+    sendVelocityToVictim(victim.v)
+    victim.velocityChanged = false
+    victim.serverMotion = saved</code></pre>
+<p>From zero server motion, a head-on ordinary fresh hit yields about (H=0.4, Y=0.4); a head-on level-one sprint hit gives about (H=0.9, Y=0.5). The server snapshots its own victim motion. Your client may already be moving at a different velocity. Nearly coincident centers trigger a random horizontal direction fallback for vanilla base knockback. Nonzero knockback resistance introduces random checks for the base impulse and for setting the velocity-changed flag. Ordinary unmodified player resistance is zero.</p>
+<h3>The local MMC-style preset</h3>
+<p>The lab overrides the outgoing vector at the fresh-player-hit packet construction site. It keeps native client travel, attacker drag and server damage-window logic. This preset is a provisional reconstruction. The public MMC server’s implementation is unverified. The result metadata identifies which local rule a recording used.</p>
+<pre><code># mmc_pre_attack_sprint_v2, fresh scored melee, just before encoding S12
+levels = knockbackEnchantment + int(serverSprintFlagAtAttackEntry)
+away = facing if horizontalSeparation &lt; 0.01 else normalizedSeparation
+packetXZ = (0.5274 * away + 0.327 * levels * facing) * horizontalScale
+height = victim.serverY - lastGroundFloor
+if height > 0.675: capped = true       # latched until a grounded report/reset
+landing = supported and consecutivePositionReports and airborneReport
+          and predictsLanding(height, lastReportedDeltaY, victimAddedRTT)
+packetY = 0 if capped and not landing else 0.361375 + levels*sprintVertical
+packetY *= verticalScale</code></pre>
+<p>Default horizontal and vertical scales are 1 and sprintVertical is 0. Thus an uncapped head-on sprint hit sends H=0.8544 before encoding; an unsprinted hit sends H=0.5274. Equal Y on those two hits is expected. Once capped, an additional fresh hit can set Y to zero even while the victim was falling. At zero added RTT the landing exception is off. For positive height up to 1.3 and added RTT above 25 ms, the predictor advances the last reported vertical delta using <code>vy=(vy−0.08)×0.980000019…</code> for up to <code>ceil((RTT−25)/50)</code> steps and checks for floor crossing. It uses measured report state and a configured delay. A predicted landing is a server rule, distinct from the victim’s actual ground collision.</p>
+<p>The lab’s Hypixel-style preset uses the native-shaped fresh vector with a sprint-Y replacement of 0.07 at the default scales and a nine-tick window. Older lab MMC recordings tagged <code>mmc_community_first_hit</code> used a different sprint rule. Read the match’s <code>combat_profile</code> before applying the numbers above.</p>
+<h3>From a double to the victim’s next move</h3>
+<pre><code>for axis in (x, y, z):
+    wire[axis] = truncTowardZero(clamp(packetV[axis], -3.9, 3.9) * 8000)
+# S12 arrives; on the receiving client's game thread:
+entity.motion = (wire.x, wire.y, wire.z) / 8000</code></pre>
+<p>S12 <strong>replaces</strong> all three components. A fresh head-on X of −0.5274 becomes −4219/8000 = −0.527375. An existing −0.2 is overwritten. A local contact before this overwrite scales the old speed; a contact after it scales the new one. If the player moves between those two events, the already-traveled distance stays traveled. A jump can overwrite Y and add a sprint impulse before travel if the grounded jump gate is open. A later S12 can overwrite that result. “Jump reset” therefore needs a specific order of jump, packet application, and movement to predict an outcome.</p>
+<p class="source">Preset constants, landing conditions and packet hook are in <a href="../src/lab/CombatProfile.java">CombatProfile</a>, <a href="../src/lab/MmcKnockback.java">MmcKnockback</a>, <a href="../src/lab/CombatTuning.java">CombatTuning</a> and <a href="../src/lab/PracticePresets.java">PracticePresets</a>.</p></section>
+
+<section id="trace"><h2>One trade, two first steps</h2>
+<p>In m2151, both packet handlers finished at <b>6.988 s</b>. Positive X points toward Hold-W’s edge. The previous exchange had already put the players at different heights. You had landed at 6.908 s; Hold-W was still 0.586973 blocks above the platform. Neither player pressed jump in this sequence.</p>
+<div class="cols"><div class="example"><b>Nomophobia · ground entry</b><p>At 7.007 your ray hit while you were locally sprinting. X changed from −0.527375 to −0.316425. The click cleared sprint; held movement re-armed it before travel.</p><div class="formula">move X ≈ −0.316425 + 0.127400<br>= −0.189025 blocks<br>saved X ≈ −0.189025 × 0.546<br>= −0.103208</div></div>
+<div class="example"><b>Hold-W · air entry</b><p>Its move began at 6.990 and finished at 6.991. There was no intervening local contact. It faced nearly −X, so the air input opposed the received +X.</p><div class="formula">move X ≈ +0.527375 − 0.025480<br>= +0.501895 blocks<br>saved X ≈ +0.501895 × 0.91<br>= +0.456724</div></div></div>
+<p>Both moved up by <code>0.361375</code> on this first move and carried about <code>+0.2757475</code> Y into the next one. Your height became 0.361375. Its height became 0.948348. You landed after ten movements at 7.462; it needed twelve and landed at 7.547. Equal launch Y preserves the difference in starting heights until a floor collision intervenes. The early local contact and the ground/air branch explain the different horizontal displacements. The preceding launch timing explains why those branches differed in the first place.</p>
+<p>For the full chain, Hold-W’s earlier hit registered at 6.436, yours at 6.535. You left the ground 128 ms earlier on the two client movement clocks. Your falling upgrade at 6.881 consumed server sprint and sent no replacement velocity, letting your first arc finish. Your later W release/re-press produced server STOP/START at 7.432/7.483. Your 7.582 fresh hit then carried a full sprint bonus.</p>
+<p class="source">Inspect every click, packet and move in the <a href="../recordings/m2151-movement-audit.html">measured m2151 ledger</a>. The <a href="../research/m2151-sumo/audit.py">reconstruction</a> reads both native recordings.</p></section>
+
+<section id="reach"><h2>Why the two players see different reach</h2>
+<p>Your self position moves immediately on your movement tick. The opponent on your client is a replica. The server receives the opponent’s position reports, the tracker emits updates, and your client advances the replica toward its newest destination. In 1.8.9 ordinary tracked player positions are encoded on a 1/32-block grid. A relative update changes the accumulated destination. A new destination commonly requests three interpolation increments. Each remote-player tick moves a fraction of the <em>remaining</em> distance:</p>
+<pre><code>if remainingSteps > 0:
+    replica.pos += (destination - replica.pos) / remainingSteps
+    remainingSteps -= 1
+# Rendering can blend previous/current poses again for a partial frame.</code></pre>
+<p>A newer packet can replace the destination before the previous interpolation finishes. Neither “subtract half the ping” nor “both players use the last server tick” reconstructs those two local positions. Ordinary walking reports use position change squared &gt;0.0009 or the 20-tick refresh gate; rotation-only and ground-only reports are possible. Tracker emission, packet arrival, game-thread drain and replica movement are distinct stages.</p>
+<p>For ideal aim, use the standing eye at feet +1.62, a target box about 0.6 wide × 1.8 high, and the ordinary targeting border of 0.1 on each side. The nearest distance is the Euclidean length of the vector from the eye to its closest point on the expanded box. In actual play, the current look ray must intersect the eligible target within the ordinary three-block entity reach and beat nearer obstructions. At partial tick 1 the living look direction uses head yaw and pitch. Server acceptance also checks its own distance and line-of-sight rules before resolving damage.</p>
+<pre><code>nearest = clamp(eye, expandedTargetBox.min, expandedTargetBox.max)
+distance = length(eye - nearest)
+advantage = opponentPOV.distanceToYou - yourPOV.distanceToOpponent</code></pre>
+<p>At <b>8.192 s</b> your ideal distance was 2.903598 and Hold-W’s was 5.639619. The practice mod showed <b>+2.736021 blocks</b>. Its own client had already moved Hold-W far back; your client was still interpolating its replica. An update to X=4100.25 had finished processing on your client at 8.190, but its next interpolation move was at 8.207. That 17 ms gap is enough to change which position an observer reads.</p>
+<details><summary>What the server does with a walking report</summary>
+<p>The survival client ordinarily sends feet position and rotation when they change enough; each movement-report variant carries a ground bit. The server compares the request with its accepted position, checks speed and collision constraints, and can send a position correction. A grounded-to-air report with positive requested Y can trigger the server jump branch. Accepted descent and ground reports also feed fall distance, which matters for the next critical. This server state and the client’s post-travel motion can differ even at zero added ping.</p>
+<pre><code># An ordinary C03 path, simplified; thresholds and correction paths are in lm.a(ip).
+if previousServerGround and not report.ground and requestedDY > 0: serverPlayer.jump()
+validateAndMoveAgainstWorld(requestedPosition)
+if invalid: sendPositionCorrection()
+else: acceptReportedPoseAndGround(); updateFallingAndTracking()</code></pre>
+<p>On a C02 attack, the native server distance guard uses squared player-position distance &lt;36 with line of sight, &lt;9 without. The normal local survival ray still determines whether an attack packet is produced. A report queued after the attack cannot change the server’s pose or sprint state for that attack retroactively.</p></details>
+<h3>What the techniques change</h3>
+<ul><li><b>W-tapping</b> changes forward acceleration and can re-arm the server sprint bonus. Check whether STOP and START arrived in time, and what spacing the release cost.</li>
+<li><b>Hit selecting and mid-trade timing</b> change which player is grounded, rising or falling at each contact and which return window is open. Taking a first hit and delaying your own can shift the two launch phases. Measure the next fresh window and the opponent’s ray to see who actually gained a return opportunity.</li>
+<li><b>Burst clicking</b> changes how many eligible local drag events fall between velocity application and travel. If one of them happens after movement, it can only affect later moves. If the underlying speed pointed forward, slowing it can shorten your chase.</li>
+<li><b>Jump resetting</b> changes the Y assigned before travel, the sprint-jump impulse, and when ground control returns. Use the ground flag and the ordered S12, jump and move records to distinguish an actual jump from being launched off the floor.</li></ul>
+<h3>Reading another fight in replay</h3>
+<ol><li>Pause near the trade. In server POV, use hotbar <b>2</b> to step between hits, upgrades and KB records. Several records can share a millisecond. Note the vector, target, and whether the attack scored.</li><li>Use the compass in slot <b>6</b> to follow the victim’s recorded POV, then use <b>2</b> to find the applied velocity and any local click drag. Match the entity, sign, magnitude and order. The clocks can put multiple events in one movement interval.</li><li>Use <b>3</b> for native recorded ticks. Identify the starting ground flag, incoming motion, acceleration direction, actual displacement and outgoing motion. Repeat on the other POV. When a recording lacks a detailed event, the full pose/packet archive is the next source if available.</li><li>At the return-hit window, compare each eye to its own replica of the other fighter. Check the actual ray and attack outcome separately. For an exact audit use full-precision logs; the step labels round H and Y for readability.</li></ol>
+<p class="source">See <a href="../src/practice/math/ReachAdvantage.java">the mod’s reach-advantage calculation</a> and <a href="../FORMAL-MODEL.md">the lab’s formal movement, attack and replication model</a>.</p></section>
+
+<section id="source"><h2>Read the original methods</h2>
+<p>The pseudocode follows the ordinary unmounted survival-player route through Java 1.8.9. Numeric examples round for readability. Java uses double positions and motion, float inputs and friction, and a 65,536-entry float sine table. Native box endpoints retain their own rounding history. Exact reconciliation also needs world collision boxes, effect/attribute state, event order, and the packet integers. The runnable dry-floor reference preserves that arithmetic and explicitly checks its scope. <a href="../src/lab/ExactTravel.java">ExactTravel.java</a> · <a href="../tests/ExactTravelCheck.java">Native fixture checks</a></p>
+<div class="scroll"><table><thead><tr><th>Start in this method</th><th>In the official jar</th><th>Follow for</th></tr></thead><tbody>
+<tr><td>Minecraft.runGameLoop / runTick / clickMouse</td><td><code>ave.av / s / aw</code></td><td>Queued tasks, mouse-over, press consumption, entity updates.</td></tr>
+<tr><td>MovementInputFromOptions.updatePlayerMoveState; EntityPlayerSP.onLivingUpdate / onUpdateWalkingPlayer</td><td><code>bev.a</code>; <code>bew.m / p</code></td><td>Keys, sneak, use slowdown, sprint eligibility and packet reports.</td></tr>
+<tr><td>EntityLivingBase.onLivingUpdate / jump / moveEntityWithHeading</td><td><code>pr.m / bF / g(FF)</code></td><td>Cutoff, jump, movement branches, gravity and retention.</td></tr>
+<tr><td>Entity.moveFlying / moveEntity; EntityPlayer.getAIMoveSpeed / onLivingUpdate</td><td><code>pk.a(FFF) / d(DDD)</code>; <code>wn.bI / m</code></td><td>Rotation, clipping, current ground attribute and cached air factor.</td></tr>
+<tr><td>PlayerControllerMP.attackEntity; EntityOtherPlayerMP.attackEntityFrom</td><td><code>bda.a(wn,pk)</code>; <code>bex.a(ow,float)</code></td><td>Send order and successful local contacts.</td></tr>
+<tr><td>EntityPlayer.attackTargetEntityWithCurrentItem; EntityLivingBase.attackEntityFrom / knockBack</td><td><code>wn.f(pk)</code>; <code>pr.a(ow,float) / a(pk,float,double,double)</code></td><td>Criticals, fresh/upgrade gate, base KB, sprint extra, attacker drag, S12 and restore.</td></tr>
+<tr><td>NetHandlerPlayServer.processUseEntity / processPlayer</td><td><code>lm.a(in) / a(ip)</code></td><td>Server attack validation, reported movement, landing and ground state.</td></tr>
+<tr><td>S12PacketEntityVelocity; NetHandlerPlayClient.handleEntityVelocity / handleEntityMovement; EntityOtherPlayerMP.onLivingUpdate</td><td><code>hm</code>; <code>bcy.a(hm) / a(gv)</code>; <code>bex.m</code></td><td>Quantization, motion overwrite, destination updates and interpolation.</td></tr>
+<tr><td>EntityRenderer.getMouseOver; EntityLivingBase.getLook</td><td><code>bfk.a(float)</code>; <code>pr.d(float)</code></td><td>Target box expansion, view ray and reach cutoff.</td></tr></tbody></table></div>
+<p>From the project root, a JDK can print the actual instructions. The remapped compile jar uses stable <code>func_…</code> names; the official jar uses the short names above. Match by method signature, because a class can overload the same letter many times.</p>
+<pre><code>javap -classpath .cache/client.jar -c -p pr
+javap -classpath .cache/server.jar -c -p wn
+javap -classpath build/practice-client/compile-api.jar -c -p net.minecraft.client.entity.EntityPlayerSP</code></pre>
+<p class="source">The lab pins Mojang’s client SHA-1 <code>3870888a6c3d349d3771a3e9d16c9bf5e076b908</code> and server SHA-1 <code>b58b2ceb36e01bcd8dbf49c8fb66c55a9f0676cd</code>. <a href="https://piston-meta.mojang.com/v1/packages/d546f1707a3f2b7d034eece5ea2e311eda875787/1.8.9.json">Official 1.8.9 version manifest</a> · <a href="../dependencies.lock.json">Project dependency lock</a></p></section>
+</main><script>
+'use strict';
+const f32 = Math.fround;
+function initialState(mode) {
+    const hit = mode === 'ground' || mode === 'air';
+    const grounded = mode !== 'air';
+    const retention = f32(f32(0.6) * f32(0.91));
+    const settledSprintMotion = 0.1274 * retention / (1 - retention);
+    return { x: 0, y: grounded ? 0 : 0.586973, grounded,
+        vx: hit ? -0.527375 : mode === 'release' ? settledSprintMotion : 0,
+        vy: hit ? 0.361375 : -0.08 * f32(0.98) };
+}
+function moveOneTick(before, mode, tick, contact) {
+    const hit = mode === 'ground' || mode === 'air';
+    const sprint = mode !== 'walk' && mode !== 'release';
+    const slipperiness = f32(mode === 'ice' ? 0.98 : 0.6);
+    const friction = before.grounded ? f32(slipperiness * f32(0.91)) : f32(0.91);
+    const cube = f32(f32(friction * friction) * friction);
+    const groundSpeed = f32(sprint ? 0.13000001 : 0.1);
+    const airSpeed = f32(sprint ? 0.02599999867 : 0.02);
+    const acceleration = before.grounded ? f32(groundSpeed * f32(f32(0.16277136) / cube)) : airSpeed;
+    const forward = f32(mode === 'release' ? 0 : 0.98);
+    let vx = before.vx, vy = before.vy;
+
+    if (hit && tick === 1 && contact) vx *= 0.6;
+    if (Math.abs(vx) < 0.005) vx = 0;
+    if (Math.abs(vy) < 0.005) vy = 0;
+    if (mode === 'jump' && tick === 1) {
+        vy = f32(0.42);
+        vx += f32(0.2);
+    }
+    const inputX = f32(forward * acceleration); // Facing +X, always W or idle.
+    const dx = vx + inputX;
+    const dy = Math.max(-before.y, vy);         // Solid plane at Y=0.
+    const grounded = vy < 0 && dy !== vy;
+    return { x: before.x + dx, y: before.y + dy, grounded,
+        vx: dx * friction, vy: ((grounded ? 0 : vy) - 0.08) * f32(0.98),
+        dx, dy, friction, inputX, entryGround: before.grounded };
+}
+function trajectory(mode, contact) {
+    const rows = [initialState(mode)];
+    for (let tick = 1; tick <= 20; tick++) rows.push(moveOneTick(rows[tick-1], mode, tick, contact));
+    return rows;
+}
+const element = id => document.getElementById(id);
+const fmt = value => value.toFixed(6);
+function draw(canvas, rows, key, index) {
+    const width = canvas.clientWidth, height = canvas.clientHeight;
+    if (!width || !height) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+    const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+    const styles = getComputedStyle(document.documentElement);
+    const color = name => styles.getPropertyValue('--'+name).trim();
+    const vals = rows.map(r => r[key]);
+    const min = Math.min(0,...vals), max = Math.max(min + 0.25,...vals);
+    const left = 46, right = width-15, top = 12, bottom = height-27;
+    const x = i => left+(right-left)*i/(rows.length-1);
+    const y = v => bottom-(bottom-top)*(v-min)/(max-min);
+    ctx.font = '12px system-ui'; ctx.lineWidth = 1; ctx.fillStyle = color('muted');
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
+    for (const v of [max,(min+max)/2,min]) {
+        ctx.strokeStyle=color('line'); ctx.beginPath();ctx.moveTo(left,y(v));ctx.lineTo(right,y(v));ctx.stroke();
+        ctx.fillText(v.toFixed(2),left-6,y(v));
+    }
+    ctx.textAlign='center'; for (const i of [0,5,10,15,20]) ctx.fillText(String(i),x(i),bottom+14);
+    ctx.strokeStyle=color(key==='x'?'accent':'alt');ctx.lineWidth=2.5;ctx.beginPath();
+    rows.forEach((row,i)=>{if(i===0)ctx.moveTo(x(i),y(row[key]));else ctx.lineTo(x(i),y(row[key]));});ctx.stroke();
+    ctx.fillStyle=color('ink');ctx.beginPath();ctx.arc(x(index),y(rows[index][key]),4.5,0,2*Math.PI);ctx.fill();
+}
+function render() {
+    const mode = element('scenario').value, index = Number(element('tick').value);
+    const rows = trajectory(mode,element('contact').checked), row=rows[index];
+    element('tickno').value=index; element('prev').disabled=index===0; element('next').disabled=index===20;
+    element('dragLabel').hidden = !(mode==='ground'||mode==='air');
+    const state = (grounded) => grounded ? 'Ground' : 'Air';
+    const stats = index===0 ? [['Starting on',state(row.grounded)],['Stored X',fmt(row.vx)],['Stored Y',fmt(row.vy)]] :
+        [['Entry → exit',state(row.entryGround)+' → '+state(row.grounded)],['Input added to X',fmt(row.inputX)],['X retained',row.friction.toFixed(3)],
+        ['Move X',fmt(row.dx)],['Saved X',fmt(row.vx)],['Saved Y',fmt(row.vy)]];
+    element('stats').replaceChildren(...stats.map(([name,value])=>{const block=document.createElement('div'),term=document.createElement('dt'),def=document.createElement('dd');term.textContent=name;def.textContent=value;block.append(term,def);return block;}));
+    const items=rows.slice(1).map((r,i)=>{const tr=document.createElement('tr');if(i+1===index)tr.className='focus';
+        [i+1,state(r.entryGround)+' → '+state(r.grounded),fmt(r.dx),fmt(r.vx),fmt(r.dy),fmt(r.vy),fmt(r.y)].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td);});return tr;});
+    element('ledger').replaceChildren(...items);
+    draw(element('xchart'),rows,'x',index);draw(element('ychart'),rows,'y',index);
+}
+element('exampleCode').textContent='const f32 = Math.fround;\n'+[initialState,moveOneTick,trajectory].map(f=>f.toString()).join('\n\n');
+for (const id of ['tick','contact','scenario']) element(id).addEventListener('input',render);
+element('prev').addEventListener('click',()=>{element('tick').stepDown();render();});
+element('next').addEventListener('click',()=>{element('tick').stepUp();render();});
+window.addEventListener('resize',render);window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',render);render();
+</script></body></html>
