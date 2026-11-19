@@ -17,6 +17,7 @@ final class ReplayData {
     final double originalCenter;
     final boolean posesRecorded;
     final PovReplayData pov;
+    final ReplaySteps serverSteps=new ReplaySteps("server");
     @SuppressWarnings("unchecked") static Map<String,Object> map(Object value){return value instanceof Map?(Map<String,Object>)value:Map.of();}
     static double number(Map<String,Object> m,String key,double fallback){Object v=m.get(key);return v instanceof Number?((Number)v).doubleValue():fallback;}
     static String string(Map<String,Object> m,String key,String fallback){Object v=m.get(key);return v instanceof String?(String)v:fallback;}
@@ -74,6 +75,12 @@ final class ReplayData {
                         f.put("health_"+victim,e.get("health_after"));f.put("hits_a",e.get("hits_a"));f.put("hits_b",e.get("hits_b"));frames.add(f);
                     }
                 }
+                if(time<=start+duration){
+                    // Follow file order within a millisecond. Two hits can supply different poses at the same timestamp.
+                    Map<String,Object> recent=frames.isEmpty()?Map.of():frames.get(frames.size()-1);
+                    serverSteps.recordedFrame=number(recent,"time",Double.POSITIVE_INFINITY)<=time?recent:Map.of();
+                    indexServer(e,type,time-start);
+                }
             }
         }
         if(frames.isEmpty())throw new IllegalArgumentException("This recording has no playable server samples.");
@@ -83,7 +90,41 @@ final class ReplayData {
         frames.sort(Comparator.comparingDouble(f->number(f,"time",0)));events.sort(Comparator.comparingDouble(e->number(e,"time",0)));
         for(Map<String,Object> f:frames)times.add((long)number(f,"time",start)-start);
         posesRecorded=map(frames.get(0).get("a")).containsKey("rotationYaw");
-        pov=new PovReplayData(this,legacy);
+        serverSteps.sort();pov=new PovReplayData(this,legacy);
+    }
+    private void indexServer(Map<String,Object> row,String type,long ms){
+        switch(type){
+            case "tick" -> {
+                serverSteps.tick(ms,"server sample "+(serverSteps.ticks.size()+1));
+                for(String side:List.of("a","b")){
+                    Map<String,Object> p=map(row.get(side));Map<String,Object> old=lastTick.getOrDefault(side,Map.of());
+                    String name=label(side);
+                    serverSteps.transition(ms,old,p,"ground",name+" landed",name+" left ground");
+                    lastTick.put(side,p);
+                }
+            }
+            case "hit" -> {
+                String kind=flag(row,"rod")?"rod contact":flag(row,"damage_upgrade")?"damage upgrade":"fresh hit";
+                serverSteps.event(ms,actor(row,"attacker")+" → "+actor(row,"target")+" · "+kind);
+            }
+            case "blocked_damage","critical","rod_trick" ->
+                serverSteps.event(ms,actor(row,"attacker")+" · "+type.replace('_',' '));
+            case "science_server_attack" -> {
+                if(row.get("score_before") instanceof List<?> before && before.equals(row.get("score_after")))
+                    serverSteps.event(ms,actor(row,"attacker")+" → "+actor(row,"target")+" · no score");
+            }
+            case "mmc_knockback" -> {
+                String label=actor(row,"target")+" · knockback";
+                if(row.get("velocity") instanceof List<?> v && v.size()==3 && v.get(0) instanceof Number x && v.get(1) instanceof Number y && v.get(2) instanceof Number z)
+                    label+=String.format(Locale.ROOT," H %.3f · Y %+.3f",Math.hypot(x.doubleValue(),z.doubleValue()),y.doubleValue());
+                serverSteps.event(ms,label);
+            }
+        }
+    }
+    private final Map<String,Map<String,Object>> lastTick=new HashMap<>();
+    private String actor(Map<String,Object> row,String field){
+        Object value=row.get(field);for(String side:List.of("a","b"))if(Objects.equals(value,result.get(side)))return label(side);
+        return string(row,field,"unknown");
     }
     Map<String,Object> frame(long ms){return frames.get(ReplayTimeline.floor(times,ms));}
     String label(String side){return label(result,side);}

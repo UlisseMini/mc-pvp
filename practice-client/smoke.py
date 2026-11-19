@@ -9,14 +9,15 @@ from build import *
 import forge_runtime
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--optifine',action='store_true');parser.add_argument('--port',type=int,default=25565);args=parser.parse_args();server_port=args.port
+    parser=argparse.ArgumentParser();parser.add_argument('--optifine',action='store_true');parser.add_argument('--replay-controls',action='store_true',help='Exercise the replay hotbar on the recorded m2151 exchange only');parser.add_argument('--port',type=int,default=25565);args=parser.parse_args();server_port=args.port
+    replay_controls=args.replay_controls
     verify_cache()
     mc=Path.home()/'Library/Application Support/minecraft'
     work=BUILD/'smoke';work.mkdir(exist_ok=True)
     forge_classpath=forge_runtime.stage_dependencies()
     libraries=json.loads((ROOT/'.cache/classpath.json').read_text())
     cp=os.pathsep.join([str(BUILD/'compile-api.jar'),str(BUILD/'api'),*libraries])
-    compile_to(work/'probe-classes',[SRC/'smoke/ForgeProbe.java'],cp)
+    compile_to(work/'probe-classes',[SRC/'smoke/ForgeProbe.java',SRC/'smoke/ServerReplayControlChecks.java'],cp)
     jar(work/'probe.jar',work/'probe-classes')
     game=ROOT/'runtime/practice-forge-smoke';game.mkdir(exist_ok=True)
     for d in ['mods','config/pvp-practice','tmp','home']:(game/d).mkdir(parents=True,exist_ok=True)
@@ -39,6 +40,7 @@ def main():
           '--gameDir',str(game),'--assetsDir',str(forge_runtime.ASSETS),'--assetIndex','1.8','--uuid','00000000-0000-0000-0000-000000000007',
           '--accessToken','0','--userProperties','{}','--userType','legacy','--tweakClass','net.minecraftforge.fml.common.launcher.FMLTweaker',
           '--server','127.0.0.1','--port',str(server_port)]
+    if replay_controls:args.insert(0,'-Dpractice.probe.replay_controls=true')
     args=forge_runtime.command(args,game)
     log=game/'console.log'
     with log.open('w') as stream:

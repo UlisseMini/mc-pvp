@@ -55,6 +55,7 @@ public final class PracticeBridge {
     @Mod.EventHandler public void init(FMLInitializationEvent event) {
         FMLCommonHandler.instance().bus().register(this);
         MinecraftForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.register(new ServerReplayHotbar(capture));
         ClientCommandHandler.instance.func_71560_a(new Command());
         System.out.println("[PracticeBridge] Ready. "+host.status());
     }

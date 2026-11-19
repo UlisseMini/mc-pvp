@@ -19,6 +19,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 @Mod(modid="practiceprobe",name="Practice smoke test",version="1",clientSideOnly=true,dependencies="required-after:practicebridge")
 public final class ForgeProbe {
+    private final ServerReplayControlChecks replayControls=new ServerReplayControlChecks();
     private int ticks,draws,worldDraws,stopAt; private Object bridge;
     private boolean playerLabelsChecked;
     private final Set<Double> drillGaps=new HashSet<>();
@@ -27,7 +28,7 @@ public final class ForgeProbe {
     private EntityPlayer drillOpponent;private int drillContinuitySamples;private boolean drillLostOpponent;
     private String sumoMatch;private int sumoEnd;private double sumoCenter;
     private int openingResults;private String replayMatch;private double pausedTime;private String inventoryBefore;private int poseChecks;private double poseError;
-    private Map<?,?> replay()throws Exception{Field f=bridge.getClass().getDeclaredField("capture");f.setAccessible(true);Object c=f.get(bridge);Field r=c.getClass().getDeclaredField("replay");r.setAccessible(true);Object p=r.get(c);Method m=p.getClass().getDeclaredMethod("state");m.setAccessible(true);return (Map<?,?>)m.invoke(p);}
+    Map<?,?> replay()throws Exception{Field f=bridge.getClass().getDeclaredField("capture");f.setAccessible(true);Object c=f.get(bridge);Field r=c.getClass().getDeclaredField("replay");r.setAccessible(true);Object p=r.get(c);Method m=p.getClass().getDeclaredMethod("state");m.setAccessible(true);return (Map<?,?>)m.invoke(p);}
     private void right(int slot){Minecraft mc=Minecraft.func_71410_x();mc.field_71439_g.field_71071_by.field_70461_c=slot;KeyBinding.func_74507_a(mc.field_71474_y.field_74313_G.func_151463_i());}
     private void left(int slot){Minecraft mc=Minecraft.func_71410_x();mc.field_71439_g.field_71071_by.field_70461_c=slot;KeyBinding.func_74507_a(mc.field_71474_y.field_74312_F.func_151463_i());}
     private Frame frame()throws Exception{Field f=bridge.getClass().getDeclaredField("frame");f.setAccessible(true);return (Frame)f.get(bridge);}
@@ -72,7 +73,7 @@ public final class ForgeProbe {
         check(count==(present?80:0),present?"native client sees complete 10-block-wide circular platform":"ordinary replay clears previous sumo platform");
     }
     private void cleanHooks()throws Exception{check(Class.forName("practice.bridge.ObserverHooks").getField("errors").getLong(null)==0,"native observer hooks report no errors");}
-    private void check(boolean ok,String message){if(!ok)throw new AssertionError(message);System.out.println("[PracticeProbe] PASS "+message);}
+    void check(boolean ok,String message){if(!ok)throw new AssertionError(message);System.out.println("[PracticeProbe] PASS "+message);}
     @Mod.EventHandler public void init(FMLInitializationEvent e){
         bridge=Loader.instance().getIndexedModList().get("practicebridge").getMod();
         FMLCommonHandler.instance().bus().register(this);MinecraftForge.EVENT_BUS.register(this);
@@ -88,6 +89,7 @@ public final class ForgeProbe {
         Minecraft mc=Minecraft.func_71410_x();if(mc.field_71439_g==null)return;
         try{
             ticks++;
+            if(Boolean.getBoolean("practice.probe.replay_controls")){replayControls.tick(this,mc,ticks);return;}
             if(ticks==25){nativeReachCheck();
                 check(frame().holdSprint,"Forge tick drives module");
                 check(frame().lines.get(0).right,"top-right HUD");
@@ -188,13 +190,13 @@ public final class ForgeProbe {
             }
             if(stopAt>0){int t=ticks-stopAt;
                 if(t==160){check(Boolean.TRUE.equals(replay().get("active")),"replay stream active");check(mc.field_71439_g.field_71075_bZ.field_75101_c&&mc.field_71439_g.field_71075_bZ.field_75102_a,"hotbar replay permits invulnerable free flight");right(0);}
-                if(t==175){check(Boolean.TRUE.equals(replay().get("paused")),"clock item pauses replay");pausedTime=((Number)replay().get("time_ms")).doubleValue();right(2);}
-                if(t==190){check(Math.abs(((Number)replay().get("time_ms")).doubleValue()-Math.min(pausedTime+5000,((Number)replay().get("duration_ms")).doubleValue()))<100,"forward item seeks five seconds, clamped at recording end");left(1);}
-                if(t==205){check(Math.abs(((Number)replay().get("time_ms")).doubleValue()-Math.max(0,Math.min(pausedTime+5000,((Number)replay().get("duration_ms")).doubleValue())-1000))<100,"rewind item left click seeks one second");mc.field_71439_g.func_71165_d("/replay seek 2");mc.field_71439_g.func_71165_d("/replay pov human");}
+                if(t==175){check(Boolean.TRUE.equals(replay().get("paused")),"clock item pauses replay");pausedTime=((Number)replay().get("time_ms")).doubleValue();right(3);}
+                if(t==190){check(Math.abs(((Number)replay().get("time_ms")).doubleValue()-Math.min(pausedTime+1000,((Number)replay().get("duration_ms")).doubleValue()))<100,"seek item goes forward one second, clamped at recording end");left(3);}
+                if(t==205){check(Math.abs(((Number)replay().get("time_ms")).doubleValue()-Math.max(0,Math.min(pausedTime+1000,((Number)replay().get("duration_ms")).doubleValue())-1000))<100,"same seek item goes back one second");mc.field_71439_g.func_71165_d("/replay seek 2");mc.field_71439_g.func_71165_d("/replay pov human");}
                 if(t==225){check("a".equals(replay().get("source")),"human POV selects the human recording");check(mc.func_175606_aa()!=mc.field_71439_g,"POV switches native camera to recorded actor");mc.field_71439_g.func_71165_d("/replay ghost human on");mc.field_71439_g.func_71165_d("/replay ghost bot on");}
                 if(t==245){check(world().boxes.size()==24&&world().spheres.size()==2,"all four client ghosts and both reach fields coexist in replay");Map<?,?> av=(Map<?,?>)replay().get("availability");check("recorded client poses".equals(((Map<?,?>)av.get("a")).get("quality"))&&"recorded client poses".equals(((Map<?,?>)av.get("b")).get("quality")),"both clients recorded high-rate pose files");mc.field_71439_g.func_71165_d("/replay pov bot");}
                 if(t==265){check(poseChecks>10&&poseError<1e-7,"rendered replay actors match archived poses exactly ("+poseChecks+" samples, error "+poseError+")");check(!((Map<?,?>)replayFrame().get("reach_advantage")).isEmpty(),"replay computes reach advantage from both recorded client views");check("b".equals(replay().get("source")),"bot POV selects the bot recording");right(6);}
-                if(t==280){check(mc.field_71462_r!=null&&mc.field_71462_r.getClass().getSimpleName().equals("ReplayMenu"),"ghost hotbar item opens native settings menu");mc.func_147108_a(null);mc.field_71439_g.func_71165_d("/replay speed 0.1");mc.field_71439_g.func_71165_d("/replay play");}
+                if(t==280){check(mc.field_71462_r!=null&&mc.field_71462_r.getClass().getSimpleName().equals("ReplayMenu"),"settings item opens native settings menu");mc.func_147108_a(null);mc.field_71439_g.func_71165_d("/replay speed 0.1");mc.field_71439_g.func_71165_d("/replay play");}
                 if(t==300){check(Math.abs(((Number)replay().get("speed")).doubleValue()-.1)<.0001&&!Boolean.TRUE.equals(replay().get("paused")),"client replay follows slow-motion clock");right(8);}
                 if(t==325){check(inventoryBefore.equals(mc.field_71439_g.field_71071_by.func_70442_a(new net.minecraft.nbt.NBTTagList()).toString()),"replay exit restores the complete prior inventory");check(!Boolean.TRUE.equals(replay().get("active")),"exit item clears replay views");check(mc.func_175606_aa()==mc.field_71439_g&&!mc.field_71439_g.field_71075_bZ.field_75101_c,"exit restores camera and ordinary survival abilities");cleanHooks();}
             }

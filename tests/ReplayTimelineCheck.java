@@ -39,6 +39,16 @@ public final class ReplayTimelineCheck {
         List<Long> times=List.of(0L,50L,50L,100L);
         check(ReplayTimeline.floor(times,-10)==0,"before first sample");check(ReplayTimeline.floor(times,50)==2,"last same-time sample");
         check(ReplayTimeline.floor(times,99)==2,"recorded step, no invented trajectory");check(ReplayTimeline.floor(times,999)==3,"last sample");
+        ReplaySteps steps=new ReplaySteps("server");
+        steps.event(49,"lead-in");steps.event(50,"hit");steps.event(50,"knockback");steps.event(52,"return");steps.sort();
+        int first=ReplaySteps.adjacent(steps.events,50,-1,true);
+        int second=ReplaySteps.adjacent(steps.events,50,first,true);
+        check(first==1&&second==2,"next from seek includes first tied event and steps by identity");
+        check(ReplaySteps.adjacent(steps.events,50,second,false)==first,"previous reverses exactly across a tie");
+        check(ReplaySteps.adjacent(steps.events,50,-1,false)==second,"previous from seek includes last tied event");
+        check(ReplaySteps.adjacent(steps.events,51,-1,true)==3&&ReplaySteps.adjacent(steps.events,51,-1,false)==2,"seek between events");
+        check(ReplaySteps.adjacent(steps.events,53,-1,true)==steps.events.size()&&ReplaySteps.adjacent(steps.events,48,-1,false)==-1,"endpoints do not wrap");
+        check(steps.points(true).isEmpty(),"combat events do not manufacture ticks");
         System.out.println("PASS replay clock: fractional/arbitrary speeds, absolute/relative seek, pause preservation, boundary clamps, invalid inputs and recorded samples");
     }
 }

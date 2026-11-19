@@ -99,6 +99,7 @@ enabling RCON or opening another network port.
 | `/replay pov human` / `bot` / `server` | Switch the actual recorded viewpoint; `a`/`b` also accepted |
 | `/replay ghost human-self on` | Toggle any individual client ghost: human-self, human-opponent, bot-self, bot-opponent; `ghost off` clears them |
 | `/practice advantage on` | Show both client-view reach distances and `d1 − d2` advantage, live and during replay |
+| `/replay event prev` / `/replay event next` | Pause on the previous/next recorded event in the selected view. Use `/replay tick prev` or `/replay tick next` for recorded ticks |
 | `/replay controls` | Show the clickable rewind/forward, pause/play, speed and camera controls again |
 | `/replay combos` | Show clickable timestamps for every 3+ hit combo (20 per page; use `combos 2` for page 2) |
 | `/replay pause` / `/replay play` | Pause/resume; play restarts after the recording ends |
@@ -252,10 +253,14 @@ actors are private packet-only copies in a separate viewing area: they consume
 no bot slots, run no combat, and cannot affect another match. Starting a duel or
 watching a live match removes your replay; `/stop` exits it. Completed recordings
 remain available across server restarts. Pause, seek, speed and follow controls
-operate independently for each viewer. Replay equips nine hotbar tools for playback,
-seeking, speed, POV, camera, ghosts, combos and exit. Scroll/1–9 selects; left/right
-click uses the item. Right-click the ghost item for a native settings menu. You
-can also open chat (T) to click the controls shown
+operate independently for each viewer. In replay, select with the wheel or 1–9. The slots are **1** play/pause,
+**2** event, **3** recorded tick, **4** seek one second, **5** speed, **6** POV,
+**7** settings, **8** combo, and **9** right-click to exit. Left goes back or slower,
+right goes forward or faster. Settings includes independent camera and ghost controls.
+A step pauses and shows its exact timestamp, ordinal and description. Equal-time
+events can share a pose. Server events cover both fighters. A player POV steps
+through that client's recorded clicks, velocity applications and movement changes.
+You can also open chat (T) to click the controls shown
 when a replay starts. **Custom...** fills in the speed command for you to type a
 number; **Go to...** fills in the seek command. Rewind/forward preserve your
 camera and pause state and stop at the recording's boundaries. You can pause

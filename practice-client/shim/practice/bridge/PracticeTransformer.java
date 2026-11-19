@@ -12,6 +12,7 @@ public final class PracticeTransformer implements IClassTransformer {
     public byte[] transform(String name,String transformed,byte[] bytes){
         if(bytes==null)return null;
         bytes=BotTransformer.transform(transformed,bytes);
+        if(transformed.equals("net.minecraft.client.gui.GuiIngame"))return replayHotbar(bytes);
         if(transformed.equals("net.minecraft.client.renderer.ItemRenderer"))return firstPersonUse(bytes);
         if(transformed.equals("net.minecraft.client.renderer.EntityRenderer"))return hurtCamera(sneakCamera(bytes));
         boolean network=transformed.equals("net.minecraft.network.NetworkManager"),
@@ -88,6 +89,26 @@ public final class PracticeTransformer implements IClassTransformer {
         if(hooks==0)throw new IllegalStateException("Practice observer hooks missing for "+transformed);
         ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS);node.accept(out);
         System.out.println("[PracticeBridge] Observer hooks: "+transformed+" ("+hooks+")");return out.toByteArray();
+    }
+    private static byte[] replayHotbar(byte[] bytes){
+        ClassNode node=new ClassNode();new ClassReader(bytes).accept(node,0);
+        int lookups=0;
+        for(MethodNode method:node.methods){
+            if(!named(method,"func_180479_a","renderTooltip","a")||
+                    !(method.desc.equals("(Lnet/minecraft/client/gui/ScaledResolution;F)V")||method.desc.equals("(Lavr;F)V")))continue;
+            for(AbstractInsnNode insn:method.instructions.toArray()){
+                if(!(insn instanceof MethodInsnNode))continue;
+                MethodInsnNode getter=(MethodInsnNode)insn;
+                if(!(getter.name.equals("func_175606_aa")||getter.name.equals("getRenderViewEntity")||getter.name.equals("ac"))
+                        ||!(getter.desc.equals("()Lnet/minecraft/entity/Entity;")||getter.desc.equals("()Lpk;")))continue;
+                InsnList owner=new InsnList();
+                owner.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"practice/bridge/ServerReplayHotbar","owner","(Ljava/lang/Object;)Ljava/lang/Object;",false));
+                owner.add(new TypeInsnNode(Opcodes.CHECKCAST,Type.getReturnType(getter.desc).getInternalName()));
+                method.instructions.insert(insn,owner);lookups++;
+            }
+        }
+        if(lookups==0)throw new IllegalStateException("Replay hotbar camera lookup missing");
+        ClassWriter writer=new ClassWriter(0);node.accept(writer);return writer.toByteArray();
     }
     private static boolean named(MethodNode m,String srg,String mcp,String obf){
         return m.name.equals(srg)||m.name.equals(mcp)||m.name.equals(obf);

@@ -127,10 +127,12 @@ there is no delay label on the normal HUD.
 ## Multi-view replay and shared archives
 
 `/replay` opens your latest completed match. Select hotbar items with 1–9 or the
-scroll wheel, then click. Slots are play/pause, rewind, forward, speed, viewpoint,
-camera, ghosts, combos and exit. Left/right seek 1/5 seconds; speed clicks decrease/
-increase the multiplier; combo clicks select previous/next. Right-click the ghost
-item or use `/replay menu` for the native settings screen. Exit is right-click only.
+scroll wheel, then click. Slots are play/pause, event, recorded tick, one-second seek,
+speed, viewpoint, settings, combos and exit. Left-click goes back or slower and
+right-click goes forward or faster. Event and tick steps pause in the selected
+view. The action bar shows the exact timestamp and selected record. Settings
+opens with either click or `/replay menu`. Exit is right-click only. The practice
+mod keeps your own toolbar visible while following either replay actor.
 
 The menu switches server/A-client/B-client POVs and independently toggles both
 actors as seen by each client (four ghosts), plus two optional server ghosts.

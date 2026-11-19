@@ -41,6 +41,7 @@ class JavaModelTest(unittest.TestCase):
              str(lab.ROOT / 'src/lab/RodTricks.java'),
              str(lab.ROOT / 'tests/RodTricksCheck.java'),
              str(lab.ROOT / 'src/lab/ReplayTimeline.java'),
+             str(lab.ROOT / 'src/lab/ReplaySteps.java'),
              str(lab.ROOT / 'tests/ReplayTimelineCheck.java'),
              str(lab.ROOT / 'tests/JavaModelCheck.java')],
             cwd=lab.ROOT, capture_output=True, text=True, timeout=30,

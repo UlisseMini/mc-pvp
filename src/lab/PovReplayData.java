@@ -3,6 +3,7 @@ import practice.replay.PoseTrack;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.zip.GZIPInputStream;
 
 /** Readable, independently timestamped POV tracks; missing client views are never substituted. */
@@ -20,6 +21,16 @@ final class PovReplayData {
             if(track.size()>0){track.sort();tracks.put(side,track);quality.put(side,"legacy 5 Hz snapshots");}
         }
     }
+    private static final ExecutorService INDEXER=Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"replay-event-index");t.setDaemon(true);return t;});
+    private final Map<String,CompletableFuture<ReplaySteps>> indices=new HashMap<>();
+    CompletableFuture<ReplaySteps> steps(String source){
+        if(source.equals("server"))return CompletableFuture.completedFuture(replay.serverSteps);
+        return indices.computeIfAbsent(source,side->CompletableFuture.supplyAsync(()->{
+            try{return ClientReplaySteps.read(Referee.DATA.resolve("pov/"+replay.id),side,replay.start,replay.duration);}
+            catch(IOException e){throw new CompletionException(e);}
+        },INDEXER));
+    }
+    void close(){for(var job:indices.values())job.cancel(false);}
     String source(String name){
         if(Set.of("server","a","b").contains(name))return name;
         for(String side:List.of("a","b")){boolean human="human".equals(replay.result.get("policy_"+side));if(name.equals(human?"human":"bot"))return side;}
