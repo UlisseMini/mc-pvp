@@ -19,6 +19,7 @@
   "SumoJumpPolicy",
   "DuelNetwork",
   "HumanTiming",
+  "ExpertRouter",
   "CriticalClickController",
   "BlockhitController",
   "LinearHitPredictor",

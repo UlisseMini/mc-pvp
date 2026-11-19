@@ -5,11 +5,12 @@ import java.util.Base64;
 
 /** Java 8 inference shared by the Forge player and tournament. One instance per fighter per bout. */
 public final class DuelNetwork {
-    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION }
+    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION, ROUTER }
     public static final int INPUTS=22, HIDDEN=8, OUTPUTS=5;
     public static final int STRIDE=12;
     private final Family family;
     private HumanTiming imitation;
+    private ExpertRouter router;
     private final float[] weights;
     private final double[] features=new double[INPUTS], hidden=new double[HIDDEN], next=new double[HIDDEN];
     private final double[] outputs=new double[OUTPUTS];
@@ -18,6 +19,7 @@ public final class DuelNetwork {
     private int previousAction;
 
     public static int size(Family f) {
+        if(f==Family.ROUTER)return ExpertRouter.SIZE;
         if(f==Family.IMITATION)return HumanTiming.SIZE;
         if(f==Family.LINEAR)return OUTPUTS*(INPUTS+1);
         int recurrent=(f==Family.RECURRENT || f==Family.HYBRID)?HIDDEN:0;
@@ -28,10 +30,12 @@ public final class DuelNetwork {
     public DuelNetwork(Family family,float[] weights) {
         if(weights.length!=size(family))throw new IllegalArgumentException("Wrong network dimensions");
         this.family=family;this.weights=weights;
+        if(family==Family.ROUTER)router=new ExpertRouter(weights);
         if(family==Family.IMITATION)imitation=new HumanTiming(weights);
     }
     public DuelNetwork copy(){
         DuelNetwork c=new DuelNetwork(family,weights);
+        if(router!=null)c.router=router.copy();
         if(imitation!=null)c.imitation=imitation.copy();
         c.started=started;c.centerX=centerX;c.centerZ=centerZ;c.previousTargetX=previousTargetX;
         c.previousTargetY=previousTargetY;c.previousTargetZ=previousTargetZ;c.previousAction=previousAction;
@@ -62,8 +66,11 @@ public final class DuelNetwork {
     public Family family(){return family;}
     public double[] features(){return features.clone();}
     public double[] scores(){return outputs.clone();}
+    public ExpertRouter router(){return router;}
     public double[] imitationInputs(){return imitation.inputs();}
-    public void applied(int action){previousAction=action;if(imitation!=null)imitation.applied(action); }
+    public void applied(int action){previousAction=action;
+        if(imitation!=null)imitation.applied(action);
+        if(router!=null)router.applied(action); }
 
     private static double clip(double v){return Math.max(-1,Math.min(1,v));}
     public static int pack(int key,int side,boolean click,boolean jump){
@@ -79,6 +86,7 @@ public final class DuelNetwork {
     public int step(double x,double y,double z,double tx,double ty,double tz,
                     double vx,double vy,double vz,boolean grounded,boolean sprint,
                     double ownHurtAge,double targetHurtAge,double rtt){
+        if(router!=null)return router.step(x,y,z,tx,ty,tz,vx,vy,vz,grounded,sprint,ownHurtAge,targetHurtAge,rtt);
         if(!started){
             started=true;centerX=(x+tx)*.5;centerZ=(z+tz)*.5;
             previousTargetX=tx;previousTargetZ=tz;previousTargetY=ty;
