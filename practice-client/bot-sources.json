@@ -20,6 +20,8 @@
   "DuelNetwork",
   "HumanTiming",
   "ExpertRouter",
+  "CombatTactics",
+  "TradeResponse",
   "CriticalClickController",
   "BlockhitController",
   "LinearHitPredictor",

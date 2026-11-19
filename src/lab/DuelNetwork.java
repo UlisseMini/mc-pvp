@@ -5,12 +5,14 @@ import java.util.Base64;
 
 /** Java 8 inference shared by the Forge player and tournament. One instance per fighter per bout. */
 public final class DuelNetwork {
-    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION, ROUTER }
+    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION, ROUTER, TACTIC, RESPONSE }
     public static final int INPUTS=22, HIDDEN=8, OUTPUTS=5;
     public static final int STRIDE=12;
     private final Family family;
     private HumanTiming imitation;
     private ExpertRouter router;
+    private CombatTactics tactics;
+    private TradeResponse response;
     private final float[] weights;
     private final double[] features=new double[INPUTS], hidden=new double[HIDDEN], next=new double[HIDDEN];
     private final double[] outputs=new double[OUTPUTS];
@@ -19,6 +21,8 @@ public final class DuelNetwork {
     private int previousAction;
 
     public static int size(Family f) {
+        if(f==Family.RESPONSE)return TradeResponse.SIZE;
+        if(f==Family.TACTIC)return CombatTactics.SIZE;
         if(f==Family.ROUTER)return ExpertRouter.SIZE;
         if(f==Family.IMITATION)return HumanTiming.SIZE;
         if(f==Family.LINEAR)return OUTPUTS*(INPUTS+1);
@@ -30,11 +34,15 @@ public final class DuelNetwork {
     public DuelNetwork(Family family,float[] weights) {
         if(weights.length!=size(family))throw new IllegalArgumentException("Wrong network dimensions");
         this.family=family;this.weights=weights;
+        if(family==Family.RESPONSE)response=new TradeResponse(weights);
+        if(family==Family.TACTIC)tactics=new CombatTactics(weights);
         if(family==Family.ROUTER)router=new ExpertRouter(weights);
         if(family==Family.IMITATION)imitation=new HumanTiming(weights);
     }
     public DuelNetwork copy(){
         DuelNetwork c=new DuelNetwork(family,weights);
+        if(response!=null)c.response=response.copy();
+        if(tactics!=null)c.tactics=tactics.copy();
         if(router!=null)c.router=router.copy();
         if(imitation!=null)c.imitation=imitation.copy();
         c.started=started;c.centerX=centerX;c.centerZ=centerZ;c.previousTargetX=previousTargetX;
@@ -64,13 +72,16 @@ public final class DuelNetwork {
     }
     public float[] weights(){return weights.clone();}
     public Family family(){return family;}
-    public double[] features(){return features.clone();}
+    public double[] features(){return response==null?features.clone():response.features();}
     public double[] scores(){return outputs.clone();}
+    public TradeResponse response(){return response;}
+    public CombatTactics tactics(){return tactics;}
     public ExpertRouter router(){return router;}
     public double[] imitationInputs(){return imitation.inputs();}
     public void applied(int action){previousAction=action;
         if(imitation!=null)imitation.applied(action);
-        if(router!=null)router.applied(action); }
+        if(router!=null)router.applied(action);
+        if(response!=null)response.applied(action); }
 
     private static double clip(double v){return Math.max(-1,Math.min(1,v));}
     public static int pack(int key,int side,boolean click,boolean jump){
@@ -86,6 +97,7 @@ public final class DuelNetwork {
     public int step(double x,double y,double z,double tx,double ty,double tz,
                     double vx,double vy,double vz,boolean grounded,boolean sprint,
                     double ownHurtAge,double targetHurtAge,double rtt){
+        if(response!=null)return response.step(x,y,z,tx,ty,tz,vx,vy,vz,grounded,sprint,ownHurtAge,targetHurtAge,rtt);
         if(router!=null)return router.step(x,y,z,tx,ty,tz,vx,vy,vz,grounded,sprint,ownHurtAge,targetHurtAge,rtt);
         if(!started){
             started=true;centerX=(x+tx)*.5;centerZ=(z+tz)*.5;
@@ -111,6 +123,7 @@ public final class DuelNetwork {
         features[20]=clip((dist-3.3)*4);features[21]=clip((targetHurtAge-ownHurtAge)/300);
         if(Double.isNaN(features[21]))features[21]=0; // neither player has shown a hurt cue
         previousTargetX=tx;previousTargetY=ty;previousTargetZ=tz;
+        if(tactics!=null)return tactics.step(features,dist,y,ty,vy,grounded?1:0,sprint,ownHurtAge,targetHurtAge);
         if(imitation!=null)return imitation.step(features,grounded);
         boolean recurring=family==Family.RECURRENT||family==Family.HYBRID;
         int index=0;
