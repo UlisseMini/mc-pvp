@@ -12,6 +12,12 @@ CLIENT = {'native_input_head':'TICK_HEAD', 'native_attack_loop':'CONSUME',
 SERVER = {'drain_start':'SERVER_DRAIN','entity_tick_start':'SERVER_ENTITY',
           'tracker_tick_start':'SERVER_TRACK','tick_end':'SERVER_END'}
 
+def server_stage(e):
+    if e['type']!='replication_server_clock':return None
+    kind=SERVER.get(e['phase'])
+    if kind in ('SERVER_ENTITY','SERVER_TRACK') and e['world_ordinal']!=0:return None
+    return kind
+
 def timeline(mid, side, game):
     path = (ROOT/'runtime/replays'/f'{mid}.jsonl' if side=='s' else
             next((ROOT/'runtime/pov'/mid).glob(f'{side}-client-*-events.jsonl.gz')))
@@ -22,7 +28,7 @@ def timeline(mid, side, game):
             e = json.loads(line)
             typ = e['type']
             if side=='s':
-                kind = SERVER.get(e.get('phase')) if typ=='replication_server_clock' else None
+                kind = server_stage(e)
             else:
                 kind = CLIENT.get(typ)
                 if typ=='client_task_drain' and e['data']['phase']=='start':
@@ -43,7 +49,7 @@ def tape(mid):
     for s,stream in streams.items():
         start,end = heads[s][0],heads[s][n]
         events = [(t-start,k) for t,k in stream if start<=t<end]
-        for key in (('SERVER_DRAIN','SERVER_END') if s=='s' else ('TICK_HEAD','MOVE','CONSUME','FLUSH')):
+        for key in (('SERVER_DRAIN','SERVER_ENTITY','SERVER_TRACK','SERVER_END') if s=='s' else ('TICK_HEAD','MOVE','CONSUME','FLUSH')):
             if sum(k==key for _,k in events)!=n: raise ValueError((mid,s,key,n))
         lines.append(f'{s} {start-origin} {end-start}')
         lines.extend(f'{dt} {k}' for dt,k in events)
