@@ -9,6 +9,8 @@ The [double-hit investigation](research/double-hit-mechanisms.md) records W-tap
 versus hold-W trials and the native timing differences behind their exchanges.
 The [burst-clicking experiments](research/burst-clicking-results.md) test immediate
 recoil cancellation, continuous one-tick W-tap and critical-aware click scheduling.
+The [sprint-reset and recoil drill](research/recoil-drill/README.md) compares
+20 CPS W-tap with selective clicking in boxing and sumo on the updated MMC preset.
 The [click-rate comparison](research/cps-wtap-results.md) isolates 15, 20, 25 and
 30 CPS against otherwise identical 10 CPS one-tick W-tap.
 The [timed-block trials](research/blockhit-linear-results.md) cover the practice
@@ -221,7 +223,12 @@ server still applies it.
 Use `preset=mmc` in any duel kit or in `/drill jumpreset preset=mmc`.
 This preset uses a community fit dated October 30, 2025. It applies a base
 horizontal impulse of 0.5274, adds 0.327 for a sprint hit, and sends 0.361375
-upward with no extra lift for sprint. Once a hit happens more than 0.675 blocks
+upward with no extra lift for sprint. The lab awards the sprint extra using the
+attacker's server sprint flag at attack entry. A successful sprint attack consumes
+that flag. A W release and re-press can re-arm it for the next hit. Replays record
+the flag and the applied bonus. Older recordings tagged `mmc_community_first_hit`
+used the last sprint toggle. New matches use `mmc_pre_attack_sprint_v2`, a
+provisional choice for practice. Once a hit happens more than 0.675 blocks
 above the player's last standing height, subsequent hits suppress upward
 knockback until landing. The author describes the horizontal figures as a
 first-hit fit, and reported that combo knockback could differ.

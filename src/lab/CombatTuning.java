@@ -23,7 +23,7 @@ public final class CombatTuning {
     public static void outgoing(Object victim){
         if(victim!=target||match==null||!fresh||match.ha+match.hb==previousScore)return;
         if(match.mmcKnockback!=null){
-            match.mmcKnockback.outgoing(source,victim);
+            match.mmcKnockback.outgoing(source,victim,preAttackSprint);
             return;
         }
         CombatProfile p=match.combat;

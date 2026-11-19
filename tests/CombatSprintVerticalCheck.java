@@ -19,6 +19,20 @@ public final class CombatSprintVerticalCheck {
             var a=seed(sprint,0,false);var b=a.deepCopy();PeriodicComboFightModel.hit(a,nativeConfig,true,0);PeriodicComboFightModel.hit(b,explicit,true,0);
             var av=velocity(a);var bv=velocity(b);bits(av.vx,bv.vx,"default X parity");bits(av.vy,bv.vy,"default Y parity");bits(av.vz,bv.vz,"default Z parity");check(a.serverB.equals(b.serverB),"native server motion exact");
         }
+        var mmc=new PeriodicComboFightModel.Config();
+        mmc.applyCombat(PracticePresets.defaults("mmc"));
+        var repeated=seed(true,0,false);
+        PeriodicComboFightModel.hit(repeated,mmc,true,0);
+        bits(repeated.lastFreshB.x(),PeriodicComboFightModel.vel(.5274+.327),"opening MMC sprint hit");
+        check(!repeated.serverSprint,"accepted sprint hit consumes the server flag");
+        repeated.resistant=mmc.hitTicks;
+        PeriodicComboFightModel.hit(repeated,mmc,true,450);
+        bits(repeated.lastFreshB.x(),PeriodicComboFightModel.vel(.5274),"unreset second MMC hit");
+        repeated.add(2,850,0,0,0,0,true);
+        PeriodicComboFightModel.serverDrain(repeated,mmc,850);
+        repeated.resistant=mmc.hitTicks;
+        PeriodicComboFightModel.hit(repeated,mmc,true,900);
+        bits(repeated.lastFreshB.x(),PeriodicComboFightModel.vel(.5274+.327),"sprint command re-arms the bonus");
         var h=new PeriodicComboFightModel.Config();h.applyCombat(PracticePresets.defaults("hypixel"));check(h.hitTicks==9&&h.kbScale==1&&h.verticalScale==1&&h.sprintVertical==.07,"full profile import");check(h.deepCopy().sprintVertical==.07,"copied boost");
         var standard=new PeriodicComboFightModel.Config();standard.hitTicks=9;
         for(boolean sprint:new boolean[]{false,true}){

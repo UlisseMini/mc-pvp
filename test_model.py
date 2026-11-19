@@ -18,7 +18,7 @@ class JavaModelTest(unittest.TestCase):
         cls.addClassCleanup(cls.temporary.cleanup)
         cls.classes = Path(cls.temporary.name)
         result = subprocess.run(
-            [str(lab.JAVAC), '-d', str(cls.classes),
+            [str(lab.JAVAC), '-d', str(cls.classes), '-sourcepath', str(lab.ROOT / 'src'),
              str(lab.ROOT / 'src/lab/ComboModel.java'),
              str(lab.ROOT / 'src/lab/ExactTravel.java'),
              str(lab.ROOT / 'tests/ExactTravelCheck.java'),

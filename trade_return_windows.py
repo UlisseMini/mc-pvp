@@ -28,7 +28,7 @@ def box_distance(click):
 def attack_kind(event,game=None):
     if event is None:
         return 'server_rejected_before_attack'
-    if not (game or {}).get('scenario') and max(event['score_before']) >= 100:
+    if (game or {}).get('mode', 'boxing') == 'boxing' and not (game or {}).get('scenario') and max(event['score_before']) >= 100:
         return 'after_winning_score'
     if event['score_before'] == event['score_after']:
         return 'immune'

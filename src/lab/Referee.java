@@ -425,11 +425,15 @@ public final class Referee {
                 start(a,b,args[3],args[4],args.length==9?ping(args[5]):120,args.length==9?ping(args[6]):120,
                     args.length==9?args[8]:"seed-"+System.nanoTime(),duration,"boxing",config,config,6,0,"");
                 message(sender,"Seeded research "+find(a).id+": waiting for both clients, then a2.5s quiescence barrier. /watch "+find(a).id);
-            }else if(cmd.equals("lab")&&args.length==8&&args[1].equals("scenario")){
+            }else if(cmd.equals("lab")&&args.length>=8&&args[1].equals("scenario")){
                 long duration=Long.parseLong(args[6]);if(duration<1000||duration>304_000)throw new IllegalArgumentException("Scenario duration must be1000–304000ms");
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
                 if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}
-                loadPolicies();start(a,b,args[2],args[3],ping(args[4]),ping(args[5]),args[7],duration);
+                // Reuse the match option parser. The scenario duration is the only extra positional field.
+                List<String> options=new ArrayList<>(List.of(args[4],args[5],args[7]));
+                options.addAll(Arrays.asList(args).subList(8,args.length));
+                BotMatchSettings setup=BotMatchSettings.parse(options.toArray(new String[0]),0,args[7]);
+                loadPolicies();start(a,b,args[2],args[3],setup.pingA,setup.pingB,setup.request,duration,"boxing",setup.a,setup.b,6,0,"");
             }else if(cmd.equals("lab")&&args.length>=4&&args[1].equals("match")){
                 String a=freeBot(Set.of());String b=a==null?null:freeBot(Set.of(a));
                 if(a==null||b==null){message(sender,"Need two free bot slots.");return true;}
@@ -541,7 +545,7 @@ public final class Referee {
         message(player(a),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules+" §b/stop §7to exit.");
         message(player(b),"§aStarting "+m.id+": §b"+m.label("a")+" §7vs §6"+m.label("b")+"§7. "+rules);
         if(m.combat.mmc())for(Object who:List.of(player(a),player(b)))
-            message(who,"§dMMC-like melee knockback §7(community first-hit fit, local landing prediction).");
+            message(who,"§dMMC-like melee knockback §7(first-hit fit, sprint reset required for repeat sprint KB).");
         else if(!m.combat.equals(CombatProfile.DEFAULT)&&!m.combat.vanilla())for(Object who:List.of(player(a),player(b)))
             message(who,"§dModified combat for both players: §fKB ×"+m.combat.horizontal()+" horizontal, ×"+m.combat.vertical()+" vertical; sprint extra Y "+m.combat.sprintVertical()+"; fresh hit delay "+m.combat.freshTicks()+" ticks. §7Not an exact Hypixel profile.");
         if(pa.equals("human")){

@@ -51,8 +51,13 @@ def ready_bracket(ticks,start,end,target,fresh_ticks=10):
 
 def analyze(game,side='a'):
     other='b' if side=='a' else 'a'
+    return analyze_events(game,side,server_events(game['id']),client_events(game,side),client_events(game,other))
+
+
+def analyze_events(game,side,raw,native,opposite):
+    """Score supplied, match-specific streams, including isolated servers with overlapping IDs."""
+    other='b' if side=='a' else 'a'
     fresh_ticks=game.get('combat_profile',{}).get('fresh_hit_ticks',10)
-    raw=server_events(game['id']);native=client_events(game,side);opposite=client_events(game,other)
     rows,links,linkage=link_clicks(raw,native,game,side)
     if linkage['errors']:raise ValueError(linkage)
     delays=[r['server_receive_ms']-r['consumption_ms'] for r in rows if r['server_receive_ms'] is not None]

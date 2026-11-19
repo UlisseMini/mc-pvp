@@ -14,8 +14,15 @@ from the primary matched improvement gate below; do not reject only candidates
 with a stricter criterion than W-tap. Preserve old evidence under its original
 metric definition.
 
-Check live status before deployment. Do not interrupt a human duel. Research
-policies use only their own client observations; other POVs are offline evidence.
+Use the main lab for experiments. Check live status before deployment. The
+owner authorizes restarting the main server even during their own duel.
+Research policies use only their own client observations. Other POVs are
+offline evidence.
+
+The overall 1.8.9 goal covers both boxing and sumo. Target the provisional
+MMC sprint-reset preset first and measure transfer to other knockback profiles.
+Isolate one skill at a time before integrating it. Score boxing maintenance and
+sumo ring-outs under their own win conditions.
 
 Keep controller examples and held-out calendars separate, with a frozen split
 recorded before evaluation. A new jitter seed on an example calendar is NOT

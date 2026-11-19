@@ -26,7 +26,8 @@ public record CombatProfile(double horizontal, double vertical, int freshTicks, 
             "replace pre-attack sprint extra Y, then scale native fresh melee velocity before S12 quantization; restored server motion unchanged");
         if(!mmc)return state;
         Map<String,Object> details=new LinkedHashMap<>(state);
-        details.put("knockback_model","mmc_community_first_hit");
+        details.put("knockback_model","mmc_pre_attack_sprint_v2");
+        details.put("mmc_sprint_rule","server_sprint_at_attack_entry");
         details.put("mmc_base_horizontal",MMC_HORIZONTAL);
         details.put("mmc_base_vertical",MMC_VERTICAL);
         details.put("mmc_sprint_horizontal",MMC_SPRINT_EXTRA);

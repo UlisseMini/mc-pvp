@@ -101,6 +101,9 @@ public final class PeriodicComboClock {
         /** Own-observation admission permission, consulted only after gate/cap eligibility.
          * A deferral leaves the physical cap timestamp, gate and admitted FIFO unchanged. */
         default boolean allowInjection(Observation own,String source){return true;}
+        /** The current native crosshair and miss cooldown, both local to the clicking client. */
+        default boolean allowInjection(Observation own,String source,java.util.function.BooleanSupplier contactReady){return allowInjection(own,source);}
+
         /** Successful physical injection only; return the gate to retain until the next input decision. */
         default boolean injected(Observation own,double completedAt){return true;}
         /** Native clickMouse invocation, including a call suppressed by the native miss counter. */
@@ -549,13 +552,15 @@ public final class PeriodicComboClock {
             return new PacketObservation(p.due,handledAt,p.packetId,kind,x,y,z,ground,vx,vy,vz,sprint);
     }
     private void aim(boolean a){int side=a?0:1;PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;double dx=v.x-b.q.x(),dz=v.z-b.q.z(),eye=b.q.y()+PeriodicComboFightModel.EYE;double targetY=Math.max(v.y+.15,Math.min(v.y+1.65,eye));b.yaw=policies[side].aimYaw((float)Math.toDegrees(Math.atan2(-dx,dz)));b.pitch=(float)-Math.toDegrees(Math.atan2(targetY-eye,Math.hypot(dx,dz)));selectionReady[side]=true;}
+    private boolean selectsOpponent(boolean a){
+        return PeriodicComboFightModel.ray(a?state.a:state.b,a?state.ab:state.ba)<=(a?3:config.defenderReach);
+    }
     private void poll(boolean a,String source){
         int side=a?0:1;ClickQueue q=clickQueues[side];long ns=Math.round(now*1_000_000.0);
         boolean ready=q.lastCompletedNanos==Long.MIN_VALUE||ns-q.lastCompletedNanos>=timing.clickIntervalNanos;
         if(!q.gate||!ready){clickEvent(a,"POLL",source,null,ready,false);return;}
-        if(!policies[side].allowInjection(observation(a),source)){clickEvent(a,"DEFER",source,null,true,false);return;}
-        if(policies[side].contactOnly()&&!(PeriodicComboFightModel.ray(a?state.a:state.b,a?state.ab:state.ba)
-                <=(a?3:config.defenderReach))){clickEvent(a,"DEFER",source,null,true,false);return;}
+        if(!policies[side].allowInjection(observation(a),source,()->q.missCounter<=0&&selectsOpponent(a))
+                ||policies[side].contactOnly()&&!selectsOpponent(a)){clickEvent(a,"DEFER",source,null,true,false);return;}
         long delay=timing.injectionTiming==null?0:timing.injectionTiming.completionDelayNanos(a,ns);
         if(delay<0)throw new IllegalArgumentException("Negative injection completion overhead");
         long completed=Math.addExact(ns,delay);

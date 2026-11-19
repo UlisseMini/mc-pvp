@@ -44,7 +44,7 @@ public final class LabHelp {
          "/lab match wtap wtap 20 80 cps=20 b.aimdelay=150 b.aimnoise=2",
          "/matches — clickable active matches; /watch [match-id] [a|b]",
          "/lab ping <match-id> <RTT-a> <RTT-b> — change active added RTT",
-         "/lab scenario <bot-a> <bot-b> <RTT-a> <RTT-b> <duration-ms> <request-id>",
+         "/lab scenario <bot-a> <bot-b> <RTT-a> <RTT-b> <duration-ms> <request-id> [options]",
          "/lab seed list — saved synthetic mid-combo starts",
          "/lab seed <name> <bot-a> <bot-b> [RTT-a RTT-b duration-ms request] — exact declared seed, audited native phases",
          "/lab prepare long — prewarm long arena while no match is active. Scenarios: 1000–304000ms. Normal boxing always ends at 100 accepted hits.",

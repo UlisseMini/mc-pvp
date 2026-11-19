@@ -339,10 +339,8 @@ public final class Agent implements ClassFileTransformer {
                     }
                     method.instructions.insert(callPair("lab/ServerReplicationTrace","input"));
                     method.instructions.insert(serverHandler(false));
-                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN){
+                    for(AbstractInsnNode ins:method.instructions.toArray())if(ins.getOpcode()==Opcodes.RETURN)
                         method.instructions.insertBefore(ins,serverHandler(true));
-                        if(method.desc.equals("(Lis;)V"))method.instructions.insertBefore(ins,callPair("lab/MmcKnockback","playerAction"));
-                    }
                     InsnList setup=new InsnList();LabelNode normal=new LabelNode();
                     setup.add(new VarInsnNode(Opcodes.ALOAD,0));setup.add(new VarInsnNode(Opcodes.ALOAD,1));
                     setup.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/SeededStartServer","suppressInput","(Ljava/lang/Object;Ljava/lang/Object;)Z",false));

@@ -4,6 +4,32 @@ This is the working brief for future sessions. The latest clarification below
 supersedes the earlier continuous-own-reach interpretation. Keep historical
 measurements and their original definitions; do not silently relabel them.
 
+## November 18 direction for boxing and sumo
+
+The goal is a legal 1.8.9 bot that consistently beats 20 CPS W-tap in boxing
+and sumo. The primary practice preset is provisional MMC with the sprint
+bonus read at attack entry. Historic MMC matches used the last sprint toggle.
+Test transfer to other knockback settings, including the Hypixel-like preset.
+Use the main server for experiments. The owner permits restarts while playing.
+
+Isolate a skill, establish its causal advantage over W-tap, then test how it
+combines with the other skills. Start boxing with a no-click opening for the
+defender, then measure maintenance from active opposition. Repeated local
+sprint contacts can brake recoil several times. Account for every contact,
+intervening movement and received velocity. When testing a model fork, replay
+identical controls on both bots and compare both policy histories, queues, clock
+and final state. Exact live Minecraft resumption is still unverified.
+The first matched click-timing drill is in [recoil-drill](recoil-drill/README.md).
+In that drill the general selective-click rule lost maintenance time against
+W-tap in all seven common MMC model states. On the main server the three
+selective-click MMC boxing entries drew a return before a fourth fresh hit.
+A retrospective fork omitting just four forward-braking contacts yielded ten
+additional hits versus W-tap's one in a single development fixture. Similar
+omissions cost hits elsewhere. Train and validate a decision from own-view
+history before making this a bot rule. In a separate main-server 10-block
+sumo replication, Hold-W won three of four despite zero sprint bonuses on 25
+follow-up hits. Plain W-tap won two of four mirrors and earned 36/40 bonuses.
+
 ## HARD RULE: plain W-tap is the mandatory baseline
 
 ALWAYS compare against plain W-tap under identical settings in both the model

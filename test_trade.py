@@ -4,6 +4,7 @@ from unittest.mock import patch
 import trade_causes
 import trade_science
 import trade_grounding
+from trade_return_windows import attack_kind
 
 
 def state(h=0):
@@ -23,6 +24,11 @@ def incoming(t):
 
 
 class TradeEvidenceTest(unittest.TestCase):
+    def test_sumo_continues_scoring_after_one_hundred_hits(self):
+        contact=dict(score_before=[100,70],score_after=[101,70],target_before=state())
+        self.assertEqual(attack_kind(contact,{'mode':'sumo'}),'fresh')
+        self.assertEqual(attack_kind(contact,{'mode':'boxing'}),'after_winning_score')
+
     def test_unscored_terminal_contact_is_not_called_immune(self):
         e=attack(100,h=0,accepted=False)
         e.update(score_before=[100,70],score_after=[100,70])

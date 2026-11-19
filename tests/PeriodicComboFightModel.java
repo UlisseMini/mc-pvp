@@ -78,17 +78,15 @@ public final class PeriodicComboFightModel {
     }
     /** Immutable diagnostic, never an input to physics or a legal policy. */
     public record FreshImpulse(double time,ExactTravel.State victimBefore,double x,double y,double z) {}
-    // Flat-arena MMC approximation. This tracks the accepted C03/C0B history
-    // separately from sprint cleared by an attack and server-side gravity.
+    // The MMC-like height cap and landing forecast follow accepted movement reports.
     record MmcMovement(double floor,double y,double dy,boolean moved,boolean hasDy,
-                       boolean grounded,boolean capped,boolean sprint) {
-        static MmcMovement initial(){return new MmcMovement(4,0,0,false,false,false,false,false);}
+                       boolean grounded,boolean capped) {
+        static MmcMovement initial(){return new MmcMovement(4,0,0,false,false,false,false);}
         MmcMovement move(Packet p){
             boolean moving=p.packetId==4||p.packetId==6;
-            return new MmcMovement(p.flag?p.y:floor,p.y,p.y-y,moving,moving&&moved,p.flag,capped&&!p.flag,sprint);
+            return new MmcMovement(p.flag?p.y:floor,p.y,p.y-y,moving,moving&&moved,p.flag,capped&&!p.flag);
         }
-        MmcMovement withSprint(boolean next){return new MmcMovement(floor,y,dy,moved,hasDy,grounded,capped,next);}
-        MmcMovement cap(double height){return height>.675&&!capped?new MmcMovement(floor,y,dy,moved,hasDy,grounded,true,sprint):this;}
+        MmcMovement cap(double height){return height>.675&&!capped?new MmcMovement(floor,y,dy,moved,hasDy,grounded,true):this;}
         boolean landing(double height,double rtt){
             if(!hasDy||grounded||height<=0||height>1.3||rtt<=25)return false;
             double vy=dy;
@@ -342,17 +340,17 @@ public final class PeriodicComboFightModel {
             // Match the native pre-S12 intervention, including double arithmetic order.
             // Damage upgrades and unpacketized server motion retain native sprint lift.
             if(fresh&&c.mmc){
-                MmcMovement source=fromA?s.mmcA:s.mmcB,target=fromA?s.mmcB:s.mmcA;
+                MmcMovement target=fromA?s.mmcB:s.mmcA;
                 double yaw=Math.toRadians(fromA?s.serverYawA:s.serverYawB);
                 double facingX=-Math.sin(yaw),facingZ=Math.cos(yaw),length=Math.hypot(dx,dz);
-                double extra=source.sprint()?.327:0;
+                double extra=sprint?.327:0;
                 vx=(length<.01?facingX:dx/length)*.5274+facingX*extra;
                 vz=(length<.01?facingZ:dz/length)*.5274+facingZ*extra;
                 double height=ty-target.floor();
                 target=target.cap(height);
                 if(fromA)s.mmcB=target;else s.mmcA=target;
                 boolean landing=(!c.sumo||sumoSupport(victim.box(),c.sumoDiameter))&&target.landing(height,fromA?c.otherRtt:c.ownRtt);
-                vy=target.capped()&&!landing?0:.361375+(source.sprint()?c.sprintVertical:0);
+                vy=target.capped()&&!landing?0:.361375+(sprint?c.sprintVertical:0);
             }else if(fresh&&sprint&&c.sprintVertical!=.1)vy+=c.sprintVertical-.1;
             s.lastVx=vel(vx*(fresh?c.kbScale:1));s.lastVy=vel(vy*(fresh?c.verticalScale:1));
             s.add3(fromA?4:8,t+(fromA?c.otherRtt:c.ownRtt)/2,0,0,0,s.lastVx,s.lastVy,vel(vz*(fresh?c.kbScale:1)),false);
@@ -367,10 +365,10 @@ public final class PeriodicComboFightModel {
         for(Packet p:due(s,t,0))switch(p.kind){
             case 0:serverMove(s,p,true,c,t);break;
             case 1:serverMove(s,p,false,c,t);s.serverYawB=p.vx;break;
-            case 2:s.sprintDirtyA|=s.serverSprint!=p.flag;s.dirtyA|=s.serverSprint!=p.flag;s.serverSprint=p.flag;if(c.mmc)s.mmcA=s.mmcA.withSprint(p.flag);break;
+            case 2:s.sprintDirtyA|=s.serverSprint!=p.flag;s.dirtyA|=s.serverSprint!=p.flag;s.serverSprint=p.flag;break;
             case 3:hit(s,c,true,t);break;
             case 7:hit(s,c,false,t);break;
-            case 9:s.sprintDirtyB|=s.serverSprintB!=p.flag;s.dirtyB|=s.serverSprintB!=p.flag;s.serverSprintB=p.flag;if(c.mmc)s.mmcB=s.mmcB.withSprint(p.flag);break;
+            case 9:s.sprintDirtyB|=s.serverSprintB!=p.flag;s.dirtyB|=s.serverSprintB!=p.flag;s.serverSprintB=p.flag;break;
             default:throw new AssertionError();
         }
     }

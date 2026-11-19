@@ -11,13 +11,12 @@ public final class MmcKnockback {
     private static final class Fighter {
         final Object entity, handler;
         double floor, lastY, lastDy;
-        boolean moved, hasDy, grounded, sprint, capped;
+        boolean moved, hasDy, grounded, capped;
 
         Fighter(Object entity, double floor) {
             this.entity = entity;
             this.floor = floor;
             handler = R.get(entity, "playerNetServerHandler");
-            sprint = (Boolean) R.call(entity, "isSprinting");
             players.put(handler, this);
         }
     }
@@ -37,13 +36,6 @@ public final class MmcKnockback {
         players.remove(b.handler);
     }
 
-    // These callbacks follow vanilla's accepted server-thread updates.
-    public static void playerAction(Object handler, Object packet) {
-        Fighter player = players.get(handler);
-        if (player == null) return;
-        int action = ((Enum<?>) R.call(packet, "getAction")).ordinal();
-        if (action == 3 || action == 4) player.sprint = action == 3;
-    }
 
     public static void playerMove(Object handler, Object packet) {
         Fighter player = players.get(handler);
@@ -80,8 +72,7 @@ public final class MmcKnockback {
         return false;
     }
 
-    void outgoing(Object attacker, Object target) {
-        Fighter source = attacker == a.entity ? a : b;
+    void outgoing(Object attacker, Object target, boolean preAttackSprint) {
         Fighter victim = target == a.entity ? a : b;
         CombatProfile profile = match.combat;
         double vx = R.num(target, "posX") - R.num(attacker, "posX");
@@ -90,7 +81,7 @@ public final class MmcKnockback {
         double facingX = -Math.sin(yaw), facingZ = Math.cos(yaw);
         double length = Math.hypot(vx, vz);
         int extra = ((Number) R.call(R.cls("net.minecraft.enchantment.EnchantmentHelper"), "getKnockbackModifier", attacker)).intValue();
-        if (source.sprint) extra++;
+        if (preAttackSprint) extra++;
         vx = (length < .01 ? facingX : vx / length) * CombatProfile.MMC_HORIZONTAL +
             facingX * extra * CombatProfile.MMC_SPRINT_EXTRA;
         vz = (length < .01 ? facingZ : vz / length) * CombatProfile.MMC_HORIZONTAL +
@@ -109,7 +100,7 @@ public final class MmcKnockback {
         R.set(target, "motionY", vy);
         R.set(target, "motionZ", vz);
         Referee.append(match.replay, Map.of("type", "mmc_knockback", "time", System.currentTimeMillis(),
-            "target", R.name(target), "velocity", List.of(vx, vy, vz), "extra_levels", extra,
+            "target", R.name(target), "velocity", List.of(vx, vy, vz), "extra_levels", extra, "pre_attack_server_sprint", preAttackSprint,
             "victim_height", height, "height_capped", victim.capped, "predicted_landing", landing));
     }
 }
