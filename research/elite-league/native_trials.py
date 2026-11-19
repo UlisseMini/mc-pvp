@@ -79,8 +79,11 @@ def plan(tag,champion):
     return dict(rows)
 
 def cohort_priority(name):
+    # The common frozen final has no dependency on the track confirmations.
+    # Give both game modes turns in the same FIFO as the general confirmation.
+    if name.startswith(('mmc13-final','boxing100-native','box-student-native')):return 0
     if name.startswith(('mmc13-opening','mmc13-confirm','mmc13-box-clocks','m13floor','focus-','ladder-','confirmation-','mouse-smoke','gate-smoke','port-smoke')):return 0
-    if name.startswith(('mmc13-actor','mmc13-pairs','mmc13-final')):return 4
+    if name.startswith(('mmc13-actor','mmc13-pairs')):return 4
     if name.startswith('history-'):return 5
     if name.startswith('mmc13-trade-confirm'):return 7
     if name.startswith(('mmc13-broad','mmc13-slice','mmc13-transfer','mmc13-archive-final')):return 8
@@ -172,8 +175,17 @@ def _run_locked(trials,out,found=None):
             if age<220:return 2
             if age<250:return 3
             return jobs
-        batch.run(trials,jobs,part,reserve=2,share_with_players=True,finished=found,
-                  empty_lab_reserve=0 if jobs==4 else 2,recover=recover,only_requests=list(pending)[:64],capacity_limit=capacity_limit)
+        try:
+            batch.run(trials,jobs,part,reserve=2,share_with_players=True,finished=found,
+                      empty_lab_reserve=0 if jobs==4 else 2,recover=recover,only_requests=list(pending)[:64],capacity_limit=capacity_limit)
+        except SystemExit:
+            # Reflect all duels which drained at closing time in the primary manifest.
+            if part.exists():
+                partial=json.loads(part.read_text())
+                if partial['plan']!=trials:raise ValueError('Partial manifest has different protocol')
+                found.update(partial['matches'])
+                batch.save(out,trials,found)
+            raise
         found.update(json.loads(part.read_text())['matches'])
     else:batch.save(part,trials,found)
     batch.save(out,trials,found)
