@@ -1,0 +1,6 @@
+{
+  "boxing_specialist_clock_cohort": "Reuse the prospective elite-br-sealed eight mirror donor clocks for the separately frozen boxing specialist. Both policies and this rule were recorded before collection. Do not optimize on these clocks. Native boxing uses 8 independent repeats per seat/RTT/arm for W-tap and elite-boxing, 2s defender wake and 20s horizon.",
+  "robust_models": "Report the preselected champion, best PPO, best population, W-tap, Hold-W, v1 hybrid and both targeted adversaries on eight new elite-robust-sealed donors. Score novel opponents from the existing native lab: timed click windows, a pass-through pull or edge-directed look, and phase spacing. These strategies do not enter robust model selection.",
+  "robust_native": "Against W-tap, Hold-W, v1 hybrid, anti-Hold, anti-hybrid and hit-selecting Zest strafe, compare W-tap, Hold-W, v1 hybrid, best PPO and best population in balanced 0/80ms symmetric runs. Add a matched native panel of novel timed-window and directional challengers. Test 40ms vs 100ms and its reverse against anti-hybrid and W-tap. Separate Hypixel transfer. All native repeats share settings but independent OS scheduling.",
+  "policies": "All held-out human participants and games remain entirely outside candidate selection. The final playable challenger is frozen before official human results."
+}
