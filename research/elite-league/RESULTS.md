@@ -19,6 +19,20 @@ The 96 native duels used 20 CPS, physical mouse inputs, three-block reach and re
 
 Across twelve preselected matches, all **9,009 individual travel steps** reproduced the native position, velocity, collision box and collision flags. Running continuously from the first position with observed keys, contacts and knockback initially disagreed on 1,070 steps. The missing input was the server's ability to change the client's sprint flag between clicks. Supplying the 641 observed sprint-flag changes reproduced all 9,009 steps continuously, including 56 off-platform steps. Predicting both players from just their physical controls and host event times matched the opening two seconds in **10 of 12** matches. Predicting packet order across a full new fight remains a separate limitation. [Physical-input forecasts](evidence/mmc13/opening/fidelity.json.gz) · [Continuous travel checks](evidence/mmc13/opening/travel-with-sprint-metadata.json)
 
+### Which inputs helped after a trade?
+
+The second PPO actor struggled most against its earlier training opponent. On 16 training calendars, we resumed both bots from the same complete simulator state after their first exchange of hits. For the next three input decisions we changed combinations of forward/sprint keys, strafe, clicks and jump. The actor still chose every unchanged input from its own view. Each branch then played to a ring-out or timeout. The original continuations, including their early hit traces, reproduced on every fixture.
+
+| First exchange opponent | Forks reached / starts | Plain W-tap from fork | Unchanged PPO | Force left strafe only | Sprint forward and left, allow clicks, no jump |
+|---|---:|---:|---:|---:|---:|
+| Earlier PPO actor | 63/64 | 3.5 | 27.5 | 37 | 38 |
+| Adaptive pair from round four | 64/64 | 4 | 47 | 46 | 46 |
+| Plain W-tap | 64/64 | 35.5 | 60 | 59 | 59 |
+
+Against the earlier actor, left strafe alone improved 21 outcomes and worsened 11. At zero added RTT it cost three points from seat A and gained 4.5 from seat B. At 80 ms it gained 5.5 and 2.5 points respectively. Seven calendars improved, six tied and three worsened. At the second exchange the full four-input change gained five points against this opponent and lost 6.5 against the adaptive pair. A fixed direction at every trade would give up points in some matchups.
+
+Against the adaptive pair at the first exchange, the actor scored 47 points, W-tap scored four, and sprinting straight while allowing clicks only during recoil scored 54. Changing only click timing added half a point. Removing strafe alone added three. The full change improved both the inputs and how they worked together. These are training-calendar mechanism tests. Independent native tournaments assess the complete controllers. Native attribution for the individual input changes remains unmeasured. [First-exchange wins, draws, losses and timing spread](evidence/mmc13/trade-inputs/comparison-1.json) · [Second exchange](evidence/mmc13/trade-inputs/comparison-2.json) · [Experimental design](evidence/mmc13/trade-inputs/design.json)
+
 ## Six further rounds against an adversarial mixture
 
 Each round measured the historical field, solved a game over the observed head-to-head scores, and trained explicit and neural responses against a distribution weighted toward the hardest opponents. Six rounds added 1,597,440 training bouts and 854,816 matrix and tournament bouts. On the eight previously exposed development clocks, the final field contained 55 opponents.

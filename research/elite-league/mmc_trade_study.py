@@ -1,5 +1,6 @@
 """Fork the new direct actor's first two observed exchanges against W-tap and its hardest rivals."""
 from collections import defaultdict
+import argparse
 import gzip
 import json
 from pathlib import Path
@@ -13,21 +14,28 @@ from run import ROOT, calendars, compile_model, java
 from tournament import roster
 
 
-def run():
+def run(isolate=False):
     setup()
-    study = EVIDENCE / 'training-trades'
+    original = EVIDENCE / 'training-trades'
+    study = EVIDENCE / 'trade-inputs' if isolate else original
     study.mkdir(exist_ok=True)
     actor = 'mmc13-actor-2-fit'
     policy = FROZEN / 'mmc13-actor-2/contender.net'
     previous = FROZEN / 'mmc13-actor-1/contender.net'
     foes = {'wtap': None, 'mmc13-actor-1-fit': previous, 'adapt-04-pair': groups()['modern']['adapt-04-pair']}
     clocks = calendars('training_clocks')
-    dump(study / 'design.json', dict(
+    design = dict(
         arm=actor, policy_sha256=sha(policy), foes=list(foes), training_clocks=[p.name for p in clocks],
         decision='First or second episode with both own and opponent hurt cues in the preceding 230 ms. Intervene beginning at the following decision.',
         endpoint='Regulation ring-out. A draw scores half. Branch W-tap and the main actor from the same queues, full plant, clock and primed policy states.',
-        controls='Play both the unchanged actor and plain W-tap from the common ordinary start. Leave fixtures that never reach the exchange in the entry denominator.'))
-    regular = study / 'from-start.jsonl.gz'
+        controls='Play both the unchanged actor and plain W-tap from the common ordinary start. Leave fixtures that never reach the exchange in the entry denominator.')
+    if isolate:
+        design.update(scope='Mechanism diagnostic on previously exposed training clocks only. No title selection.',
+                      interventions=['left', 'recoil-click'], channels=['key', 'strafe', 'click', 'jump'],
+                      method='At each of the following three input decisions replace only the selected channels. Other channels use the original actor reacting to that branch. Score every subset and use four-input Shapley values to split the ring-out score difference. Report outcomes and variation by clock, seat and RTT.',
+                      native='The native confirmation of the learned complete controller runs independently. A native single-input causal comparison is unmeasured.')
+    dump(study / 'design.json', design)
+    regular = original / 'from-start.jsonl.gz'
     play_model(regular, {'wtap': None, actor: policy}, foes, clocks)
     compile_model()
     with tempfile.TemporaryDirectory(dir=WORK) as temp:
@@ -38,13 +46,21 @@ def run():
             output = study / f'exchange-{index}.jsonl.gz'
             if not output.exists():
                 flags = ['--second-trade'] if index == 2 else []
-                args = java('TradeWords', t / 'arm', t / 'foes', *flags, '--mouse', '--audit-forks', *clocks)
+                flags.extend(['--mouse', '--audit-forks'])
+                if isolate:
+                    flags.append('--isolate-inputs')
+                args = java('TradeWords', t / 'arm', t / 'foes', *flags, *clocks)
                 with subprocess.Popen(args, stdout=subprocess.PIPE, cwd=ROOT) as child:
                     with (t / 'run.gz').open('wb') as stream, gzip.GzipFile(fileobj=stream, mode='wb', mtime=0) as packed:
                         shutil.copyfileobj(child.stdout, packed)
                     if child.wait():
                         raise RuntimeError('Exchange continuation or its full-state check failed')
                 freeze(output, (t / 'run.gz').read_bytes())
+            if isolate:
+                from trade_attribution import analyze
+                analyze(output, original / output.name, study / f'comparison-{index}.json')
+                print('Verified trade input decomposition', index, flush=True)
+                continue
             cells = defaultdict(list)
             with gzip.open(output, 'rt') as stream:
                 for row in map(json.loads, stream):
@@ -66,4 +82,6 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--isolate-inputs', action='store_true')
+    run(parser.parse_args().isolate_inputs)

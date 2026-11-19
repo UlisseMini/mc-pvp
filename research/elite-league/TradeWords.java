@@ -7,8 +7,22 @@ import lab.Json;
  * primed controller, or use W-tap/Hold-W for the rest of the bout. No future state enters the legal bot. */
 final class TradeWords {
     static int exchange=1;
-    static boolean auditForks;
+    static boolean auditForks, isolateInputs;
     static final String[] WORDS={"continue","release-ctrl","release-w","back","recoil-click","late-click","jump","left","right","wtap","hold"};
+    static final String[] CHANNELS={"key","strafe","click","jump"};
+    static int forcedWord(int choice){
+        if(choice<WORDS.length)return choice;
+        return (choice-WORDS.length)/15==0?7:4;
+    }
+    static int forcedMask(int choice){
+        return choice<WORDS.length?15:1+(choice-WORDS.length)%15;
+    }
+    static String branchName(int choice){
+        if(choice<WORDS.length)return WORDS[choice];
+        List<String> names=new ArrayList<>();
+        for(int i=0;i<CHANNELS.length;i++)if((forcedMask(choice)&(1<<i))!=0)names.add(CHANNELS[i]);
+        return WORDS[forcedWord(choice)]+"/"+String.join("+",names);
+    }
     static final class Probe extends DuelEnv.Player{
         Arena.Neural base;
         DuelEnv.Player wt,hold;
@@ -35,10 +49,14 @@ final class TradeWords {
             boolean away=base.net.features()[2]<0;
             if(choice==9)use=w;else if(choice==10)use=h;
             else if(remaining-->0){
-                int key=choice==1?1:choice==2?0:choice==3?3:2;
-                float side=choice==7?.98f:choice==8?-.98f:0;
-                boolean click=choice==4?away:choice!=5||remaining==0;
-                use=new PeriodicComboClock.Control(key,side,click,choice==6&&remaining==2&&o.own().onGround());
+                int word=forcedWord(choice),mask=forcedMask(choice);
+                int key=word==1?1:word==2?0:word==3?3:2;
+                float side=word==7?.98f:word==8?-.98f:0;
+                boolean click=word==4?away:word!=5||remaining==0;
+                boolean jump=word==6&&remaining==2&&o.own().onGround();
+                // All unforced channels follow the actor on this branch's own observations.
+                use=new PeriodicComboClock.Control((mask&1)!=0?key:b.key(),(mask&2)!=0?side:b.strafe(),
+                    (mask&4)!=0?click:b.click(),(mask&8)!=0?jump:b.jump());
             }
             base.net.applied(DuelNetwork.pack(use.key(),(int)Math.signum(use.strafe()),use.click(),use.jump()));
             return use;
@@ -58,7 +76,7 @@ final class TradeWords {
             double start=g.clock.time();result.put("at",start);result.put("x",p.x);
             var scores=new LinkedHashMap<String,Object>();result.put("continuations",scores);
             if(auditForks)result.put("fork_sha256",stateHash(g));
-            for(int i=0;i<WORDS.length;i++){
+            for(int i=0;i<WORDS.length+(isolateInputs?30:0);i++){
                 var b=env.new Game(g,g.a.copy(),g.b.copy());
                 if(i==0 && auditForks && !stateHash(b).equals(result.get("fork_sha256")))
                     throw new AssertionError("Trade fork changed the plant or primed policies");
@@ -71,7 +89,11 @@ final class TradeWords {
                 double radial=Math.hypot(own.x()-(env.initial.config.centerX+offset),own.z()-offset);
                 var early=b.hits.list.stream().map(v->List.of(v.at()-start,v.sideA()==first,v.upgrade())).toList();
                 double gap=Math.hypot(own.x()-other.x(),own.z()-other.z());
-                b.finish();scores.put(WORDS[i],List.of(b.reward(),gap,radial,early));
+                b.finish();
+                var outcome=List.of(b.reward(),gap,radial,early);
+                if(i>=WORDS.length && forcedMask(i)==15 && !outcome.equals(scores.get(WORDS[forcedWord(i)])))
+                    throw new AssertionError("All four forced channels must reproduce their original trace and outcome");
+                scores.put(branchName(i),outcome);
                 if(i==0 && auditForks)noChange=stateHash(b);
             }
         }
@@ -91,6 +113,7 @@ final class TradeWords {
         int start=2;if(args[start].equals("--second-trade")){exchange=2;start++;}
         boolean mouse=args[start].equals("--mouse");if(mouse)start++;
         auditForks=args[start].equals("--audit-forks");if(auditForks)start++;
+        isolateInputs=args[start].equals("--isolate-inputs");if(isolateInputs)start++;
         boolean shifted=args[start].equals("--phase-fit");
         var tapes=Arrays.stream(args,shifted?start+1:start,args.length).map(Path::of).toList();
         var envs=Arena.envs(tapes,"mmc",true);
