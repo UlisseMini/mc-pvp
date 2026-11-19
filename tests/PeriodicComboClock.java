@@ -398,6 +398,8 @@ public final class PeriodicComboClock {
     public void setAudit(Audit audit){this.audit=audit;}
     public void setClickAudit(ClickAudit audit){clickAudit=audit;}
     public double time(){return now;}
+    /** Last control sampled at this client's head, including the primed control of a fork. */
+    public Control appliedControl(boolean fromA){return controls[fromA?0:1];}
     public int queuedClicks(boolean fromA){return clickQueues[fromA?0:1].presses.size();}
     public int missCounter(boolean fromA){return clickQueues[fromA?0:1].missCounter;}
     public long serviceBusyUntil(boolean fromA){return serviceUntil[fromA?0:1];}

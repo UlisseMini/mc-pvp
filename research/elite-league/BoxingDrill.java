@@ -23,7 +23,7 @@ final class BoxingDrill {
             this.history=List.copyOf(history);this.landmark=landmark;this.committed=List.copyOf(committed);this.k=k;
             baseline=run(null,null);
         }
-        Result run(Arena.Model model,List<Object> trace){
+        DuelEnv.Game suffix(Arena.Model model){
             var a=state.a.copy();var b=state.b.copy();
             if(model!=null){
                 var n=new Arena.Neural(model,env.rtt);
@@ -36,6 +36,10 @@ final class BoxingDrill {
                 if(state.first)a=n;else b=n;
             }
             var g=env.new Game(state,a,b);g.trace();g.hits.list.addAll(committed);
+            return g;
+        }
+        Result run(Arena.Model model,List<Object> trace){
+            var g=suffix(model);
             int seen=0,cycles=0;double last=landmark;
             do{
                 var plant=g.clock.state;
