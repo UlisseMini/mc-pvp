@@ -23,12 +23,18 @@ def bindings(mid,side,weights,start,end):
     if ticks!=sorted(set(ticks)):raise ValueError(f'{mid}: out-of-order policy heads')
     query=['@'+weights]
     by_tick={};actions=Counter();released=[];mismatch=[];checked=0
+    experts=Counter();changes=[];previous=None
     for d in decisions:
         obs=d['observation'];action=d['action']
-        query.append(' '.join(map(str,[*obs[:9],int(obs[9]),int(obs[10]),*obs[11:],d['proposed'],action])))
+        route=[d['expert'],d['switches'],d['selector_score']] if 'expert' in d else []
+        query.append(' '.join(map(str,[*obs[:9],int(obs[9]),int(obs[10]),*obs[11:],d['proposed'],action,*route])))
         if d['released'] and action!=d['proposed']:raise ValueError('Released action replaced')
         if start<=d['time']<=end:
             by_tick[d['tick']]=action;actions[action]+=1
+            if route:
+                experts[route[0]]+=1
+                if previous is not None and previous!=route[0]:changes.append([d['time']-start,route[0]])
+                previous=route[0]
             if d['released']:released.append(d['time']-start)
     result=subprocess.run(['java','-Xms12m','-Xmx48m','-XX:+UseSerialGC','-XX:ActiveProcessorCount=1','-cp',str(class_path()),'NetworkChecks','replay'],
         input='\n'.join(query)+'\n',text=True,capture_output=True)
@@ -41,7 +47,7 @@ def bindings(mid,side,weights,start,end):
         if not math.isclose(e['forward'],.98*forward,abs_tol=1e-6) or not math.isclose(e['strafe'],side_key*.98,abs_tol=1e-6) or (action>=24)!=(e['tick'] in jumps):
             mismatch.append([e['tick'],key,side_key,action>=24,e['forward'],e['strafe'],e['tick'] in jumps])
         checked+=1
-    return dict(replayed=len(decisions),active_heads=sum(actions.values()),verified_move_heads=checked,mismatches=mismatch,
+    return dict(**(dict(expert_heads=experts,expert_changes=changes) if experts else {}),replayed=len(decisions),active_heads=sum(actions.values()),verified_move_heads=checked,mismatches=mismatch,
         first_released_ms=min(released,default=None),applied_counts=actions,
         forward=sum(v for k,v in actions.items() if k%4 in (1,2)),back=sum(v for k,v in actions.items() if k%4==3),
         strafe=sum(v for k,v in actions.items() if k//4%3!=1),jump=sum(v for k,v in actions.items() if k>=24),

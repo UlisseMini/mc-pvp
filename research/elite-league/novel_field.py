@@ -72,7 +72,7 @@ def study(frozen,out,clocks):
     if clocks:
         out.mkdir(exist_ok=False,parents=True)
         aliases={WT:'wtap',HOLD:'hold'};roster={aliases.get(n,n):files.get(n) for n in arms}
-        grid(out,'novel',roster,new,sorted(clocks.glob('*.txt.gz')))
+        grid(out,'novel',roster,new,sorted(clocks.glob('*.txt.gz')),mode='mouse')
     else:
         native_install(new);run_batch(plan('enov',arms,list(new),4),out)
 

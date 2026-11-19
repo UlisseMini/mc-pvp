@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 from crossplay import matrix
+from champions import publish_round
 from ladder import initial,roster_fields,MILESTONES
 from ladder_transfer import WT,HOLD,REFERENCE,models as frozen_roster,native_install,plan
 from native_trials import run_batch
@@ -89,7 +90,9 @@ def response(out,round_id,members,m,frames,previous,feedback):
         updated[pair]=v
     roster(stage/'choices.txt',additions)
     subprocess.run(java('Ladder','misses',stage/'choices.txt',spec,stage/'lost-states.txt',*calendars('training_clocks')[:4]),check=True)
-    write(stage/'response.json',dict(family=family,picks=picked,ranks=ranks))
+    result=dict(family=family,picks=picked,ranks=ranks)
+    write(stage/'response.json',result)
+    publish_round(stage,result,'game')
     print(stage.name,'equilibrium gap',round(equilibrium['gap'],5),'responses',picked['explicit'],picked['neural'],flush=True)
     return stage,members|additions,updated
 
@@ -124,7 +127,7 @@ def study(out,clocks):
         tapes=sorted(clocks.glob('*.txt.gz'))
         if len(tapes)!=8:raise ValueError('Eight prospective mirrors required')
         def aliases(field):return {{WT:'wtap',HOLD:'hold'}.get(k,k):p for k,p in field.items()}
-        grid(out,'regulation',aliases(arms),aliases(opponents),tapes)
+        grid(out,'regulation',aliases(arms),aliases(opponents),tapes,mode='mouse')
     else:
         native_install(new|probes);run_batch(plan('egame',list(arms),list(opponents),3),out)
 

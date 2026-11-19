@@ -2,6 +2,10 @@
 
 The sumo score is a ring-out. Boxing has a first-to-100 score and a separate question about how long a player can keep a combo after establishing it. A player can trade hits successfully in sumo and still give away the next boxing hit. The experiments train and score those skills separately. [Performance and limitations](RESULTS.md)
 
+## Tournament winners on the main server
+
+Use `/duel best-sumo sumo preset=mmc` or `/duel best-boxing boxing preset=mmc` for the current playing choices. Each title change records its evidence and previous winners keep their permanent names. Open `/bots winners` for the overall title holders. The button starts a sumo duel with the same MMC combat preset. `/bots winners tracks` shows the neural and explicit winners from each round. Direct names also work, for example `/duel season-12-explicit sumo preset=mmc`. The numbered series are `population-01` through `population-12`, `season-01` through `season-12`, and `game-01` through `game-06`. A returning champion can hold several titles. New experimental editions can supply a distinct `ELITE_EDITION` prefix. Each published policy carries the source hash and keeps its original weights. [Publisher](champions.py)
+
 ## Fight a contender
 
 Use the main server and choose sumo or boxing in the duel command. These settings match the research court's provisional MMC sprint-reset profile, 3-block reach and shared 20 CPS ceiling.

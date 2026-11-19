@@ -1,0 +1,9 @@
+{
+  "cause": "On the frozen robust field 30 of 448 original Hypixel-like model bouts stopped at a fresh contact with a horizontal center separation below 0.01. Preserve those original unknowns. Locally disassembled 1.8.9 EntityLivingBase attackEntityFrom checks squared separation < 1.0e-4, then repeatedly draws both axes from the difference of two Math.random calls times 0.01 until outside that circle. This is distinct from the MMC intervention.",
+  "method": "Seed the same 48-bit java.util.Random algorithm and preserve its state at every fork. Match 512 seeds directly against Java and check the next unused random value. For new stochastic wins compare four common seeds (17, 1109, 31297, 871099) per clock and arm. All previously completed deterministic bout winners, fresh hits and finish times must match exactly. Native global random values cannot generally be recovered from playing inputs.",
+  "native_check": "On 4181 fresh native v1 Hypixel-like hits, check ordinary S12 xyz using the actual prior state and compare horizontal residual magnitude and vertical S12 for the coincident cases. Compare all fresh hits again in the robust native transfer, separately report games started after this registration. Equal settings and W-tap remain the ring-out gate.",
+  "time_utc": "2026-11-19T08:41:38.613559+00:00",
+  "latest_existing_or_active_id": 3378,
+  "already_completed_robust": 97,
+  "server_artifact": "c18e4245073aaff580eb7359902f0251436568b1647a9e443a924cdb73fa8312"
+}

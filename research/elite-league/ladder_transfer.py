@@ -8,6 +8,7 @@ import shutil
 from pathlib import Path
 
 from challenge_native import install
+import champions
 from human_sparring import samples
 from ladder import MILESTONES
 from native_trials import run_batch
@@ -88,7 +89,7 @@ def plan(tag,arms,opps,repeats):
     for arm,opp,rep,rtt,side in itertools.product(arms,opps,range(repeats),(0,80),'ab'):
         req=f'{tag}-{arm}-{opp}-{rep}-{rtt}-{side}';a,b=(arm,opp) if side=='a' else (opp,arm)
         trials.append((req,dict(mode='sumo',profile='mmc',arm=arm,opponent=opp,rep=rep,rtt=rtt,side=side,
-               command=f'lab sumo {a} {b} {rtt} {rtt} {req} preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0')))
+               aim_input='mouse',command=f'lab sumo {a} {b} {rtt} {rtt} {req} preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse')))
     random.Random(719311 if tag=='elad' else 983041).shuffle(trials)
     return dict(trials)
 
@@ -101,7 +102,7 @@ def study(folder,out,clocks,decision):
         def sub(names):return {BUILTINS.get(n,n):paths.get(n) for n in names}
         tapes=sorted(clocks.glob('*.txt.gz'))
         if len(tapes)!=8:raise ValueError('Expected eight prospective native donor clocks')
-        grid(out,'regulation',sub(arms),sub(opps),tapes)
+        grid(out,'regulation',sub(arms),sub(opps),tapes,mode='mouse')
     else:
         native_install(paths);run_batch(plan('elad' if decision is None else 'efin',arms,opps,2 if decision is None else 6),out)
 
@@ -123,6 +124,8 @@ def choose(folder,manifest,out):
         ranking.append(dict(name=n,merit=.6*mean+.4*min(groups),mean=mean,worst=min(groups),cells=cells))
     ranking.sort(key=lambda r:(-r['merit'],-r['mean'],r['name']))
     winner=ranking[0]['name']
+    champions.install('league-native-selection',paths.get(winner,ROOT/'policies'/(winner+'.properties')),
+                      'Minecraft selection tournament winner','league-native-selection')
     dump(out,dict(winner=winner,sha256=sha(paths[winner]) if winner in paths else sha(ROOT/'policies'/(winner+'.properties')),
                   native_selection_sha256=sha(manifest),ranking=ranking))
 

@@ -2,6 +2,17 @@
 
 One win earns one point. A timeout or double ring-out earns half a point. The local primary preset is the lab's provisional MMC pre-attack sprint-reset configuration. Native bouts use real Minecraft 1.8.9 clients on the main server. The opponent benchmark consists of bots. **No held-out elite player has played a registered match.** Nomophobia's recordings are development examples.
 
+## Six further rounds against an adversarial mixture
+
+Each round measured the historical field, solved a game over the observed head-to-head scores, and trained explicit and neural responses against a distribution weighted toward the hardest opponents. Six rounds added 1,597,440 training bouts and 854,816 matrix and tournament bouts. On the eight previously exposed development clocks, the final field contained 55 opponents.
+
+| Development metric | Plain W-tap | Best new lookup table | Best new neural policy | Previous equal-budget control |
+|---|---:|---:|---:|---:|
+| Average points per bout | .226 | .759 | .743 | .731 |
+| Average against weakest five | .006 | .503 | .431 | .438 |
+
+The lookup table came from round six and the neural fighter from round four. The weakest-five average still permits considerable losses to individual opponents. These are simulator development scores with the original ideal-angle tracker. [Individual matchup results](empirical-game-frozen/selection.json) · [Round-by-round games](evidence/empirical-development)
+
 ## The first native transfer
 
 The first registered tournament played 336 native rounds, including boxing and the separate Hypixel-like preset. The MMC cells below have symmetric 0 or 80 ms RTT, both seats, an ordinary 3-block reach and a 20 CPS ceiling. The simulator used eight previously unseen donor calendars. The pairs of columns show points earned against the same opponent.
@@ -94,3 +105,10 @@ On this 12-core host with the main lab running, the benchmark played 4,096 regul
 Nomophobia supplies examples from one developing player. The frozen split contains 52 fit games, 11 selection games and 19 later games. One later game had no usable action frames. Five of the 82 eligible completed games were against a 20-CPS opponent. A sampled action model reproduced some distance-dependent click behavior and improved bout-equal later-game loss to 0.663, against 0.764 for a previous-input predictor. Grounded jump positives were sparse. A world-class human result requires separate registered players and real matches. [Development split](human-development.json) · [Held-out human grader](../sumo-rl/grade_humans.py)
 
 In development fight **m2150**, the 10-CPS Hold-W opponent landed the first of four hits at 3.085 seconds, with horizontal knockback magnitude 0.52736. Nomophobia clicked at 3.159 and hit back at 3.185 with a sprint bonus, producing 0.85430. At 3.409 and 3.459 their forward input was zero, then positive again at 3.511. The next two accepted hits belonged to Nomophobia at 3.733 and 4.233, both with a sprint bonus. At those instants center-to-center horizontal separation was 3.246 and 3.313 blocks. A client attack targets an entity's hitbox. This trace motivated testing a short movement response after a reciprocal exchange. The counterfactual branches above measure its effect at an identical start. [Timestamped human and bot examples](evidence/human-informed/development-trades.json.gz)
+
+
+## Mouse control and physics validation
+
+The initial transfer experiments and all six empirical-game training rounds used a shared tracker that assigned the desired local yaw and pitch directly. The joint native selection and later title panels use one integer mouse movement per render frame, actual vanilla sensitivity and the native look function. A native input tick can refresh the ray without turning the camera again. Both players use the same tracking settings in each comparison. [Mouse control amendment](ladder-transfer-protocol.json)
+
+On the earlier Hypixel-like transfer panel, the model reproduced all three velocity components for 4,170 ordinary fresh native hits when supplied the measured attack state. Eleven native impacts with almost coincident positions matched the fallback's random-direction magnitude and vertical law. The exact hidden native random angles were unavailable. On 448 simulated bouts, the four registered randomness seeds gave the same outcomes on the 418 unaffected bouts. Sixteen of the 30 bouts that reached a coincidence changed outcome across seeds. [Native impulses](evidence/v1/native-knockback-check.json) · [Seed-by-seed outcomes](evidence/robust/hypixel-random-directions.json.gz)

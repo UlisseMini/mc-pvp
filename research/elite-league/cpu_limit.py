@@ -36,13 +36,16 @@ def main(cmd):
     state=ROOT/'build/elite-league';state.mkdir(exist_ok=True,parents=True)
     with (state/'rollout.lock').open('a') as lock:
         fcntl.flock(lock.fileno(),fcntl.LOCK_EX)
-        manager=ROOT/'runtime/manager.json';lab=json.loads(manager.read_text())['pid'] if manager.exists() else -1
+        manager=ROOT/'runtime/manager.json'
+        def lab_pid():
+            try:return json.loads(manager.read_text())['pid']
+            except (OSError,ValueError,KeyError):return -1
         child=subprocess.Popen(cmd);running=True
         try:
-            prev=family_usage((lab,child.pid));now=time.monotonic();credit=.25*target
+            prev=family_usage((lab_pid(),child.pid));now=time.monotonic();credit=0.
             while child.poll() is None:
                 time.sleep(.4)
-                cur=family_usage((lab,child.pid));end=time.monotonic()
+                cur=family_usage((lab_pid(),child.pid));end=time.monotonic()
                 # A first sample for a new process has no measured interval.
                 work=sum(max(0,v-prev.get(k,v)) for k,v in cur.items())
                 credit=min(.4*target,credit+target*(end-now)-work)

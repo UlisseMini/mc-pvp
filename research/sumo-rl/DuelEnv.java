@@ -151,6 +151,7 @@ final class DuelEnv {
         t.inputMode=PeriodicComboClock.InputMode.NATIVE_QUEUED;
         t.uplinkA=t.uplinkB=t.downlinkA=t.downlinkB=.35;
         var state=new PeriodicComboFightModel.State(4096-gap/2,lateralOffset,4096+gap/2,lateralOffset,sumo?12:4);
+        if(!config.mmc)state.seedCoincidence(tape.id.hashCode());
         state.serverTicks=trackerStart;
         Player idle=new Player("wtap",0,rtt,0);
         initial=new PeriodicComboClock(state,config,t,idle,idle,tape.events);

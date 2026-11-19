@@ -83,7 +83,7 @@ public final class Client {
     static KnockbackDisplacement.Decision displacementTurn;
     static final AimController aim=new AimController();
     static Object aimTarget;
-    static long aimLogAt;
+    static long aimLogAt,mouseTimeNs;
 
     static final class Observation {
         long time, tick, freshHurtCue, targetFreshHurtCue; double x,y,z,tx,ty,tz,vx,vy,vz,distance,localRange,closing,ux,uz,tvx,tvz; int hurt,targetHurt; boolean sprint,ground,sentSprint;
@@ -128,16 +128,43 @@ public final class Client {
             double dx=R.num(opponent,"posX")-R.num(player,"posX"), dz=R.num(opponent,"posZ")-R.num(player,"posZ");
             double eye=R.num(player,"posY")+((Number)R.call(player,"getEyeHeight")).doubleValue();
             long aimNow=System.currentTimeMillis();
-            if(aimTarget!=opponent){aim.reset();aimTarget=opponent;}
+            if(aimTarget!=opponent){aim.reset();aimTarget=opponent;mouseTimeNs=0;}
             AimController.Settings aimSettings=AimController.Settings.from(controls);
             AimController.Result tracking=aim.aim(aimNow,R.num(player,"posX"),eye,R.num(player,"posZ"),
                 R.num(opponent,"posX"),R.num(opponent,"posY"),R.num(opponent,"posZ"),
                 (float)R.num(player,"rotationYaw"),(float)R.num(player,"rotationPitch"),aimSettings);
             float yaw=displacementTurn!=null&&!Float.isNaN(displacementTurn.yaw)?displacementTurn.yaw:tracking.yaw;
-            R.set(player,"rotationYaw",yaw); R.set(player,"rotationPitch",tracking.pitch);
+            boolean mouse=DuelSettings.mouseInput(controls);
+            if(mouse && !nativeInputPoll){
+                long frameNs=System.nanoTime();
+                double elapsed=mouseTimeNs==0?0:(frameNs-mouseTimeNs)/1e6;
+                boolean first=mouseTimeNs==0;mouseTimeNs=frameNs;
+                Object settings=R.get(mc,"gameSettings");
+                if((Boolean)R.get(settings,"smoothCamera"))throw new IllegalStateException("Tournament mouse input requires normal camera mode");
+                float sensitivity=(float)R.num(settings,"mouseSensitivity");
+                boolean inverted=(Boolean)R.get(settings,"invertMouse");
+                float startYaw=(float)R.num(player,"rotationYaw"),startPitch=(float)R.num(player,"rotationPitch");
+                MouseLook delta=MouseLook.plan(startYaw,startPitch,yaw,tracking.pitch,sensitivity,inverted,elapsed);
+                if(first || delta.dx!=0 || delta.dy!=0){
+                    R.call(player,"setAngles",delta.yawInput,delta.pitchInput);
+                    float afterYaw=(float)R.num(player,"rotationYaw"),afterPitch=(float)R.num(player,"rotationPitch");
+                    if(afterYaw!=delta.yawAfter(startYaw)||afterPitch!=delta.pitchAfter(startPitch))
+                        throw new IllegalStateException("Vanilla mouse movement differed from model");
+                    Map<String,Object> m=new LinkedHashMap<>();m.put("type","mouse_input");m.put("match",match);
+                    m.put("time",aimNow);m.put("monotonic_ns",frameNs);m.put("elapsed_ms",elapsed);
+                    m.put("counts",Compat.list(delta.dx,delta.dy));m.put("sensitivity",sensitivity);m.put("inverted",inverted);
+                    m.put("before",Compat.list(startYaw,startPitch));m.put("target",Compat.list(yaw,tracking.pitch));
+                    m.put("after",Compat.list(afterYaw,afterPitch));log(m);
+                }
+            }else if(!mouse){
+                R.set(player,"rotationYaw",yaw); R.set(player,"rotationPitch",tracking.pitch);
+            }
             if(aimNow-aimLogAt>=50){aimLogAt=aimNow;Map<String,Object> a=new LinkedHashMap<>();
-                a.put("type","aim_plan");a.put("time",aimNow);a.put("match",match);a.put("applied",Compat.list(yaw,tracking.pitch));
-                a.put("ideal",Compat.list(tracking.idealYaw,tracking.idealPitch));a.put("error_deg",tracking.errorDegrees);
+                a.put("type","aim_plan");a.put("time",aimNow);a.put("match",match);
+                a.put("input",mouse?"mouse":"ideal");a.put("applied",Compat.list(R.num(player,"rotationYaw"),R.num(player,"rotationPitch")));
+                a.put("ideal",Compat.list(tracking.idealYaw,tracking.idealPitch));
+                a.put("error_deg",mouse?Math.hypot(AimController.wrap(R.num(player,"rotationYaw")-tracking.idealYaw),
+                        R.num(player,"rotationPitch")-tracking.idealPitch):tracking.errorDegrees);
                 a.put("sample_age_ms",tracking.sampleAge);a.put("noise",Compat.list(tracking.noiseYaw,tracking.noisePitch));
                 a.put("delay_ms",aimSettings.delayMs);a.put("noise_deg",aimSettings.noiseDegrees);a.put("turn_rate_dps",aimSettings.turnRate);a.put("seed",aimSettings.seed);log(a);}
             Object renderer=R.get(mc,"entityRenderer"); R.call(renderer,"getMouseOver",1.0f);
@@ -409,7 +436,7 @@ public final class Client {
                 displacement=null;displacementTurn=null;
                 hitPredictor.reset();timedBlock.reset();blockTapCues.clear();blockTapQueued=0;
                 targetWatchdog.reset();targetReady=false;
-                aim.reset();aimTarget=null;aimLogAt=0;
+                aim.reset();aimTarget=null;aimLogAt=0;mouseTimeNs=0;
                 SeededStartClient.begin(controls);
                 matchInitialized=true;
             }
@@ -846,6 +873,10 @@ public final class Client {
                 clickGate=DuelNetwork.click(action);networkJump=DuelNetwork.jump(action);
                 duelNetwork.applied(action);
                 Map<String,Object> decision=new LinkedHashMap<>();
+                if(duelNetwork.pair()!=null){
+                    decision.put("expert",duelNetwork.pair().selected());decision.put("switches",duelNetwork.pair().switches());
+                    decision.put("selector_score",duelNetwork.pair().score());
+                }
                 decision.put("type","duel_network");decision.put("time",now);decision.put("match",match);
                 decision.put("tick",ticks);decision.put("action",action);decision.put("proposed",proposed);
                 decision.put("released",networkReleased);

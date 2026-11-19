@@ -134,6 +134,16 @@ public final class PeriodicComboFightModel {
         PacketReadiness deepCopy();
     }
     static final class State implements Cloneable {
+        boolean sampleCoincidence;
+        long coincidenceRandom,coincidenceHits;
+        void seedCoincidence(long externalSeed){
+            sampleCoincidence=true;coincidenceRandom=(externalSeed^0x5DEECE66DL)&((1L<<48)-1);coincidenceHits=0;
+        }
+        private long randomBits(int bits){
+            coincidenceRandom=(coincidenceRandom*0x5DEECE66DL+0xBL)&((1L<<48)-1);
+            return coincidenceRandom>>>(48-bits);
+        }
+        double tieDouble(){return ((randomBits(26)<<27)+randomBits(27))*0x1.0p-53;}
         MmcMovement mmcA=MmcMovement.initial(),mmcB=MmcMovement.initial();
         double[] extraLatency={0,0,0,0},nominalHalfRtt={0,0,0,0};PacketTiming packetTiming;PacketReadiness packetReadiness;
         int plannedReadinessRoutes;
@@ -345,8 +355,16 @@ public final class PeriodicComboFightModel {
         boolean fresh=immunity<=c.hitTicks,sprint=fromA?s.serverSprint:s.serverSprintB;
         double vx=victim.vx(),vy=victim.vy(),vz=victim.vz();
         if(fresh&&!c.mmc){
+            if(dx*dx+dz*dz<1.0e-4){
+                if(!s.sampleCoincidence)throw new IllegalStateException("Unsupported degenerate knockback separation");
+                s.coincidenceHits++;
+                // Vanilla samples attacker minus victim, then subtracts that direction from victim motion.
+                do{
+                    dx=-(s.tieDouble()-s.tieDouble())*.01;
+                    dz=-(s.tieDouble()-s.tieDouble())*.01;
+                }while(dx*dx+dz*dz<1.0e-4);
+            }
             double length=(double)(float)Math.sqrt(dx*dx+dz*dz);
-            if(length<.01)throw new IllegalStateException("Unsupported degenerate knockback separation");
             vx=vx*.5+dx/length*(double).4f;vy=Math.min((double).4f,vy*.5+(double).4f);vz=vz*.5+dz/length*(double).4f;
         }
         if(fresh)hurtStatus(s,c,!fromA,t);

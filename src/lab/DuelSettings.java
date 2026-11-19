@@ -13,6 +13,9 @@ public final class DuelSettings {
     private DuelSettings(String mode,double botPing,double humanPing,Properties overrides,boolean humanPingExplicit){
         this.mode=mode;this.botPing=botPing;this.humanPing=humanPing;this.overrides=overrides;this.humanPingExplicit=humanPingExplicit;
     }
+    public static boolean mouseInput(Properties options){
+        return "mouse".equals(options.getProperty("aim_input",options.containsKey("league_stage")?"mouse":"ideal"));
+    }
     public static DuelSettings parse(String[] args,int offset,String mode,double botPing,double humanPing,Properties inherited){
         Properties overrides=new Properties();overrides.putAll(inherited);
         if(args.length>offset&&Compat.list("boxing","diamond","diamond_box","rod_diamond","sumo").contains(args[offset]))mode=args[offset++];
@@ -56,6 +59,9 @@ public final class DuelSettings {
                     break;
                 }
                 case "diameter": overrides.setProperty("sumo_diameter",Integer.toString(sumoDiameter(value)));break;
+                case "aiminput":
+                    if(!value.equals("mouse") && !value.equals("ideal"))throw new IllegalArgumentException("Choose aiminput=mouse or aiminput=ideal");
+                    overrides.setProperty("aim_input",value);break;
                 case "aimdelay": overrides.setProperty("aim_delay_ms",Double.toString(bounded(value,0,500,"Aim delay (ms)")));break;
                 case "aimnoise": overrides.setProperty("aim_noise_deg",Double.toString(bounded(value,0,10,"Aim noise (degrees)")));break;
                 case "aimrate": {

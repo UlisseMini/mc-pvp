@@ -78,15 +78,48 @@ def plan(tag,champion):
     random.Random(982177).shuffle(rows)
     return dict(rows)
 
-def run_batch(trials,out):
-    # Separate campaigns share the same eight players and the same CPU allowance.
-    with (ROOT/'build/elite-league/main-cohort.lock').open('a') as main_lock:
-        fcntl.flock(main_lock.fileno(),fcntl.LOCK_EX)
-        with out.with_suffix('.runner.lock').open('a') as lock:
-            fcntl.flock(lock.fileno(),fcntl.LOCK_EX)
-            _run_locked(trials,out)
+def cohort_priority(name):
+    if name.startswith(('ladder-','confirmation-','mouse-smoke','gate-smoke')):return 0
+    if name.startswith(('history-','novel-','empirical-','final-','boxing100','box-student','gate-native')):return 10
+    if name.startswith('eold'):return 20
+    return 30
 
-def _run_locked(trials,out):
+def run_batch(trials,out):
+    # Keep the complete frozen schedule visible while short cohorts share eight physical clients.
+    # A phase ends only after every issued match in it records a terminal result.
+    if out.exists():
+        record=json.loads(out.read_text())
+        if record['plan']!=trials:raise ValueError('Existing manifest has different protocol')
+        if record['matches'].keys()==trials.keys():
+            for req,mid in record['matches'].items():
+                if json.loads((ROOT/'runtime/results'/(mid+'.json')).read_text())['request']!=req:
+                    raise ValueError('Recorded result differs from its request')
+            return
+    work=ROOT/'build/elite-league';waiting=work/'native-waiting';waiting.mkdir(exist_ok=True)
+    with out.with_suffix('.runner.lock').open('a') as runner:
+        fcntl.flock(runner.fileno(),fcntl.LOCK_EX)
+        found=None
+        while found is None or len(found)<len(trials):
+            ticket=waiting/f'{cohort_priority(out.stem):02d}-{time.time_ns()}-{os.getpid()}'
+            ticket.touch(exist_ok=False)
+            try:
+                with (work/'main-cohort.lock').open('a') as shared:
+                    while True:
+                        queue=[]
+                        for item in sorted(waiting.iterdir()):
+                            try:os.kill(int(item.name.split('-')[-1]),0)
+                            except ProcessLookupError:
+                                item.unlink(missing_ok=True);continue
+                            queue.append(item)
+                        if queue and queue[0]==ticket:
+                            try:fcntl.flock(shared.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB);break
+                            except BlockingIOError:pass
+                        time.sleep(.5)
+                    ticket.unlink(missing_ok=True)
+                    found=_run_locked(trials,out,found)
+            finally:ticket.unlink(missing_ok=True)
+
+def _run_locked(trials,out,found=None):
     batch=load_batch()
     lock=out.with_suffix('.build.json')
     pinned=json.loads(lock.read_text()) if lock.exists() else {}
@@ -106,12 +139,13 @@ def _run_locked(trials,out):
         raise ValueError('Native cohort was opened on different runtime artifacts')
     if not lock.exists():lock.write_text(json.dumps(build)+'\n')
     # A recovered process reconciles by immutable request ID before issuing any further rounds.
-    found={}
-    for path in (ROOT/'runtime/results').glob('m*.json'):
-        g=json.loads(path.read_text());req=g.get('request')
-        if req in trials:
-            if req in found:raise RuntimeError('Duplicate trial '+req)
-            found[req]=g['id']
+    if found is None:
+        found={}
+        for path in (ROOT/'runtime/results').glob('m*.json'):
+            g=json.loads(path.read_text());req=g.get('request')
+            if req in trials:
+                if req in found:raise RuntimeError('Duplicate trial '+req)
+                found[req]=g['id']
     if out.exists() and json.loads(out.read_text())['plan']!=trials:raise ValueError('Existing manifest has different protocol')
     batch.save(out,trials,found)
     part=out.with_suffix('.partial.json')
@@ -119,11 +153,19 @@ def _run_locked(trials,out):
     if pending:
         jobs=int(os.environ.get('ELITE_NATIVE_JOBS','4' if (os.cpu_count() or 1)>=12 else '3'))
         if not 1<=jobs<=4:raise ValueError('Expected one to four simultaneous native duels')
+        def recover():
+            if (ROOT/'runtime/manager.json').exists():return False
+            from deploy_runtime import resume
+            folder=out.parent/(out.stem+'-recovery-'+str(time.time_ns()))
+            resume(folder,out)
+            print('Main lab recovered at',folder,flush=True)
+            return True
         batch.run(trials,jobs,part,reserve=2,share_with_players=True,finished=found,
-                  empty_lab_reserve=0 if jobs==4 else 2)
+                  empty_lab_reserve=0 if jobs==4 else 2,recover=recover,only_requests=list(pending)[:64])
         found.update(json.loads(part.read_text())['matches'])
     else:batch.save(part,trials,found)
     batch.save(out,trials,found)
+    return found
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('selected',type=Path);p.add_argument('out',type=Path);p.add_argument('--tag',default='elite-v1')

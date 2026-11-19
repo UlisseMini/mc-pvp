@@ -43,7 +43,7 @@ class HumanGradeTest(unittest.TestCase):
                 combat_profile={'knockback_model':'mmc_pre_attack_sprint_v2'},initial_ping_a=0,initial_ping_b=0,
                 click_cps_b=20,sumo_arena={'diameter':10,'start_gap':6},attack_reach_a=3,attack_reach_b=3,
                 reaction_ms_b=0,duration_limit_ms=120000,client_b={'backend':'forge','bridge_sha256':p['bridge_sha256']},
-                parameters_b=dict(kind='hold' if arm==ARMS[1] else 'wtap',sumo_jump_mask=5168 if arm==ARMS[1] else 0,
+                parameters_b=dict(aim_input='mouse',kind='hold' if arm==ARMS[1] else 'wtap',sumo_jump_mask=5168 if arm==ARMS[1] else 0,
                      aim_delay_ms=0,aim_noise_deg=0,aim_turn_rate_dps=0))
         a,b=game(1,order[0]),game(2,order[1]);b['reason']='disconnect'
         result=grade(p,[b,a])['Example']

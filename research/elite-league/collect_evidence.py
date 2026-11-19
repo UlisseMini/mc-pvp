@@ -19,7 +19,8 @@ PANELS={
  'boxing-distilled':('box-student-clocks','box-student-validation'),
  'novel':('novel-clocks','novel-validation'),
  'click-gate':('robust-clocks','click-gate-validation'),
- 'empirical-game':('novel-clocks','empirical-validation')}
+ 'empirical-game':('novel-clocks','empirical-validation'),
+ 'final-challenge':('final-clocks','final-validation')}
 
 def compact(d):return gzip.compress(json.dumps(d,separators=(',',':')).encode(),mtime=0)
 def put(p,b):

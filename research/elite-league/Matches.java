@@ -63,6 +63,11 @@ final class Matches {
                     envs.add(new DuelEnv(tape,profile,ping,ping,true,29,true,diameter,6,0));
             }
         }else envs.addAll(Arena.envs(files,profile,sumo));
+        if(mode.equals("mouse"))for(var env:envs)env.initial.timing.mouseInput=true;
+        if(mode.startsWith("coincidence-")){
+            int seed=Integer.parseInt(mode.substring("coincidence-".length()));
+            for(var env:envs)env.initial.state.seedCoincidence(((long)seed<<32)^env.clockId.hashCode());
+        }
         var pool=Executors.newFixedThreadPool(3);
         try{
             for(var arm:arms){
@@ -73,9 +78,14 @@ final class Matches {
                         var s=new Arena.Scenario(env,opp,first);
                         Map<String,Object> row=new LinkedHashMap<>(Map.of("arm",arm.name(),"opponent",opp.name(),"profile",profile,
                                 "clock",env.clockId,"rtt",first?env.rtt:env.otherRtt,"opponent_rtt",first?env.otherRtt:env.rtt,"side",first?"a":"b"));
+                        if(mode.equals("mouse"))row.put("aim_input","mouse");
                         if(mode.startsWith("disk-"))row.put("diameter",env.initial.config.sumoDiameter);
                         try{
                             var game=s.round(arm);var state=game.clock.state;
+                            if(game.our() instanceof Arena.Neural n && n.net.pair()!=null)row.put("our_switches",n.net.pair().switches());
+                            var rival=first?game.b:game.a;
+                            if(rival instanceof Arena.Neural n && n.net.pair()!=null)row.put("opponent_switches",n.net.pair().switches());
+                            if(mode.startsWith("coincidence-"))row.put("coincidences",state.coincidenceHits);
                             row.put("score",game.reward());row.put("winner",game.winner());row.put("end_ms",game.clock.time());
                             row.put("fresh",first?state.hits:state.incomingHits);row.put("incoming",first?state.incomingHits:state.hits);
                         }

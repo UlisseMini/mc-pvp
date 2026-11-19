@@ -171,7 +171,7 @@ max-tick-time=60000
     assets=CACHE/'assets';assets.mkdir(exist_ok=True)
 
 
-async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots=8,port_offset=0):
+async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots=8,port_offset=0,client_start_timeout=150):
     global BOT_SLOTS
     if bot_backend not in ('legacy','forge') or not 1<=bot_slots<=8:raise ValueError('Choose legacy/forge and 1–8 bot slots')
     if not 0<=port_offset<=39000:raise ValueError('Invalid local port offset')
@@ -243,7 +243,7 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
             start_bot(i)
         (RUNTIME/'manager.json').write_text(json.dumps({'pid':os.getpid(),'address':f'127.0.0.1:{25565+port_offset}','version':'1.8.9','started':time.time(),'frame_sleep_ms':frame_sleep_ms,'bot_backends':backends,'bot_slots':BOT_SLOTS,'port_offset':port_offset}))
         print(f'Server address: 127.0.0.1:{25565+port_offset} (Minecraft Java 1.8.9). Waiting for {BOT_SLOTS} real clients: {backends}.',flush=True)
-        initialized=False;client_deadline=time.time()+150
+        initialized=False;client_deadline=time.time()+client_start_timeout
         while not stop.is_set():
             if server.poll() is not None:raise RuntimeError('Server exited')
             for i,p in enumerate(processes[1:]):

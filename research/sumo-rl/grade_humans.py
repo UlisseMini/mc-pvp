@@ -34,8 +34,9 @@ def bridge_hash():
     if len(hashes)!=1:raise ValueError('Benchmark slots have different client builds')
     return hashes.pop()
 
-def register(players, pairs, seed, rtt, challenger=ARMS[1], mode="sumo"):
+def register(players, pairs, seed, rtt, challenger=ARMS[1], mode="sumo", aim_input="mouse"):
     check_roster(players)
+    if aim_input not in ("mouse","ideal"):raise ValueError("Unknown mouse input mode")
     if challenger==ARMS[0]:raise ValueError("Challenger must differ from W-tap")
     if mode not in ("boxing","sumo"):raise ValueError("Expected sumo or boxing")
     arms=(ARMS[0],challenger)
@@ -47,8 +48,9 @@ def register(players, pairs, seed, rtt, challenger=ARMS[1], mode="sumo"):
         first=rng.randrange(2)
         schedule[player]=[arms[(first+rep+idx)%2] for rep in range(pairs) for idx in (0,1)]
     return dict(bridge_sha256=bridge_hash(),frozen_at_ms=int(datetime.now(timezone.utc).timestamp()*1000),
-                profile='mmc',mode=mode,rtt=rtt,pairs=pairs,seed=seed,arms=arms,duration_limit_ms=120000 if mode=='sumo' else 180000,
+                profile='mmc',mode=mode,aim_input=aim_input,rtt=rtt,pairs=pairs,seed=seed,arms=arms,duration_limit_ms=120000 if mode=='sumo' else 180000,
                 policy_sha256={k:config_hash(k) for k in arms},schedule=schedule,
+                duel_commands={k:f'/duel {k} {mode} {rtt} {rtt} preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput={aim_input}' for k in arms},
                 competitive_parameters={k:dict(line.split('=',1) for line in (ROOT/'policies'/(k+'.properties')).read_text().splitlines()
                     if '=' in line and line.split('=',1)[0] in ('kind','sumo_jump_mask','duel_network','duel_network_landmark','click_mode','pause_ms')) for k in arms})
 
@@ -73,7 +75,7 @@ def grade(plan, games):
                 g['sumo_arena']['diameter']==10 and g['sumo_arena']['start_gap']==6)
             if not (g['practice_preset']==plan['profile'] and g['combat_profile']['knockback_model']=='mmc_pre_attack_sprint_v2'
                 and g['initial_ping_a']==g['initial_ping_b']==plan['rtt'] and not g.get('ping_changes',0) and g['click_cps_'+b]==20
-                and regulation and
+                and regulation and pars.get('aim_input','mouse' if pars.get('league_stage') else 'ideal')==plan.get('aim_input','ideal') and
                 g['attack_reach_a']==g['attack_reach_b']==3 and g['reaction_ms_'+b]==0 and
                 all(float(pars[k])==0 for k in ('aim_delay_ms','aim_noise_deg','aim_turn_rate_dps'))
                 and all(str(pars.get(k))==v for k,v in plan.get('competitive_parameters',{}).get(expected,{}).items()) and
@@ -94,12 +96,13 @@ if __name__=='__main__':
     new=subs.add_parser('register');new.add_argument('plan',type=Path);new.add_argument('players',nargs='+')
     new.add_argument('--pairs',type=int,default=10);new.add_argument('--seed',type=int,required=True)
     new.add_argument('--rtt',type=int,default=0)
+    new.add_argument('--aim-input',choices=('mouse','ideal'),default='mouse')
     new.add_argument('--challenger',default=ARMS[1])
     new.add_argument('--mode',choices=('sumo','boxing'),default='sumo')
     run=subs.add_parser('score');run.add_argument('plan',type=Path)
     a=p.parse_args()
     if a.action=='register':
-        plan=register(a.players,a.pairs,a.seed,a.rtt,a.challenger,a.mode)
+        plan=register(a.players,a.pairs,a.seed,a.rtt,a.challenger,a.mode,a.aim_input)
         with a.plan.open('x') as f:json.dump(plan,f,indent=2)
         print(json.dumps(plan,indent=2))
     else:

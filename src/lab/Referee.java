@@ -324,17 +324,23 @@ public final class Referee {
                 else if(args.length!=1)throw new IllegalArgumentException("Usage: /blocktiming on or off");
                 message(sender,"Block timing feedback: "+(mutedBlockTiming.contains(name)?"OFF":"ON")+". Uses server timing; early/late only within 250 ms of a hit.");
             }else if(cmd.equals("bots")){
-                loadPolicies();message(sender,"Choose a bot with /duel <name>. Mode: "+preferredModes.getOrDefault(R.name(sender),"boxing")+". Options: reach=3.5 cps=15 ping=100. Your ping is saved; /ping me <ms>.");
+                loadPolicies();
+                if(args.length>1 && args[1].equalsIgnoreCase("winners")){
+                    tournamentWinners(sender,args);
+                    return true;
+                }
+                message(sender,"Choose a bot with /duel <name>. Mode: "+preferredModes.getOrDefault(R.name(sender),"boxing")+". Options: reach=3.5 cps=15 ping=100. Your ping is saved; /ping me <ms>.");
                 button(sender,"Switch to boxing","/mode boxing");button(sender,"Switch to full diamond","/mode diamond");
                 button(sender,"Switch to 1x1 diamond box","/mode diamond_box");
                 button(sender,"Switch to rod diamond","/mode rod_diamond");
                 button(sender,"Switch to sumo","/mode sumo");
                 boolean all=args.length>1&&args[1].equals("all");
                 for(var entry:policies.entrySet()){
-                    if(!all && (entry.getKey().matches("zest-(tune|model|long|select|pulse)-[0-9]+") || entry.getKey().startsWith("evolved-g")))continue;
+                    if(!all && (entry.getValue().containsKey("league_stage") || entry.getKey().matches("zest-(tune|model|long|select|pulse)-[0-9]+") || entry.getKey().startsWith("evolved-g")))continue;
                     button(sender,entry.getKey()+" — "+entry.getValue().getProperty("description",entry.getValue().getProperty("kind")),"/duel "+entry.getKey()+(entry.getKey().startsWith("lock8")?" preset=lock8":""));
                 }
                 if(!all)button(sender,"Show every search candidate","/bots all");
+                button(sender,"Tournament winners by round","/bots winners");
             }else if(cmd.equals("matches")){
                 if(matches.isEmpty())message(sender,"No active matches. /lab match hold-w wtap starts one.");
                 for(Match m:matches.values())button(sender,m.id+" ["+m.mode+"]: "+m.label("a")+" vs "+m.label("b")+" ("+m.ha+"–"+m.hb+" hits)","/watch "+m.id);
@@ -455,6 +461,27 @@ public final class Referee {
             }
         }catch(Throwable e){e.printStackTrace();message(sender,"§cLab: "+e.getMessage());}
         return true;
+    }
+
+    static void tournamentWinners(Object sender,String[] args){
+        boolean tracks=args.length>2 && args[2].equalsIgnoreCase("tracks");
+        int offset=tracks?3:2;
+        int page=args.length>offset?Integer.parseInt(args[offset]):1;
+        var entries=policies.entrySet().stream()
+            .filter(e->e.getValue().containsKey("league_stage"))
+            .filter(e->tracks!=e.getValue().getProperty("league_track","winner").equals("winner"))
+            .sorted(Map.Entry.<String,Properties>comparingByKey().reversed()).toList();
+        int pages=Math.max(1,(entries.size()+7)/8);
+        if(args.length>offset+1 || page<1 || page>pages)throw new IllegalArgumentException("Choose a page from 1 to "+pages);
+        message(sender,(tracks?"Tournament track winners":"Tournament winners")+" ("+page+"/"+pages+"). Click to duel on the MMC preset.");
+        for(var entry:entries.subList((page-1)*8,Math.min(page*8,entries.size()))){
+            Properties p=entry.getValue();
+            button(sender,entry.getKey()+" — "+p.getProperty("description"),"/duel "+entry.getKey()+" "+p.getProperty("league_mode","sumo")+" preset=mmc");
+        }
+        String command=tracks?"/bots winners tracks ":"/bots winners ";
+        if(page>1)button(sender,"Previous page",command+(page-1));
+        if(page<pages)button(sender,"Next page",command+(page+1));
+        button(sender,tracks?"Overall winners":"Explicit and neural track winners",tracks?"/bots winners":"/bots winners tracks");
     }
 
     static void loadPolicies() throws IOException {

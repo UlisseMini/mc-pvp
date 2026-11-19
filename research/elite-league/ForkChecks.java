@@ -7,6 +7,7 @@ final class ForkChecks{
         var tape=DuelEnv.Tape.read(Path.of(args[0]),3500);
         for(int rtt:new int[]{0,80})for(String name:List.of("zest-strafe","kb-displace-pull","kb-displace-edge","wtap-tick-window","phase-spacing","select","counterstrafe","hold")){
             var e=new DuelEnv(tape,"mmc",rtt,true);
+            e.initial.timing.mouseInput=args.length>2 && args[2].equals("mouse");
             var p=RobustField.load("net",Path.of(args[1])).create(rtt,0);
             var g=e.new Game(true,p,Arena.Fighter.named(name).create(rtt,0));g.clock.runUntil(1270);
             var c=e.new Game(g,g.a.copy(),g.b.copy());g.trace();c.trace();

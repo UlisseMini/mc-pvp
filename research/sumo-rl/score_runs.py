@@ -7,6 +7,7 @@ ROOT=HERE.parents[1]
 sys.path.insert(0,str(ROOT/'research/recoil-drill'))
 import score
 import captures
+from mouse_audit import MouseAudit
 
 def native(mid,setup,network=None):
     g=score.record(ROOT/f'runtime/results/{mid}.json')
@@ -31,6 +32,7 @@ def native(mid,setup,network=None):
         assert p['kind']=={'hold':'hold','wtap':'wtap','trade':'tradetap'}[fit['style']]
         if fit['style']=='trade':assert int(p['trade_window_ms'])==fit['window'] and int(p['reply_wait_ms'])==fit['wait']
     else:assert p['kind']==('hold' if setup['arm']=='research-hold20' else 'wtap')
+    mouse_checks={}
     hashes={};streams={};starts={};press={};jumps=[];takes=set();moves={};sprint_bonus=collections.Counter()
     for s in 'ab':
         par=g['parameters_'+s];assert g['click_cps_'+s]==20 and g['attack_reach_'+s]==3 and g['reaction_ms_'+s]==0
@@ -40,11 +42,14 @@ def native(mid,setup,network=None):
         hashes[s]=[g['client_'+s][k] for k in ('bridge_sha256','module_sha256','headless_sha256','java_sha256')]
         files=list((ROOT/f'runtime/pov/{mid}').glob(s+'-client-*-events.jsonl.gz'))
         if len(files)!=1:raise ValueError(f'{mid} has {len(files)} archives on {s}')
+        mouse=MouseAudit() if setup.get('aim_input')=='mouse' else None
+        if mouse and par.get('aim_input','mouse' if par.get('league_stage') else 'ideal')!='mouse':raise ValueError('Mismatched aim inputs')
         keep=[];footer=None
         for e in captures.events(files[0]):
             typ=e['type']
             if typ=='capture_end':footer=e
             if not start<=e.get('time',0)<=end:continue
+            if mouse:mouse.record(e)
             if typ in ('click','science_click','engine_attack','velocity_packet','reach_probe'):keep.append(e)
             if s==side:
                 if typ=='sumo_rl_jump':
@@ -53,6 +58,7 @@ def native(mid,setup,network=None):
                 if typ=='science_move':
                     moves[e['tick']]=e
                     if e['before']['ground'] and e['before']['motionY']==0.41999998688697815:takes.add(e['tick'])
+        if mouse:mouse_checks[s]=mouse.summary()
         assert footer and footer['writer_complete'] and not any(footer[k] for k in ('dropped','size_capped','continues'))
         clicks=[e for e in keep if e['type']=='click'];starts[s]=clicks[0]['time'] if clicks else None;streams[s]=keep
         intervals=[(b['monotonic_ns']-a['monotonic_ns'])/1e6 for a,b in zip(clicks,clicks[1:])]
@@ -94,7 +100,7 @@ def native(mid,setup,network=None):
         windows=dict(scored=len(w['windows']),definitely_over_100ms=sum(x['window_to_next_hit_delay_ms'][0]>100 for x in w['windows']),
                      terminal=w['terminal_unfinished_window'],readiness=w['readiness_class_counts'])
     except ValueError as e:windows={'unknown':str(e)}
-    return dict(mid=mid,**{k:v for k,v in setup.items() if k!='command'},win=g['winner']==g[side],draw=not g['winner'],
+    return dict(**({'mouse':mouse_checks} if mouse_checks else {}),mid=mid,**{k:v for k,v in setup.items() if k!='command'},win=g['winner']==g[side],draw=not g['winner'],
         wake_ms=active-start if active<=end else None,wake_snapshot=geometry(initial[side],initial[other]) if initial and active<=end else None,
         max_server_gap_ms=max((b['time']-a['time'] for a,b in zip(snaps,snaps[1:])),default=None),
         margin=g['hits_'+side]-g['hits_'+other],duration_ms=end-start,build=hashes['a'],press=press,jump_inputs=jumps,

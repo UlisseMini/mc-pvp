@@ -4,6 +4,15 @@ This is the working brief for future sessions. The latest clarification below
 supersedes the earlier continuous-own-reach interpretation. Keep historical
 measurements and their original definitions; do not silently relabel them.
 
+## November 19 overnight direction
+
+Every completed tournament publishes its actual overall winner under a permanent
+duel name on the main test server. Keep the best new explicit and neural entries
+separately when an older bot wins. Grade broad performance against individual
+historical opponents and opponents that change tactics within a duel. Use only
+the bot's own observations for adaptation. The strongest independent human
+players remain the ultimate test. Nomophobia supplies development evidence.
+
 ## November 19 tournament ladder
 
 The grading opponents are independent, world-class human sumo and boxing

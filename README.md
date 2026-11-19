@@ -63,6 +63,7 @@ enabling RCON or opening another network port.
 |---|---|
 | `/bots` | Clickable roster, including saved search candidates |
 | `/bots all` | Include every saved tuning candidate |
+| `/bots winners` | Click a permanent tournament champion to play MMC sumo. Pages include `season-01` through `season-12`, `population-01` through `population-12`, and `game-01` through `game-06`. Use `/bots winners tracks` for explicit and neural division winners. |
 | `/duel wtap sumo` | Bare fists, no armor, full health; knock the bot off the circular platform. Ping/CPS/reach overrides and replays work as usual |
 | `/duel wtap sumo preset=mmc` | Sumo with the lab's Minemen-like melee knockback preset. The same preset works in boxing and diamond modes |
 | `/duel sumo-rl-pressure sumo preset=mmc cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0` | Fight the learned forward-pressure and jump-timing policy. [Native benchmarks and simulator](research/sumo-rl/README.md) |

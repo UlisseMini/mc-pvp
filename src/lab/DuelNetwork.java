@@ -5,7 +5,7 @@ import java.util.Base64;
 
 /** Java 8 inference shared by the Forge player and tournament. One instance per fighter per bout. */
 public final class DuelNetwork {
-    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION, ROUTER, TACTIC, RESPONSE }
+    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION, ROUTER, TACTIC, RESPONSE, PAIR }
     public static final int INPUTS=22, HIDDEN=8, OUTPUTS=5;
     public static final int STRIDE=12;
     private final Family family;
@@ -13,6 +13,7 @@ public final class DuelNetwork {
     private ExpertRouter router;
     private CombatTactics tactics;
     private TradeResponse response;
+    private PairedExperts pair;
     private final float[] weights;
     private final double[] features=new double[INPUTS], hidden=new double[HIDDEN], next=new double[HIDDEN];
     private final double[] outputs=new double[OUTPUTS];
@@ -21,6 +22,7 @@ public final class DuelNetwork {
     private int previousAction;
 
     public static int size(Family f) {
+        if(f==Family.PAIR)return PairedExperts.SIZE;
         if(f==Family.RESPONSE)return TradeResponse.SIZE;
         if(f==Family.TACTIC)return CombatTactics.SIZE;
         if(f==Family.ROUTER)return ExpertRouter.SIZE;
@@ -34,6 +36,7 @@ public final class DuelNetwork {
     public DuelNetwork(Family family,float[] weights) {
         if(weights.length!=size(family))throw new IllegalArgumentException("Wrong network dimensions");
         this.family=family;this.weights=weights;
+        if(family==Family.PAIR)pair=new PairedExperts(weights);
         if(family==Family.RESPONSE)response=new TradeResponse(weights);
         if(family==Family.TACTIC)tactics=new CombatTactics(weights);
         if(family==Family.ROUTER)router=new ExpertRouter(weights);
@@ -41,6 +44,7 @@ public final class DuelNetwork {
     }
     public DuelNetwork copy(){
         DuelNetwork c=new DuelNetwork(family,weights);
+        if(pair!=null)c.pair=pair.copy();
         if(response!=null)c.response=response.copy();
         if(tactics!=null)c.tactics=tactics.copy();
         if(router!=null)c.router=router.copy();
@@ -76,9 +80,11 @@ public final class DuelNetwork {
     public double[] scores(){return outputs.clone();}
     public TradeResponse response(){return response;}
     public CombatTactics tactics(){return tactics;}
+    public PairedExperts pair(){return pair;}
     public ExpertRouter router(){return router;}
     public double[] imitationInputs(){return imitation.inputs();}
     public void applied(int action){previousAction=action;
+        if(pair!=null)pair.applied(action);
         if(imitation!=null)imitation.applied(action);
         if(router!=null)router.applied(action);
         if(response!=null)response.applied(action); }
@@ -123,6 +129,7 @@ public final class DuelNetwork {
         features[20]=clip((dist-3.3)*4);features[21]=clip((targetHurtAge-ownHurtAge)/300);
         if(Double.isNaN(features[21]))features[21]=0; // neither player has shown a hurt cue
         previousTargetX=tx;previousTargetY=ty;previousTargetZ=tz;
+        if(pair!=null)return pair.step(features,x,y,z,tx,ty,tz,vx,vy,vz,grounded,sprint,ownHurtAge,targetHurtAge,rtt);
         if(tactics!=null)return tactics.step(features,dist,y,ty,vy,grounded?1:0,sprint,ownHurtAge,targetHurtAge);
         if(imitation!=null)return imitation.step(features,grounded);
         boolean recurring=family==Family.RECURRENT||family==Family.HYBRID;

@@ -1,5 +1,6 @@
 """Switch the main lab between completed native cohorts, preserving its checked Forge launch command."""
 import asyncio
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -23,24 +24,32 @@ def wait_file(fn,seconds,message):
     raise RuntimeError(message)
 
 def gated_launch(slot,after,command):
-    # Limit Forge initialization to one pair at a time. The issued Java sandbox command is untouched.
-    if slot>=2:
+    # Bring up one Forge JVM at a time within the shared CPU budget.
+    if slot:
         def previous_online():
-            for i in (slot//2*2-2,slot//2*2-1):
-                beat=json.loads((ROOT/f'runtime/bots/{i}/heartbeat.json').read_text())
-                if beat['time']<=after:return False
-            return True
-        wait_file(previous_online,100,'Previous pair of Forge clients did not come online')
+            beat=json.loads((ROOT/f'runtime/bots/{slot-1}/heartbeat.json').read_text())
+            return beat['time']>after
+        wait_file(previous_online,45+30*slot,'Previous Forge client did not come online')
     os.execvp(str(command[0]),list(map(str,command)))
 
 def serve(settings):
     start=time.time()*1000
     orig=forge_runtime.bot_command
+    snapshot=settings.get('cohort_snapshot')
+    if settings.get('bridge_file'):
+        forge_runtime.BRIDGE=Path(settings['bridge_file'])
+    if snapshot:
+        snapshot=Path(snapshot)
+        forge_runtime.BRIDGE=snapshot/'bridge.jar'
+        forge_runtime.MODULE=snapshot/'module.jar'
     def stagger(slot,*args):
-        return [sys.executable,__file__,'gate',str(slot),str(start),*map(str,orig(slot,*args))]
+        command=orig(slot,*args)
+        if snapshot:
+            shutil.copyfile(snapshot/f'settings-{slot}.properties',ROOT/f'runtime/bots/{slot}/config/pvp-practice/settings.properties')
+        return [sys.executable,__file__,'gate',str(slot),str(start),*map(str,command)]
     forge_runtime.bot_command=stagger
     asyncio.run(lab_runtime.serve(frame_sleep_ms=settings['frame_sleep_ms'],slot_backends=','.join(settings['bot_backends']),
-                                  bot_slots=settings['bot_slots'],port_offset=settings['port_offset']))
+                                  bot_slots=settings['bot_slots'],port_offset=settings['port_offset'],client_start_timeout=285))
 
 def set_artifacts(folder,hashes,previous):
     for n,r in hashes.items():
@@ -50,14 +59,20 @@ def set_artifacts(folder,hashes,previous):
         shutil.copyfile(source,tmp);tmp.replace(dest)
 
 def launch(folder,settings):
+    # Forge initialization is burstier than a live duel; keep training off the CPU throughout startup.
+    with (ROOT/'build/elite-league/rollout.lock').open('a') as lock:
+        fcntl.flock(lock.fileno(),fcntl.LOCK_EX)
+        launch_locked(folder,settings)
+
+def launch_locked(folder,settings):
     log=(folder/'serve.log').open('a')
     try:
         proc=subprocess.Popen([sys.executable,'-u',__file__,'serve',json.dumps(settings)],cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
     finally:log.close()
     def healthy():
         if proc.poll() is not None:raise RuntimeError(f'Main lab exited with {proc.returncode}; see {folder}/serve.log')
-        return ready() and json.loads((ROOT/'runtime/manager.json').read_text())['pid']==proc.pid
-    try:wait_file(healthy,160,'Main Forge lab startup timed out')
+        return ready(settings.get('expected_bridge')) and json.loads((ROOT/'runtime/manager.json').read_text())['pid']==proc.pid
+    try:wait_file(healthy,300,'Main Forge lab startup timed out')
     except BaseException:
         if proc.poll() is None:proc.terminate();proc.wait(timeout=30)
         raise
@@ -80,7 +95,7 @@ def switch(folder):
         verify(folder,ROOT/'research/elite-league/ladder-frozen')
         hashes=json.loads((folder/'hashes.json').read_text())
     if registry.exists():
-        if not all(sha(Path(r['base']))==r['new'] for r in hashes.values()) or not ready():raise ValueError('Recorded deployment differs from running lab')
+        if not ready(hashes['bridge']['new']) or sha(Path(hashes['agent']['base']))!=hashes['agent']['new']:raise ValueError('Recorded deployment differs from running lab')
         return
     status=json.loads((ROOT/'runtime/status.json').read_text());mgr=ROOT/'runtime/manager.json'
     settings=json.loads(mgr.read_text())
@@ -91,14 +106,41 @@ def switch(folder):
     lab_runtime.send('shutdown')
     wait_file(lambda:not mgr.exists(),45,'Main lab did not stop')
     try:
-        set_artifacts(folder,hashes,False);launch(folder,settings)
+        set_artifacts(folder,hashes,False)
+        launch(folder,dict(settings,bridge_file=str(folder/'bridge.jar'),expected_bridge=hashes['bridge']['new']))
     except BaseException:
-        set_artifacts(folder,hashes,True);launch(folder,settings);raise
+        set_artifacts(folder,hashes,True)
+        launch(folder,dict(settings,bridge_file=str(folder/'bridge-previous.jar'),expected_bridge=hashes['bridge']['original']))
+        raise
     registry.write_text(json.dumps(dict(time=time.time(),stage=str(folder),hashes=hashes,settings=settings,players=status['players']),indent=2)+'\n')
+
+def resume(folder,manifest):
+    if (ROOT/'runtime/manager.json').exists():raise ValueError('A lab manager is already present')
+    pin=json.loads(manifest.with_suffix('.build.json').read_text())
+    if sha(ROOT/'build/lab-agent.jar')!=pin['server_agent_sha256']:raise ValueError('Server differs from this cohort')
+    folder.mkdir(parents=True,exist_ok=False)
+    status_file=ROOT/'runtime/status.json'
+    status=json.loads(status_file.read_text()) if status_file.exists() else {'matches':[]}
+    (folder/'interrupted.json').write_text(json.dumps(dict(time=time.time(),active=[
+        dict(id=m['id'],request=m['request']) for m in status['matches']]),indent=2)+'\n')
+    mods=set()
+    for i in range(8):
+        slot=ROOT/f'runtime/bots/{i}'
+        b=slot/'mods/practice-bridge.jar';mod=slot/'config/pvp-practice/practice-module.jar'
+        info=json.loads((slot/'client-runtime.json').read_text())
+        if sha(b)!=pin['bridge_sha256'] or sha(mod)!=info['module_sha256'] or sha(forge_runtime.HEADLESS)!=info['headless_sha256'] or sha(forge_runtime.JAVA8)!=info['java_sha256']:
+            raise ValueError('Slot artifact no longer matches the cohort')
+        mods.add(info['module_sha256'])
+        if i==0:shutil.copyfile(b,folder/'bridge.jar');shutil.copyfile(mod,folder/'module.jar')
+        shutil.copyfile(slot/'config/pvp-practice/settings.properties',folder/f'settings-{i}.properties')
+    if len(mods)!=1:raise ValueError('Slot modules differ')
+    launch(folder,dict(bot_slots=8,frame_sleep_ms=10,port_offset=0,bot_backends=['forge']*8,
+                       expected_bridge=pin['bridge_sha256'],cohort_snapshot=str(folder.resolve())))
 
 if __name__=='__main__':
     op=sys.argv[1]
     if op=='gate':gated_launch(int(sys.argv[2]),float(sys.argv[3]),sys.argv[4:])
     elif op=='serve':serve(json.loads(sys.argv[2]))
     elif op=='switch':switch(Path(sys.argv[2]).resolve())
+    elif op=='resume':resume(Path(sys.argv[2]).resolve(),Path(sys.argv[3]))
     else:raise SystemExit('Expected switch, serve or gate')

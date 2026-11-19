@@ -68,6 +68,7 @@ public final class PeriodicComboClock {
         /** Null preserves strict historical-envelope behavior, including rejection
          * of unsupported coalescence. Non-null replaces service, not transport. */
         public DrainServiceTiming drainServiceTiming;
+        public boolean mouseInput;
         public boolean aRemoteBeforeMove=true,bRemoteBeforeMove=false,aimBeforeFrameDrain=true;
     }
     public record Observation(double time,long tick,ExactTravel.State own,double targetX,double targetY,double targetZ,
@@ -158,6 +159,7 @@ public final class PeriodicComboClock {
     private final Injection[] injections=new Injection[2];
     private final List<LinkedList<Publication>> publications=List.of(new LinkedList<>(),new LinkedList<>());
     private final boolean[] selectionReady=new boolean[2];
+    private final double[] mouseFrameAt={Double.NaN,Double.NaN};
     private final HeadTiming[] headTimings=new HeadTiming[2];
     private final long[][] deferredCounts=new long[2][Kind.values().length];
     private final long[] deferredStages=new long[2],deferralAttempts=new long[2];
@@ -201,6 +203,7 @@ public final class PeriodicComboClock {
         events.addAll(source.events);sharedCalendar=source.sharedCalendar;calendarCursor=source.calendarCursor;shareableCalendar=source.shareableCalendar;
         phaseCalendar=source.phaseCalendar;phaseCursors=source.phaseCursors==null?null:source.phaseCursors.clone();phaseOffsets=source.phaseOffsets==null?null:source.phaseOffsets.clone();nextSource=source.nextSource;
         System.arraycopy(source.ticks,0,ticks,0,2);System.arraycopy(source.controls,0,controls,0,2);System.arraycopy(source.lastClick,0,lastClick,0,2);executionStarted=source.executionStarted;
+        System.arraycopy(source.mouseFrameAt,0,mouseFrameAt,0,2);
         System.arraycopy(source.selectionReady,0,selectionReady,0,2);clickQueues[0]=source.clickQueues[0].copy();clickQueues[1]=source.clickQueues[1].copy();order=source.order;now=source.now;
         System.arraycopy(source.injections,0,injections,0,2);
         for(int side=0;side<2;side++)for(Publication p:source.publications.get(side))publications.get(side).addLast(p.deepCopy());
@@ -553,7 +556,23 @@ public final class PeriodicComboClock {
             else throw new AssertionError("Unexpected own incoming packet kind "+p.kind);
             return new PacketObservation(p.due,handledAt,p.packetId,kind,x,y,z,ground,vx,vy,vz,sprint);
     }
-    private void aim(boolean a){int side=a?0:1;PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;double dx=v.x-b.q.x(),dz=v.z-b.q.z(),eye=b.q.y()+PeriodicComboFightModel.EYE;double targetY=Math.max(v.y+.15,Math.min(v.y+1.65,eye));b.yaw=policies[side].aimYaw((float)Math.toDegrees(Math.atan2(-dx,dz)));b.pitch=(float)-Math.toDegrees(Math.atan2(targetY-eye,Math.hypot(dx,dz)));selectionReady[side]=true;}
+    private void aim(boolean a,boolean render){
+        int side=a?0:1;
+        var b=a?state.a:state.b;
+        var v=a?state.ab:state.ba;
+        double dx=v.x-b.q.x(),dz=v.z-b.q.z(),eye=b.q.y()+PeriodicComboFightModel.EYE;
+        double targetY=Math.max(v.y+.15,Math.min(v.y+1.65,eye));
+        float yaw=policies[side].aimYaw((float)Math.toDegrees(Math.atan2(-dx,dz)));
+        float pitch=(float)-Math.toDegrees(Math.atan2(targetY-eye,Math.hypot(dx,dz)));
+        if(!timing.mouseInput){b.yaw=yaw;b.pitch=pitch;}
+        else if(render){
+            double dt=Double.isNaN(mouseFrameAt[side])?0:now-mouseFrameAt[side];
+            var delta=lab.MouseLook.plan(b.yaw,b.pitch,yaw,pitch,.5f,false,dt);
+            b.yaw=delta.yawAfter(b.yaw);b.pitch=delta.pitchAfter(b.pitch);
+            mouseFrameAt[side]=now;
+        }
+        selectionReady[side]=true;
+    }
     private boolean selectsOpponent(boolean a){
         return PeriodicComboFightModel.ray(a?state.a:state.b,a?state.ab:state.ba)<=(a?3:config.defenderReach);
     }
@@ -611,8 +630,8 @@ public final class PeriodicComboClock {
     private void executeNext(){
         Event e=removeEvent();now=e.time;int k=e.kind;boolean a=(k&1)==0;int side=a?0:1;String name;
             if(k<2){
-                if(timing.inputMode==InputMode.NATIVE_QUEUED){aim(a);if(!timing.explicitPolls)poll(a,"frame");if(!recordedSchedule){receive(a);selectionReady[side]=false;}}
-                else{if(timing.aimBeforeFrameDrain)aim(a);receive(a);if(!timing.aimBeforeFrameDrain)aim(a);}
+                if(timing.inputMode==InputMode.NATIVE_QUEUED){aim(a,true);if(!timing.explicitPolls)poll(a,"frame");if(!recordedSchedule){receive(a);selectionReady[side]=false;}}
+                else{if(timing.aimBeforeFrameDrain)aim(a,true);receive(a);if(!timing.aimBeforeFrameDrain)aim(a,true);}
                 if(!recordedSchedule)add(now+timing.framePeriod,k);name="FRAME"+(a?"A":"B");
             }
             else if(k<4){
@@ -621,7 +640,7 @@ public final class PeriodicComboClock {
                 if(timing.inputMode==InputMode.NATIVE_QUEUED){
                     ClickQueue q=clickQueues[side];if(q.missCounter>0)q.missCounter--;q.gate=control.click;
                     // Reaction0 Client.tick calls Client.frame before native input consumption, even when cap-blocked.
-                    aim(a);if(!timing.explicitPolls)poll(a,"native_tick");if(!recordedSchedule)consume(a);
+                    aim(a,false);if(!timing.explicitPolls)poll(a,"native_tick");if(!recordedSchedule)consume(a);
                 }else{
                     if(control.click){if(now-lastClick[side]<50-1e-9)throw new IllegalArgumentException("20 CPS native input cap violated");lastClick[side]=now;}
                     PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.replayInput(state,config,a,control.key,b.yaw,b.pitch,control.click,now);

@@ -7,6 +7,7 @@ public final class LabHelp {
     static final String[] TOPICS={"play","settings","matches","replay","views","client"};
     static final String[][] PAGES={
         {"/bots [all] — choose an opponent",
+         "/bots winners [page] — duel past tournament winners; /bots winners tracks for specialists",
          "/duel <bot> [mode] [bot RTT] [your RTT] [options]",
          "/rematch [mode] [options] — repeat with saved bot settings",
          "/mode boxing|diamond|diamond_box|rod_diamond|sumo",
@@ -26,6 +27,7 @@ public final class LabHelp {
          "reach=3.0 — bot attack reach (1–5 blocks); 3.0 is normal",
          "ping=100 (or botping=100); myping=20 — added RTT, 0–500ms",
          "aimdelay=150 — delayed local target tracking, 0–500ms; default 0",
+         "aiminput=mouse — integer mouse counts each frame, vanilla sensitivity and a 720 degree/second target speed",
          "aimnoise=2 — smooth angular aim error in degrees, 0–10; default 0",
          "aimrate=360 — turn limit in degrees/sec, 30–1440; 0 means unlimited",
          "tapdelay=150 — W-tap observation/reaction delay in ms, 0–1000",

@@ -15,6 +15,9 @@ final class NetworkChecks {
                 int got=n.step(v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9]!=0,v[10]!=0,
                     v[11]<0?Double.POSITIVE_INFINITY:v[11],v[12]<0?Double.POSITIVE_INFINITY:v[12],v[13]);
                 if(got!=Integer.parseInt(s[14]))throw new AssertionError("Replayed decision differs at row "+count);
+                if(s.length>16 && (n.pair()==null || n.pair().selected()!=Integer.parseInt(s[16])
+                        || n.pair().switches()!=Integer.parseInt(s[17]) || Math.abs(n.pair().score()-Double.parseDouble(s[18]))>1e-7))
+                    throw new AssertionError("Selected expert differs at row "+count);
                 n.applied(Integer.parseInt(s[15]));count++;
             }
             System.out.println(count);return;

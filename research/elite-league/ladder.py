@@ -10,6 +10,7 @@ from run import HERE,ROOT,compile_model,java,calendars
 from tournament import grid,read,roster
 from human_sparring import controls,samples
 from mechanism import unpack
+from champions import publish_round
 
 TRACKS=('rule','table','search','neural')
 MILESTONES=(1,4,8,12)
@@ -94,6 +95,7 @@ def season(top,num,frames,generations,pop):
         tournament_bouts=(len(pool)+len(baseline))*len(models)*32,
         feedback_rows=sum(1 for _ in (out/'lost-states.txt').open()))
     (out/'results.json').write_text(json.dumps(result,indent=2)+'\n')
+    publish_round(out,result,"season")
     print(f"S{num} W-tap {result['wt']['mean']:.3f} Hold-W {result['hold']['mean']:.3f} reference {result['reference']['mean']:.3f} "
           f"explicit {picks['explicit']['name']} {picks['explicit']['mean']:.3f} neural {picks['neural']['mean']:.3f}",flush=True)
 
