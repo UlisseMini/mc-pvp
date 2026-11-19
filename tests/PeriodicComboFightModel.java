@@ -223,11 +223,11 @@ public final class PeriodicComboFightModel {
         double ownRtt=20,otherRtt=20,defenderReach=1.5,kbScale=1,verticalScale=1,sprintVertical=.1;
         /** Explicit profile import keeps model/native options identical; omitted fields retain defaults. */
         void applyCombat(Properties p){
-            lab.CombatProfile q=lab.CombatProfile.fromOverrides(p,new lab.CombatProfile(kbScale,verticalScale,hitTicks,sprintVertical,mmc));
-            kbScale=q.horizontal();verticalScale=q.vertical();hitTicks=q.freshTicks();sprintVertical=q.sprintVertical();mmc=q.mmc();
+            lab.CombatProfile q=lab.CombatProfile.fromOverrides(p,new lab.CombatProfile(kbScale,verticalScale,hitTicks,sprintVertical,mmc,recordedMmc));
+            kbScale=q.horizontal();verticalScale=q.vertical();hitTicks=q.freshTicks();sprintVertical=q.sprintVertical();mmc=q.mmc();recordedMmc=q.recordedMmc();
         }
         int bPhase=10,serverPhase=25,hitTicks=10,sumoDiameter=10;
-        boolean quantize=true,nativeNormalization=true,forceContacts=true,deferMovementSend=false,mmc=false,sumo=false;
+        boolean quantize=true,nativeNormalization=true,forceContacts=true,deferMovementSend=false,mmc=false,sumo=false,recordedMmc=false;
     }
     // Same tile-center disk and footprint as the native sumo platform, with
     // Y translated from 12 to 4. No block side-face collision below the top.
@@ -376,14 +376,15 @@ public final class PeriodicComboFightModel {
                 MmcMovement target=fromA?s.mmcB:s.mmcA;
                 double yaw=Math.toRadians(fromA?s.serverYawA:s.serverYawB);
                 double facingX=-Math.sin(yaw),facingZ=Math.cos(yaw),length=Math.hypot(dx,dz);
-                double extra=sprint?.327:0;
-                vx=(length<.01?facingX:dx/length)*.5274+facingX*extra;
-                vz=(length<.01?facingZ:dz/length)*.5274+facingZ*extra;
+                double base=c.recordedMmc?lab.CombatProfile.RECORDED_BASE:.5274;
+                double extra=sprint?(c.recordedMmc?lab.CombatProfile.RECORDED_EXTRA:.327):0;
+                vx=(length<.01?facingX:dx/length)*base+facingX*extra;
+                vz=(length<.01?facingZ:dz/length)*base+facingZ*extra;
                 double height=ty-target.floor();
-                target=target.cap(height);
+                if(!c.recordedMmc)target=target.cap(height);
                 if(fromA)s.mmcB=target;else s.mmcA=target;
                 boolean landing=(!c.sumo||sumoSupport(victim.box(),c.sumoDiameter,c.centerX))&&target.landing(height,fromA?c.otherRtt:c.ownRtt);
-                vy=target.capped()&&!landing?0:.361375+(sprint?c.sprintVertical:0);
+                vy=!c.recordedMmc&&target.capped()&&!landing?0:lab.CombatProfile.RECORDED_Y+(sprint?c.sprintVertical:0);
             }else if(fresh&&sprint&&c.sprintVertical!=.1)vy+=c.sprintVertical-.1;
             s.lastVx=vel(vx*(fresh?c.kbScale:1));s.lastVy=vel(vy*(fresh?c.verticalScale:1));
             s.add3(fromA?4:8,t+(fromA?c.otherRtt:c.ownRtt)/2,0,0,0,s.lastVx,s.lastVy,vel(vz*(fresh?c.kbScale:1)),false);

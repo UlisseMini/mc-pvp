@@ -232,29 +232,15 @@ server still applies it.
 ### Minemen-like knockback
 
 Use `preset=mmc` in any duel kit or in `/drill jumpreset preset=mmc`.
-This preset uses a community fit dated October 30, 2025. It applies a base
-horizontal impulse of 0.5274, adds 0.327 for a sprint hit, and sends 0.361375
-upward with no extra lift for sprint. The lab awards the sprint extra using the
-attacker's server sprint flag at attack entry. A successful sprint attack consumes
-that flag. A W release and re-press can re-arm it for the next hit. Replays record
-the flag and the applied bonus. Older recordings tagged `mmc_community_first_hit`
-used the last sprint toggle. New matches use `mmc_pre_attack_sprint_v2`, a
-provisional choice for practice. Once a hit happens more than 0.675 blocks
-above the player's last standing height, subsequent hits suppress upward
-knockback until landing. The author describes the horizontal figures as a
-first-hit fit, and reported that combo knockback could differ.
-[Knockback Manager reference profile](https://www.spigotmc.org/resources/1-7-10-26-3-knockback-manager-best-free-custom-knockback-plugin.134924/),
-[author's follow-up](https://www.spigotmc.org/members/dw1e.980462/).
-
-The lab estimates whether the victim will land before the hit's velocity
-arrives using their movement reports, configured added ping and a 25 ms
-offset from the public plugin. If it predicts landing, the hit sends the
-grounded lift. The preset uses the lab's normal tracking, projectiles and
-damage rules. The reference profile's three-tick position-update delay
-belongs to the third-party configuration. MMC's live settings and private
-implementation remain unverified.
-[Public Knockback Sync landing code](https://github.com/ramune7/knockback-sync/blob/3b13e277f7710b3392289f6b05aa0d8ba7e7538b/common/src/main/java/me/caseload/knockbacksync/player/PlayerData.java),
-[Knockback Manager default configuration](https://github.com/dw1e/KnockbackManager/blob/453e126f932445b01baac54f21abd2f01cb1c125/src/main/resources/knockback/default.yml).
+The recorded-sumo fit uses 430 Minemen fights. A fresh hit gives 0.5275
+horizontal velocity away from the attacker, plus 0.422 along their facing
+direction when sprinting at attack entry. An aligned sprint hit reaches 0.9495.
+The usual lift is 0.361375 even in the air. A successful sprint hit consumes
+the flag, and releasing and pressing W can re-arm the bonus. The lab uses a
+ten-tick fresh-damage window. Match metadata identifies this revision as
+`mmc_recorded_sumo_v3`. Choose `preset=mmc-v2` to reproduce archived trials
+with their earlier horizontal limit, height cap, and nine-tick window.
+[Recording comparison and remaining uncertainty](research/mmc-knockback/README.md).
 
 Finished-match chat includes a clickable **Watch server replay** button. Replay
 actors are private packet-only copies in a separate viewing area: they consume

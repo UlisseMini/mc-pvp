@@ -20,7 +20,7 @@ public final class CombatSprintVerticalCheck {
             var av=velocity(a);var bv=velocity(b);bits(av.vx,bv.vx,"default X parity");bits(av.vy,bv.vy,"default Y parity");bits(av.vz,bv.vz,"default Z parity");check(a.serverB.equals(b.serverB),"native server motion exact");
         }
         var mmc=new PeriodicComboFightModel.Config();
-        mmc.applyCombat(PracticePresets.defaults("mmc"));
+        mmc.applyCombat(PracticePresets.defaults("mmc-v2"));
         var repeated=seed(true,0,false);
         PeriodicComboFightModel.hit(repeated,mmc,true,0);
         bits(repeated.lastFreshB.x(),PeriodicComboFightModel.vel(.5274+.327),"opening MMC sprint hit");
@@ -33,6 +33,16 @@ public final class CombatSprintVerticalCheck {
         repeated.resistant=mmc.hitTicks;
         PeriodicComboFightModel.hit(repeated,mmc,true,900);
         bits(repeated.lastFreshB.x(),PeriodicComboFightModel.vel(.5274+.327),"sprint command re-arms the bonus");
+        var measured=new PeriodicComboFightModel.Config();measured.applyCombat(PracticePresets.defaults("mmc"));
+        check(measured.hitTicks==10 && measured.deepCopy().recordedMmc,"recorded profile and fresh window retained");
+        for(boolean running:new boolean[]{false,true}){
+            var air=seed(running,0,false);air.serverBy=air.mmcB.floor()+1.1;air.mmcB=air.mmcB.cap(1.1);
+            PeriodicComboFightModel.hit(air,measured,true,0);
+            bits(air.lastFreshB.y(),PeriodicComboFightModel.vel(.361375),"full recorded airborne lift");
+            bits(air.lastFreshB.x(),PeriodicComboFightModel.vel(.5275+(running?.422:0)),"recorded horizontal impulse");
+            var old=seed(running,0,false);old.serverBy=old.mmcB.floor()+1.1;old.mmcB=old.mmcB.cap(1.1);
+            PeriodicComboFightModel.hit(old,mmc,true,0);bits(old.lastFreshB.y(),0,"legacy high hit stays capped");
+        }
         var h=new PeriodicComboFightModel.Config();h.applyCombat(PracticePresets.defaults("hypixel"));check(h.hitTicks==9&&h.kbScale==1&&h.verticalScale==1&&h.sprintVertical==.07,"full profile import");check(h.deepCopy().sprintVertical==.07,"copied boost");
         var standard=new PeriodicComboFightModel.Config();standard.hitTicks=9;
         for(boolean sprint:new boolean[]{false,true}){

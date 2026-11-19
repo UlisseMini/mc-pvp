@@ -3,7 +3,9 @@ package lab;
 import java.util.*;
 
 /** Explicit experimental server settings. Vanilla is an exact no-op. */
-public record CombatProfile(double horizontal, double vertical, int freshTicks, double sprintVertical, boolean mmc) {
+public record CombatProfile(double horizontal, double vertical, int freshTicks, double sprintVertical, boolean mmc, boolean recordedMmc) {
+    public CombatProfile(double h,double v,int ticks,double sprintY,boolean mmc){this(h,v,ticks,sprintY,mmc,false);}
+    public static final double RECORDED_BASE=.5275, RECORDED_EXTRA=.422, RECORDED_Y=.361375;
     static final double MMC_HORIZONTAL=.5274, MMC_VERTICAL=.361375, MMC_SPRINT_EXTRA=.327, MMC_HEIGHT_LIMIT=.675;
     public static final CombatProfile DEFAULT = new CombatProfile(1,1,DuelSettings.DEFAULT_HIT_TICKS);
     public static final CombatProfile VANILLA = new CombatProfile(1,1,DuelSettings.VANILLA_HIT_TICKS);
@@ -22,16 +24,16 @@ public record CombatProfile(double horizontal, double vertical, int freshTicks, 
         Map<String,Object> state=Map.of("kb_horizontal",horizontal,"kb_vertical",vertical,
         "sprint_vertical",sprintVertical,"fresh_hit_ticks",freshTicks,"max_hurt_resistant_ticks",2*freshTicks,
         "modified",!vanilla(),"scope","both players in this match",
-        "kb_semantics",mmc?"MMC-style replacement fresh melee velocity with height cap and predicted landing":
+        "kb_semantics",recordedMmc?"Recorded sumo fresh melee impulse and pre-attack sprint bonus":mmc?"MMC-style replacement fresh melee velocity with height cap and predicted landing":
             "replace pre-attack sprint extra Y, then scale native fresh melee velocity before S12 quantization; restored server motion unchanged");
         if(!mmc)return state;
         Map<String,Object> details=new LinkedHashMap<>(state);
-        details.put("knockback_model","mmc_pre_attack_sprint_v2");
+        details.put("knockback_model",recordedMmc?PracticePresets.RECORDED_MODEL:"mmc_pre_attack_sprint_v2");
         details.put("mmc_sprint_rule","server_sprint_at_attack_entry");
-        details.put("mmc_base_horizontal",MMC_HORIZONTAL);
+        details.put("mmc_base_horizontal",recordedMmc?RECORDED_BASE:MMC_HORIZONTAL);
         details.put("mmc_base_vertical",MMC_VERTICAL);
-        details.put("mmc_sprint_horizontal",MMC_SPRINT_EXTRA);
-        details.put("mmc_height_threshold",MMC_HEIGHT_LIMIT);
+        details.put("mmc_sprint_horizontal",recordedMmc?RECORDED_EXTRA:MMC_SPRINT_EXTRA);
+        if(!recordedMmc)details.put("mmc_height_threshold",MMC_HEIGHT_LIMIT);
         return details;
     }
     /** For captured sprint attacks, native velocity already contains .1; replace that contribution. */
@@ -40,11 +42,13 @@ public record CombatProfile(double horizontal, double vertical, int freshTicks, 
         return adjusted*vertical;
     }
     public static CombatProfile fromOverrides(Properties p,CombatProfile fallback){
+        String model=p.getProperty(PracticePresets.KB_MODEL,fallback.recordedMmc?PracticePresets.RECORDED_MODEL:fallback.mmc?"mmc":"vanilla");
+        boolean recorded=PracticePresets.RECORDED_MODEL.equals(model);
         return new CombatProfile(Double.parseDouble(p.getProperty("combat_kb_horizontal",Double.toString(fallback.horizontal))),
             Double.parseDouble(p.getProperty("combat_kb_vertical",Double.toString(fallback.vertical))),
             Integer.parseInt(p.getProperty("combat_hit_ticks",Integer.toString(fallback.freshTicks))),
             Double.parseDouble(p.getProperty("combat_sprint_vertical",Double.toString(fallback.sprintVertical))),
-            "mmc".equals(p.getProperty("combat_kb_model",fallback.mmc?"mmc":"vanilla")));
+            recorded||"mmc".equals(model),recorded);
     }
     public static CombatProfile parse(String[] args,int from){
         double horizontal=1,vertical=1,sprintVertical=.1;int ticks=DuelSettings.DEFAULT_HIT_TICKS;Set<String> seen=new HashSet<>();

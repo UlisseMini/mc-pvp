@@ -292,24 +292,19 @@ public class MovementGuide {
         return false;
     }
 
-    // Called at the outgoing fresh-hit packet site. A grounded report clears the height latch.
-    static Vec mmcVelocity(Player attacker, Player victim, Vec separation, boolean sprintAtEntry,
-                           Landing landing, MmcSettings settings) {
+    // Outgoing fresh-hit packet on the recorded Minemen sumo fit.
+    static Vec mmcVelocity(Player attacker, Vec separation, boolean sprintAtEntry,
+                           MmcSettings settings) {
         int levels = attacker.knockbackLevel + (sprintAtEntry ? 1 : 0);
         double angle = Math.toRadians(attacker.yaw);
         double facingX = -Math.sin(angle), facingZ = Math.cos(angle);
         double length = Math.hypot(separation.x, separation.z);
         double awayX = length < 0.01 ? facingX : separation.x/length;
         double awayZ = length < 0.01 ? facingZ : separation.z/length;
-        double height = victim.box.y0 - victim.floorY;
-        if (height > 0.675) victim.heightCapped = true;
-
-        boolean willLand = landing.supported && landing.hasDelta && !landing.groundedReport
-                && predictsLanding(height, landing.lastDeltaY, landing.addedRttMs);
-        double y = victim.heightCapped && !willLand ? 0 : 0.361375 + levels * settings.sprintVertical;
-        return new Vec((0.5274 * awayX + 0.327 * levels * facingX) * settings.horizontal,
+        double y = 0.361375 + levels * settings.sprintVertical;
+        return new Vec((0.5275 * awayX + 0.422 * levels * facingX) * settings.horizontal,
                        y * settings.vertical,
-                       (0.5274 * awayZ + 0.327 * levels * facingZ) * settings.horizontal);
+                       (0.5275 * awayZ + 0.422 * levels * facingZ) * settings.horizontal);
     }
 
     static short encodeAxis(double speed) {

@@ -18,13 +18,14 @@ def native(mid,setup,network=None):
     side=setup['side'];other='b' if side=='a' else 'a';start=g['start'];end=g['finish']
     assert g['policy_'+side]==setup['arm'] and g['policy_'+other]==setup['opponent']
     assert g['mode']==setup['mode'] and g['practice_preset']==setup['profile']
-    assert g['combat_profile']['fresh_hit_ticks']==9
+    ticks=setup.get('fresh_hit_ticks',9)
+    assert g['combat_profile']['fresh_hit_ticks']==ticks
     regulation=setup.get('match_format')=='first-to-100'
     assert g['duration_limit_ms']==(120000 if g['mode']=='sumo' else 180000 if regulation else 20000)
     if regulation:assert g['mode']=='boxing' and g['goal']==100 and not g['scenario']
     if g['mode']=='sumo':assert g['sumo_arena']['diameter']==setup.get('diameter',10) and g['sumo_arena']['start_gap']==setup.get('start_gap',6)
     if setup.get('diameter')==13:assert g['sumo_arena']['shape']=='mmc_recorded_13_v1' and g['sumo_arena']['floor_blocks']==137
-    if setup['profile']=='mmc':assert g['combat_profile']['knockback_model']=='mmc_pre_attack_sprint_v2'
+    if setup['profile']=='mmc':assert g['combat_profile']['knockback_model']==setup.get('knockback_model','mmc_pre_attack_sprint_v2')
     p=g['parameters_'+side]
     expected=0 if network is not None or setup['arm'] in ('research-wtap20','research-hold20') else score.record(HERE/{'sumo-rl-jump':'v1/fit.json','sumo-rl':'fit.json','sumo-rl-pressure':'league-fit.json'}[setup['arm']])['mask']
     assert int(p.get('sumo_jump_mask',0))==expected
@@ -88,7 +89,7 @@ def native(mid,setup,network=None):
             if streak in (3,5,10):landmarks.append([streak,e['time']-start,e['server_tick'],*geometry(e['attacker_state'],e['target_state'])])
     if setup['profile']=='mmc':
         fresh=[e for e in raw if e['type']=='science_server_attack' and e['score_before']!=e['score_after'] and
-               e['target_before']['hurtResistantTime']<=9]
+               e['target_before']['hurtResistantTime']<=ticks]
         impulses=[e for e in raw if e['type']=='mmc_knockback']
         for h,k in zip(fresh,impulses,strict=True):
             source=h['attacker_before'];victim=h['target_before'];bonus=int(source['sprint'])
@@ -96,7 +97,10 @@ def native(mid,setup,network=None):
             yaw=math.radians(source['rotationYaw']);f=(-math.sin(yaw),math.cos(yaw))
             delta=(victim['posX']-source['posX'],victim['posZ']-source['posZ']);l=math.hypot(*delta)
             unit=f if l<.01 else [v/l for v in delta]
-            assert math.dist([.5274*u+.327*v*bonus for u,v in zip(unit,f)],k['velocity'][::2])<1e-9
+            recorded=setup.get('knockback_model')=='mmc_recorded_sumo_v3'
+            base,extra=(.5275,.422) if recorded else (.5274,.327)
+            assert math.dist([base*u+extra*v*bonus for u,v in zip(unit,f)],k['velocity'][::2])<1e-9
+            if recorded:assert k['velocity'][1]==.361375 and not k['height_capped']
             assert [int(v*8000)/8000 for v in k['velocity']]==h['velocity_packet']
             sprint_bonus['all_fresh']+=1
             if h['attacker']==g[side]:sprint_bonus['own_fresh']+=1;sprint_bonus['own_sprint']+=bonus
@@ -110,7 +114,7 @@ def native(mid,setup,network=None):
         max_server_gap_ms=max((b['time']-a['time'] for a,b in zip(snaps,snaps[1:])),default=None),
         margin=g['hits_'+side]-g['hits_'+other],duration_ms=end-start,build=hashes['a'],press=press,jump_inputs=jumps,
         confirmed_takeoffs=sum(k in takes for k,_,_ in jumps),unmatched_takeoffs=sorted(takes-{j[0] for j in jumps}),
-        maintenance=score.maintenance(hs,active,end,9),landmark_states=landmarks,windows=windows,
+        maintenance=score.maintenance(hs,active,end,ticks),landmark_states=landmarks,windows=windows,
         contact_braking=score.audit_motion(streams[side])['counts'],sprint_bonus=sprint_bonus)
 
 if __name__=='__main__':

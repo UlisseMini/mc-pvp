@@ -10,21 +10,23 @@ public final class PracticePresets {
     /** Provisional passive Housing fit; not an exact Hypixel implementation. */
     public static final String HYPIXEL="hypixel";
     public static final String MMC="mmc";
+    public static final String MMC_LEGACY="mmc-v2";
+    public static final String RECORDED_MODEL="mmc_recorded_sumo_v3";
     public static final String KB_MODEL="combat_kb_model";
     private PracticePresets() {}
 
     public static String normalize(String name){
-        if(name!=null){String n=name.toLowerCase(Locale.ROOT);if(LOCK8.equals(n)||HYPIXEL.equals(n)||MMC.equals(n))return n;}
-        throw new IllegalArgumentException("Unknown practice preset '"+name+"'. Available: lock8, hypixel, mmc");
+        if(name!=null){String n=name.toLowerCase(Locale.ROOT);if(LOCK8.equals(n)||HYPIXEL.equals(n)||MMC.equals(n)||MMC_LEGACY.equals(n))return n;}
+        throw new IllegalArgumentException("Unknown practice preset '"+name+"'. Available: lock8, hypixel, mmc, mmc-v2");
     }
     public static Properties defaults(String name){
         String preset=normalize(name);Properties p=new Properties();
         p.setProperty(LABEL,preset);
-        String hitTicks=Integer.toString(preset.equals(LOCK8)?8:DuelSettings.DEFAULT_HIT_TICKS);
+        String hitTicks=Integer.toString(preset.equals(LOCK8)?8:preset.equals(MMC)?10:DuelSettings.DEFAULT_HIT_TICKS);
         p.setProperty("combat_hit_ticks",hitTicks);
         p.setProperty("hurt_window_ticks",hitTicks);
-        if(MMC.equals(preset)){
-            p.setProperty(KB_MODEL,MMC);
+        if(MMC.equals(preset)||MMC_LEGACY.equals(preset)){
+            p.setProperty(KB_MODEL,MMC.equals(preset)?RECORDED_MODEL:MMC);
             p.setProperty("combat_kb_horizontal","1.0");
             p.setProperty("combat_kb_vertical","1.0");
             p.setProperty("combat_sprint_vertical","0.0");

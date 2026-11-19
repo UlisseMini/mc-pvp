@@ -20,7 +20,7 @@ public final class LabHelp {
         {"Append options to /duel <bot> or /rematch:",
          "preset=lock8 — KB1.1/1, hit8, reach3, cap20, bot RTT150/your RTT0; explicit options win",
          "preset=hypixel — PROVISIONAL Housing fit: native KB, sprint extra Y .07, hit9; keeps your configured RTT",
-         "preset=mmc — community Minemen first-hit fit + landing prediction; available in sumo and other kits",
+         "preset=mmc — recorded Minemen sumo impulses, 10-tick fresh-hit window; available in sumo and other kits",
          "/duel lock8 boxing preset=lock8 — face the demo controller; this does not disable your attacks",
          "cps=20 — maximum inputs/sec (1–30); bot may deliberately click less",
          "diameter=13 — recorded MMC sumo platform, 8 blocks between spawns. Even sizes 8–16 use a 6-block gap",

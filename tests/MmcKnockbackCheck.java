@@ -10,9 +10,11 @@ public final class MmcKnockbackCheck {
     public static void main(String[] args) {
         DuelSettings mmc = DuelSettings.parse(new String[]{"sumo", "preset=mmc"}, 0, "boxing", 20, 120, new Properties());
         CombatProfile profile = CombatProfile.fromOverrides(mmc.overrides, CombatProfile.VANILLA);
-        check(profile.mmc() && profile.sprintVertical() == 0 && profile.freshTicks() == 9, "MMC combat config");
-        check("mmc_pre_attack_sprint_v2".equals(profile.state().get("knockback_model")), "Archive the sprint-reset variant");
-        check(DuelSettings.hurtWindowTicks(mmc.overrides) == 9, "MMC bot timing follows the combat profile");
+        check(profile.mmc() && profile.sprintVertical() == 0 && profile.recordedMmc() && profile.freshTicks() == 10, "MMC combat config");
+        check(PracticePresets.RECORDED_MODEL.equals(profile.state().get("knockback_model")), "Archive the measured revision");
+        check(DuelSettings.hurtWindowTicks(mmc.overrides) == 10, "MMC bot timing follows the combat profile");
+        var legacy=CombatProfile.fromOverrides(PracticePresets.defaults("mmc-v2"),CombatProfile.VANILLA);
+        check(!legacy.recordedMmc() && legacy.freshTicks()==9 && "mmc_pre_attack_sprint_v2".equals(legacy.state().get("knockback_model")), "Frozen legacy preset");
         check(mmc.botPing == 20 && mmc.humanPing == 120 && !mmc.overrides.containsKey("click_cps"), "KB-only preset");
         DuelSettings reset = DuelSettings.parse(new String[]{"kb=vanilla"}, 0, "sumo", 20, 120, mmc.overrides);
         check(CombatProfile.fromOverrides(reset.overrides, profile).vanilla(), "Explicit reset clears custom impulses");

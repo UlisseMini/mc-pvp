@@ -4,7 +4,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Local approximation based on a public first-hit fit and landing prediction. */
+/** Match-scoped recorded-sumo and archived community knockback profiles. */
 public final class MmcKnockback {
     private static final Map<Object, Fighter> players = new IdentityHashMap<>();
 
@@ -82,15 +82,15 @@ public final class MmcKnockback {
         double length = Math.hypot(vx, vz);
         int extra = ((Number) R.call(R.cls("net.minecraft.enchantment.EnchantmentHelper"), "getKnockbackModifier", attacker)).intValue();
         if (preAttackSprint) extra++;
-        vx = (length < .01 ? facingX : vx / length) * CombatProfile.MMC_HORIZONTAL +
-            facingX * extra * CombatProfile.MMC_SPRINT_EXTRA;
-        vz = (length < .01 ? facingZ : vz / length) * CombatProfile.MMC_HORIZONTAL +
-            facingZ * extra * CombatProfile.MMC_SPRINT_EXTRA;
+        double base = profile.recordedMmc() ? CombatProfile.RECORDED_BASE : CombatProfile.MMC_HORIZONTAL;
+        double bonus = profile.recordedMmc() ? CombatProfile.RECORDED_EXTRA : CombatProfile.MMC_SPRINT_EXTRA;
+        vx = (length < .01 ? facingX : vx / length) * base + facingX * extra * bonus;
+        vz = (length < .01 ? facingZ : vz / length) * base + facingZ * extra * bonus;
         double height = R.num(target, "posY") - victim.floor;
-        if (height > CombatProfile.MMC_HEIGHT_LIMIT) victim.capped = true;
+        if (!profile.recordedMmc() && height > CombatProfile.MMC_HEIGHT_LIMIT) victim.capped = true;
         double rtt = victim == a ? match.pingA : match.pingB;
         boolean supported = !match.sumo() || SumoArena.supports(match.arena, R.num(target, "posX"), R.num(target, "posZ"), match.sumoDiameter);
-        boolean landing = supported && victim.hasDy && !victim.grounded &&
+        boolean landing = !profile.recordedMmc() && supported && victim.hasDy && !victim.grounded &&
             landsBeforeDelivery(height, victim.lastDy, rtt);
         double vy = victim.capped && !landing ? 0 : CombatProfile.MMC_VERTICAL + extra * profile.sprintVertical();
         vx *= profile.horizontal();

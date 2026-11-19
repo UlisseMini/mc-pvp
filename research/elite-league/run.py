@@ -53,7 +53,7 @@ _compiled=None
 def java(main,*args):
     layout=os.environ.get('ELITE_LAYOUT','mmc')
     if layout not in ('mmc','legacy'):raise ValueError('Choose the recorded MMC layout or the archived legacy disk')
-    return [sys.executable,str(HERE/'cpu_limit.py'),'nice','-n','8','java','-ea','-Dlab.sumo.legacy='+str(layout=='legacy').lower(),'-XX:ActiveProcessorCount=4','-XX:+UseSerialGC','-XX:CICompilerCount=2',
+    return [sys.executable,str(HERE/'cpu_limit.py'),'nice','-n','8','java','-ea','-Dlab.sumo.legacy='+str(layout=='legacy').lower(),'-Dlab.mmc.legacy=true','-XX:ActiveProcessorCount=4','-XX:+UseSerialGC','-XX:CICompilerCount=2',
             '-Xms512m','-Xmx3500m','-cp',str(_compiled or class_path()),main,*map(str,args)]
 
 def calendars(field):
