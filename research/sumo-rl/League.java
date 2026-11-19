@@ -35,7 +35,7 @@ public final class League {
         for(int i=6;i<args.length;i++){
             var tape=DuelEnv.Tape.read(Path.of(args[i]),DuelEnv.LIMIT);
             for(int rtt:new int[]{0,80}){
-                var env=new DuelEnv(tape,"mmc",rtt,true,29);
+                var env=new DuelEnv(tape,"mmc",rtt,true,29,false);
                 for(String opp:List.of("wtap","hold","trade"))for(boolean first:new boolean[]{true,false})
                     fixtures.add(new Learn.Fixture(env,first,opp));
             }

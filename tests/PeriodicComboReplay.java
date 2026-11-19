@@ -10,9 +10,15 @@ public final class PeriodicComboReplay {
         while((line=r.readLine())!=null){if(line.isEmpty()||line.startsWith("#"))continue;String[] p=line.split("\\t");
             if(p[0].equals("NETWORK")){if(transport==null)transport=new PeriodicComboTransport();transport.add(p);continue;}
             if(p[0].equals("INIT")){
-                double ax=Double.parseDouble(p[1]),bx=Double.parseDouble(p[2]);s=new PeriodicComboFightModel.State(bx);s.a=new PeriodicComboFightModel.Body(ax);s.a.yaw=s.a.headYaw=s.a.reportYaw=-90;s.serverAx=s.trackedAx=s.sentAx=ax;s.serverA=PeriodicComboFightModel.state(ax,4,0,-.0784000015258789,true);s.ba=new PeriodicComboFightModel.View(ax);
+                double ax=Double.parseDouble(p[1]),bx=Double.parseDouble(p[2]);double top=p.length>28?Double.parseDouble(p[28]):4;
+                s=new PeriodicComboFightModel.State(ax,0,bx,0,top);
+                if(p.length>30){
+                    c.sumo=p[27].equals("1");c.mmc=p[30].equals("1");
+                    if(p.length>31)c.trackerAFirst=p[31].equals("1");
+                    if(c.sumo){c.sumoArena(Double.parseDouble(p[29]),top);c.solidEdge();}
+                }
                 c.ownRtt=Double.parseDouble(p[3]);c.otherRtt=Double.parseDouble(p[4]);c.defenderReach=Double.parseDouble(p[5]);PeriodicComboFightModel.defenderReach=c.defenderReach;
-                s.serverTicks=Integer.parseInt(p[6]);for(int i=0;i<2;i++){PeriodicComboFightModel.Body b=i==0?s.a:s.b;int k=7+6*i;b.reportAge=Integer.parseInt(p[k]);b.reportX=Double.parseDouble(p[k+1]);b.reportY=Double.parseDouble(p[k+2]);b.reportZ=Double.parseDouble(p[k+3]);b.reportYaw=Float.parseFloat(p[k+4]);b.reportPitch=Float.parseFloat(p[k+5]);}s.lastDamageA=(int)Double.parseDouble(p[19]);s.lastDamageB=(int)Double.parseDouble(p[20]);if(p.length>22){s.teleportAgeA=Integer.parseInt(p[21]);s.teleportAgeB=Integer.parseInt(p[22]);}if(p.length>25){c.kbScale=Double.parseDouble(p[23]);c.verticalScale=Double.parseDouble(p[24]);c.hitTicks=Integer.parseInt(p[25]);s.freshThreshold=c.hitTicks;}
+                s.serverTicks=Integer.parseInt(p[6]);for(int i=0;i<2;i++){PeriodicComboFightModel.Body b=i==0?s.a:s.b;int k=7+6*i;b.reportAge=Integer.parseInt(p[k]);b.reportX=Double.parseDouble(p[k+1]);b.reportY=Double.parseDouble(p[k+2]);b.reportZ=Double.parseDouble(p[k+3]);b.reportYaw=Float.parseFloat(p[k+4]);b.reportPitch=Float.parseFloat(p[k+5]);}s.lastDamageA=(int)Math.round(Double.parseDouble(p[19])*(c.sumo?2:1));s.lastDamageB=(int)Math.round(Double.parseDouble(p[20])*(c.sumo?2:1));if(p.length>22){s.teleportAgeA=Integer.parseInt(p[21]);s.teleportAgeB=Integer.parseInt(p[22]);}if(p.length>25){c.kbScale=Double.parseDouble(p[23]);c.verticalScale=Double.parseDouble(p[24]);c.hitTicks=Integer.parseInt(p[25]);s.freshThreshold=c.hitTicks;}
                 // Optional trailing field preserves legacy INIT tapes' native .1 lift.
                 c.sprintVertical=p.length>26?Double.parseDouble(p[26]):.1;
                 if(transport!=null){transport.seal();s.transport=transport;c.deferMovementSend=false;}continue;
@@ -21,7 +27,7 @@ public final class PeriodicComboReplay {
             if(transport!=null)transport.assertDeliveredBy(t);
             if(kind.startsWith("APPLY"))PeriodicComboFightModel.receive(s,t,fromA);
             else if(kind.startsWith("INPUT"))PeriodicComboFightModel.replayInput(s,c,fromA,Integer.parseInt(p[2]),Float.parseFloat(p[3]),Float.parseFloat(p[4]),p[5].equals("1"),t);
-            else if(kind.startsWith("MOVE"))PeriodicComboFightModel.replayMove(s,c,fromA,Integer.parseInt(p[2]),Float.parseFloat(p[4]),Float.parseFloat(p[3]),t);
+            else if(kind.startsWith("MOVE"))PeriodicComboFightModel.replayMove(s,c,fromA,Integer.parseInt(p[2]),Float.parseFloat(p[4]),Float.parseFloat(p[3]),p.length>5&&p[5].equals("1"),t);
             else if(kind.startsWith("INTERP")){(fromA?s.ab:s.ba).step();PeriodicComboFightModel.audit(s);}
             else if(kind.startsWith("FRAME")){if(transport==null&&Boolean.getBoolean("periodic.frame_drain"))PeriodicComboFightModel.receive(s,t,fromA);}
             else if(kind.startsWith("TICKEND"))PeriodicComboFightModel.replayFlush(s,c,fromA,t);
@@ -33,7 +39,7 @@ public final class PeriodicComboReplay {
             else if(kind.equals("SERVER_END"))PeriodicComboFightModel.serverEnd(s);
             else if(kind.equals("SERVER"))PeriodicComboFightModel.serverTick(s,c,t);
             else throw new IllegalArgumentException(line);
-            if(!kind.startsWith("FRAME"))System.out.println(t+"\t"+kind+"\t"+s.a.q.x()+"\t"+s.a.q.y()+"\t"+s.a.q.vx()+"\t"+s.a.q.vy()+"\t"+s.b.q.x()+"\t"+s.b.q.y()+"\t"+s.b.q.vx()+"\t"+s.b.q.vy()+"\t"+s.ab.x+"\t"+s.ab.y+"\t"+s.ba.x+"\t"+s.ba.y+"\t"+s.serverAx+"\t"+s.serverAy+"\t"+s.serverBx+"\t"+s.serverBy+"\t"+s.hits+"\t"+s.incomingHits+"\t"+s.immuneAttempts+"\t"+PeriodicComboFightModel.own(s)+"\t"+PeriodicComboFightModel.their(s)+"\t"+s.a.q.z()+"\t"+s.a.q.vz()+"\t"+s.b.q.z()+"\t"+s.b.q.vz()+"\t"+s.ab.z+"\t"+s.ba.z+"\t"+s.serverAz+"\t"+s.serverBz+"\t"+PeriodicComboFightModel.ray(s.a,s.ab)+"\t"+PeriodicComboFightModel.ray(s.b,s.ba)+"\t"+s.acceptedA+"\t"+s.acceptedB+"\t"+s.serverA.vx()+"\t"+s.serverA.vy()+"\t"+s.serverA.vz()+"\t"+s.ownResistant+"\t"+(double)s.fallA+"\t"+s.lastDamageA+"\t"+(s.serverSprint?1:0)+"\t"+(s.a.q.onGround()?1:0)+"\t"+(s.a.sprint?1:0)+"\t"+(double)s.a.headYaw+"\t"+s.serverB.vx()+"\t"+s.serverB.vy()+"\t"+s.serverB.vz()+"\t"+s.resistant+"\t"+(double)s.fallB+"\t"+s.lastDamageB+"\t"+(s.serverSprintB?1:0)+"\t"+(s.b.q.onGround()?1:0)+"\t"+(s.b.sprint?1:0)+"\t"+(double)s.b.headYaw);
+            if(!kind.startsWith("FRAME"))System.out.println(t+"\t"+kind+"\t"+s.a.q.x()+"\t"+s.a.q.y()+"\t"+s.a.q.vx()+"\t"+s.a.q.vy()+"\t"+s.b.q.x()+"\t"+s.b.q.y()+"\t"+s.b.q.vx()+"\t"+s.b.q.vy()+"\t"+s.ab.x+"\t"+s.ab.y+"\t"+s.ba.x+"\t"+s.ba.y+"\t"+s.serverAx+"\t"+s.serverAy+"\t"+s.serverBx+"\t"+s.serverBy+"\t"+s.hits+"\t"+s.incomingHits+"\t"+s.immuneAttempts+"\t"+PeriodicComboFightModel.own(s)+"\t"+PeriodicComboFightModel.their(s)+"\t"+s.a.q.z()+"\t"+s.a.q.vz()+"\t"+s.b.q.z()+"\t"+s.b.q.vz()+"\t"+s.ab.z+"\t"+s.ba.z+"\t"+s.serverAz+"\t"+s.serverBz+"\t"+PeriodicComboFightModel.ray(s.a,s.ab)+"\t"+PeriodicComboFightModel.ray(s.b,s.ba)+"\t"+s.acceptedA+"\t"+s.acceptedB+"\t"+s.serverA.vx()+"\t"+s.serverA.vy()+"\t"+s.serverA.vz()+"\t"+s.ownResistant+"\t"+(double)s.fallA+"\t"+(s.lastDamageA/(c.sumo?2.0:1.0))+"\t"+(s.serverSprint?1:0)+"\t"+(s.a.q.onGround()?1:0)+"\t"+(s.a.sprint?1:0)+"\t"+(double)s.a.headYaw+"\t"+s.serverB.vx()+"\t"+s.serverB.vy()+"\t"+s.serverB.vz()+"\t"+s.resistant+"\t"+(double)s.fallB+"\t"+(s.lastDamageB/(c.sumo?2.0:1.0))+"\t"+(s.serverSprintB?1:0)+"\t"+(s.b.q.onGround()?1:0)+"\t"+(s.b.sprint?1:0)+"\t"+(double)s.b.headYaw);
         }
     }
 }

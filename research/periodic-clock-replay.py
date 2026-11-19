@@ -4,11 +4,11 @@
 Later native poses, packets and attacks are comparison data only. No fresh-hit
 confirmations, observed impulses, or remote trajectory corrections are fed back.
 """
-import argparse,base64,collections,csv,gzip,hashlib,io,json,math,statistics,struct,subprocess,tempfile
+import argparse,base64,collections,csv,gzip,hashlib,io,json,math,statistics,struct,subprocess,tempfile,shutil
 from network_pipeline_audit import archive,wire as pipeline_wire,pair_payloads,signature,input_signature
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-JAVA=Path('/opt/homebrew/opt/openjdk@17/bin/java')
+JAVA=Path(shutil.which('java') or 'java')
 SOURCES=['src/lab/ExactTravel.java','src/lab/Json.java','src/lab/CombatProfile.java','src/lab/DuelSettings.java','src/lab/Compat.java','src/lab/PracticePresets.java','tests/PeriodicComboFightModel.java','tests/PeriodicComboReplay.java','tests/PeriodicComboTransport.java']
 
 def wire(events,direction,player=None):
@@ -29,7 +29,12 @@ def wire(events,direction,player=None):
     return sorted(rows,key=lambda r:r['ns'])
 
 def load(mid,side):
-    with gzip.open(ROOT/'research/traces'/f'{mid}-{side}.jsonl.gz','rt')as f:return [json.loads(l)for l in f]
+    path=ROOT/'research/traces'/f'{mid}-{side}.jsonl.gz'
+    if path.exists():
+        with gzip.open(path,'rt')as f:return [json.loads(l)for l in f]
+    if side=='server':
+        with (ROOT/'runtime/replays'/f'{mid}.jsonl').open() as f:return [json.loads(l) for l in f]
+    return [e for e in archive(mid,side) if 'time' in e]
 
 def initial_tracker_state(events,game,clock):
     """Use the replay clock boundary for both tracker counter and teleport age."""
@@ -39,7 +44,13 @@ def initial_tracker_state(events,game,clock):
     counters=[int(e['tracker']['updateCounter'])for e in seeds]
     if counters[0]!=counters[1]:
         raise ValueError(('Unsupported unequal initial tracker counters',counters))
-    return counters[0],[int(e['tracker']['ticksSinceLastForcedTeleport'])for e in seeds]
+    # The clock may start between the last pre-start tracker and tick_end.
+    # The replay increments its counter at END, whereas the seed was observed
+    # immediately before the first in-window tracker. Undo those prefix ends.
+    first_track=min(map(clock,seeds))
+    prefix_ends=sum(e['type']=='replication_server_clock' and e['phase']=='tick_end'
+                    and 0<=clock(e)<first_track for e in events)
+    return counters[0]-prefix_ends,[int(e['tracker']['ticksSinceLastForcedTeleport'])for e in seeds]
 
 def server_snapshot_clocks(events,clock):
     """Anchor wall-only snapshots to their preceding hook, using file order.
@@ -100,7 +111,8 @@ def network_schedule(mid,data,game,offset,t0,seconds):
         pairs,_,_=pair_payloads(sent,received)
         target=[0.,4.,0.]
         # Remote starts at the other player's independently recorded initial position.
-        target[0]=next(e for e in data['b'if side=='a'else'a']if e['type']=='science_move')['before']['posX']
+        initial=next(e for e in data['b'if side=='a'else'a']if e['type']=='science_move')['before']
+        target=[initial['pos'+axis] for axis in 'XYZ']
         for send,receive in pairs:
             t=ms(send['ns']);q=send['packet'];pid=q['id']
             if not 0<=t<seconds*1000:continue
@@ -134,7 +146,12 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
     requested_seconds=seconds
     unsupported=[] # Entity pushing and degenerate KB remain declared unsupported transitions.
     ax,bx=(moves[side][0]['before']['posX']for side in ('a','b'))
-    assert all(moves[side][0]['before']['posY']==4 and moves[side][0]['before']['motionX']==0 for side in ('a','b'))
+    sumo=game['mode']=='sumo'
+    # Native referee cleanup changes the arena and controls after a ring-out.
+    if sumo:seconds=min(seconds,(game['finish']-t0)/1000-.10)
+    if seconds<=0:raise ValueError('Insufficient active fight before teardown')
+    top=game['sumo_arena']['top_y'] if sumo else 4
+    assert all(moves[side][0]['before']['posY']==top and moves[side][0]['before']['motionX']==0 for side in ('a','b'))
     tracker,teleport_ages=initial_tracker_state(data['server'],game,clock)
     rows=[];expected=[];report_seeds=[]
     initial_tick=next(e for e in data['server']if e['type']=='tick'and e['time']>=t0)
@@ -143,7 +160,15 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
     for side in ('a','b'):
         es=data[side];suffix=side.upper()
         raw=archive(mid,side)
-        prior=[r['packet']for r in wire(raw,'out')if r['packet']['id']in(3,4,5,6)and r['ns']<moves[side][0]['monotonic_ns']]
+        wire_moves=[r for r in wire(raw,'out') if r['packet']['id'] in (3,4,5,6)]
+        first_move=moves[side][0]
+        prior=[r['packet'] for r in wire_moves if r['ns']<first_move['monotonic_ns']]
+        # A tick can move just before match start and serialize its C03 just after.
+        # Recreate that pending packet from the recorded input and the settled body.
+        first_send=next((r for r in wire_moves if r['ns']>=first_move['monotonic_ns']),None)
+        straddles_start=(transport_trace and clock(first_move)<0 and first_send is not None and
+                         first_send['ns']/1e6-offset>=t0 and
+                         (len(moves[side])==1 or first_send['ns']<moves[side][1]['monotonic_ns']))
         if not prior or not any(q['moving']for q in prior):raise ValueError(('Missing initial C03 history',side))
         last_move=max(i for i,q in enumerate(prior)if q['moving']);q=prior[last_move]
         look=next((p for p in reversed(prior)if p['rotating']),{'yaw':-90 if side=='a'else 90,'pitch':0})
@@ -156,8 +181,9 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
         # provide the actual key for every input tick, including acquisition.
         explicit_keys={e['native_tick']:e['key'] for e in es
                        if e['type'] in ('gap_strafe_plan','frozen_cycle_plan','tick_cycle_plan','hurt_window_coast_plan')}
+        jumps={e['native_tick'] for e in es if e['type'] in ('sumo_rl_jump','jump_reset_input')}
         for move in moves[side]:
-            if not 0<=clock(move)<seconds*1000:continue
+            if not (0<=clock(move)<seconds*1000 or (move is first_move and straddles_start)):continue
             tick=move['tick'];q=move['before']
             key=explicit_keys.get(tick,2 if move['forward'] else 0)
             if bool(key)!=bool(move['forward']):
@@ -171,7 +197,7 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
                     input_t=(click['monotonic_ns']if transport_trace else click.get('monotonic_end_ns',click['monotonic_ns']))/1e6-offset-t0
                     look=click['own'];rows.append((input_t,f'INPUT{suffix}',[key,look['rotationYaw'],look['rotationPitch'],1],click))
             else:rows.append((input_t,f'INPUT{suffix}',[key,q['rotationYaw'],q['rotationPitch'],0],None))
-            rows.append((clock(move),f'MOVE{suffix}',[key,q['rotationYaw'],move['strafe']],move))
+            rows.append((clock(move),f'MOVE{suffix}',[key,q['rotationYaw'],move['strafe'],int(tick in jumps)],move))
             if tick not in ends:raise ValueError(('Missing native tick_end',side,tick))
             rows.append((clock(ends[tick]),f'TICKEND{suffix}',[],None))
         for e in es:
@@ -205,13 +231,22 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
             if exact_clocks:snapshot_ordering['anchored']+=1
     network=[]
     if transport_trace:
-        network,applies=network_schedule(mid,data,game,offset,t0,seconds)
+        # A move callback can generate a packet immediately before the cutoff
+        # whose native serializer runs after it. Include one tick of send-side
+        # assertions; only handlers strictly inside the requested horizon run.
+        network,applies=network_schedule(mid,data,game,offset,t0,seconds+(.05 if sumo else 0))
         # Pending packets can arrive after the requested cutoff. Replaying
         # those handlers would generate new packets outside the captured send
         # horizon, falsely reporting NETWORK_EXTRA at the truncated tail.
         rows.extend(row for row in applies if row[0]<seconds*1000)
     rows.sort(key=lambda r:r[0])
-    lines=['\t'.join(map(str,['INIT',ax,bx,game['ping_a'],game['ping_b'],game['attack_reach_b'],tracker,*report_seeds,*initial_damage,*teleport_ages,*combat]))]
+    kb=profile.get('knockback_model','vanilla')
+    if kb not in ('mmc_pre_attack_sprint_v2','vanilla','vanilla_sprint_components') and 'mmc' in kb:
+        raise ValueError('Unsupported historical knockback model: '+kb)
+    first_tracker=next(e['tracker']['player'] for e in data['server'] if e['type']=='replication_tracker_before'
+                       and e['tracker']['player'] in (game['a'],game['b']) and clock(e)>=0)
+    arena=[int(sumo),top,(game['arena']+1)*4096,int(kb=='mmc_pre_attack_sprint_v2'),int(first_tracker==game['a'])]
+    lines=['\t'.join(map(str,['INIT',ax,bx,game['ping_a'],game['ping_b'],game['attack_reach_b'],tracker,*report_seeds,*initial_damage,*teleport_ages,*combat,*arena]))]
     lines=['\t'.join(map(lambda x:'NaN'if isinstance(x,float)and x!=x else str(x),['NETWORK',*r]))for r in network]+lines
     for t,k,args,e in rows:
         lines.append('\t'.join(map(str,[t,k,*args])))

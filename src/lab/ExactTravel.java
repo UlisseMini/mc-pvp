@@ -10,9 +10,9 @@ package lab;
  * g RETURN; it does not predict preceding keys/attacks/packets or later pushing.
  * All positions and floorTopY use absolute native world coordinates.
  *
- * Scope: a stationary full solid horizontal plane, uniform slipperiness, open
- * space above it, ordinary block landing callback (motionY=0), no horizontal
- * collision, mount, flight, liquid, web, ladder, or sneak edge-clamping. Callers
+ * Scope: a stationary horizontal plane or single-layer solid sumo disk, uniform
+ * slipperiness, open space above it and ordinary block landing (motionY=0).
+ * Mounted travel, flight, liquids, webs, ladders and sneak edge-clamping are outside this scope. Callers
  * must establish that world/ability scope independently. Unsupported recorded
  * flags are rejected rather than silently approximated. This is not a general
  * collision engine and is deliberately separate from ComboModel.
@@ -64,13 +64,67 @@ public final class ExactTravel {
     /** floorTopY=4 in the lab; the ordinary supporting block's Y is 3. */
     public record Environment(double floorTopY, float floorSlipperiness,
                               boolean loadedColumnBefore, boolean loadedColumnAfter,
-                              boolean water, boolean lava, boolean ladder) {
+                              boolean water, boolean lava, boolean ladder, Disk disk) {
+        public Environment(double top,float friction,boolean before,boolean after,boolean water,boolean lava,boolean ladder) {
+            this(top,friction,before,after,water,lava,ladder,null);
+        }
         public Environment {
             finite(floorTopY, floorSlipperiness);
             if (!(floorSlipperiness > 0))
                 throw new IllegalArgumentException("Nonpositive slipperiness");
         }
     }
+
+    /** Solid, single-layer platform in open air. Player step height is the native 0.6f. */
+    public record Disk(double centerX,int diameter) {
+        public Disk { if(diameter<=0)throw new IllegalArgumentException("Empty platform"); }
+        boolean cell(int x,int z) {
+            double dx=x+.5-centerX,dz=z+.5,r=diameter*.5;
+            return dx*dx+dz*dz<=r*r;
+        }
+        public boolean supports(Box box) {
+            for(int x=(int)Math.floor(box.minX);x<box.maxX;x++)
+                for(int z=(int)Math.floor(box.minZ);z<box.maxZ;z++)if(cell(x,z))return true;
+            return false;
+        }
+        // AABB.calculateXOffset/ZOffset, selecting candidate block faces on the swept axis.
+        double side(Box box,double delta,double top,boolean xAxis) {
+            if(delta==0 || box.minY>=top || box.maxY<=top-1)return delta;
+            double lo=xAxis?box.minX:box.minZ,hi=xAxis?box.maxX:box.maxZ;
+            int first=(int)Math.floor(lo+Math.min(0,delta));
+            double end=hi+Math.max(0,delta);
+            int crossMin=(int)Math.floor(xAxis?box.minZ:box.minX);
+            double crossMax=xAxis?box.maxZ:box.maxX;
+            for(int i=first;i<end;i++)for(int j=crossMin;j<crossMax;j++){
+                if(!(xAxis?cell(i,j):cell(j,i)))continue;
+                if(delta>0 && hi<=i)delta=Math.min(delta,i-hi);
+                else if(delta<0 && lo>=i+1)delta=Math.max(delta,i+1-lo);
+            }
+            return delta;
+        }
+        private Clip move(Box b,double dx,double dy,double dz,double top) {
+            double y=dy;
+            if(dy<0 && b.minY>=top && b.minY+dy<=top && supports(b))y=Math.max(dy,top-b.minY);
+            Box out=b.offset(0,y,0);
+            double x=side(out,dx,top,true);out=out.offset(x,0,0);
+            double z=side(out,dz,top,false);out=out.offset(0,0,z);
+            return new Clip(out,x,y,z);
+        }
+        Clip collide(State s,double dx,double dy,double dz,double top) {
+            Clip normal=move(s.box,dx,dy,dz,top);
+            if((dx==normal.x && dz==normal.z) || !(s.onGround || dy<0 && normal.y!=dy))return normal;
+            // Both vanilla step candidates have the same overhead clearance on this disk.
+            double up=(double).6f;
+            Box raised=s.box.offset(0,up,0);
+            double x=side(raised,dx,top,true);raised=raised.offset(x,0,0);
+            double z=side(raised,dz,top,false);raised=raised.offset(0,0,z);
+            if(normal.x*normal.x+normal.z*normal.z>=x*x+z*z)return normal;
+            double down=-up;
+            if(raised.minY>=top && supports(raised))down=Math.max(down,top-raised.minY);
+            return new Clip(raised.offset(0,down,0),x,down,z);
+        }
+    }
+    private record Clip(Box box,double x,double y,double z) {}
 
     /**
      * Reproduce setPosition's NEW-box construction. Use for an actual native
@@ -124,13 +178,23 @@ public final class ExactTravel {
         // pk.d(DDD): Y, X, Z clipping and separate AABB offsets. A full plane
         // clips only downward Y; no other box intersects in this scoped world.
         double requestedY = vy, clippedY = requestedY;
-        if (requestedY < 0.0) {
-            double gap = environment.floorTopY - before.box.minY;
-            if (gap > clippedY) clippedY = gap;
+        Box box;
+        boolean horizontalCollision=false;
+        if(environment.disk!=null){
+            Clip clipped=environment.disk.collide(before,vx,vy,vz,environment.floorTopY);
+            box=clipped.box;clippedY=clipped.y;
+            horizontalCollision=vx!=clipped.x || vz!=clipped.z;
+            if(vx!=clipped.x)vx=0;
+            if(vz!=clipped.z)vz=0;
+        } else {
+            if (requestedY < 0.0) {
+                double gap = environment.floorTopY - before.box.minY;
+                if (gap > clippedY) clippedY = gap;
+            }
+            box = before.box.offset(0.0, clippedY, 0.0);
+            box = box.offset(vx, 0.0, 0.0);
+            box = box.offset(0.0, 0.0, vz);
         }
-        Box box = before.box.offset(0.0, clippedY, 0.0);
-        box = box.offset(vx, 0.0, 0.0);
-        box = box.offset(0.0, 0.0, vz);
 
         // resetPositionToBB: do not substitute before.x + vx.
         double x = (box.minX + box.maxX) / 2.0;
@@ -146,7 +210,7 @@ public final class ExactTravel {
         vx *= (double) friction;
         vz *= (double) friction;
         return new State(x, y, z, vx, vy, vz, box, onGround,
-                false, verticalCollision, verticalCollision, false, false, false);
+                horizontalCollision, verticalCollision, horizontalCollision || verticalCollision, false, false, false);
     }
 
     private static void requireSupported(State state, Environment environment) {
@@ -156,7 +220,7 @@ public final class ExactTravel {
             throw new IllegalArgumentException("Unsupported liquid or ladder branch");
         if (!environment.loadedColumnBefore || !environment.loadedColumnAfter)
             throw new IllegalArgumentException("Unloaded-column gravity branch is unsupported");
-        if (state.box.minY < environment.floorTopY)
+        if (environment.disk==null && state.box.minY < environment.floorTopY)
             throw new IllegalArgumentException("Initial box penetrates declared floor");
     }
 

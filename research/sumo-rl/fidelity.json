@@ -1,0 +1,6273 @@
+{
+  "head_on_strict_legacy_boxing": [
+    {
+      "mid": "m1193",
+      "requested_seconds": 4.0,
+      "audited_seconds": 4.0,
+      "events": 1460,
+      "requested_events": 1460,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 544,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 144,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 110,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m1205",
+      "requested_seconds": 4.0,
+      "audited_seconds": 4.0,
+      "events": 1364,
+      "requested_events": 1364,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 451,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 49,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 41,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m1206",
+      "requested_seconds": 4.0,
+      "audited_seconds": 4.0,
+      "events": 1350,
+      "requested_events": 1350,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 447,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 47,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 29,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m1212",
+      "requested_seconds": 4.0,
+      "audited_seconds": 4.0,
+      "events": 1449,
+      "requested_events": 1449,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 540,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 143,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 129,
+          "max_absolute_error_blocks": 4.440892098500626e-16,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    }
+  ],
+  "head_on_strict_sumo": [
+    {
+      "mid": "m2039",
+      "requested_seconds": 8.0,
+      "audited_seconds": 3.4299999999999997,
+      "events": 1189,
+      "requested_events": 1189,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 454,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 111,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 26,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2041",
+      "requested_seconds": 8.0,
+      "audited_seconds": 3.9819999999999998,
+      "events": 1414,
+      "requested_events": 1414,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 512,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 115,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 51,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2058",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 2853,
+      "requested_events": 2853,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1064,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 264,
+          "max_absolute_error_blocks": 4.547473508864641e-13,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 116,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2183",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 2723,
+      "requested_events": 2723,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1067,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 267,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 41,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2184",
+      "requested_seconds": 8.0,
+      "audited_seconds": 3.484,
+      "events": 1215,
+      "requested_events": 1215,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 457,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 107,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 28,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2185",
+      "requested_seconds": 8.0,
+      "audited_seconds": 7.977,
+      "events": 2823,
+      "requested_events": 2823,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1059,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 260,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 111,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2186",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 2719,
+      "requested_events": 2719,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1067,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 267,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 40,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2187",
+      "requested_seconds": 8.0,
+      "audited_seconds": 5.781000000000001,
+      "events": 1992,
+      "requested_events": 1992,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 770,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 192,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 39,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2188",
+      "requested_seconds": 8.0,
+      "audited_seconds": 5.839,
+      "events": 2099,
+      "requested_events": 2099,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 782,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 197,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 90,
+          "max_absolute_error_blocks": 4.440892098500626e-16,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2189",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 2855,
+      "requested_events": 2855,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1067,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 267,
+          "max_absolute_error_blocks": 8.917311333789257e-13,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 126,
+          "max_absolute_error_blocks": 4.440892098500626e-16,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2190",
+      "requested_seconds": 8.0,
+      "audited_seconds": 5.133,
+      "events": 1828,
+      "requested_events": 1828,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 688,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 173,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 76,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2195",
+      "requested_seconds": 8.0,
+      "audited_seconds": 6.542000000000001,
+      "events": 2260,
+      "requested_events": 2260,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 881,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 226,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 44,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2197",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 2729,
+      "requested_events": 2729,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1069,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 269,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 39,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2293",
+      "requested_seconds": 8.0,
+      "audited_seconds": 3.991,
+      "events": 1378,
+      "requested_events": 1378,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 530,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 130,
+          "max_absolute_error_blocks": 4.547473508864641e-13,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 26,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2294",
+      "requested_seconds": 8.0,
+      "audited_seconds": 4.591,
+      "events": 1640,
+      "requested_events": 1640,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 607,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 149,
+          "max_absolute_error_blocks": 9.094947017729282e-13,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 73,
+          "max_absolute_error_blocks": 2.220446049250313e-16,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2295",
+      "requested_seconds": 8.0,
+      "audited_seconds": 4.986000000000001,
+      "events": 1800,
+      "requested_events": 1800,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 664,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 164,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 89,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    }
+  ],
+  "v3_two_sided_probe_availability": {
+    "selected": [
+      "m2384",
+      "m2396",
+      "m2385",
+      "m2386",
+      "m2388",
+      "m2425",
+      "m2389",
+      "m2400",
+      "m2393",
+      "m2399",
+      "m2394",
+      "m2443",
+      "m2397",
+      "m2419",
+      "m2403",
+      "m2409"
+    ],
+    "two_detailed_povs": [
+      "m2385",
+      "m2386",
+      "m2388",
+      "m2425",
+      "m2389",
+      "m2400",
+      "m2393",
+      "m2399"
+    ],
+    "without_both_detailed_povs": [
+      "m2384",
+      "m2396",
+      "m2394",
+      "m2443",
+      "m2397",
+      "m2419",
+      "m2403",
+      "m2409"
+    ]
+  },
+  "v3_head_on_strict_prior_to_tracker_order_fix": [
+    {
+      "mid": "m2385",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 27,
+      "requested_events": 2880,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 11,
+      "first_failure": "Exception in thread \"main\" java.lang.IllegalStateException: NETWORK_SEQUENCE predicted=6 native=11 nativeSend=80.148681640625",
+      "range_error": {
+        "nearest": {
+          "n": 2,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 0,
+          "max_absolute_error_blocks": 0,
+          "p95_absolute_error_blocks": null
+        }
+      }
+    },
+    {
+      "mid": "m2386",
+      "requested_seconds": 8.0,
+      "audited_seconds": 5.79,
+      "events": 1995,
+      "requested_events": 1995,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 768,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 190,
+          "max_absolute_error_blocks": 4.547473508864641e-13,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 56,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2388",
+      "requested_seconds": 8.0,
+      "audited_seconds": 7.7330000000000005,
+      "events": 141,
+      "requested_events": 2792,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 56,
+      "first_failure": "Exception in thread \"main\" java.lang.IllegalStateException: NETWORK_SEQUENCE predicted=6 native=11 nativeSend=433.842529296875",
+      "range_error": {
+        "nearest": {
+          "n": 14,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 2,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2425",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 175,
+      "requested_events": 2974,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 71,
+      "first_failure": "Exception in thread \"main\" java.lang.IllegalStateException: NETWORK_SEQUENCE predicted=6 native=11 nativeSend=535.826904296875",
+      "range_error": {
+        "nearest": {
+          "n": 17,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 4,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2389",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 2752,
+      "requested_events": 2752,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1061,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 261,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 55,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2400",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 26,
+      "requested_events": 2717,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 9,
+      "first_failure": "Exception in thread \"main\" java.lang.IllegalStateException: NETWORK_SEQUENCE predicted=10 native=5 nativeSend=81.85009765625",
+      "range_error": {
+        "nearest": {
+          "n": 2,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 0,
+          "max_absolute_error_blocks": 0,
+          "p95_absolute_error_blocks": null
+        }
+      }
+    },
+    {
+      "mid": "m2393",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 27,
+      "requested_events": 2907,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 11,
+      "first_failure": "Exception in thread \"main\" java.lang.IllegalStateException: NETWORK_SEQUENCE predicted=6 native=11 nativeSend=82.497314453125",
+      "range_error": {
+        "nearest": {
+          "n": 2,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 0,
+          "max_absolute_error_blocks": 0,
+          "p95_absolute_error_blocks": null
+        }
+      }
+    },
+    {
+      "mid": "m2399",
+      "requested_seconds": 8.0,
+      "audited_seconds": 6.986000000000001,
+      "events": 2493,
+      "requested_events": 2493,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 926,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 228,
+          "max_absolute_error_blocks": 9.094947017729282e-13,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 129,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    }
+  ],
+  "v3_head_on_strict": [
+    {
+      "mid": "m2385",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 2880,
+      "requested_events": 2880,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1066,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 264,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 164,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2386",
+      "requested_seconds": 8.0,
+      "audited_seconds": 5.79,
+      "events": 1995,
+      "requested_events": 1995,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 768,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 190,
+          "max_absolute_error_blocks": 4.547473508864641e-13,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 56,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2388",
+      "requested_seconds": 8.0,
+      "audited_seconds": 7.7330000000000005,
+      "events": 2792,
+      "requested_events": 2792,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1027,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 254,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 204,
+          "max_absolute_error_blocks": 4.440892098500626e-16,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2425",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 2974,
+      "requested_events": 2974,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1068,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 268,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 254,
+          "max_absolute_error_blocks": 2.220446049250313e-16,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2389",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 2752,
+      "requested_events": 2752,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1061,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 261,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 55,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2400",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 2717,
+      "requested_events": 2717,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1063,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 263,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 36,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2393",
+      "requested_seconds": 8.0,
+      "audited_seconds": 8.0,
+      "events": 2907,
+      "requested_events": 2907,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 1062,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 262,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 179,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2399",
+      "requested_seconds": 8.0,
+      "audited_seconds": 6.986000000000001,
+      "events": 2493,
+      "requested_events": 2493,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 926,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 228,
+          "max_absolute_error_blocks": 9.094947017729282e-13,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 129,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    }
+  ],
+  "physical_input_estimated_transport": [
+    {
+      "mid": "m2039",
+      "moves": 80,
+      "clicks": 63,
+      "exact": false,
+      "first_difference": {
+        "side": "b",
+        "ms": 396.015869140625,
+        "pred": [
+          4097.15028253622,
+          12.0,
+          0.0,
+          -0.11902810857962519,
+          -0.0784000015258789,
+          8.518691798208756e-18
+        ],
+        "native": [
+          4097.089882407873,
+          12.0,
+          0.0,
+          -0.15200658248766197,
+          -0.0784000015258789,
+          8.518691798208756e-18
+        ]
+      },
+      "max_position_error": 2.786804711960712,
+      "native_hits": [
+        [
+          433,
+          true,
+          false
+        ],
+        [
+          480,
+          false,
+          false
+        ],
+        [
+          1274,
+          false,
+          false
+        ],
+        [
+          1275,
+          true,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          431.89,
+          false,
+          false
+        ],
+        [
+          431.89,
+          true,
+          false
+        ],
+        [
+          1476.96,
+          true,
+          false
+        ],
+        [
+          1476.96,
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2041",
+      "moves": 80,
+      "clicks": 58,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          485,
+          false,
+          false
+        ],
+        [
+          533,
+          true,
+          false
+        ],
+        [
+          932,
+          true,
+          true
+        ],
+        [
+          933,
+          false,
+          false
+        ],
+        [
+          985,
+          true,
+          false
+        ],
+        [
+          1980,
+          false,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          483.82,
+          false,
+          false
+        ],
+        [
+          532.37,
+          true,
+          false
+        ],
+        [
+          931.54,
+          true,
+          true
+        ],
+        [
+          931.54,
+          false,
+          false
+        ],
+        [
+          984.94,
+          true,
+          false
+        ],
+        [
+          1979.68,
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2058",
+      "moves": 80,
+      "clicks": 66,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          534,
+          true,
+          false
+        ],
+        [
+          535,
+          false,
+          false
+        ],
+        [
+          1429,
+          false,
+          false
+        ],
+        [
+          1485,
+          true,
+          false
+        ],
+        [
+          1884,
+          true,
+          true
+        ],
+        [
+          1938,
+          true,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          533.76,
+          true,
+          false
+        ],
+        [
+          533.76,
+          false,
+          false
+        ],
+        [
+          1428.54,
+          false,
+          false
+        ],
+        [
+          1483.99,
+          true,
+          false
+        ],
+        [
+          1883.19,
+          true,
+          true
+        ],
+        [
+          1937.75,
+          true,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2183",
+      "moves": 80,
+      "clicks": 62,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          482,
+          false,
+          false
+        ],
+        [
+          483,
+          true,
+          false
+        ],
+        [
+          1584,
+          false,
+          false
+        ],
+        [
+          1585,
+          true,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          481.4,
+          false,
+          false
+        ],
+        [
+          481.4,
+          true,
+          false
+        ],
+        [
+          1583.15,
+          false,
+          false
+        ],
+        [
+          1583.15,
+          true,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2184",
+      "moves": 80,
+      "clicks": 57,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          479,
+          true,
+          false
+        ],
+        [
+          531,
+          false,
+          false
+        ],
+        [
+          726,
+          false,
+          true
+        ],
+        [
+          1381,
+          false,
+          false
+        ],
+        [
+          1382,
+          true,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          478.12,
+          true,
+          false
+        ],
+        [
+          529.2,
+          false,
+          false
+        ],
+        [
+          725.2,
+          false,
+          true
+        ],
+        [
+          1378.99,
+          false,
+          false
+        ],
+        [
+          1378.99,
+          true,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2185",
+      "moves": 80,
+      "clicks": 60,
+      "exact": false,
+      "first_difference": {
+        "side": "b",
+        "ms": 827.571533203125,
+        "pred": [
+          12291.473391023417,
+          12.79020230889472,
+          0.0,
+          0.18797622332319605,
+          -0.20322904178713383,
+          2.839563985842927e-18
+        ],
+        "native": [
+          12291.380572115071,
+          12.79020230889472,
+          0.0,
+          0.10351101429462546,
+          -0.20322904178713383,
+          2.839563985842927e-18
+        ]
+      },
+      "max_position_error": 1.277070467866439,
+      "native_hits": [
+        [
+          577,
+          true,
+          false
+        ],
+        [
+          578,
+          false,
+          false
+        ],
+        [
+          878,
+          false,
+          true
+        ],
+        [
+          1524,
+          false,
+          false
+        ],
+        [
+          1574,
+          true,
+          false
+        ],
+        [
+          1972,
+          true,
+          true
+        ],
+        [
+          1974,
+          false,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          576.36,
+          true,
+          false
+        ],
+        [
+          576.36,
+          false,
+          false
+        ],
+        [
+          1573.8,
+          false,
+          false
+        ],
+        [
+          1627.68,
+          true,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2186",
+      "moves": 80,
+      "clicks": 66,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          431,
+          true,
+          false
+        ],
+        [
+          432,
+          false,
+          false
+        ],
+        [
+          1526,
+          false,
+          false
+        ],
+        [
+          1527,
+          true,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          430.13,
+          true,
+          false
+        ],
+        [
+          430.13,
+          false,
+          false
+        ],
+        [
+          1525.24,
+          false,
+          false
+        ],
+        [
+          1525.24,
+          true,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2187",
+      "moves": 79,
+      "clicks": 64,
+      "exact": false,
+      "first_difference": {
+        "side": "b",
+        "ms": 475.503173828125,
+        "pred": [
+          12289.72565347736,
+          12.361375,
+          0.0,
+          0.4664888041839004,
+          0.2757475053668022,
+          0.0
+        ],
+        "native": [
+          12288.751920717435,
+          12.0,
+          0.0,
+          -0.06516934448843453,
+          -0.0784000015258789,
+          0.0
+        ]
+      },
+      "max_position_error": 1.043599575619072,
+      "native_hits": [
+        [
+          423,
+          false,
+          false
+        ],
+        [
+          473,
+          true,
+          false
+        ],
+        [
+          1330,
+          true,
+          false
+        ],
+        [
+          1330,
+          false,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          422.44,
+          false,
+          false
+        ],
+        [
+          472.62,
+          true,
+          false
+        ],
+        [
+          1377.35,
+          true,
+          false
+        ],
+        [
+          1377.35,
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2188",
+      "moves": 80,
+      "clicks": 67,
+      "exact": false,
+      "first_difference": {
+        "side": "a",
+        "ms": 1025.035888671875,
+        "pred": [
+          4093.0936103814947,
+          12.30940880075403,
+          0.0,
+          -0.4567244645827294,
+          -0.0784000015258789,
+          0.0
+        ],
+        "native": [
+          4093.6714995756315,
+          12.0,
+          0.0,
+          0.06915471723726255,
+          -0.0784000015258789,
+          0.0
+        ]
+      },
+      "max_position_error": 2.260729877372494,
+      "native_hits": [
+        [
+          484,
+          true,
+          false
+        ],
+        [
+          528,
+          false,
+          false
+        ],
+        [
+          931,
+          false,
+          true
+        ],
+        [
+          983,
+          false,
+          false
+        ],
+        [
+          1429,
+          true,
+          false
+        ],
+        [
+          1484,
+          false,
+          false
+        ],
+        [
+          1883,
+          false,
+          true
+        ],
+        [
+          1884,
+          true,
+          false
+        ],
+        [
+          1935,
+          false,
+          false
+        ],
+        [
+          1935,
+          true,
+          true
+        ]
+      ],
+      "model_hits": [
+        [
+          482.92,
+          true,
+          false
+        ],
+        [
+          528.01,
+          false,
+          false
+        ],
+        [
+          930.52,
+          false,
+          true
+        ],
+        [
+          982.18,
+          false,
+          false
+        ],
+        [
+          1585.15,
+          false,
+          false
+        ],
+        [
+          1683.86,
+          true,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2189",
+      "moves": 80,
+      "clicks": 67,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          534,
+          false,
+          false
+        ],
+        [
+          535,
+          true,
+          false
+        ],
+        [
+          1332,
+          true,
+          false
+        ],
+        [
+          1385,
+          false,
+          false
+        ],
+        [
+          1783,
+          true,
+          false
+        ],
+        [
+          1784,
+          false,
+          true
+        ],
+        [
+          1829,
+          false,
+          false
+        ],
+        [
+          1883,
+          true,
+          true
+        ]
+      ],
+      "model_hits": [
+        [
+          533.78,
+          false,
+          false
+        ],
+        [
+          533.78,
+          true,
+          false
+        ],
+        [
+          1331.51,
+          true,
+          false
+        ],
+        [
+          1384.07,
+          false,
+          false
+        ],
+        [
+          1782.62,
+          true,
+          false
+        ],
+        [
+          1782.62,
+          false,
+          true
+        ],
+        [
+          1828.61,
+          false,
+          false
+        ],
+        [
+          1882.8,
+          true,
+          true
+        ]
+      ]
+    },
+    {
+      "mid": "m2190",
+      "moves": 81,
+      "clicks": 69,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          483,
+          false,
+          false
+        ],
+        [
+          534,
+          true,
+          false
+        ],
+        [
+          934,
+          true,
+          true
+        ],
+        [
+          983,
+          true,
+          false
+        ],
+        [
+          984,
+          false,
+          false
+        ],
+        [
+          1931,
+          false,
+          false
+        ],
+        [
+          1984,
+          true,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          482.1,
+          false,
+          false
+        ],
+        [
+          533.41,
+          true,
+          false
+        ],
+        [
+          933.62,
+          true,
+          true
+        ],
+        [
+          982.32,
+          true,
+          false
+        ],
+        [
+          982.32,
+          false,
+          false
+        ],
+        [
+          1929.21,
+          false,
+          false
+        ],
+        [
+          1983.4,
+          true,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2385",
+      "moves": 80,
+      "clicks": 65,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          534,
+          true,
+          false
+        ],
+        [
+          535,
+          false,
+          false
+        ],
+        [
+          983,
+          false,
+          false
+        ],
+        [
+          984,
+          true,
+          false
+        ],
+        [
+          1034,
+          false,
+          true
+        ],
+        [
+          1980,
+          true,
+          false
+        ],
+        [
+          1981,
+          false,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          533.56,
+          true,
+          false
+        ],
+        [
+          533.56,
+          false,
+          false
+        ],
+        [
+          982.75,
+          false,
+          false
+        ],
+        [
+          982.75,
+          true,
+          false
+        ],
+        [
+          1033.65,
+          false,
+          true
+        ],
+        [
+          1979.62,
+          true,
+          false
+        ],
+        [
+          1979.62,
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2386",
+      "moves": 79,
+      "clicks": 65,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          432,
+          false,
+          false
+        ],
+        [
+          486,
+          true,
+          false
+        ],
+        [
+          1187,
+          true,
+          false
+        ],
+        [
+          1240,
+          false,
+          false
+        ],
+        [
+          1831,
+          true,
+          false
+        ],
+        [
+          1832,
+          false,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          430.39,
+          false,
+          false
+        ],
+        [
+          484.73,
+          true,
+          false
+        ],
+        [
+          1184.57,
+          true,
+          false
+        ],
+        [
+          1238.01,
+          false,
+          false
+        ],
+        [
+          1830.04,
+          true,
+          false
+        ],
+        [
+          1830.04,
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2388",
+      "moves": 79,
+      "clicks": 65,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          431,
+          true,
+          false
+        ],
+        [
+          432,
+          false,
+          false
+        ],
+        [
+          1080,
+          true,
+          false
+        ],
+        [
+          1080,
+          false,
+          false
+        ],
+        [
+          1429,
+          false,
+          true
+        ],
+        [
+          1481,
+          true,
+          true
+        ],
+        [
+          1534,
+          false,
+          false
+        ],
+        [
+          1534,
+          true,
+          false
+        ],
+        [
+          1980,
+          true,
+          false
+        ],
+        [
+          1981,
+          false,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          430.63,
+          true,
+          false
+        ],
+        [
+          430.63,
+          false,
+          false
+        ],
+        [
+          1078.89,
+          true,
+          false
+        ],
+        [
+          1078.89,
+          false,
+          false
+        ],
+        [
+          1428.08,
+          false,
+          true
+        ],
+        [
+          1480.45,
+          true,
+          true
+        ],
+        [
+          1533.18,
+          false,
+          false
+        ],
+        [
+          1533.18,
+          true,
+          false
+        ],
+        [
+          1979.83,
+          true,
+          false
+        ],
+        [
+          1979.83,
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2425",
+      "moves": 79,
+      "clicks": 66,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          533,
+          true,
+          false
+        ],
+        [
+          534,
+          false,
+          false
+        ],
+        [
+          984,
+          true,
+          false
+        ],
+        [
+          985,
+          false,
+          false
+        ],
+        [
+          1035,
+          false,
+          true
+        ],
+        [
+          1436,
+          true,
+          false
+        ],
+        [
+          1436,
+          false,
+          false
+        ],
+        [
+          1885,
+          true,
+          false
+        ],
+        [
+          1886,
+          false,
+          false
+        ],
+        [
+          1936,
+          false,
+          true
+        ]
+      ],
+      "model_hits": [
+        [
+          532.64,
+          true,
+          false
+        ],
+        [
+          532.64,
+          false,
+          false
+        ],
+        [
+          983.6,
+          true,
+          false
+        ],
+        [
+          983.6,
+          false,
+          false
+        ],
+        [
+          1035.02,
+          false,
+          true
+        ],
+        [
+          1435.16,
+          true,
+          false
+        ],
+        [
+          1435.16,
+          false,
+          false
+        ],
+        [
+          1884.62,
+          true,
+          false
+        ],
+        [
+          1884.62,
+          false,
+          false
+        ],
+        [
+          1935.96,
+          false,
+          true
+        ]
+      ]
+    },
+    {
+      "mid": "m2389",
+      "moves": 80,
+      "clicks": 66,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          480,
+          false,
+          false
+        ],
+        [
+          481,
+          true,
+          false
+        ],
+        [
+          1629,
+          false,
+          false
+        ],
+        [
+          1681,
+          true,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          479.61,
+          false,
+          false
+        ],
+        [
+          479.61,
+          true,
+          false
+        ],
+        [
+          1628.7,
+          false,
+          false
+        ],
+        [
+          1680.39,
+          true,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2400",
+      "moves": 80,
+      "clicks": 64,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          433,
+          true,
+          false
+        ],
+        [
+          434,
+          false,
+          false
+        ],
+        [
+          1580,
+          true,
+          false
+        ],
+        [
+          1580,
+          false,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          431.72,
+          true,
+          false
+        ],
+        [
+          431.72,
+          false,
+          false
+        ],
+        [
+          1578.69,
+          true,
+          false
+        ],
+        [
+          1578.69,
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2393",
+      "moves": 80,
+      "clicks": 66,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          536,
+          true,
+          false
+        ],
+        [
+          537,
+          false,
+          false
+        ],
+        [
+          982,
+          true,
+          false
+        ],
+        [
+          1029,
+          false,
+          false
+        ],
+        [
+          1783,
+          false,
+          false
+        ],
+        [
+          1833,
+          true,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          535.15,
+          true,
+          false
+        ],
+        [
+          535.15,
+          false,
+          false
+        ],
+        [
+          981.58,
+          true,
+          false
+        ],
+        [
+          1028.33,
+          false,
+          false
+        ],
+        [
+          1781.56,
+          false,
+          false
+        ],
+        [
+          1832.64,
+          true,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2399",
+      "moves": 80,
+      "clicks": 64,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          479,
+          true,
+          false
+        ],
+        [
+          480,
+          false,
+          false
+        ],
+        [
+          830,
+          false,
+          true
+        ],
+        [
+          831,
+          true,
+          true
+        ],
+        [
+          931,
+          true,
+          false
+        ],
+        [
+          981,
+          false,
+          false
+        ],
+        [
+          1678,
+          true,
+          false
+        ],
+        [
+          1779,
+          false,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          478.91,
+          true,
+          false
+        ],
+        [
+          478.91,
+          false,
+          false
+        ],
+        [
+          829.95,
+          false,
+          true
+        ],
+        [
+          829.95,
+          true,
+          true
+        ],
+        [
+          930.63,
+          true,
+          false
+        ],
+        [
+          980.55,
+          false,
+          false
+        ],
+        [
+          1677.41,
+          true,
+          false
+        ],
+        [
+          1778.88,
+          false,
+          false
+        ]
+      ]
+    }
+  ],
+  "lateral_strict": [
+    {
+      "mid": "m2503",
+      "requested_seconds": 8.0,
+      "audited_seconds": 5.4830000000000005,
+      "events": 1928,
+      "requested_events": 1928,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 726,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 175,
+          "max_absolute_error_blocks": 4.440892098500626e-16,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 86,
+          "max_absolute_error_blocks": 4.440892098500626e-16,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2504",
+      "requested_seconds": 8.0,
+      "audited_seconds": 4.0360000000000005,
+      "events": 1426,
+      "requested_events": 1426,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 523,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 123,
+          "max_absolute_error_blocks": 8.002487561498128e-13,
+          "p95_absolute_error_blocks": 2.220446049250313e-16
+        },
+        "selected_ray": {
+          "n": 92,
+          "max_absolute_error_blocks": 4.440892098500626e-16,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2505",
+      "requested_seconds": 8.0,
+      "audited_seconds": 2.739,
+      "events": 944,
+      "requested_events": 944,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 358,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 83,
+          "max_absolute_error_blocks": 8.881784197001252e-16,
+          "p95_absolute_error_blocks": 0.0
+        },
+        "selected_ray": {
+          "n": 21,
+          "max_absolute_error_blocks": 0.0,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    },
+    {
+      "mid": "m2509",
+      "requested_seconds": 8.0,
+      "audited_seconds": 3.283,
+      "events": 1123,
+      "requested_events": 1123,
+      "bit_mismatch_rows": 0,
+      "checked_snapshots": 429,
+      "first_failure": null,
+      "range_error": {
+        "nearest": {
+          "n": 101,
+          "max_absolute_error_blocks": 4.720668300706166e-13,
+          "p95_absolute_error_blocks": 4.440892098500626e-16
+        },
+        "selected_ray": {
+          "n": 22,
+          "max_absolute_error_blocks": 4.440892098500626e-16,
+          "p95_absolute_error_blocks": 0.0
+        }
+      }
+    }
+  ],
+  "lateral_physical_input_estimated_transport": [
+    {
+      "mid": "m2503",
+      "moves": 80,
+      "clicks": 58,
+      "exact": false,
+      "first_difference": {
+        "side": "a",
+        "ms": 1708.852294921875,
+        "pred": [
+          4094.590735639236,
+          12.361375,
+          3.098083695463635,
+          -0.09889668229894147,
+          0.2757475053668022,
+          0.08064528009527246
+        ],
+        "native": [
+          4094.5782856392357,
+          12.361375,
+          3.0906586954636355,
+          -0.10569438308851227,
+          0.2757475053668022,
+          0.07659122962438383
+        ]
+      },
+      "max_position_error": 0.030828294788939226,
+      "native_hits": [
+        [
+          434,
+          false,
+          false
+        ],
+        [
+          488,
+          true,
+          false
+        ],
+        [
+          835,
+          true,
+          true
+        ],
+        [
+          888,
+          false,
+          false
+        ],
+        [
+          935,
+          true,
+          false
+        ],
+        [
+          1685,
+          false,
+          false
+        ],
+        [
+          1738,
+          false,
+          true
+        ],
+        [
+          1738,
+          true,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          433.23,
+          false,
+          false
+        ],
+        [
+          487.74,
+          true,
+          false
+        ],
+        [
+          834.28,
+          true,
+          true
+        ],
+        [
+          886.67,
+          false,
+          false
+        ],
+        [
+          934.33,
+          true,
+          false
+        ],
+        [
+          1684.03,
+          false,
+          false
+        ],
+        [
+          1735.96,
+          false,
+          true
+        ],
+        [
+          1735.96,
+          true,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2504",
+      "moves": 80,
+      "clicks": 56,
+      "exact": false,
+      "first_difference": {
+        "side": "b",
+        "ms": 239.261962890625,
+        "pred": [
+          8194.19065914638,
+          12.0,
+          -0.7499280601713996,
+          -0.11289276614088926,
+          -0.0784000015258789,
+          -0.09673358233232339
+        ],
+        "native": [
+          8194.190760802101,
+          12.0,
+          -0.7500542283032279,
+          -0.11283726211041355,
+          -0.0784000015258789,
+          -0.09680247014030315
+        ]
+      },
+      "max_position_error": 0.02860341731053205,
+      "native_hits": [
+        [
+          587,
+          true,
+          false
+        ],
+        [
+          736,
+          false,
+          false
+        ],
+        [
+          1034,
+          false,
+          true
+        ],
+        [
+          1089,
+          true,
+          false
+        ],
+        [
+          1188,
+          false,
+          false
+        ],
+        [
+          1238,
+          true,
+          true
+        ],
+        [
+          1485,
+          false,
+          true
+        ],
+        [
+          1540,
+          true,
+          false
+        ],
+        [
+          1633,
+          false,
+          false
+        ],
+        [
+          1983,
+          true,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          586.44,
+          true,
+          false
+        ],
+        [
+          735.01,
+          false,
+          false
+        ],
+        [
+          1033.47,
+          false,
+          true
+        ],
+        [
+          1088.06,
+          true,
+          false
+        ],
+        [
+          1186.31,
+          false,
+          false
+        ],
+        [
+          1237.16,
+          true,
+          true
+        ],
+        [
+          1482.94,
+          false,
+          true
+        ],
+        [
+          1539.1,
+          true,
+          false
+        ],
+        [
+          1631.8,
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2505",
+      "moves": 80,
+      "clicks": 58,
+      "exact": true,
+      "first_difference": null,
+      "max_position_error": 0.0,
+      "native_hits": [
+        [
+          436,
+          false,
+          false
+        ],
+        [
+          482,
+          true,
+          false
+        ],
+        [
+          1281,
+          false,
+          false
+        ],
+        [
+          1780,
+          false,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          434.99,
+          false,
+          false
+        ],
+        [
+          480.01,
+          true,
+          false
+        ],
+        [
+          1280.78,
+          false,
+          false
+        ],
+        [
+          1779.3,
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "mid": "m2509",
+      "moves": 80,
+      "clicks": 59,
+      "exact": false,
+      "first_difference": {
+        "side": "b",
+        "ms": 278.8583984375,
+        "pred": [
+          8193.645175059282,
+          12.0,
+          0.013076305156573653,
+          -0.1490129754642163,
+          -0.0784000015258789,
+          0.004198928060644896
+        ],
+        "native": [
+          8193.645074267828,
+          12.0,
+          0.011173556791618466,
+          -0.14906800760466452,
+          -0.0784000015258789,
+          0.003160027332708315
+        ]
+      },
+      "max_position_error": 0.024311353603650363,
+      "native_hits": [
+        [
+          480,
+          false,
+          false
+        ],
+        [
+          531,
+          true,
+          false
+        ],
+        [
+          1577,
+          true,
+          false
+        ],
+        [
+          1578,
+          false,
+          false
+        ]
+      ],
+      "model_hits": [
+        [
+          479.77,
+          false,
+          false
+        ],
+        [
+          529.72,
+          true,
+          false
+        ],
+        [
+          1576.77,
+          true,
+          false
+        ],
+        [
+          1576.77,
+          false,
+          false
+        ]
+      ]
+    }
+  ],
+  "travel": {
+    "initial": [
+      {
+        "mid": "m2039",
+        "side": "a",
+        "moves": 71,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 15,
+        "velocities": 3
+      },
+      {
+        "mid": "m2039",
+        "side": "b",
+        "moves": 71,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 5,
+        "contacts": 11,
+        "velocities": 4
+      },
+      {
+        "mid": "m2041",
+        "side": "a",
+        "moves": 82,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 4,
+        "contacts": 27,
+        "velocities": 6
+      },
+      {
+        "mid": "m2041",
+        "side": "b",
+        "moves": 82,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 24,
+        "velocities": 5
+      },
+      {
+        "mid": "m2058",
+        "side": "a",
+        "moves": 328,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 119,
+        "velocities": 19
+      },
+      {
+        "mid": "m2058",
+        "side": "b",
+        "moves": 327,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 4,
+        "contacts": 110,
+        "velocities": 20
+      },
+      {
+        "mid": "m2183",
+        "side": "a",
+        "moves": 326,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 8,
+        "contacts": 45,
+        "velocities": 15
+      },
+      {
+        "mid": "m2183",
+        "side": "b",
+        "moves": 326,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 44,
+        "velocities": 15
+      },
+      {
+        "mid": "m2184",
+        "side": "a",
+        "moves": 72,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 3,
+        "contacts": 13,
+        "velocities": 4
+      },
+      {
+        "mid": "m2184",
+        "side": "b",
+        "moves": 72,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 15,
+        "velocities": 4
+      },
+      {
+        "mid": "m2185",
+        "side": "a",
+        "moves": 162,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 14,
+        "contacts": 50,
+        "velocities": 11
+      },
+      {
+        "mid": "m2185",
+        "side": "b",
+        "moves": 162,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 61,
+        "velocities": 9
+      },
+      {
+        "mid": "m2186",
+        "side": "a",
+        "moves": 188,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 3,
+        "contacts": 29,
+        "velocities": 9
+      },
+      {
+        "mid": "m2186",
+        "side": "b",
+        "moves": 188,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 26,
+        "velocities": 9
+      },
+      {
+        "mid": "m2187",
+        "side": "a",
+        "moves": 117,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 18,
+        "velocities": 6
+      },
+      {
+        "mid": "m2187",
+        "side": "b",
+        "moves": 118,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 8,
+        "contacts": 21,
+        "velocities": 6
+      },
+      {
+        "mid": "m2188",
+        "side": "a",
+        "moves": 119,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 5,
+        "contacts": 42,
+        "velocities": 8
+      },
+      {
+        "mid": "m2188",
+        "side": "b",
+        "moves": 119,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 48,
+        "velocities": 7
+      },
+      {
+        "mid": "m2189",
+        "side": "a",
+        "moves": 316,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 120,
+        "velocities": 19
+      },
+      {
+        "mid": "m2189",
+        "side": "b",
+        "moves": 316,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 5,
+        "contacts": 118,
+        "velocities": 19
+      },
+      {
+        "mid": "m2190",
+        "side": "a",
+        "moves": 105,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 5,
+        "contacts": 36,
+        "velocities": 7
+      },
+      {
+        "mid": "m2190",
+        "side": "b",
+        "moves": 105,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 40,
+        "velocities": 6
+      }
+    ],
+    "jumps_and_edge": [
+      {
+        "mid": "m2197",
+        "side": "a",
+        "moves": 209,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 10,
+        "off_platform": 0,
+        "contacts": 35,
+        "velocities": 10
+      },
+      {
+        "mid": "m2197",
+        "side": "b",
+        "moves": 209,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 6,
+        "contacts": 25,
+        "velocities": 10
+      },
+      {
+        "mid": "m2290",
+        "side": "a",
+        "moves": 216,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 75,
+        "velocities": 16
+      },
+      {
+        "mid": "m2290",
+        "side": "b",
+        "moves": 216,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 5,
+        "off_platform": 5,
+        "contacts": 74,
+        "velocities": 16
+      },
+      {
+        "mid": "m2293",
+        "side": "a",
+        "moves": 82,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 1,
+        "off_platform": 0,
+        "contacts": 14,
+        "velocities": 4
+      },
+      {
+        "mid": "m2293",
+        "side": "b",
+        "moves": 82,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 7,
+        "contacts": 12,
+        "velocities": 4
+      },
+      {
+        "mid": "m2294",
+        "side": "a",
+        "moves": 94,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 1,
+        "off_platform": 0,
+        "contacts": 38,
+        "velocities": 6
+      },
+      {
+        "mid": "m2294",
+        "side": "b",
+        "moves": 94,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 5,
+        "contacts": 35,
+        "velocities": 6
+      },
+      {
+        "mid": "m2300",
+        "side": "a",
+        "moves": 153,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 109,
+        "velocities": 13
+      },
+      {
+        "mid": "m2300",
+        "side": "b",
+        "moves": 154,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 5,
+        "off_platform": 5,
+        "contacts": 91,
+        "velocities": 14
+      },
+      {
+        "mid": "m2301",
+        "side": "a",
+        "moves": 298,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 2,
+        "off_platform": 0,
+        "contacts": 113,
+        "velocities": 17
+      },
+      {
+        "mid": "m2301",
+        "side": "b",
+        "moves": 299,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 5,
+        "contacts": 106,
+        "velocities": 18
+      },
+      {
+        "mid": "m2302",
+        "side": "a",
+        "moves": 62,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 2,
+        "off_platform": 0,
+        "contacts": 13,
+        "velocities": 3
+      },
+      {
+        "mid": "m2302",
+        "side": "b",
+        "moves": 62,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 3,
+        "contacts": 10,
+        "velocities": 3
+      },
+      {
+        "mid": "m2303",
+        "side": "a",
+        "moves": 62,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 21,
+        "velocities": 3
+      },
+      {
+        "mid": "m2303",
+        "side": "b",
+        "moves": 62,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 1,
+        "off_platform": 3,
+        "contacts": 11,
+        "velocities": 4
+      },
+      {
+        "mid": "m2305",
+        "side": "a",
+        "moves": 135,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 4,
+        "off_platform": 5,
+        "contacts": 70,
+        "velocities": 12
+      },
+      {
+        "mid": "m2305",
+        "side": "b",
+        "moves": 135,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 90,
+        "velocities": 10
+      },
+      {
+        "mid": "m2312",
+        "side": "a",
+        "moves": 348,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 129,
+        "velocities": 21
+      },
+      {
+        "mid": "m2312",
+        "side": "b",
+        "moves": 348,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 2,
+        "off_platform": 2,
+        "contacts": 121,
+        "velocities": 21
+      },
+      {
+        "mid": "m2319",
+        "side": "a",
+        "moves": 159,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 4,
+        "off_platform": 9,
+        "contacts": 87,
+        "velocities": 14
+      },
+      {
+        "mid": "m2319",
+        "side": "b",
+        "moves": 159,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 93,
+        "velocities": 13
+      },
+      {
+        "mid": "m2320",
+        "side": "a",
+        "moves": 158,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 7,
+        "contacts": 68,
+        "velocities": 11
+      },
+      {
+        "mid": "m2320",
+        "side": "b",
+        "moves": 158,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 4,
+        "off_platform": 0,
+        "contacts": 72,
+        "velocities": 11
+      },
+      {
+        "mid": "m2328",
+        "side": "a",
+        "moves": 205,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 2,
+        "off_platform": 6,
+        "contacts": 41,
+        "velocities": 11
+      },
+      {
+        "mid": "m2328",
+        "side": "b",
+        "moves": 206,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 39,
+        "velocities": 11
+      },
+      {
+        "mid": "m2335",
+        "side": "a",
+        "unsupported": "No movement telemetry in this POV"
+      },
+      {
+        "mid": "m2335",
+        "side": "b",
+        "moves": 176,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 4,
+        "off_platform": 3,
+        "contacts": 34,
+        "velocities": 10
+      },
+      {
+        "mid": "m2336",
+        "side": "a",
+        "moves": 274,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 3,
+        "off_platform": 0,
+        "contacts": 49,
+        "velocities": 14
+      },
+      {
+        "mid": "m2336",
+        "side": "b",
+        "unsupported": "No movement telemetry in this POV"
+      },
+      {
+        "mid": "m2349",
+        "side": "a",
+        "moves": 182,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 66,
+        "velocities": 11
+      },
+      {
+        "mid": "m2349",
+        "side": "b",
+        "moves": 182,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 3,
+        "off_platform": 5,
+        "contacts": 64,
+        "velocities": 11
+      },
+      {
+        "mid": "m2354",
+        "side": "a",
+        "moves": 184,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 127,
+        "velocities": 16
+      },
+      {
+        "mid": "m2354",
+        "side": "b",
+        "moves": 184,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 5,
+        "off_platform": 6,
+        "contacts": 116,
+        "velocities": 17
+      }
+    ],
+    "v3": [
+      {
+        "mid": "m2384",
+        "side": "a",
+        "moves": 384,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 4,
+        "contacts": 152,
+        "velocities": 25
+      },
+      {
+        "mid": "m2384",
+        "side": "b",
+        "unsupported": "No movement telemetry in this POV"
+      },
+      {
+        "mid": "m2396",
+        "side": "a",
+        "unsupported": "No movement telemetry in this POV"
+      },
+      {
+        "mid": "m2396",
+        "side": "b",
+        "moves": 321,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 5,
+        "contacts": 105,
+        "velocities": 19
+      },
+      {
+        "mid": "m2385",
+        "side": "a",
+        "moves": 204,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 5,
+        "contacts": 100,
+        "velocities": 17
+      },
+      {
+        "mid": "m2385",
+        "side": "b",
+        "moves": 204,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 10,
+        "off_platform": 0,
+        "contacts": 105,
+        "velocities": 15
+      },
+      {
+        "mid": "m2386",
+        "side": "a",
+        "moves": 117,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 9,
+        "off_platform": 0,
+        "contacts": 29,
+        "velocities": 7
+      },
+      {
+        "mid": "m2386",
+        "side": "b",
+        "moves": 118,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 6,
+        "contacts": 27,
+        "velocities": 8
+      },
+      {
+        "mid": "m2388",
+        "side": "a",
+        "moves": 157,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 5,
+        "off_platform": 0,
+        "contacts": 113,
+        "velocities": 15
+      },
+      {
+        "mid": "m2388",
+        "side": "b",
+        "moves": 156,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 24,
+        "contacts": 94,
+        "velocities": 16
+      },
+      {
+        "mid": "m2425",
+        "side": "a",
+        "moves": 2186,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 1839,
+        "velocities": 238
+      },
+      {
+        "mid": "m2425",
+        "side": "b",
+        "moves": 2134,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 114,
+        "off_platform": 0,
+        "contacts": 1789,
+        "velocities": 232
+      },
+      {
+        "mid": "m2389",
+        "side": "a",
+        "moves": 282,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 11,
+        "contacts": 47,
+        "velocities": 14
+      },
+      {
+        "mid": "m2389",
+        "side": "b",
+        "moves": 283,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 51,
+        "velocities": 14
+      },
+      {
+        "mid": "m2400",
+        "side": "a",
+        "moves": 327,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 44,
+        "velocities": 15
+      },
+      {
+        "mid": "m2400",
+        "side": "b",
+        "moves": 328,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 3,
+        "contacts": 41,
+        "velocities": 15
+      },
+      {
+        "mid": "m2393",
+        "side": "a",
+        "moves": 210,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 133,
+        "velocities": 17
+      },
+      {
+        "mid": "m2393",
+        "side": "b",
+        "moves": 210,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 12,
+        "contacts": 108,
+        "velocities": 19
+      },
+      {
+        "mid": "m2399",
+        "side": "a",
+        "moves": 141,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 65,
+        "velocities": 11
+      },
+      {
+        "mid": "m2399",
+        "side": "b",
+        "moves": 142,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 7,
+        "contacts": 64,
+        "velocities": 11
+      },
+      {
+        "mid": "m2394",
+        "side": "a",
+        "unsupported": "No movement telemetry in this POV"
+      },
+      {
+        "mid": "m2394",
+        "side": "b",
+        "moves": 131,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 7,
+        "off_platform": 0,
+        "contacts": 99,
+        "velocities": 11
+      },
+      {
+        "mid": "m2443",
+        "side": "a",
+        "unsupported": "No movement telemetry in this POV"
+      },
+      {
+        "mid": "m2443",
+        "side": "b",
+        "moves": 93,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 4,
+        "off_platform": 0,
+        "contacts": 61,
+        "velocities": 6
+      },
+      {
+        "mid": "m2397",
+        "side": "a",
+        "unsupported": "No movement telemetry in this POV"
+      },
+      {
+        "mid": "m2397",
+        "side": "b",
+        "moves": 103,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 47,
+        "velocities": 6
+      },
+      {
+        "mid": "m2419",
+        "side": "a",
+        "moves": 134,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 7,
+        "contacts": 23,
+        "velocities": 7
+      },
+      {
+        "mid": "m2419",
+        "side": "b",
+        "unsupported": "No movement telemetry in this POV"
+      },
+      {
+        "mid": "m2403",
+        "side": "a",
+        "moves": 103,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 4,
+        "off_platform": 0,
+        "contacts": 69,
+        "velocities": 7
+      },
+      {
+        "mid": "m2403",
+        "side": "b",
+        "unsupported": "No movement telemetry in this POV"
+      },
+      {
+        "mid": "m2409",
+        "side": "a",
+        "unsupported": "No movement telemetry in this POV"
+      },
+      {
+        "mid": "m2409",
+        "side": "b",
+        "moves": 248,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 12,
+        "off_platform": 10,
+        "contacts": 146,
+        "velocities": 23
+      }
+    ],
+    "lateral": [
+      {
+        "mid": "m2503",
+        "side": "a",
+        "moves": 112,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 9,
+        "contacts": 39,
+        "velocities": 9
+      },
+      {
+        "mid": "m2503",
+        "side": "b",
+        "moves": 112,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 6,
+        "off_platform": 0,
+        "contacts": 47,
+        "velocities": 8
+      },
+      {
+        "mid": "m2504",
+        "side": "a",
+        "moves": 82,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 4,
+        "off_platform": 0,
+        "contacts": 52,
+        "velocities": 6
+      },
+      {
+        "mid": "m2504",
+        "side": "b",
+        "moves": 82,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 10,
+        "contacts": 41,
+        "velocities": 8
+      },
+      {
+        "mid": "m2505",
+        "side": "a",
+        "moves": 57,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 20,
+        "contacts": 2,
+        "velocities": 4
+      },
+      {
+        "mid": "m2505",
+        "side": "b",
+        "moves": 57,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 2,
+        "contacts": 19,
+        "velocities": 1
+      },
+      {
+        "mid": "m2509",
+        "side": "a",
+        "moves": 67,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 9,
+        "contacts": 7,
+        "velocities": 4
+      },
+      {
+        "mid": "m2509",
+        "side": "b",
+        "moves": 67,
+        "step_failures": 0,
+        "first_step_failure": null,
+        "continuous_failures": 0,
+        "first_continuous_failure": null,
+        "jumps": 0,
+        "off_platform": 0,
+        "contacts": 15,
+        "velocities": 2
+      }
+    ]
+  },
+  "throughput": [
+    {
+      "policy_code": 0,
+      "simulated_seconds": 75782.93585296317,
+      "workers": 4,
+      "wall_seconds": 0.999686875,
+      "equivalent_20hz_duel_ticks_per_second": 1516133.4563477824,
+      "wins": 3326,
+      "rounds": 8192,
+      "rounds_per_second": 8194.565923454782,
+      "realtime_multiple": 75806.67281738912
+    },
+    {
+      "equivalent_20hz_duel_ticks_per_second": 1136491.5474766407,
+      "wins": 6145,
+      "rounds": 8192,
+      "rounds_per_second": 2177.6702846431685,
+      "realtime_multiple": 56824.577373832035,
+      "policy_code": 70704,
+      "simulated_seconds": 213763.73692985834,
+      "workers": 4,
+      "wall_seconds": 3.761818333
+    },
+    {
+      "policy_code": 70704,
+      "simulated_seconds": 213763.73692985834,
+      "workers": 4,
+      "wall_seconds": 3.836780667,
+      "equivalent_20hz_duel_ticks_per_second": 1114286.9790208852,
+      "wins": 6145,
+      "rounds": 8192,
+      "rounds_per_second": 2135.123352361283,
+      "realtime_multiple": 55714.34895104425
+    },
+    {
+      "policy_code": 0,
+      "simulated_seconds": 75782.93585296317,
+      "workers": 4,
+      "wall_seconds": 0.9233305,
+      "equivalent_20hz_duel_ticks_per_second": 1641512.6729370074,
+      "wins": 3326,
+      "rounds": 8192,
+      "rounds_per_second": 8872.229391317625,
+      "realtime_multiple": 82075.63364685036
+    },
+    {
+      "rounds_per_second": 7899.292064326643,
+      "rounds": 8192,
+      "wins": 3326,
+      "equivalent_20hz_duel_ticks_per_second": 1461502.7924674978,
+      "wall_seconds": 1.037054958,
+      "workers": 4,
+      "simulated_seconds": 75782.93585296317,
+      "policy_code": 0,
+      "realtime_multiple": 73075.13962337488
+    },
+    {
+      "policy_code": 70704,
+      "simulated_seconds": 213763.73692985834,
+      "workers": 4,
+      "wall_seconds": 3.828415875,
+      "equivalent_20hz_duel_ticks_per_second": 1116721.609717274,
+      "wins": 6145,
+      "rounds": 8192,
+      "rounds_per_second": 2139.7884314226962,
+      "realtime_multiple": 55836.080485863706
+    }
+  ],
+  "v3_native_mechanism": [
+    {
+      "mid": "m2383",
+      "arm": "research-hold20",
+      "opponent": "research-hold20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 4,
+        "bonus": 1,
+        "followup": 3,
+        "followup_bonus": 0,
+        "travel": 68,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 6,
+        "bonus": 1,
+        "followup": 5,
+        "followup_bonus": 0,
+        "travel": 69,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2386",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 8,
+        "bonus": 1,
+        "followup": 7,
+        "followup_bonus": 0,
+        "travel": 117,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 7,
+        "bonus": 7,
+        "followup": 6,
+        "followup_bonus": 6,
+        "travel": 118,
+        "coast": 13
+      }
+    },
+    {
+      "mid": "m2385",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 17,
+        "bonus": 1,
+        "followup": 16,
+        "followup_bonus": 0,
+        "travel": 204,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 15,
+        "bonus": 14,
+        "followup": 14,
+        "followup_bonus": 13,
+        "travel": 204,
+        "coast": 23
+      }
+    },
+    {
+      "mid": "m2384",
+      "arm": "research-wtap20",
+      "opponent": "jump-reset",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 24,
+        "bonus": 16,
+        "followup": 23,
+        "followup_bonus": 15,
+        "travel": 384,
+        "coast": 39
+      },
+      "theirs": {
+        "fresh": 25,
+        "bonus": 23,
+        "followup": 24,
+        "followup_bonus": 22,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2387",
+      "arm": "research-hold20",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 12,
+        "bonus": 1,
+        "followup": 11,
+        "followup_bonus": 0,
+        "travel": 161,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 12,
+        "bonus": 10,
+        "followup": 11,
+        "followup_bonus": 9,
+        "travel": 161,
+        "coast": 19
+      }
+    },
+    {
+      "mid": "m2388",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-hold20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 16,
+        "bonus": 1,
+        "followup": 15,
+        "followup_bonus": 0,
+        "travel": 157,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 15,
+        "bonus": 1,
+        "followup": 14,
+        "followup_bonus": 0,
+        "travel": 156,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2391",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 5,
+        "bonus": 1,
+        "followup": 4,
+        "followup_bonus": 0,
+        "travel": 54,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 2,
+        "bonus": 1,
+        "followup": 1,
+        "followup_bonus": 0,
+        "travel": 53,
+        "coast": 3
+      }
+    },
+    {
+      "mid": "m2390",
+      "arm": "research-hold20",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 7,
+        "bonus": 1,
+        "followup": 6,
+        "followup_bonus": 0,
+        "travel": 91,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 5,
+        "bonus": 5,
+        "followup": 4,
+        "followup_bonus": 4,
+        "travel": 91,
+        "coast": 9
+      }
+    },
+    {
+      "mid": "m2389",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 14,
+        "bonus": 14,
+        "followup": 13,
+        "followup_bonus": 13,
+        "travel": 282,
+        "coast": 27
+      },
+      "theirs": {
+        "fresh": 14,
+        "bonus": 14,
+        "followup": 13,
+        "followup_bonus": 13,
+        "travel": 283,
+        "coast": 23
+      }
+    },
+    {
+      "mid": "m2393",
+      "arm": "research-wtap20",
+      "opponent": "research-hold20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 17,
+        "bonus": 15,
+        "followup": 16,
+        "followup_bonus": 14,
+        "travel": 210,
+        "coast": 26
+      },
+      "theirs": {
+        "fresh": 19,
+        "bonus": 1,
+        "followup": 18,
+        "followup_bonus": 0,
+        "travel": 210,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2394",
+      "arm": "sumo-rl-pressure",
+      "opponent": "jump-reset",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 13,
+        "bonus": 1,
+        "followup": 12,
+        "followup_bonus": 0,
+        "travel": 131,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 11,
+        "bonus": 7,
+        "followup": 10,
+        "followup_bonus": 6,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2396",
+      "arm": "research-wtap20",
+      "opponent": "jump-reset",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 19,
+        "bonus": 17,
+        "followup": 18,
+        "followup_bonus": 16,
+        "travel": 321,
+        "coast": 34
+      },
+      "theirs": {
+        "fresh": 19,
+        "bonus": 19,
+        "followup": 18,
+        "followup_bonus": 18,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2397",
+      "arm": "research-wtap20",
+      "opponent": "trade-wtap",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 7,
+        "bonus": 5,
+        "followup": 6,
+        "followup_bonus": 4,
+        "travel": 103,
+        "coast": 12
+      },
+      "theirs": {
+        "fresh": 6,
+        "bonus": 3,
+        "followup": 5,
+        "followup_bonus": 2,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2398",
+      "arm": "research-hold20",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 5,
+        "bonus": 1,
+        "followup": 4,
+        "followup_bonus": 0,
+        "travel": 75,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 5,
+        "bonus": 4,
+        "followup": 4,
+        "followup_bonus": 3,
+        "travel": 74,
+        "coast": 8
+      }
+    },
+    {
+      "mid": "m2399",
+      "arm": "research-wtap20",
+      "opponent": "research-hold20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 11,
+        "bonus": 7,
+        "followup": 10,
+        "followup_bonus": 6,
+        "travel": 142,
+        "coast": 16
+      },
+      "theirs": {
+        "fresh": 11,
+        "bonus": 1,
+        "followup": 10,
+        "followup_bonus": 0,
+        "travel": 141,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2392",
+      "arm": "research-hold20",
+      "opponent": "research-hold20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 120,
+        "bonus": 1,
+        "followup": 119,
+        "followup_bonus": 0,
+        "travel": 1119,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 121,
+        "bonus": 1,
+        "followup": 120,
+        "followup_bonus": 0,
+        "travel": 1119,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2401",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 3,
+        "bonus": 3,
+        "followup": 2,
+        "followup_bonus": 2,
+        "travel": 74,
+        "coast": 5
+      },
+      "theirs": {
+        "fresh": 6,
+        "bonus": 5,
+        "followup": 5,
+        "followup_bonus": 4,
+        "travel": 74,
+        "coast": 10
+      }
+    },
+    {
+      "mid": "m2400",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 15,
+        "bonus": 15,
+        "followup": 14,
+        "followup_bonus": 14,
+        "travel": 328,
+        "coast": 27
+      },
+      "theirs": {
+        "fresh": 15,
+        "bonus": 15,
+        "followup": 14,
+        "followup_bonus": 14,
+        "travel": 327,
+        "coast": 25
+      }
+    },
+    {
+      "mid": "m2403",
+      "arm": "sumo-rl-pressure",
+      "opponent": "trade-wtap",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 9,
+        "bonus": 1,
+        "followup": 8,
+        "followup_bonus": 0,
+        "travel": 103,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 7,
+        "bonus": 5,
+        "followup": 6,
+        "followup_bonus": 4,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2404",
+      "arm": "research-hold20",
+      "opponent": "research-hold20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 20,
+        "bonus": 1,
+        "followup": 19,
+        "followup_bonus": 0,
+        "travel": 230,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 22,
+        "bonus": 1,
+        "followup": 21,
+        "followup_bonus": 0,
+        "travel": 230,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2405",
+      "arm": "research-hold20",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 25,
+        "bonus": 1,
+        "followup": 24,
+        "followup_bonus": 0,
+        "travel": 326,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 29,
+        "bonus": 21,
+        "followup": 28,
+        "followup_bonus": 20,
+        "travel": 326,
+        "coast": 53
+      }
+    },
+    {
+      "mid": "m2406",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 13,
+        "bonus": 12,
+        "followup": 12,
+        "followup_bonus": 11,
+        "travel": 261,
+        "coast": 24
+      },
+      "theirs": {
+        "fresh": 13,
+        "bonus": 13,
+        "followup": 12,
+        "followup_bonus": 12,
+        "travel": 260,
+        "coast": 21
+      }
+    },
+    {
+      "mid": "m2408",
+      "arm": "research-wtap20",
+      "opponent": "jump-reset",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 5,
+        "bonus": 5,
+        "followup": 4,
+        "followup_bonus": 4,
+        "travel": 82,
+        "coast": 9
+      },
+      "theirs": {
+        "fresh": 5,
+        "bonus": 5,
+        "followup": 4,
+        "followup_bonus": 4,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2410",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 4,
+        "bonus": 1,
+        "followup": 3,
+        "followup_bonus": 0,
+        "travel": 58,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 3,
+        "bonus": 2,
+        "followup": 2,
+        "followup_bonus": 1,
+        "travel": 57,
+        "coast": 5
+      }
+    },
+    {
+      "mid": "m2411",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 8,
+        "bonus": 1,
+        "followup": 7,
+        "followup_bonus": 0,
+        "travel": 93,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 6,
+        "bonus": 4,
+        "followup": 5,
+        "followup_bonus": 3,
+        "travel": 93,
+        "coast": 12
+      }
+    },
+    {
+      "mid": "m2409",
+      "arm": "sumo-rl-pressure",
+      "opponent": "trade-wtap",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 20,
+        "bonus": 1,
+        "followup": 19,
+        "followup_bonus": 0,
+        "travel": 248,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 24,
+        "bonus": 20,
+        "followup": 23,
+        "followup_bonus": 19,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2415",
+      "arm": "sumo-rl-pressure",
+      "opponent": "trade-wtap",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 9,
+        "bonus": 1,
+        "followup": 8,
+        "followup_bonus": 0,
+        "travel": 129,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 9,
+        "bonus": 7,
+        "followup": 8,
+        "followup_bonus": 6,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2416",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 25,
+        "bonus": 1,
+        "followup": 24,
+        "followup_bonus": 0,
+        "travel": 305,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 25,
+        "bonus": 22,
+        "followup": 24,
+        "followup_bonus": 21,
+        "travel": 305,
+        "coast": 41
+      }
+    },
+    {
+      "mid": "m2417",
+      "arm": "research-wtap20",
+      "opponent": "jump-reset",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 10,
+        "bonus": 10,
+        "followup": 9,
+        "followup_bonus": 9,
+        "travel": 208,
+        "coast": 19
+      },
+      "theirs": {
+        "fresh": 10,
+        "bonus": 10,
+        "followup": 9,
+        "followup_bonus": 9,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2419",
+      "arm": "research-wtap20",
+      "opponent": "trade-wtap",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 7,
+        "bonus": 6,
+        "followup": 6,
+        "followup_bonus": 5,
+        "travel": 134,
+        "coast": 12
+      },
+      "theirs": {
+        "fresh": 7,
+        "bonus": 7,
+        "followup": 6,
+        "followup_bonus": 6,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2420",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 7,
+        "bonus": 1,
+        "followup": 6,
+        "followup_bonus": 0,
+        "travel": 91,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 7,
+        "bonus": 7,
+        "followup": 6,
+        "followup_bonus": 6,
+        "travel": 91,
+        "coast": 13
+      }
+    },
+    {
+      "mid": "m2421",
+      "arm": "research-wtap20",
+      "opponent": "trade-wtap",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 6,
+        "bonus": 4,
+        "followup": 5,
+        "followup_bonus": 3,
+        "travel": 83,
+        "coast": 8
+      },
+      "theirs": {
+        "fresh": 6,
+        "bonus": 6,
+        "followup": 5,
+        "followup_bonus": 5,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2422",
+      "arm": "research-wtap20",
+      "opponent": "jump-reset",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 19,
+        "bonus": 19,
+        "followup": 18,
+        "followup_bonus": 18,
+        "travel": 414,
+        "coast": 34
+      },
+      "theirs": {
+        "fresh": 19,
+        "bonus": 19,
+        "followup": 18,
+        "followup_bonus": 18,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2423",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 19,
+        "bonus": 19,
+        "followup": 18,
+        "followup_bonus": 18,
+        "travel": 383,
+        "coast": 32
+      },
+      "theirs": {
+        "fresh": 19,
+        "bonus": 19,
+        "followup": 18,
+        "followup_bonus": 18,
+        "travel": 383,
+        "coast": 33
+      }
+    },
+    {
+      "mid": "m2424",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 6,
+        "bonus": 1,
+        "followup": 5,
+        "followup_bonus": 0,
+        "travel": 79,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 5,
+        "bonus": 4,
+        "followup": 4,
+        "followup_bonus": 3,
+        "travel": 79,
+        "coast": 9
+      }
+    },
+    {
+      "mid": "m2426",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 6,
+        "bonus": 1,
+        "followup": 5,
+        "followup_bonus": 0,
+        "travel": 58,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 3,
+        "bonus": 2,
+        "followup": 2,
+        "followup_bonus": 1,
+        "travel": 57,
+        "coast": 5
+      }
+    },
+    {
+      "mid": "m2427",
+      "arm": "research-wtap20",
+      "opponent": "research-hold20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 6,
+        "bonus": 6,
+        "followup": 5,
+        "followup_bonus": 5,
+        "travel": 94,
+        "coast": 11
+      },
+      "theirs": {
+        "fresh": 8,
+        "bonus": 1,
+        "followup": 7,
+        "followup_bonus": 0,
+        "travel": 94,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2414",
+      "arm": "research-hold20",
+      "opponent": "research-hold20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 257,
+        "bonus": 1,
+        "followup": 256,
+        "followup_bonus": 0,
+        "travel": 2401,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 256,
+        "bonus": 1,
+        "followup": 255,
+        "followup_bonus": 0,
+        "travel": 2401,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2429",
+      "arm": "research-hold20",
+      "opponent": "research-hold20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 127,
+        "bonus": 1,
+        "followup": 126,
+        "followup_bonus": 0,
+        "travel": 1185,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 126,
+        "bonus": 1,
+        "followup": 125,
+        "followup_bonus": 0,
+        "travel": 1184,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2425",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-hold20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 261,
+        "bonus": 1,
+        "followup": 260,
+        "followup_bonus": 0,
+        "travel": 2401,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 262,
+        "bonus": 1,
+        "followup": 261,
+        "followup_bonus": 0,
+        "travel": 2401,
+        "coast": 1
+      }
+    },
+    {
+      "mid": "m2431",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 4,
+        "bonus": 4,
+        "followup": 3,
+        "followup_bonus": 3,
+        "travel": 85,
+        "coast": 6
+      },
+      "theirs": {
+        "fresh": 4,
+        "bonus": 4,
+        "followup": 3,
+        "followup_bonus": 3,
+        "travel": 85,
+        "coast": 8
+      }
+    },
+    {
+      "mid": "m2432",
+      "arm": "research-wtap20",
+      "opponent": "trade-wtap",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 9,
+        "bonus": 8,
+        "followup": 8,
+        "followup_bonus": 7,
+        "travel": 187,
+        "coast": 14
+      },
+      "theirs": {
+        "fresh": 9,
+        "bonus": 8,
+        "followup": 8,
+        "followup_bonus": 7,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2428",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-hold20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 261,
+        "bonus": 1,
+        "followup": 260,
+        "followup_bonus": 0,
+        "travel": 2400,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 260,
+        "bonus": 1,
+        "followup": 259,
+        "followup_bonus": 0,
+        "travel": 2401,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2434",
+      "arm": "sumo-rl-pressure",
+      "opponent": "trade-wtap",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 11,
+        "bonus": 1,
+        "followup": 10,
+        "followup_bonus": 0,
+        "travel": 138,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 10,
+        "bonus": 6,
+        "followup": 9,
+        "followup_bonus": 5,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2435",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 7,
+        "bonus": 1,
+        "followup": 6,
+        "followup_bonus": 0,
+        "travel": 93,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 5,
+        "bonus": 4,
+        "followup": 4,
+        "followup_bonus": 3,
+        "travel": 93,
+        "coast": 9
+      }
+    },
+    {
+      "mid": "m2436",
+      "arm": "research-wtap20",
+      "opponent": "research-hold20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 5,
+        "bonus": 3,
+        "followup": 4,
+        "followup_bonus": 2,
+        "travel": 66,
+        "coast": 9
+      },
+      "theirs": {
+        "fresh": 7,
+        "bonus": 1,
+        "followup": 6,
+        "followup_bonus": 0,
+        "travel": 67,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2438",
+      "arm": "sumo-rl-pressure",
+      "opponent": "trade-wtap",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 5,
+        "bonus": 1,
+        "followup": 4,
+        "followup_bonus": 0,
+        "travel": 77,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 5,
+        "bonus": 4,
+        "followup": 4,
+        "followup_bonus": 3,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2439",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-hold20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 6,
+        "bonus": 1,
+        "followup": 5,
+        "followup_bonus": 0,
+        "travel": 68,
+        "coast": 1
+      },
+      "theirs": {
+        "fresh": 3,
+        "bonus": 1,
+        "followup": 2,
+        "followup_bonus": 0,
+        "travel": 67,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2437",
+      "arm": "research-wtap20",
+      "opponent": "jump-reset",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 9,
+        "bonus": 7,
+        "followup": 8,
+        "followup_bonus": 6,
+        "travel": 174,
+        "coast": 18
+      },
+      "theirs": {
+        "fresh": 9,
+        "bonus": 9,
+        "followup": 8,
+        "followup_bonus": 8,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2440",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 13,
+        "bonus": 1,
+        "followup": 12,
+        "followup_bonus": 0,
+        "travel": 151,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 13,
+        "bonus": 11,
+        "followup": 12,
+        "followup_bonus": 10,
+        "travel": 151,
+        "coast": 21
+      }
+    },
+    {
+      "mid": "m2442",
+      "arm": "research-wtap20",
+      "opponent": "trade-wtap",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 4,
+        "bonus": 3,
+        "followup": 3,
+        "followup_bonus": 2,
+        "travel": 105,
+        "coast": 7
+      },
+      "theirs": {
+        "fresh": 7,
+        "bonus": 6,
+        "followup": 6,
+        "followup_bonus": 5,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2443",
+      "arm": "sumo-rl-pressure",
+      "opponent": "jump-reset",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 8,
+        "bonus": 1,
+        "followup": 7,
+        "followup_bonus": 0,
+        "travel": 93,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 6,
+        "bonus": 6,
+        "followup": 5,
+        "followup_bonus": 5,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2441",
+      "arm": "sumo-rl-pressure",
+      "opponent": "trade-wtap",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 27,
+        "bonus": 1,
+        "followup": 26,
+        "followup_bonus": 0,
+        "travel": 315,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 28,
+        "bonus": 20,
+        "followup": 27,
+        "followup_bonus": 19,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2444",
+      "arm": "research-wtap20",
+      "opponent": "research-hold20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 13,
+        "bonus": 9,
+        "followup": 12,
+        "followup_bonus": 8,
+        "travel": 178,
+        "coast": 20
+      },
+      "theirs": {
+        "fresh": 13,
+        "bonus": 1,
+        "followup": 12,
+        "followup_bonus": 0,
+        "travel": 179,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2445",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 10,
+        "bonus": 1,
+        "followup": 9,
+        "followup_bonus": 0,
+        "travel": 132,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 10,
+        "bonus": 7,
+        "followup": 9,
+        "followup_bonus": 6,
+        "travel": 132,
+        "coast": 16
+      }
+    },
+    {
+      "mid": "m2448",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 28,
+        "bonus": 1,
+        "followup": 27,
+        "followup_bonus": 0,
+        "travel": 294,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 29,
+        "bonus": 24,
+        "followup": 28,
+        "followup_bonus": 23,
+        "travel": 294,
+        "coast": 43
+      }
+    },
+    {
+      "mid": "m2449",
+      "arm": "research-wtap20",
+      "opponent": "research-hold20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 6,
+        "bonus": 5,
+        "followup": 5,
+        "followup_bonus": 4,
+        "travel": 87,
+        "coast": 12
+      },
+      "theirs": {
+        "fresh": 7,
+        "bonus": 1,
+        "followup": 6,
+        "followup_bonus": 0,
+        "travel": 87,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2453",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 9,
+        "bonus": 1,
+        "followup": 8,
+        "followup_bonus": 0,
+        "travel": 107,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 7,
+        "bonus": 7,
+        "followup": 6,
+        "followup_bonus": 6,
+        "travel": 107,
+        "coast": 10
+      }
+    },
+    {
+      "mid": "m2455",
+      "arm": "research-wtap20",
+      "opponent": "jump-reset",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 4,
+        "bonus": 4,
+        "followup": 3,
+        "followup_bonus": 3,
+        "travel": 69,
+        "coast": 6
+      },
+      "theirs": {
+        "fresh": 4,
+        "bonus": 4,
+        "followup": 3,
+        "followup_bonus": 3,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2456",
+      "arm": "research-hold20",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 12,
+        "bonus": 1,
+        "followup": 11,
+        "followup_bonus": 0,
+        "travel": 140,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 12,
+        "bonus": 8,
+        "followup": 11,
+        "followup_bonus": 7,
+        "travel": 140,
+        "coast": 23
+      }
+    },
+    {
+      "mid": "m2454",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 28,
+        "bonus": 1,
+        "followup": 27,
+        "followup_bonus": 0,
+        "travel": 307,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 25,
+        "bonus": 22,
+        "followup": 24,
+        "followup_bonus": 21,
+        "travel": 307,
+        "coast": 39
+      }
+    },
+    {
+      "mid": "m2460",
+      "arm": "research-wtap20",
+      "opponent": "trade-wtap",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 8,
+        "bonus": 7,
+        "followup": 7,
+        "followup_bonus": 6,
+        "travel": 142,
+        "coast": 14
+      },
+      "theirs": {
+        "fresh": 8,
+        "bonus": 7,
+        "followup": 7,
+        "followup_bonus": 6,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2462",
+      "arm": "research-wtap20",
+      "opponent": "jump-reset",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 4,
+        "bonus": 3,
+        "followup": 3,
+        "followup_bonus": 2,
+        "travel": 66,
+        "coast": 8
+      },
+      "theirs": {
+        "fresh": 4,
+        "bonus": 4,
+        "followup": 3,
+        "followup_bonus": 3,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2464",
+      "arm": "sumo-rl-pressure",
+      "opponent": "trade-wtap",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 8,
+        "bonus": 1,
+        "followup": 7,
+        "followup_bonus": 0,
+        "travel": 106,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 6,
+        "bonus": 6,
+        "followup": 5,
+        "followup_bonus": 5,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2463",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-hold20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 32,
+        "bonus": 1,
+        "followup": 31,
+        "followup_bonus": 0,
+        "travel": 304,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 32,
+        "bonus": 1,
+        "followup": 31,
+        "followup_bonus": 0,
+        "travel": 304,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2465",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 4,
+        "bonus": 4,
+        "followup": 3,
+        "followup_bonus": 3,
+        "travel": 85,
+        "coast": 7
+      },
+      "theirs": {
+        "fresh": 4,
+        "bonus": 4,
+        "followup": 3,
+        "followup_bonus": 3,
+        "travel": 84,
+        "coast": 7
+      }
+    },
+    {
+      "mid": "m2466",
+      "arm": "research-wtap20",
+      "opponent": "research-hold20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 8,
+        "bonus": 6,
+        "followup": 7,
+        "followup_bonus": 5,
+        "travel": 116,
+        "coast": 16
+      },
+      "theirs": {
+        "fresh": 8,
+        "bonus": 1,
+        "followup": 7,
+        "followup_bonus": 0,
+        "travel": 116,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2467",
+      "arm": "research-wtap20",
+      "opponent": "research-hold20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 11,
+        "bonus": 8,
+        "followup": 10,
+        "followup_bonus": 7,
+        "travel": 124,
+        "coast": 18
+      },
+      "theirs": {
+        "fresh": 11,
+        "bonus": 1,
+        "followup": 10,
+        "followup_bonus": 0,
+        "travel": 124,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2468",
+      "arm": "research-hold20",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 9,
+        "bonus": 1,
+        "followup": 8,
+        "followup_bonus": 0,
+        "travel": 127,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 9,
+        "bonus": 7,
+        "followup": 8,
+        "followup_bonus": 6,
+        "travel": 127,
+        "coast": 15
+      }
+    },
+    {
+      "mid": "m2469",
+      "arm": "sumo-rl-pressure",
+      "opponent": "jump-reset",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 4,
+        "bonus": 1,
+        "followup": 3,
+        "followup_bonus": 0,
+        "travel": 48,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 2,
+        "bonus": 2,
+        "followup": 1,
+        "followup_bonus": 1,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2472",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 2,
+        "bonus": 2,
+        "followup": 1,
+        "followup_bonus": 1,
+        "travel": 30,
+        "coast": 3
+      },
+      "theirs": {
+        "fresh": 1,
+        "bonus": 1,
+        "followup": 0,
+        "followup_bonus": 0,
+        "travel": 31,
+        "coast": 2
+      }
+    },
+    {
+      "mid": "m2471",
+      "arm": "sumo-rl-pressure",
+      "opponent": "jump-reset",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 12,
+        "bonus": 1,
+        "followup": 11,
+        "followup_bonus": 0,
+        "travel": 140,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 10,
+        "bonus": 6,
+        "followup": 9,
+        "followup_bonus": 5,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2475",
+      "arm": "sumo-rl-pressure",
+      "opponent": "jump-reset",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 3,
+        "bonus": 1,
+        "followup": 2,
+        "followup_bonus": 0,
+        "travel": 46,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 2,
+        "bonus": 2,
+        "followup": 1,
+        "followup_bonus": 1,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2476",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 16,
+        "bonus": 14,
+        "followup": 15,
+        "followup_bonus": 13,
+        "travel": 297,
+        "coast": 29
+      },
+      "theirs": {
+        "fresh": 16,
+        "bonus": 16,
+        "followup": 15,
+        "followup_bonus": 15,
+        "travel": 298,
+        "coast": 26
+      }
+    },
+    {
+      "mid": "m2478",
+      "arm": "research-hold20",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 16,
+        "bonus": 1,
+        "followup": 15,
+        "followup_bonus": 0,
+        "travel": 181,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 14,
+        "bonus": 12,
+        "followup": 13,
+        "followup_bonus": 11,
+        "travel": 181,
+        "coast": 24
+      }
+    },
+    {
+      "mid": "m2480",
+      "arm": "research-wtap20",
+      "opponent": "trade-wtap",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 10,
+        "bonus": 8,
+        "followup": 9,
+        "followup_bonus": 7,
+        "travel": 148,
+        "coast": 14
+      },
+      "theirs": {
+        "fresh": 10,
+        "bonus": 9,
+        "followup": 9,
+        "followup_bonus": 8,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2479",
+      "arm": "sumo-rl-pressure",
+      "opponent": "trade-wtap",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 49,
+        "bonus": 1,
+        "followup": 48,
+        "followup_bonus": 0,
+        "travel": 489,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 49,
+        "bonus": 32,
+        "followup": 48,
+        "followup_bonus": 31,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2482",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 5,
+        "bonus": 1,
+        "followup": 4,
+        "followup_bonus": 0,
+        "travel": 76,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 5,
+        "bonus": 5,
+        "followup": 4,
+        "followup_bonus": 4,
+        "travel": 76,
+        "coast": 10
+      }
+    },
+    {
+      "mid": "m2481",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 21,
+        "bonus": 18,
+        "followup": 20,
+        "followup_bonus": 17,
+        "travel": 357,
+        "coast": 33
+      },
+      "theirs": {
+        "fresh": 22,
+        "bonus": 19,
+        "followup": 21,
+        "followup_bonus": 18,
+        "travel": 356,
+        "coast": 34
+      }
+    },
+    {
+      "mid": "m2484",
+      "arm": "research-hold20",
+      "opponent": "research-hold20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 43,
+        "bonus": 1,
+        "followup": 42,
+        "followup_bonus": 0,
+        "travel": 487,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 47,
+        "bonus": 1,
+        "followup": 46,
+        "followup_bonus": 0,
+        "travel": 487,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2473",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-hold20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 261,
+        "bonus": 1,
+        "followup": 260,
+        "followup_bonus": 0,
+        "travel": 2402,
+        "coast": 1
+      },
+      "theirs": {
+        "fresh": 262,
+        "bonus": 1,
+        "followup": 261,
+        "followup_bonus": 0,
+        "travel": 2402,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2485",
+      "arm": "research-hold20",
+      "opponent": "research-hold20",
+      "rtt": 0,
+      "side": "a",
+      "ours": {
+        "fresh": 43,
+        "bonus": 1,
+        "followup": 42,
+        "followup_bonus": 0,
+        "travel": 442,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 41,
+        "bonus": 1,
+        "followup": 40,
+        "followup_bonus": 0,
+        "travel": 442,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2483",
+      "arm": "research-hold20",
+      "opponent": "research-hold20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 151,
+        "bonus": 1,
+        "followup": 150,
+        "followup_bonus": 0,
+        "travel": 1417,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 151,
+        "bonus": 1,
+        "followup": 150,
+        "followup_bonus": 0,
+        "travel": 1417,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2488",
+      "arm": "sumo-rl-pressure",
+      "opponent": "jump-reset",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 22,
+        "bonus": 1,
+        "followup": 21,
+        "followup_bonus": 0,
+        "travel": 241,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 20,
+        "bonus": 15,
+        "followup": 19,
+        "followup_bonus": 14,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2489",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 4,
+        "bonus": 4,
+        "followup": 3,
+        "followup_bonus": 3,
+        "travel": 83,
+        "coast": 8
+      },
+      "theirs": {
+        "fresh": 4,
+        "bonus": 4,
+        "followup": 3,
+        "followup_bonus": 3,
+        "travel": 83,
+        "coast": 6
+      }
+    },
+    {
+      "mid": "m2492",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 7,
+        "bonus": 6,
+        "followup": 6,
+        "followup_bonus": 5,
+        "travel": 96,
+        "coast": 12
+      },
+      "theirs": {
+        "fresh": 7,
+        "bonus": 5,
+        "followup": 6,
+        "followup_bonus": 4,
+        "travel": 96,
+        "coast": 14
+      }
+    },
+    {
+      "mid": "m2490",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 20,
+        "bonus": 18,
+        "followup": 19,
+        "followup_bonus": 17,
+        "travel": 341,
+        "coast": 31
+      },
+      "theirs": {
+        "fresh": 21,
+        "bonus": 19,
+        "followup": 20,
+        "followup_bonus": 18,
+        "travel": 340,
+        "coast": 33
+      }
+    },
+    {
+      "mid": "m2491",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 23,
+        "bonus": 19,
+        "followup": 22,
+        "followup_bonus": 18,
+        "travel": 367,
+        "coast": 38
+      },
+      "theirs": {
+        "fresh": 22,
+        "bonus": 19,
+        "followup": 21,
+        "followup_bonus": 18,
+        "travel": 367,
+        "coast": 38
+      }
+    },
+    {
+      "mid": "m2493",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 23,
+        "bonus": 20,
+        "followup": 22,
+        "followup_bonus": 19,
+        "travel": 383,
+        "coast": 41
+      },
+      "theirs": {
+        "fresh": 23,
+        "bonus": 20,
+        "followup": 22,
+        "followup_bonus": 19,
+        "travel": 384,
+        "coast": 38
+      }
+    },
+    {
+      "mid": "m2495",
+      "arm": "research-hold20",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 15,
+        "bonus": 1,
+        "followup": 14,
+        "followup_bonus": 0,
+        "travel": 167,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 14,
+        "bonus": 12,
+        "followup": 13,
+        "followup_bonus": 11,
+        "travel": 167,
+        "coast": 22
+      }
+    },
+    {
+      "mid": "m2497",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-hold20",
+      "rtt": 0,
+      "side": "b",
+      "ours": {
+        "fresh": 13,
+        "bonus": 1,
+        "followup": 12,
+        "followup_bonus": 0,
+        "travel": 136,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 12,
+        "bonus": 1,
+        "followup": 11,
+        "followup_bonus": 0,
+        "travel": 136,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2496",
+      "arm": "research-wtap20",
+      "opponent": "trade-wtap",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 14,
+        "bonus": 12,
+        "followup": 13,
+        "followup_bonus": 11,
+        "travel": 220,
+        "coast": 24
+      },
+      "theirs": {
+        "fresh": 14,
+        "bonus": 11,
+        "followup": 13,
+        "followup_bonus": 10,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2499",
+      "arm": "sumo-rl-pressure",
+      "opponent": "jump-reset",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 4,
+        "bonus": 1,
+        "followup": 3,
+        "followup_bonus": 0,
+        "travel": 59,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 3,
+        "bonus": 3,
+        "followup": 2,
+        "followup_bonus": 2,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2501",
+      "arm": "sumo-rl-pressure",
+      "opponent": "jump-reset",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 6,
+        "bonus": 1,
+        "followup": 5,
+        "followup_bonus": 0,
+        "travel": 78,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 5,
+        "bonus": 5,
+        "followup": 4,
+        "followup_bonus": 4,
+        "travel": 0,
+        "coast": 0
+      }
+    },
+    {
+      "mid": "m2500",
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "rtt": 80,
+      "side": "b",
+      "ours": {
+        "fresh": 23,
+        "bonus": 21,
+        "followup": 22,
+        "followup_bonus": 20,
+        "travel": 390,
+        "coast": 39
+      },
+      "theirs": {
+        "fresh": 23,
+        "bonus": 20,
+        "followup": 22,
+        "followup_bonus": 19,
+        "travel": 389,
+        "coast": 38
+      }
+    },
+    {
+      "mid": "m2502",
+      "arm": "sumo-rl-pressure",
+      "opponent": "research-hold20",
+      "rtt": 80,
+      "side": "a",
+      "ours": {
+        "fresh": 83,
+        "bonus": 1,
+        "followup": 82,
+        "followup_bonus": 0,
+        "travel": 769,
+        "coast": 0
+      },
+      "theirs": {
+        "fresh": 84,
+        "bonus": 1,
+        "followup": 83,
+        "followup_bonus": 0,
+        "travel": 770,
+        "coast": 0
+      }
+    }
+  ],
+  "clock_split": {
+    "train-clocks": [
+      "m2065",
+      "m2073",
+      "m2090",
+      "m2093",
+      "m2097",
+      "m2098",
+      "m2107",
+      "m2110"
+    ],
+    "test-clocks": [
+      "m2183",
+      "m2184",
+      "m2185",
+      "m2186",
+      "m2187",
+      "m2188",
+      "m2189",
+      "m2190"
+    ],
+    "league-clocks": [
+      "m2193",
+      "m2201",
+      "m2218",
+      "m2247",
+      "m2257",
+      "m2259",
+      "m2268",
+      "m2276"
+    ],
+    "validation-clocks": [
+      "m2279",
+      "m2280",
+      "m2281",
+      "m2282",
+      "m2283",
+      "m2284",
+      "m2285",
+      "m2286"
+    ],
+    "league-validation-clocks": [
+      "m2375",
+      "m2376",
+      "m2377",
+      "m2378",
+      "m2379",
+      "m2380",
+      "m2381",
+      "m2382"
+    ]
+  }
+}

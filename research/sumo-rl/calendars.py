@@ -18,6 +18,15 @@ def server_stage(e):
     if kind in ('SERVER_ENTITY','SERVER_TRACK') and e['world_ordinal']!=0:return None
     return kind
 
+def tracker_first(mid,game):
+    # EntityTracker iterates its hash set; the player with the lower slot may tick second.
+    with (ROOT/'runtime/replays'/f'{mid}.jsonl').open() as stream:
+        for line in stream:
+            e=json.loads(line)
+            if e['type']=='replication_tracker_before' and e['tracker']['player'] in (game['a'],game['b']):
+                return 'a' if e['tracker']['player']==game['a'] else 'b'
+    raise ValueError(f'No tracker order for {mid}')
+
 def timeline(mid, side, game):
     path = (ROOT/'runtime/replays'/f'{mid}.jsonl' if side=='s' else
             next((ROOT/'runtime/pov'/mid).glob(f'{side}-client-*-events.jsonl.gz')))
@@ -45,7 +54,7 @@ def tape(mid):
     n = min(160,min(map(len,heads.values()))-1)
     if n<5: raise ValueError(f'{mid}: incomplete native clocks')
     origin = min(h[0] for h in heads.values())
-    lines = []
+    lines = [f"# tracker_first {tracker_first(mid,game)}"]
     for s,stream in streams.items():
         start,end = heads[s][0],heads[s][n]
         events = [(t-start,k) for t,k in stream if start<=t<end]

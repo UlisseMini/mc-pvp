@@ -1,6 +1,6 @@
 """Compare the sumo travel kernel to native 1.8.9 and check the first divergent step of each rollout."""
 import argparse
-import gzip
+import captures
 import json
 from pathlib import Path
 import subprocess
@@ -12,17 +12,15 @@ def state(s):
 def client(mid,side):
     g=json.loads((ROOT/f'runtime/results/{mid}.json').read_text())
     with (ROOT/f'runtime/replays/{mid}.jsonl').open() as f:
-        ids={e['packet']['entity_id'] for line in f if (e:=json.loads(line))['type']=='replication_send'
-             and e.get('target')==g[side] and e['packet']['kind']=='hm'}
+        ids={e['tracker']['entity_id'] for line in f if (e:=json.loads(line))['type']=='replication_tracker_before'
+             and e['tracker']['player']==g[side]}
     if len(ids)!=1:raise ValueError((mid,side,'velocity ID',ids))
     path=next((ROOT/f'runtime/pov/{mid}').glob(f'{side}-client-*-events.jsonl.gz'))
     rows=[];jump=set()
-    with gzip.open(path,'rt') as stream:
-        for line in stream:
-            e=json.loads(line)
-            if not g['start']<=e.get('time',0)<=g['finish']:continue
-            if e['type'] in ('sumo_rl_jump','jump_reset_input'):jump.add(e['native_tick'])
-            if 'monotonic_ns' in e and e['type'] in ('science_move','engine_attack','replication_apply_after'):rows.append(e)
+    for e in captures.events(path):
+        if not g['start']<=e.get('time',0)<=g['finish']:continue
+        if e['type'] in ('sumo_rl_jump','jump_reset_input'):jump.add(e['native_tick'])
+        if 'monotonic_ns' in e and e['type'] in ('science_move','engine_attack','replication_apply_after'):rows.append(e)
     rows.sort(key=lambda x:x['monotonic_ns'])
     moves=[e for e in rows if e['type']=='science_move']
     if not moves:return {'mid':mid,'side':side,'unsupported':'No movement telemetry in this POV'}

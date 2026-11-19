@@ -16,7 +16,7 @@ spec = importlib.util.spec_from_file_location('sumo_batch', ROOT / 'research/sum
 batch = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(batch)
 
-def plan(prefix, clocks=False, policy="sumo-rl"):
+def plan(prefix, clocks=False, policy="sumo-rl", lateral=False):
     rows = []
     groups = [('sumo','mmc','research-wtap20',2)] if clocks else [
         ('sumo','mmc','research-wtap20',4), ('sumo','mmc','research-hold20',2),
@@ -24,6 +24,9 @@ def plan(prefix, clocks=False, policy="sumo-rl"):
         ('boxing','mmc','combo-wake-2000',2)]
     if not clocks and policy=='sumo-rl-pressure':
         groups.append(('sumo','mmc','jump-reset',2))
+    if lateral:
+        if clocks or policy!='sumo-rl-pressure':raise ValueError('Lateral check requires frozen league policy')
+        groups=[('sumo','mmc','research-zest-strafe',4)]
     for mode, profile, opponent, repeats in groups:
         arms = ['research-wtap20'] if clocks else ['research-wtap20',policy]
         if policy=='sumo-rl-pressure' and mode=='sumo' and profile=='mmc' and opponent in ('research-wtap20','research-hold20') and not clocks:
@@ -43,11 +46,12 @@ if __name__ == '__main__':
     p.add_argument('output', type=Path)
     p.add_argument('--prefix', required=True)
     p.add_argument('--clocks', action='store_true')
+    p.add_argument('--lateral', action='store_true')
     p.add_argument('--policy', choices=['sumo-rl','sumo-rl-jump','sumo-rl-pressure'], default='sumo-rl')
     args = p.parse_args()
     if args.output.exists() or not args.prefix.replace('-','').isalnum():
         p.error('Use a fresh prefix and manifest')
-    trials = plan(args.prefix, args.clocks, args.policy)
+    trials = plan(args.prefix, args.clocks, args.policy, args.lateral)
     if any(json.loads(f.read_text()).get('request') in trials for f in (batch.RUNTIME/'results').glob('*.json')):
         p.error('Request prefix already used')
     if not args.clocks:

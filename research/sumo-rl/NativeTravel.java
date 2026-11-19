@@ -18,7 +18,7 @@ public final class NativeTravel {
         while((line=input.readLine())!=null){
             var p=line.split("\t");
             switch(p[0]){
-                case "BEGIN" -> {config.sumoArena(d(p,1),12);body=new PeriodicComboFightModel.Body(0);
+                case "BEGIN" -> {config.sumoArena(d(p,1),12);config.solidEdge();body=new PeriodicComboFightModel.Body(0);
                     body.q=state(p,3);body.sprint=b(p,19);body.airAcceleration=Float.parseFloat(p[20]);}
                 case "S12" -> body.velocity(d(p,1),d(p,2),d(p,3));
                 case "CONTACT" -> {if(b(p,1)){body.velocity(body.q.vx()*.6,body.q.vy(),body.q.vz()*.6);body.sprint=false;}}

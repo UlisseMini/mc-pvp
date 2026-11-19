@@ -121,6 +121,25 @@ public final class ExactTravelCheck {
                 && after.isCollidedVertically() && after.isCollided(), "four native landing flags");
     }
 
+    private static void sumoLipRecovery() {
+        // m2197, 6.472 s. The box starts fully beyond the last block, still flagged
+        // grounded from the previous move. Its inward travel steps back onto the rim.
+        var floor = new ExactTravel.Environment(12, .6f, true, true, false, false, false,
+                new ExactTravel.Disk(4096, 10));
+        var box = new ExactTravel.Box(4101.048270047797, 12, -.30000001192092896,
+                4101.648270071639, 13.799999952316284, .30000001192092896);
+        var initial = new ExactTravel.State(4101.348270059718, 12, 0,
+                .06591015984082216, -.0784000015258789, 0, box,
+                true, false, true, true, false, false, false);
+        var recovered = ExactTravel.predict(initial, new ExactTravel.Input(0, .98f, 90, .13000001f, .026f), floor);
+        equal(4101.286780238537, recovered.x(), "native lip recovery x");
+        equal(12, recovered.y(), "native lip recovery y");
+        equal(-.033573446264502184, recovered.vx(), "native lip recovery velocity");
+        check(recovered.onGround() && !recovered.isCollidedHorizontally(), "step onto disk");
+        var fall = ExactTravel.predict(initial, IDLE, floor);
+        check(fall.y() < 12 && !fall.onGround(), "outward momentum falls off disk");
+    }
+
     private static void unsupportedInputs() {
         ExactTravel.State s = state(0, 4, 0, 0, -.0784000015258789, 0, true);
         for (int flag = 0; flag < 3; flag++) {
@@ -183,7 +202,7 @@ public final class ExactTravelCheck {
     public static void main(String[] args) throws Exception {
         if (args.length == 1 && args[0].equals("--predict-tsv")) { predictTsv(); return; }
         if (args.length != 0) throw new IllegalArgumentException("Use no arguments or --predict-tsv");
-        nativeGoldenVelocities(); exactBoxHistoryAndBoundary(); nativeGoldenBoxAndLanding(); unsupportedInputs();
+        nativeGoldenVelocities(); exactBoxHistoryAndBoundary(); nativeGoldenBoxAndLanding(); sumoLipRecovery(); unsupportedInputs();
         System.out.println("ExactTravelCheck PASS: native golden velocities, box history, clipping, scope and purity");
     }
 }

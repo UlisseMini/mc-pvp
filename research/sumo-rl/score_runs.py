@@ -6,6 +6,7 @@ HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
 sys.path.insert(0,str(ROOT/'research/recoil-drill'))
 import score
+import captures
 
 def native(mid,setup):
     g=score.record(ROOT/f'runtime/results/{mid}.json')
@@ -34,7 +35,7 @@ def native(mid,setup):
         files=list((ROOT/f'runtime/pov/{mid}').glob(s+'-client-*-events.jsonl.gz'))
         if len(files)!=1:raise ValueError(f'{mid} has {len(files)} archives on {s}')
         keep=[];footer=None
-        for e in score.events(files[0]):
+        for e in captures.events(files[0]):
             typ=e['type']
             if typ=='capture_end':footer=e
             if not start<=e.get('time',0)<=end:continue

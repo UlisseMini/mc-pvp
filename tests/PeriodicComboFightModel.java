@@ -199,8 +199,10 @@ public final class PeriodicComboFightModel {
     }
     static final class Config implements Cloneable {
         public Config deepCopy(){try{return (Config)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
+        boolean trackerAFirst=true;
         double centerX=4096; ExactTravel.Environment platform=ENV, below=BELOW_SUMO;
         void sumoArena(double center,double top){centerX=center;platform=new ExactTravel.Environment(top,.6f,true,true,false,false,false);below=new ExactTravel.Environment(top-8,.6f,true,true,false,false,false);}
+        void solidEdge(){platform=new ExactTravel.Environment(platform.floorTopY(),.6f,true,true,false,false,false,new ExactTravel.Disk(centerX,sumoDiameter));}
         double ownRtt=20,otherRtt=20,defenderReach=1.5,kbScale=1,verticalScale=1,sprintVertical=.1;
         /** Explicit profile import keeps model/native options identical; omitted fields retain defaults. */
         void applyCombat(Properties p){
@@ -228,6 +230,7 @@ public final class PeriodicComboFightModel {
     }
     static ExactTravel.Environment floor(Config c,ExactTravel.State q){
         if(c==null||!c.sumo)return ENV;
+        if(c.platform.disk()!=null)return c.platform;
         return q.y()<c.platform.floorTopY()||!sumoSupport(q.box(),c.sumoDiameter,c.centerX)?c.below:c.platform;
     }
     static ExactTravel.State state(double x,double y,double vx,double vy,boolean ground){
@@ -381,7 +384,7 @@ public final class PeriodicComboFightModel {
             default:throw new AssertionError();
         }
     }
-    static void serverTrack(State s,Config c,double t){track(s,c,t,true);flushVelocity(s,c,t,true);track(s,c,t,false);flushVelocity(s,c,t,false);}
+    static void serverTrack(State s,Config c,double t){boolean first=c.trackerAFirst;track(s,c,t,first);flushVelocity(s,c,t,first);track(s,c,t,!first);flushVelocity(s,c,t,!first);}
     static void flushVelocity(State s,Config c,double t,boolean victimA){if(!(victimA?s.velocityChangedA:s.velocityChangedB))return;ExactTravel.State q=victimA?s.serverA:s.serverB;s.add3(victimA?8:4,t+(victimA?c.ownRtt:c.otherRtt)/2,0,0,0,vel(q.vx()),vel(q.vy()),vel(q.vz()),false);if(victimA)s.velocityChangedA=false;else s.velocityChangedB=false;}
     static void track(State s,Config c,double t,boolean fromA){
         boolean dirty=fromA?s.dirtyA:s.dirtyB,air=fromA?s.airborneA:s.airborneB;

@@ -63,6 +63,7 @@ enabling RCON or opening another network port.
 | `/bots all` | Include every saved tuning candidate |
 | `/duel wtap sumo` | Bare fists, no armor, full health; knock the bot off the circular platform. Ping/CPS/reach overrides and replays work as usual |
 | `/duel wtap sumo preset=mmc` | Sumo with the lab's Minemen-like melee knockback preset. The same preset works in boxing and diamond modes |
+| `/duel sumo-rl-pressure sumo preset=mmc cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0` | Fight the learned forward-pressure and jump-timing policy. [Native benchmarks and simulator](research/sumo-rl/README.md) |
 | `/duel hold-w` | Fight the simplest baseline |
 | `/duel wtap diamond` | Full unenchanted diamond armor and an unbreakable wooden sword; real health and regeneration; fight to death |
 | `/duel blockhit_timing diamond` | Timed sword-block bot; native controls, 10 CPS ceiling, 3-block reach, zero artificial reaction delay |

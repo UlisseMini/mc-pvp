@@ -40,12 +40,14 @@ public final class Evaluate {
     }
     public static void main(String[] args)throws Exception{
         int mask=Integer.parseInt(args[1]);boolean league=args.length>2 && args[2].equals("league");
+        boolean lateral=args.length>3 && args[3].equals("lateral");
         for(var path:Files.list(Path.of(args[0])).sorted().toList()){
             var tape=DuelEnv.Tape.read(path,DuelEnv.LIMIT);
             for(String mode:List.of("sumo","boxing"))for(String profile:(mode.equals("sumo")?List.of("mmc","hypixel"):List.of("mmc"))){
+                if(lateral && (!mode.equals("sumo") || !profile.equals("mmc")))continue;
                 for(int rtt:new int[]{0,80}){
-                    var env=new DuelEnv(tape,profile,rtt,mode.equals("sumo"),league?29:0);
-                    for(String opp:(mode.equals("sumo")&&profile.equals("mmc")?(league?List.of("wtap","hold","trade","reset"):List.of("wtap","hold","trade")):List.of("wtap")))
+                    var env=new DuelEnv(tape,profile,rtt,mode.equals("sumo"),league?29:0,args.length>3 && (args[3].equals("solid") || lateral));
+                    for(String opp:lateral?List.of("zest-strafe"):(mode.equals("sumo")&&profile.equals("mmc")?(league?List.of("wtap","hold","trade","reset"):List.of("wtap","hold","trade")):List.of("wtap")))
                         for(boolean first:new boolean[]{true,false}){
                             try{
                                 var row=new LinkedHashMap<>(episode(env,first,opp,mask));

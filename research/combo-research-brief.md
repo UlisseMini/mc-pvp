@@ -43,6 +43,16 @@ forward-braking contacts. This rule stays experimental. Calibrate when physical
 contacts change return timing before extending it or claiming transfer.
 The test phases and diagnostic donor recordings in this study are now exposed.
 
+The [frozen pressure-policy experiment](sumo-rl/RESULTS.md) recorded 14/16
+native MMC sumo wins against 20-CPS W-tap, versus 7/16 for plain W-tap.
+On the subset shared with the movement-only control, pure Hold-W and the
+learned arm both won 7/8. The separate native jump-reset opponent lost 8/8
+to pressure and 2/8 to W-tap. In the boxing drill the learned arm completed
+seven cycles across fourteen three-hit entries; W-tap completed nine across
+eight. Plain W-tap had server sprint on every third-hit landmark while
+pressure had it on none. Keep W-tap as the boxing reference. The held-out
+human cohort is unplayed. The final clock donors m2375–m2382 are now exposed.
+
 ## HARD RULE: plain W-tap is the mandatory baseline
 
 ALWAYS compare against plain W-tap under identical settings in both the model

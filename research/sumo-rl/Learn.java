@@ -19,7 +19,7 @@ public final class Learn {
         for(var file:files){
             var tape=DuelEnv.Tape.read(file,DuelEnv.LIMIT);
             for(int rtt:new int[]{0,80}){
-                var env=new DuelEnv(tape,"mmc",rtt,true);
+                var env=new DuelEnv(tape,"mmc",rtt,true,0,false);
                 for(boolean first:new boolean[]{true,false})for(String opponent:List.of("wtap","hold"))fixtures.add(new Fixture(env,first,opponent));
             }
         }
