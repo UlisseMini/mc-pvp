@@ -1,0 +1,32 @@
+{
+  "diagnosis": "Hold-W beat native plain W-tap 6/8 while delivering no sprint bonus on 83 follow-up hits. The jumping-only v1 also lost 6/8. The corrected jumping-only v2 scored 4/32 against Hold-W on its prospective model clocks, equal to plain W-tap. Keep W down or use the already implemented trade-aware release. Choose between these existing movement primitives through terminal ring-out reward, and audit pure movement ablations.",
+  "train_donors": [
+    "m2065",
+    "m2073",
+    "m2090",
+    "m2093",
+    "m2097",
+    "m2098",
+    "m2107",
+    "m2110",
+    "m2193",
+    "m2201",
+    "m2218",
+    "m2247",
+    "m2257",
+    "m2259",
+    "m2268",
+    "m2276"
+  ],
+  "testing": "Eight new future sumorl3-clock native mirror calendars. No tuning on validation. Prior calendars already seen in diagnoses are development. Hold out the Jump-reset opponent from training entirely.",
+  "native": "Same 88 matches as revision 2, plus eight MMC sumo pairs (16 rounds) against the untrained Jump-reset opponent, balanced across both RTTs and seats. Independent live rounds. Maintain the frozen boxing landmarks.",
+  "seed": 408163,
+  "generations": 10,
+  "population": 48,
+  "elite": 8,
+  "train_scenarios_per_generation": 64,
+  "finalists": 16,
+  "finalist_metric": "Mean ring-out score over the complete development grid. Tie-break by worst of 3 opponent means, then simplest mask. Terminal draws half. Exact same scenarios for baseline and candidates.",
+  "arena": "10 block provisional MMC at native top Y=12, initial tracker phase 29 from declared native countdown; sides and both RTTs. Simulate regulation 120 s. Future opponents and server values hidden from controller.",
+  "actions": "Choose one existing locomotion profile (immediate W-tap, continuous W, or trade-tap with wait 50/100/150/250/400 ms and recent exchange thresholds 0/100/200 ms), and a grounded Jump decision mask. W-tap, hold and default trade-tap with zero jumps are explicit controls."
+}
