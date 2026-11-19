@@ -1,0 +1,7 @@
+{
+  "policy": "sumo-rl-pressure, unchanged from the frozen league fit",
+  "opponent": "zest-strafe, an existing hit-select, three-hit-cycle, alternating A/D controller excluded from every training fixture",
+  "native": "32 future MMC sumo matches, 4 repeats per arm, per seat and per RTT (0/80 ms), against Zest. Arm is either plain W-tap or frozen league policy. All other settings identical to revision 3. Match ID prefix sumorl3-lateral.",
+  "model": "Replay the same frozen arms against the existing SumoModel Zest port. Eight revision-3 test clocks are already exposed. Their reuse here is a diagnostic across an unseen opponent, not newly sealed clock transfer. Solid collision disk, tracker phase 29. Inspect native and model per seat/RTT. Boxing calibration remains the separate registered drill.",
+  "grading": "Independent native bouts and no elite humans. No post-test fit."
+}
