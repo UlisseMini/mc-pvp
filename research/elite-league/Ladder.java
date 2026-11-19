@@ -90,7 +90,7 @@ final class Ladder {
     }
     static Arena.Fighter fighter(String name,Arena.Model m){return new Arena.Fighter(name,m);}
     static void train(Path out,int season,int generations,int population,Path fieldPath,Path warmPath,
-                      Path frames,Path feedback,List<Path> tapes)throws Exception{
+                      Path frames,Path feedback,List<Path> tapes,int drawsPerGroup)throws Exception{
         var rng=new Random(719033L+season*101113);var pool=Executors.newFixedThreadPool(3);
         var base=Path.of("research/elite-league");
         var domains=new RobustField(tapes,base.resolve("frozen"),base.resolve("challenge-frozen"));
@@ -109,7 +109,7 @@ final class Ladder {
         long bouts=0;
         try(var log=Files.newBufferedWriter(out.resolve("training.jsonl"),StandardOpenOption.CREATE_NEW)){
             for(int gen=0;gen<generations;gen++){
-                var fixtures=cases(domains,field,rng,2);
+                var fixtures=cases(domains,field,rng,drawsPerGroup);
                 var group=new ArrayList<Arena.Fighter>();var names=new HashMap<Arena.Fighter,String>();
                 for(String track:TRACKS){
                     var parents=elites.get(track);var proposed=new ArrayList<>(parents);
@@ -163,6 +163,6 @@ final class Ladder {
     public static void main(String[] a)throws Exception{
         if(a[0].equals("misses")){misses(Path.of(a[1]),Path.of(a[2]),Path.of(a[3]),Arrays.stream(a,4,a.length).map(Path::of).toList());return;}
         train(Path.of(a[1]),Integer.parseInt(a[2]),Integer.parseInt(a[3]),Integer.parseInt(a[4]),Path.of(a[5]),Path.of(a[6]),
-              Path.of(a[7]),Path.of(a[8]),Arrays.stream(a,9,a.length).map(Path::of).toList());
+              Path.of(a[7]),Path.of(a[8]),Arrays.stream(a,9,a.length).map(Path::of).toList(),a[0].equals("response")?16:2);
     }
 }

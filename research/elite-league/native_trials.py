@@ -117,9 +117,10 @@ def _run_locked(trials,out):
     part=out.with_suffix('.partial.json')
     pending={k:v for k,v in trials.items() if k not in found}
     if pending:
-        jobs=int(os.environ.get('ELITE_NATIVE_JOBS','3'))
-        if not 1<=jobs<=3:raise ValueError('Expected one to three simultaneous native duels')
-        batch.run(trials,jobs,part,reserve=2,share_with_players=True,finished=found)
+        jobs=int(os.environ.get('ELITE_NATIVE_JOBS','4' if (os.cpu_count() or 1)>=12 else '3'))
+        if not 1<=jobs<=4:raise ValueError('Expected one to four simultaneous native duels')
+        batch.run(trials,jobs,part,reserve=2,share_with_players=True,finished=found,
+                  empty_lab_reserve=0 if jobs==4 else 2)
         found.update(json.loads(part.read_text())['matches'])
     else:batch.save(part,trials,found)
     batch.save(out,trials,found)
