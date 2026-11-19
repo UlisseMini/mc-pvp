@@ -28,7 +28,7 @@ def schedules():
     for tag, path in [('actor','actor-confirmation.json'),('pairs','pairs-confirmation.json'),
                       ('trade-confirm','mmc13-trades/confirmation.json'),('phase-confirm','mmc13-phase-trades/confirmation.json'),
                       ('click-confirm','mmc13-click-bias/confirmation.json'),('contact-confirm','mmc13-contact-gate/confirmation.json'),
-                      ('edge-confirm','mmc13-edge-fit/confirmation.json')]:
+                      ('edge-confirm','mmc13-edge-fit/confirmation.json'),('hidden-confirm','mmc13-hidden-strafe/confirmation.json')]:
         spec_path = FROZEN/path
         if spec_path.exists():
             spec = read(spec_path)
@@ -70,7 +70,7 @@ def model_progress(plans):
     # Count complete recorded evaluation bouts. Training sweeps, physics forks and
     # prospective native fixtures have different denominators and are kept apart.
     expected={}
-    for tag in ('opening','confirmation','final','transfer','actor','pairs','trade-confirm','phase-confirm','click-confirm','contact-confirm','edge-confirm'):
+    for tag in ('opening','confirmation','final','transfer','actor','pairs','trade-confirm','phase-confirm','click-confirm','contact-confirm','edge-confirm','hidden-confirm'):
         if 'mmc13-'+tag not in plans:continue
         tasks=plans['mmc13-'+tag].values()
         pairs={(r['arm'],r['opponent']) for r in tasks}

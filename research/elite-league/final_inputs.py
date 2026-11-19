@@ -155,11 +155,11 @@ def follow(manifest, scores):
 
 
 def follow_registered():
-    from mmc_league import WORK, VERIFIED_STAGES
+    from mmc_league import WORK, registered_control_stages
     deadline = read(WORK / 'admission-deadline.json')['unix_time']
     completed = {}
     while time.time() < deadline + 180:
-        for tag in VERIFIED_STAGES:
+        for tag in registered_control_stages():
             name = 'mmc13-' + tag
             current = WORK / (name + '.partial.json')
             if not current.is_file():continue

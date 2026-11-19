@@ -7,7 +7,7 @@ from statistics import median
 import time
 
 from adaptation import dump, sha
-from mmc_league import EVIDENCE, VERIFIED_STAGES, WORK, WT, native_name
+from mmc_league import EVIDENCE, WORK, WT, native_name, registered_control_stages
 
 
 def record(scores):
@@ -84,11 +84,11 @@ def build(tag):
 def wait():
     done=set()
     deadline=json.loads((WORK/'admission-deadline.json').read_text())['unix_time']
-    while len(done)<len(VERIFIED_STAGES)+2 and time.time()<deadline+600:
-        for tag in ('opening','final',*VERIFIED_STAGES):
+    while time.time()<deadline+600:
+        for tag in ('opening','final',*registered_control_stages()):
             if tag not in done and (EVIDENCE/tag/'outcomes.json').is_file():
                 build(tag);done.add(tag)
-        if len(done)<len(VERIFIED_STAGES)+2:time.sleep(15)
+        time.sleep(15)
 
 
 if __name__=='__main__':

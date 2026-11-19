@@ -83,7 +83,7 @@ def cohort_priority(name):
     # Give both game modes turns in the same FIFO as the general confirmation.
     if name.startswith('mmc13-') and name.endswith('-clocks'):return 0
     if name=='mmc13-slice-1-01':return 0
-    if name.startswith(('mmc13-phase-confirm','mmc13-click-confirm','mmc13-contact-confirm','mmc13-edge-confirm')):return 2
+    if name.startswith(('mmc13-phase-confirm','mmc13-click-confirm','mmc13-contact-confirm','mmc13-edge-confirm','mmc13-hidden-confirm')):return 2
     if name.startswith(('mmc13-transfer','box-breadth-native')):return 3
     if name.startswith(('mmc13-final','boxing100-native','box-student-native')):return 0
     if name.startswith(('mmc13-opening','mmc13-confirm','mmc13-box-clocks','m13floor','focus-','ladder-','confirmation-','mouse-smoke','gate-smoke','port-smoke')):return 0

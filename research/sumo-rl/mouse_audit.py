@@ -22,9 +22,10 @@ class MouseAudit:
         if e['sensitivity']!=.5 or e['inverted']:raise ValueError('Tournament mouse settings changed')
         s=single(single(single(e['sensitivity'])*single(.6))+single(.2))
         scale=single(single(single(s*s)*s)*8)
-        dx=(ty-y+180)%360-180
+        dx=(math.fmod(ty-y,360)+540)%360-180
         dp=max(-90,min(90,tp))-p
-        mag=math.hypot(dx,dp);limit=.72*max(0,min(50,e['elapsed_ms']))
+        # The client's multiply then divide can decide which integer wins at half a count.
+        mag=math.hypot(dx,dp);limit=720.*max(0,min(50,e['elapsed_ms']))/1000.
         frac=min(1,limit/mag) if mag else 1
         expected=[math.floor(dx*frac/(.15*scale)+.5),math.floor(-dp*frac/(.15*scale)+.5)]
         if list(e['counts'])!=expected:raise ValueError('Recorded mouse counts differ from planned local turn')

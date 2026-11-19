@@ -94,6 +94,60 @@ def partial(stage, snapshot):
                 pending_physical_audit=unchecked,excluded_attempts=excluded,arms=out)
 
 
+def archive_panel(snapshot):
+    directory=EVIDENCE/'archive'
+    spec=read(directory/'roster.json');field=spec['opponents']
+    aliases={name:o for o,v in field.items() for name in v['aliases']}
+    ids={r['mid']:q for q,r in snapshot['raw_native'].items() if q not in snapshot['known_invalid']}
+    scores=defaultdict(dict);matches={}
+    paths=sorted(directory.glob('mmc13-slice-*.json.gz'))+sorted((EVIDENCE/'archive-final').glob('mmc13-archive-final-*.json.gz'))
+    for path in paths:
+        with gzip.open(path,'rt') as f:rows=json.load(f)
+        for r in rows:
+            mid=r['mid']
+            if mid not in ids:continue
+            if set(r['checks'])!={'a','b'} or mid in matches:raise ValueError('Invalid archive audit for '+mid)
+            score=referee(mid,ids[mid],dict(r,profile='mmc'))
+            if score!=(1 if r['win'] else .5 if r['draw'] else 0):raise ValueError('Archive score differs '+mid)
+            cell=scores[r['arm'],r['opponent']];key=r['rtt'],r['side'],r['rep']
+            if key in cell:raise ValueError('Repeated archive fixture '+mid)
+            cell[key]=score;matches[mid]=ids[mid]
+    arms=list(spec['arms']);entry=EVIDENCE/'archive-final/native-entrant.json'
+    if entry.is_file() and read(entry)['winner'] not in arms:arms.append(read(entry)['winner'])
+    out={}
+    for a in arms:
+        cells={o:pair_card(scores[a,o],scores[WT,o],1) for o in field if scores[a,o] or scores[WT,o]}
+        active=[o for o in cells if field[o]['regulation_family']=='active fighter' and a not in field[o]['aliases']]
+        def lowest(n):
+            eligible={o:points(cells[o]['overlap']['candidate']) for o in active if cells[o]['jointly_observed']==n}
+            return sorted(o for o,v in eligible.items() if v==min(eligible.values()))
+        out[a]=dict(opponents=cells,weakest_distinct_active_by_native_coverage={n:lowest(n) for n in (2,4)},
+                    pending_without_any_matched_native=sum(o not in cells or not cells[o]['jointly_observed'] for o in field))
+    for label,path in [('development',directory/'model-development.jsonl.gz'),('final_calendars',EVIDENCE/'archive-final/model.jsonl.gz')]:
+        if not path.exists():continue
+        model=defaultdict(dict);origins={}
+        with gzip.open(path,'rt') as f:
+            for r in map(json.loads,f):
+                a=native_name(r['arm']);name=native_name(r['opponent']);o=aliases.get(name)
+                if a not in arms or o is None:continue
+                if origins.setdefault(o,name)!=name:raise ValueError('Multiple model representatives for '+o)
+                key=r['rtt'],r['side'],r['clock'];cell=model[a,o]
+                if key in cell:raise ValueError('Duplicate archived model fixture')
+                cell[key]=r['score']
+        for a,arm in out.items():
+            matched={}
+            for o in field:
+                left=model.get((a,o));right=model.get((WT,o))
+                if not left:continue
+                if not right or len(left)!=32 or left.keys()!=right.keys():raise ValueError('Unmatched archive model cells')
+                def wdl(keys):return dict(candidate=record([left[k] for k in keys]),plain_wtap=record([right[k] for k in keys]))
+                matched[o]=dict(all=wdl(left),by_seat_rtt={f'{r}/{s}':wdl([k for k in left if k[:2]==(r,s)]) for r in (0,80) for s in 'ab'})
+            active={o:points(v['all']['candidate']) for o,v in matched.items() if field[o]['regulation_family']=='active fighter' and a not in field[o]['aliases']}
+            arm['model_'+label]=dict(opponents=matched,weakest_distinct_active=sorted(o for o,v in active.items() if v==min(active.values())))
+    return dict(scheduled_distinct=len(field),source_slices=[p.name for p in paths],checked_matches=matches,arms=out,
+                rule='Count only complete, verified archive slices finished by the snapshot. Two-cell and four-cell native opponents have separate weakest lists. Model panels retain their individual clocks. Each row includes the opponent-matched W-tap control.')
+
+
 def build(snapshot):
     stages={n:partial(n,snapshot) for n in ('opening','final',*VERIFIED_STAGES) if (EVIDENCE/n/'schedule.json').exists()}
-    return dict(as_of=snapshot['as_of'],rule='Only referee results finished by the snapshot time and subsequently verified for both physical players. Pair each candidate with W-tap against the same opponent in the same seat, added RTT, and repeat index. Distinct native games have independent timing. Weakest observed native uses complete four-seat/RTT repeat blocks only. Opponents missing even one full block are named explicitly. Native rows in unfinished tournaments are descriptive and confer no title. No simulation or partial native score changes the common final.',stages=stages)
+    return dict(as_of=snapshot['as_of'],rule='Only referee results finished by the snapshot time and subsequently verified for both physical players. Pair each candidate with W-tap against the same opponent in the same seat, added RTT, and repeat index. Distinct native games have independent timing. Weakest observed native uses complete four-seat/RTT repeat blocks only. Opponents missing even one full block are named explicitly. Native rows in unfinished tournaments are descriptive and confer no title. No simulation or partial native score changes the common final.',stages=stages,archive=archive_panel(snapshot))
