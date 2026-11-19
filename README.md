@@ -6,6 +6,8 @@ movement, collision, raycasting, attacks, knockback and damage immunity.
 
 Read the [illustrated movement and knockback guide](docs/movement-and-knockback.html) for the native tick order, a runnable travel example, and an annotated sumo trade.
 
+The [sumo and boxing learning league](research/elite-league/README.md) trains neural and programmed fighters in repeated tournaments and checks their performance in real Forge clients.
+
 Current research: [physics validation before policy search](research/README.md).
 The [double-hit investigation](research/double-hit-mechanisms.md) records W-tap
 versus hold-W trials and the native timing differences behind their exchanges.

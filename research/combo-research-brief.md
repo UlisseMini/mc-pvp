@@ -4,6 +4,16 @@ This is the working brief for future sessions. The latest clarification below
 supersedes the earlier continuous-own-reach interpretation. Keep historical
 measurements and their original definitions; do not silently relabel them.
 
+## November 19 tournament ladder
+
+The grading opponents are independent, world-class human sumo and boxing
+players. Nomophobia's recordings are authorized development examples from one
+player. Train and refine both explicit and learned opponents across repeated
+tournaments. Keep earlier opponents, examine winning and losing trades, and
+run the prospective Minecraft comparisons before choosing a competitive bot.
+The [league results](elite-league/RESULTS.md) give the matched W-tap scores,
+physical-fidelity tests and status of the human evaluation.
+
 ## November 18 direction for boxing and sumo
 
 The goal is a legal 1.8.9 bot that consistently beats 20 CPS W-tap in boxing

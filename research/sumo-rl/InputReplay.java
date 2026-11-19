@@ -10,16 +10,39 @@ public final class InputReplay {
         int index;
         public PeriodicComboClock.Control input(PeriodicComboClock.Observation unused){return words.get(index++);}
     }
+    /** Training-derived stage-to-wire overhead and queue readiness. Route FIFO order is preserved. */
+    static final class TransportShape implements PeriodicComboFightModel.PacketTiming {
+        final double[] values,last=new double[4];
+        TransportShape(double[] v){if(v.length!=9)throw new IllegalArgumentException("Expected five transit and four enqueue estimates");
+            for(double x:v)if(x<0||!Double.isFinite(x))throw new IllegalArgumentException("Invalid overhead");values=v;}
+        int cell(int route,PeriodicComboFightModel.TimingSemantic s){
+            if(route<2)return 0;
+            return switch(s){case OWN_HURT->2;case TARGET_HURT->3;case OWN_VELOCITY->4;default->1;};
+        }
+        public double arrival(int route,double sent,double half){return arrival(route,sent,half,PeriodicComboFightModel.TimingSemantic.OTHER);}
+        public double arrival(int route,double sent,double half,PeriodicComboFightModel.TimingSemantic s){
+            return last[route]=Math.max(last[route],sent+half+values[cell(route,s)]);
+        }
+        public PeriodicComboFightModel.PacketTimingPlan plan(int route,double sent,double half,PeriodicComboFightModel.TimingSemantic s){
+            double raw=arrival(route,sent,half,s);Double ready=route<2?null:Double.valueOf(raw+values[cell(route,s)+4]);
+            return new PeriodicComboFightModel.PacketTimingPlan(raw,ready,null);
+        }
+        public TransportShape deepCopy(){var t=new TransportShape(values);System.arraycopy(last,0,t.last,0,4);return t;}
+    }
     public static void main(String[] args)throws Exception{
         var lines=new BufferedReader(new InputStreamReader(System.in)).lines().toList();
-        if(args.length==0){run(lines,.35,.35);return;}
+        if(args.length==0){run(lines,.35,.35,null);return;}
         for(String pair:args){
+            if(pair.startsWith("shape=")){
+                double[] v=Arrays.stream(pair.substring(6).split(",")).mapToDouble(Double::parseDouble).toArray();
+                run(lines,0,0,new TransportShape(v));continue;
+            }
             String[] legs=pair.split(",",-1);
             if(legs.length!=2)throw new IllegalArgumentException("Expected uplink,downlink milliseconds");
-            run(lines,Double.parseDouble(legs[0]),Double.parseDouble(legs[1]));
+            run(lines,Double.parseDouble(legs[0]),Double.parseDouble(legs[1]),null);
         }
     }
-    static void run(List<String> lines,double up,double down)throws Exception{
+    static void run(List<String> lines,double up,double down,TransportShape shape)throws Exception{
         if(!Double.isFinite(up)||!Double.isFinite(down)||up<0||down<0)throw new IllegalArgumentException("Invalid overhead");
         var input=lines.iterator();
         var a=new Keyboard();var b=new Keyboard();
@@ -47,6 +70,7 @@ public final class InputReplay {
         st.serverTicks=Integer.parseInt(header[3]);st.teleportAgeA=Integer.parseInt(header[4]);st.teleportAgeB=Integer.parseInt(header[5]);
         st.trackedYawA=Integer.parseInt(header[6]);st.trackedYawB=Integer.parseInt(header[7]);
         st.trackedPitchA=Integer.parseInt(header[8]);st.trackedPitchB=Integer.parseInt(header[9]);
+        if(shape!=null)st.packetTiming=shape;
         var clock=new PeriodicComboClock(st,cfg,timing,a,b,tape);
         var moves=new ArrayList<Object>();var hits=new DuelEnv.Hits();
         clock.setAudit((t,event,state)->{

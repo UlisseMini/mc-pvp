@@ -25,6 +25,7 @@ def pick(manifest,names):
     cells={}
     for req,mid in sorted(d['matches'].items(),key=lambda q:int(q[1][1:])):
         p=d['plan'][req];key=(p['arm'],p['rtt'],p['side'])
+        if p['rtt']!=p.get('opponent_rtt',p['rtt']):continue
         if p['arm'] not in names or p['mode']!='sumo' or p['profile']!='mmc' or p['rtt'] not in (0,80) or key in cells:continue
         g=json.loads((ROOT/f'runtime/results/{mid}.json').read_text())
         if all(g['parameters_'+s].get('science_trace')=='1' for s in 'ab'):cells[key]=mid

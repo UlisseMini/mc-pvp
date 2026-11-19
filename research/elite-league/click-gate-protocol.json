@@ -1,0 +1,9 @@
+{
+  "development": "In 128 completed counter-strategy rounds the anti-Hold MLP closed its click gate on 522 of 13,963 active heads. 397 were before either local hurt cue with horizontal center gap above 3.31. 78 were at or below 3.31 after a cue. The gap bin is descriptive; a sightline to the hitbox depends on orientation, height and the hitbox radius. This panel and its prior transfer calendars are exposed development data for this question.",
+  "question": "Does withholding ordinary clicks improve ring-outs or does the MLP win principally through its other keys? Repeat the exact network with its click output pinned open. The normal policy observes the actually applied action at its next head, so the intervention includes downstream changes in control decisions.",
+  "freeze": {
+    "original_sha256": "60bfb17d2f69c78947f5138e3f219fc9337bdb353a5c16f4c4007805489e01e7",
+    "always_open_sha256": "fafa4c026af61255ced412d1178c9f66f85d506319b40bfa101c3b629c86ab5d"
+  },
+  "plan": "W-tap, Hold-W, original MLP and forced-open MLP against W-tap, Hold-W and the independently trained anti-hybrid recurrent challenger. Default MMC disk, both seats, symmetric 0 and 80 ms, 3 blocks, 20 CPS, identical aim/reaction, two independent replications per native cell for 96 bouts. Use the eight not-yet-collected robust mirror calendars, common clock/seat on model arms. Report real ring-outs and draws by opponent, seat, RTT and mirror/repeat, compare the MLP with W-tap and with the open variant; do not promote a variant or change the already frozen ladder from this study."
+}

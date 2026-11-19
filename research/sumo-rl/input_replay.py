@@ -54,7 +54,7 @@ def compare(mid,delay_pairs=None):
            *[int(v['encodedRotationYaw']) for v in seeds],*[int(v['encodedRotationPitch']) for v in seeds],int(trackers[g['a']][0]<trackers[g['b']][0]),
            int(g['initial_ping_b']),g['sumo_arena']['diameter'],g['sumo_arena']['start_gap']]))]
     query+=[' '.join(map(str,[ns-origin,side,kind,*keys])) for ns,side,kind,keys in rows]
-    settings=[] if delay_pairs is None else [f'{up},{down}' for up,down in delay_pairs]
+    settings=[] if delay_pairs is None else [v if isinstance(v,str) else f'{v[0]},{v[1]}' for v in delay_pairs]
     proc=subprocess.run(java('InputReplay',*settings),input='\n'.join(query)+'\n',text=True,capture_output=True,check=True)
     def measure(pred):
         assert pred['admissions']==[counts['a'],counts['b']],(mid,pred['admissions'],counts)
