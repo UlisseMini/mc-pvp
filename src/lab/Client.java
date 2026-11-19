@@ -130,7 +130,9 @@ public final class Client {
             long aimNow=System.currentTimeMillis();
             if(aimTarget!=opponent){aim.reset();aimTarget=opponent;mouseTimeNs=0;}
             AimController.Settings aimSettings=AimController.Settings.from(controls);
-            AimController.Result tracking=aim.aim(aimNow,R.num(player,"posX"),eye,R.num(player,"posZ"),
+            // Tracking measures elapsed time. A corrected wall clock is still useful for recording timestamps.
+            long trackingMs=System.nanoTime()/1_000_000L;
+            AimController.Result tracking=aim.aim(trackingMs,R.num(player,"posX"),eye,R.num(player,"posZ"),
                 R.num(opponent,"posX"),R.num(opponent,"posY"),R.num(opponent,"posZ"),
                 (float)R.num(player,"rotationYaw"),(float)R.num(player,"rotationPitch"),aimSettings);
             float yaw=displacementTurn!=null&&!Float.isNaN(displacementTurn.yaw)?displacementTurn.yaw:tracking.yaw;

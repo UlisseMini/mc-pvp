@@ -32,9 +32,13 @@ def native(out):
                 command=f'lab match {a} {b} {rtt} {rtt} {req} preset=mmc cps=20 reach=3 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse')))
     random.Random(470081).shuffle(rows);run_batch(dict(rows),out)
 
+def audited_bundle(folder):
+    corrected=folder/'native-eligible.json.gz'
+    return corrected if corrected.is_file() else folder/'native.json.gz'
+
 def publish(folder):
     """Keep a distinct playable winner for the native first-to-100 tournament."""
-    actual=folder/'native.json.gz';model=folder/'boxing.jsonl.gz'
+    actual=audited_bundle(folder);model=folder/'boxing.jsonl.gz'
     with gzip.open(actual,'rt') as f:n=json.load(f)
     with gzip.open(model,'rt') as f:sim=list(map(json.loads,f))
     rows=n['matches']

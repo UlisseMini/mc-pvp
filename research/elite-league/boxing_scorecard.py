@@ -6,7 +6,7 @@ import json
 from statistics import median
 
 from adaptation import dump
-from boxing_regulation import NAMES
+from boxing_regulation import NAMES, audited_bundle
 from results import lines, outcome
 from run import HERE, ROOT
 
@@ -90,7 +90,7 @@ def summarize(rows):
 
 
 def publish(dest):
-    with gzip.open(dest / 'native.json.gz', 'rt') as f:
+    with gzip.open(audited_bundle(dest), 'rt') as f:
         bundle = json.load(f)
     native = [read_native(g) for g in bundle['matches']]
     model = [read_model(g) for g in lines(dest / 'boxing.jsonl.gz')]

@@ -36,14 +36,16 @@ def family_usage(roots,all_research=False):
 def supervised():
     return os.environ.get('ELITE_GOVERNED_GROUP')==str(os.getpgrp())
 
-def main(cmd):
+def main(cmd,audit=False):
     if supervised():
         return subprocess.call(cmd)
     budget=min(6,(os.cpu_count() or 2)/2)
     # Leave margin for startup, GC, incoming players, and short-lived analysis processes.
     target=max(.5,budget-1.25)
     state=ROOT/'build/elite-league';state.mkdir(exist_ok=True,parents=True)
-    with (state/'rollout.lock').open('a') as lock:
+    # One replay reader can use spare capacity while a long single-threaded
+    # simulation owns the rollout slot. Both governors measure total lab usage.
+    with (state/('replay-reader.lock' if audit else 'rollout.lock')).open('a') as lock:
         fcntl.flock(lock.fileno(),fcntl.LOCK_EX)
         manager=ROOT/'runtime/manager.json'
         def lab_pid():
@@ -89,4 +91,5 @@ if __name__=='__main__':
             os.nice(8)
             del sys.argv[2:5]
         os.execvp(sys.argv[2],sys.argv[2:])
-    sys.exit(main(sys.argv[1:]))
+    audit=sys.argv[1:2]==['--audit']
+    sys.exit(main(sys.argv[2:] if audit else sys.argv[1:],audit))
