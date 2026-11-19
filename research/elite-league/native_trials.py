@@ -81,16 +81,28 @@ def plan(tag,champion):
 def cohort_priority(name):
     # The common frozen final has no dependency on the track confirmations.
     # Give both game modes turns in the same FIFO as the general confirmation.
+    if name.startswith('mmc13-') and name.endswith('-clocks'):return 0
+    if name=='mmc13-slice-1-01':return 0
+    if name.startswith(('mmc13-phase-confirm','mmc13-click-confirm','mmc13-contact-confirm')):return 2
+    if name.startswith(('mmc13-transfer','box-breadth-native')):return 3
     if name.startswith(('mmc13-final','boxing100-native','box-student-native')):return 0
     if name.startswith(('mmc13-opening','mmc13-confirm','mmc13-box-clocks','m13floor','focus-','ladder-','confirmation-','mouse-smoke','gate-smoke','port-smoke')):return 0
     if name.startswith(('mmc13-actor','mmc13-pairs')):return 4
     if name.startswith('history-'):return 5
-    if name.startswith(('mmc13-trade-confirm','mmc13-phase-confirm','mmc13-click-confirm')):return 7
+    if name.startswith('mmc13-trade-confirm'):return 7
     if name.startswith(('mmc13-broad','mmc13-slice','mmc13-transfer','mmc13-archive-final')):return 8
     if name.startswith(('continuation-','cadence-','box-breadth-','box-student','gate-native','boxing100')):return 8
     if name.startswith(('novel-','empirical-','final-')):return 10
     if name.startswith('eold'):return 20
     return 30
+
+def tranche(out,completed):
+    # Give the small prospective panels a first turn on the shared server before
+    # long confirmations finish. Subsequent turns resume the original request order.
+    if out.parent.name=='mmc13' and completed<16 and out.stem in {
+            'mmc13-transfer','box-breadth-native','mmc13-contact-confirm','mmc13-phase-confirm'}:
+        return 0,16-completed
+    return cohort_priority(out.stem),64
 
 def run_batch(trials,out):
     # Keep the complete frozen schedule visible while short cohorts share eight physical clients.
@@ -108,7 +120,9 @@ def run_batch(trials,out):
         fcntl.flock(runner.fileno(),fcntl.LOCK_EX)
         found=None
         while found is None or len(found)<len(trials):
-            ticket=waiting/f'{cohort_priority(out.stem):02d}-{time.time_ns()}-{os.getpid()}'
+            count=len(found) if found is not None else len(json.loads(out.read_text())['matches']) if out.exists() else 0
+            priority,_=tranche(out,count)
+            ticket=waiting/f'{priority:02d}-{time.time_ns()}-{os.getpid()}'
             ticket.touch(exist_ok=False)
             try:
                 with (work/'main-cohort.lock').open('a') as shared:
@@ -177,7 +191,7 @@ def _run_locked(trials,out,found=None):
             return jobs
         try:
             batch.run(trials,jobs,part,reserve=2,share_with_players=True,finished=found,
-                      empty_lab_reserve=0 if jobs==4 else 2,recover=recover,only_requests=list(pending)[:64],capacity_limit=capacity_limit)
+                      empty_lab_reserve=0 if jobs==4 else 2,recover=recover,only_requests=list(pending)[:tranche(out,len(found))[1]],capacity_limit=capacity_limit)
         except SystemExit:
             # Reflect all duels which drained at closing time in the primary manifest.
             if part.exists():

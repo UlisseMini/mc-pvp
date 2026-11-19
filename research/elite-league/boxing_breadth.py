@@ -79,6 +79,18 @@ def defend(name,k):
     config='\n'.join(lines+['description=Two-second delayed boxing drill defender '+name,'click_start_ms=2000','research_landmark_k='+str(k)])+'\n'
     freeze(ROOT/'policies'/(alias+'.properties'),config.encode());return alias
 
+def trial_plan():
+    trials=[];name='boxing-03-contender'
+    for k,repeats in ((3,2),(5,1),(10,1)):
+        for foe in FOES:
+            opp=f'breadth-{foe}-wake{k}'
+            for arm,rep,ping,seat in itertools.product((WT,name),range(repeats),(0,80),'ab'):
+                req=f'ebwide-{k}-{foe}-{arm}-{rep}-{ping}-{seat}';a,b=(arm,opp) if seat=='a' else (opp,arm)
+                command=f'lab scenario {a} {b} {ping} {ping} 20000 {req} preset=mmc cps=20 reach=3 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse'
+                trials.append((req,dict(arm=arm,opponent=opp,defender_style=foe,side=seat,rep=rep,rtt=ping,gate_k=k,mode='boxing',profile='mmc',aim_input='mouse',command=command)))
+    random.Random(228931).shuffle(trials)
+    return dict(trials)
+
 def validation(work):
     native_install({n:p for n,p in rivals().values() if p})
     selection=json.loads((DEST/'selection.json').read_text());best=selection['challenger']
@@ -87,15 +99,9 @@ def validation(work):
     raw=RESULT/'prospective.jsonl.gz'
     if not raw.exists():simulate({best:arms()[best]},{n:rivals()[n][1] for n in FOES},donors,raw)
     dump(RESULT/'prospective.json',summarize(raw))
-    trials=[];name='boxing-03-contender'
-    for k,repeats in ((3,2),(5,1),(10,1)):
-        for foe in FOES:
-            opp=defend(foe,k)
-            for arm,rep,ping,seat in itertools.product((WT,name),range(repeats),(0,80),'ab'):
-                req=f'ebwide-{k}-{foe}-{arm}-{rep}-{ping}-{seat}';a,b=(arm,opp) if seat=='a' else (opp,arm)
-                command=f'lab scenario {a} {b} {ping} {ping} 20000 {req} preset=mmc cps=20 reach=3 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse'
-                trials.append((req,dict(arm=arm,opponent=opp,defender_style=foe,side=seat,rep=rep,rtt=ping,gate_k=k,mode='boxing',profile='mmc',aim_input='mouse',command=command)))
-    random.Random(228931).shuffle(trials)
+    name='boxing-03-contender'
+    for foe,k in itertools.product(FOES,(3,5,10)):defend(foe,k)
+    trials=trial_plan()
     manifest=work/'box-breadth-native.json';run_batch(dict(trials),manifest)
     bundle=RESULT/'native.json.gz'
     if not bundle.exists():
