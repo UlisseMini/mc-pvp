@@ -12,7 +12,7 @@ from adaptation import dump,freeze,sha,properties
 from audit import collect
 from breadth import field
 from history_cup import counts,mirrors
-from ladder_transfer import plan,WT,REFERENCE
+from ladder_transfer import native_install,plan,WT,REFERENCE
 from native_trials import run_batch
 from results import native
 from run import ROOT,HERE,calendars
@@ -68,6 +68,42 @@ def record_setup(rows,diameter=13):
         r.update(diameter=diameter,start_gap=8 if diameter==13 else 6)
     return rows
 
+def regulation_batch(trials,manifest,evidence):
+    """Replay referee-invalidated client views in the same cell; retain every attempt."""
+    run_batch(trials,manifest)
+    attempts=json.loads(manifest.read_text())['matches']
+    selected={};accepted={};replacements={};excluded=[]
+    for attempt in range(3):
+        retry={}
+        for key,mid in attempts.items():
+            task=replacements.get(key,trials.get(key))
+            reason=json.loads((ROOT/'runtime/results'/(mid+'.json')).read_text())['reason']
+            if reason!='invalid_client_view':
+                accepted[key]=task
+                selected[key]=mid
+                continue
+            excluded.append(dict(request=key,mid=mid,reason=reason))
+            base=key.split('-view-retry',1)[0]
+            request=base+'-view-retry'+str(attempt+1)
+            words=trials[base]['command'].split()
+            words[words.index(base)]=request
+            retry[request]=dict(trials[base],command=' '.join(words))
+        if not retry:break
+        if attempt==2:
+            dump(evidence/(manifest.stem+'-incomplete-views.json'),excluded)
+            raise ValueError('Three invalid native views in the same scheduled fixture')
+        replacements=retry
+        batch=manifest.with_name(manifest.stem+f'-view-retry{attempt+1}.json')
+        run_batch(retry,batch)
+        attempts=json.loads(batch.read_text())['matches']
+    if not excluded:return manifest
+    if len(accepted)!=len(trials) or len(set(selected.values()))!=len(trials):
+        raise ValueError('Unequal exposure after replacing invalid client views')
+    chosen=manifest.with_name(manifest.stem+'-eligible.json')
+    dump(chosen,dict(plan=accepted,matches=selected))
+    dump(evidence/(manifest.stem+'-invalid-views.json'),excluded)
+    return chosen
+
 def read_results(manifest):
     records=json.loads(manifest.read_text())
     if records['matches'].keys()!=records['plan'].keys():raise ValueError('Incomplete schedule')
@@ -95,6 +131,7 @@ def read_results(manifest):
 def contest(tag,arms,foes,repeats,tapes,profile='mmc'):
     d=EVIDENCE/tag;d.mkdir(exist_ok=True,parents=True);model=d/'model.jsonl.gz'
     name='mmc13-'+tag;manifest=WORK/(name+'.json')
+    native_install({native_name(n):p for n,p in (arms|foes).items() if p})
     tasks={}
     # These are normal referee commands without a diameter argument, so default selection is exercised.
     for o in foes:tasks.update(record_setup(plan('m13center'+tag,[native_name(n) for n in arms],[native_name(o)],repeats[o])))
@@ -109,7 +146,7 @@ def contest(tag,arms,foes,repeats,tapes,profile='mmc'):
             compile_model()
             with tempfile.TemporaryDirectory(dir=WORK) as tmp:freeze(model,grid(Path(tmp),'matches',arms,foes,tapes,mode='mouse',profile=profile).read_bytes())
     rates(model)
-    run_batch(dict(items),manifest)
+    manifest=regulation_batch(dict(items),manifest,d)
     rows=read_results(manifest);actual=counts(rows)
     with gzip.open(model,'rt') as f:predictions=list(map(json.loads,f))
     for r in predictions:r.update(arm=native_name(r['arm']),opponent=native_name(r['opponent']))
@@ -124,6 +161,14 @@ def contest(tag,arms,foes,repeats,tapes,profile='mmc'):
 def pilot():
     foes={'wtap':None,OLD_TARGET:groups()['modern'][OLD_TARGET]}
     contest('opening',focus.BASE,foes,{n:4 for n in foes},calendars('development_selection_clocks'))
+    from reigning import publish
+    folder=EVIDENCE/'opening'
+    with gzip.open(folder/'native.json.gz','rt') as f:audit=json.load(f)
+    if len(audit['matches'])!=96 or audit['summary']['binding_disagreements']:
+        raise ValueError('Opening tournament input validation failed')
+    receipt=folder/'outcomes.json'
+    winner=json.loads(receipt.read_text())['winner']
+    publish('best-sumo',winner,'Recorded MMC platform opening tournament winner ('+winner+')',receipt)
 
 def finalists():
     last=FROZEN/'round-03';result=json.loads((last/'selection.json').read_text());modern=groups()['modern']

@@ -24,6 +24,8 @@ The copied floor comes from clip `fb302faee0f03c27bcaac437a64752fa`. It containe
 
 A normal `/duel wtap sumo preset=mmc` selects the measured platform. An explicit `diameter=10` selects the former 80-block lab disk and six-block opening. The server also preserves the sizes of old replays.
 
+The main server played three consecutive validation duels in the same arena slot. The default in m4513 matched all 256 recorded floor and surrounding air cells in a 16×16 square. M4514 selected the older disk. M4516 restored the recorded floor and gold markers. Both players occupied the expected spawn centers in all 41 countdown frames of each duel, and all three ended in ring-outs. [Live block hashes and spawn coordinates](evidence/live-verification.json)
+
 ## Reproducing the measurement
 
 The decoder verifies the server name and Minecraft protocol 47. It reconstructs received chunk sections and subsequent block changes up to a stationary countdown frame, then flood-fills the fighting surface. It requires a known perimeter and a connected path between the players. One bookmark had only one frame with the opposing spawn visible and was excluded.

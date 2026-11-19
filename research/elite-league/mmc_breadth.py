@@ -11,7 +11,8 @@ import champions
 import focus
 from history_cup import FIELD,counts
 from legacy_census import schedule,signature,summarize
-from mmc_league import EVIDENCE,FROZEN,WORK,WT,finalists,groups,native_name,read_results,record_setup,setup
+from ladder_transfer import native_install
+from mmc_league import EVIDENCE,FROZEN,WORK,WT,finalists,groups,native_name,read_results,record_setup,regulation_batch,setup
 from run import ROOT,calendars
 from reigning import publish
 
@@ -21,6 +22,7 @@ def roster():
     arms={WT:None,name:entries.get(n) if n!='wtap' else entries[new]}
     if len(arms)!=2:raise ValueError('Expected a separate W-tap comparison')
     modern=groups()['modern']
+    native_install({native_name(n):p for n,p in modern.items() if p})
     archived=json.loads((FIELD/'legacy-census.json').read_text())
     # Preserve every historical alias; newer identical references share one opponent cell.
     field=dict(archived['field']);keys={signature(ROOT/'policies'/(k+'.properties')):k for k in field}
@@ -58,11 +60,10 @@ def archive():
             current=order[i:i+8];tag=f'mmc13-slice-{stage+1}-{i//8+1:02d}';dest=d/(tag+'.json.gz')
             trials=paired(stage,tag,arms,field,current,i)
             if not dest.exists():
-                from native_trials import run_batch
-                manifest=WORK/(tag+'.json');run_batch(trials,manifest)
+                manifest=regulation_batch(trials,WORK/(tag+'.json'),d)
                 rows=read_results(manifest)
                 # Full POV validation of both sides (including historical configuration/dependencies).
-                observed=summarize(trials,manifest,field)
+                observed=summarize(json.loads(manifest.read_text())['plan'],manifest,field)
                 if [r['mid'] for r in rows]!=[r['mid'] for r in observed]:raise ValueError('Different verifier IDs')
                 freeze(dest,gzip.compress(json.dumps(observed,separators=(',',':')).encode(),mtime=0))
             with gzip.open(dest,'rt') as f:allrows+=json.load(f)

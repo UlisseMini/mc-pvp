@@ -52,6 +52,9 @@ if __name__ == '__main__':
     if args.output.exists() or not args.prefix.replace('-','').isalnum():
         p.error('Use a fresh prefix and manifest')
     trials = plan(args.prefix, args.clocks, args.policy, args.lateral)
+    for trial in trials.values():
+        if trial['mode']=='sumo':
+            trial.update(diameter=13,start_gap=8)
     if any(json.loads(f.read_text()).get('request') in trials for f in (batch.RUNTIME/'results').glob('*.json')):
         p.error('Request prefix already used')
     if not args.clocks:

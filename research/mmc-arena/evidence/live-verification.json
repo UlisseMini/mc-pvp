@@ -1,0 +1,97 @@
+{
+  "rotation": "clockwise 90 degrees",
+  "floor_bytes": "16 by 16, Z major then X, unsigned big endian block state IDs",
+  "cases": [
+    {
+      "mid": "m4513",
+      "command": "lab sumo research-wtap20 research-wtap20 0 0 m13floor0-research-wtap20-research-wtap20-0-0-a preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse",
+      "geometry": {
+        "shape": "mmc_recorded_13_v1",
+        "diameter": 13,
+        "floor_y": 11,
+        "top_y": 12.0,
+        "loss_y": 11.5,
+        "start_gap": 8.0,
+        "reference": "mmc_capture_fb302faee0f03c27bcaac437a64752fa",
+        "center_offset": 0.5,
+        "floor_blocks": 137,
+        "observed_floor_sha256": "89f9197f91ca4b33e1e00ef751b22ab2ba476885608c528b51bfdb32cb6c123a"
+      },
+      "spawn_positions": [
+        [
+          4092.5,
+          12,
+          0.5
+        ],
+        [
+          4100.5,
+          12,
+          0.5
+        ]
+      ],
+      "countdown_frames": 41,
+      "arena_slot": 0,
+      "finish": "ring_out"
+    },
+    {
+      "mid": "m4514",
+      "command": "lab sumo research-wtap20 research-wtap20 0 0 m13floor1-research-wtap20-research-wtap20-0-0-a preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse diameter=10",
+      "geometry": {
+        "shape": "cell_center_disk_v1",
+        "diameter": 10,
+        "floor_y": 11,
+        "top_y": 12.0,
+        "loss_y": 11.5,
+        "start_gap": 6.0,
+        "reference": "provisional_not_verified_server_map",
+        "observed_floor_sha256": "2330f2fc6d4b2e0e7d2374afe20adc078e974dbb039ece9c860d987e71b8f8f9"
+      },
+      "spawn_positions": [
+        [
+          4093.0,
+          12,
+          0
+        ],
+        [
+          4099.0,
+          12,
+          0
+        ]
+      ],
+      "countdown_frames": 41,
+      "arena_slot": 0,
+      "finish": "ring_out"
+    },
+    {
+      "mid": "m4516",
+      "command": "lab sumo research-wtap20 research-wtap20 0 0 m13floor2-research-wtap20-research-wtap20-0-0-a preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse",
+      "geometry": {
+        "shape": "mmc_recorded_13_v1",
+        "diameter": 13,
+        "floor_y": 11,
+        "top_y": 12.0,
+        "loss_y": 11.5,
+        "start_gap": 8.0,
+        "reference": "mmc_capture_fb302faee0f03c27bcaac437a64752fa",
+        "center_offset": 0.5,
+        "floor_blocks": 137,
+        "observed_floor_sha256": "89f9197f91ca4b33e1e00ef751b22ab2ba476885608c528b51bfdb32cb6c123a"
+      },
+      "spawn_positions": [
+        [
+          4092.5,
+          12,
+          0.5
+        ],
+        [
+          4100.5,
+          12,
+          0.5
+        ]
+      ],
+      "countdown_frames": 41,
+      "arena_slot": 0,
+      "finish": "ring_out"
+    }
+  ]
+}
