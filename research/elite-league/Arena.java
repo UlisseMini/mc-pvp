@@ -69,7 +69,7 @@ final class Arena {
     }
     record Scenario(DuelEnv env,Fighter opponent,boolean first){
         double game(Fighter fighter){
-            DuelEnv.Game game=env.new Game(first,fighter.create(env.rtt,0),opponent.create(env.rtt,0));
+            DuelEnv.Game game=env.new Game(first,fighter.create(first?env.rtt:env.otherRtt,0),opponent.create(first?env.otherRtt:env.rtt,0));
             game.finish();return game.reward();
         }
     }

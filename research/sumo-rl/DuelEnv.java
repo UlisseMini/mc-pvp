@@ -130,13 +130,16 @@ final class DuelEnv {
     }
     final String clockId,profile;
     final boolean sumo;
-    final int rtt,limit;
+    final int rtt,otherRtt,limit;
     final double[] serverEnds;
     final PeriodicComboClock initial;
     DuelEnv(Tape tape,String profile,int rtt,boolean sumo){this(tape,profile,rtt,sumo,29,true);}
     DuelEnv(Tape tape,String profile,int rtt,boolean sumo,int trackerStart,boolean solidRim){
-        this.clockId=tape.id;this.profile=profile;this.rtt=rtt;this.sumo=sumo;limit=sumo?LIMIT:20000;serverEnds=tape.serverEnds;
-        var config=BoxingModel.config(profile,rtt);config.sumo=sumo;
+        this(tape,profile,rtt,rtt,sumo,trackerStart,solidRim,10,6,0);
+    }
+    DuelEnv(Tape tape,String profile,int rtt,int otherRtt,boolean sumo,int trackerStart,boolean solidRim,int diameter,double gap,double lateralOffset){
+        this.clockId=tape.id;this.profile=profile;this.rtt=rtt;this.otherRtt=otherRtt;this.sumo=sumo;limit=sumo?LIMIT:20000;serverEnds=tape.serverEnds;
+        var config=BoxingModel.config(profile,rtt);config.otherRtt=otherRtt;config.sumo=sumo;config.sumoDiameter=diameter;
         if(sumo){
             config.sumoArena(4096,12);
             if(solidRim){config.solidEdge();config.trackerAFirst=tape.trackerAFirst();}
@@ -144,7 +147,7 @@ final class DuelEnv {
         var t=new PeriodicComboClock.Timing();
         t.inputMode=PeriodicComboClock.InputMode.NATIVE_QUEUED;
         t.uplinkA=t.uplinkB=t.downlinkA=t.downlinkB=.35;
-        var state=new PeriodicComboFightModel.State(4093,0,4099,0,sumo?12:4);
+        var state=new PeriodicComboFightModel.State(4096-gap/2,lateralOffset,4096+gap/2,lateralOffset,sumo?12:4);
         state.serverTicks=trackerStart;
         Player idle=new Player("wtap",0,rtt,0);
         initial=new PeriodicComboClock(state,config,t,idle,idle,tape.events);

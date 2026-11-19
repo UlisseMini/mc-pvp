@@ -30,7 +30,6 @@ def compare(mid):
             if typ=='client_task_drain' and e['data']['phase']=='start':kind='CLIENT_DRAIN'
             if typ=='native_input_head':
                 tick=e['native_tick'];m=moves[tick]
-                if m['forward']<0:return dict(mid=mid,unsupported='Backward input')
                 keys=[network_keys.get(tick,3 if m['forward']<0 else 2 if m['forward'] else 0),str(tick in jump).lower(),m['strafe']]
             if not kind:continue
             rows.append((ns,side,kind,keys))

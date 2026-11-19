@@ -55,6 +55,7 @@ public final class DuelNetwork {
     public float[] weights(){return weights.clone();}
     public Family family(){return family;}
     public double[] features(){return features.clone();}
+    public double[] scores(){return outputs.clone();}
     public void applied(int action){previousAction=action;}
 
     private static double clip(double v){return Math.max(-1,Math.min(1,v));}
