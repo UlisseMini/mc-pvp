@@ -1,0 +1,6 @@
+{
+  "reason": "The first calendar importer counted all three loaded worlds' entity and tracker hooks. Its recorded W-tap input replay emitted fresh damage again after three overworld ticks. Preserve that frozen fit and its matches as development evidence.",
+  "change": "One overworld entity step and one tracker step per server drain. Re-run exactly the original learning algorithm and development donor roster, with identical rewards and action space.",
+  "validation": "The eight sumorl1-clock recordings are now exposed diagnostics. Reserve eight new mirror clocks (sumorl2-clock requests) before fitting. Do not extract or train on these before v2 is frozen.",
+  "native": "If the learned mask changes, retain original 88 independent matches and repeat the same matched comparison under sumorl2-transfer. Both arms share the same bridge. A repeated mask is the same native policy."
+}
