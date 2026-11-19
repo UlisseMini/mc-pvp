@@ -20,7 +20,7 @@ finally:
 
 def bindings(mid,side,weights,start,end):
     path,=list((ROOT/'runtime/pov'/mid).glob(side+'-client-*-events.jsonl.gz'))
-    events=[e for e in captures.events(path) if e.get('match')==mid]
+    events=[e for e in captures.events(path,{'duel_network','duel_network_jump','science_move'}) if e.get('match')==mid]
     decisions=[e for e in events if e['type']=='duel_network']
     if not decisions:raise ValueError(f'{mid}/{side}: missing network decisions')
     ticks=[e['tick'] for e in decisions]
@@ -44,14 +44,23 @@ def bindings(mid,side,weights,start,end):
         input='\n'.join(query)+'\n',text=True,capture_output=True)
     if result.returncode or int(result.stdout)!=len(decisions):raise ValueError((mid,'network replay',result.stderr))
     jumps={e['native_tick'] for e in events if e['type']=='duel_network_jump'}
+    movement_ticks=set()
     for e in events:
-        if e['type']!='science_move' or e['tick'] not in by_tick or not start<=e['time']<=end:continue
+        if e['type']!='science_move' or not start<=e['time']<=end:continue
+        tick=e['tick']
+        if tick in movement_ticks:raise ValueError(f'Duplicate movement {mid}/{side} at {tick}')
+        movement_ticks.add(tick)
+        if tick not in by_tick:continue
         action=by_tick[e['tick']];key=action%4;side_key=action//4%3-1
         forward=-1 if key==3 else int(key!=0)
         if not math.isclose(e['forward'],.98*forward,abs_tol=1e-6) or not math.isclose(e['strafe'],side_key*.98,abs_tol=1e-6) or (action>=24)!=(e['tick'] in jumps):
             mismatch.append([e['tick'],key,side_key,action>=24,e['forward'],e['strafe'],e['tick'] in jumps])
         checked+=1
-    return dict(**(dict(expert_heads=experts,expert_changes=changes) if experts else {}),replayed=len(decisions),active_heads=sum(actions.values()),verified_move_heads=checked,mismatches=mismatch,
+    shared=movement_ticks & by_tick.keys()
+    interior=set(range(min(shared),max(shared)+1)) if shared else set()
+    coverage=dict(missing_inputs=sorted(interior-by_tick.keys()),missing_moves=sorted(interior-movement_ticks),
+                  unpaired_inputs=sorted(by_tick.keys()-movement_ticks),unpaired_moves=sorted(movement_ticks-by_tick.keys()))
+    return dict(move_coverage=coverage,**(dict(expert_heads=experts,expert_changes=changes) if experts else {}),replayed=len(decisions),active_heads=sum(actions.values()),verified_move_heads=checked,mismatches=mismatch,
         first_released_ms=min(released,default=None),applied_counts=actions,
         forward=sum(v for k,v in actions.items() if k%4 in (1,2)),back=sum(v for k,v in actions.items() if k%4==3),
         strafe=sum(v for k,v in actions.items() if k//4%3!=1),jump=sum(v for k,v in actions.items() if k>=24),

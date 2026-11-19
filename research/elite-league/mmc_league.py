@@ -94,6 +94,7 @@ def regulation_batch(trials,manifest,evidence):
             raise ValueError('Three invalid native views in the same scheduled fixture')
         replacements=retry
         batch=manifest.with_name(manifest.stem+f'-view-retry{attempt+1}.json')
+        freeze(batch.with_suffix('.build.json'),manifest.with_suffix('.build.json').read_bytes())
         run_batch(retry,batch)
         attempts=json.loads(batch.read_text())['matches']
     if not excluded:return manifest
@@ -151,15 +152,18 @@ def contest(tag,arms,foes,repeats,tapes,profile='mmc'):
             with tempfile.TemporaryDirectory(dir=WORK) as tmp:freeze(model,grid(Path(tmp),'matches',arms,foes,tapes,mode='mouse',profile=profile).read_bytes())
     rates(model)
     manifest=regulation_batch(tasks,manifest,d)
+    if tag=='final':
+        from final_inputs import eligible
+        manifest=eligible(WORK/(name+'.json'),manifest,d,WORK/(name+'-scores'))
     rows=read_results(manifest);actual=counts(rows)
     with gzip.open(model,'rt') as f:predictions=list(map(json.loads,f))
     for r in predictions:r.update(arm=native_name(r['arm']),opponent=native_name(r['opponent']))
     sim=counts(predictions,True)
     winner=min(actual,key=lambda n:(-actual[n]['merit'],-actual[n]['mean'],n!=WT,n))
-    champions.install(name,ROOT/'policies'/(winner+'.properties'),f'Recorded MMC platform native {tag} winner ({winner})',name)
-    dump(d/'outcomes.json',dict(winner=winner,model=sim,native=actual,records=rows))
     bundle=d/'native.json.gz'
     if not bundle.exists():scores=WORK/(name+'-scores');collect(manifest,scores,False);native(manifest,scores,bundle)
+    champions.install(name,ROOT/'policies'/(winner+'.properties'),f'Recorded MMC platform native {tag} winner ({winner})',name)
+    dump(d/'outcomes.json',dict(winner=winner,model=sim,native=actual,records=rows))
     return rows,predictions
 
 def pilot():

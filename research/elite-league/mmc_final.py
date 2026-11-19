@@ -89,7 +89,7 @@ def run(native_only=False):
     winner = json.loads((out / 'outcomes.json').read_text())['winner']
     receipt = out / 'title.json'
     dump(receipt, dict(winner=winner, wtap=verdicts, audited_sha256=sha(out / 'native.json.gz'),
-                       outcome_sha256=sha(out / 'outcomes.json')))
+                       physical_inputs_sha256=sha(out / 'input-audit.json'), outcome_sha256=sha(out / 'outcomes.json')))
     publish('best-sumo', winner, 'Recorded MMC platform native final winner (' + winner + ')', receipt)
     print(winner, verdicts[winner], flush=True)
 
