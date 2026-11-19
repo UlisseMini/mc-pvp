@@ -212,6 +212,8 @@ def watch(close_now=False):
             last=snapshot()
             if outstanding<=last['raw_native'].keys() and not last['active_ours']:
                 save(dest/'drained.json.gz',last)
+                from overnight_scorecards import build
+                save(dest/'matched-native-and-model.json.gz',build(last))
                 print(last['totals'],flush=True)
                 return
         time.sleep(2)
