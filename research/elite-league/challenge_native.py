@@ -6,7 +6,7 @@ import random
 from pathlib import Path
 from run import HERE,ROOT
 from tournament import grid
-from native_trials import run_batch,ready
+from native_trials import run_batch
 import hashlib
 
 def opponents(selected):
@@ -26,7 +26,7 @@ def install(opps):
         dest.write_text(content)
 
 def native(opps,out):
-    install(opps);assert ready()
+    install(opps)
     rows=[];arms=('research-wtap20','research-hold20','sumo-rl-pressure','elite-v1-hybrid')
     # Also test each best response attacking W-tap and Hold-W in both simulator and Minecraft.
     pairs={(a,b) for a in arms for b in opps}|{(a,b) for a in (*opps,arms[0],arms[1]) for b in arms[:2]}

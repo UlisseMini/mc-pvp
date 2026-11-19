@@ -3,6 +3,8 @@ import argparse
 import hashlib
 import importlib.util
 import itertools
+import fcntl
+import os
 import json
 from pathlib import Path
 import random
@@ -18,8 +20,22 @@ def load_batch():
 def installed():
     return hashlib.sha256((ROOT/'build/practice-client/practice-bridge.jar').read_bytes()).hexdigest()
 
-def ready():
-    expected=installed();status=json.loads((ROOT/'runtime/status.json').read_text())
+def active_bridge():
+    # Forge loads a private copy per slot. Another local build can legitimately update the template jar.
+    manager=json.loads((ROOT/'runtime/manager.json').read_text())
+    values=set()
+    for i in range(manager['bot_slots']):
+        heartbeat=json.loads((ROOT/f'runtime/bots/{i}/heartbeat.json').read_text())
+        if time.time()-heartbeat['time']/1000>=6:return None
+        path=ROOT/f'runtime/bots/{i}/mods/practice-bridge.jar'
+        actual=hashlib.sha256(path.read_bytes()).hexdigest()
+        if heartbeat['bridge_sha256']!=actual:return None
+        values.add(actual)
+    return values.pop() if len(values)==1 else None
+
+def ready(expected=None):
+    if expected is None:expected=installed()
+    status=json.loads((ROOT/'runtime/status.json').read_text())
     return time.time()-status['time']/1000<5 and all(
         f'LabSlot{i}' in status['players'] and
         (lambda d:d['bridge_sha256']==expected and time.time()-d['time']/1000<6)(
@@ -63,13 +79,31 @@ def plan(tag,champion):
     return dict(rows)
 
 def run_batch(trials,out):
+    # Separate campaigns share the same eight players and the same CPU allowance.
+    with (ROOT/'build/elite-league/main-cohort.lock').open('a') as main_lock:
+        fcntl.flock(main_lock.fileno(),fcntl.LOCK_EX)
+        with out.with_suffix('.runner.lock').open('a') as lock:
+            fcntl.flock(lock.fileno(),fcntl.LOCK_EX)
+            _run_locked(trials,out)
+
+def _run_locked(trials,out):
     batch=load_batch()
+    lock=out.with_suffix('.build.json')
+    pinned=json.loads(lock.read_text()) if lock.exists() else {}
+    expected=pinned.get('bridge_sha256')
     until=time.monotonic()+150
-    while not ready():
+    while True:
+        try:
+            live=active_bridge()
+            if live and (not expected or live==expected) and ready(live):break
+        except (OSError,ValueError,KeyError):
+            pass
         if time.monotonic()>until:raise RuntimeError('Native pool is missing the frozen bridge or fresh heartbeats')
         time.sleep(2)
-    lock=out.with_suffix('.build.json');build={'bridge_sha256':installed()}
-    if lock.exists() and json.loads(lock.read_text())!=build:raise ValueError('Native cohort was opened on a different bridge')
+    build={'bridge_sha256':live,
+        'server_agent_sha256':hashlib.sha256((ROOT/'build/lab-agent.jar').read_bytes()).hexdigest()}
+    if lock.exists() and any(build.get(k)!=v for k,v in json.loads(lock.read_text()).items()):
+        raise ValueError('Native cohort was opened on different runtime artifacts')
     if not lock.exists():lock.write_text(json.dumps(build)+'\n')
     # A recovered process reconciles by immutable request ID before issuing any further rounds.
     found={}
@@ -83,8 +117,11 @@ def run_batch(trials,out):
     part=out.with_suffix('.partial.json')
     pending={k:v for k,v in trials.items() if k not in found}
     if pending:
-        batch.run(pending,2,part,reserve=2,share_with_players=True)
+        jobs=int(os.environ.get('ELITE_NATIVE_JOBS','3'))
+        if not 1<=jobs<=3:raise ValueError('Expected one to three simultaneous native duels')
+        batch.run(trials,jobs,part,reserve=2,share_with_players=True,finished=found)
         found.update(json.loads(part.read_text())['matches'])
+    else:batch.save(part,trials,found)
     batch.save(out,trials,found)
 
 if __name__=='__main__':

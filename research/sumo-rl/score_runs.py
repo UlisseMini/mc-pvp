@@ -14,15 +14,18 @@ def native(mid,setup,network=None):
     assert g['policy_'+side]==setup['arm'] and g['policy_'+other]==setup['opponent']
     assert g['mode']==setup['mode'] and g['practice_preset']==setup['profile']
     assert g['combat_profile']['fresh_hit_ticks']==9
-    assert g['duration_limit_ms']==(120000 if g['mode']=='sumo' else 20000)
+    regulation=setup.get('match_format')=='first-to-100'
+    assert g['duration_limit_ms']==(120000 if g['mode']=='sumo' else 180000 if regulation else 20000)
+    if regulation:assert g['mode']=='boxing' and g['goal']==100 and not g['scenario']
     if g['mode']=='sumo':assert g['sumo_arena']['diameter']==setup.get('diameter',10) and g['sumo_arena']['start_gap']==6
     if setup['profile']=='mmc':assert g['combat_profile']['knockback_model']=='mmc_pre_attack_sprint_v2'
     p=g['parameters_'+side]
     expected=0 if network is not None or setup['arm'] in ('research-wtap20','research-hold20') else score.record(HERE/{'sumo-rl-jump':'v1/fit.json','sumo-rl':'fit.json','sumo-rl-pressure':'league-fit.json'}[setup['arm']])['mask']
     assert int(p.get('sumo_jump_mask',0))==expected
     if network is not None:
-        assert p['duel_network']==network and p['kind']==('wtap' if g['mode']=='boxing' else 'hold')
-        assert int(p.get('duel_network_landmark',0))==(3 if g['mode']=='boxing' else 0)
+        delayed=g['mode']=='boxing' and (not regulation or setup['arm']=='elite-boxing')
+        assert p['duel_network']==network and p['kind']==('wtap' if delayed else 'hold')
+        assert int(p.get('duel_network_landmark',0))==(3 if delayed else 0)
     elif setup['arm']=='sumo-rl-pressure':
         fit=score.record(HERE/'league-fit.json')
         assert p['kind']=={'hold':'hold','wtap':'wtap','trade':'tradetap'}[fit['style']]
@@ -33,7 +36,7 @@ def native(mid,setup,network=None):
         par=g['parameters_'+s];assert g['click_cps_'+s]==20 and g['attack_reach_'+s]==3 and g['reaction_ms_'+s]==0
         assert g['initial_ping_'+s]==(setup['rtt'] if s==side else setup.get('opponent_rtt',setup['rtt'])) and g['client_'+s]['backend']=='forge'
         assert all(float(par[k])==0 for k in ('aim_noise_deg','aim_delay_ms','aim_turn_rate_dps'))
-        assert int(par.get('click_start_ms',0))==(2000 if g['mode']=='boxing' and s==other else 0)
+        assert int(par.get('click_start_ms',0))==(2000 if g['mode']=='boxing' and not regulation and s==other else 0)
         hashes[s]=[g['client_'+s][k] for k in ('bridge_sha256','module_sha256','headless_sha256','java_sha256')]
         files=list((ROOT/f'runtime/pov/{mid}').glob(s+'-client-*-events.jsonl.gz'))
         if len(files)!=1:raise ValueError(f'{mid} has {len(files)} archives on {s}')

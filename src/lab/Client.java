@@ -63,7 +63,7 @@ public final class Client {
     static DuelNetwork duelNetwork;
     static int networkLandmark,networkStreak;
     static long networkIncoming,networkOutgoing;
-    static boolean networkReleased;
+    static boolean networkReleased,drillWakeSent,drillLandmarkSubject,drillLandmarkParticipant,drillLandmarkSeen;
     static ClickPause clickPause;
     static ClickPause.Tree pauseTree;
     static long burstObservedAt;
@@ -249,7 +249,11 @@ public final class Client {
                 if(criticalOpportunity)criticalClicks.injected(lastObservedTargetHurt);
                 ModelController.click(System.currentTimeMillis());
                 Map<String,Object> issued=new LinkedHashMap<>();
-                issued.put("type","click");issued.put("time",System.currentTimeMillis());issued.put("monotonic_ns",lastClick);
+                long issuedAt=System.currentTimeMillis();
+                issued.put("type","click");issued.put("time",issuedAt);issued.put("monotonic_ns",lastClick);
+                if(drillLandmarkParticipant&&!drillWakeSent&&issuedAt>=Long.parseLong(controls.getProperty("start_at","0"))){
+                    BoxingLandmark.click(DIR,match,issuedAt);drillWakeSent=true;
+                }
                 issued.put("match",match);issued.put("forward",forward);
                 issued.put("input_poll",nativeInputPoll?"native_tick":"frame");
                 issued.put("reaction_ms",(int)number("reaction_ms",150));
@@ -355,6 +359,9 @@ public final class Client {
                 duelNetwork=null;networkIncoming=networkOutgoing=0;networkStreak=0;
                 networkLandmark=Integer.parseInt(controls.getProperty("duel_network_landmark","0"));
                 networkReleased=networkLandmark==0;
+                drillWakeSent=false;drillLandmarkSeen=false;
+                drillLandmarkParticipant="1".equals(controls.getProperty("boxing_drill_participant"));
+                drillLandmarkSubject="1".equals(controls.getProperty("boxing_drill_subject"));
                 if(controls.containsKey("duel_network"))duelNetwork=DuelNetwork.decode(controls.getProperty("duel_network"));
                 sumoJumpMask=Integer.parseInt(controls.getProperty("sumo_jump_mask","0"));
                 if(sumoJumpMask<0||sumoJumpMask>65535)throw new IllegalArgumentException("Invalid sumo jump policy");
@@ -811,12 +818,17 @@ public final class Client {
                 setKeys(sw,sa,sc);
             }
             boolean networkJump=false;
+            if(drillLandmarkSubject && !drillLandmarkSeen && BoxingLandmark.started(DIR,match)){
+                drillLandmarkSeen=true;
+                log(Compat.map("type","boxing_drill_handoff","match",match,"time",now,"tick",ticks));
+            }
             if(duelNetwork!=null){
                 double ownAge=obs.freshHurtCue==0?Double.POSITIVE_INFINITY:obs.time-obs.freshHurtCue;
                 double targetAge=obs.targetFreshHurtCue==0?Double.POSITIVE_INFINITY:obs.time-obs.targetFreshHurtCue;
                 int proposed=duelNetwork.step(obs.x,obs.y,obs.z,obs.tx,obs.ty,obs.tz,obs.vx,obs.vy,obs.vz,
                         obs.ground,obs.sprint,ownAge,targetAge,ping);
-                if(!networkReleased && obs.time-epoch>=2000){
+                if(!networkReleased && drillLandmarkSubject)networkReleased=drillLandmarkSeen;
+                if(!networkReleased && !drillLandmarkSubject && obs.time-epoch>=2000){
                     if(obs.freshHurtCue>networkIncoming){networkIncoming=obs.freshHurtCue;networkStreak=0;}
                     if(obs.targetFreshHurtCue>networkOutgoing){
                         networkOutgoing=obs.targetFreshHurtCue;

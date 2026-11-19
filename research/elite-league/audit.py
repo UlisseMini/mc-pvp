@@ -1,7 +1,7 @@
 """Re-score live matches, verify frozen weights, replay every neural input head and compare emitted movement keys."""
 import argparse
 from collections import Counter
-import importlib.util
+import fcntl
 import json
 import math
 from pathlib import Path
@@ -50,6 +50,7 @@ def bindings(mid,side,weights,start,end):
 def one(mid,setup):
     game=json.loads((ROOT/f'runtime/results/{mid}.json').read_text());checks={}
     allowed=('ring_out','double_ring_out','timeout_draw') if setup['mode']=='sumo' else ('scenario_completed',)
+    if setup.get('match_format')=='first-to-100':allowed=('100_hits','timeout_draw')
     if game['reason'] not in allowed:raise ValueError(f'{mid} end: '+game['reason'])
     for side in 'ab':
         name=game['policy_'+side]
@@ -70,7 +71,10 @@ def collect(manifest,out,watch):
         for req,mid in trial['matches'].items():
             dest=out/(mid+'.json')
             if dest.exists():continue
-            try:summary=one(mid,trial['plan'][req])
+            try:
+                with (ROOT/'build/elite-league/replay-scoring.lock').open('a') as lock:
+                    fcntl.flock(lock.fileno(),fcntl.LOCK_EX)
+                    summary=one(mid,trial['plan'][req])
             except (FileNotFoundError,EOFError,ValueError) as exc:
                 result=json.loads((ROOT/f'runtime/results/{mid}.json').read_text())
                 if not watch or time.time()-result['finish']/1000>60:raise

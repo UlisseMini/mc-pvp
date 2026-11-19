@@ -8,8 +8,8 @@ import subprocess
 import zipfile
 
 ROOT=Path(__file__).resolve().parents[2]
-SERVER=['SumoArena','Referee','MmcKnockback','ServerReplay','DuelSettings','BotMatchSettings','LabHelp']
-CLIENT=['Client','DuelNetwork','HumanTiming','ExpertRouter','DuelSettings']
+SERVER=['SumoArena','Referee','MmcKnockback','ServerReplay','DuelSettings','BotMatchSettings','LabHelp','BoxingLandmark']
+CLIENT=['Client','DuelNetwork','HumanTiming','ExpertRouter','CombatTactics','TradeResponse','DuelSettings','BoxingLandmark']
 
 def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -23,6 +23,9 @@ def patched(base,classes,dest):
     with zipfile.ZipFile(dest) as jar:
         if jar.testzip() is not None:raise ValueError('Corrupt staged archive')
 
+def source_hashes():
+    return {n:sha(ROOT/'src/lab'/(n+'.java')) for n in sorted(set(SERVER+CLIENT))}
+
 def stage(out):
     out.mkdir(parents=True,exist_ok=False);result={}
     for name,base,files,target in [
@@ -34,6 +37,7 @@ def stage(out):
         dest=out/(name+'.jar');patched(base,classes,dest)
         backup=out/(name+'-previous.jar');shutil.copyfile(base,backup)
         result[name]=dict(base=str(base),original=sha(backup),new=sha(dest))
+    (out/'sources.json').write_text(json.dumps(source_hashes(),indent=2)+'\n')
     (out/'hashes.json').write_text(json.dumps(result,indent=2)+'\n')
 
 if __name__=='__main__':

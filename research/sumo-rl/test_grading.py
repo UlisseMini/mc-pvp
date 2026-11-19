@@ -51,3 +51,7 @@ class HumanGradeTest(unittest.TestCase):
         self.assertEqual(result[order[0]]['win'],1)
         self.assertEqual(result[order[1]]['interrupted'],1)
         with self.assertRaises(ValueError):grade(p,[b])
+        box=dict(p,mode='boxing',duration_limit_ms=180000)
+        game100=dict(a,mode='boxing',duration_limit_ms=180000,goal=100,scenario=False,reason='100_hits')
+        self.assertEqual(grade(box,[a,game100])['Example'][order[0]]['win'],1)
+        with self.assertRaises(ValueError):grade(box,[dict(game100,goal=10)])

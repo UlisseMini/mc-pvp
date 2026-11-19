@@ -37,6 +37,7 @@ public final class Referee {
         boolean jumpReset(){return EntryDrills.JUMP_RESET.equals(drillPreset);}
         JumpResetFeedback jumpFeedback;
         MmcKnockback mmcKnockback;
+        BoxingLandmark.Session boxingLandmark;
         final CombatStats sa=new CombatStats(),sb=new CombatStats();
         CombatStats stats(String name){return name.equals(a)?sa:name.equals(b)?sb:null;}
         String label(String side){return side.equals("a")?MatchLabels.label(a,pa,pb,"a"):MatchLabels.label(b,pb,pa,"b");}
@@ -54,6 +55,8 @@ public final class Referee {
             m.put("mode",mode);m.put("blocks_a",ba);m.put("blocks_b",bb);
             m.put("combat_profile",combat.state());
             if(seed!=null)m.put("seed",seed.state());
+            if(boxingLandmark!=null)m.put("boxing_drill_gate",Map.of("k",boxingLandmark.threshold,"subject",boxingLandmark.subject,
+                "wake",boxingLandmark.wake,"landmark",boxingLandmark.landmark,"announced",boxingLandmark.announced));
             String practicePreset=configB.getProperty(PracticePresets.LABEL,"");
             if(!practicePreset.isEmpty())m.put("practice_preset",practicePreset);
             long now=finish>0?finish:System.currentTimeMillis(),duration=Math.max(0,now-start);
@@ -127,6 +130,7 @@ public final class Referee {
                 if(a==null||b==null){m.winner=a==null?m.b:m.a;finish(m,"disconnect");continue;}
                 long setupNow=System.currentTimeMillis();
                 if((m.drillRound>0||m.sumo())&&setupNow<m.start)EntryDrills.holdStart(m,a,b);
+                if(m.boxingLandmark!=null)m.boxingLandmark.poll();
                 EntryDrills.countdown(m,setupNow);
                 if(setupNow>=m.start){CombatStats.usingItemChanged(a);CombatStats.usingItemChanged(b);}
                 if(!m.setupReseated&&setupNow<m.start&&setupNow>=m.start-(m.drillRound>0?500:1500)){
@@ -273,6 +277,7 @@ public final class Referee {
             hit.put("rod",rod);hit.put("damage_upgrade",immuneBefore);
             hit.put("hit_index",m.ha+m.hb);hit.put("server_tick",ticks);
             append(m.replay,hit);
+            if(m.boxingLandmark!=null&&!rod)m.boxingLandmark.accepted(who,immuneBefore,((Number)hit.get("time")).longValue());
             if(m.boxing()){if(!m.scenario){if(m.ha>=m.goal)m.winner=m.a;else if(m.hb>=m.goal)m.winner=m.b;}}
             else if(!m.sumo()&&((Number)R.call(target,"getHealth")).floatValue()<=0){m.winner=who;m.finishReason="death";}
         }catch(Throwable e){if(errors++<10)e.printStackTrace();}
@@ -499,6 +504,13 @@ public final class Referee {
         String hitTicks=Integer.toString(m.combat.freshTicks());
         if(isBot(a))m.configA.putIfAbsent("hurt_window_ticks",hitTicks);
         if(isBot(b))m.configB.putIfAbsent("hurt_window_ticks",hitTicks);
+        // Only the referee of a timed, bot-only research drill can publish this start signal.
+        boolean gateA=m.configA.containsKey("research_landmark_k"),gateB=m.configB.containsKey("research_landmark_k");
+        if(m.boxing()&&m.scenario&&isBot(a)&&isBot(b)&&gateA!=gateB){
+            Path slotA=DATA.resolve("bots/"+a.substring(7)),slotB=DATA.resolve("bots/"+b.substring(7));
+            int k=Integer.parseInt((gateA?m.configA:m.configB).getProperty("research_landmark_k"));
+            m.boxingLandmark=new BoxingLandmark.Session(k,m.id,gateA?b:a,slotA,slotB,gateA?slotB:slotA);
+        }
         SeededStartServer.configure(m);
         ClickRate.cps(m.configA);ClickRate.cps(m.configB);DuelSettings.reach(m.configA);DuelSettings.reach(m.configB);
         Set<Integer> used=new HashSet<>();for(Match current:matches.values())used.add(current.arena);
@@ -699,6 +711,11 @@ public final class Referee {
             config.setProperty("fast_view","1");
         }
         Properties p=new Properties();p.putAll(who.equals(m.a)?m.configA:m.configB);p.setProperty("enabled","true");p.setProperty("opponent",opponent);
+        p.remove("boxing_drill_participant");p.remove("boxing_drill_subject");
+        if(m.boxingLandmark!=null){
+            p.setProperty("boxing_drill_participant","1");
+            if(who.equals(m.boxingLandmark.subject))p.setProperty("boxing_drill_subject","1");
+        }
         p.setProperty("archive_side",who.equals(m.a)?"a":"b");
         p.setProperty("match",m.id);p.setProperty("start_at",Long.toString(m.start));p.setProperty("ping",Double.toString(ping));p.setProperty("opponent_ping",Double.toString(oppPing));
         R.writeProperties(DATA.resolve("bots/"+who.substring(7)+"/control.properties"),p);

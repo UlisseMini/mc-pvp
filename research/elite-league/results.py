@@ -5,6 +5,8 @@ import gzip
 import hashlib
 import json
 import math
+import os
+import tempfile
 from pathlib import Path
 from statistics import median
 import sys
@@ -15,7 +17,10 @@ from report import collect_maintenance,model_game,K,METHODS,score
 
 def read(path):return json.loads(path.read_text())
 def gzip_json(path,data):
-    with path.open('xb') as f:f.write(gzip.compress(json.dumps(data,separators=(',',':')).encode(),mtime=0))
+    packed=gzip.compress(json.dumps(data,separators=(',',':')).encode(),mtime=0)
+    with tempfile.NamedTemporaryFile(dir=path.parent) as f:
+        f.write(packed);f.flush()
+        os.link(f.name,path)
 def lines(path):
     with gzip.open(path,'rt') as f:return [json.loads(l) for l in f]
 
@@ -102,7 +107,25 @@ def native(manifest,scores,out):
     for g in games:
         if g['mode']=='boxing':
             g['first_boxing']=first_boxing(g)
-            boxes[g['arm']].append(g)
+            if 'gate_k' in g:
+                raw=read(ROOT/'runtime/results'/(g['mid']+'.json'))
+                info=raw.get('boxing_drill_gate',{});desired=g['gate_k'];cut=g['first_boxing']['at_ms'].get(str(desired))
+                if not info or info['k']!=desired or info['subject']!=raw[g['side']]:raise ValueError('Missing native gate '+g['mid'])
+                wake=raw['start']+g['wake_ms'] if g['wake_ms'] is not None else -1
+                landmark=raw['start']+cut if cut is not None else -1
+                if (info['wake'],info['landmark'])!=(wake,landmark):raise ValueError('Offline K boundary disagrees '+g['mid'])
+                import captures
+                path,=(ROOT/'runtime/pov'/g['mid']).glob(g['side']+'-client-*-events.jsonl.gz')
+                hand=[x for x in captures.events(path) if x.get('type')=='boxing_drill_handoff' and x.get('match')==g['mid']]
+                if len(hand)>1 or hand and (landmark<0 or hand[0]['time']<landmark):raise ValueError('Premature handoff '+g['mid'])
+                if cut is not None and landmark<raw['finish']-200 and not hand:raise ValueError('Missing handoff '+g['mid'])
+                release=g['first_boxing']['local_release_ms']
+                if g['arm']!='research-wtap20' and ((release is None)!= (not hand) or hand and release!=hand[0]['time']-raw['start']):
+                    raise ValueError('Released controller differs from phase marker '+g['mid'])
+                g['gate']=dict(wake_ms=g['wake_ms'],landmark_ms=cut,handoff_ms=hand[0]['time']-raw['start'] if hand else None,
+                               wait_ms=hand[0]['time']-landmark if hand else None)
+            key=g['arm']+(f"@K{g['gate_k']}" if 'gate_k' in g else '')
+            boxes[key].append(g)
     summary=dict(matches=len(games),build=games[0]['build'],rings=rings(score_rows),
         boxing={k:dict(bouts=len(v),bouts_entering=sum(x['maintenance']['3']['return_only']['entries']>0 for x in v),
                        maintenance=collect_maintenance([x['maintenance'] for x in v]),
@@ -111,6 +134,14 @@ def native(manifest,scores,out):
         physical_clicks=sum(x[0] for g in games for x in g['press'].values()),
         minimum_physical_interval_ms=min(x[1] for g in games for x in g['press'].values() if x[1] is not None),
         max_server_gap_ms=max(g['max_server_gap_ms'] or 0 for g in games))
+    regulation=defaultdict(lambda:defaultdict(list))
+    for g in games:
+        if g.get('match_format')=='first-to-100':regulation[g['opponent']][g['arm']].append(g)
+    if regulation:
+        summary['boxing_first_to_100']={op:{a:dict(outcome=outcome([1 if g['win'] else .5 if g['draw'] else 0 for g in vs]),
+            margins=[g['margin'] for g in vs],round_ids=[g['mid'] for g in vs]) for a,vs in arms.items()} for op,arms in regulation.items()}
+    lock=manifest.with_suffix('.build.json')
+    summary['cohort_artifacts']=read(lock) if lock.exists() else {'bridge_sha256':games[0]['build'][0]}
     gzip_json(out,dict(summary=summary,matches=games,manifest=m))
     return summary
 
