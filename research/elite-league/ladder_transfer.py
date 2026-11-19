@@ -37,7 +37,14 @@ def freeze(source,summary,out):
     for i in MILESTONES:
         for t in ('explicit','neural'):
             pool[f'elite-m{i:02d}-{t}']=source/f'season-{i:02d}'/(t+'.net')
-    for i in (3,8):pool[f'elite-r{i:02d}-table']=HERE/f'ladder-refinements/round-{i}/table.net'
+    for i in (3,8):
+        for base in ('table','reference'):
+            pool[f'elite-r{i:02d}-{base}']=HERE/f'ladder-refinements/round-{i}'/(base+'.net')
+    common=read(summary/'finalists.json')['ranked']
+    for t in ('rule','search'):
+        winner=next(r['name'] for r in common if r['name'].startswith('s') and r['name'][1:3].isdigit() and r['name'].endswith('-'+t))
+        pool['elite-common-'+t]=source/('season-'+winner[1:3])/(t+'.net')
+    models['elite-ppo']=HERE/'robust-frozen/ppo.net'
     for t in ('explicit','neural'):pool['elite-common-'+t]=summary/(t+'.net')
     field={'elite-m08-search':source/'season-08/search.net','elite-br-hybrid':HERE/'challenge-frozen/anti-hybrid.net',
            'elite-br-hold':HERE/'challenge-frozen/anti-hold.net'}

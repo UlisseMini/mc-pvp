@@ -39,7 +39,7 @@ final class BestResponse {
         int seed=Integer.parseInt(args[2]),steps=Integer.parseInt(args[3]),pop=Integer.parseInt(args[4]);
         int pairs=Integer.parseInt(args[5]),threads=Integer.parseInt(args[6]);
         if(threads<1||threads>4)throw new IllegalArgumentException("Invalid parallelism");
-        var target=args[7].equals("hold")?Arena.Fighter.named("hold"):new Arena.Fighter("target",Arena.Model.decode(Files.readString(Path.of(args[7])).trim()));
+        var target=(args[7].equals("wtap")||args[7].equals("hold"))?Arena.Fighter.named(args[7]):new Arena.Fighter("target",Arena.Model.decode(Files.readString(Path.of(args[7])).trim()));
         var warm=Arena.Model.decode(Files.readString(Path.of(args[8])).trim());
         if(warm.family()!=family)throw new IllegalArgumentException("Warm start has wrong architecture");
         var envs=Arena.envs(Arrays.stream(args,9,args.length).map(Path::of).toList(),"mmc",true);
