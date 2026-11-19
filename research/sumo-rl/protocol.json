@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "target": "Head-on sumo ring-outs on the local pre-attack sprint MMC preset. Legal feature is a single Jump key decision at eligible grounded, forward-moving input heads. Plain W-tap handles the remaining controls.",
+  "rationale": "In the native recoil audit a grounded player could cancel incoming horizontal travel through contact before movement. Earlier jump-every-impact trials produced sprint takeoffs but the benefit changed with timing, including lost boxing maintenance. Isolate when a grounded sprint takeoff is worth its airborne exposure.",
+  "development_clock_matches": ["m2065","m2073","m2090","m2093","m2097","m2098","m2107","m2110"],
+  "model_validation_calendars": "Eight new W-tap mirror recordings identified by sumorl1-clock requests, each used whole. Open after freezing policy. Development and evaluation never share a donor match.",
+  "training": {"seed": 791901, "generations": 9, "population": 32, "elite": 6, "opponents": ["wtap","hold"], "reward": "mean regulation ring-out score (win 1, draw or timeout 0.5, loss 0), equal weight per opponent. CEM stochastic policy search with common scenarios within generation."},
+  "deployment": {"id": "sumo-rl-jump", "arena_diameter": 10, "cps": 20, "reach": 3, "opening_gap": 6, "equal_rtts": [0,80], "reaction_ms": 0, "aim_delay_noise_turn_limit": 0},
+  "native_plan": "Both seats and RTTs. MMC sumo 4 repeats per cell against W-tap, 2 each against Hold-W and trade-W-tap. Hypixel-like sumo 1 per cell vs W-tap. MMC 20-second boxing maintenance drill 2 per cell with 2-second defender click handicap. Identical settings in control arm. Independent native runs. No final humans recruited or used.",
+  "promotion": "No promotion without ring-out gains vs plain W-tap in native and model across RTTs, inspect opponent and seat spread, and inspect shared-state maintenance at 3/5/10. Report inactivity (2 windows +100ms), upgrades, censoring and missed windows. Native elite-human performance requires a separately sealed evaluation. All prior opponent policies are development or diagnostic baselines."
+}
