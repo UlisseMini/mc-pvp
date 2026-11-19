@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -20,7 +21,7 @@ def compile_model():
                     *map(str,sorted(HERE.glob('*.java')))],cwd=ROOT,check=True)
 
 def java(main,*args):
-    return ['nice','-n','8','java','-ea','-XX:ActiveProcessorCount=4','-XX:+UseSerialGC','-XX:CICompilerCount=2',
+    return [sys.executable,str(HERE/'cpu_limit.py'),'nice','-n','8','java','-ea','-XX:ActiveProcessorCount=4','-XX:+UseSerialGC','-XX:CICompilerCount=2',
             '-Xms512m','-Xmx3500m','-cp',str(BUILD),main,*map(str,args)]
 
 def calendars(field):

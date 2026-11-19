@@ -57,8 +57,14 @@ final class Matches {
                     if(!sumo){jobs.add(()->Json.encode(boxing(env,first,arm)));continue;}
                     for(var opp:opponents)jobs.add(()->{
                         var s=new Arena.Scenario(env,opp,first);
-                        return Json.encode(Map.of("arm",arm.name(),"opponent",opp.name(),"profile",profile,
-                            "clock",env.clockId,"rtt",env.rtt,"side",first?"a":"b","score",s.game(arm)));
+                        Map<String,Object> row=new LinkedHashMap<>(Map.of("arm",arm.name(),"opponent",opp.name(),"profile",profile,
+                                "clock",env.clockId,"rtt",env.rtt,"side",first?"a":"b"));
+                        try{row.put("score",s.game(arm));}
+                        catch(IllegalStateException error){
+                            if(!BoxingModel.UNSUPPORTED_SEPARATION.equals(error.getMessage()))throw error;
+                            row.put("unknown",error.getMessage());
+                        }
+                        return Json.encode(row);
                     });
                 }
                 for(var f:pool.invokeAll(jobs))System.out.println(f.get());
