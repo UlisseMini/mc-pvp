@@ -30,6 +30,19 @@ history before making this a bot rule. In a separate main-server 10-block
 sumo replication, Hold-W won three of four despite zero sprint bonuses on 25
 follow-up hits. Plain W-tap won two of four mirrors and earned 36/40 bonuses.
 
+The [trained click-pause experiment](learned-click-pause/README.md) froze a
+four-tick decision from own-view features. It gained hits in 40 of 99 shared
+three-hit MMC model starts and tied in 59. With recorded client tick intervals
+substituted after the same landmarks, 25 of 372 covered continuations gained,
+344 tied and three lost. Both full-reach native MMC boxing arms had a median
++3 whole-round hit margin. The trained arm never paused in the 48-round
+full-reach benchmark. With a 2.25-block defender it took five real pauses.
+W-tap completed 85 further hits across 21 entries and learned completed 70
+across 18. One W-tap control sustained thirteen more hits after four successive
+forward-braking contacts. This rule stays experimental. Calibrate when physical
+contacts change return timing before extending it or claiming transfer.
+The test phases and diagnostic donor recordings in this study are now exposed.
+
 ## HARD RULE: plain W-tap is the mandatory baseline
 
 ALWAYS compare against plain W-tap under identical settings in both the model

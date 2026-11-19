@@ -28,6 +28,7 @@ class JavaModelTest(unittest.TestCase):
              str(lab.ROOT / 'src/lab/BurstClickController.java'),
              str(lab.ROOT / 'src/lab/MotionClickController.java'),
              str(lab.ROOT / 'tests/MotionClickControllerCheck.java'),
+             str(lab.ROOT / 'tests/ClickPauseCheck.java'),
              str(lab.ROOT / 'src/lab/CriticalClickController.java'),
              str(lab.ROOT / 'src/lab/ClickRate.java'),
              str(lab.ROOT / 'tests/ClickRateCheck.java'),
@@ -113,6 +114,10 @@ class JavaModelTest(unittest.TestCase):
         result=subprocess.run([str(lab.JAVA),'-cp',str(self.classes),'CriticalClickControllerCheck'],capture_output=True,text=True,timeout=10)
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         self.assertIn('PASS',result.stdout)
+
+    def test_learned_click_pause_uses_primed_history_and_four_input_heads(self):
+        subprocess.run([str(lab.JAVA),'-cp',str(self.classes),'ClickPauseCheck'],check=True,
+                       capture_output=True,text=True,timeout=10)
 
     def test_declared_click_caps_and_no_catchup(self):
         result=subprocess.run([str(lab.JAVA),'-cp',str(self.classes),'ClickRateCheck'],capture_output=True,text=True,timeout=10)

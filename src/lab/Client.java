@@ -59,6 +59,8 @@ public final class Client {
     static boolean referenceActive;
     static final BurstClickController burstClicks=new BurstClickController();
     static BurstClickController.Decision burstDecision;
+    static ClickPause clickPause;
+    static ClickPause.Tree pauseTree;
     static long burstObservedAt;
     static boolean nativeInputPoll;
     static final CriticalClickController criticalClicks=new CriticalClickController();
@@ -345,6 +347,8 @@ public final class Client {
                 matchInitialized=false;
                 match=next;epoch=Long.parseLong(controls.getProperty("start_at",Long.toString(now)));history.clear();previous=null;lastConsumed=null;lastClick=firstClickEligible=0;
                 lastObservedHurt=lastObservedTargetHurt=0;
+                clickPause=controls.containsKey("pause_tree")?new ClickPause():null;
+                pauseTree=clickPause==null?null:new ClickPause.Tree(controls.getProperty("pause_tree"));
                 handledTapCue=pendingTapCue=tapUntil=0;tapReason="";
                 zestPhase=zestUnanswered=0;zestCue=zestIncoming=zestRelease=zestResume=zestEntryAt=0;
                 zestSelecting=controls.getProperty("entry","select").equals("select");
@@ -817,6 +821,19 @@ public final class Client {
             // of runTick, after packet work and before vanilla input consumption.
             // Every fast baseline uses this same opportunity; no queued input is
             // canceled and no attack is called directly.
+            if(clickPause!=null){
+                double radial=((obs.tx-obs.x)*obs.vx+(obs.tz-obs.z)*obs.vz)/Math.max(.001,obs.distance);
+                double[] x=clickPause.observe(obs.time,now-epoch,lastObservedTargetHurt,lastObservedHurt,
+                        obs.distance,obs.localRange,obs.ty,obs.y,radial,obs.sprint,ping);
+                if(x!=null){
+                    boolean pause=pauseTree.pause(x);
+                    if(pause)clickPause.pause(ticks);
+                    Map<String,Object> event=new LinkedHashMap<>();
+                    event.put("type","click_pause_choice");event.put("time",now);event.put("native_tick",ticks);
+                    event.put("match",match);event.put("features",x);event.put("pause",pause);log(event);
+                }
+                clickGate &= clickPause.allows(ticks);
+            }
             if(maintenanceFeedbackHead!=null){
                 MaintenanceStrafeFeedback.Control actual=new MaintenanceStrafeFeedback.Control(
                         forward?(sprintKey?2:1):0,strafe<0?.98f:strafe>0?-.98f:0,clickGate);

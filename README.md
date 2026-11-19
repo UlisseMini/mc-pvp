@@ -11,6 +11,8 @@ The [burst-clicking experiments](research/burst-clicking-results.md) test immedi
 recoil cancellation, continuous one-tick W-tap and critical-aware click scheduling.
 The [sprint-reset and recoil drill](research/recoil-drill/README.md) compares
 20 CPS W-tap with selective clicking in boxing and sumo on the updated MMC preset.
+The [learned four-tick pause](research/learned-click-pause/README.md) tests
+when keeping forward speed during an established combo buys another hit.
 The [click-rate comparison](research/cps-wtap-results.md) isolates 15, 20, 25 and
 30 CPS against otherwise identical 10 CPS one-tick W-tap.
 The [timed-block trials](research/blockhit-linear-results.md) cover the practice

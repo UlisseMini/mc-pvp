@@ -15,6 +15,7 @@
   "MomentumController",
   "BurstClickController",
   "MotionClickController",
+  "ClickPause",
   "CriticalClickController",
   "BlockhitController",
   "LinearHitPredictor",
