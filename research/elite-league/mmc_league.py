@@ -24,7 +24,7 @@ EVIDENCE=HERE/'evidence/mmc13'
 DIGEST='89f9197f91ca4b33e1e00ef751b22ab2ba476885608c528b51bfdb32cb6c123a'
 OLD_TARGET=focus.TARGET
 CURRENT=focus.CURRENT
-VERIFIED_STAGES=('confirmation','transfer','actor','pairs','trade-confirm','phase-confirm','click-confirm','contact-confirm','edge-confirm','hidden-confirm')
+VERIFIED_STAGES=('confirmation','transfer','actor','pairs','trade-confirm','phase-confirm','click-confirm','contact-confirm','edge-confirm','hidden-confirm','reset-confirm')
 
 def registered_control_stages():
     protocol=(HERE/'mmc13-control-protocol.json').read_bytes()

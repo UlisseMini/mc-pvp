@@ -85,24 +85,30 @@ def model(opening=False):
     dump(DEST/(prefix+'model-summary.json'),dict(source=sha(raw),cells=results))
 
 
-def native_bout(r):
+def native_bout(r,sprint=False):
     mid=r['mid'];seat=r['side'];g=json.loads((ROOT/'runtime/results'/(mid+'.json')).read_text())
     path,=(ROOT/'runtime/pov'/mid).glob(seat+'-client-*-events.jsonl.gz')
     first=None;hurt=None;clicks=[];consumes=[];contacts=[];moves=[];last_tick=None;local=None
-    kinds={'duel_network','legacy_head','fresh_hurt_status','click','science_click','engine_attack','science_move'}
+    cue='fresh_target_hurt_status' if sprint else 'fresh_hurt_status'
+    kinds={'duel_network','legacy_head',cue,'click','science_click','engine_attack','science_move'}
+    inputs=[]
     for e in captures.events(path,kinds):
         if e.get('match')!=mid or not g['start']<=e['time']<=g['finish']:continue
         t=e['time'];typ=e['type']
-        if typ=='fresh_hurt_status':hurt=t
+        if typ==cue:hurt=t
         if typ in ('duel_network','legacy_head'):
             last_tick=e['tick']
             if typ=='duel_network':
-                v=e['observation'];x,y,z,tx,_,tz,vx,vy,vz=v[:9];age=v[11]
+                v=e['observation'];x,y,z,tx,_,tz,vx,vy,vz=v[:9];age=v[12 if sprint else 11]
+                key=e['action']%4
             else:
                 x,y,z,vx,vy,vz=e['own'][:6];tx,_,tz=e['target'];age=-1 if hurt is None else t-hurt
+                w,ctrl,*_=e['keys'];key=2 if w and ctrl else int(w)
             dx,dz=tx-x,tz-z;gap=math.hypot(dx,dz);away=-(vx*dx+vz*dz)/gap if gap else 0
-            if first is None and 0<=age<=175 and away>=.12 and 0<gap<=3.6:
+            landmark=0<=age<100 if sprint else 0<=age<=175 and away>=.12 and 0<gap<=3.6
+            if first is None and landmark:
                 first=t;local=[age,gap,away,x,y,z,vx,vy,vz,tx,tz]
+            if sprint and first is not None and 0<=t-first<=350:inputs.append([t-first,last_tick,key])
         if first is None or not 0<=t-first<=350:continue
         if typ=='click':clicks.append([t-first,e['monotonic_ns']])
         if typ=='science_click':consumes.append([t-first,e['tick'],e['sequence']])
@@ -116,6 +122,7 @@ def native_bout(r):
             contacts.append([t-first,last_tick,was,vx,vz,e['vx_after'],e['vz_after'],e['own_x'],e['own_z'],e['click_attempt']])
     out=dict(r,score=1 if r['win'] else .5 if r['draw'] else 0,local=local)
     if first is not None:out.update(at=first-g['start'],censored=first+350>g['finish'],admissions=clicks,consumes=consumes,contacts=contacts,moves=moves)
+    if sprint and first is not None:out.update(inputs=inputs,censored_1500=first+1500>g['finish'])
     return out
 
 

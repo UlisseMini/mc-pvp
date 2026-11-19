@@ -149,5 +149,6 @@ def archive_panel(snapshot):
 
 
 def build(snapshot):
+    from overnight_boxing import panel
     stages={n:partial(n,snapshot) for n in ('opening','final',*VERIFIED_STAGES) if (EVIDENCE/n/'schedule.json').exists()}
-    return dict(as_of=snapshot['as_of'],rule='Only referee results finished by the snapshot time and subsequently verified for both physical players. Pair each candidate with W-tap against the same opponent in the same seat, added RTT, and repeat index. Distinct native games have independent timing. Weakest observed native uses complete four-seat/RTT repeat blocks only. Opponents missing even one full block are named explicitly. Native rows in unfinished tournaments are descriptive and confer no title. No simulation or partial native score changes the common final.',stages=stages,archive=archive_panel(snapshot))
+    return dict(as_of=snapshot['as_of'],rule='Only referee results finished by the snapshot time and subsequently verified for both physical players. Pair each candidate with W-tap against the same opponent in the same seat, added RTT, and repeat index. Distinct native games have independent timing. Weakest observed native uses complete four-seat/RTT repeat blocks only. Opponents missing even one full block are named explicitly. Native rows in unfinished tournaments are descriptive and confer no title. No simulation or partial native score changes the common final.',stages=stages,archive=archive_panel(snapshot),boxing=panel(snapshot))
