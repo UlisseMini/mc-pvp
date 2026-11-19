@@ -3,5 +3,22 @@
   "inputs": "Pair first-person tick start with same tick-end applied forward/strafe and grounded jump. Physical left-button-down within the tick is the attack label, capped to a binary gate. Read local main-thread hurt handlers before the head. Use past applied controls, rendered target changes and own state. Never read the opponent POV. Aim offsets and sub-tick physical intervals are descriptive. The proxy has standard tracking aim and requests sprint with forward.",
   "proxy": "Fit a conditional 16-unit softsign MLP with categorical longitudinal and lateral actions and Bernoulli physical press and grounded jump. Give it the previous input and bounded elapsed heads since a press, jump, longitudinal change or strafe change. Sample its distribution on a deterministic private random stream, separately frozen across development and validation. Compare teacher-forced log loss and per-head action frequencies to unconditional and previous-input-only baselines. Choose seed and training epoch on selection rounds and only then score the later same-player rounds. Evaluate separate high-CPS stress with the learned movement and private timing rhythm but attack gate open.",
   "challenger": "First measure existing W-tap, Hold-W, champion and targeted adversaries against both proxies on original development clocks. Permit human-informed optimization if a stronger response exists or the champion drops games. Optimize ring-outs in a mixed population of human-informed proxies and ordinary strong fixed controllers using only original training clocks. Keep W-tap and Hold-W controls, both seats and both RTTs. Choose challenge weights before obtaining new mirror clocks, then test a different set of proxy draw streams. An evaluator never sees an opponent name or random seed.",
-  "promotion": "Compare challenger, strongest previously frozen candidate and W-tap on matched model and main-lab Forge ring-outs. Development and same-player checks establish proxy fidelity only. Do not interpret proxy wins as wins against Nomophobia or elite players."
+  "promotion": "Compare challenger, strongest previously frozen candidate and W-tap on matched model and main-lab Forge ring-outs. Development and same-player checks establish proxy fidelity only. Do not interpret proxy wins as wins against Nomophobia or elite players.",
+  "random_streams": {
+    "training": "new 24-bit positive seed per mirrored fixture, both seats and all contenders share one draw stream",
+    "selection": [
+      10103,
+      30307,
+      50111,
+      70201
+    ],
+    "prospective": [
+      151121,
+      221077,
+      351019,
+      448043
+    ],
+    "native": "use the first two prospective streams at both RTTs for each of the two proxy variants"
+  },
+  "challenger_fit": "Compare paired evolutionary search from the strongest frozen sumo network with and without human proxy exposure. Keep the same compute, starting weights, draw of original timing donors, seats, and nonhuman opponents. For the no-human arm replace the two human fixtures per generation with a draw from ordinary opponents. One additional recurrent human-informed search is exploratory. Choose candidates by balanced average/worst-group on the former development clocks. Include the frozen reference and W-tap in every ring-out panel."
 }
