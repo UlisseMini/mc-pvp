@@ -48,13 +48,14 @@ def sprint_flag_drains(events, first, last, start):
         flags.append((packet['entity_id'], starts[index]))
     return flags
 
-def compare(mid,delay_pairs=None,mouse='generated',diagnose=False):
+def compare(mid,delay_pairs=None,mouse='generated',diagnose=False,horizon_ms=2000):
     g=json.loads((ROOT/f'runtime/results/{mid}.json').read_text())
     modes={g['parameters_'+s].get('aim_input','ideal') for s in 'ab'}
     if len(modes)!=1:raise ValueError('Mixed mouse modes in physical-input panel')
     aim=mouse if modes=={'mouse'} else 'ideal'
     if mouse not in ('generated','recorded'):raise ValueError('Unknown physical mouse replay')
-    start=g['start'];end=min(start+2000,g['finish'])
+    if horizon_ms<=0:raise ValueError('Replay horizon must be positive')
+    start=g['start'];end=min(start+horizon_ms,g['finish'])
     rows=[];refs={};counts={};native_hits=[];clock_origins=[];trackers={}
     interventions={'a':[],'b':[]};velocity_drains={'a':[],'b':[]};sprint_evidence={'a':[],'b':[]}
     settings_set={v for v in delay_pairs or () if isinstance(v,str)}

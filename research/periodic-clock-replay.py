@@ -9,7 +9,7 @@ from network_pipeline_audit import archive,wire as pipeline_wire,pair_payloads,s
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 JAVA=Path(shutil.which('java') or 'java')
-SOURCES=['src/lab/ExactTravel.java','src/lab/Json.java','src/lab/CombatProfile.java','src/lab/DuelSettings.java','src/lab/Compat.java','src/lab/PracticePresets.java','tests/PeriodicComboFightModel.java','tests/PeriodicComboReplay.java','tests/PeriodicComboTransport.java']
+SOURCES=['src/lab/ExactTravel.java','src/lab/SumoFootprint.java','src/lab/Json.java','src/lab/CombatProfile.java','src/lab/DuelSettings.java','src/lab/Compat.java','src/lab/PracticePresets.java','tests/PeriodicComboFightModel.java','tests/PeriodicComboReplay.java','tests/PeriodicComboTransport.java']
 
 def wire(events,direction,player=None):
     rows=pipeline_wire(events,direction,player)
@@ -73,7 +73,7 @@ def server_snapshot_clocks(events,clock):
                 pending=None
     return anchors
 
-def network_schedule(mid,data,game,offset,t0,seconds):
+def network_schedule(mid,data,game,offset,t0,seconds,service_horizon=None):
     """Packet values assert predictions; only delivery times enter simulated state."""
     server=archive(mid,'server');records=[];applies=[]
     ids={e['tracker']['player']:int(e['tracker']['entity_id'])for e in data['server']if e['type']=='replication_tracker_before'}
@@ -104,6 +104,11 @@ def network_schedule(mid,data,game,offset,t0,seconds):
                 kind=2 if side=='a'else 9;flag=int(q['action']==3)
             queue=inputs[signature(q)]
             while queue and queue[0]['monotonic_ns']<receive['ns']:queue.popleft()
+            if not queue and service_horizon is not None and ms(receive['ns'])>=service_horizon*1000:
+                # Verify its generated payload. A packet still in transit at the cutoff
+                # cannot affect any state being compared, even if the referee stops tracing.
+                records.append((kind,t,'Infinity',x,y,vx,vy,flag,z,vz,pid))
+                continue
             if not queue:raise ValueError(('Missing server task service',side,q,t))
             delivery=ms(queue.popleft()['monotonic_ns'])
             records.append((kind,t,delivery,x,y,vx,vy,flag,z,vz,pid));applies.append((delivery,'SERVER_APPLY',[],None))
@@ -235,7 +240,7 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
         # A move callback can generate a packet immediately before the cutoff
         # whose native serializer runs after it. Include one tick of send-side
         # assertions; only handlers strictly inside the requested horizon run.
-        network,applies=network_schedule(mid,data,game,offset,t0,seconds+(.05 if sumo else 0))
+        network,applies=network_schedule(mid,data,game,offset,t0,seconds+(.05 if sumo else 0),seconds)
         # Pending packets can arrive after the requested cutoff. Replaying
         # those handlers would generate new packets outside the captured send
         # horizon, falsely reporting NETWORK_EXTRA at the truncated tail.
@@ -247,6 +252,9 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
     first_tracker=next(e['tracker']['player'] for e in data['server'] if e['type']=='replication_tracker_before'
                        and e['tracker']['player'] in (game['a'],game['b']) and clock(e)>=0)
     arena=[int(sumo),top,(game['arena']+1)*4096,{'mmc_pre_attack_sprint_v2':1,'mmc_recorded_sumo_v3':2,'mmc_recorded_range_v4':3}.get(kb,0),int(first_tracker==game['a'])]
+    # The recorded 13-block MMC floor starts both players at z = 0.5.
+    arena.extend([game['sumo_arena'].get('diameter',10) if sumo else 10,
+                  *[moves[side][0]['before']['posZ'] for side in ('a','b')]])
     lines=['\t'.join(map(str,['INIT',ax,bx,game['ping_a'],game['ping_b'],game['attack_reach_b'],tracker,*report_seeds,*initial_damage,*teleport_ages,*combat,*arena]))]
     lines=['\t'.join(map(lambda x:'NaN'if isinstance(x,float)and x!=x else str(x),['NETWORK',*r]))for r in network]+lines
     for t,k,args,e in rows:

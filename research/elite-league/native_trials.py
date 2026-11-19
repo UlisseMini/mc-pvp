@@ -104,20 +104,23 @@ def tranche(out,completed):
         return 0,16-completed
     return cohort_priority(out.stem),64
 
+def complete_manifest(trials,out):
+    if not out.exists():return False
+    record=json.loads(out.read_text())
+    if record['plan']!=trials:raise ValueError('Existing manifest has different protocol')
+    if record['matches'].keys()!=trials.keys():return False
+    for req,mid in record['matches'].items():
+        if json.loads((ROOT/'runtime/results'/(mid+'.json')).read_text())['request']!=req:
+            raise ValueError('Recorded result differs from its request')
+    return True
+
 def run_batch(trials,out):
-    # Keep the complete frozen schedule visible while short cohorts share eight physical clients.
-    # A phase ends only after every issued match in it records a terminal result.
-    if out.exists():
-        record=json.loads(out.read_text())
-        if record['plan']!=trials:raise ValueError('Existing manifest has different protocol')
-        if record['matches'].keys()==trials.keys():
-            for req,mid in record['matches'].items():
-                if json.loads((ROOT/'runtime/results'/(mid+'.json')).read_text())['request']!=req:
-                    raise ValueError('Recorded result differs from its request')
-            return
+    # A completed native manifest can be audited while another executable occupies the lab.
+    if complete_manifest(trials,out):return
     work=ROOT/'build/elite-league';waiting=work/'native-waiting';waiting.mkdir(exist_ok=True)
     with out.with_suffix('.runner.lock').open('a') as runner:
         fcntl.flock(runner.fileno(),fcntl.LOCK_EX)
+        if complete_manifest(trials,out):return
         found=None
         while found is None or len(found)<len(trials):
             count=len(found) if found is not None else len(json.loads(out.read_text())['matches']) if out.exists() else 0

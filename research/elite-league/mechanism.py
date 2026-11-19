@@ -19,9 +19,10 @@ def encode(f,w):
 
 def intervention(net,name):
     family,w=unpack(net)
-    if family!='HYBRID':raise ValueError('Registered base is hybrid')
+    if family not in ('HYBRID','MLP'):raise ValueError('Action interventions require an MLP or hybrid')
     h=8;inputs=22;outputs=5;block=h+1;base=len(w)-outputs*block
     if name=='no-memory':
+        if family!='HYBRID':raise ValueError('An MLP has no recurrent weights')
         for i in range(h):
             start=i*(1+inputs+h)+1+inputs
             w[start:start+h]=[0]*h

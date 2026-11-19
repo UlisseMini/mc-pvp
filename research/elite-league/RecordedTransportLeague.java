@@ -65,7 +65,17 @@ final class RecordedTransportLeague {
         ranked.sort(Comparator.comparingDouble(Rating::merit).reversed().thenComparing(Comparator.comparingDouble(Rating::mean).reversed()).thenComparing(r->r.fighter.name()));
         return ranked;
     }
-    static void train(Path folder,List<DuelEnv> basic,List<DuelEnv> varied,List<Arena.Fighter> opponents,Arena.Fighter source)throws Exception{
+    static Arena.Model mutateSprint(Arena.Model parent,Random rng,double sigma){
+        if(parent.family()!=lab.DuelNetwork.Family.MLP)throw new IllegalArgumentException("Expected the frozen PPO MLP");
+        int block=lab.DuelNetwork.HIDDEN+1;
+        int start=parent.weights().length-(lab.DuelNetwork.OUTPUTS-1)*block;
+        float[] weights=parent.weights().clone();
+        int required=rng.nextInt(block);double fraction=rng.nextBoolean()?.18:.7;
+        for(int i=0;i<block;i++)if(i==required || rng.nextDouble()<fraction)
+            weights[start+i]=(float)Math.max(-6,Math.min(6,weights[start+i]+rng.nextGaussian()*sigma));
+        return new Arena.Model(parent.family(),weights);
+    }
+    static void train(Path folder,List<DuelEnv> basic,List<DuelEnv> varied,List<Arena.Fighter> opponents,Arena.Fighter source,boolean sprintOnly)throws Exception{
         var draw=new Random(783163);var pool=Executors.newFixedThreadPool(3);
         var rng=List.of(new Random(587301),new Random(587301));
         var tracks=List.of(new ArrayList<>(List.of(source)),new ArrayList<>(List.of(source)));
@@ -85,7 +95,8 @@ final class RecordedTransportLeague {
                     while(entrants.size()<20){
                         var random=rng.get(track);var parent=elite.get(random.nextInt(elite.size()));
                         double scale=new double[]{.04,.12,.3,.65}[entrants.size()%4];
-                        entrants.add(new Arena.Fighter("child-"+gen+"-"+entrants.size(),Evolve.mutate(parent.model(),random,scale)));
+                        var child=sprintOnly?mutateSprint(parent.model(),random,scale):Evolve.mutate(parent.model(),random,scale);
+                        entrants.add(new Arena.Fighter("child-"+gen+"-"+entrants.size(),child));
                     }
                     var ranks=rank(pool,entrants,panels.get(track));var wt=rate(Evolve.WT,panels.get(track));
                     elite.clear();for(var r:ranks){
@@ -118,12 +129,14 @@ final class RecordedTransportLeague {
     public static void main(String[] args)throws Exception{
         var donors=read(Path.of(args[1]));var foes=Matches.roster(Path.of(args[2]));var arms=Matches.roster(Path.of(args[3]));
         var tapes=Arrays.stream(args,5,args.length).map(Path::of).toList();
-        var fixed=Arena.envs(tapes,"mmc-recorded",true);var varied=Arena.envs(tapes,"mmc-recorded",true);
-        var seed=new Random(args[0].equals("fit")?179613:627715);
+        String profile=args[0].endsWith("-range")?"mmc-range":"mmc-recorded";
+        String operation=args[0].replaceFirst("-range$","");
+        var fixed=Arena.envs(tapes,profile,true);var varied=Arena.envs(tapes,profile,true);
+        var seed=new Random(operation.equals("fit")?179613:627715);
         for(var env:fixed)env.initial.timing.mouseInput=true;
         for(var env:varied){env.initial.timing.mouseInput=true;jitter(env,donors,seed);}
-        if(args[0].equals("fit"))train(Path.of(args[4]),fixed,varied,foes,arms.get(0));
-        else if(args[0].equals("score"))score(arms,foes,fixed,varied);
+        if(operation.equals("fit")||operation.equals("fit-sprint"))train(Path.of(args[4]),fixed,varied,foes,arms.get(0),operation.equals("fit-sprint"));
+        else if(operation.equals("score"))score(arms,foes,fixed,varied);
         else throw new IllegalArgumentException("Use fit or score");
     }
 }

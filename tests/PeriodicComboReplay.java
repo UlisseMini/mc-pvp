@@ -11,11 +11,15 @@ public final class PeriodicComboReplay {
             if(p[0].equals("NETWORK")){if(transport==null)transport=new PeriodicComboTransport();transport.add(p);continue;}
             if(p[0].equals("INIT")){
                 double ax=Double.parseDouble(p[1]),bx=Double.parseDouble(p[2]);double top=p.length>28?Double.parseDouble(p[28]):4;
-                s=new PeriodicComboFightModel.State(ax,0,bx,0,top);
+                double az=p.length>34?Double.parseDouble(p[33]):0,bz=p.length>34?Double.parseDouble(p[34]):0;
+                s=new PeriodicComboFightModel.State(ax,az,bx,bz,top);
                 if(p.length>30){
                     c.sumo=p[27].equals("1");c.rangeMmc=p[30].equals("3");c.recordedMmc=c.rangeMmc||p[30].equals("2");c.mmc=c.recordedMmc||p[30].equals("1");
                     if(p.length>31)c.trackerAFirst=p[31].equals("1");
-                    if(c.sumo){c.sumoArena(Double.parseDouble(p[29]),top);c.solidEdge();}
+                    if(c.sumo){
+                        if(p.length>32)c.sumoDiameter=Integer.parseInt(p[32]);
+                        c.sumoArena(Double.parseDouble(p[29]),top);c.solidEdge();
+                    }
                 }
                 c.ownRtt=Double.parseDouble(p[3]);c.otherRtt=Double.parseDouble(p[4]);c.defenderReach=Double.parseDouble(p[5]);PeriodicComboFightModel.defenderReach=c.defenderReach;
                 s.serverTicks=Integer.parseInt(p[6]);for(int i=0;i<2;i++){PeriodicComboFightModel.Body b=i==0?s.a:s.b;int k=7+6*i;b.reportAge=Integer.parseInt(p[k]);b.reportX=Double.parseDouble(p[k+1]);b.reportY=Double.parseDouble(p[k+2]);b.reportZ=Double.parseDouble(p[k+3]);b.reportYaw=Float.parseFloat(p[k+4]);b.reportPitch=Float.parseFloat(p[k+5]);}s.lastDamageA=(int)Math.round(Double.parseDouble(p[19])*(c.sumo?2:1));s.lastDamageB=(int)Math.round(Double.parseDouble(p[20])*(c.sumo?2:1));if(p.length>22){s.teleportAgeA=Integer.parseInt(p[21]);s.teleportAgeB=Integer.parseInt(p[22]);}if(p.length>25){c.kbScale=Double.parseDouble(p[23]);c.verticalScale=Double.parseDouble(p[24]);c.hitTicks=Integer.parseInt(p[25]);s.freshThreshold=c.hitTicks;}

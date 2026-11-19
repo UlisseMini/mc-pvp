@@ -32,6 +32,12 @@ def fit():
         training='80 generations per track, 20 actors plus plain W-tap, both seats, both RTTs. Each generation draws the identical calendars, opponents and seats for both tracks. Fixed track uses the standard 0.35 ms everywhere. Mixed track gives half the cases lane-specific native wire-delay distributions, on top of the configured one-way RTT. Score equal-weight opponent mean, bottom quartile of opponent/seat/RTT cells and weakest opponent in weights 0.4/0.4/0.2. Prioritize W-tap during selection.',
         residual='The link model samples bounded residuals by an exogenous seed, route and 50 ms interval with monotonic FIFO receipt. Five-second measurements supply the percentile distribution, not historical payloads or opponent actions. This is a robustness intervention, not an identified model of packet delivery.',
         development='Use distinct donor fixtures and original development calendars, both fixed and varying links. Freeze training weights before scoring. These are development fixtures.'))
+    controls={n:pool[n] for n in ['wtap',parent,'v3-feed-39',students[-1]]}
+    return search(d,tmp,parent,pool[parent],foes,controls,train_ids,dev_ids,'v3')
+
+def search(d,tmp,parent,source,foes,controls,train_ids,dev_ids,version):
+    operation={'v3':'','v4':'-range','v4-sprint':'-range'}[version]
+    fit_op='fit-sprint' if version=='v4-sprint' else 'fit'
     def donors(name,requests):
         lines=[]
         for q in requests:
@@ -42,21 +48,21 @@ def fit():
     def saved_roster(name, field):
         with tempfile.TemporaryDirectory(dir=tmp) as directory:
             path=Path(directory)/name;roster(path,field);freeze(tmp/name,path.read_bytes())
-    saved_roster('opponents',foes);saved_roster('source',{parent:pool[parent]})
+    saved_roster('opponents',foes);saved_roster('source',{parent:source})
     compile_model();saved=tmp/'trained'
     if not saved.is_dir():
         with tempfile.TemporaryDirectory(dir=tmp) as sub:
             out=Path(sub)/'checkpoints';out.mkdir()
-            subprocess.run(java('RecordedTransportLeague','fit',train,tmp/'opponents',tmp/'source',out,*calendars('training_clocks')),cwd=ROOT,check=True)
+            subprocess.run(java('RecordedTransportLeague',fit_op+operation,train,tmp/'opponents',tmp/'source',out,*calendars('training_clocks')),cwd=ROOT,check=True)
             out.rename(saved)
-    arms={n:pool[n] for n in ['wtap',parent,'v3-feed-39',students[-1]]}
+    arms=controls.copy()
     for f in sorted(saved.glob('*.net')):
-        n='v3-link-'+f.stem;arms[n]=d/(n+'.net');freeze(arms[n],f.read_bytes())
+        n=version+'-link-'+f.stem;arms[n]=d/(n+'.net');freeze(arms[n],f.read_bytes())
     freeze(d/'training.jsonl', (saved/'training.jsonl').read_bytes())
     saved_roster('entrants',arms);raw=d/'development.jsonl.gz'
     if not raw.exists():
         with tempfile.TemporaryFile() as f:
-            subprocess.run(java('RecordedTransportLeague','score',dev,tmp/'opponents',tmp/'entrants',tmp,*calendars('development_selection_clocks')),cwd=ROOT,stdout=f,check=True)
+            subprocess.run(java('RecordedTransportLeague','score'+operation,dev,tmp/'opponents',tmp/'entrants',tmp,*calendars('development_selection_clocks')),cwd=ROOT,stdout=f,check=True)
             f.seek(0);freeze(raw,gzip.compress(f.read(),mtime=0))
     cells=defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:defaultdict(Counter))))
     with gzip.open(raw,'rt') as f:
@@ -77,10 +83,10 @@ def fit():
         ranks.append(dict(name=arm,wtap=by_opponent['wtap'],rates=by_opponent,mean=mean,merit=.4*mean+.4*sum(bottom)/len(bottom)+.2*min(by_opponent.values())))
     ranks.sort(key=lambda r:(r['wtap']<.8,-r['merit'],-r['mean'],r['name']))
     for track in ('fixed','jitter'):
-        selected=next(r['name'] for r in ranks if r['name'].startswith('v3-link-'+track))
+        selected=next(r['name'] for r in ranks if r['name'].startswith(version+'-link-'+track))
         champions.install(selected,arms[selected],'Recorded wire-transport training, '+track+' track',selected,'direct')
-        publish('minemen-v3-link-'+track,selected,arms)
-    winner=ranks[0]['name'];publish('minemen-v3-link-cup',winner,arms)
+        publish('minemen-'+version+'-link-'+track,selected,arms)
+    winner=ranks[0]['name'];publish('minemen-'+version+'-link-cup',winner,arms)
     dump(d/'results.json',dict(winner=winner,ranks=ranks,cells=cells))
     print('Transport search',winner,flush=True)
 if __name__=='__main__':fit()
