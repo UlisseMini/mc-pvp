@@ -13,7 +13,7 @@ public final class PeriodicComboReplay {
                 double ax=Double.parseDouble(p[1]),bx=Double.parseDouble(p[2]);double top=p.length>28?Double.parseDouble(p[28]):4;
                 s=new PeriodicComboFightModel.State(ax,0,bx,0,top);
                 if(p.length>30){
-                    c.sumo=p[27].equals("1");c.mmc=p[30].equals("1");
+                    c.sumo=p[27].equals("1");c.rangeMmc=p[30].equals("3");c.recordedMmc=c.rangeMmc||p[30].equals("2");c.mmc=c.recordedMmc||p[30].equals("1");
                     if(p.length>31)c.trackerAFirst=p[31].equals("1");
                     if(c.sumo){c.sumoArena(Double.parseDouble(p[29]),top);c.solidEdge();}
                 }

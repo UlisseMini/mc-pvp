@@ -141,9 +141,10 @@ final class PPO {
     public static void main(String[] args)throws Exception{
         var dest=Path.of(args[0]);int steps=Integer.parseInt(args[1]),pairs=Integer.parseInt(args[2]),seed=Integer.parseInt(args[3]);
         var initial=Arena.Model.decode(Files.readString(Path.of(args[4])).trim());if(initial.family()!=DuelNetwork.Family.MLP)throw new IllegalArgumentException("MLP actor required");
-        boolean recorded=args[7].equals("--recorded-mouse-league");
+        boolean range=args[7].equals("--range-mouse-league");
+        boolean recorded=range||args[7].equals("--recorded-mouse-league");
         boolean fittedField=recorded||args[7].equals("--mouse-league");
-        var field=new RobustField(Arrays.stream(args,fittedField?9:7,args.length).map(Path::of).toList(),Path.of(args[5]),Path.of(args[6]),recorded?"mmc-recorded":"mmc");
+        var field=new RobustField(Arrays.stream(args,fittedField?9:7,args.length).map(Path::of).toList(),Path.of(args[5]),Path.of(args[6]),range?"mmc-range":recorded?"mmc-recorded":"mmc");
         if(fittedField){
             var groups=new TreeMap<String,List<Arena.Fighter>>();
             for(var opp:Ladder.readField(Path.of(args[8])))groups.computeIfAbsent(opp.group(),name->new ArrayList<>()).add(opp.f());

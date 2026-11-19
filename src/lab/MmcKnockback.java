@@ -84,8 +84,14 @@ public final class MmcKnockback {
         if (preAttackSprint) extra++;
         double base = profile.recordedMmc() ? CombatProfile.RECORDED_BASE : CombatProfile.MMC_HORIZONTAL;
         double bonus = profile.recordedMmc() ? CombatProfile.RECORDED_EXTRA : CombatProfile.MMC_SPRINT_EXTRA;
-        vx = (length < .01 ? facingX : vx / length) * base + facingX * extra * bonus;
-        vz = (length < .01 ? facingZ : vz / length) * base + facingZ * extra * bonus;
+        if (profile.rangeMmc()) {
+            double half = .5 * CombatProfile.rangeHorizontal(length, extra);
+            vx = half * ((length < .01 ? facingX : vx / length) + facingX);
+            vz = half * ((length < .01 ? facingZ : vz / length) + facingZ);
+        } else {
+            vx = (length < .01 ? facingX : vx / length) * base + facingX * extra * bonus;
+            vz = (length < .01 ? facingZ : vz / length) * base + facingZ * extra * bonus;
+        }
         double height = R.num(target, "posY") - victim.floor;
         if (!profile.recordedMmc() && height > CombatProfile.MMC_HEIGHT_LIMIT) victim.capped = true;
         double rtt = victim == a ? match.pingA : match.pingB;

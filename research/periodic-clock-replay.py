@@ -242,11 +242,11 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
         rows.extend(row for row in applies if row[0]<seconds*1000)
     rows.sort(key=lambda r:r[0])
     kb=profile.get('knockback_model','vanilla')
-    if kb not in ('mmc_pre_attack_sprint_v2','vanilla','vanilla_sprint_components') and 'mmc' in kb:
+    if kb not in ('mmc_pre_attack_sprint_v2','mmc_recorded_sumo_v3','mmc_recorded_range_v4','vanilla','vanilla_sprint_components') and 'mmc' in kb:
         raise ValueError('Unsupported historical knockback model: '+kb)
     first_tracker=next(e['tracker']['player'] for e in data['server'] if e['type']=='replication_tracker_before'
                        and e['tracker']['player'] in (game['a'],game['b']) and clock(e)>=0)
-    arena=[int(sumo),top,(game['arena']+1)*4096,int(kb=='mmc_pre_attack_sprint_v2'),int(first_tracker==game['a'])]
+    arena=[int(sumo),top,(game['arena']+1)*4096,{'mmc_pre_attack_sprint_v2':1,'mmc_recorded_sumo_v3':2,'mmc_recorded_range_v4':3}.get(kb,0),int(first_tracker==game['a'])]
     lines=['\t'.join(map(str,['INIT',ax,bx,game['ping_a'],game['ping_b'],game['attack_reach_b'],tracker,*report_seeds,*initial_damage,*teleport_ages,*combat,*arena]))]
     lines=['\t'.join(map(lambda x:'NaN'if isinstance(x,float)and x!=x else str(x),['NETWORK',*r]))for r in network]+lines
     for t,k,args,e in rows:

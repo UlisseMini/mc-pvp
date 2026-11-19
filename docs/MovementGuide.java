@@ -302,9 +302,11 @@ public class MovementGuide {
         double awayX = length < 0.01 ? facingX : separation.x/length;
         double awayZ = length < 0.01 ? facingZ : separation.z/length;
         double y = 0.361375 + levels * settings.sprintVertical;
-        return new Vec((0.5275 * awayX + 0.422 * levels * facingX) * settings.horizontal,
+        double reduction = levels == 0 ? 0 : Math.min(0.40, 0.35 * Math.max(0, length - 3));
+        double strength = (0.5275 + 0.422 * levels) * (1 - reduction);
+        return new Vec(0.5 * strength * (awayX + facingX) * settings.horizontal,
                        y * settings.vertical,
-                       (0.5275 * awayZ + 0.422 * levels * facingZ) * settings.horizontal);
+                       0.5 * strength * (awayZ + facingZ) * settings.horizontal);
     }
 
     static short encodeAxis(double speed) {

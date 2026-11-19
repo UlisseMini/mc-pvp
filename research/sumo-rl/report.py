@@ -74,7 +74,7 @@ def model_game(r):
                 hs=[(cut['landmark'],False,False)]+score.signed_hits(cut['committed']+g['hits'],first)
                 box[arm]={}
                 for method in METHODS:
-                    ep=score.episodes(hs,cut['landmark'],g['end'],9,1,method=='active')
+                    ep=score.episodes(hs,cut['landmark'],g['end'],r.get('fresh_hit_ticks',9),1,method=='active')
                     box[arm][method]=score.summarize_episodes(ep[:1])
     return row
 

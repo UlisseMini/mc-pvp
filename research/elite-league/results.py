@@ -85,7 +85,7 @@ def first_boxing(game):
             if k in starts:
                 # Keep the logged order for multiple attacks in one server drain.
                 cut=starts[k];at=hits[cut][0]
-                episodes=score.episodes(hits[cut:],at,record['finish'],9,1,method=='active')[:1]
+                episodes=score.episodes(hits[cut:],at,record['finish'],record['combat_profile']['fresh_hit_ticks'],1,method=='active')[:1]
             partial[method]=score.summarize_episodes(episodes)
         outcomes[k]=partial
     return dict(outcomes=outcomes,at_ms={k:hits[i][0]-record['start'] for k,i in starts.items()},

@@ -19,13 +19,13 @@ DEST=HERE/'recorded-mmc-frozen'
 TEMP=ROOT/'build/elite-league/recorded-mmc'
 PROFILE='mmc-recorded'
 
-def evaluate(path,arms,foes,clocks):
+def evaluate(path,arms,foes,clocks,profile=PROFILE):
     if not path.exists():
         with tempfile.TemporaryDirectory(dir=TEMP) as d:
-            freeze(path,grid(Path(d),'crossplay',arms,foes,clocks,'mouse',PROFILE).read_bytes())
+            freeze(path,grid(Path(d),'crossplay',arms,foes,clocks,'mouse',profile).read_bytes())
     with gzip.open(path,'rt') as f:
         for row in map(json.loads,f):
-            if (row['profile'],row['diameter'],row['start_gap'],row['aim_input'])!=(PROFILE,13,8,'mouse'):raise ValueError('Unexpected calibrated fixture')
+            if (row['profile'],row['diameter'],row['start_gap'],row['aim_input'])!=(profile,13,8,'mouse'):raise ValueError('Unexpected calibrated fixture')
     return ranking(path,arms,foes,len(clocks))
 
 def publish(alias,arm,field):

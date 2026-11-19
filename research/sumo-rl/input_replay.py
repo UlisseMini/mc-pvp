@@ -131,7 +131,13 @@ def compare(mid,delay_pairs=None,mouse='generated',diagnose=False):
     prefix_ends=sum(ns<first_tracker and kind=='SERVER_END' for ns,_,kind,_ in rows)
     seeds=[trackers[g[s]][1] for s in 'ab']
     if seeds[0]['updateCounter']!=seeds[1]['updateCounter']:raise ValueError('Unsynchronized tracker initialization')
-    query=[' '.join(map(str,[(g['arena']+1)*4096,int(g['initial_ping_a']),g['practice_preset'],
+    profile=g['practice_preset']
+    if profile in ('mmc','mmc-v3','mmc-v2'):
+        model=g['combat_profile'].get('knockback_model')
+        versions={'mmc_pre_attack_sprint_v2':'mmc-v2','mmc_recorded_sumo_v3':'mmc-recorded','mmc_recorded_range_v4':'mmc-range'}
+        if model not in versions:raise ValueError('Unrecognized recorded MMC revision: '+str(model))
+        profile=versions[model]
+    query=[' '.join(map(str,[(g['arena']+1)*4096,int(g['initial_ping_a']),profile,
            int(seeds[0]['updateCounter'])-prefix_ends,*[int(v['ticksSinceLastForcedTeleport']) for v in seeds],
            *[int(v['encodedRotationYaw']) for v in seeds],*[int(v['encodedRotationPitch']) for v in seeds],int(trackers[g['a']][0]<trackers[g['b']][0]),
            int(g['initial_ping_b']),g['sumo_arena']['diameter'],g['sumo_arena']['start_gap'],aim]))]

@@ -33,7 +33,7 @@ public final class CombatSprintVerticalCheck {
         repeated.resistant=mmc.hitTicks;
         PeriodicComboFightModel.hit(repeated,mmc,true,900);
         bits(repeated.lastFreshB.x(),PeriodicComboFightModel.vel(.5274+.327),"sprint command re-arms the bonus");
-        var measured=new PeriodicComboFightModel.Config();measured.applyCombat(PracticePresets.defaults("mmc"));
+        var measured=new PeriodicComboFightModel.Config();measured.applyCombat(PracticePresets.defaults("mmc-v3"));
         check(measured.hitTicks==10 && measured.deepCopy().recordedMmc,"recorded profile and fresh window retained");
         for(boolean running:new boolean[]{false,true}){
             var air=seed(running,0,false);air.serverBy=air.mmcB.floor()+1.1;air.mmcB=air.mmcB.cap(1.1);
@@ -42,6 +42,20 @@ public final class CombatSprintVerticalCheck {
             bits(air.lastFreshB.x(),PeriodicComboFightModel.vel(.5275+(running?.422:0)),"recorded horizontal impulse");
             var old=seed(running,0,false);old.serverBy=old.mmcB.floor()+1.1;old.mmcB=old.mmcB.cap(1.1);
             PeriodicComboFightModel.hit(old,mmc,true,0);bits(old.lastFreshB.y(),0,"legacy high hit stays capped");
+        }
+        var ranged=new PeriodicComboFightModel.Config();ranged.applyCombat(PracticePresets.defaults("mmc"));
+        for(double gap:new double[]{1,3,3.5,4,4.5})for(boolean running:new boolean[]{true,false}){
+            var state=seed(running,0,false);state.serverBx=gap;
+            PeriodicComboFightModel.hit(state,ranged,true,0);
+            double strength=running?.9495*Math.max(.6,1-.35*Math.max(0,gap-3)):.5275;
+            bits(state.lastFreshB.x(),PeriodicComboFightModel.vel(strength),"distance attenuation");
+            var cross=seed(running,0,false);cross.serverBx=gap;cross.serverYawA=0;
+            PeriodicComboFightModel.hit(cross,ranged,true,0);
+            bits(cross.lastFreshB.x(),PeriodicComboFightModel.vel(strength*.5),"right-angle radial impulse");
+            bits(cross.lastFreshB.z(),PeriodicComboFightModel.vel(strength*.5),"right-angle facing impulse");
+            var reverse=seed(running,0,false);reverse.serverBx=gap;reverse.serverYawA=90;
+            PeriodicComboFightModel.hit(reverse,ranged,true,0);
+            bits(reverse.lastFreshB.x(),0,"crossed players cancel the two X components");
         }
         var h=new PeriodicComboFightModel.Config();h.applyCombat(PracticePresets.defaults("hypixel"));check(h.hitTicks==9&&h.kbScale==1&&h.verticalScale==1&&h.sprintVertical==.07,"full profile import");check(h.deepCopy().sprintVertical==.07,"copied boost");
         var standard=new PeriodicComboFightModel.Config();standard.hitTicks=9;

@@ -223,11 +223,11 @@ public final class PeriodicComboFightModel {
         double ownRtt=20,otherRtt=20,defenderReach=1.5,kbScale=1,verticalScale=1,sprintVertical=.1;
         /** Explicit profile import keeps model/native options identical; omitted fields retain defaults. */
         void applyCombat(Properties p){
-            lab.CombatProfile q=lab.CombatProfile.fromOverrides(p,new lab.CombatProfile(kbScale,verticalScale,hitTicks,sprintVertical,mmc,recordedMmc));
-            kbScale=q.horizontal();verticalScale=q.vertical();hitTicks=q.freshTicks();sprintVertical=q.sprintVertical();mmc=q.mmc();recordedMmc=q.recordedMmc();
+            lab.CombatProfile q=lab.CombatProfile.fromOverrides(p,new lab.CombatProfile(kbScale,verticalScale,hitTicks,sprintVertical,mmc,recordedMmc,rangeMmc));
+            kbScale=q.horizontal();verticalScale=q.vertical();hitTicks=q.freshTicks();sprintVertical=q.sprintVertical();mmc=q.mmc();recordedMmc=q.recordedMmc();rangeMmc=q.rangeMmc();
         }
         int bPhase=10,serverPhase=25,hitTicks=10,sumoDiameter=10;
-        boolean quantize=true,nativeNormalization=true,forceContacts=true,deferMovementSend=false,mmc=false,sumo=false,recordedMmc=false;
+        boolean quantize=true,nativeNormalization=true,forceContacts=true,deferMovementSend=false,mmc=false,sumo=false,recordedMmc=false,rangeMmc=false;
     }
     // Same tile-center disk and footprint as the native sumo platform, with
     // Y translated from 12 to 4. No block side-face collision below the top.
@@ -378,8 +378,14 @@ public final class PeriodicComboFightModel {
                 double facingX=-Math.sin(yaw),facingZ=Math.cos(yaw),length=Math.hypot(dx,dz);
                 double base=c.recordedMmc?lab.CombatProfile.RECORDED_BASE:.5274;
                 double extra=sprint?(c.recordedMmc?lab.CombatProfile.RECORDED_EXTRA:.327):0;
-                vx=(length<.01?facingX:dx/length)*base+facingX*extra;
-                vz=(length<.01?facingZ:dz/length)*base+facingZ*extra;
+                if(c.rangeMmc){
+                    double half=.5*lab.CombatProfile.rangeHorizontal(length,sprint?1:0);
+                    vx=half*((length<.01?facingX:dx/length)+facingX);
+                    vz=half*((length<.01?facingZ:dz/length)+facingZ);
+                }else{
+                    vx=(length<.01?facingX:dx/length)*base+facingX*extra;
+                    vz=(length<.01?facingZ:dz/length)*base+facingZ*extra;
+                }
                 double height=ty-target.floor();
                 if(!c.recordedMmc)target=target.cap(height);
                 if(fromA)s.mmcB=target;else s.mmcA=target;

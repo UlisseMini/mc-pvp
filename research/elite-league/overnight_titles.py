@@ -55,14 +55,26 @@ def audit():
     print('Verified',', '.join(delta),flush=True)
 
 
+def available(delta):
+    # Server startup and the periodic live policy refresh can outlast several scan attempts.
+    from native_trials import active_bridge,ready
+    try:
+        bridge=active_bridge()
+        status=json.loads((ROOT/'runtime/status.json').read_text())
+        return bridge and ready(bridge) and set(delta)<=set(status['policies'])
+    except (OSError,KeyError,ValueError):
+        return False
+
 def follow():
     deadline=json.loads((WORK/'admission-deadline.json').read_text())['unix_time']+180
     while time.time()<deadline:
-        if changed():
+        delta=changed()
+        if delta and available(delta):
             command=[sys.executable,str(HERE/'cpu_limit.py'),'--audit',sys.executable,__file__,'scan']
             for attempt in range(3):
                 result=subprocess.run(command)
                 if result.returncode==0:break
+                if not available(changed()):break
                 if attempt==2:result.check_returncode()
                 time.sleep(5)
         time.sleep(15)
