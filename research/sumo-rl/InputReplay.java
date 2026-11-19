@@ -25,7 +25,11 @@ public final class InputReplay {
         var a=new Keyboard();var b=new Keyboard();
         String[] header=input.next().split(" ");
         double center=Double.parseDouble(header[0]);int rtt=Integer.parseInt(header[1]);
-        var cfg=BoxingModel.config(header[2],rtt);cfg.sumo=true;cfg.sumoArena(center,12);cfg.solidEdge();
+        var cfg=BoxingModel.config(header[2],rtt);cfg.sumo=true;
+        cfg.otherRtt=header.length>11?Integer.parseInt(header[11]):rtt;
+        cfg.sumoDiameter=header.length>12?Integer.parseInt(header[12]):10;
+        double gap=header.length>13?Double.parseDouble(header[13]):6;
+        cfg.sumoArena(center,12);cfg.solidEdge();
         cfg.trackerAFirst=header.length<=10 || header[10].equals("1");
         var timing=new PeriodicComboClock.Timing();timing.inputMode=PeriodicComboClock.InputMode.NATIVE_QUEUED;
         timing.explicitPolls=true;timing.uplinkA=timing.uplinkB=up;timing.downlinkA=timing.downlinkB=down;
@@ -39,7 +43,7 @@ public final class InputReplay {
                 new PeriodicComboClock.Control(Integer.parseInt(v[3]),Float.parseFloat(v[5]),true,Boolean.parseBoolean(v[4])));
             tape.add(new PeriodicComboClock.Scheduled(ns,tape.size(),kind,first||v[1].equals("s")));end=Math.max(end,ns);
         }
-        var st=new PeriodicComboFightModel.State(center-3,0,center+3,0,12);
+        var st=new PeriodicComboFightModel.State(center-gap/2,0,center+gap/2,0,12);
         st.serverTicks=Integer.parseInt(header[3]);st.teleportAgeA=Integer.parseInt(header[4]);st.teleportAgeB=Integer.parseInt(header[5]);
         st.trackedYawA=Integer.parseInt(header[6]);st.trackedYawB=Integer.parseInt(header[7]);
         st.trackedPitchA=Integer.parseInt(header[8]);st.trackedPitchB=Integer.parseInt(header[9]);

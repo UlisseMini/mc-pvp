@@ -18,7 +18,7 @@ public final class NativeTravel {
         while((line=input.readLine())!=null){
             var p=line.split("\t");
             switch(p[0]){
-                case "BEGIN" -> {config.sumoArena(d(p,1),12);config.solidEdge();body=new PeriodicComboFightModel.Body(0);
+                case "BEGIN" -> {config.sumoDiameter=p.length>21?Integer.parseInt(p[21]):10;config.sumoArena(d(p,1),d(p,2));config.solidEdge();body=new PeriodicComboFightModel.Body(0);
                     body.q=state(p,3);body.sprint=b(p,19);body.airAcceleration=Float.parseFloat(p[20]);}
                 case "S12" -> body.velocity(d(p,1),d(p,2),d(p,3));
                 case "CONTACT" -> {if(b(p,1)){body.velocity(body.q.vx()*.6,body.q.vy(),body.q.vz()*.6);body.sprint=false;}}
@@ -30,7 +30,7 @@ public final class NativeTravel {
                         Float.parseFloat(p[4]),Float.parseFloat(p[5])),env);
                     body.move(p.length>39?Integer.parseInt(p[39]):forward<0?3:forward==0?0:2,strafe,yaw,b(p,6),PeriodicComboFightModel.floor(config,body.q));
                     System.out.println((step.equals(expected)?1:0)+" "+(body.q.equals(expected)?1:0)+" "+
-                        (PeriodicComboFightModel.sumoSupport(before.box(),10,config.centerX)?1:0)+" "+
+                        (PeriodicComboFightModel.sumoSupport(before.box(),config.sumoDiameter,config.centerX)?1:0)+" "+
                         (body.q.x()-expected.x())+" "+(body.q.y()-expected.y()));
                 }
                 default -> throw new IOException("Unknown travel input");

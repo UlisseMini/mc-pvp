@@ -11,7 +11,7 @@ import sys
 HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
 sys.path.insert(0,str(ROOT/'research/sumo-rl'))
-from report import collect_maintenance,model_game,K,METHODS
+from report import collect_maintenance,model_game,K,METHODS,score
 
 def read(path):return json.loads(path.read_text())
 def gzip_json(path,data):
@@ -29,7 +29,9 @@ def rings(rows):
     for r in rows:
         if r.get('mode','sumo')!='sumo':continue
         asym=r['rtt']!=r.get('opponent_rtt',r['rtt'])
-        item=cells[(r['profile'],r['opponent'],'asymmetric' if asym else 'symmetric')][r['arm']]
+        cell=(r['profile'],r['opponent'],'asymmetric' if asym else 'symmetric')
+        if 'diameter' in r:cell+=('disk-'+str(r['diameter']),)
+        item=cells[cell][r['arm']]
         item.append(r)
     result={}
     for cell,arms in cells.items():
@@ -51,6 +53,35 @@ def model_boxes(rows):
     return {name:{arm:collect_maintenance([{k:r['forks'][k][arm] if k in r['forks'] else {m:blank for m in METHODS}
                                            for k in K} for r in games]) for arm in ('wtap','rl')} for name,games in byarm.items()}
 
+def first_boxing(game):
+    """Enroll at the same first post-wake server landmark for both survival definitions."""
+    record=read(ROOT/'runtime/results'/(game['mid']+'.json'))
+    first=record[game['side']]
+    wake=record['start']+game['wake_ms'] if game['wake_ms'] is not None else record['finish']+1
+    hits=[(e['time'],e['attacker']!=first,e['damage_upgrade'])
+          for e in score.events(ROOT/'runtime/replays'/(game['mid']+'.jsonl'))
+          if e['type']=='hit' and not e['rod'] and wake<=e['time']<=record['finish']]
+    starts={};streak=0
+    for i,(when,returned,upgrade) in enumerate(hits):
+        if returned:streak=0
+        elif not upgrade:
+            streak+=1
+            if str(streak) in K:starts.setdefault(str(streak),i)
+    outcomes={}
+    release=game['bindings'].get(game['side'],{}).get('first_released_ms')
+    for k in K:
+        partial={}
+        for method in METHODS:
+            episodes=[]
+            if k in starts:
+                # Keep the logged order for multiple attacks in one server drain.
+                cut=starts[k];at=hits[cut][0]
+                episodes=score.episodes(hits[cut:],at,record['finish'],9,1,method=='active')[:1]
+            partial[method]=score.summarize_episodes(episodes)
+        outcomes[k]=partial
+    return dict(outcomes=outcomes,at_ms={k:hits[i][0]-record['start'] for k,i in starts.items()},
+                local_release_ms=release)
+
 def native(manifest,scores,out):
     m=read(manifest)
     if set(m['plan'])!=set(m['matches']) or len(set(m['matches'].values()))!=len(m['matches']):raise ValueError('Incomplete or duplicate native matches')
@@ -69,10 +100,13 @@ def native(manifest,scores,out):
         disagreements.extend(x['mismatches'])
     boxes=defaultdict(list)
     for g in games:
-        if g['mode']=='boxing':boxes[g['arm']].append(g)
+        if g['mode']=='boxing':
+            g['first_boxing']=first_boxing(g)
+            boxes[g['arm']].append(g)
     summary=dict(matches=len(games),build=games[0]['build'],rings=rings(score_rows),
         boxing={k:dict(bouts=len(v),bouts_entering=sum(x['maintenance']['3']['return_only']['entries']>0 for x in v),
-                       maintenance=collect_maintenance([x['maintenance'] for x in v])) for k,v in boxes.items()},
+                       maintenance=collect_maintenance([x['maintenance'] for x in v]),
+                       common_first_landmark=collect_maintenance([x['first_boxing']['outcomes'] for x in v])) for k,v in boxes.items()},
         binding_checks=aggregate,binding_disagreements=disagreements,
         physical_clicks=sum(x[0] for g in games for x in g['press'].values()),
         minimum_physical_interval_ms=min(x[1] for g in games for x in g['press'].values() if x[1] is not None),

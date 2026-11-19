@@ -14,6 +14,15 @@ public final class SumoCheck {
             cells++;check(x>=-5&&x<5&&z>=-5&&z<5,"ten-block footprint");
             check(SumoArena.cell(-1-x,z)&&SumoArena.cell(x,-1-z)&&SumoArena.cell(z,x),"symmetric arena");
         }
+        for(int diameter:new int[]{8,10,12,14,16}){
+            int r=diameter/2;
+            check(SumoArena.cell(-r,0,diameter)&&!SumoArena.cell(-r-1,0,diameter),"selectable disk extent");
+            check(SumoArena.supports(0,4096+r+.29,0,diameter)&&!SumoArena.supports(0,4096+r+.31,0,diameter),"bounding box lip matches diameter");
+            check(SumoArena.geometry(diameter,6).get("diameter").equals(diameter),"replay metadata");
+        }
+        check(DuelSettings.parse("sumo diameter=14".split(" "),0,"boxing",0,0,new Properties()).overrides.getProperty("sumo_diameter").equals("14"),"human option");
+        boolean rejected=false;try{DuelSettings.sumoDiameter("9");}catch(IllegalArgumentException expected){rejected=true;}check(rejected,"odd geometry rejected");
+        rejected=false;try{BotMatchSettings.parse(new String[]{"a.diameter=12"},0,"test");}catch(IllegalArgumentException expected){rejected=true;}check(rejected,"disk belongs to both seats");
         check(cells==80,"expected circular footprint");
         check(SumoArena.cell(-3,0)&&SumoArena.cell(3,0),"both spawns supported");
         check(SumoArena.outcome(12,12)==-1&&SumoArena.outcome(13,11.5)==-1,"ground, jumping, and edge tolerance");

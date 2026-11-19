@@ -5,7 +5,7 @@ import java.util.*;
 /** Per-duel overrides. Parsing never changes a shared policy or player preference. */
 public final class DuelSettings {
     static final int DEFAULT_HIT_TICKS=9, VANILLA_HIT_TICKS=10;
-    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8|hypixel|mmc] [reach=3.0] [cps=20] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks="+DEFAULT_HIT_TICKS+"] [sprint_vertical=.1]";
+    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8|hypixel|mmc] [reach=3.0] [cps=20] [diameter=10] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks="+DEFAULT_HIT_TICKS+"] [sprint_vertical=.1]";
     public final String mode;
     public final double botPing,humanPing;
     public final boolean humanPingExplicit;
@@ -55,6 +55,7 @@ public final class DuelSettings {
                     overrides.setProperty("click_cps",Integer.toString(cps));
                     break;
                 }
+                case "diameter": overrides.setProperty("sumo_diameter",Integer.toString(sumoDiameter(value)));break;
                 case "aimdelay": overrides.setProperty("aim_delay_ms",Double.toString(bounded(value,0,500,"Aim delay (ms)")));break;
                 case "aimnoise": overrides.setProperty("aim_noise_deg",Double.toString(bounded(value,0,10,"Aim noise (degrees)")));break;
                 case "aimrate": {
@@ -91,6 +92,12 @@ public final class DuelSettings {
         String label=overrides.getProperty(PracticePresets.LABEL);
         if(label!=null&&!PracticePresets.combatMatches(label,overrides))overrides.remove(PracticePresets.LABEL);
         return new DuelSettings(mode,botPing,humanPing,overrides,seen.contains("myping"));
+    }
+    public static int sumoDiameter(String value){
+        int size;
+        try{size=Integer.parseInt(value);}catch(NumberFormatException e){throw new IllegalArgumentException("Sumo diameter must be an even whole number from 8 to 16");}
+        if(size<8||size>16||size%2!=0)throw new IllegalArgumentException("Sumo diameter must be even and between 8 and 16");
+        return size;
     }
     static int hurtWindowTicks(Properties p){
         String ticks=p.getProperty("hurt_window_ticks");

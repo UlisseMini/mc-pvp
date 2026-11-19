@@ -1,0 +1,6 @@
+{
+  "question": "How much of Hold-W pressure and the learned challenger's advantage comes from the short path to the edge of a 10-block platform?",
+  "treatment": "Use native solid cell-centered disk diameters 8, 10, 12, 14, 16 with the same six-block start gap, both seats, 0 and 80ms symmetric RTT, MMC v2, ordinary 3-block reach, 20 CPS and equal tracking/reaction. Keep disk geometry, landing support and recorded replay stage consistent. The model uses matching block-cell and bounding-box lip geometry.",
+  "arms": "Plain W-tap, Hold-W, frozen population reference and frozen human-informed challenger versus plain W-tap, Hold-W and the anti-hybrid exploiter. Three independent rounds at each seat/RTT in Minecraft and eight prospective native mirror donors in the simulator. Compare regulation diameter 10 on the exact same build. Keep timeouts and double ring-outs as draws.",
+  "interpretation": "Track immutable ring-outs, first fresh and sprint bonuses, fresh exchanges, edge distance, exposure time, alternate shifts in momentum and timeouts. Do not equate a larger combo hit margin with a ring-out. Diameter dependence on the local court need not generalize to an unmeasured public server."
+}

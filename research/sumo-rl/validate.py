@@ -25,7 +25,7 @@ def client(mid,side):
     rows.sort(key=lambda x:x['monotonic_ns'])
     moves=[e for e in rows if e['type']=='science_move']
     if not moves:return {'mid':mid,'side':side,'unsupported':'No movement telemetry in this POV'}
-    start=moves[0];inputs=[['BEGIN',(1+g['arena'])*4096,12,*state(start['before']),start['before']['sprint'],start['air_acceleration']]]
+    start=moves[0];inputs=[['BEGIN',(1+g['arena'])*4096,12,*state(start['before']),start['before']['sprint'],start['air_acceleration'],g['sumo_arena']['diameter']]]
     for e in rows:
         if e['monotonic_ns']<start['monotonic_ns']:continue
         if e['type']=='science_move':

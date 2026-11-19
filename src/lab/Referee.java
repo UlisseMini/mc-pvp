@@ -27,6 +27,7 @@ public final class Referee {
 
     static final class Match {
         String id,a,b,pa,pb,winner="",request="",mode="boxing",finishReason="100_hits"; int ha,hb,ba,bb,goal=100,arena,pingChanges; long start,finish,durationMs=180_000; boolean scenario,setupReseated; double pingA,pingB,initialPingA,initialPingB;
+        int sumoDiameter=SumoArena.DIAMETER;
         boolean boxing(){return mode.equals("boxing");}
         CombatProfile combat=CombatProfile.DEFAULT;
         SeededStartServer.Session seed;
@@ -67,7 +68,7 @@ public final class Referee {
             m.put("click_cps_b",pb.equals("human")?null:ClickRate.cps(configB));
             m.put("attack_reach_a",DuelSettings.reach(configA));m.put("attack_reach_b",DuelSettings.reach(configB));
             m.put("modified_reach",DuelSettings.reach(configA)!=3||DuelSettings.reach(configB)!=3);
-            if(sumo())m.put("sumo_arena",SumoArena.geometry());
+            if(sumo())m.put("sumo_arena",SumoArena.geometry(sumoDiameter,startGap));
             m.put("armor_protection",0);m.put("weapon",sumo()?"fist":boxing()?"diamond_sword":"wooden_sword");
             m.put("arena_surface",sumo()?"raised_circular_sumo_platform":box()?"bedrock_1x1_interior_y4_5_barrier_ceiling_y6":preparedLongArenas.contains(arena)?"bedrock_y3_air_y4_19_half_x1024_z512_verified_v5":"bedrock_y3_air_y4_19_radius256_verified_v4");return m;
         }
@@ -482,6 +483,10 @@ public final class Referee {
         Match m=new Match();m.mode=mode(selectedMode);m.goal=m.boxing()?100:0;m.request=request;if(duration>0){m.scenario=true;m.durationMs=duration;}
         if(m.scenario&&isBot(a)&&isBot(b)){m.combat=CombatTuning.nextScenario;m.goal=0;}
         m.combat=CombatProfile.fromOverrides(overridesB,m.combat);
+        if(overridesB.containsKey("sumo_diameter")){
+            if(!m.sumo())throw new IllegalArgumentException("diameter= applies to sumo matches");
+            m.sumoDiameter=DuelSettings.sumoDiameter(overridesB.getProperty("sumo_diameter"));
+        }
         m.startGap=m.sumo()&&round==0?SumoArena.START_GAP:startGap;m.drillRound=round;m.drillPreset=preset;
         if(m.jumpReset())m.durationMs=0;
         else if(m.sumo()&&duration==0)m.durationMs=SumoArena.DURATION_MS;
@@ -508,7 +513,7 @@ public final class Referee {
         if(duration>64_000)prepareLongArena(arenaWorld,m.arena);
         if(m.box())prepareBox(arenaWorld,m.arena);
         boolean continuousDrill=EntryDrills.sameArena(m);
-        if(m.sumo()&&!continuousDrill)SumoArena.build(arenaWorld,m.arena);
+        if(m.sumo()&&!continuousDrill)SumoArena.build(arenaWorld,m.arena,m.sumoDiameter);
         m.start=System.currentTimeMillis()+3000;
         m.replay=DATA.resolve("replays/"+m.id+".jsonl");matches.put(m.id,m);
         if(m.jumpReset())m.jumpFeedback=new JumpResetFeedback(m,player(a),player(b));

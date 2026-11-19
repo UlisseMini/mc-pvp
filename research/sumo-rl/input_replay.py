@@ -51,7 +51,8 @@ def compare(mid,delay_pairs=None):
     if seeds[0]['updateCounter']!=seeds[1]['updateCounter']:raise ValueError('Unsynchronized tracker initialization')
     query=[' '.join(map(str,[(g['arena']+1)*4096,int(g['initial_ping_a']),g['practice_preset'],
            int(seeds[0]['updateCounter'])-prefix_ends,*[int(v['ticksSinceLastForcedTeleport']) for v in seeds],
-           *[int(v['encodedRotationYaw']) for v in seeds],*[int(v['encodedRotationPitch']) for v in seeds],int(trackers[g['a']][0]<trackers[g['b']][0])]))]
+           *[int(v['encodedRotationYaw']) for v in seeds],*[int(v['encodedRotationPitch']) for v in seeds],int(trackers[g['a']][0]<trackers[g['b']][0]),
+           int(g['initial_ping_b']),g['sumo_arena']['diameter'],g['sumo_arena']['start_gap']]))]
     query+=[' '.join(map(str,[ns-origin,side,kind,*keys])) for ns,side,kind,keys in rows]
     settings=[] if delay_pairs is None else [f'{up},{down}' for up,down in delay_pairs]
     proc=subprocess.run(java('InputReplay',*settings),input='\n'.join(query)+'\n',text=True,capture_output=True,check=True)

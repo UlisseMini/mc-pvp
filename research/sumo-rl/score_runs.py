@@ -15,7 +15,7 @@ def native(mid,setup,network=None):
     assert g['mode']==setup['mode'] and g['practice_preset']==setup['profile']
     assert g['combat_profile']['fresh_hit_ticks']==9
     assert g['duration_limit_ms']==(120000 if g['mode']=='sumo' else 20000)
-    if g['mode']=='sumo':assert g['sumo_arena']['diameter']==10 and g['sumo_arena']['start_gap']==6
+    if g['mode']=='sumo':assert g['sumo_arena']['diameter']==setup.get('diameter',10) and g['sumo_arena']['start_gap']==6
     if setup['profile']=='mmc':assert g['combat_profile']['knockback_model']=='mmc_pre_attack_sprint_v2'
     p=g['parameters_'+side]
     expected=0 if network is not None or setup['arm'] in ('research-wtap20','research-hold20') else score.record(HERE/{'sumo-rl-jump':'v1/fit.json','sumo-rl':'fit.json','sumo-rl-pressure':'league-fit.json'}[setup['arm']])['mask']

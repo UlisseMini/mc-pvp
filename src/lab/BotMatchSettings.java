@@ -33,6 +33,7 @@ public final class BotMatchSettings {
             if(key.startsWith("a.")){dest=a;key=key.substring(2);}
             else if(key.startsWith("b.")){dest=b;key=key.substring(2);}
             if(key.equals("combat_sprint_vertical"))key="sprint_vertical";
+            if(dest!=common&&key.equals("diameter"))throw new IllegalArgumentException("The arena is shared. Use diameter= for both fighters");
             if(dest!=common&&key.equals("preset"))throw new IllegalArgumentException("Practice presets apply to the whole match; omit a./b. for preset");
             if(dest!=common&&(key.equals("kb")||key.equals("kb_horizontal")||key.equals("kb_vertical")||key.equals("hit_ticks")||key.equals("sprint_vertical")))
                 throw new IllegalArgumentException("Combat settings apply to the whole match; omit a./b. for "+key);

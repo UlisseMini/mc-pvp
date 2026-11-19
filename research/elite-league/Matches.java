@@ -55,6 +55,13 @@ final class Matches {
                 for(int[] ping:new int[][]{{40,100},{100,40}})
                     envs.add(new DuelEnv(tape,profile,ping[0],ping[1],true,29,true,10,6,0));
             }
+        }else if(mode.startsWith("disk-")){
+            int diameter=lab.DuelSettings.sumoDiameter(mode.substring(5));
+            for(Path path:files){
+                var tape=DuelEnv.Tape.read(path,DuelEnv.LIMIT);
+                for(int ping:new int[]{0,80})
+                    envs.add(new DuelEnv(tape,profile,ping,ping,true,29,true,diameter,6,0));
+            }
         }else envs.addAll(Arena.envs(files,profile,sumo));
         var pool=Executors.newFixedThreadPool(3);
         try{
@@ -66,6 +73,7 @@ final class Matches {
                         var s=new Arena.Scenario(env,opp,first);
                         Map<String,Object> row=new LinkedHashMap<>(Map.of("arm",arm.name(),"opponent",opp.name(),"profile",profile,
                                 "clock",env.clockId,"rtt",first?env.rtt:env.otherRtt,"opponent_rtt",first?env.otherRtt:env.rtt,"side",first?"a":"b"));
+                        if(mode.startsWith("disk-"))row.put("diameter",env.initial.config.sumoDiameter);
                         try{
                             var game=s.round(arm);var state=game.clock.state;
                             row.put("score",game.reward());row.put("winner",game.winner());row.put("end_ms",game.clock.time());

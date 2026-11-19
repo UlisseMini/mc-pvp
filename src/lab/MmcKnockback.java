@@ -89,7 +89,7 @@ public final class MmcKnockback {
         double height = R.num(target, "posY") - victim.floor;
         if (height > CombatProfile.MMC_HEIGHT_LIMIT) victim.capped = true;
         double rtt = victim == a ? match.pingA : match.pingB;
-        boolean supported = !match.sumo() || SumoArena.supports(match.arena, R.num(target, "posX"), R.num(target, "posZ"));
+        boolean supported = !match.sumo() || SumoArena.supports(match.arena, R.num(target, "posX"), R.num(target, "posZ"), match.sumoDiameter);
         boolean landing = supported && victim.hasDy && !victim.grounded &&
             landsBeforeDelivery(height, victim.lastDy, rtt);
         double vy = victim.capped && !landing ? 0 : CombatProfile.MMC_VERTICAL + extra * profile.sprintVertical();

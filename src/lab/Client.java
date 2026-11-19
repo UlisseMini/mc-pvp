@@ -929,13 +929,15 @@ public final class Client {
         if(mode.isEmpty())return false;
         if(displacement==null){
             double center=Math.rint(sample.x/4096)*4096;
-            // Read the local floor. Both supported sumo platforms have the same
-            // top, and only the wider court has the floor tile six blocks west.
+            // Count the center row of the ordinary visible platform.
             if(Math.abs(sample.y-12)>.05||Math.abs(sample.x-center)>6||Math.abs(sample.z)>6)return false;
             if((Boolean)R.call(world,"isAirBlock",R.construct("net.minecraft.util.BlockPos",(int)center,11,0)))return false;
-            boolean wide=!(Boolean)R.call(world,"isAirBlock",R.construct("net.minecraft.util.BlockPos",(int)center-6,11,0));
+            int radius=0;
+            while(radius<8 && !(Boolean)R.call(world,"isAirBlock",
+                    R.construct("net.minecraft.util.BlockPos",(int)center-radius-1,11,0)))radius++;
+            if(radius<4)return false;
             displacement=new KnockbackDisplacement(KnockbackDisplacement.Mode.valueOf(mode.toUpperCase(Locale.ROOT)),
-                new KnockbackDisplacement.Arena(center,wide?12:10),
+                new KnockbackDisplacement.Arena(center,radius*2),
                 PracticePresets.MMC.equals(controls.getProperty(PracticePresets.KB_MODEL)),
                 Boolean.parseBoolean(controls.getProperty("displacement_jump_reset","true")));
         }

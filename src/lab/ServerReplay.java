@@ -62,7 +62,10 @@ public final class ServerReplay {
         int arena=-2;while(inUse(arena))arena--;
         Object world=R.get(viewer,"worldObj");
         prepareStage(world,data,4096.0*(arena+1));Referee.clearBox(world,arena);SumoArena.clear(world,arena);
-        if("sumo".equals(data.result.get("mode")))SumoArena.build(world,arena);
+        if("sumo".equals(data.result.get("mode"))){
+            double size=ReplayData.number(ReplayData.map(data.result.get("sumo_arena")),"diameter",SumoArena.DIAMETER);
+            SumoArena.build(world,arena,DuelSettings.sumoDiameter(Integer.toString((int)size)));
+        }
         if("diamond_box".equals(data.result.get("mode")))Referee.prepareBox(world,arena);
         Session s=new Session(who,data,arena,System.currentTimeMillis());sessions.put(who,s);
         for(int i=0;i<2;i++)s.actors[i]=actor(viewer,data.label(i==0?"a":"b"),UUID.randomUUID());
