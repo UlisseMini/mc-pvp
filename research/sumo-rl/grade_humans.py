@@ -9,11 +9,19 @@ import random
 from run import ROOT
 
 ARMS = ('research-wtap20','sumo-rl-pressure')
+DEVELOPMENT_PLAYERS = {'nomophobia'}
+
+def check_roster(players):
+    if any(n.strip().casefold() in DEVELOPMENT_PLAYERS for n in players):
+        raise ValueError('Nomophobia is registered as development only')
+    if not players or any(not n.strip() for n in players):
+        raise ValueError('At least one named benchmark player is required')
+
 def config_hash(name):
     return hashlib.sha256((ROOT/'policies'/(name+'.properties')).read_bytes()).hexdigest()
 
 def register(players, pairs, seed, rtt, challenger=ARMS[1]):
-    if any(n.casefold()=="nomophobia" for n in players):raise ValueError("Nomophobia is registered as development only")
+    check_roster(players)
     if challenger==ARMS[0]:raise ValueError("Challenger must differ from W-tap")
     arms=(ARMS[0],challenger)
     if pairs<1 or rtt<0:raise ValueError('Positive pair count and nonnegative RTT required')
@@ -31,6 +39,7 @@ def register(players, pairs, seed, rtt, challenger=ARMS[1]):
                     if '=' in line and line.split('=',1)[0] in ('kind','sumo_jump_mask','duel_network','duel_network_landmark','click_mode','pause_ms')) for k in arms})
 
 def grade(plan, games):
+    check_roster(plan['schedule'])
     result={};registered=plan.get('arms',ARMS)
     for player,arms in plan['schedule'].items():
         attempts=[]

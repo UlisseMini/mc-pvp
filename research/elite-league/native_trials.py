@@ -64,6 +64,13 @@ def plan(tag,champion):
 
 def run_batch(trials,out):
     batch=load_batch()
+    until=time.monotonic()+150
+    while not ready():
+        if time.monotonic()>until:raise RuntimeError('Native pool is missing the frozen bridge or fresh heartbeats')
+        time.sleep(2)
+    lock=out.with_suffix('.build.json');build={'bridge_sha256':installed()}
+    if lock.exists() and json.loads(lock.read_text())!=build:raise ValueError('Native cohort was opened on a different bridge')
+    if not lock.exists():lock.write_text(json.dumps(build)+'\n')
     # A recovered process reconciles by immutable request ID before issuing any further rounds.
     found={}
     for path in (ROOT/'runtime/results').glob('m*.json'):

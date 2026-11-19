@@ -5,6 +5,7 @@ import lab.DuelNetwork;
 
 /** Policy adapters may see only the local input-head observation. */
 final class Arena {
+    static final Set<String> NATIVE_STYLES=Set.of("zest-strafe","wtap-tick-window","phase-spacing","kb-displace-pull","kb-displace-edge");
     static final String[] SCRIPTED={"wtap","hold","trade","reset","pressure","select","counterstrafe"};
     record Model(DuelNetwork.Family family,float[] weights){
         String encode(){return DuelNetwork.encode(family,weights);}
@@ -15,9 +16,11 @@ final class Arena {
     }
     record Fighter(String name,Model model){
         static Fighter named(String name){return new Fighter(name,null);}
-        DuelEnv.Player create(int rtt,int wake){
+        DuelEnv.Player create(int rtt,int wake){return create(rtt,wake,true,10);}
+        DuelEnv.Player create(int rtt,int wake,boolean mmc,int diameter){
             if(model!=null)return new Neural(model,rtt);
-            if(name.equals("zest-strafe"))return new StrafeOpponent(rtt);
+            if(NATIVE_STYLES.contains(name))
+                return new StrafeOpponent(name,rtt,mmc,diameter);
             if(name.equals("select")||name.equals("counterstrafe"))return new Sparring(name,rtt);
             if(name.equals("pressure")){var p=new DuelEnv.Player("hold",5168,rtt,wake);return p;}
             return new DuelEnv.Player(name,0,rtt,wake);
@@ -52,6 +55,10 @@ final class Arena {
         double originX=Double.NaN,originZ,previousOwnCue=Double.NEGATIVE_INFINITY;
         int direction=1;
         Sparring(String style,int rtt){super(style,0,rtt,0);selecting=style.equals("select");}
+        @Override Sparring copy(){
+            Sparring c=new Sparring(style,rtt);c.originX=originX;c.originZ=originZ;c.previousOwnCue=previousOwnCue;
+            c.direction=direction;c.firstClick=firstClick;return c;
+        }
         @Override public PeriodicComboClock.Control input(PeriodicComboClock.Observation o){
             var q=o.own();double dx=o.targetX()-q.x(),dz=o.targetZ()-q.z(),gap=Math.hypot(dx,dz);
             if(Double.isNaN(originX)){originX=(q.x()+o.targetX())/2;originZ=(q.z()+o.targetZ())/2;}
@@ -68,9 +75,12 @@ final class Arena {
         }
     }
     record Scenario(DuelEnv env,Fighter opponent,boolean first){
-        double game(Fighter fighter){
-            DuelEnv.Game game=env.new Game(first,fighter.create(first?env.rtt:env.otherRtt,0),opponent.create(first?env.otherRtt:env.rtt,0));
-            game.finish();return game.reward();
+        double game(Fighter fighter){return round(fighter).reward();}
+        DuelEnv.Game round(Fighter fighter){
+            var config=env.initial.config;
+            DuelEnv.Game game=env.new Game(first,fighter.create(first?env.rtt:env.otherRtt,0,config.mmc,config.sumoDiameter),
+                opponent.create(first?env.otherRtt:env.rtt,0,config.mmc,config.sumoDiameter));
+            game.finish();return game;
         }
     }
     static List<DuelEnv> envs(List<Path> files,String profile,boolean sumo)throws IOException{

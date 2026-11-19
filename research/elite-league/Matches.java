@@ -45,10 +45,17 @@ final class Matches {
             "rtt",env.rtt,"arm",arm.name(),"forks",forks);
     }
     public static void main(String[] args)throws Exception{
-        String mode=args[0],profile=args[1];boolean sumo=mode.equals("sumo");
+        String mode=args[0],profile=args[1];boolean sumo=!mode.equals("boxing");
         var arms=roster(Path.of(args[2]));var opponents=roster(Path.of(args[3]));
         var files=Arrays.stream(args,4,args.length).map(Path::of).toList();
-        var envs=Arena.envs(files,profile,sumo);
+        var envs=new ArrayList<DuelEnv>();
+        if(mode.equals("asymmetric")){
+            for(Path path:files){
+                var tape=DuelEnv.Tape.read(path,DuelEnv.LIMIT);
+                for(int[] ping:new int[][]{{40,100},{100,40}})
+                    envs.add(new DuelEnv(tape,profile,ping[0],ping[1],true,29,true,10,6,0));
+            }
+        }else envs.addAll(Arena.envs(files,profile,sumo));
         var pool=Executors.newFixedThreadPool(3);
         try{
             for(var arm:arms){
@@ -58,8 +65,12 @@ final class Matches {
                     for(var opp:opponents)jobs.add(()->{
                         var s=new Arena.Scenario(env,opp,first);
                         Map<String,Object> row=new LinkedHashMap<>(Map.of("arm",arm.name(),"opponent",opp.name(),"profile",profile,
-                                "clock",env.clockId,"rtt",env.rtt,"side",first?"a":"b"));
-                        try{row.put("score",s.game(arm));}
+                                "clock",env.clockId,"rtt",first?env.rtt:env.otherRtt,"opponent_rtt",first?env.otherRtt:env.rtt,"side",first?"a":"b"));
+                        try{
+                            var game=s.round(arm);var state=game.clock.state;
+                            row.put("score",game.reward());row.put("winner",game.winner());row.put("end_ms",game.clock.time());
+                            row.put("fresh",first?state.hits:state.incomingHits);row.put("incoming",first?state.incomingHits:state.hits);
+                        }
                         catch(IllegalStateException error){
                             if(!BoxingModel.UNSUPPORTED_SEPARATION.equals(error.getMessage()))throw error;
                             row.put("unknown",error.getMessage());

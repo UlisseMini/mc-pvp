@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
-from run import ROOT,HERE,BUILD
+from run import ROOT,HERE,class_path
 
 sys.path.insert(0,str(ROOT/'research/sumo-rl'))
 import captures
@@ -30,7 +30,7 @@ def bindings(mid,side,weights,start,end):
         if start<=d['time']<=end:
             by_tick[d['tick']]=action;actions[action]+=1
             if d['released']:released.append(d['time']-start)
-    result=subprocess.run(['java','-Xms12m','-Xmx48m','-XX:+UseSerialGC','-XX:ActiveProcessorCount=1','-cp',str(BUILD),'NetworkChecks','replay'],
+    result=subprocess.run(['java','-Xms12m','-Xmx48m','-XX:+UseSerialGC','-XX:ActiveProcessorCount=1','-cp',str(class_path()),'NetworkChecks','replay'],
         input='\n'.join(query)+'\n',text=True,capture_output=True)
     if result.returncode or int(result.stdout)!=len(decisions):raise ValueError((mid,'network replay',result.stderr))
     jumps={e['native_tick'] for e in events if e['type']=='duel_network_jump'}
@@ -70,9 +70,14 @@ def collect(manifest,out,watch):
         for req,mid in trial['matches'].items():
             dest=out/(mid+'.json')
             if dest.exists():continue
-            summary=one(mid,trial['plan'][req]);pending=dest.with_suffix('.tmp')
+            try:summary=one(mid,trial['plan'][req])
+            except (FileNotFoundError,EOFError,ValueError) as exc:
+                result=json.loads((ROOT/f'runtime/results/{mid}.json').read_text())
+                if not watch or time.time()-result['finish']/1000>60:raise
+                continue
+            pending=dest.with_suffix('.tmp')
             pending.write_text(json.dumps(summary,separators=(',',':')));pending.replace(dest)
-        if not watch or trial['matches'].keys()==trial['plan'].keys():return
+        if not watch or (trial['matches'].keys()==trial['plan'].keys() and all((out/(mid+'.json')).exists() for mid in trial['matches'].values())):return
         time.sleep(5)
 
 if __name__=='__main__':

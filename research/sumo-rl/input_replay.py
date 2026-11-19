@@ -4,7 +4,7 @@ from run import ROOT, compile_model, java
 from calendars import server_stage, CLIENT
 from pathlib import Path
 
-def compare(mid):
+def compare(mid,delay_pairs=None):
     g=json.loads((ROOT/f'runtime/results/{mid}.json').read_text())
     start=g['start'];end=min(start+2000,g['finish'])
     rows=[];refs={};counts={};native_hits=[];clock_origins=[];trackers={}
@@ -53,19 +53,25 @@ def compare(mid):
            int(seeds[0]['updateCounter'])-prefix_ends,*[int(v['ticksSinceLastForcedTeleport']) for v in seeds],
            *[int(v['encodedRotationYaw']) for v in seeds],*[int(v['encodedRotationPitch']) for v in seeds],int(trackers[g['a']][0]<trackers[g['b']][0])]))]
     query+=[' '.join(map(str,[ns-origin,side,kind,*keys])) for ns,side,kind,keys in rows]
-    proc=subprocess.run(java('InputReplay'),input='\n'.join(query)+'\n',text=True,capture_output=True,check=True)
-    pred=json.loads(proc.stdout);assert pred['admissions']==[counts['a'],counts['b']],(mid,pred['admissions'],counts)
-    assert len(refs)==len(pred['moves'])
-    errors=[];first_bad=None
-    for ns,side,*values in pred['moves']:
-        native=refs[ns+origin,side]
-        distance=math.dist(values[:3],native[:3]);errors.append(distance)
-        if first_bad is None and values!=native:
-            first_bad={'side':side,'ms':ns/1e6+origin/1e6+statistics.median(clock_origins)-start,'pred':values,'native':native}
-    shift=origin/1e6+statistics.median(clock_origins)-start
-    sim_hits=[[round(t+shift,2),a,u] for t,a,u in pred['hits']]
-    return dict(mid=mid,moves=len(errors),clicks=sum(counts.values()),exact=first_bad is None,
-                first_difference=first_bad,max_position_error=max(errors),native_hits=native_hits,model_hits=sim_hits)
+    settings=[] if delay_pairs is None else [f'{up},{down}' for up,down in delay_pairs]
+    proc=subprocess.run(java('InputReplay',*settings),input='\n'.join(query)+'\n',text=True,capture_output=True,check=True)
+    def measure(pred):
+        assert pred['admissions']==[counts['a'],counts['b']],(mid,pred['admissions'],counts)
+        assert len(refs)==len(pred['moves'])
+        errors=[];first_bad=None
+        for ns,side,*values in pred['moves']:
+            native=refs[ns+origin,side]
+            distance=math.dist(values[:3],native[:3]);errors.append(distance)
+            if first_bad is None and values!=native:
+                first_bad={'side':side,'ms':ns/1e6+origin/1e6+statistics.median(clock_origins)-start,'pred':values,'native':native}
+        shift=origin/1e6+statistics.median(clock_origins)-start
+        sim_hits=[[round(t+shift,2),a,u] for t,a,u in pred['hits']]
+        return dict(mid=mid,moves=len(errors),clicks=sum(counts.values()),exact=first_bad is None,
+                    first_difference=first_bad,max_position_error=max(errors),native_hits=native_hits,model_hits=sim_hits)
+    results=[measure(json.loads(line)) for line in proc.stdout.splitlines()]
+    if delay_pairs is None:return results[0]
+    if len(results)!=len(delay_pairs):raise ValueError('Incomplete transport grid')
+    return results
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('output',type=Path);p.add_argument('mids',nargs='+');a=p.parse_args()
     compile_model();results=[compare(mid) for mid in a.mids]

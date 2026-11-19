@@ -31,7 +31,7 @@ def native(mid,setup,network=None):
     hashes={};streams={};starts={};press={};jumps=[];takes=set();moves={};sprint_bonus=collections.Counter()
     for s in 'ab':
         par=g['parameters_'+s];assert g['click_cps_'+s]==20 and g['attack_reach_'+s]==3 and g['reaction_ms_'+s]==0
-        assert g['initial_ping_'+s]==setup['rtt'] and g['client_'+s]['backend']=='forge'
+        assert g['initial_ping_'+s]==(setup['rtt'] if s==side else setup.get('opponent_rtt',setup['rtt'])) and g['client_'+s]['backend']=='forge'
         assert all(float(par[k])==0 for k in ('aim_noise_deg','aim_delay_ms','aim_turn_rate_dps'))
         assert int(par.get('click_start_ms',0))==(2000 if g['mode']=='boxing' and s==other else 0)
         hashes[s]=[g['client_'+s][k] for k in ('bridge_sha256','module_sha256','headless_sha256','java_sha256')]
@@ -51,7 +51,7 @@ def native(mid,setup,network=None):
                     moves[e['tick']]=e
                     if e['before']['ground'] and e['before']['motionY']==0.41999998688697815:takes.add(e['tick'])
         assert footer and footer['writer_complete'] and not any(footer[k] for k in ('dropped','size_capped','continues'))
-        clicks=[e for e in keep if e['type']=='click'];starts[s]=clicks[0]['time'];streams[s]=keep
+        clicks=[e for e in keep if e['type']=='click'];starts[s]=clicks[0]['time'] if clicks else None;streams[s]=keep
         intervals=[(b['monotonic_ns']-a['monotonic_ns'])/1e6 for a,b in zip(clicks,clicks[1:])]
         assert not intervals or min(intervals)>=50
         press[s]=[len(clicks),min(intervals,default=None)]
@@ -60,7 +60,7 @@ def native(mid,setup,network=None):
          ('hit','tick','replication_server_input','science_server_attack','mmc_knockback')]
     hs=[(e['time'],e['attacker']!=g[side],e['damage_upgrade']) for e in raw if e['type']=='hit' and not e['rod'] and start<=e['time']<=end]
     assert sum(not ret for t,ret,u in hs)==g['hits_'+side] and sum(ret for t,ret,u in hs)==g['hits_'+other]
-    active=max(starts.values())
+    active=max(starts.values()) if all(t is not None for t in starts.values()) else end+1
     snaps=[e for e in raw if e['type']=='tick' and start<=e['time']<=end]
     initial=next((e for e in reversed(snaps) if e['time']<=active),None)
     def geometry(a,b):
@@ -92,7 +92,7 @@ def native(mid,setup,network=None):
                      terminal=w['terminal_unfinished_window'],readiness=w['readiness_class_counts'])
     except ValueError as e:windows={'unknown':str(e)}
     return dict(mid=mid,**{k:v for k,v in setup.items() if k!='command'},win=g['winner']==g[side],draw=not g['winner'],
-        wake_ms=active-start,wake_snapshot=geometry(initial[side],initial[other]) if initial else None,
+        wake_ms=active-start if active<=end else None,wake_snapshot=geometry(initial[side],initial[other]) if initial and active<=end else None,
         max_server_gap_ms=max((b['time']-a['time'] for a,b in zip(snaps,snaps[1:])),default=None),
         margin=g['hits_'+side]-g['hits_'+other],duration_ms=end-start,build=hashes['a'],press=press,jump_inputs=jumps,
         confirmed_takeoffs=sum(k in takes for k,_,_ in jumps),unmatched_takeoffs=sorted(takes-{j[0] for j in jumps}),

@@ -5,10 +5,11 @@ import java.util.Base64;
 
 /** Java 8 inference shared by the Forge player and tournament. One instance per fighter per bout. */
 public final class DuelNetwork {
-    public enum Family { LINEAR, MLP, RECURRENT, HYBRID }
+    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION }
     public static final int INPUTS=22, HIDDEN=8, OUTPUTS=5;
     public static final int STRIDE=12;
     private final Family family;
+    private HumanTiming imitation;
     private final float[] weights;
     private final double[] features=new double[INPUTS], hidden=new double[HIDDEN], next=new double[HIDDEN];
     private final double[] outputs=new double[OUTPUTS];
@@ -17,6 +18,7 @@ public final class DuelNetwork {
     private int previousAction;
 
     public static int size(Family f) {
+        if(f==Family.IMITATION)return HumanTiming.SIZE;
         if(f==Family.LINEAR)return OUTPUTS*(INPUTS+1);
         int recurrent=(f==Family.RECURRENT || f==Family.HYBRID)?HIDDEN:0;
         return HIDDEN*(INPUTS+1+recurrent)+OUTPUTS*(HIDDEN+1);
@@ -26,12 +28,16 @@ public final class DuelNetwork {
     public DuelNetwork(Family family,float[] weights) {
         if(weights.length!=size(family))throw new IllegalArgumentException("Wrong network dimensions");
         this.family=family;this.weights=weights;
+        if(family==Family.IMITATION)imitation=new HumanTiming(weights);
     }
     public DuelNetwork copy(){
         DuelNetwork c=new DuelNetwork(family,weights);
+        if(imitation!=null)c.imitation=imitation.copy();
         c.started=started;c.centerX=centerX;c.centerZ=centerZ;c.previousTargetX=previousTargetX;
         c.previousTargetY=previousTargetY;c.previousTargetZ=previousTargetZ;c.previousAction=previousAction;
-        System.arraycopy(hidden,0,c.hidden,0,HIDDEN);
+        System.arraycopy(features,0,c.features,0,INPUTS);
+        System.arraycopy(hidden,0,c.hidden,0,HIDDEN);System.arraycopy(next,0,c.next,0,HIDDEN);
+        System.arraycopy(outputs,0,c.outputs,0,OUTPUTS);
         return c;
     }
     public static String encode(Family f,float[] weights){
@@ -56,7 +62,8 @@ public final class DuelNetwork {
     public Family family(){return family;}
     public double[] features(){return features.clone();}
     public double[] scores(){return outputs.clone();}
-    public void applied(int action){previousAction=action;}
+    public double[] imitationInputs(){return imitation.inputs();}
+    public void applied(int action){previousAction=action;if(imitation!=null)imitation.applied(action); }
 
     private static double clip(double v){return Math.max(-1,Math.min(1,v));}
     public static int pack(int key,int side,boolean click,boolean jump){
@@ -96,6 +103,7 @@ public final class DuelNetwork {
         features[20]=clip((dist-3.3)*4);features[21]=clip((targetHurtAge-ownHurtAge)/300);
         if(Double.isNaN(features[21]))features[21]=0; // neither player has shown a hurt cue
         previousTargetX=tx;previousTargetY=ty;previousTargetZ=tz;
+        if(imitation!=null)return imitation.step(features,grounded);
         boolean recurring=family==Family.RECURRENT||family==Family.HYBRID;
         int index=0;
         if(family!=Family.LINEAR){

@@ -1,10 +1,12 @@
 """Compile shared Java policies and fit families on registered training calendars."""
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -13,16 +15,39 @@ BUILD = ROOT / 'build/elite-league/classes'
 FAMILIES = ('LINEAR','MLP','RECURRENT','HYBRID')
 SEEDS = (193081,492811)
 
+def class_path():
+    pinned=BUILD.parent/'compiled-version.txt'
+    return BUILD.parent/pinned.read_text().strip() if pinned.exists() else BUILD
+
 def compile_model():
-    BUILD.mkdir(parents=True,exist_ok=True)
-    paths = ['src','tests','research/elite-league','research/sumo-rl','research/jump-reset-boxing',
-             'research/sumo-strategies','research/maintenance-20261101/oracle-mechanism/transfer']
-    subprocess.run(['javac','-J-XX:ActiveProcessorCount=3','-proc:none','-d',str(BUILD),'-sourcepath',os.pathsep.join(paths),
-                    *map(str,sorted(HERE.glob('*.java')))],cwd=ROOT,check=True)
+    # A JVM can load classes lazily. Never replace class files beneath a live tournament.
+    BUILD.parent.mkdir(parents=True,exist_ok=True)
+    paths=['src','tests','research/elite-league','research/sumo-rl','research/jump-reset-boxing',
+           'research/sumo-strategies','research/maintenance-20261101/oracle-mechanism/transfer']
+    source_hash=hashlib.sha256()
+    for directory in paths:
+        for p in sorted((ROOT/directory).rglob('*.java')):
+            source_hash.update(str(p.relative_to(ROOT)).encode()+b'\0'+p.read_bytes()+b'\0')
+    name='classes-'+source_hash.hexdigest()[:18];version=BUILD.parent/name
+    if not version.exists():
+        with tempfile.TemporaryDirectory(dir=BUILD.parent) as temp:
+            classes=Path(temp)/'classes';classes.mkdir()
+            subprocess.run(['javac','-J-XX:ActiveProcessorCount=2','-proc:none','-d',str(classes),'-sourcepath',os.pathsep.join(paths),
+                            *map(str,sorted(HERE.glob('*.java')))],cwd=ROOT,check=True)
+            try:classes.rename(version)
+            except OSError:
+                if not version.is_dir():raise
+    with tempfile.NamedTemporaryFile('w',dir=BUILD.parent,delete=False) as f:f.write(name+'\n')
+    os.replace(f.name,BUILD.parent/'compiled-version.txt')
+    global _compiled
+    _compiled=version
+    return version
+
+_compiled=None
 
 def java(main,*args):
     return [sys.executable,str(HERE/'cpu_limit.py'),'nice','-n','8','java','-ea','-XX:ActiveProcessorCount=4','-XX:+UseSerialGC','-XX:CICompilerCount=2',
-            '-Xms512m','-Xmx3500m','-cp',str(BUILD),main,*map(str,args)]
+            '-Xms512m','-Xmx3500m','-cp',str(_compiled or class_path()),main,*map(str,args)]
 
 def calendars(field):
     spec=json.loads((HERE/'protocol.json').read_text())

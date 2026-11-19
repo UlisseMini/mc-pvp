@@ -18,6 +18,7 @@
   "ClickPause",
   "SumoJumpPolicy",
   "DuelNetwork",
+  "HumanTiming",
   "CriticalClickController",
   "BlockhitController",
   "LinearHitPredictor",

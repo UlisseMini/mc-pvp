@@ -5,6 +5,27 @@ from unittest.mock import patch
 from grade_humans import ARMS, grade, register
 
 class HumanGradeTest(unittest.TestCase):
+    def test_development_player_excluded_even_in_manually_edited_plan(self):
+        with self.assertRaisesRegex(ValueError, 'development only'):
+            register(['nOmOpHoBiA'], 2, 55, 0)
+        with self.assertRaisesRegex(ValueError, 'development only'):
+            grade({'schedule': {'Nomophobia': []}}, [])
+        with self.assertRaisesRegex(ValueError, 'named'):
+            register([], 2, 55, 0)
+
+    def test_custom_network_is_pinned_in_manifest(self):
+        with TemporaryDirectory() as tmp, patch('grade_humans.ROOT',Path(tmp)):
+            root=Path(tmp)
+            (root/'policies').mkdir()
+            (root/'policies/research-wtap20.properties').write_text('kind=wtap')
+            (root/'policies/custom.properties').write_text('kind=hold\nduel_network=opaque-fixture\n')
+            b=root/'build/practice-client'
+            b.mkdir(parents=True)
+            (b/'practice-bridge.jar').write_bytes(b'fixture')
+            p=register(['NewPlayer'],2,55,0,challenger='custom')
+            self.assertEqual(p['competitive_parameters']['custom']['duel_network'],'opaque-fixture')
+            self.assertCountEqual(p['schedule']['NewPlayer'][:2],['research-wtap20','custom'])
+
     def test_counterbalance_and_first_eligible_games(self):
         with TemporaryDirectory() as tmp, patch('grade_humans.ROOT',Path(tmp)):
             root=Path(tmp)
