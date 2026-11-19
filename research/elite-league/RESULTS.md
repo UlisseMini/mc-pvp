@@ -6,6 +6,19 @@ One win earns one point. A timeout or double ring-out earns half a point. The lo
 
 New sumo trials use the most frequent platform in Nomophobia's MMC recordings. The fighting surface spans 13 by 13 blocks, with 137 solid blocks and eight blocks between the two gold spawn centers. The earlier results below used the arena registered for each experiment. Scores on the former 10-block ring have their original geometry. [Recorded block layout and survey](../mmc-arena/README.md)
 
+### First tournament on the recorded platform
+
+The 96 native duels used 20 CPS, physical mouse inputs, three-block reach and regulation ring-outs. Each matchup included four independent bouts from each seat at each of 0 and 80 ms added RTT. The model played the same seats and latencies on eight development calendars.
+
+| Opponent | Native W-tap /16 | Native continuation /16 | Native population /16 | Model W-tap /32 | Model continuation /32 | Model population /32 |
+|---|---:|---:|---:|---:|---:|---:|
+| 20-CPS W-tap | 6 | 16 | 16 | 16 | 30 | 32 |
+| Adaptive pair from round one | 0 | 9 | 8 | 1 | 14.5 | 12.5 |
+
+`continuation-03-fit` won all four native W-tap bouts in every seat and latency cell. It won two or three of four in each cell against the adaptive pair. All 96 native matches ended in ring-outs. The control audit counted 40,982 physical presses, with a minimum interval of 50.006 ms and zero binding disagreements. The permanent winner can be played with `/duel mmc13-opening sumo preset=mmc`. [Individual matches and seat spread](evidence/mmc13/opening/outcomes.json) · [Native input audit](evidence/mmc13/opening/native.json.gz)
+
+Across twelve preselected matches, all **9,009 individual travel steps** reproduced the native position, velocity, collision box and collision flags. Running continuously from the first position with observed keys, contacts and knockback initially disagreed on 1,070 steps. The missing input was the server's ability to change the client's sprint flag between clicks. Supplying the 641 observed sprint-flag changes reproduced all 9,009 steps continuously, including 56 off-platform steps. Predicting both players from just their physical controls and host event times matched the opening two seconds in **10 of 12** matches. Predicting packet order across a full new fight remains a separate limitation. [Physical-input forecasts](evidence/mmc13/opening/fidelity.json.gz) · [Continuous travel checks](evidence/mmc13/opening/travel-with-sprint-metadata.json)
+
 ## Six further rounds against an adversarial mixture
 
 Each round measured the historical field, solved a game over the observed head-to-head scores, and trained explicit and neural responses against a distribution weighted toward the hardest opponents. Six rounds added 1,597,440 training bouts and 854,816 matrix and tournament bouts. On the eight previously exposed development clocks, the final field contained 55 opponents.

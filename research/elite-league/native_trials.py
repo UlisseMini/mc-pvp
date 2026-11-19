@@ -83,7 +83,7 @@ def cohort_priority(name):
     if name.startswith(('mmc13-actor','mmc13-pairs','mmc13-final')):return 4
     if name.startswith('history-'):return 5
     if name.startswith('mmc13-trade-confirm'):return 7
-    if name.startswith(('mmc13-broad','mmc13-slice','mmc13-transfer')):return 8
+    if name.startswith(('mmc13-broad','mmc13-slice','mmc13-transfer','mmc13-archive-final')):return 8
     if name.startswith(('continuation-','cadence-','box-breadth-','box-student','gate-native','boxing100')):return 8
     if name.startswith(('novel-','empirical-','final-')):return 10
     if name.startswith('eold'):return 20

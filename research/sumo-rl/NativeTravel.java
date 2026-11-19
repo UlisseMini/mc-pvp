@@ -21,6 +21,7 @@ public final class NativeTravel {
                 case "BEGIN" -> {config.sumoDiameter=p.length>21?Integer.parseInt(p[21]):10;config.sumoArena(d(p,1),d(p,2));config.solidEdge();body=new PeriodicComboFightModel.Body(0);
                     body.q=state(p,3);body.sprint=b(p,19);body.airAcceleration=Float.parseFloat(p[20]);}
                 case "S12" -> body.velocity(d(p,1),d(p,2),d(p,3));
+                case "SPRINT_METADATA" -> body.sprint=b(p,1);
                 case "CONTACT" -> {if(b(p,1)){body.velocity(body.q.vx()*.6,body.q.vy(),body.q.vz()*.6);body.sprint=false;}}
                 case "MOVE" -> {
                     float yaw=Float.parseFloat(p[1]),strafe=Float.parseFloat(p[2]),forward=Float.parseFloat(p[3]);

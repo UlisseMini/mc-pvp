@@ -13,7 +13,7 @@ import tempfile
 import champions
 from adaptation import dump,freeze,properties,sha
 from audit import collect
-from ladder_transfer import WT,HOLD,REFERENCE
+from ladder_transfer import WT,HOLD,REFERENCE,native_install
 from native_trials import run_batch
 from results import model_game,model_boxes,collect_maintenance,native
 from run import HERE,ROOT,calendars,compile_model,java
@@ -80,6 +80,7 @@ def defend(name,k):
     freeze(ROOT/'policies'/(alias+'.properties'),config.encode());return alias
 
 def validation(work):
+    native_install({n:p for n,p in rivals().values() if p})
     selection=json.loads((DEST/'selection.json').read_text());best=selection['challenger']
     donors=sorted((work/'box-student-clocks').glob('*.txt.gz'))
     if len(donors)!=8:raise ValueError('Expected the eight reserved boxing donor calendars')
