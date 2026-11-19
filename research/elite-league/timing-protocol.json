@@ -1,0 +1,6 @@
+{
+  "question": "Can two fixed exogenous residual service delays predict more native two-second openings than the inherited 0.35/0.35ms assumption? Conditioning on the actually issued key/click timestamps and exogenous host stages isolates the timing plant. The controller receives none of this future information.",
+  "fit": "Only the 16 original development timing donors with both POVs and eligible sumo openings. Grid search uplink and downlink separately over 0, 0.35, 1, 2, 4 and 8 ms. Select by most fights with every movement vector exact, break ties by mean of the per-fight maximum Euclidean position errors then closeness to the original 0.35/0.35ms. Explicitly list unsupported fixtures.",
+  "prospective": "First three two-detailed-POV MMC sumo matches at or after m2750 within the elite-v1 transfer cohort, per evaluated arm for W-tap, linear, MLP, recurrent and hybrid. Preserve missing/unscoreable data; do not choose replacement fights by error. The four earlier native replay windows remain exposed.",
+  "deployment": "Keep previously frozen training and validation results on their declared transport. No global simulator-default change without a prospective improvement; a mean win-rate estimate is separate from the exact trajectory test."
+}
