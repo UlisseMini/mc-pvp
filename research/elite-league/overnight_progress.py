@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import sys
 import time
 
 from boxing_breadth import FOES as BOXING_FOES, trial_plan as boxing_plan
@@ -26,13 +27,14 @@ def schedules():
         plans['mmc13-'+tag] = contest_plan(tag,spec['arms'],spec['opponents'],spec['repeats'],spec['profile'])
     for tag, path in [('actor','actor-confirmation.json'),('pairs','pairs-confirmation.json'),
                       ('trade-confirm','mmc13-trades/confirmation.json'),('phase-confirm','mmc13-phase-trades/confirmation.json'),
-                      ('click-confirm','mmc13-click-bias/confirmation.json'),('contact-confirm','mmc13-contact-gate/confirmation.json')]:
+                      ('click-confirm','mmc13-click-bias/confirmation.json'),('contact-confirm','mmc13-contact-gate/confirmation.json'),
+                      ('edge-confirm','mmc13-edge-fit/confirmation.json')]:
         spec_path = FROZEN/path
         if spec_path.exists():
             spec = read(spec_path)
             plans['mmc13-'+tag] = contest_plan(tag,spec['arms'],spec.get('opponents',spec['repeats']),spec['repeats'])
-    for tag in ('confirm','box','final','actor','pairs','trade-confirm','phase-confirm','click-confirm','contact-confirm'):
-        if tag=='contact-confirm' and 'mmc13-contact-confirm' not in plans:continue
+    for tag in ('confirm','box','final','actor','pairs','trade-confirm','phase-confirm','click-confirm','contact-confirm','edge-confirm'):
+        if tag in ('contact-confirm','edge-confirm') and 'mmc13-'+tag not in plans:continue
         name='mmc13-'+tag
         plans[name+'-clocks'] = mirror_plan(name)
     plans['box-breadth-native'] = boxing_plan()
@@ -52,8 +54,14 @@ def schedules():
                 name='mmc13-archive-final-'+index
                 plans[name]=paired(round_no,name,[final],archive['opponents'],opponents,offset)
     folders=[FROZEN,EVIDENCE,HERE/'evidence/boxing100',HERE/'evidence/boxing-distilled',HERE/'evidence/boxing-breadth']
+    transfer=read(EVIDENCE/'final-profile/protocol.json')['extra_fixtures_by_possible_winner']
+    if final:
+        from mmc_final_profile import NAME,native_schedule
+        _,additional=native_schedule(final)
+        if len(additional)!=transfer[final]:raise ValueError('Changed alternative-preset conditional schedule')
+        plans[NAME]=additional
     model_stages=sorted(str(p.relative_to(HERE)) for folder in folders for p in folder.rglob('*.jsonl.gz'))
-    return plans,dict(archive_final_winner=final,winner_archive_comparison_cells=4*len(archive['order']),
+    return plans,dict(alternative_preset_new_fixtures_by_possible_champion=transfer,archive_final_winner=final,winner_archive_comparison_cells=4*len(archive['order']),
                       extra_physical_fixtures=(4*len(archive['order']) if extra else 0) if final else None,
                       extra_physical_if_winner_new=4*len(archive['order']),completed_model_files=model_stages)
 
@@ -62,7 +70,7 @@ def model_progress(plans):
     # Count complete recorded evaluation bouts. Training sweeps, physics forks and
     # prospective native fixtures have different denominators and are kept apart.
     expected={}
-    for tag in ('opening','confirmation','final','transfer','actor','pairs','trade-confirm','phase-confirm','click-confirm','contact-confirm'):
+    for tag in ('opening','confirmation','final','transfer','actor','pairs','trade-confirm','phase-confirm','click-confirm','contact-confirm','edge-confirm'):
         if 'mmc13-'+tag not in plans:continue
         tasks=plans['mmc13-'+tag].values()
         pairs={(r['arm'],r['opponent']) for r in tasks}
@@ -70,6 +78,7 @@ def model_progress(plans):
     portable={n for field in groups().values() for n in field}
     final=read(EVIDENCE/'final/schedule.json')
     expected[EVIDENCE/'archive/model-development.jsonl.gz']=32*len(portable)*len(read(FROZEN/'confirmation.json')['arms'])
+    expected[EVIDENCE/'final-profile/model.jsonl.gz']=32*len(final['opponents'])*len(final['arms'])
     expected[EVIDENCE/'archive-final/model.jsonl.gz']=32*len(portable|set(final['opponents']))*len(final['arms'])
     expected[HERE/'evidence/boxing100/boxing.jsonl.gz']=8*4*2*4
     expected[HERE/'evidence/boxing-distilled/boxing.jsonl.gz']=8*2*4
@@ -140,8 +149,7 @@ def snapshot(as_of=None):
     for path in sorted((HERE/'evidence/boxing100').glob('*-movement.json')):
         for q,row in read(path).items():
             if not row['valid']:invalid[q]='physical inputs' if row.get('sides') else row['reason']
-    final_checks=WORK/'mmc13-final-scores/movement'
-    for path in final_checks.glob('m*.json'):
+    for path in WORK.glob('mmc13-*-scores/movement/m*.json'):
         audit=read(path)
         if not audit['valid']:invalid[audit['request']]=audit.get('reason','physical inputs')
     for q,r in settled.items():
@@ -178,10 +186,13 @@ def save(path, data):
         os.link(temp.name,path)
 
 
-def watch():
+def watch(close_now=False):
     deadline=read(WORK/'admission-deadline.json')['unix_time']
     while time.time()<deadline:
         time.sleep(min(30,max(0,deadline-time.time())))
+    if not close_now:
+        # Load the latest registered experiments when the clock reaches admission close.
+        os.execv(sys.executable,[sys.executable,__file__,'--capture-cutoff'])
     dest=EVIDENCE/'morning'
     dest.mkdir(exist_ok=True)
     boundary=dest/'admission-close.json.gz'
@@ -209,9 +220,10 @@ def watch():
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--watch-cutoff',action='store_true')
+    parser.add_argument('--capture-cutoff',action='store_true')
     parser.add_argument('--save',type=Path)
     args=parser.parse_args()
-    if args.watch_cutoff:watch()
+    if args.watch_cutoff or args.capture_cutoff:watch(args.capture_cutoff)
     else:
         progress=snapshot()
         if args.save:save(args.save,progress)

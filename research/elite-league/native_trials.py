@@ -83,7 +83,7 @@ def cohort_priority(name):
     # Give both game modes turns in the same FIFO as the general confirmation.
     if name.startswith('mmc13-') and name.endswith('-clocks'):return 0
     if name=='mmc13-slice-1-01':return 0
-    if name.startswith(('mmc13-phase-confirm','mmc13-click-confirm','mmc13-contact-confirm')):return 2
+    if name.startswith(('mmc13-phase-confirm','mmc13-click-confirm','mmc13-contact-confirm','mmc13-edge-confirm')):return 2
     if name.startswith(('mmc13-transfer','box-breadth-native')):return 3
     if name.startswith(('mmc13-final','boxing100-native','box-student-native')):return 0
     if name.startswith(('mmc13-opening','mmc13-confirm','mmc13-box-clocks','m13floor','focus-','ladder-','confirmation-','mouse-smoke','gate-smoke','port-smoke')):return 0
@@ -122,7 +122,11 @@ def run_batch(trials,out):
         while found is None or len(found)<len(trials):
             count=len(found) if found is not None else len(json.loads(out.read_text())['matches']) if out.exists() else 0
             priority,_=tranche(out,count)
-            ticket=waiting/f'{priority:02d}-{time.time_ns()}-{os.getpid()}'
+            stamp=time.time_ns()
+            if os.environ.get('ELITE_RESUME_COHORT')==out.stem:
+                stamp=int(os.environ.pop('ELITE_RESUME_TICKET_NS'))
+                del os.environ['ELITE_RESUME_COHORT']
+            ticket=waiting/f'{priority:02d}-{stamp}-{os.getpid()}'
             ticket.touch(exist_ok=False)
             try:
                 with (work/'main-cohort.lock').open('a') as shared:

@@ -154,7 +154,26 @@ def follow(manifest, scores):
         time.sleep(20)
 
 
+def follow_registered():
+    from mmc_league import WORK, VERIFIED_STAGES
+    deadline = read(WORK / 'admission-deadline.json')['unix_time']
+    completed = {}
+    while time.time() < deadline + 180:
+        for tag in VERIFIED_STAGES:
+            name = 'mmc13-' + tag
+            current = WORK / (name + '.partial.json')
+            if not current.is_file():continue
+            trial = read(current)
+            count = len(trial['matches'])
+            if count == completed.get(tag,0):continue
+            governed_scan(current,WORK/(name+'-scores'))
+            completed[tag] = count
+        time.sleep(12)
+
+
 if __name__ == '__main__':
+    if sys.argv[1:]==['--follow-registered']:
+        follow_registered();sys.exit(0)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('manifest', type=Path)
     parser.add_argument('scores', type=Path)

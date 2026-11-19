@@ -24,6 +24,7 @@ EVIDENCE=HERE/'evidence/mmc13'
 DIGEST='89f9197f91ca4b33e1e00ef751b22ab2ba476885608c528b51bfdb32cb6c123a'
 OLD_TARGET=focus.TARGET
 CURRENT=focus.CURRENT
+VERIFIED_STAGES=('confirmation','transfer','actor','pairs','trade-confirm','phase-confirm','click-confirm','contact-confirm','edge-confirm')
 
 def groups():
     original=field()
@@ -152,7 +153,8 @@ def contest(tag,arms,foes,repeats,tapes,profile='mmc'):
             with tempfile.TemporaryDirectory(dir=WORK) as tmp:freeze(model,grid(Path(tmp),'matches',arms,foes,tapes,mode='mouse',profile=profile).read_bytes())
     rates(model)
     manifest=regulation_batch(tasks,manifest,d)
-    if tag=='final':
+    if tag in VERIFIED_STAGES:freeze(d/'input-protocol.json',(HERE/'mmc13-control-protocol.json').read_bytes())
+    if tag=='final' or tag in VERIFIED_STAGES:
         from final_inputs import eligible
         manifest=eligible(WORK/(name+'.json'),manifest,d,WORK/(name+'-scores'))
     rows=read_results(manifest);actual=counts(rows)

@@ -27,6 +27,25 @@ In m4532 the native player's sprint was still on when the click reduced horizont
 
 We also tested a timing estimate that can run before the fight. On those 24 openings, the best of 64 delay pairs used 1.5 ms beyond nominal transport for velocity and 0.75 ms for sprint metadata. It matched 15/24 versus 13/24 at the standard 0.35 ms. On 12 separate openings from the same tournament it matched 6/12 versus 5/12. The mean of the largest position error in each bout fell from 0.570 to 0.521 blocks. A shared 1.5 ms estimate did equally well on those 12. The only additional exact match came from the continuation at zero added RTT in seat A. Plain W-tap stayed at 2/4 in both models. Forty future confirmation match IDs have been reserved to test whether this transfers. [Fit and validation results](evidence/mmc13/transport/summary.json) · [Prospective fixtures](evidence/mmc13/transport/prospective-protocol.json)
 
+### Does moving toward center prevent ring-outs?
+
+We replayed 384 development fights at each of two landmarks. The fighter had to have seen a hurt cue and be moving outward at 0.02 blocks per tick or faster. At the first input past the stated radius, we forked both players, the server, queued packets and the controller history. Every unchanged branch reproduced its original terminal state. The table follows the contact learner against its passive opponent and the earlier PPO opponent. Each entry gives wins/draws/losses from identical starts within that row. Plain 20-CPS W-tap had already been observing the same fight when it took control.
+
+| Opponent | Radius | Plain W-tap | Continue contact learner | Strafe toward center for six input ticks |
+|---|---:|---:|---:|---:|
+| Passive actor | 3.5 | 3/0/27 | 11/4/15 | 15/1/14 |
+| Earlier PPO | 3.5 | 4/0/25 | 10/2/17 | 12/2/15 |
+| Plain W-tap | 3.5 | 16/0/4 | 19/0/1 | 18/0/2 |
+| Passive actor | 5.0 | 1/0/21 | 5/2/15 | 5/1/16 |
+| Earlier PPO | 5.0 | 2/0/21 | 4/2/17 | 1/2/20 |
+| Plain W-tap | 5.0 | 4/0/3 | 6/0/1 | 5/0/2 |
+
+By radius 5.0 the same correction lost three wins against the earlier PPO. The two radii select different starts, so their difference alone cannot establish that making the *same player* act earlier would save it. The fitted experiment uses the local observation at each input and reserves separate clocks for testing. [3.5-block forks](evidence/mmc13/edge-recovery/radius-3.5.jsonl.gz) · [5-block forks](evidence/mmc13/edge-recovery/radius-5.0.jsonl.gz) · [Training and selection split](mmc13-frozen/mmc13-edge-fit/protocol.json)
+
+### How sensitive are the finalists to knockback settings?
+
+Against plain W-tap, all four frozen challengers won all 32 model bouts on MMC. On the local Hypixel-like preset, the population champion won 15/32, continuation-01 and the second PPO actor each won 28/32, and the adaptive pair won 30/32. None of the challengers drew. Plain W-tap against itself recorded 16/0/16 on MMC and 15/2/15 on the alternate preset. Both presets used the very same eight calendars, both seats and both latencies. These are simulator results. The independent native comparison uses the winner of the audited MMC final. [All six opponents and seat/RTT results](evidence/mmc13/final-profile/model-score.json) · [Native comparison design](evidence/mmc13/final-profile/protocol.json)
+
 ### Which inputs helped after a trade?
 
 The second PPO actor struggled most against its earlier training opponent. On 16 training calendars, we resumed both bots from the same complete simulator state after their first exchange of hits. For the next three input decisions we changed combinations of forward/sprint keys, strafe, clicks and jump. The actor still chose every unchanged input from its own view. Each branch then played to a ring-out or timeout. The original continuations, including their early hit traces, reproduced on every fixture.

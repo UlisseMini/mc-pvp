@@ -1,0 +1,5 @@
+{
+  "basis": "The original first-to-100 boxing replays showed a wall-clock adjustment could release W for one movement on either type of client. Apply the same control checks to every remaining measured-platform tournament with the standard W-tap, Hold-W and network players.",
+  "eligibility": "Keep the original scheduled fixture and all referee-invalid attempts. Before ranking, require both recorded clients to pass the physical movement check. Replay every neural decision from the frozen weights, check the applied controls and recorded neural jump, and compare every matched ordinary W-tap or Hold-W forward/strafe command against actual travel. Missing evidence stops certification.",
+  "replacements": "Only an observed disagreement or referee-invalid view triggers a new attempt. Preserve the exact mode, profile, frozen build, paired players, arena, seats, RTT, reach, CPS, aim and duration. Give a replacement the original request plus a deterministic retry suffix. This rule applies equally to both players and ignores the outcome. Preserve the attempt lineage before reading replacement scores."
+}
