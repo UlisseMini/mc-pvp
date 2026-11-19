@@ -142,11 +142,14 @@ public final class PeriodicComboFightModel {
         double minDef=1e9,lastOwn,maxOwn,lowerOffset=-1e9,upperOffset=1e9;ArrayList<Packet> packets=new ArrayList<>(),outboundA=new ArrayList<>(),outboundB=new ArrayList<>();
         FreshImpulse lastFreshA,lastFreshB;
         State(double gap){this(0,0,gap,0);}
-        State(double ax,double az,double bx,double bz){
-            a=new Body(ax);b=new Body(bx);a.q=state(ax,4,az,0,-.0784000015258789,0,true);b.q=state(bx,4,bz,0,-.0784000015258789,0,true);a.reportZ=az;b.reportZ=bz;
+        State(double ax,double az,double bx,double bz){this(ax,az,bx,bz,4);}
+        State(double ax,double az,double bx,double bz,double top){
+            mmcA=mmcB=new MmcMovement(top,0,0,false,false,false,false);
+            trackedAy=trackedBy=sentAy=sentBy=serverAy=serverBy=top;
+            a=new Body(ax);b=new Body(bx);a.q=state(ax,top,az,0,-.0784000015258789,0,true);b.q=state(bx,top,bz,0,-.0784000015258789,0,true);a.reportZ=az;b.reportZ=bz;a.reportY=b.reportY=top;
             a.yaw=a.headYaw=a.reportYaw=-90;b.yaw=b.headYaw=b.reportYaw=90;
-            ab=new View(bx);ab.z=ab.gz=bz;ba=new View(ax);ba.z=ba.gz=az;
-            serverA=state(ax,4,az,0,-.0784000015258789,0,true);serverB=state(bx,4,bz,0,-.0784000015258789,0,true);
+            ab=new View(bx);ab.z=ab.gz=bz;ba=new View(ax);ba.z=ba.gz=az;ab.y=ab.gy=ba.y=ba.gy=top;
+            serverA=state(ax,top,az,0,-.0784000015258789,0,true);serverB=state(bx,top,bz,0,-.0784000015258789,0,true);
             serverAx=trackedAx=sentAx=ax;serverAz=trackedAz=sentAz=az;serverBx=trackedBx=sentBx=bx;serverBz=trackedBz=sentBz=bz;
         }
 
@@ -196,6 +199,8 @@ public final class PeriodicComboFightModel {
     }
     static final class Config implements Cloneable {
         public Config deepCopy(){try{return (Config)super.clone();}catch(CloneNotSupportedException impossible){throw new AssertionError(impossible);}}
+        double centerX=4096; ExactTravel.Environment platform=ENV, below=BELOW_SUMO;
+        void sumoArena(double center,double top){centerX=center;platform=new ExactTravel.Environment(top,.6f,true,true,false,false,false);below=new ExactTravel.Environment(top-8,.6f,true,true,false,false,false);}
         double ownRtt=20,otherRtt=20,defenderReach=1.5,kbScale=1,verticalScale=1,sprintVertical=.1;
         /** Explicit profile import keeps model/native options identical; omitted fields retain defaults. */
         void applyCombat(Properties p){
@@ -208,8 +213,11 @@ public final class PeriodicComboFightModel {
     // Same tile-center disk and footprint as the native sumo platform, with
     // Y translated from 12 to 4. No block side-face collision below the top.
     static boolean sumoSupport(ExactTravel.Box box,int diameter){
+        return sumoSupport(box,diameter,4096);
+    }
+    static boolean sumoSupport(ExactTravel.Box box,int diameter,double center){
         double radius=diameter/2.0;
-        for(int x=(int)Math.floor(box.minX()-4096);x<box.maxX()-4096;x++)
+        for(int x=(int)Math.floor(box.minX()-center);x<box.maxX()-center;x++)
             for(int z=(int)Math.floor(box.minZ());z<box.maxZ();z++)
                 if((x+.5)*(x+.5)+(z+.5)*(z+.5)<=radius*radius)return true;
         return false;
@@ -218,8 +226,9 @@ public final class PeriodicComboFightModel {
         boolean a=s.serverAy<3.5,b=s.serverBy<3.5;
         return a?(b?0:2):b?1:-1;
     }
-    private static ExactTravel.Environment floor(Config c,ExactTravel.State q){
-        return c!=null&&c.sumo&&(q.y()<4||!sumoSupport(q.box(),c.sumoDiameter))?BELOW_SUMO:ENV;
+    static ExactTravel.Environment floor(Config c,ExactTravel.State q){
+        if(c==null||!c.sumo)return ENV;
+        return q.y()<c.platform.floorTopY()||!sumoSupport(q.box(),c.sumoDiameter,c.centerX)?c.below:c.platform;
     }
     static ExactTravel.State state(double x,double y,double vx,double vy,boolean ground){
         return state(x,y,0,vx,vy,0,ground);
@@ -349,7 +358,7 @@ public final class PeriodicComboFightModel {
                 double height=ty-target.floor();
                 target=target.cap(height);
                 if(fromA)s.mmcB=target;else s.mmcA=target;
-                boolean landing=(!c.sumo||sumoSupport(victim.box(),c.sumoDiameter))&&target.landing(height,fromA?c.otherRtt:c.ownRtt);
+                boolean landing=(!c.sumo||sumoSupport(victim.box(),c.sumoDiameter,c.centerX))&&target.landing(height,fromA?c.otherRtt:c.ownRtt);
                 vy=target.capped()&&!landing?0:.361375+(sprint?c.sprintVertical:0);
             }else if(fresh&&sprint&&c.sprintVertical!=.1)vy+=c.sprintVertical-.1;
             s.lastVx=vel(vx*(fresh?c.kbScale:1));s.lastVy=vel(vy*(fresh?c.verticalScale:1));

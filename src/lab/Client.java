@@ -59,6 +59,7 @@ public final class Client {
     static boolean referenceActive;
     static final BurstClickController burstClicks=new BurstClickController();
     static BurstClickController.Decision burstDecision;
+    static int sumoJumpMask;
     static ClickPause clickPause;
     static ClickPause.Tree pauseTree;
     static long burstObservedAt;
@@ -347,6 +348,8 @@ public final class Client {
                 matchInitialized=false;
                 match=next;epoch=Long.parseLong(controls.getProperty("start_at",Long.toString(now)));history.clear();previous=null;lastConsumed=null;lastClick=firstClickEligible=0;
                 lastObservedHurt=lastObservedTargetHurt=0;
+                sumoJumpMask=Integer.parseInt(controls.getProperty("sumo_jump_mask","0"));
+                if(sumoJumpMask<0||sumoJumpMask>65535)throw new IllegalArgumentException("Invalid sumo jump policy");
                 clickPause=controls.containsKey("pause_tree")?new ClickPause():null;
                 pauseTree=clickPause==null?null:new ClickPause.Tree(controls.getProperty("pause_tree"));
                 handledTapCue=pendingTapCue=tapUntil=0;tapReason="";
@@ -856,11 +859,13 @@ public final class Client {
             if(reaction==0||displacementTurn!=null&&displacementTurn.headOnly()){nativeInputPoll=true;try{frame(mc);}finally{nativeInputPoll=false;}}
             // S12 changes velocity while the previous movement's ground flag
             // still holds. Read Jump in the next native living update.
-            if((displacementJump||jumpOnImpact&&Boolean.parseBoolean(controls.getProperty("jump_reset","false")))
+            int jumpState=sumoJumpMask==0?-1:SumoJumpPolicy.state(obs.ground,forward,obs.tx-obs.x,obs.tz-obs.z,obs.ty-obs.y,obs.vx,obs.vz);
+            boolean learnedJump=SumoJumpPolicy.jump(sumoJumpMask,jumpState);
+            if((learnedJump||displacementJump||jumpOnImpact&&Boolean.parseBoolean(controls.getProperty("jump_reset","false")))
                     &&(Boolean)R.get(player,"onGround")&&R.get(mc,"currentScreen")==null){
                 Object binding=R.get(R.get(mc,"gameSettings"),"keyBindJump");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"setKeyBindState",(int)R.call(binding,"getKeyCode"),true);
-                log(Compat.map("type","jump_reset_input","time",now,"match",match,"native_tick",ticks));
+                log(Compat.map("type",learnedJump?"sumo_rl_jump":"jump_reset_input","time",now,"match",match,"native_tick",ticks,"state",jumpState));
             }
             if(now-logAt>=50){
                 logAt=now;

@@ -16,6 +16,7 @@
   "BurstClickController",
   "MotionClickController",
   "ClickPause",
+  "SumoJumpPolicy",
   "CriticalClickController",
   "BlockhitController",
   "LinearHitPredictor",
