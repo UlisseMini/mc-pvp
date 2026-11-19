@@ -16,13 +16,15 @@ def java(main,*args):
     return ['java','-ea','-Xmx2700m','-cp',str(BUILD),main,*map(str,args)]
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('mode',choices=['train','evaluate']);p.add_argument('clocks',type=Path);p.add_argument('output',type=Path)
+    p.add_argument('mode',choices=['train','evaluate','evaluate-league']);p.add_argument('clocks',type=Path);p.add_argument('output',type=Path)
     args=p.parse_args();compile_model()
     if args.mode=='train':
         spec=json.loads((HERE/'protocol.json').read_text())['training']
         if sorted(f.name.split('.')[0] for f in args.clocks.glob('*.txt.gz'))!=sorted(json.loads((HERE/'protocol.json').read_text())['development_clock_matches']):
             p.error('Training requires exactly the registered development donors')
         cmd=java('Learn',args.clocks,*(spec[k] for k in ('seed','generations','population','elite')))
+    elif args.mode=='evaluate-league':
+        cmd=java('Evaluate',args.clocks,json.loads((HERE/'league-fit.json').read_text())['code'],'league')
     else:
         cmd=java('Evaluate',args.clocks,json.loads((HERE/'fit.json').read_text())['mask'])
     if args.output.exists():p.error('Choose a fresh output path')

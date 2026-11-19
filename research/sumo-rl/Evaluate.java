@@ -39,15 +39,24 @@ public final class Evaluate {
             "side",first?"a":"b","opponent",opponent,"rl",learned.result(),"wtap",plain.result(),"forks",forks);
     }
     public static void main(String[] args)throws Exception{
-        int mask=Integer.parseInt(args[1]);
+        int mask=Integer.parseInt(args[1]);boolean league=args.length>2 && args[2].equals("league");
         for(var path:Files.list(Path.of(args[0])).sorted().toList()){
             var tape=DuelEnv.Tape.read(path,DuelEnv.LIMIT);
             for(String mode:List.of("sumo","boxing"))for(String profile:(mode.equals("sumo")?List.of("mmc","hypixel"):List.of("mmc"))){
                 for(int rtt:new int[]{0,80}){
-                    var env=new DuelEnv(tape,profile,rtt,mode.equals("sumo"));
-                    for(String opp:(mode.equals("sumo")&&profile.equals("mmc")?List.of("wtap","hold","trade"):List.of("wtap")))
+                    var env=new DuelEnv(tape,profile,rtt,mode.equals("sumo"),league?29:0);
+                    for(String opp:(mode.equals("sumo")&&profile.equals("mmc")?(league?List.of("wtap","hold","trade","reset"):List.of("wtap","hold","trade")):List.of("wtap")))
                         for(boolean first:new boolean[]{true,false}){
-                            try{System.out.println(Json.encode(episode(env,first,opp,mask)));}
+                            try{
+                                var row=new LinkedHashMap<>(episode(env,first,opp,mask));
+                                if(league && env.sumo){
+                                    var movement=env.start(first,opp,mask&0xffff0000);
+                                    movement.trace();movement.finish();row.put("movement_only",movement.result());
+                                    var timing=env.start(first,opp,mask&65535);
+                                    timing.trace();timing.finish();row.put("jump_only",timing.result());
+                                }
+                                System.out.println(Json.encode(row));
+                            }
                             catch(IllegalStateException e){
                                 if(!BoxingModel.UNSUPPORTED_SEPARATION.equals(e.getMessage()))throw e;
                                 System.out.println(Json.encode(Map.of("clock",tape.id(),"mode",mode,"profile",profile,"rtt",rtt,

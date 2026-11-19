@@ -32,24 +32,40 @@ final class DuelEnv {
         }
     }
     static final class Player implements PeriodicComboClock.Policy {
-        final String style;
+        String style;
+        int waitMs=150, tradeWindow=200;
+        boolean impact;
         final int rtt, wake;
         int mask, jumps;
         double handled=Double.NEGATIVE_INFINITY, releaseUntil=Double.NEGATIVE_INFINITY;
         double firstClick=Double.NaN;
         Player(String style,int mask,int rtt,int wake){this.style=style;this.mask=mask;this.rtt=rtt;this.wake=wake;}
-        Player copy(){Player b=new Player(style,mask,rtt,wake);b.jumps=jumps;b.handled=handled;b.releaseUntil=releaseUntil;b.firstClick=firstClick;return b;}
+        // Bits 0..15 select grounded jump states. The high word selects an
+        // existing native movement preset; zero is the ordinary W-tapper.
+        void select(int code){
+            int kind=code>>>16;mask=code&65535;
+            if(kind>16)throw new IllegalArgumentException("Unknown movement preset");
+            style=kind==0?"wtap":kind==1?"hold":"trade";
+            if(kind>=2){
+                waitMs=new int[]{50,100,150,250,400}[(kind-2)/3];
+                tradeWindow=new int[]{0,100,200}[(kind-2)%3];
+            }
+        }
+        public void received(PeriodicComboClock.PacketObservation p){
+            if(style.equals("reset") && p.kind()==PeriodicComboClock.ReceivedKind.OWN_VELOCITY)impact=p.vx()!=0||p.vz()!=0;
+        }
+        Player copy(){Player b=new Player(style,mask,rtt,wake);b.jumps=jumps;b.waitMs=waitMs;b.tradeWindow=tradeWindow;b.impact=impact;b.handled=handled;b.releaseUntil=releaseUntil;b.firstClick=firstClick;return b;}
         public PeriodicComboClock.Control input(PeriodicComboClock.Observation o){
             long now=(long)o.time();
             double cue=o.lastTargetHurtTime();
             if (!style.equals("hold") && cue>handled &&
-                (!style.equals("trade") || o.lastOwnHurtTime()>=cue-200 || now>=cue+150+rtt/2.0)) {
+                (!style.equals("trade") || o.lastOwnHurtTime()>=cue-tradeWindow || now>=cue+waitMs+rtt/2.0)) {
                 handled=cue;releaseUntil=now+50;
             }
             boolean go=now>=releaseUntil;
             int state=SumoJumpPolicy.state(o.own().onGround(),go,o.targetX()-o.own().x(),o.targetZ()-o.own().z(),
                                           o.targetY()-o.own().y(),o.own().vx(),o.own().vz());
-            boolean jump=SumoJumpPolicy.jump(mask,state);
+            boolean jump=SumoJumpPolicy.jump(mask,state)||(impact&&o.own().onGround());impact=false;
             if(jump)jumps++;
             return new PeriodicComboClock.Control(go?2:0,0,now>=wake,jump);
         }
@@ -78,7 +94,8 @@ final class DuelEnv {
     final int rtt,limit;
     final double[] serverEnds;
     final PeriodicComboClock initial;
-    DuelEnv(Tape tape,String profile,int rtt,boolean sumo){
+    DuelEnv(Tape tape,String profile,int rtt,boolean sumo){this(tape,profile,rtt,sumo,0);}
+    DuelEnv(Tape tape,String profile,int rtt,boolean sumo,int trackerStart){
         this.clockId=tape.id;this.profile=profile;this.rtt=rtt;this.sumo=sumo;limit=sumo?LIMIT:20000;serverEnds=tape.serverEnds;
         var config=BoxingModel.config(profile,rtt);config.sumo=sumo;
         if(sumo)config.sumoArena(4096,12);
@@ -86,6 +103,7 @@ final class DuelEnv {
         t.inputMode=PeriodicComboClock.InputMode.NATIVE_QUEUED;
         t.uplinkA=t.uplinkB=t.downlinkA=t.downlinkB=.35;
         var state=new PeriodicComboFightModel.State(4093,0,4099,0,sumo?12:4);
+        state.serverTicks=trackerStart;
         Player idle=new Player("wtap",0,rtt,0);
         initial=new PeriodicComboClock(state,config,t,idle,idle,tape.events);
         initial.enableSharedCalendar();
@@ -95,13 +113,13 @@ final class DuelEnv {
         Hits hits; int step;
         Game(boolean first,String opponent,int mask){
             this.first=first;
-            var our=new Player("wtap",mask,rtt,0);
+            var our=new Player("wtap",0,rtt,0);our.select(mask);
             var other=new Player(opponent,0,rtt,sumo?0:2000);
             a=first?our:other;b=first?other:our;
             clock=initial.fork(a,b);
         }
         Game(Game prefix,int mask){
-            first=prefix.first;a=prefix.a.copy();b=prefix.b.copy();our().mask=mask;
+            first=prefix.first;a=prefix.a.copy();b=prefix.b.copy();our().select(mask);
             clock=prefix.clock.fork(a,b);step=prefix.step;
         }
         Player our(){return first?a:b;}

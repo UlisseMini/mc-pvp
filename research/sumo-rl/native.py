@@ -22,9 +22,14 @@ def plan(prefix, clocks=False, policy="sumo-rl"):
         ('sumo','mmc','research-wtap20',4), ('sumo','mmc','research-hold20',2),
         ('sumo','mmc','trade-wtap',2), ('sumo','hypixel','research-wtap20',1),
         ('boxing','mmc','combo-wake-2000',2)]
+    if not clocks and policy=='sumo-rl-pressure':
+        groups.append(('sumo','mmc','jump-reset',2))
     for mode, profile, opponent, repeats in groups:
         arms = ['research-wtap20'] if clocks else ['research-wtap20',policy]
+        if policy=='sumo-rl-pressure' and mode=='sumo' and profile=='mmc' and opponent in ('research-wtap20','research-hold20') and not clocks:
+            arms.append('research-hold20')
         for rep, rtt, side, arm in itertools.product(range(repeats), (0,80), 'ab', arms):
+            if arm=='research-hold20' and rep>=2:continue
             name = f'{prefix}-{mode}-{profile}-{opponent}-{rep}-{rtt}-{side}-{arm}'
             a, b = (arm,opponent) if side == 'a' else (opponent,arm)
             start = f'lab sumo {a} {b} {rtt} {rtt}' if mode == 'sumo' else f'lab scenario {a} {b} {rtt} {rtt} 20000'
@@ -38,7 +43,7 @@ if __name__ == '__main__':
     p.add_argument('output', type=Path)
     p.add_argument('--prefix', required=True)
     p.add_argument('--clocks', action='store_true')
-    p.add_argument('--policy', choices=['sumo-rl','sumo-rl-jump'], default='sumo-rl')
+    p.add_argument('--policy', choices=['sumo-rl','sumo-rl-jump','sumo-rl-pressure'], default='sumo-rl')
     args = p.parse_args()
     if args.output.exists() or not args.prefix.replace('-','').isalnum():
         p.error('Use a fresh prefix and manifest')
@@ -46,7 +51,7 @@ if __name__ == '__main__':
     if any(json.loads(f.read_text()).get('request') in trials for f in (batch.RUNTIME/'results').glob('*.json')):
         p.error('Request prefix already used')
     if not args.clocks:
-        fit=json.loads((HERE/('fit.json' if args.policy=='sumo-rl' else 'v1/fit.json')).read_text())
+        fit=json.loads((HERE/{'sumo-rl':'fit.json','sumo-rl-jump':'v1/fit.json','sumo-rl-pressure':'league-fit.json'}[args.policy]).read_text())
         settings=(ROOT/'policies'/f'{args.policy}.properties').read_text().splitlines()
         if f"sumo_jump_mask={fit['mask']}" not in settings:raise ValueError("Policy file differs from frozen fit")
         expected=hashlib.sha256((ROOT/'build/practice-client/practice-bridge.jar').read_bytes()).hexdigest()
