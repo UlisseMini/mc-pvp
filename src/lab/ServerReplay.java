@@ -63,7 +63,7 @@ public final class ServerReplay {
         Object world=R.get(viewer,"worldObj");
         prepareStage(world,data,4096.0*(arena+1));Referee.clearBox(world,arena);SumoArena.clear(world,arena);
         if("sumo".equals(data.result.get("mode"))){
-            double size=ReplayData.number(ReplayData.map(data.result.get("sumo_arena")),"diameter",SumoArena.DIAMETER);
+            double size=ReplayData.number(ReplayData.map(data.result.get("sumo_arena")),"diameter",SumoFootprint.LEGACY);
             SumoArena.build(world,arena,DuelSettings.sumoDiameter(Integer.toString((int)size)));
         }
         if("diamond_box".equals(data.result.get("mode")))Referee.prepareBox(world,arena);

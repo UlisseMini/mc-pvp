@@ -44,7 +44,7 @@ final class ContinuationTeacher {
     static List<String> one(DuelEnv e,Arena.Fighter opp,boolean seat,String brain,int seed,int index)throws Exception{
         var rand=new Random(1729L*seed+293L*index);int[] marks={150+rand.nextInt(301),600+rand.nextInt(401),
             1300+rand.nextInt(901),2500+rand.nextInt(1751),5000+rand.nextInt(4001)};
-        var game=e.new Game(seat,new Student(brain,e.rtt),opp.create(e.rtt,0,true,10));
+        var game=e.new Game(seat,new Student(brain,e.rtt),opp.create(e.rtt,0,true,e.initial.config.sumoDiameter));
         var forks=new ArrayList<DuelEnv.Game>();
         while(forks.size()<marks.length && game.advance()){
             if(game.clock.time()>=marks[forks.size()] && game.winner()<0)forks.add(copy(e,game));

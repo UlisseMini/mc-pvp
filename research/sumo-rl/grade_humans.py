@@ -48,6 +48,7 @@ def register(players, pairs, seed, rtt, challenger=ARMS[1], mode="sumo", aim_inp
         first=rng.randrange(2)
         schedule[player]=[arms[(first+rep+idx)%2] for rep in range(pairs) for idx in (0,1)]
     return dict(bridge_sha256=bridge_hash(),frozen_at_ms=int(datetime.now(timezone.utc).timestamp()*1000),
+                sumo_arena={'diameter':13,'start_gap':8,'shape':'mmc_recorded_13_v1'} if mode=='sumo' else None,
                 profile='mmc',mode=mode,aim_input=aim_input,rtt=rtt,pairs=pairs,seed=seed,arms=arms,duration_limit_ms=120000 if mode=='sumo' else 180000,
                 policy_sha256={k:config_hash(k) for k in arms},schedule=schedule,
                 duel_commands={k:f'/duel {k} {mode} {rtt} {rtt} preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput={aim_input}' for k in arms},
@@ -72,7 +73,7 @@ def grade(plan, games):
             pars=g['parameters_'+b]
             if g['policy_'+b]!=expected:raise ValueError(f"{player}: {g['id']} played out of the registered order")
             regulation=(g.get('goal')==100 and not g.get('scenario')) if mode=='boxing' else (
-                g['sumo_arena']['diameter']==10 and g['sumo_arena']['start_gap']==6)
+                all(g['sumo_arena'].get(k)==v for k,v in plan.get('sumo_arena',{'diameter':10,'start_gap':6}).items()))
             if not (g['practice_preset']==plan['profile'] and g['combat_profile']['knockback_model']=='mmc_pre_attack_sprint_v2'
                 and g['initial_ping_a']==g['initial_ping_b']==plan['rtt'] and not g.get('ping_changes',0) and g['click_cps_'+b]==20
                 and regulation and pars.get('aim_input','mouse' if pars.get('league_stage') else 'ideal')==plan.get('aim_input','ideal') and

@@ -24,6 +24,11 @@ MMC sprint-reset preset first and measure transfer to other knockback profiles.
 Isolate one skill at a time before integrating it. Score boxing maintenance and
 sumo ring-outs under their own win conditions.
 
+Use the [recorded MMC 13×13 platform](research/mmc-arena/README.md) as
+the default in sumo play, training and transfer tests. Its 137 blocks include
+two gold spawn markers eight blocks apart. Preserve the original ring size
+and opening when comparing archived evidence.
+
 Keep controller examples and held-out calendars separate, with a frozen split
 recorded before evaluation. A new jitter seed on an example calendar is NOT
 held-out calendar transfer. Never add examples from a held-out calendar; after

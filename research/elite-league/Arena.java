@@ -16,10 +16,13 @@ final class Arena {
     }
     record Fighter(String name,Model model){
         static Fighter named(String name){return new Fighter(name,null);}
-        DuelEnv.Player create(int rtt,int wake){return create(rtt,wake,true,10);}
+        DuelEnv.Player create(int rtt,int wake){return create(rtt,wake,true,DuelEnv.regulationDiameter());}
         DuelEnv.Player create(int rtt,int wake,boolean mmc,int diameter){
+            return create(rtt,rtt,wake,mmc,diameter,mmc?9:10);
+        }
+        DuelEnv.Player create(int rtt,int opponentRtt,int wake,boolean mmc,int diameter,int freshTicks){
             if(model!=null)return new Neural(model,rtt);
-            if(name.startsWith("legacy-"))return new HistoricalMovement(name.substring(7),rtt,rtt);
+            if(name.startsWith("legacy-"))return new HistoricalMovement(name.substring(7),rtt,opponentRtt,freshTicks);
             if(NATIVE_STYLES.contains(name))
                 return new StrafeOpponent(name,rtt,mmc,diameter);
             if(name.equals("select")||name.equals("counterstrafe"))return new Sparring(name,rtt);
@@ -79,8 +82,9 @@ final class Arena {
         double game(Fighter fighter){return round(fighter).reward();}
         DuelEnv.Game round(Fighter fighter){
             var config=env.initial.config;
-            DuelEnv.Game game=env.new Game(first,fighter.create(first?env.rtt:env.otherRtt,0,config.mmc,config.sumoDiameter),
-                opponent.create(first?env.otherRtt:env.rtt,0,config.mmc,config.sumoDiameter));
+            int ourRtt=first?env.rtt:env.otherRtt,otherRtt=first?env.otherRtt:env.rtt;
+            DuelEnv.Game game=env.new Game(first,fighter.create(ourRtt,otherRtt,0,config.mmc,config.sumoDiameter,config.hitTicks),
+                opponent.create(otherRtt,ourRtt,0,config.mmc,config.sumoDiameter,config.hitTicks));
             game.finish();return game;
         }
     }

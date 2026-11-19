@@ -6,6 +6,8 @@ public final class DuelSettingsCheck {
     static DuelSettings parse(String command,Properties inherited){return DuelSettings.parse(command.split(" "),2,"boxing",0,80,inherited);}
     public static void main(String[] args){
         Properties empty=new Properties();
+        check(!DuelSettings.inOpening(-1,0)&&!DuelSettings.inOpening(-1,50),"prestart never runs acquisition controls");
+        check(!DuelSettings.inOpening(0,0)&&DuelSettings.inOpening(0,50)&&DuelSettings.inOpening(49,50)&&!DuelSettings.inOpening(50,50),"opening uses its exact half-open interval");
         DuelSettings defaults=parse("/duel wtap",empty);
         check(defaults.humanPing==80&&defaults.botPing==0&&defaults.overrides.isEmpty(),"saved player ping and policy defaults");
         check(!defaults.humanPingExplicit,"saved player ping is implicit");

@@ -8,7 +8,7 @@ import subprocess
 import zipfile
 
 ROOT=Path(__file__).resolve().parents[2]
-SERVER=['SumoArena','Referee','MmcKnockback','ServerReplay','DuelSettings','BotMatchSettings','LabHelp','BoxingLandmark']
+SERVER=['EntryDrills','SumoFootprint','SumoArena','Referee','MmcKnockback','ServerReplay','DuelSettings','BotMatchSettings','LabHelp','BoxingLandmark']
 CLIENT=['PairedExperts','MouseLook','Client','DuelNetwork','HumanTiming','ExpertRouter','CombatTactics','TradeResponse','DuelSettings','BoxingLandmark']
 
 def sha(path):

@@ -232,11 +232,7 @@ public final class PeriodicComboFightModel {
         return sumoSupport(box,diameter,4096);
     }
     static boolean sumoSupport(ExactTravel.Box box,int diameter,double center){
-        double radius=diameter/2.0;
-        for(int x=(int)Math.floor(box.minX()-center);x<box.maxX()-center;x++)
-            for(int z=(int)Math.floor(box.minZ());z<box.maxZ();z++)
-                if((x+.5)*(x+.5)+(z+.5)*(z+.5)<=radius*radius)return true;
-        return false;
+        return new ExactTravel.Disk(center,diameter).supports(box);
     }
     static int sumoOutcome(State s){
         boolean a=s.serverAy<3.5,b=s.serverBy<3.5;

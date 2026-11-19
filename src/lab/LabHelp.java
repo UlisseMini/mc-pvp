@@ -23,7 +23,7 @@ public final class LabHelp {
          "preset=mmc — community Minemen first-hit fit + landing prediction; available in sumo and other kits",
          "/duel lock8 boxing preset=lock8 — face the demo controller; this does not disable your attacks",
          "cps=20 — maximum inputs/sec (1–30); bot may deliberately click less",
-         "diameter=10 — sumo platform width, even numbers 8–16; the starting gap stays 6 blocks",
+         "diameter=13 — recorded MMC sumo platform, 8 blocks between spawns. Even sizes 8–16 use a 6-block gap",
          "reach=3.0 — bot attack reach (1–5 blocks); 3.0 is normal",
          "ping=100 (or botping=100); myping=20 — added RTT, 0–500ms",
          "aimdelay=150 — delayed local target tracking, 0–500ms; default 0",

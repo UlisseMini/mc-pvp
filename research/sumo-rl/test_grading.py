@@ -41,7 +41,7 @@ class HumanGradeTest(unittest.TestCase):
             return dict(id=f'm{i}',start=p['frozen_at_ms']+i,mode='sumo',a='Example',b='LabSlot1',
                 policy_a='human',policy_b=arm,winner='LabSlot1',reason='ring_out',practice_preset='mmc',
                 combat_profile={'knockback_model':'mmc_pre_attack_sprint_v2'},initial_ping_a=0,initial_ping_b=0,
-                click_cps_b=20,sumo_arena={'diameter':10,'start_gap':6},attack_reach_a=3,attack_reach_b=3,
+                click_cps_b=20,sumo_arena={'diameter':13,'start_gap':8,'shape':'mmc_recorded_13_v1'},attack_reach_a=3,attack_reach_b=3,
                 reaction_ms_b=0,duration_limit_ms=120000,client_b={'backend':'forge','bridge_sha256':p['bridge_sha256']},
                 parameters_b=dict(aim_input='mouse',kind='hold' if arm==ARMS[1] else 'wtap',sumo_jump_mask=5168 if arm==ARMS[1] else 0,
                      aim_delay_ms=0,aim_noise_deg=0,aim_turn_rate_dps=0))
@@ -50,6 +50,10 @@ class HumanGradeTest(unittest.TestCase):
         self.assertFalse(result['complete'])
         self.assertEqual(result[order[0]]['win'],1)
         self.assertEqual(result[order[1]]['interrupted'],1)
+        legacy_game=dict(a,sumo_arena={'diameter':10,'start_gap':6})
+        with self.assertRaises(ValueError):grade(p,[legacy_game])
+        legacy_plan={k:v for k,v in p.items() if k!='sumo_arena'}
+        self.assertEqual(grade(legacy_plan,[legacy_game])['Example'][order[0]]['win'],1)
         with self.assertRaises(ValueError):grade(p,[b])
         box=dict(p,mode='boxing',duration_limit_ms=180000)
         game100=dict(a,mode='boxing',duration_limit_ms=180000,goal=100,scenario=False,reason='100_hits')

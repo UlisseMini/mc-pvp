@@ -5,7 +5,9 @@ import java.util.*;
 /** Per-duel overrides. Parsing never changes a shared policy or player preference. */
 public final class DuelSettings {
     static final int DEFAULT_HIT_TICKS=9, VANILLA_HIT_TICKS=10;
-    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8|hypixel|mmc] [reach=3.0] [cps=20] [diameter=10] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks="+DEFAULT_HIT_TICKS+"] [sprint_vertical=.1]";
+    /** A tick sampled before the declared start cannot activate an optional acquisition policy. */
+    public static boolean inOpening(long elapsedMs,double durationMs){return elapsedMs>=0 && elapsedMs<durationMs;}
+    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8|hypixel|mmc] [reach=3.0] [cps=20] [diameter=13] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks="+DEFAULT_HIT_TICKS+"] [sprint_vertical=.1]";
     public final String mode;
     public final double botPing,humanPing;
     public final boolean humanPingExplicit;
@@ -101,8 +103,8 @@ public final class DuelSettings {
     }
     public static int sumoDiameter(String value){
         int size;
-        try{size=Integer.parseInt(value);}catch(NumberFormatException e){throw new IllegalArgumentException("Sumo diameter must be an even whole number from 8 to 16");}
-        if(size<8||size>16||size%2!=0)throw new IllegalArgumentException("Sumo diameter must be even and between 8 and 16");
+        try{size=Integer.parseInt(value);}catch(NumberFormatException e){throw new IllegalArgumentException("Choose the MMC 13-block map or an even diameter from 8 to 16");}
+        if(size!=13 && (size<8||size>16||size%2!=0))throw new IllegalArgumentException("Choose the MMC 13-block map or an even diameter from 8 to 16");
         return size;
     }
     static int hurtWindowTicks(Properties p){

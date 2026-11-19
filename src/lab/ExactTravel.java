@@ -79,7 +79,9 @@ public final class ExactTravel {
     public record Disk(double centerX,int diameter) {
         public Disk { if(diameter<=0)throw new IllegalArgumentException("Empty platform"); }
         boolean cell(int x,int z) {
-            double dx=x+.5-centerX,dz=z+.5,r=diameter*.5;
+            // An odd-width ring is centered on a block; an even one lies between four blocks.
+            double offset=(diameter%2)*.5;
+            double dx=x+.5-(centerX+offset),dz=z+.5-offset,r=diameter*.5;
             return dx*dx+dz*dz<=r*r;
         }
         public boolean supports(Box box) {

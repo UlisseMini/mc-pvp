@@ -4,6 +4,22 @@ This is the working brief for future sessions. The latest clarification below
 supersedes the earlier continuous-own-reach interpretation. Keep historical
 measurements and their original definitions; do not silently relabel them.
 
+## November 19 measured sumo arena
+
+Use the most frequent exact fighting surface from the MMC replay survey for
+regulation sumo. On the 13×13 platform the players start eight blocks apart on
+the gold block centers. Retain geometry metadata when comparing tournaments.
+The previous 10-block lab disk and its six-block opening belong to the earlier
+evidence. [Source measurements and coordinates](mmc-arena/README.md).
+
+## November 19 matchup priority
+
+Give ordinary 20-CPS W-tap and the weakest distinct opponent their own scores.
+Seek a decisive W-tap win rate across seat and latency and repair the weakest
+matchup without discarding the generalist field. Track true mirrors separately.
+The [targeted tournament](elite-league/focus-protocol.json) freezes the current
+weak opponents, comparison field and confirmation thresholds.
+
 ## November 19 overnight direction
 
 Every completed tournament publishes its actual overall winner under a permanent

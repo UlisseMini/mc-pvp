@@ -37,9 +37,11 @@ reload live; client commands start with `/practice`.
 3. Type **`/bots`** and click a bot to fight it. Boxing is first to 100 hits.
    For full diamond armor and a fight to death, use **`/duel wtap diamond`**.
 
-Sumo uses a **provisional 10-block-wide circular platform**, with spawns 6 blocks
-apart. This approximates the [size described by Hypixel players](https://hypixel.net/threads/pvp-vs-gamesense.5158839/page-2);
-we have not verified exact current MMC/Hypixel map dimensions or that they match.
+Sumo defaults to the **13×13 MMC platform** measured in Nomophobia’s recordings.
+It has 137 solid floor blocks, with the two gold spawn blocks 8 blocks apart.
+This was the most frequent layout in the recorded matches. To play the former
+lab layout, add `diameter=10` to a sumo duel. The measurements and block map
+are in the [arena survey](research/mmc-arena/README.md).
 The platform is built from native solid blocks with normal friction. Falling
 half a block below its surface loses; both falling in the same server tick is
 a draw. Health is restored after native punch damage, preserving knockback and

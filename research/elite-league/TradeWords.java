@@ -56,7 +56,8 @@ final class TradeWords {
                 var b=env.new Game(g,g.a.copy(),g.b.copy());var q=(Probe)b.our();q.choice=i;q.remaining=3;b.trace();
                 while(b.clock.time()<start+900&&b.advance()){}
                 var s=b.clock.state;var own=first?s.serverA:s.serverB;var other=first?s.serverB:s.serverA;
-                double radial=Math.hypot(own.x()-env.initial.config.centerX,own.z());
+                double offset=lab.SumoFootprint.centerOffset(env.initial.config.sumoDiameter);
+                double radial=Math.hypot(own.x()-(env.initial.config.centerX+offset),own.z()-offset);
                 var early=b.hits.list.stream().map(v->List.of(v.at()-start,v.sideA()==first,v.upgrade())).toList();
                 double gap=Math.hypot(own.x()-other.x(),own.z()-other.z());
                 b.finish();scores.put(WORDS[i],List.of(b.reward(),gap,radial,early));
@@ -72,6 +73,7 @@ final class TradeWords {
     public static void main(String[] args)throws Exception{
         var arms=Matches.roster(Path.of(args[0]));var opponents=Matches.roster(Path.of(args[1]));
         int start=2;if(args[start].equals("--second-trade")){exchange=2;start++;}
+        boolean mouse=args[start].equals("--mouse");if(mouse)start++;
         boolean shifted=args[start].equals("--phase-fit");
         var tapes=Arrays.stream(args,shifted?start+1:start,args.length).map(Path::of).toList();
         var envs=Arena.envs(tapes,"mmc",true);
@@ -82,6 +84,7 @@ final class TradeWords {
                 envs.add(new DuelEnv(changed,"mmc",ping,ping,true,24+v,true,8+2*v,5.5+v*.4,(v-2)*.6));
             }
         }
+        if(mouse)for(var e:envs)e.initial.timing.mouseInput=true;
         for(var e:envs)
             for(var f:arms)for(var opp:opponents)for(boolean seat:new boolean[]{true,false})run(e,seat,f,opp);
     }

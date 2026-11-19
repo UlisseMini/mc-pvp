@@ -7,6 +7,9 @@ import lab.SumoJumpPolicy;
 /** Forkable head-on 1.8.9 environment. No recorded combat outcomes enter the plant. */
 final class DuelEnv {
     static final int LIMIT = 120_000;
+    /** Reproduce archived ten-block tournaments explicitly with -Dlab.sumo.legacy=true. */
+    static int regulationDiameter(){return Boolean.getBoolean("lab.sumo.legacy")?lab.SumoFootprint.LEGACY:lab.SumoFootprint.DEFAULT;}
+    static double regulationGap(){return lab.SumoFootprint.startGap(regulationDiameter());}
     record Tape(String id, List<PeriodicComboClock.Scheduled> events, double[] serverEnds, boolean trackerAFirst) {
         static Tape read(Path path, int limit) throws IOException {
             var events = new ArrayList<PeriodicComboClock.Scheduled>();
@@ -135,7 +138,7 @@ final class DuelEnv {
     final PeriodicComboClock initial;
     DuelEnv(Tape tape,String profile,int rtt,boolean sumo){this(tape,profile,rtt,sumo,29,true);}
     DuelEnv(Tape tape,String profile,int rtt,boolean sumo,int trackerStart,boolean solidRim){
-        this(tape,profile,rtt,rtt,sumo,trackerStart,solidRim,10,6,0);
+        this(tape,profile,rtt,rtt,sumo,trackerStart,solidRim,sumo?regulationDiameter():10,sumo?regulationGap():6,0);
     }
     DuelEnv(Tape tape,String profile,int rtt,int otherRtt,boolean sumo,int trackerStart,boolean solidRim,int diameter,double gap,double lateralOffset){
         this(tape,profile,rtt,otherRtt,sumo,trackerStart,solidRim,diameter,gap,lateralOffset,sumo?LIMIT:20000);
@@ -150,7 +153,8 @@ final class DuelEnv {
         var t=new PeriodicComboClock.Timing();
         t.inputMode=PeriodicComboClock.InputMode.NATIVE_QUEUED;
         t.uplinkA=t.uplinkB=t.downlinkA=t.downlinkB=.35;
-        var state=new PeriodicComboFightModel.State(4096-gap/2,lateralOffset,4096+gap/2,lateralOffset,sumo?12:4);
+        double offset=sumo?lab.SumoFootprint.centerOffset(diameter):0.;
+        var state=new PeriodicComboFightModel.State(4096+offset-gap/2,lateralOffset+offset,4096+offset+gap/2,lateralOffset+offset,sumo?12:4);
         if(!config.mmc)state.seedCoincidence(tape.id.hashCode());
         state.serverTicks=trackerStart;
         Player idle=new Player("wtap",0,rtt,0);

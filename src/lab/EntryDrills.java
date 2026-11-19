@@ -44,10 +44,10 @@ public final class EntryDrills {
     static int arena(String name){Session s=sessions.get(name);return s==null?0:s.arena;}
     static boolean sameArena(Referee.Match m){Session s=sessions.get(m.a);return s!=null&&m.drillRound>1&&m.b.equals(s.slot)&&m.arena==s.arena;}
     static void resetPlayers(Referee.Match m,Object a,Object b){
-        double center=4096.0*(m.arena+1);
+        double center=m.centerX(),z=m.laneZ();
         double floor=m.sumo()?SumoArena.TOP_Y:4;
-        Referee.resetRoundPosition(a,center-m.startGap/2,floor,0,270);
-        Referee.resetRoundPosition(b,center+m.startGap/2,floor,0,90);
+        Referee.resetRoundPosition(a,center-m.startGap/2,floor,z,270);
+        Referee.resetRoundPosition(b,center+m.startGap/2,floor,z,90);
     }
     static void tick()throws Exception{
         for(Session s:new ArrayList<>(sessions.values())){
@@ -94,12 +94,12 @@ public final class EntryDrills {
         Referee.append(m.replay,Map.of("type","drill_countdown","time",now,"combat_start",m.start,"tenths",tenths));
     }
     static void holdStart(Referee.Match m,Object a,Object b){
-        double center=4096.0*(m.arena+1),y=m.sumo()?SumoArena.TOP_Y:4;
+        double center=m.centerX(),z=m.laneZ(),y=m.sumo()?SumoArena.TOP_Y:4;
         for(int side=0;side<2;side++){
             Object p=side==0?a:b;double x=center+(side==0?-1:1)*m.startGap/2;
             Object hook=R.get(p,"fishEntity");if(hook!=null){R.call(hook,"setDead");R.set(p,"fishEntity",null);}
-            if(Math.abs(R.num(p,"posX")-x)>.02||Math.abs(R.num(p,"posY")-y)>.02||Math.abs(R.num(p,"posZ"))>.02){
-                Referee.teleport(p,x,y,0);R.set(p,"motionX",0.0);R.set(p,"motionY",0.0);R.set(p,"motionZ",0.0);
+            if(Math.abs(R.num(p,"posX")-x)>.02||Math.abs(R.num(p,"posY")-y)>.02||Math.abs(R.num(p,"posZ")-z)>.02){
+                Referee.teleport(p,x,y,z);R.set(p,"motionX",0.0);R.set(p,"motionY",0.0);R.set(p,"motionZ",0.0);
             }
         }
     }

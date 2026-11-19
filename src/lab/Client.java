@@ -460,7 +460,7 @@ public final class Client {
                 (long)R.num(opponent,"ticksExisted"),identityContains(R.get(world,"loadedEntityList"),opponent),
                 (Boolean)R.get(opponent,"addedToChunk"),regionLoaded(world,opponent));
             if(SeededStartClient.head(now,decisionHeadNanos))return;
-            if(!active() || !targetReady){
+            if(!active(now) || !targetReady){
                 setKeys(false);clickGate=false;blockKey=false;
                 // Invalid world/setup: also discard an already queued physical
                 // click. This guard never filters ordinary immune-frame clicks.
@@ -697,7 +697,7 @@ public final class Client {
             }
             // Matched maintenance baseline: shadow ordinary W-tap above, but
             // apply the same acquisition inputs until the declared switch.
-            if(kind.equals("frozen-cycle") || now-epoch<number("frozen_cycle_opening_ms",0)){
+            if(kind.equals("frozen-cycle") || DuelSettings.inOpening(now-epoch,number("frozen_cycle_opening_ms",0))){
                 FrozenLegalCycleController.Decision d=frozenCycle.decide(ticks,now-epoch,now,lastObservedTargetHurt);
                 setKeys(d.key!=0,0,d.key==2);clickGate=d.click;
                 Map<String,Object> plan=new LinkedHashMap<>();plan.put("type","frozen_cycle_plan");plan.put("time",now);plan.put("match",match);
@@ -717,7 +717,7 @@ public final class Client {
             }
             // Common acquisition for matched maintenance tests. W-tap's own
             // cue history above keeps advancing while these inputs are held.
-            if(now-epoch<number("hold_opening_ms",0)){
+            if(DuelSettings.inOpening(now-epoch,number("hold_opening_ms",0))){
                 setKeys(true,0,true);clickGate=true;
             }
             boolean maintenanceAcquisition=maintenanceMode&&maintenanceHandoff.useAcquisition();
@@ -725,7 +725,7 @@ public final class Client {
                     &&maintenanceHandoff.feedbackOpening(decisionHeadNanos);
             MaintenanceStrafeFeedback.Control maintenanceFeedbackProposal=null;
             long maintenanceComputeNs=0;
-            if(kind.equals("gap-strafe") || now-epoch<number("gap_opening_ms",0)
+            if(kind.equals("gap-strafe") || DuelSettings.inOpening(now-epoch,number("gap_opening_ms",0))
                     ||maintenanceAcquisition&&maintenanceHandoff.settings.acquisition.equals("gap")){
                 StrongRelaxationPolicy.Control d=strongGap.step(obs.localRange);
                 int key=number("gap_sprint",0)>0 && d.key!=0?2:d.key;
@@ -740,7 +740,7 @@ public final class Client {
             }
             // Both arms share the declared coast acquisition/opening. W-tap's
             // ordinary cue history keeps advancing above this override.
-            hurtWindowActive=kind.equals("hurt-window-coast")||now-epoch<number("hurt_window_opening_ms",0)
+            hurtWindowActive=kind.equals("hurt-window-coast")||DuelSettings.inOpening(now-epoch,number("hurt_window_opening_ms",0))
                     ||maintenanceAcquisition&&maintenanceHandoff.settings.acquisition.equals("lock8")||maintenanceFeedbackOpening;
             if(hurtWindowActive){
                 double inputMs=maintenanceFeedbackOpening||Boolean.parseBoolean(controls.getProperty("hurt_window_head_clock","false"))?
@@ -1232,7 +1232,12 @@ public final class Client {
             if(SeededStartClient.beforePacket(System.currentTimeMillis(),System.nanoTime()))ReplicationTrace.refreshContext();
         }catch(Throwable error){matchInitialized=false;fail(error);}
     }
-    static boolean active(){return matchInitialized&&match.equals(controls.getProperty("match",""))&&Boolean.parseBoolean(controls.getProperty("enabled","false"))&&SeededStartClient.active()&&(SeededStartClient.seeded()||System.currentTimeMillis()>=Long.parseLong(controls.getProperty("start_at","0")));}
+    static boolean active(){return active(System.currentTimeMillis());}
+    static boolean active(long now){
+        return matchInitialized && match.equals(controls.getProperty("match","")) &&
+            Boolean.parseBoolean(controls.getProperty("enabled","false")) && SeededStartClient.active() &&
+            (SeededStartClient.seeded() || now>=Long.parseLong(controls.getProperty("start_at","0")));
+    }
     static boolean observingActive(){return active()||(matchInitialized&&match.equals(controls.getProperty("match",""))&&Boolean.parseBoolean(controls.getProperty("enabled","false"))&&SeededStartClient.initialized());}
     static double number(String name,double fallback){return Double.parseDouble(controls.getProperty(name,Double.toString(fallback)));}
     static void setKeys(boolean w){

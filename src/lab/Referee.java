@@ -27,12 +27,14 @@ public final class Referee {
 
     static final class Match {
         String id,a,b,pa,pb,winner="",request="",mode="boxing",finishReason="100_hits"; int ha,hb,ba,bb,goal=100,arena,pingChanges; long start,finish,durationMs=180_000; boolean scenario,setupReseated; double pingA,pingB,initialPingA,initialPingB;
-        int sumoDiameter=SumoArena.DIAMETER;
+        int sumoDiameter=SumoArena.DIAMETER;String observedFloor="";
         boolean boxing(){return mode.equals("boxing");}
         CombatProfile combat=CombatProfile.DEFAULT;
         SeededStartServer.Session seed;
         boolean sumo(){return mode.equals("sumo");}
         boolean box(){return mode.equals("diamond_box");}
+        double laneZ(){return sumo()?SumoFootprint.centerOffset(sumoDiameter):0.;}
+        double centerX(){return 4096.0*(arena+1)+laneZ();}
         boolean rods(){return mode.equals("rod_diamond");}
         boolean jumpReset(){return EntryDrills.JUMP_RESET.equals(drillPreset);}
         JumpResetFeedback jumpFeedback;
@@ -71,7 +73,11 @@ public final class Referee {
             m.put("click_cps_b",pb.equals("human")?null:ClickRate.cps(configB));
             m.put("attack_reach_a",DuelSettings.reach(configA));m.put("attack_reach_b",DuelSettings.reach(configB));
             m.put("modified_reach",DuelSettings.reach(configA)!=3||DuelSettings.reach(configB)!=3);
-            if(sumo())m.put("sumo_arena",SumoArena.geometry(sumoDiameter,startGap));
+            if(sumo()){
+                var geometry=SumoArena.geometry(sumoDiameter,startGap);
+                if(!observedFloor.isEmpty())geometry.put("observed_floor_sha256",observedFloor);
+                m.put("sumo_arena",geometry);
+            }
             m.put("armor_protection",0);m.put("weapon",sumo()?"fist":boxing()?"diamond_sword":"wooden_sword");
             m.put("arena_surface",sumo()?"raised_circular_sumo_platform":box()?"bedrock_1x1_interior_y4_5_barrier_ceiling_y6":preparedLongArenas.contains(arena)?"bedrock_y3_air_y4_19_half_x1024_z512_verified_v5":"bedrock_y3_air_y4_19_radius256_verified_v4");return m;
         }
@@ -490,6 +496,7 @@ public final class Referee {
     }
 
     static int tournamentOrder(String name){
+        if(name.startsWith("mmc13-"))return -1;
         if(name.startsWith("league-history")||name.startsWith("league-native"))return 0;
         if(name.startsWith("adapt-"))return 1;
         if(name.startsWith("game-"))return 2;
@@ -533,7 +540,7 @@ public final class Referee {
             if(!m.sumo())throw new IllegalArgumentException("diameter= applies to sumo matches");
             m.sumoDiameter=DuelSettings.sumoDiameter(overridesB.getProperty("sumo_diameter"));
         }
-        m.startGap=m.sumo()&&round==0?SumoArena.START_GAP:startGap;m.drillRound=round;m.drillPreset=preset;
+        m.startGap=m.sumo()&&round==0?SumoFootprint.startGap(m.sumoDiameter):startGap;m.drillRound=round;m.drillPreset=preset;
         if(m.jumpReset())m.durationMs=0;
         else if(m.sumo()&&duration==0)m.durationMs=SumoArena.DURATION_MS;
         do{m.id=String.format("m%04d",++counter);}while(Files.exists(DATA.resolve("results/"+m.id+".json"))||Files.exists(DATA.resolve("replays/"+m.id+".jsonl")));
@@ -566,7 +573,7 @@ public final class Referee {
         if(duration>64_000)prepareLongArena(arenaWorld,m.arena);
         if(m.box())prepareBox(arenaWorld,m.arena);
         boolean continuousDrill=EntryDrills.sameArena(m);
-        if(m.sumo()&&!continuousDrill)SumoArena.build(arenaWorld,m.arena,m.sumoDiameter);
+        if(m.sumo()&&!continuousDrill)m.observedFloor=SumoArena.build(arenaWorld,m.arena,m.sumoDiameter);
         m.start=System.currentTimeMillis()+3000;
         m.replay=DATA.resolve("replays/"+m.id+".jsonl");matches.put(m.id,m);
         if(m.jumpReset())m.jumpFeedback=new JumpResetFeedback(m,player(a),player(b));
@@ -614,11 +621,11 @@ public final class Referee {
         System.out.println("[PvP Lab] START "+Json.encode(m.state()));
     }
     static void seatPlayers(Match m,Object a,Object b){
-        double center=4096.0*(m.arena+1);
+        double offset=m.laneZ(),center=m.centerX();
         // Two normal 0.6-wide player bodies fit in the same 1x1 cell by
         // overlapping each other, never the walls. Native collision handles KB.
-        preparePlayer(a,center+(m.box()?.32:-m.startGap/2),m.sumo()?SumoArena.TOP_Y:4,m.box()?.5:0,270,m.mode);
-        preparePlayer(b,center+(m.box()?.68:m.startGap/2),m.sumo()?SumoArena.TOP_Y:4,m.box()?.5:0,90,m.mode);
+        preparePlayer(a,center+(m.box()?.32:-m.startGap/2),m.sumo()?SumoArena.TOP_Y:4,m.box()?.5:offset,270,m.mode);
+        preparePlayer(b,center+(m.box()?.68:m.startGap/2),m.sumo()?SumoArena.TOP_Y:4,m.box()?.5:offset,90,m.mode);
     }
     static void prepareBox(Object world,int arena){
         int center=4096*(arena+1);

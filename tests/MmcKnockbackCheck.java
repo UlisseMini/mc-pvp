@@ -21,7 +21,7 @@ public final class MmcKnockbackCheck {
         check(MmcKnockback.landsBeforeDelivery(.45, -.2, 120), "Predicts a descent through the platform");
         check(!MmcKnockback.landsBeforeDelivery(.45, -.2, 20), "Short ping has no compensation horizon");
         check(!MmcKnockback.landsBeforeDelivery(.45, .25, 120), "Jump still ascending in delivery window");
-        check(SumoArena.supports(0, 4096.0, 0) && !SumoArena.supports(0, 4101.4, 0), "Sumo floor support");
+        check(SumoArena.supports(0, 4103.29, .5) && !SumoArena.supports(0, 4103.31, .5), "Recorded sumo floor support at the east lip");
         System.out.println("PASS MMC preset selection and landing estimate");
     }
 }

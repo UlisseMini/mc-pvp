@@ -4,12 +4,12 @@ import java.util.Map;
 
 /** Ordinary solid blocks and a fall detector; never changes native combat or velocity. */
 final class SumoArena {
-    // Provisional Hypixel-style footprint, not a verified MMC/Hypixel map copy.
-    static final int DIAMETER=10, MAX_DIAMETER=16, FLOOR_Y=11;
-    static final double TOP_Y=FLOOR_Y+1, START_GAP=6, LOSS_Y=TOP_Y-.5;
+    // The default is the most frequent complete footprint in the recorded MMC survey.
+    static final int DIAMETER=SumoFootprint.DEFAULT, MAX_DIAMETER=16, FLOOR_Y=11;
+    static final double TOP_Y=FLOOR_Y+1, START_GAP=8, LOSS_Y=TOP_Y-.5;
     static final long COUNTDOWN_MS=2000, DURATION_MS=120_000;
     static boolean cell(int x,int z){return cell(x,z,DIAMETER);}
-    static boolean cell(int x,int z,int diameter){return Math.pow(x+.5,2)+Math.pow(z+.5,2)<=diameter*diameter/4.0;}
+    static boolean cell(int x,int z,int diameter){return SumoFootprint.cell(x,z,diameter);}
     static boolean supports(int arena,double x,double z){return supports(arena,x,z,DIAMETER);}
     static boolean supports(int arena,double x,double z,int diameter){
         // A native player can stand with part of its 0.6-wide box over an edge.
@@ -23,25 +23,41 @@ final class SumoArena {
     /** -1: neither; 0: both fell in this server tick; 1/2: winning side. */
     static int outcome(double aY,double bY){boolean a=fallen(aY),b=fallen(bY);return !a&&!b?-1:a&&b?0:a?2:1;}
     static Map<String,Object> geometry(){return geometry(DIAMETER,START_GAP);}
-    static Map<String,Object> geometry(int diameter,double gap){return Map.of("shape","cell_center_disk_v1","diameter",diameter,
-        "floor_y",FLOOR_Y,"top_y",TOP_Y,"loss_y",LOSS_Y,"start_gap",gap,"reference","provisional_not_verified_server_map");}
+    static Map<String,Object> geometry(int diameter,double gap){
+        var g=new java.util.LinkedHashMap<String,Object>();
+        g.put("shape",diameter==DIAMETER?SumoFootprint.SHAPE:"cell_center_disk_v1");g.put("diameter",diameter);
+        g.put("floor_y",FLOOR_Y);g.put("top_y",TOP_Y);g.put("loss_y",LOSS_Y);g.put("start_gap",gap);
+        g.put("reference",diameter==DIAMETER?"mmc_capture_"+SumoFootprint.CLIP:"provisional_not_verified_server_map");
+        if(diameter==DIAMETER){g.put("center_offset",.5);g.put("floor_blocks",137);}
+        return g;
+    }
     static void build(Object world,int arena){build(world,arena,DIAMETER);}
-    static void build(Object world,int arena,int diameter){change(world,arena,diameter,true);}
+    static String build(Object world,int arena,int diameter){return change(world,arena,diameter,true);}
     static void clear(Object world,int arena){change(world,arena,MAX_DIAMETER,false);}
-    private static void change(Object world,int arena,int diameter,boolean build){
-        int center=4096*(arena+1),r=diameter/2,clearRadius=MAX_DIAMETER/2;
-        // Vanilla /fill also checks its positive border chunk.
-        for(int x=(center-clearRadius)>>4;x<=(center+clearRadius+16)>>4;x++)for(int z=(-clearRadius)>>4;z<=(clearRadius+16)>>4;z++)
-            R.call(world,"getChunkFromChunkCoords",x,z);
-        Referee.vanilla("fill "+(center-clearRadius)+" "+FLOOR_Y+" "+(-clearRadius)+" "+(center+clearRadius-1)+" "+FLOOR_Y+" "+(clearRadius-1)+" minecraft:air");
-        if(build)for(int z=-r;z<r;z++){
-            int lo=-r,hi=r-1;while(lo<=hi&&!cell(lo,z,diameter))lo++;while(hi>=lo&&!cell(hi,z,diameter))hi--;
-            if(lo<=hi)Referee.vanilla("fill "+(center+lo)+" "+FLOOR_Y+" "+z+" "+(center+hi)+" "+FLOOR_Y+" "+z+" minecraft:bedrock");
+    private static String change(Object world,int arena,int diameter,boolean build){
+        int center=4096*(arena+1),r=MAX_DIAMETER/2;
+        Object blocks=R.cls("net.minecraft.init.Blocks");var states=new java.util.HashMap<Integer,Object>();
+        for(int state:new int[]{0,7<<4,16,98<<4,(98<<4)|1,41<<4}){
+            String name=switch(state>>4){case 0->"air";case 7->"bedrock";case 1->"stone";case 98->"stonebrick";case 41->"gold_block";default->throw new AssertionError();};
+            states.put(state,R.call(R.get(blocks,name),"getStateFromMeta",state&15));
         }
-        for(int x=-r;x<r;x++)for(int z=-r;z<r;z++){
-            Object expected=R.get(R.cls("net.minecraft.init.Blocks"),build&&cell(x,z,diameter)?"bedrock":"air");
-            if(R.call(R.call(world,"getBlockState",R.construct("net.minecraft.util.BlockPos",center+x,FLOOR_Y,z)),"getBlock")!=expected)
-                throw new IllegalStateException("Sumo platform verification failed at "+x+","+z);
+        for(int cx=(center-r)>>4;cx<=(center+r-1)>>4;cx++)for(int cz=-r>>4;cz<=(r-1)>>4;cz++)
+            R.call(world,"getChunkFromChunkCoords",cx,cz);
+        var nativeIds=new java.util.HashMap<Object,Integer>();
+        states.forEach((id,state)->nativeIds.put(state,id));
+        java.security.MessageDigest hash;
+        try{hash=java.security.MessageDigest.getInstance("SHA-256");}catch(java.security.NoSuchAlgorithmException e){throw new AssertionError(e);}
+        for(int z=-r;z<r;z++)for(int x=-r;x<r;x++){
+            Object pos=R.construct("net.minecraft.util.BlockPos",center+x,FLOOR_Y,z);
+            Object expected=states.get(build?SumoFootprint.state(x,z,diameter):0);
+            Object actual=R.call(world,"getBlockState",pos);
+            if(!expected.equals(actual)){
+                R.call(world,"setBlockState",pos,expected,2);
+                actual=R.call(world,"getBlockState",pos);
+            }
+            if(!expected.equals(actual))throw new IllegalStateException("Sumo block state differs at "+x+","+z);
+            int id=nativeIds.get(actual);hash.update((byte)(id>>8));hash.update((byte)id);
         }
+        return java.util.HexFormat.of().formatHex(hash.digest());
     }
 }

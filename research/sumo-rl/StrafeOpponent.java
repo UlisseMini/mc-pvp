@@ -8,10 +8,14 @@ final class StrafeOpponent extends DuelEnv.Player {
     private final SumoModel.Bot bot;
     private interface Event {void apply(SumoModel.Bot replay);}
     private final List<Event> history=new ArrayList<>();
-    StrafeOpponent(int rtt){this("zest-strafe",rtt,true,10);}
+    StrafeOpponent(int rtt){this("zest-strafe",rtt,true,DuelEnv.regulationDiameter());}
     StrafeOpponent(String name,int rtt,boolean mmc,int diameter){
         super(name,0,rtt,0);
-        try{bot=new SumoModel.Bot(name,rtt,9,20,mmc,diameter);}
+        // The archived client's displacement controller estimates width by doubling
+        // the number of visible center-row blocks west of the anchor. An odd ring
+        // therefore gives it a 12-block estimate. World collision still uses all 137 cells.
+        int observedWidth=2*(diameter/2);
+        try{bot=new SumoModel.Bot(name,rtt,9,20,mmc,observedWidth);}
         catch(IOException ex){throw new UncheckedIOException(ex);}
     }
     @Override public StrafeOpponent copy(){

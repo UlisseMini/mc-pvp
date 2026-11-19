@@ -2,6 +2,10 @@
 
 One win earns one point. A timeout or double ring-out earns half a point. The local primary preset is the lab's provisional MMC pre-attack sprint-reset configuration. Native bouts use real Minecraft 1.8.9 clients on the main server. The opponent benchmark consists of bots. **No held-out elite player has played a registered match.** Nomophobia's recordings are development examples.
 
+## Regulation arena
+
+New sumo trials use the most frequent platform in Nomophobia's MMC recordings. The fighting surface spans 13 by 13 blocks, with 137 solid blocks and eight blocks between the two gold spawn centers. The earlier results below used the arena registered for each experiment. Scores on the former 10-block ring have their original geometry. [Recorded block layout and survey](../mmc-arena/README.md)
+
 ## Six further rounds against an adversarial mixture
 
 Each round measured the historical field, solved a game over the observed head-to-head scores, and trained explicit and neural responses against a distribution weighted toward the hardest opponents. Six rounds added 1,597,440 training bouts and 854,816 matrix and tournament bouts. On the eight previously exposed development clocks, the final field contained 55 opponents.
@@ -60,7 +64,7 @@ The first registered tournament played 336 native rounds, including boxing and t
 | W-tap | 16/32 | 26/32 | 4/8 | 6.5/8 |
 | Prior learned pressure bot | 12/32 | 31/32 | 3/12 | 10/12 |
 
-The hybrid won all four native Hold-W matches at each RTT. The eight games are a small sample of the default 10-block ring. With the same native starts and settings across arms, independent bouts still have different OS and packet timing. The full archive records every win, draw, seat and repeat. [Native outcomes and spread](evidence/v1/native-paired.json.gz) · [Model outcomes by donor and seat](evidence/v1/model-paired.json.gz)
+The hybrid won all four native Hold-W matches at each RTT. The eight games are a small sample of the original 10-block lab ring. With the same native starts and settings across arms, independent bouts still have different OS and packet timing. The full archive records every win, draw, seat and repeat. [Native outcomes and spread](evidence/v1/native-paired.json.gz) · [Model outcomes by donor and seat](evidence/v1/model-paired.json.gz)
 
 ## Why keeping W down can work
 
