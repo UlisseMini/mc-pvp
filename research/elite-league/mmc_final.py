@@ -1,10 +1,12 @@
 """Compare the measured-map finalists on one prospective model and native schedule."""
+import argparse
 import gzip
 import json
 from adaptation import dump, sha
 from history_cup import FIELD, mirrors
 import focus
-from mmc_league import EVIDENCE, FROZEN, WORK, WT, contest, finalists, groups, native_name, setup
+from mmc_league import EVIDENCE, FROZEN, WORK, WT, contest, contest_plan, finalists, groups, native_name, setup
+from native_trials import run_batch
 from reigning import publish
 from run import HERE
 
@@ -42,7 +44,7 @@ def common_field():
     return arms, focus.unique({n: policies[n] for n in foes})
 
 
-def run():
+def run(native_only=False):
     setup()
     arms, foes = common_field()
     repeats = {n: 12 if n == 'wtap' else 3 for n in foes}
@@ -51,6 +53,15 @@ def run():
         entrants={n: focus.identity(n, p) for n, p in arms.items()},
         opponents={n: focus.identity(n, p) for n, p in foes.items()}, repeats=repeats))
     clocks = mirrors('mmc13-final', WORK)
+    if native_only:
+        scheduled = json.loads((EVIDENCE/'final/schedule.json').read_text())
+        expected = dict(profile='mmc',arms={n:focus.identity(n,p) for n,p in arms.items()},
+                        opponents={n:focus.identity(n,p) for n,p in foes.items()},repeats=repeats)
+        if scheduled!=expected:raise ValueError('Native final differs from published schedule')
+        # The normal final owns exclusions, input audits and publication. This worker
+        # can play the same frozen schedule while the main worker computes its model.
+        run_batch(contest_plan('final',arms,foes,repeats),WORK/'mmc13-final.json')
+        return
     rows, model = contest('final', arms, foes, repeats, clocks)
     out = EVIDENCE / 'final'
     verdicts = {}
@@ -84,4 +95,6 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--native-only',action='store_true')
+    run(parser.parse_args().native_only)

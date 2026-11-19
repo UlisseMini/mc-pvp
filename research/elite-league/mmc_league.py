@@ -128,16 +128,20 @@ def read_results(manifest):
         out.append(dict(mid=mid,**{k:t[k] for k in ('side','rep','rtt','opponent','arm')},win=g['winner']==g[t['side']],draw=not g['winner']))
     return out
 
-def contest(tag,arms,foes,repeats,tapes,profile='mmc'):
-    d=EVIDENCE/tag;d.mkdir(exist_ok=True,parents=True);model=d/'model.jsonl.gz'
-    name='mmc13-'+tag;manifest=WORK/(name+'.json')
-    native_install({native_name(n):p for n,p in (arms|foes).items() if p})
+def contest_plan(tag,arms,foes,repeats,profile='mmc'):
     tasks={}
     # These are normal referee commands without a diameter argument, so default selection is exercised.
     for o in foes:tasks.update(record_setup(plan('m13center'+tag,[native_name(n) for n in arms],[native_name(o)],repeats[o])))
     if profile!='mmc':
         for r in tasks.values():r['profile']=profile;r['command']=r['command'].replace('preset=mmc','preset='+profile)
     items=list(tasks.items());random.Random(78331).shuffle(items)
+    return dict(items)
+
+def contest(tag,arms,foes,repeats,tapes,profile='mmc'):
+    d=EVIDENCE/tag;d.mkdir(exist_ok=True,parents=True);model=d/'model.jsonl.gz'
+    name='mmc13-'+tag;manifest=WORK/(name+'.json')
+    native_install({native_name(n):p for n,p in (arms|foes).items() if p})
+    tasks=contest_plan(tag,arms,foes,repeats,profile)
     dump(d/'schedule.json',dict(profile=profile,arms={n:focus.identity(n,p) for n,p in arms.items()},opponents={n:focus.identity(n,p) for n,p in foes.items()},repeats=repeats))
     if not model.exists():
         if profile=='mmc':focus.play_model(model,arms,foes,tapes)
@@ -146,7 +150,7 @@ def contest(tag,arms,foes,repeats,tapes,profile='mmc'):
             compile_model()
             with tempfile.TemporaryDirectory(dir=WORK) as tmp:freeze(model,grid(Path(tmp),'matches',arms,foes,tapes,mode='mouse',profile=profile).read_bytes())
     rates(model)
-    manifest=regulation_batch(dict(items),manifest,d)
+    manifest=regulation_batch(tasks,manifest,d)
     rows=read_results(manifest);actual=counts(rows)
     with gzip.open(model,'rt') as f:predictions=list(map(json.loads,f))
     for r in predictions:r.update(arm=native_name(r['arm']),opponent=native_name(r['opponent']))
