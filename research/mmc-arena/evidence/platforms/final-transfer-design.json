@@ -1,0 +1,14 @@
+{
+  "arms": "Selected checkpoint from each target, its original 16384-fight specialist, and matched plain W-tap. Reuse the selected row if the two checkpoints have identical bytes.",
+  "fixtures": "Identical simulator timing donors, action seeds, seats and pings for the three arms. Independent native duels at the same seat and two RTTs.",
+  "lock": "All three final weights are selected only on the original training floor. Register all six weight hashes before any scored duel on these sealed outlines.",
+  "maps": [
+    "default",
+    "mmc-137",
+    "mmc-165",
+    "mmc-193",
+    "mmc-201",
+    "mmc-223"
+  ],
+  "metric": "Outright ring-outs against each frozen target, W/D/L and paired final-minus-16k difference; also play plain W-tap directly."
+}

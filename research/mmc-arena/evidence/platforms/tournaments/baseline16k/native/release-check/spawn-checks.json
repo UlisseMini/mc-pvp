@@ -1,0 +1,66 @@
+{
+  "map-16k-m02-p04-b00-f00-a0": {
+    "frames": 79,
+    "observed_volume": "287292e9bb5a3896796ce12107344fa975eda30b4956fa40c0cce3f8cf475e03",
+    "positions": [
+      [
+        4096.5,
+        12,
+        -3.5
+      ],
+      [
+        4096.5,
+        12,
+        4.5
+      ]
+    ]
+  },
+  "map-16k-m02-p05-b00-f00-a0": {
+    "frames": 44,
+    "observed_volume": "287292e9bb5a3896796ce12107344fa975eda30b4956fa40c0cce3f8cf475e03",
+    "positions": [
+      [
+        8192.5,
+        12,
+        -3.5
+      ],
+      [
+        8192.5,
+        12,
+        4.5
+      ]
+    ]
+  },
+  "map-16k-m05-p04-b00-f00-a0": {
+    "frames": 43,
+    "observed_volume": "c4c7ca9f832d33c5087c072b7168d7192266505e6c0efacb34ad55aef920a585",
+    "positions": [
+      [
+        4096.5,
+        12,
+        -4.5
+      ],
+      [
+        4096.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "map-16k-m05-p05-b00-f00-a0": {
+    "frames": 41,
+    "observed_volume": "c4c7ca9f832d33c5087c072b7168d7192266505e6c0efacb34ad55aef920a585",
+    "positions": [
+      [
+        8192.5,
+        12,
+        -4.5
+      ],
+      [
+        8192.5,
+        12,
+        5.5
+      ]
+    ]
+  }
+}

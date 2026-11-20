@@ -26,6 +26,7 @@ def report(stage):
         lines.extend(['','## '+title,''])
         columns=['Platform','Frozen best-sumo','W-tap vs best-sumo','League winner 001','W-tap vs winner 001','Sumo Seven','W-tap vs Seven']
         lines.extend(['| '+' | '.join(columns)+' |','| '+' | '.join(['---']*len(columns))+' |'])
+        references=[]
         for name in protocol['maps']:
             base=folder/mode/name
             completed=base/'summary.json'
@@ -39,8 +40,15 @@ def report(stage):
                 for arm in DISPLAY:
                     opponent=protocol['contestants'][arm]['target']
                     cells.extend(tally(by_arm[a,opponent]) for a in (arm,'wtap'))
+                    if 'original_16k' in protocol:
+                        old=by_arm.get((arm+'-16k',opponent),by_arm[arm,opponent])
+                        references.append([name,DISPLAY[arm],tally(by_arm[arm,opponent]),tally(old),tally(by_arm['wtap',opponent])])
             else:cells=['pending']*6
             lines.append('| '+' | '.join([name,*cells])+' |')
+        if references:
+            lines.extend(['','### Matched final and original checkpoints','','| Platform | Frozen opponent | Selected specialist | Original 16k specialist | Plain W-tap |',
+                          '| --- | --- | --- | --- | --- |'])
+            lines.extend('| '+' | '.join(row)+' |' for row in references)
         if mode=='model':
             lines.extend(['','Each cell contains 128 bouts from eight timing recordings, mirrored seats and four RTT pairs. '
                 'Matching timing recordings and action seeds across maps lets the platform change while the fixture stays fixed. '

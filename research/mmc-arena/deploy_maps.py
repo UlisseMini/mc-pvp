@@ -41,8 +41,9 @@ def run():
         default=ROOT/'build/lab-agent.jar'
         if sha(default)==ids['base']:
             tmp=default.with_suffix('.map-tmp');tmp.write_bytes((ROOT/'build/agents'/(ids['server']+'.jar')).read_bytes());os.replace(tmp,default)
-    record(OUT/'collision/live-verification.json',json.dumps(dict(server=ids['server'],minimum_native_ticks_after_placement=20,
-        maps=[r['name'] for r in json.loads((OUT/'catalog.json').read_text())]),sort_keys=True).encode())
+        if sha(default)!=ids['server']:raise RuntimeError('The public server changed during map verification')
+        record(OUT/'collision/live-verification.json',json.dumps(dict(server=ids['server'],minimum_native_ticks_after_placement=20,
+            maps=[r['name'] for r in json.loads((OUT/'catalog.json').read_text())]),sort_keys=True).encode())
     runtime=model()
     register_model(runtime)
     print('Model ready',runtime,flush=True)

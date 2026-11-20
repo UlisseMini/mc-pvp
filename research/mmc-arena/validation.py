@@ -23,12 +23,22 @@ import numpy as np
 def read(p):return json.loads(p.read_text())
 def keys():return ('incumbent','seven','g1')
 STAGES={'baseline16k':'16k','checkpoint32k':'32k','sealed-final':'final'}
+def final_design():
+    path=OUT/'final-transfer-design.json'
+    write_json(path,dict(maps=['default','mmc-137',*['mmc-'+str(n) for n in read(OUT/'split.json')['sealed']]],
+             arms='Selected checkpoint from each target, its original 16384-fight specialist, and matched plain W-tap. Reuse the selected row if the two checkpoints have identical bytes.',
+             lock='All three final weights are selected only on the original training floor. Register all six weight hashes before any scored duel on these sealed outlines.',
+             fixtures='Identical simulator timing donors, action seeds, seats and pings for the three arms. Independent native duels at the same seat and two RTTs.',
+             metric='Outright ring-outs against each frozen target, W/D/L and paired final-minus-16k difference; also play plain W-tap directly.'),fixed=True)
+    return read(path)
+
 def register(stage):
     folder=OUT/'tournaments'/stage
     spec=folder/'protocol.json'
     if spec.exists():return folder,read(spec)
     maps=read(OUT/'split.json')
     if stage=='sealed-final':
+        final_design()
         while not all((RUN/k/'selection.json').is_file() and
                 ((d:=read(RUN/k/'selection.json'))['best_wins']==d['panel_size'] or d['stale']>=2) for k in keys()):time.sleep(10)
     contestants={}
@@ -47,6 +57,12 @@ def register(stage):
         regulation='120 s MMC-range, 7/7 CPS, reach 3, mouse aim, zero added reaction delay; no map identity or opponent ID sent to any policy',
         origin='same 137 outline in original Z orientation controls for changing the original lab X opening; other maps preserve their recorded gold spawns',
         model_repetitions=2,native_blocks=8,selection='weights frozen before any outcome is read; later selection on original training geometry only')
+    if stage=='sealed-final':
+        anchors=read(OUT/'tournaments/baseline16k/protocol.json')['contestants']
+        for k in keys():
+            if anchors[k]['target_sha']!=contestants[k]['target_sha']:raise ValueError('Frozen opponent changed')
+        doc['original_16k']=anchors
+        assert names==final_design()['maps']
     write_json(spec,doc,fixed=True)
     return folder,doc
 
@@ -58,6 +74,10 @@ def pairs(doc):
         for opponent in (r['target'],'wtap'):
             rows[name,opponent]=r['actor']
             rows['wtap',opponent]='wtap'
+    for name,ref in doc.get('original_16k',{}).items():
+        if sha(ROOT/ref['actor'])!=ref['sha256']:raise ValueError('Original 16k actor changed')
+        if ref['sha256']!=doc['contestants'][name]['sha256']:
+            for opponent in (ref['target'],'wtap'):rows[name+'-16k',opponent]=ref['actor']
     return rows
 
 def trials(folder,doc,map_name,native=False):
@@ -104,7 +124,24 @@ def simulate(stage):
             donors=[np.mean([n for n,c in zip(v,cells) if c[0]==i]) for i in range(len(CLOCKS['dev']))]
             mean=float(np.mean(donors));margin=float(np.std(donors,ddof=1)*student.ppf(.975,len(donors)-1)/np.sqrt(len(donors)))
             summaries[key]=dict(actor=actor,foe=foe,**now['stats'],win_delta_to_default=mean,paired_donor_interval=[mean-margin,mean+margin])
-        write_json(base/'summary.json',summaries,fixed=True);print('Scored',name,flush=True)
+        write_json(base/'summary.json',summaries,fixed=True)
+        if 'original_16k' in doc:
+            by_arm={(a,foe):key for a,foe,_,key in trials(folder,doc,name)}
+            paired={}
+            for arm in keys():
+                foe=doc['contestants'][arm]['target']
+                original=by_arm.get((arm+'-16k',foe),by_arm[arm,foe])
+                early=read(base/(original+'.json'))['games']
+                final=read(base/(by_arm[arm,foe]+'.json'))['games']
+                if len(final)!=len(early) or any(a[:5]!=b[:5] for a,b in zip(early,final)):
+                    raise ValueError('Cannot pair final and 16k fixtures')
+                delta=[int(b[5]==1)-int(a[5]==1) for a,b in zip(early,final)]
+                donors=np.array([np.mean([v for v,e in zip(delta,early) if e[0]==i]) for i in range(len(CLOCKS['dev']))])
+                m=float(donors.mean());h=float(donors.std(ddof=1)*student.ppf(.975,len(donors)-1)/np.sqrt(len(donors)))
+                paired[arm]=dict(final_win_delta=m,paired_donor_means=donors.tolist(),approximate_interval=[m-h,m+h],
+                                 plain_wtap=summaries[by_arm['wtap',foe]])
+            write_json(base/'final-vs-16k.json',paired,fixed=True)
+        print('Scored',name,flush=True)
     from report_transfer import report
     report(stage)
 
@@ -169,20 +206,36 @@ def smoke(bridge):
     from report_transfer import report
     report(stage)
 
+def assessment_bridge():
+    stamp=read(OUT/'tournaments/baseline16k/native/release-check/native-build.json')
+    digest=stamp['bridge_sha256']
+    archived=LBUILD/('map-validation-'+digest+'.jar')
+    if not archived.exists():
+        candidates=[LBUILD/'bridge.jar',ROOT/'runtime/bots/0/mods/practice-bridge.jar',
+                    *sorted(LBUILD.glob('forge-*.jar')),*sorted((LBUILD/'forge-window').glob('*/bridge.jar'))]
+        source=next((p for p in candidates if p.is_file() and sha(p)==digest),None)
+        if source is None:raise FileNotFoundError('Missing archived map assessment client '+digest)
+        record(archived,source.read_bytes())
+    if sha(archived)!=digest:raise ValueError('Map assessment client changed')
+    return archived,stamp
+
 def native(stage):
     import random
     folder,doc=register(stage)
     while not (BUILD/'model-runtime.json').is_file() or not (OUT/'collision/live-verification.json').is_file():time.sleep(3)
     release=read(OUT/'collision/live-verification.json')
+    bridge,versions=assessment_bridge()
+    if versions['server']!=release['server']:raise ValueError('Release checks used a different server')
     all_trials,sources_by_key=native_plan(stage,folder,doc)
     records={};dest=folder/'native'
-    write_json(dest/'design.json',dict(server=release['server'],blocks=doc['native_blocks'],schedule=all_trials,
+    write_json(dest/'design.json',dict(server=release['server'],client=versions,blocks=doc['native_blocks'],schedule=all_trials,
               ordering='seeded shuffle across maps and matchups within each matched seat/RTT block; yield the main server between blocks'),fixed=True)
     for b in range(doc['native_blocks']):
         batch=dest/f'block-{b:02}';plan=[(q,t) for q,t in all_trials.items() if t['block']==b]
         random.Random(554119+b).shuffle(plan);plan=dict(plan)
         if (batch/'verified.json').exists():new=read(batch/'verified.json')['matches']
-        else:new=fair_cohort(batch,plan,LBUILD/'bridge.jar',server=release['server'])
+        else:new=fair_cohort(batch,plan,bridge,server=release['server'])
+        if read(batch/'native-build.json')!=versions:raise ValueError('Map panels used different client or server binaries')
         checks=batch/'spawn-checks.json'
         if not checks.exists():write_json(checks,{o['mid']:verify_spawn(o['mid'],sources_by_key[q][0]) for q,o in new.items()},fixed=True)
         records.update(new)

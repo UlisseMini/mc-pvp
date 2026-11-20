@@ -28,4 +28,11 @@ Each cell contains 128 bouts from eight timing recordings, mirrored seats and fo
 
 The live comparison has eight independently played seat and RTT blocks per matchup. Each published block has passed movement, physical click-spacing, map-state and countdown spawn checks.
 
+Four release checks already played on the main server. These same games count in the first full block. Both players had 31 ms RTT. The challenger occupied seat A in each game.
+
+| Platform | 16k specialist vs frozen best-sumo | Plain W-tap vs frozen best-sumo |
+| --- | --- | --- |
+| mmc-129 | win | loss |
+| mmc-221 | win | loss |
+
 [Match protocol](protocol.json) · [Per-seat and per-RTT simulator results](model)

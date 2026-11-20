@@ -1,0 +1,161 @@
+{
+  "invalid": [],
+  "matches": {
+    "map-16k-m02-p04-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 83,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-5601606a5a20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 84,
+          "method": "frozen network replay and actual movement",
+          "policy": "v4-ppo-g0496"
+        }
+      },
+      "duration": 4.167,
+      "local_timing_heads": {
+        "a": 84,
+        "b": 0
+      },
+      "mid": "m9373",
+      "minimum_physical_ns": {
+        "a": 144022166,
+        "b": 144548125
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-16k-m02-p05-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 142,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 142,
+          "method": "frozen network replay and actual movement",
+          "policy": "v4-ppo-g0496"
+        }
+      },
+      "duration": 7.086,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m9374",
+      "minimum_physical_ns": {
+        "a": 143802833,
+        "b": 143304708
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-16k-m05-p04-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 571,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-5601606a5a20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 571,
+          "method": "frozen network replay and actual movement",
+          "policy": "v4-ppo-g0496"
+        }
+      },
+      "duration": 28.565,
+      "local_timing_heads": {
+        "a": 571,
+        "b": 0
+      },
+      "mid": "m9375",
+      "minimum_physical_ns": {
+        "a": 142939750,
+        "b": 142878500
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-16k-m05-p05-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 116,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 116,
+          "method": "frozen network replay and actual movement",
+          "policy": "v4-ppo-g0496"
+        }
+      },
+      "duration": 5.805,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m9376",
+      "minimum_physical_ns": {
+        "a": 143950084,
+        "b": 142971000
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    }
+  }
+}
