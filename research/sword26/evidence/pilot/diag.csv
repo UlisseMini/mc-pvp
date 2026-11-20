@@ -1,0 +1,7 @@
+variant,win,loss,draw,mean_margin,mean_wtap_mirror_margin,presses,damage_events
+learned,0,64,0,-13.17,0.00,21.17,5.03
+baseline_aim,0,64,0,-11.54,0.00,62.44,9.03
+baseline_click,0,60,4,-12.68,0.00,7.98,3.06
+baseline_movement,0,64,0,-13.24,0.00,21.03,5.02
+baseline_aim_and_click,48,16,0,0.97,0.00,10.03,9.89
+wtap,32,32,0,0.00,0.00,11.00,10.50

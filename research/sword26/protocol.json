@@ -1,0 +1,7 @@
+{
+  "version": "26.3", "kit": "unenchanted diamond sword and full diamond armor, 20 health, regeneration off",
+  "arena": "24 by 24 stone floor with barrier walls",
+  "training": {"seed": 413692, "round_ticks":600, "one_way_delay_ticks":[0,1], "opponents":"random initial policies, current population, past champions", "selection":"last generation champion by training fitness"},
+  "evaluation": {"development_seed":1297714, "prospective_seed":77165131, "paired_openings_per_setting":16, "native_opening_seed":91621, "native_pairs_per_setting":4, "equal_rtt_ms":[0,100], "seats":"both", "timeout_seconds":30, "timeout":"draw", "metric":"wins, losses, draws and final health difference", "baseline":"plain W-tap with charged swings and the common aim controller", "latency_note":"Model one-way delay is quantized to ticks. Native comparison uses a delayed loopback TCP connection on top of loopback overhead. Native repeats share a starting protocol, not the exact game state."},
+  "split":"Model training and evaluation generate independent schedules, without recorded human timing donors. No claim of transfer to held-out human calendars. Native evaluation runs use newly generated schedules."
+}
