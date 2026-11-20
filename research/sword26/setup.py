@@ -122,7 +122,7 @@ def compile_agent():
 def compile_sim(revision=None, expected=None):
     names = ("Fighter", "Model", "FastDuel", "PhaseClock", "FlatPhysics", "TreePolicy", "Train",
              "PolicyGradient", "League", "Refine", "Starts", "Cup", "Controls",
-             "Grade", "Maintenance", "ForkAudit", "KernelReplay", "KernelBench", "JumpFork", "ContactParity", "ClockPrediction", "CrossPlay", "BranchImprove", "Checks")
+             "Grade", "Maintenance", "ForkAudit", "KernelReplay", "KernelBench", "JumpFork", "ContactParity", "ClockPrediction", "OpeningPressAudit", "CrossPlay", "BranchImprove", "Checks")
     if revision:
         root = SRC.parents[1]
         revision=subprocess.check_output(["git","rev-parse","--verify","--end-of-options",revision+"^{commit}"],

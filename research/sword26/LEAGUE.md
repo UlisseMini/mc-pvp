@@ -27,3 +27,16 @@ From season 4 onward the league also trains one response under a mixture of two 
 On the 64 development fights the mean squared error predicting the Java result from its recorded opening fell from 0.313 to 0.234. Lower is better. The varying clock still overestimated the win rate of the season 2 challenger at 47% versus 25% observed. For W-tap it predicted 41% versus 19% observed. Its phases approximate local timing; they do not recover the actual packet schedule of an ordinary bout. [Per-fight forecasts](evidence/ladder26/timing-season-003.csv)
 
 After the second Java wave, further promotion tests also accept a nominee selected by a small Java development tournament. Up to four responses play the incumbent on fresh openings at each latency and in each seat. The field includes contenders bred from the incumbent. The pilot winner joins the generalist and strongest simulated counter in the independent promotion test. A separate set of openings is reserved for the final replication. [Scouting protocol](evidence/ladder26/scouting-protocol.json)
+
+## A learned opening against option 4
+
+In the first season 9 Java panel the direct-response fighter, `1ed6988f`, passed up a charged, aimed swing before either player dealt damage in all 16 of its fights. It took the first hit in all 16. Its first reply was a critical hit 9–12 server ticks later. Across both opponents, 108 of its 109 accepted attacks were criticals. The matched W-tap control landed first in 13/16 and recorded zero criticals in 141 attacks. The fighter's training score used only the outcome and health. This is an observation of how it chooses trades. [Paired Java opening audit](evidence/ladder26/java-009-a/opening-audit.csv) · [Control implementation](Controls.java)
+
+An offline intervention compared waiting with pressing once at the first skipped, charged and aimed opening. Each comparison replayed the entire prefix and let both sides react normally thereafter. The opposing fighter was option 4. There were 512 fresh fights per clock, balanced across seats and latencies.
+
+| Model clock | Eligible opening forks | Original fighter wins | One earlier press wins | W-tap wins from the same state |
+|---|---:|---:|---:|---:|
+| Fixed | 496 | 423 | 455 | 121 |
+| Variable phases | 428 | 374 | 349 | 118 |
+
+The benefit of waiting changed sign with the clock. Native play establishes that the bot repeatedly chose this opening and won. The causal comparison above applies to simulated counterfactuals. [Fixed-clock forks](evidence/ladder26/opening-season-009-off.csv) · [Variable-clock forks](evidence/ladder26/opening-season-009-on.csv) · [Evaluation code](OpeningPressAudit.java)
