@@ -196,7 +196,7 @@ async def run(args):
         for seat in range(1 if args.human else 2):
             name=BOT_NAMES[seat];folder=worker/name
             folder.mkdir(exist_ok=True)
-            (folder/"options.txt").write_text(f"onboardAccessibility:false\npauseOnLostFocus:false\ntutorialStep:none\nrenderDistance:3\nsimulationDistance:5\nenableVsync:false\nmaxFps:{fps}\nmusic:0.0\nsoundCategory_master:0.0\n"+("graphicsMode:0\nrenderClouds:false\nparticles:2\nentityShadows:false\ngamma:1.0\n" if args.showcase else ""))
+            (folder/"options.txt").write_text(f"onboardAccessibility:false\npauseOnLostFocus:false\ntutorialStep:none\nrenderDistance:3\nsimulationDistance:5\nenableVsync:false\nmaxFps:{fps}\nmusic:0.0\nsoundCategory_master:0.0\n"+("graphicsMode:0\nrenderClouds:false\nparticles:2\nentityShadows:false\ngamma:1.0\nguiScale:2\nchatVisibility:2\n" if args.showcase else ""))
             launch(name,["xvfb-run","-a","-s",f"-screen 0 {width+120}x{height+80}x24 -nolisten tcp","env","LIBGL_ALWAYS_SOFTWARE=1","GALLIUM_DRIVER=llvmpipe","LP_NUM_THREADS=1","ALSOFT_DRIVERS=null","SDL_VIDEO_DRIVER=x11","SDL_VIDEODRIVER=x11",java,"-Xmx1000M",f"-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/sword26-lwjgl-{PORT}-{seat}","-Djava.awt.headless=true","--enable-native-access=ALL-UNNAMED","--add-exports","java.base/jdk.internal.misc=ALL-UNNAMED",
                 agent,*clock_flags,"-Dsword.spool="+str(spool),f"-Dsword.speed={args.speed}","-Dsword.control="+str(spool/("AB"[seat])),"-Dsword.logs="+str(run_dir),"-cp",(BUILD/"linux-classpath").read_text(),"net.minecraft.client.main.Main",
                 "--username",name,"--version","26.3","--gameDir",folder,"--assetsDir",BUILD/"assets","--assetIndex","34",
