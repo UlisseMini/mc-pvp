@@ -1,0 +1,27 @@
+{
+  "contestants": {
+    "generalist": {
+      "actor": "research/elite-league/single-sumo/evidence/robustness-001/mlp/final.net",
+      "sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4",
+      "target": "research/elite-league/single-sumo/evidence/long-specialists/g1/n65536.net",
+      "target_sha": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "controls": "Common action seeds and clocks across simulator arms and floors. Independent fully audited Minecraft matches in the same seat and RTT blocks.",
+  "maps": [
+    "default",
+    "mmc-137",
+    "mmc-129",
+    "mmc-155",
+    "mmc-177",
+    "mmc-221"
+  ],
+  "model_repetitions": 2,
+  "native_blocks": 8,
+  "opponent_name": "sg003-long-g1",
+  "opponent_rule": "Lowest outright wins in the common development field, then score and name. Plain W-tap plays both opponents.",
+  "published_policy": "sumo-generalist-001-64k",
+  "purpose": "Post-publication transfer on reusable validation floors. Sealed floors stay reserved for the frozen specialist test. These matches do not choose the tournament winner.",
+  "regulation": "Seven CPS for both players, MMC preset, three-block reach, mouse aim, 120 seconds, same eight mirrored seat and RTT settings in Minecraft.",
+  "stage": "remote-001-generalist"
+}

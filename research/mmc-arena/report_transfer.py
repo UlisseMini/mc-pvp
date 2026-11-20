@@ -18,11 +18,12 @@ def tally(r):
 def report(stage):
     folder=OUT/'tournaments'/stage
     protocol=read(folder/'protocol.json')
-    if 'published_winner' in protocol:
-        title=protocol['published_winner']+' on the MMC validation floors'
-        intro=f"The published league winner faces {protocol['opponent_name']}, its weakest distinct development opponent, and plain W-tap. Every matchup uses seven CPS on both sides."
-        columns=['Platform','Winner vs '+protocol['opponent_name'],'Plain W-tap vs '+protocol['opponent_name'],'Winner vs W-tap','Plain W-tap mirror']
-        arm='winner';weak=protocol['contestants'][arm]['target']
+    if 'published_winner' in protocol or 'published_policy' in protocol:
+        arm='winner' if 'published_winner' in protocol else 'generalist'
+        title=(protocol.get('published_winner') or protocol['published_policy'])+' on the MMC validation floors'
+        intro=f"The published {arm} faces {protocol['opponent_name']}, its weakest distinct development opponent, and plain W-tap. Every matchup uses seven CPS on both sides."
+        columns=['Platform',arm.title()+' vs '+protocol['opponent_name'],'Plain W-tap vs '+protocol['opponent_name'],arm.title()+' vs W-tap','Plain W-tap mirror']
+        weak=protocol['contestants'][arm]['target']
         matchups=[(arm,weak),('wtap',weak),(arm,'wtap'),('wtap','wtap')]
     else:
         title={'checkpoint32k':'32,768-fight specialists','checkpoint64k':'65,536-fight specialists','baseline16k':'16,384-fight specialists','sealed-final':'Frozen specialists on sealed maps'}[stage]

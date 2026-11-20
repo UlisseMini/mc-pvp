@@ -12,6 +12,7 @@ def ranked_parents(previous, ranking):
     sources={}
     directories=[EVIDENCE/item for item in ('counter-trained-successors/mlp','counter-trained-successors/gru')]
     directories.extend(EVIDENCE/'robustness-001'/r for r in ('mlp','gru','gru-aux'))
+    directories.extend(EVIDENCE/'robustness-001/weak-matchups'/r for r in ('original-mixture','weakest-mixture'))
     for gen in range(1,previous+1):
         folder=EVIDENCE/f'g{gen:03d}'
         directories.extend(folder/item for item in ('main','mlp','mentor-gru/ppo','mentor-mlp/ppo',
@@ -19,6 +20,14 @@ def ranked_parents(previous, ranking):
     for d in directories:
         if all((d/n).exists() for n in ('config.json','trainer.pt','final.net')):
             sources[hashlib.sha256((d/'final.net').read_bytes()).hexdigest()]=(read(d/'config.json')['kind'],d/'trainer.pt')
+    for receipt in (EVIDENCE/'fixed-adversaries').glob('*/result.json'):
+        result=read(receipt)
+        if not result['confirmed']:continue
+        policy=result['policy'];checkpoint=ROOT/result['checkpoint']
+        # A specialist can seed a generalist when it wins the broad tournament.
+        # Early specialist optimizers used a different log format. Their MLP weights are compatible.
+        if checkpoint.is_file() and (ROOT/policy['reference']).read_bytes().startswith(b'LEAGUE_MLP180.'):
+            sources.setdefault(policy['sha256'],('mlp',checkpoint))
     selected={}
     for candidate in ranking['ranking']:
         name=candidate['name']
