@@ -62,6 +62,10 @@ public final class Checks {
         var stamps=new ArrayList<Long>();
         for(int i=0;i<=20;i++)stamps.add(121L+100*(i/2));
         var burst=PollClock.Cadence.from(100,stamps);
+        if(Boolean.getBoolean("sword.serverPacketBatch")){
+            check(PhaseClock.processTime(12,40)==40,"An arriving action must wait for the server tick");
+            check(PhaseClock.processTime(41,40)==Integer.MAX_VALUE,"A late action belongs to the next server tick");
+        }else check(PhaseClock.processTime(12,40)==12,"Historical continuous-delivery timing changed");
         check(burst.time(0)==21 && burst.time(1)==21 && burst.time(2)==121 && burst.time(21)==1021,
             "A measured double input poll or its phase was lost across the repeated window");
         var resultLatch=new RoundOutcome();

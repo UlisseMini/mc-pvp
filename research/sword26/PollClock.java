@@ -43,9 +43,10 @@ final class PollClock {
         while(server<Model.LIMIT && a.hp>0 && b.hp>0){
             int pollA=timing.a.time(i),pollB=timing.b.time(j),tick=timing.server.time(server);
             int up=Math.min(left.nextUpload(),right.nextUpload());
-            int now=Math.min(Math.min(pollA,pollB),Math.min(up,tick));
-            if(now==up){
-                boolean fromA=left.nextUpload()==now&&(right.nextUpload()!=now||aFirst);
+            int processing=PhaseClock.processTime(up,tick);
+            int now=Math.min(Math.min(pollA,pollB),Math.min(processing,tick));
+            if(now==processing){
+                boolean fromA=left.nextUpload()==up&&(right.nextUpload()!=up||aFirst);
                 var lane=fromA?left:right;
                 lane.seat.handle(server,fromA?b:a,lane.incoming.removeFirst().value());
             }else if(now==tick){
@@ -53,7 +54,7 @@ final class PollClock {
             }else if(now==pollA&&(now!=pollB||aFirst))left.poll(i++,now,rng.nextInt(1,5),null);
             else right.poll(j++,now,rng.nextInt(1,5),null);
             left.collect(server,now,rng.nextInt(1,5));right.collect(server,now,rng.nextInt(1,5));
-            if(now==tick && now!=up)server++;
+            if(now==tick && now!=processing)server++;
         }
         return b.hp==0?1:a.hp==0?0:.5;
     }

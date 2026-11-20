@@ -10,6 +10,13 @@ import static sword.FastDuel.*;
  * This is a distribution of plausible timings, distinct from a recorded ordinary TCP trajectory. */
 final class PhaseClock {
     private static final String MODE=System.getProperty("sword.phaseClock","off");
+    // In 26.3 the dedicated server drains its PacketProcessor queue just before
+    // ticking the world. Older experiments delivered packets as soon as they arrived.
+    private static final boolean SERVER_BATCH=Boolean.getBoolean("sword.serverPacketBatch");
+    static int processTime(int arrival,int serverTick){
+        if(!SERVER_BATCH)return arrival;
+        return arrival<=serverTick?serverTick:Integer.MAX_VALUE;
+    }
     static boolean enabled(long seed) { return MODE.equals("on") || (MODE.equals("mix") && (seed&1)==0); }
     record UpEvent(int due,Up value){}
     record DownEvent(int due,Down value){}
@@ -59,10 +66,11 @@ final class PhaseClock {
             int oldA=a.stats.hits,oldB=b.stats.hits;boolean firstHitA=aFirst;
             while(true){
                 int upload=Math.min(left.nextUpload(),right.nextUpload());
-                int next=Math.min(Math.min(left.pollTime,right.pollTime),Math.min(server,upload));
+                int processing=processTime(upload,server);
+                int next=Math.min(Math.min(left.pollTime,right.pollTime),Math.min(server,processing));
                 if(next>=origin+50)break;
-                if(upload==next){
-                    boolean fromA=left.nextUpload()==next&&(right.nextUpload()!=next||aFirst);
+                if(processing==next){
+                    boolean fromA=left.nextUpload()==upload&&(right.nextUpload()!=upload||aFirst);
                     var who=fromA?left:right;var other=fromA?b:a;
                     who.seat.handle(t,other,who.incoming.removeFirst().value);
                     if(a.stats.hits+b.stats.hits==oldA+oldB+1)firstHitA=a.stats.hits>oldA;
