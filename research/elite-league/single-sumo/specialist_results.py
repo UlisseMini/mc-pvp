@@ -34,6 +34,7 @@ def groups():
         prefix=f'expert-population/joint/{mode}/u064'
         yield [prefix+f'-expert-{j}.net' for j in range(3)]+[prefix+'-router.pt',prefix+'.json']
     for step in (64,256):yield [f'expert-population/joint/diagnosis/u{step:03}.json']
+    for step in (256,410,1024):yield [f'expert-population/joint/expert-headroom/u{step:03}.json']
     for group in ('small','seven'):
         kinds=['q','q-blind']+(['short','short-floor','full-floor'] if group=='seven' else [])
         for kind in kinds:
@@ -50,7 +51,7 @@ def groups():
         for seed in (22819, 22820):
             path=f'expert-population/changed-opponent/reward-training/{group}/seed-{seed}/'
             yield [path+f'u{step}.pt', path+'dev.json']
-    for mode in ('joint-broad', 'joint-broad-blind'):
+    for mode in ('joint-broad', 'joint-broad-blind', 'joint-values', 'joint-values-blind'):
         for step in (0, 64, 256, 410, 1024):
             prefix=f'expert-population/joint/{mode}/u{step:03}'
             yield [prefix+f'-expert-{j}.net' for j in range(3)]+[prefix+'-router.pt',prefix+'.json']
@@ -59,6 +60,8 @@ def groups():
             for step in (512,2048):
                 path=f'expanded-library/learned-selection/covered-{count:02}/seed-{seed}/u{step}'
                 yield [path+'.pt',path+'.json']
+            if count in (9,27):
+                yield [f'expanded-library/learned-selection/covered-{count:02}/seed-{seed}/comparison.json']
     for count in (7,27):yield [f'expanded-library/crossplay/covered-{count:02}.json',f'expanded-library/crossplay/routed-{count:02}.json']
 
 

@@ -59,12 +59,17 @@ def sample(split,seed,step,foes):
 
 
 @torch.no_grad()
-def rollout(worker,net,refs,rivals,schedules,field,training,erase=False):
+def rollout(worker,net,refs,rivals,schedules,field,training,erase=False,value_exploration=False):
     b=len(rivals);na=len(refs);h=torch.zeros(1,b,48)
     wins=[];events=[];actions=[];logps=[];values=[];pings=[];trajectories=[]
     for g in range(10):
         cells=[z[g] for z in schedules];p=torch.tensor([[v[2],v[3]] for v in cells],dtype=torch.float32)
-        logits,val=net.readout(h[0],p);dist=torch.distributions.Categorical(logits=logits)
+        logits,val=net.readout(h[0],p)
+        if value_exploration and training:
+            distribution=.7*(12*logits.sigmoid()).softmax(-1)+.3/na
+            dist=torch.distributions.Categorical(probs=distribution)
+        else:
+            dist=torch.distributions.Categorical(logits=logits)
         choices=dist.sample() if training else logits.argmax(1)
         if len(choices)!=b:raise ValueError('Short router plan')
         plan=[[str(refs[j].relative_to(ROOT)),field[f]['reference'],clock,'ab'[s],a,other,x,y]
@@ -93,6 +98,18 @@ def router_step(router,opt,batch):
         ratio=(d.log_prob(a)-lp).exp()
         loss=-torch.minimum(ratio*adv,ratio.clamp(.8,1.2)*adv).mean()+.5*F.mse_loss(value,target)-.015*d.entropy().mean()
         opt.zero_grad();loss.backward();torch.nn.utils.clip_grad_norm_(router.parameters(),.8);opt.step()
+
+
+def chosen_win_step(router,opt,batch):
+    wins,events,actions,_,_,pings=batch
+    for _ in range(3):
+        logits,_=router.sequence(events,pings)
+        selected=logits.gather(-1,actions.unsqueeze(-1)).squeeze(-1)
+        loss=F.binary_cross_entropy_with_logits(selected,(wins==1).float())
+        opt.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(router.parameters(),.8)
+        opt.step()
 
 
 def grade(worker,net,refs,names,field,out,step,homogeneous=False):
@@ -139,7 +156,8 @@ def grade(worker,net,refs,names,field,out,step,homogeneous=False):
 
 
 def run(mode):
-    homogeneous = mode in ('joint-broad','joint-broad-blind')
+    learned_values = mode in ('joint-values','joint-values-blind')
+    homogeneous = learned_values or mode in ('joint-broad','joint-broad-blind')
     if not homogeneous and mode not in ('router-only','joint','joint-local','joint-slow','joint-local-slow'):
         raise ValueError('Unregistered joint learner')
     checkpoints=(0,64,256,410,1024) if homogeneous else CHECKPOINTS
@@ -148,7 +166,7 @@ def run(mode):
     parent=STUDY/'small'/f'seed-{SEED}'/'memory/u512.pt'
     while not (STUDY/'small'/f'seed-{SEED}'/'dev-u512.json').exists():time.sleep(5)
     out=DEST/mode;out.mkdir(parents=True,exist_ok=True);torch.manual_seed(93720)
-    router=Router(len(names),mode=='joint-broad-blind')
+    router=Router(len(names),mode.endswith('-blind'))
     if not homogeneous:
         router.load_state_dict(torch.load(parent,weights_only=True))
     opt=torch.optim.Adam(router.parameters(),lr=.0002)
@@ -173,7 +191,11 @@ def run(mode):
                     buf=io.BytesIO();torch.save(router.state_dict(),buf);atomic(out/f'u{step:03}-router.pt',buf.getvalue())
             if step==limit:break
             foes,tapes=sample('train',428012,step,names)
-            batch,played=rollout(worker,router,refs,foes,tapes,library['field'],True);router_step(router,opt,batch)
+            batch,played=rollout(worker,router,refs,foes,tapes,library['field'],True,value_exploration=learned_values)
+            if learned_values:
+                chosen_win_step(router,opt,batch)
+            else:
+                router_step(router,opt,batch)
             if mode!='router-only':
                 centered=2*(batch[0]==1).float()-1
                 total=centered if homogeneous or '-local' in mode else centered.flip(1).cumsum(1).flip(1)
@@ -189,6 +211,21 @@ def run(mode):
     finally:worker.close()
 
 
+def register_values():
+    write_json(DEST/'joint-values-protocol.json',dict(
+        populations=read(STUDY/'protocol.json')['small'],budgets=[n*BATCH*10 for n in (0,64,256,410,1024)],
+        motivation='The original jointly trained GRU used a single one of three MLPs at 65,600 fights. Across all 27 opponents, per-bout win prediction with exploration trained a better frozen-expert router than series PPO in both seeds. Test that recipe while the physical MLPs also learn.',
+        training='Initialize all three MLPs identically from the broad generalist and initialize the GRU randomly. Compare a recurrent selector with a separately trained blind selector, on the same physical schedules and networks as the original joint PPO pair. Retain the router learning rate 0.0002, expert learning rate 0.00002 and three epochs. The revised router estimates the probability that its chosen expert wins the current bout. Train solely on the actual outcome of the chosen expert. Sample a mixture of 30% uniform exploration and 70% softmax over predicted win probabilities times 12. Update each expert by PPO on its actual physical button trajectory and the same terminal ring-out. No opponent IDs, pretrained counters, counterfactual outcomes, auxiliary losses or assignment by opponent. The shared motor initialization retains its original broad prior.',
+        evaluation='The original three opponents and independent development games are fixed. Greedy test decisions. Score wins, draws, seats, both RTTs and plain W-tap. Run the same controller a second time with hidden state cleared before every game. Preserve every checkpoint and its actual expert selections.'),
+        fixed=True)
+
+
 if __name__=='__main__':
     if sys.argv[1]=='register':register()
+    elif sys.argv[1]=='register-values':register_values()
+    elif sys.argv[1]=='start-values':
+        from remote_jobs import OUT,start
+        read(DEST/'joint-values-protocol.json')
+        for mode in ('joint-values','joint-values-blind'):
+            start('ep-'+mode,'joint_experts.py',[mode],DEST.relative_to(OUT)/mode/'u1024-router.pt')
     else:run(sys.argv[1])
