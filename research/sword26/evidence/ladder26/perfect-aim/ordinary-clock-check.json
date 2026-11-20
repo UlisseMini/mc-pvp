@@ -1,0 +1,15 @@
+{
+  "purpose": "Separate measured scheduling effects from residual disagreement between full-fight simulation and ordinary Java.",
+  "development": ["scout-023", "java-023-a"],
+  "prospective": "Use the next completed perfect-aim native scouting and first promotion panels after season 23. No openings from those panels have been inspected. Show scouting and promotion errors separately.",
+  "shape": "Same positions, both seats, actual native policy weights, perfect aim, and recorded added RTT. W-tap on the same openings is a separate control.",
+  "comparisons": [
+    "ClockPrediction fixed schedule sampled across 32 entity orders and phases",
+    "Randomized phase scheduler with 128 trials",
+    "First 20 intervals on each of the three recorded clocks repeated, 128 trials",
+    "Post-game replay using complete native tick timestamps and repeating the final 20 intervals if a simulated fight lasts longer, 128 trials"
+  ],
+  "outcome": "Mean squared error against the Java match point (win 1, time-limit draw 0.5, loss 0), by fighter and RTT, plus overall.",
+  "interpretation": "Complete timestamps became available during the recorded fight. Their use is an offline timing diagnostic. There is no claim that it is a prediction available before a fight.",
+  "training": "These recorded calendars and native action traces are excluded from learner inputs, training opponents' observations, and rewards."
+}

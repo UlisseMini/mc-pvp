@@ -3,32 +3,36 @@ package sword;
 import java.nio.file.*;
 import java.util.*;
 
-/** Offline timing diagnostic. Repeat the first second of both native input clocks and the server
- * clock. The simulated policies see only their simulated game. No later keys, hits or scores
- * determine the clock. Unknown packet transit and entity update order are still sampled. */
+/** Offline comparison using recorded client and server poll times. The simulated policies see
+ * their own simulated game. Unknown packet transit and entity update order are still sampled. */
 final class PollClock {
-    record Cadence(int offset, int[] millis, int duration) {
+    record Cadence(int offset, int[] millis) {
         static Cadence from(long origin, List<Long> stamps) {
             if(stamps.size()<21)throw new IllegalArgumentException("Need 21 opening clock samples");
             long first=stamps.getFirst();
-            int[] times=new int[20];
+            int[] times=new int[stamps.size()];
             for(int i=0;i<times.length;i++)times[i]=Math.toIntExact(stamps.get(i)-first);
-            int duration=Math.toIntExact(stamps.get(20)-first);
-            if(duration<=0)throw new IllegalArgumentException("Clock did not advance");
             for(int i=1;i<times.length;i++)if(times[i]<times[i-1])throw new IllegalArgumentException("Clock reversed");
-            return new Cadence(Math.toIntExact(first-origin),times,duration);
+            if(times[times.length-1]==times[times.length-21])throw new IllegalArgumentException("Clock did not advance");
+            return new Cadence(Math.toIntExact(first-origin),times);
         }
-        int time(int i) {return offset+(i/millis.length)*duration+millis[i%millis.length];}
+        int time(int i) {
+            if(i<millis.length)return offset+millis[i];
+            // A simulated fight may outlast the recording. Repeat its last 20 intervals.
+            int start=millis.length-21,elapsed=i-start;
+            return offset+millis[start+elapsed%20]+(elapsed/20)*(millis[start+20]-millis[start]);
+        }
     }
     record Timing(Cadence a, Cadence b, Cadence server) {}
     static Timing read(Path path, List<KernelReplay.Sample> a, List<KernelReplay.Sample> b)throws Exception {
         long first=Math.min(a.getFirst().stamp(),b.getFirst().stamp());
+        long count=Boolean.getBoolean("sword.fullPollReplay")?Long.MAX_VALUE:21;
         List<Long> server;
         try(var stream=Files.lines(path)){
-            server=stream.skip(1).map(s->Long.valueOf(s.split("\t")[15])).filter(s->s>=first).limit(21).toList();
+            server=stream.skip(1).map(s->Long.valueOf(s.split("\t")[15])).filter(s->s>=first).limit(count).toList();
         }
-        return new Timing(Cadence.from(first,a.stream().limit(21).map(KernelReplay.Sample::stamp).toList()),
-                          Cadence.from(first,b.stream().limit(21).map(KernelReplay.Sample::stamp).toList()),
+        return new Timing(Cadence.from(first,a.stream().limit(count).map(KernelReplay.Sample::stamp).toList()),
+                          Cadence.from(first,b.stream().limit(count).map(KernelReplay.Sample::stamp).toList()),
                           Cadence.from(first,server));
     }
     static double duel(Timing timing, FastDuel.Seat a, FastDuel.Seat b, Model.Controller ca, Model.Controller cb,
