@@ -145,6 +145,45 @@ def run(coverage,seed):
                 rng=rng.get_state(),torch=torch.get_rng_state()),buf);atomic(resume,buf.getvalue())
 
 
+def compare(coverage, seed):
+    # Re-run the locked first seed on the same physical cells for both coverage levels.
+    selected=[7,coverage]
+    while not all((DEST/f'covered-{n:02}/seed-{seed}/u2048.json').exists() for n in selected):
+        time.sleep(10)
+    seen={}; names=list(read(LIB/'protocol.json')['field'])
+    for ncovered in selected:
+        world,c,motion,wt,arms=load(ncovered,'dev')
+        n,r,g,nf,na=world.shape;opener=arms.index('original-mixture')
+        cfg=DEST/f'covered-{ncovered:02}/seed-{seed}'
+        net=Actor(na,False);net.load_state_dict(torch.load(cfg/'u2048.pt',weights_only=True));net.eval()
+        z=world.permute(0,1,3,2,4).reshape(-1,g,na)
+        ctx=c[:,:,None].expand(n,r,nf,g,3).reshape(-1,g,3);p=ctx[...,1:].float()
+        _,wins,_=trajectory(net,z,p,motion[:,:,0].reshape(-1,192),opener)
+        seen[f'reward-{ncovered}']=wins.numpy()
+        if tally(wins.numpy())!=read(cfg/'u2048.json')['scores']['memory']['games']:
+            raise ValueError('Learned router did not reproduce its official fixture scores')
+    train,tc,_,_,_=load(coverage,'train')
+    ids=np.tile(np.arange(nf),n*r);rows=np.arange(len(z))[:,None];games=np.arange(g)[None,:]
+    k=tc[...,1:].numpy()>=70;b=2*k[...,0]+k[...,1];test=(2*(p[...,0]>=70)+(p[...,1]>=70)).numpy()
+    # Use the identical Laplace-smoothed observation and payoff model as expanded_crossplay.
+    counts=np.stack([np.stack([(train.numpy()[b==i]==s).sum(0)+1 for s in (0,.5,1)],-1) for i in range(4)])
+    rates=(counts/counts.sum(-1,keepdims=True))[...,2]
+    for label,choice in [('blind',rates.mean(1)[test].argmax(-1)),('known-id',rates[test,ids[:,None]].argmax(-1))]:
+        choice[:,0]=opener
+        seen[label]=z.numpy()[rows,games,choice]
+    seen['wtap']=wt.permute(0,1,3,2).reshape(-1,g).numpy()
+    official=read(FOLDER/f'crossplay/routed-{coverage:02}.json')['scores']
+    for k in ('blind','known-id','wtap'):
+        if tally(seen[k])!=official[k]['games']:raise ValueError('Reference mismatch: '+k)
+    out={};strong=seen[f'reward-{coverage}']
+    for label,v in seen.items():
+        delta=((strong==1).astype(float)-(v==1)).reshape(n,r,-1).mean(2)
+        out[label]=dict(wdl=tally(v),delta=float(delta.mean()),conditional_95=bootstrap(delta),
+            weakest=min(names,key=lambda f:(v[ids==names.index(f)]==1).sum()),against_wtap=tally(v[ids==names.index('wtap')]))
+    write_json(DEST/f'covered-{coverage:02}/seed-{seed}/comparison.json',out,fixed=True)
+
+
 if __name__=='__main__':
     if sys.argv[1]=='register':register()
+    elif sys.argv[1]=='compare':compare(int(sys.argv[2]),int(sys.argv[3]))
     else:run(int(sys.argv[1]),int(sys.argv[2]))
