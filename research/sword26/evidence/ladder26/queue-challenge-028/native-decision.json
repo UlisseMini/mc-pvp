@@ -1,0 +1,25 @@
+{
+  "champion": "evidence/ladder26/fighters/45b036297b60d75d.net",
+  "old_champion": "evidence/ladder26/fighters/45b036297b60d75d.net",
+  "promoted": false,
+  "threats": [],
+  "direct_screen": {
+    "evidence/ladder26/fighters/95d2597982785ca9.net": [
+      7,
+      16
+    ],
+    "evidence/ladder26/fighters/45b036297b60d75d.net": [
+      9,
+      16
+    ],
+    "wtap": [
+      0,
+      16
+    ]
+  },
+  "field_scores": null,
+  "already_evaluated": [],
+  "panels": [
+    "native-uy67s5pm"
+  ]
+}

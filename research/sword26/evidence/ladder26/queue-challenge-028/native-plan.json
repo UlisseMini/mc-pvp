@@ -1,0 +1,18 @@
+{
+  "champion": "evidence/ladder26/fighters/45b036297b60d75d.net",
+  "entrants": [
+    "evidence/ladder26/fighters/95d2597982785ca9.net"
+  ],
+  "already_evaluated": [],
+  "direct_seed": 71509211,
+  "direct_pairs": 4,
+  "field_seed": 71610974,
+  "field_pairs": 3,
+  "rule": "Sixteen fresh direct bouts per new fighter. A direct score over half advances to the field. Promotion requires a positive direct score on both tests in aggregate and more points than both incumbent and W-tap across all field opponents. A direct challenger missing promotion remains a tracked specialist.",
+  "field": [
+    "evidence/ladder26/fighters/45b036297b60d75d.net",
+    "evidence/ladder26/fighters/aa9e5afc8d9d79d6.net",
+    "evidence/frozen/opponents/population.net",
+    "evidence/league26/fighter.net"
+  ]
+}
