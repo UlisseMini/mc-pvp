@@ -5,6 +5,8 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+import math
+from statistics import mean,stdev
 
 from dedicated import DIR, budgets, _train_target
 from id_evaluate import make_panel
@@ -61,6 +63,12 @@ def tranche(key,until):
 
 def evaluate(key,n):
     dest,target=initialize(key)
+    source,state,_,_=sources(key)
+    # Retain the exact optimizer of every evaluated budget for a reproducible future branch.
+    if n==BASE:checkpoint=source/state
+    elif json.loads((dest/'progress.json').read_text())['duels']==n:checkpoint=dest/state
+    else:checkpoint=None
+    if checkpoint is not None:freeze(dest/'milestones'/f'n{n}.pt',checkpoint.read_bytes())
     cells=make_panel(CLOCKS['dev'],8)
     worker=Worker()
     try:
@@ -74,6 +82,21 @@ def evaluate(key,n):
                 values=[[i,rep,s,a,b,r[0],r[1]] for (i,rep,s,a,b,_,_,_),r in zip(cells,rows)]
                 write_json(path,dict(aggregate=stats(values),games=values),fixed=True)
     finally:worker.close()
+    original=json.loads((dest/'development'/str(BASE)/'target.json').read_text())['games']
+    current=json.loads((dest/'development'/str(n)/'target.json').read_text())
+    previous=json.loads((dest/'development'/str(BASE)/'target.json').read_text())['aggregate']
+    plain=json.loads((dest/'development/wtap/target.json').read_text())['aggregate']
+    changes={}
+    for prior,now in zip(original,current['games'],strict=True):
+        if prior[:5]!=now[:5]:raise ValueError('Different comparison fixtures')
+        changes.setdefault(prior[0],[]).append(int(now[5]==1)-int(prior[5]==1))
+    by_donor=[mean(changes[k]) for k in sorted(changes)]
+    from scipy.stats import t
+    delta=mean(by_donor);half=t.ppf(.975,len(by_donor)-1)*stdev(by_donor)/math.sqrt(len(by_donor))
+    count=lambda r:{k:r[k] for k in ('wins','draws','losses')}
+    write_json(dest/'development'/str(n)/'comparison.json',dict(trained_fights=n,development_games=len(original),
+        original=count(previous),current=count(current['aggregate']),plain_wtap=count(plain),delta_in_win_fraction=delta,
+        paired_donor_means=by_donor,approximate_95_percent_donor_interval=[delta-half,delta+half]),fixed=True)
 
 def native(key,selected):
     dest,target=initialize(key)

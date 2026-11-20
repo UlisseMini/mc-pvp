@@ -53,6 +53,10 @@ The 429 measured rounds contained nine outlines and 28 combinations of floor mat
 
 The simulator queries the stock Minecraft 1.8.9 block implementations for the collision boxes of each cell with its recorded neighbors. It uses those boxes for vertical movement, horizontal movement and step-ups. A separate test ran the same moves through Minecraft's `Entity.moveEntity` and compared the six bounding-box endpoints and all three collision flags exactly. [Collision hashes](evidence/platforms/collision/proof.json) · [Movement tests per map](evidence/platforms/collision/move-parity.json)
 
+On `mmc-177-03`, 28 sand blocks lie at the bottom of the copied volume. All 20 recordings of that build show sandstone directly under each one. The lab places that extra support before placing the sand so it stays in place when Minecraft updates the blocks. [Recorded supports](evidence/platforms/falling-block-supports.json)
+
 ### Interpreting the validation games
 
 All specialists train on the original 137-block arena. The comparison includes its original lab orientation and the recorded orientation, in addition to the four routine validation maps. Compare `mmc-129` to `mmc-137` to study changing the edge with the same opening distance and approach direction. The larger maps also change opening distance. A score across these floors describes transfer against the specific frozen opponent. Independent human competition remains a separate test. [Frozen match protocol](evidence/platforms/tournaments/baseline16k/protocol.json)
+
+Each tournament report shows simulator and native scores separately with matched W-tap controls. [16,384 training fights](evidence/platforms/tournaments/baseline16k/results.md) · [32,768 training fights](evidence/platforms/tournaments/checkpoint32k/results.md)
