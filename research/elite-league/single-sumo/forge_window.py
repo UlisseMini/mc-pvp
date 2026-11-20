@@ -72,6 +72,13 @@ def switch(target,settings,server=None):
         if sha(agent)!=server:raise RuntimeError('Archived server artifact changed')
         settings=dict(settings,server_agent=str(agent))
     def correct_server():return not server or server_hash()==server
+    # A different server binary always requires a full restart. Release the drained
+    # Forge clients before waiting for training slots: if their idle CPU plus other
+    # research exceeds the budget, the governed job holding a slot cannot finish.
+    if mgr.exists() and server and not correct_server():
+        wait(lambda:not read(ROOT/'runtime/status.json')['matches'],190,'Waiting for an active duel to finish')
+        lab_runtime.send('shutdown')
+        wait(lambda:not mgr.exists(),65,'Main lab did not stop')
     with (BUILD.parent/'rollout.lock').open('a') as slot,(BUILD.parent/'policy-training.lock').open('a') as private_training:
         fcntl.flock(slot,fcntl.LOCK_EX)
         fcntl.flock(private_training,fcntl.LOCK_EX)
@@ -145,7 +152,8 @@ def window(bridge_path=None,server=None,admit=None):
         finally:
             # Preserve an unrelated release that independently took over the main process.
             active=reliable(active_bridge)
-            replaced=active and (active not in (oldhash,newhash) or server_hash() not in (oldserver,server))
+            resident=reliable(server_hash)
+            replaced=resident and (resident not in (oldserver,server) or active and active not in (oldhash,newhash))
             restore_server=server if public_was_origin and sha(public_agent)==server else oldserver
             if not replaced:switch(origin,settings,restore_server)
             resume_paused(paused);journal.unlink(missing_ok=True)
