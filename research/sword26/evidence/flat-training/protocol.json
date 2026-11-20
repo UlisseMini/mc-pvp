@@ -1,0 +1,63 @@
+{
+  "engine": "Java 26.3 flat duel",
+  "training_source_hash": "facf652cb53ede5be659776b514634a69722dc4e752b00632465331c1c58ec01",
+  "parent_files": [
+    "champion.net",
+    "evidence/frozen/opponents/population.net",
+    "evidence/response/alternative.net",
+    "evidence/response/specialist-a.net",
+    "evidence/response/specialist-b.net",
+    "evidence/transfer/challenger.net"
+  ],
+  "field_files": [
+    "champion.net",
+    "evidence/frozen/opponents/population.net",
+    "evidence/response/alternative.net",
+    "evidence/response/specialist-a.net",
+    "evidence/response/specialist-b.net",
+    "evidence/transfer/challenger.net",
+    "evidence/frozen/opponents/gradient.net"
+  ],
+  "weight_hashes": {
+    "champion.net": "f6f2887237cc188680dc96c9dcc753880e6717fcef255fb5796bedbf557d033c",
+    "evidence/frozen/opponents/population.net": "bb8c34cb1c2f55084b758e80c51446d3be13f86e9f17e936ad2a2c7083d7bfdb",
+    "evidence/response/alternative.net": "313c2d95c140bb917c7642a2230b4515b19f46b667005780fcd911d8582cd529",
+    "evidence/response/specialist-a.net": "13c0712b36b4dc925eebb09eca6dffc085be239a0206d0a10c9181fcb15ad71d",
+    "evidence/response/specialist-b.net": "fa8ce89eb7a083708f734e503477919fac66a19d89ee228546b73a578b565f70",
+    "evidence/transfer/challenger.net": "3761f029e425faf2ec2274c3ac17f2158dd7d1cfc0e14080fac2978ba826c862",
+    "evidence/frozen/opponents/gradient.net": "75976d174c38b6847acb952a1a23a35843b08f8354f17b0281df009d00bade18"
+  },
+  "seeds": [
+    886552,
+    2890026,
+    9153700,
+    122406
+  ],
+  "generations": 120,
+  "shortlist_seed": 6493257,
+  "selection_seed": 5521961,
+  "selection_openings": 64,
+  "selection": "One proposal per island. Rank by one half mean plus one half worst opponent terminal payoff on both seats against the training field. Tie by proposal order. Keep W-tap outside training and selection.",
+  "model_grade_seed": 3342056,
+  "model_openings_per_latency": 24,
+  "native_grade_seed": 1965267,
+  "native_openings_per_latency": 3,
+  "opponents": [
+    "wtap",
+    "champion.net",
+    "evidence/frozen/opponents/population.net",
+    "evidence/transfer/challenger.net",
+    "evidence/transfer/unseen.net"
+  ],
+  "ordinary_confirmation_seed": 8275943,
+  "ordinary_openings_per_latency": 2,
+  "ordinary_opponents": [
+    "evidence/frozen/opponents/population.net",
+    "evidence/transfer/unseen.net"
+  ],
+  "maintenance_opponent": "evidence/frozen/opponents/population.net",
+  "native_maintenance_seed": 7061259,
+  "maintenance_openings_per_latency": 3,
+  "promotion": "A majority against each established opponent on the scheduled native panel, at least half against the never-training opponent, and a majority in ordinary TCP against each of its two opponents. Independent maintenance uses a W-tap acquisition prefix. Only terminal health and duel result determine training fitness.",
+  "native_seed_schedule": "Scheduled panels run one latency per launch at base seed plus latency in ms. Ordinary TCP runs both latencies in one launch at its base seed."
+}

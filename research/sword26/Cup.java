@@ -15,7 +15,9 @@ public final class Cup {
     }
     public static void main(String[] args)throws Exception{
         var actors=load(args[0]);var field=load(args[1]);var rng=new Random(Long.parseLong(args[2]));
-        var scenes=new ArrayList<Model.Scene>();for(int i=0;i<8;i++)scenes.add(new Model.Scene(rng.nextLong(),i%2,i/2%2));
+        int count=args.length>3?Integer.parseInt(args[3]):8;
+        if(count<1)throw new IllegalArgumentException("At least one opening is required");
+        var scenes=new ArrayList<Model.Scene>();for(int i=0;i<count;i++)scenes.add(new Model.Scene(rng.nextLong(),i%2,i/2%2));
         var pool=Executors.newFixedThreadPool(4);
         try{
             var tasks=new ArrayList<Callable<String>>();

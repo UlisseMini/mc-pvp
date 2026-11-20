@@ -1,0 +1,7 @@
+rtt,opponent,opening,seat,learned_winner,learned_health,learned_terminal_tick,learned_all_client_samples,learned_all_contacts,learned_client_samples_through_termination,wtap_winner,wtap_health,wtap_terminal_tick,wtap_all_client_samples,wtap_all_contacts,wtap_client_samples_through_termination
+100,alternative.net,0,0,True,True,True,False,True,False,True,True,True,False,True,False
+100,alternative.net,0,1,True,True,True,False,True,False,True,True,True,False,True,False
+100,population.net,0,0,True,True,True,False,True,False,True,True,True,False,True,True
+100,population.net,0,1,True,True,True,False,True,False,True,True,True,False,True,False
+100,wtap,0,0,True,True,True,False,True,False,True,True,True,False,True,False
+100,wtap,0,1,True,True,True,False,True,False,True,True,True,False,True,False

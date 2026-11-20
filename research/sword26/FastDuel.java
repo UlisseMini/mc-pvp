@@ -36,6 +36,7 @@ final class FastDuel {
         double tx,ty,tz,px,py,pz,gx,gy,gz;
         final ArrayDeque<Waypoint> path = new ArrayDeque<>();
         double startX,startY,startZ;
+        double sentX,sentY,sentZ,decodedX,decodedY,decodedZ;
         float elapsed, remaining, pace=1f;
         int trackerTicks;
         int age=20,serverAge=20,immune,hurt,otherHurt,jumpDelay,miss,tap;
@@ -49,6 +50,7 @@ final class FastDuel {
         }
         void start(double x,double y,double z,float yaw,double ex,double ey,double ez) {
             local.set(x,y,z);server.set(x,y,z);local.yaw=server.yaw=(float)Fighter.angle(yaw);
+            sentX=decodedX=x;sentY=decodedY=y;sentZ=decodedZ=z;
             tx=px=gx=ex;ty=py=gy=ey;tz=pz=gz=ez;
         }
         void receive(int tick) {
@@ -101,7 +103,8 @@ final class FastDuel {
             local.travel(k.forward(),k.side(),sprint);
             u.x=local.x;u.y=local.y;u.z=local.z;u.yaw=yaw;u.ground=local.ground;
             u.sprint=sprint==lastSent?0:sprint?1:-1;lastSent=sprint;
-            collide(local,tx,ty,tz);
+            // EntitySelector.pushableBy selects only the local player on a client.
+            // The remote player's entity tick is the one that can push us.
             if(localFirst){advanceDisplay();collide(local,tx,ty,tz);}
             age++;hurt=Math.max(0,hurt-1);otherHurt=Math.max(0,otherHurt-1);
         }
@@ -134,7 +137,7 @@ final class FastDuel {
             if(server.ground&&!u.ground&&u.y>server.y){server.jump(serverSprint);needsSync=true;}
             if(u.ground||u.y>server.y)fall=false;
             else if(u.y<server.y)fall=true;
-            server.set(u.x,u.y,u.z);server.yaw=u.yaw;server.ground=u.ground;
+            server.set(u.x,u.y,u.z);server.yaw=wrapYaw(u.yaw);server.ground=u.ground;
         }
         void attack(int t,Seat other) {
             double dx=other.server.x-server.x,dz=other.server.z-server.z;
@@ -173,9 +176,17 @@ final class FastDuel {
             trackerTicks++;
             boolean full=server.ground!=prevTrackGround;
             if(((t+phase)&1)==0||dirty||needsSync){
-                var d=observer.down[slot(t+observer.lag+1)];
-                d.position=true;d.duration=trackerTicks;trackerTicks=0;
-                d.x=full?server.x:grid(server.x);d.y=full?server.y:grid(server.y);d.z=full?server.z:grid(server.z);
+                double dx=server.x-sentX,dy=server.y-sentY,dz=server.z-sentZ;
+                // Only a position-bearing packet adds a step on the viewing client.
+                if(full||dx*dx+dy*dy+dz*dz>=7.62939453125e-6||(t+phase+8)%60==0){
+                    var d=observer.down[slot(t+observer.lag+1)];
+                    d.position=true;d.duration=trackerTicks;
+                    d.x=decodedX=full?server.x:decodeStep(server.x,sentX,decodedX);
+                    d.y=decodedY=full?server.y:decodeStep(server.y,sentY,decodedY);
+                    d.z=decodedZ=full?server.z:decodeStep(server.z,sentZ,decodedZ);
+                    sentX=server.x;sentY=server.y;sentZ=server.z;
+                }
+                trackerTicks=0;
                 prevTrackGround=server.ground;
                 if(dirty)down[slot(t+lag+1)].sprint=serverSprint?1:-1;
             }
@@ -205,7 +216,16 @@ final class FastDuel {
         return true;
     }
     static float charge(int age){return Math.min(1f,(age+.5f)/ATTACK_DELAY);}
-    static double grid(double n){return Math.round(n*4096)/4096.;}
+    static double decodeStep(double value,double base,double decoded){
+        long delta=Math.round(value*4096)-Math.round(base*4096);
+        return delta==0?decoded:(Math.round(decoded*4096)+delta)/4096.;
+    }
+    static float wrapYaw(float yaw){
+        float wrapped=yaw%360f;
+        if(wrapped>=180)wrapped-=360;
+        if(wrapped< -180)wrapped+=360;
+        return wrapped;
+    }
     static float pitch(View v) {
         double eye=v.y()+1.62f;
         return (float)-Math.toDegrees(Math.atan2(clip(eye,v.ty()+.1,v.ty()+1.7)-eye,Math.hypot(v.tx()-v.x(),v.tz()-v.z())));

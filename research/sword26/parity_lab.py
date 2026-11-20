@@ -26,12 +26,12 @@ def frozen_weights(run, meta):
     return primary, rivals
 
 
-def compare(run, destination):
+def compare(run, destination, jar=None):
     meta = json.loads((run/"metadata.json").read_text())
     if meta.get("clock") not in ("fast", "realtime"):
         raise ValueError("Trajectory replay requires a recorded tick-indexed packet schedule")
     primary, rivals = frozen_weights(run, meta)
-    jar = compile_agent()
+    jar = jar or compile_agent()
     matches = json.loads((run/"results.json").read_text())
     if len(matches) != 4 * meta["pairs"] * len(meta["opponents"]):
         raise ValueError("Incomplete native panel")
@@ -63,5 +63,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run", type=Path)
     parser.add_argument("output_csv", type=Path)
+    parser.add_argument("--jar", type=Path, help="Replay a frozen simulator build")
     args = parser.parse_args()
-    compare(args.run, args.output_csv)
+    compare(args.run, args.output_csv, args.jar)

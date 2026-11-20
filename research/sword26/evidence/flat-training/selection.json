@@ -1,0 +1,31 @@
+{
+  "sha256": "0356a03637ff083120476c4f1c4912e3c18e30f757f85450e4d97daadb062dfd",
+  "selected": "proposal-3.net",
+  "selection": [
+    {
+      "file": "proposal-0.net",
+      "mean": 0.377561,
+      "worst": 0.0,
+      "duels": 896
+    },
+    {
+      "file": "proposal-1.net",
+      "mean": 0.38449,
+      "worst": 0.0,
+      "duels": 896
+    },
+    {
+      "file": "proposal-2.net",
+      "mean": 0.392996,
+      "worst": -0.052901,
+      "duels": 896
+    },
+    {
+      "file": "proposal-3.net",
+      "mean": 0.51209,
+      "worst": 0.135085,
+      "duels": 896
+    }
+  ],
+  "training_duels": 1182720
+}

@@ -1,0 +1,23 @@
+{
+  "tested_source_sha256": {
+    "FastDuel.java": "facf652cb53ede5be659776b514634a69722dc4e752b00632465331c1c58ec01",
+    "FlatPhysics.java": "d3dfd230c60f8e2f0e01be8334d649084ffd1cdce59daef30c14f9ddcd10f7c0",
+    "KernelReplay.java": "5528e10ad88507d7685ef612aba5330177002b8383bc3dcf4fba01e2fef9baae",
+    "Fighter.java": "91d4ea30a67b6a616f8a74ec4cae735e5ddbfa306223d7e05959f5b015fe75fc",
+    "TreePolicy.java": "f0feaa93ddf3bd8815c8e714f5b9686832071af28d86d1c89ef2428d3cd4961a",
+    "Controls.java": "35874f5500b7baf4fa6513d9d18cb638749942063a215948c9edde9af033ac9d"
+  },
+  "previous_panels": "The prior 96 native fights have been used to diagnose this revision. Treat them as development. The original frozen results remain attached to the original simulator.",
+  "new_seeds": {
+    "0": 5417033,
+    "100": 8861513
+  },
+  "candidate": "evidence/transfer/challenger.net",
+  "opponents": [
+    "wtap",
+    "evidence/frozen/opponents/population.net",
+    "evidence/response/alternative.net"
+  ],
+  "fast_pairs": 4,
+  "comparison": "No midgame correction. Replay recorded keys and run both policies independently. Repeat identical openings on both seats with plain W-tap. Compare exact terminal HP, winners, terminal time and ordered contact classification, and trajectory divergence. Use identical registered treatment of unfinished tapes."
+}

@@ -1,0 +1,50 @@
+{
+  "engine": "flat26",
+  "parents": {
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/champion.net": "f6f2887237cc188680dc96c9dcc753880e6717fcef255fb5796bedbf557d033c",
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net": "bb8c34cb1c2f55084b758e80c51446d3be13f86e9f17e936ad2a2c7083d7bfdb",
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/alternative.net": "313c2d95c140bb917c7642a2230b4515b19f46b667005780fcd911d8582cd529",
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net": "13c0712b36b4dc925eebb09eca6dffc085be239a0206d0a10c9181fcb15ad71d",
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-b.net": "fa8ce89eb7a083708f734e503477919fac66a19d89ee228546b73a578b565f70",
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/transfer/challenger.net": "3761f029e425faf2ec2274c3ac17f2158dd7d1cfc0e14080fac2978ba826c862"
+  },
+  "field": {
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/champion.net": "f6f2887237cc188680dc96c9dcc753880e6717fcef255fb5796bedbf557d033c",
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net": "bb8c34cb1c2f55084b758e80c51446d3be13f86e9f17e936ad2a2c7083d7bfdb",
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/alternative.net": "313c2d95c140bb917c7642a2230b4515b19f46b667005780fcd911d8582cd529",
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net": "13c0712b36b4dc925eebb09eca6dffc085be239a0206d0a10c9181fcb15ad71d",
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-b.net": "fa8ce89eb7a083708f734e503477919fac66a19d89ee228546b73a578b565f70",
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/transfer/challenger.net": "3761f029e425faf2ec2274c3ac17f2158dd7d1cfc0e14080fac2978ba826c862",
+    "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/gradient.net": "75976d174c38b6847acb952a1a23a35843b08f8354f17b0281df009d00bade18"
+  },
+  "proposals": [
+    {
+      "file": "proposal-0.net",
+      "sha256": "93e8e151a7f236e6f67b2c804c59801a513ed3c0cb751cd47ab8c284679deb4c",
+      "source": "island-0/gen-0112.net",
+      "model_mean": 0.54199,
+      "model_worst": 0.0
+    },
+    {
+      "file": "proposal-1.net",
+      "sha256": "3761f029e425faf2ec2274c3ac17f2158dd7d1cfc0e14080fac2978ba826c862",
+      "source": "island-1/gen-0008.net",
+      "model_mean": 0.541568,
+      "model_worst": 0.0
+    },
+    {
+      "file": "proposal-2.net",
+      "sha256": "3b65278db4af53edb50a76a9469b252d937770a40e616b41343b33a443944938",
+      "source": "island-2/gen-0016.net",
+      "model_mean": 0.557178,
+      "model_worst": 0.0
+    },
+    {
+      "file": "proposal-3.net",
+      "sha256": "0356a03637ff083120476c4f1c4912e3c18e30f757f85450e4d97daadb062dfd",
+      "source": "island-3/gen-0088.net",
+      "model_mean": 0.526,
+      "model_worst": 0.0
+    }
+  ]
+}
