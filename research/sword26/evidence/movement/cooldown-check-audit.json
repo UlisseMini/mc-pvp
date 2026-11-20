@@ -1,0 +1,650 @@
+[
+  {
+    "id": "round-000",
+    "rtt": 0,
+    "pair": 0,
+    "seat": 1,
+    "policy": "wtap",
+    "rival": "wtap",
+    "hp": 1.1000042,
+    "opponent_hp": 0.0,
+    "ticks": 197.0,
+    "angle": 1.9656166902880878,
+    "gap": 7.0775383998845145,
+    "observation_ticks": 198,
+    "forward_ticks": 188,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 78,
+    "full_charge_forward_ticks": 78,
+    "low_charge_ticks": 60,
+    "low_charge_back_ticks": 0,
+    "hits": 11,
+    "events": {
+      "critical": 0,
+      "boosted": 11,
+      "strong": 11,
+      "sweep": 0,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 11,
+    "opponent_movement": {
+      "observation_ticks": 198,
+      "forward_ticks": 188,
+      "back_ticks": 0,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 0,
+      "full_charge_ticks": 78,
+      "full_charge_forward_ticks": 78,
+      "low_charge_ticks": 60,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 10,
+      "strong": 10,
+      "sweep": 0,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10,
+      "incoming_fresh_sampled": 10,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 11,
+      "own_fresh_hits": 10,
+      "window_sampled": 10,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10
+    },
+    "sampled_cps": 1.1111111111111112,
+    "mean_charge_on_press": 1.0
+  },
+  {
+    "id": "round-001",
+    "rtt": 0,
+    "pair": 0,
+    "seat": 0,
+    "policy": "learned",
+    "rival": "wtap",
+    "hp": 1.1000042,
+    "opponent_hp": 0.0,
+    "ticks": 176.0,
+    "angle": 1.9656166902880878,
+    "gap": 7.0775383998845145,
+    "observation_ticks": 177,
+    "forward_ticks": 177,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 126,
+    "full_charge_ticks": 57,
+    "full_charge_forward_ticks": 57,
+    "low_charge_ticks": 60,
+    "low_charge_back_ticks": 0,
+    "hits": 11,
+    "events": {
+      "critical": 0,
+      "boosted": 8,
+      "strong": 11,
+      "sweep": 1,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 11,
+    "opponent_movement": {
+      "observation_ticks": 177,
+      "forward_ticks": 167,
+      "back_ticks": 0,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 0,
+      "full_charge_ticks": 57,
+      "full_charge_forward_ticks": 57,
+      "low_charge_ticks": 60,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 10,
+      "strong": 10,
+      "sweep": 0,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10,
+      "incoming_fresh_sampled": 10,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 11,
+      "own_fresh_hits": 10,
+      "window_sampled": 10,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10
+    },
+    "sampled_cps": 1.2429378531073447,
+    "mean_charge_on_press": 1.0
+  },
+  {
+    "id": "round-002",
+    "rtt": 0,
+    "pair": 0,
+    "seat": 1,
+    "policy": "learned",
+    "rival": "wtap",
+    "hp": 2.990004,
+    "opponent_hp": 0.0,
+    "ticks": 163.0,
+    "angle": 1.9656166902880878,
+    "gap": 7.0775383998845145,
+    "observation_ticks": 164,
+    "forward_ticks": 164,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 110,
+    "full_charge_ticks": 56,
+    "full_charge_forward_ticks": 56,
+    "low_charge_ticks": 54,
+    "low_charge_back_ticks": 0,
+    "hits": 10,
+    "events": {
+      "critical": 1,
+      "boosted": 8,
+      "strong": 10,
+      "sweep": 0,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 163,
+      "forward_ticks": 154,
+      "back_ticks": 0,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 0,
+      "full_charge_ticks": 55,
+      "full_charge_forward_ticks": 55,
+      "low_charge_ticks": 54,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 9,
+      "strong": 9,
+      "sweep": 0,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "incoming_fresh_sampled": 9,
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 9,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "own_fresh_hits": 9,
+      "window_sampled": 9,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 9,
+      "incoming_fresh_sampled": 10
+    },
+    "sampled_cps": 1.2195121951219512,
+    "mean_charge_on_press": 0.996
+  },
+  {
+    "id": "round-003",
+    "rtt": 0,
+    "pair": 0,
+    "seat": 0,
+    "policy": "wtap",
+    "rival": "wtap",
+    "hp": 1.1000042,
+    "opponent_hp": 0.0,
+    "ticks": 185.0,
+    "angle": 1.9656166902880878,
+    "gap": 7.0775383998845145,
+    "observation_ticks": 186,
+    "forward_ticks": 176,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 66,
+    "full_charge_forward_ticks": 66,
+    "low_charge_ticks": 60,
+    "low_charge_back_ticks": 0,
+    "hits": 11,
+    "events": {
+      "critical": 0,
+      "boosted": 11,
+      "strong": 11,
+      "sweep": 0,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 11,
+    "opponent_movement": {
+      "observation_ticks": 186,
+      "forward_ticks": 176,
+      "back_ticks": 0,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 0,
+      "full_charge_ticks": 66,
+      "full_charge_forward_ticks": 66,
+      "low_charge_ticks": 60,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 10,
+      "strong": 10,
+      "sweep": 0,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 10,
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "own_fresh_hits": 10,
+      "window_sampled": 10,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10,
+      "incoming_fresh_sampled": 11
+    },
+    "sampled_cps": 1.1827956989247312,
+    "mean_charge_on_press": 1.0
+  },
+  {
+    "id": "round-004",
+    "rtt": 100,
+    "pair": 0,
+    "seat": 1,
+    "policy": "learned",
+    "rival": "wtap",
+    "hp": 0.0,
+    "opponent_hp": 3.5675025,
+    "ticks": 144.0,
+    "angle": -1.799311946128063,
+    "gap": 6.313760685858647,
+    "observation_ticks": 145,
+    "forward_ticks": 145,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 77,
+    "full_charge_ticks": 51,
+    "full_charge_forward_ticks": 51,
+    "low_charge_ticks": 48,
+    "low_charge_back_ticks": 0,
+    "hits": 8,
+    "events": {
+      "critical": 1,
+      "boosted": 5,
+      "strong": 8,
+      "sweep": 0,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 8,
+    "opponent_movement": {
+      "observation_ticks": 145,
+      "forward_ticks": 134,
+      "back_ticks": 0,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 0,
+      "full_charge_ticks": 24,
+      "full_charge_forward_ticks": 24,
+      "low_charge_ticks": 61,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 11,
+      "strong": 11,
+      "sweep": 0,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "own_fresh_hits": 8,
+      "window_sampled": 8,
+      "window_in_own_reach": 4,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 8,
+      "incoming_fresh_sampled": 11
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 8,
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 8,
+      "window_own_reach_only": 5,
+      "window_without_fresh_hit": 10,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.103448275862069,
+    "mean_charge_on_press": 0.985
+  },
+  {
+    "id": "round-005",
+    "rtt": 100,
+    "pair": 0,
+    "seat": 0,
+    "policy": "wtap",
+    "rival": "wtap",
+    "hp": 1.1000042,
+    "opponent_hp": 0.0,
+    "ticks": 197.0,
+    "angle": -1.799311946128063,
+    "gap": 6.313760685858647,
+    "observation_ticks": 198,
+    "forward_ticks": 187,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 77,
+    "full_charge_forward_ticks": 77,
+    "low_charge_ticks": 61,
+    "low_charge_back_ticks": 0,
+    "hits": 11,
+    "events": {
+      "critical": 0,
+      "boosted": 11,
+      "strong": 11,
+      "sweep": 0,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 11,
+    "opponent_movement": {
+      "observation_ticks": 198,
+      "forward_ticks": 188,
+      "back_ticks": 0,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 0,
+      "full_charge_ticks": 78,
+      "full_charge_forward_ticks": 78,
+      "low_charge_ticks": 60,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 10,
+      "strong": 10,
+      "sweep": 0,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10,
+      "incoming_fresh_sampled": 10,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 11,
+      "own_fresh_hits": 10,
+      "window_sampled": 10,
+      "window_in_own_reach": 2,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 10
+    },
+    "sampled_cps": 1.1111111111111112,
+    "mean_charge_on_press": 1.0
+  },
+  {
+    "id": "round-006",
+    "rtt": 100,
+    "pair": 0,
+    "seat": 0,
+    "policy": "learned",
+    "rival": "wtap",
+    "hp": 2.9900043,
+    "opponent_hp": 0.0,
+    "ticks": 147.0,
+    "angle": -1.799311946128063,
+    "gap": 6.313760685858647,
+    "observation_ticks": 148,
+    "forward_ticks": 148,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 90,
+    "full_charge_ticks": 39,
+    "full_charge_forward_ticks": 39,
+    "low_charge_ticks": 55,
+    "low_charge_back_ticks": 0,
+    "hits": 10,
+    "events": {
+      "critical": 2,
+      "boosted": 6,
+      "strong": 10,
+      "sweep": 1,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 149,
+      "forward_ticks": 139,
+      "back_ticks": 0,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 0,
+      "full_charge_ticks": 40,
+      "full_charge_forward_ticks": 40,
+      "low_charge_ticks": 55,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 9,
+      "strong": 9,
+      "sweep": 0,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "incoming_fresh_sampled": 9,
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 9,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "own_fresh_hits": 9,
+      "window_sampled": 9,
+      "window_in_own_reach": 4,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 9,
+      "incoming_fresh_sampled": 10
+    },
+    "sampled_cps": 1.3513513513513513,
+    "mean_charge_on_press": 0.988
+  },
+  {
+    "id": "round-007",
+    "rtt": 100,
+    "pair": 0,
+    "seat": 1,
+    "policy": "wtap",
+    "rival": "wtap",
+    "hp": 0.0,
+    "opponent_hp": 1.1000042,
+    "ticks": 197.0,
+    "angle": -1.799311946128063,
+    "gap": 6.313760685858647,
+    "observation_ticks": 199,
+    "forward_ticks": 188,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 78,
+    "full_charge_forward_ticks": 78,
+    "low_charge_ticks": 61,
+    "low_charge_back_ticks": 0,
+    "hits": 10,
+    "events": {
+      "critical": 0,
+      "boosted": 10,
+      "strong": 10,
+      "sweep": 0,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 11,
+    "opponent_movement": {
+      "observation_ticks": 198,
+      "forward_ticks": 187,
+      "back_ticks": 0,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 0,
+      "full_charge_ticks": 77,
+      "full_charge_forward_ticks": 77,
+      "low_charge_ticks": 61,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 11,
+      "strong": 11,
+      "sweep": 0,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "own_fresh_hits": 10,
+      "window_sampled": 10,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10,
+      "incoming_fresh_sampled": 11
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 10,
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.1055276381909547,
+    "mean_charge_on_press": 1.0
+  }
+]

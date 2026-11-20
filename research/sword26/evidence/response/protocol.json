@@ -1,0 +1,28 @@
+{
+  "purpose": "Exploratory search for weaknesses after freezing the champion",
+  "training": "A learned against the frozen champion. B learned against A and the champion. The alternative learned against a field including both.",
+  "model_seed": 834172,
+  "model_pairs_per_setting": 8,
+  "native_seed": 576331,
+  "native_pairs_per_setting": 2,
+  "added_rtt_ms": [
+    0,
+    100
+  ],
+  "seats": [
+    0,
+    1
+  ],
+  "native_opponent": "specialist-a.net",
+  "arms": [
+    "champion.net",
+    "alternative.net",
+    "plain W-tap"
+  ],
+  "promotion": "diagnostic only",
+  "weights": {
+    "alternative.net": "313c2d95c140bb917c7642a2230b4515b19f46b667005780fcd911d8582cd529",
+    "specialist-a.net": "13c0712b36b4dc925eebb09eca6dffc085be239a0206d0a10c9181fcb15ad71d",
+    "specialist-b.net": "fa8ce89eb7a083708f734e503477919fac66a19d89ee228546b73a578b565f70"
+  }
+}

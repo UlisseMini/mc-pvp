@@ -10,17 +10,18 @@ TEMPLATE = r"""<!doctype html><html lang="en"><meta charset="utf-8"><title>Sword
 <canvas width="860" height="440"></canvas><input id="seek" type="range" value="0" min="0" step="1" aria-label="Replay tick">
 <button id="play">Play</button> <label>Speed <select id="speed"><option>.25</option><option>.5</option><option selected>1</option><option>2</option></select></label><output id="status"></output>
 <script>
-const data=DATA, ctx=document.querySelector('canvas').getContext('2d'), el=id=>document.getElementById(id);
+const data=DATA, matches=MATCHES, ctx=document.querySelector('canvas').getContext('2d'), el=id=>document.getElementById(id);
 const colors=['#77d1e2','#ffb478'];let timer=0;
-for(const id of Object.keys(data)){el('round').add(new Option(id,id))}
+for(const id of Object.keys(data)){const m=matches[id];el('round').add(new Option(m?m.title:id,id))}
 function text(s,x,y,color){ctx.fillStyle=color;ctx.font='16px system-ui';ctx.fillText(s,x,y)}
 function frame(){let id=el('round').value,view=el('view').selectedIndex,rows=data[id][view],idx=Math.min(+el('seek').value,rows.length-1);
 el('seek').max=Math.max(0,rows.length-1);ctx.fillStyle='#10191b';ctx.fillRect(0,0,860,440);
-if(!rows.length){text('No client recording for this seat',20,40,'white');return}
+const m=matches[id],names=m?m.names:['A','B'];el('view').options[1].text='A · '+names[0];el('view').options[2].text='B · '+names[1];
+if(!rows.length){text('No client recording for this seat',20,40,'white');el('status').textContent='';return}
 const r=rows[idx];let line='';
 if(!view){ctx.strokeStyle='#647a79';ctx.strokeRect(250,40,360,360);
 for(let j=0;j<2;j++){let offset=3+j*3;ctx.fillStyle=colors[j];ctx.beginPath();ctx.arc(430+r[offset]*15,220+r[offset+2]*15,6,0,2*Math.PI);ctx.fill();
-text((j?'B  ':'A  ')+r[1+j].toFixed(1)+' HP',j?630:80,100,colors[j])}}
+text((j?'B  ':'A  ')+r[1+j].toFixed(1)+' HP',j?630:40,100,colors[j]);text(names[j],j?630:40,125,colors[j])}}
 else{let dx=r[4]-r[1],dz=r[6]-r[3],yaw=r[21]*Math.PI/180,pitch=r[22]*Math.PI/180;
 let horizontal=-dx*Math.sin(yaw)+dz*Math.cos(yaw),side=dx*Math.cos(yaw)+dz*Math.sin(yaw),height=r[5]-r[2]+.9-1.62;
 let depth=horizontal*Math.cos(pitch)-height*Math.sin(pitch);
@@ -30,12 +31,47 @@ ctx.strokeStyle=colors[view===1?1:0];ctx.strokeRect(cx-.3*scale,cy-.9*scale,.6*s
 ctx.fillStyle='white';ctx.fillRect(425,219,10,2);ctx.fillRect(429,215,2,10);
 line=(r[16]>0?' W':r[16]<0?' S':'')+(r[17]>0?' A':r[17]<0?' D':'')+(r[18]?' Sprint':'')+(r[19]?' Jump':'')+(r[20]?' Attack':'');
 text(r[13].toFixed(1)+' HP    '+Math.round(100*r[12])+'% charge',20,32,colors[view-1]);}
-el('status').textContent='Tick '+r[0]+'   '+(r[0]/20).toFixed(2)+' s   '+line;}
+const stamp=r[view?23:15],hit=m?m.events.filter(e=>e[0]<=stamp&&e[0]>stamp-220).pop():null;
+el('status').textContent='Tick '+r[0]+'   '+(r[0]/20).toFixed(2)+' s   '+line+(hit?'   ·   '+hit[1]:'');}
 function stop(){clearTimeout(timer);timer=0;el('play').textContent='Play'}
 function advance(){if(+el('seek').value>=+el('seek').max){stop();return}el('seek').stepUp();frame();timer=setTimeout(advance,50/+el('speed').value)}
 el('play').onclick=()=>{if(timer){stop();return}if(+el('seek').value>=+el('seek').max)el('seek').value=0;el('play').textContent='Pause';timer=setTimeout(advance,0)};
 for(const id of ['round','view'])el(id).onchange=()=>{stop();el('seek').value=0;frame()};
 el('seek').oninput=frame;frame();</script></html>"""
+
+
+def match_labels(folder):
+    if not (folder/"results.json").exists():
+        return {}
+    meta=json.loads((folder/"metadata.json").read_text())
+    titles={"wtap":"W-tap","champion":"Trained bot","population":"Retreating rival","gradient":"Recurrent rival"}
+    def title(file):
+        stem=Path(file).stem
+        return titles.get(stem,stem.replace("-"," ").capitalize())
+    labels={}
+    for row in json.loads((folder/"results.json").read_text()):
+        seat=row["seat"]
+        who=row["policy"]
+        if who=="learned":
+            who=meta.get("primary_file","champion")
+        elif who.startswith("learned-"):
+            who=meta["extra_weights"][int(who.split("-")[1])-1]["file"]
+        rival_file=row.get("rival","wtap")
+        rival=meta["names"][1-seat] if rival_file=="human" else title(rival_file)
+        names=[rival,rival]
+        names[seat]=title(who)
+        events=[]
+        contacts=folder/(row["id"]+"-contacts.tsv")
+        if contacts.exists():
+            with contacts.open() as f:
+                for event in csv.DictReader(f,delimiter="\t"):
+                    if "epochMs" not in event:break
+                    actor=meta["names"].index(event["attacker"])
+                    kind="critical hit" if event["critical"]=="true" else "sprint hit" if event["boosted"]=="true" else "hit"
+                    events.append([int(event["epochMs"]),names[actor]+" · "+kind])
+        number=int(row["id"].split("-")[1])+1
+        labels[row["id"]]=dict(names=names,title=f"{number} · {row['rtt']} ms · {names[0]} vs. {names[1]}",events=events)
+    return labels
 
 
 def build(folder):
@@ -53,7 +89,8 @@ def build(folder):
                 views.append([[v=="true" if v in ("true","false") else float(v) for v in r] for r in rows])
         data[key]=views
     out=folder/"Replay.html"
-    out.write_text(TEMPLATE.replace("DATA",json.dumps(data,separators=(",",":")),1))
+    names=json.dumps(match_labels(folder),separators=(",",":")).replace("<","\\u003c")
+    out.write_text(TEMPLATE.replace("DATA",json.dumps(data,separators=(",",":")),1).replace("MATCHES",names,1))
     return out
 
 

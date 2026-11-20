@@ -1,0 +1,1978 @@
+[
+  {
+    "id": "round-000",
+    "rtt": 0,
+    "pair": 0,
+    "seat": 1,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 1.732521,
+    "opponent_hp": 0.0,
+    "ticks": 112.0,
+    "angle": -2.5078204182038384,
+    "gap": 7.295595589150554,
+    "observation_ticks": 113,
+    "forward_ticks": 113,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 89,
+    "full_charge_ticks": 17,
+    "full_charge_forward_ticks": 17,
+    "low_charge_ticks": 48,
+    "low_charge_back_ticks": 0,
+    "hits": 9,
+    "events": {
+      "critical": 3,
+      "boosted": 3,
+      "strong": 9,
+      "sweep": 0,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 9,
+    "opponent_movement": {
+      "observation_ticks": 113,
+      "forward_ticks": 113,
+      "back_ticks": 0,
+      "lateral_ticks": 19,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 22,
+      "full_charge_forward_ticks": 22,
+      "low_charge_ticks": 49,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 2,
+      "boosted": 1,
+      "strong": 9,
+      "sweep": 4,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "incoming_fresh_sampled": 9,
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 6,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 8,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 4,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 8,
+      "incoming_fresh_sampled": 9,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.592920353982301,
+    "mean_charge_on_press": 0.9688888888888889
+  },
+  {
+    "id": "round-001",
+    "rtt": 0,
+    "pair": 0,
+    "seat": 1,
+    "policy": "learned-1",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 3.0706747,
+    "opponent_hp": 0.0,
+    "ticks": 97.0,
+    "angle": -2.5078204182038384,
+    "gap": 7.295595589150554,
+    "observation_ticks": 98,
+    "forward_ticks": 98,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 65,
+    "full_charge_ticks": 13,
+    "full_charge_forward_ticks": 13,
+    "low_charge_ticks": 43,
+    "low_charge_back_ticks": 0,
+    "hits": 8,
+    "events": {
+      "critical": 4,
+      "boosted": 1,
+      "strong": 8,
+      "sweep": 1,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 8,
+    "opponent_movement": {
+      "observation_ticks": 98,
+      "forward_ticks": 98,
+      "back_ticks": 0,
+      "lateral_ticks": 10,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 12,
+      "full_charge_forward_ticks": 12,
+      "low_charge_ticks": 48,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 3,
+      "boosted": 1,
+      "strong": 7,
+      "sweep": 1,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 7
+      },
+      "own_fresh_hits": 8,
+      "window_sampled": 7,
+      "window_in_own_reach": 6,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 7,
+      "incoming_fresh_sampled": 8,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 7
+      },
+      "incoming_fresh_sampled": 8,
+      "own_fresh_hits": 8,
+      "window_sampled": 7,
+      "window_in_own_reach": 6,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.6326530612244898,
+    "mean_charge_on_press": 0.97
+  },
+  {
+    "id": "round-002",
+    "rtt": 0,
+    "pair": 0,
+    "seat": 1,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 0.35761285,
+    "opponent_hp": 0.0,
+    "ticks": 146.0,
+    "angle": -2.5078204182038384,
+    "gap": 7.295595589150554,
+    "observation_ticks": 148,
+    "forward_ticks": 138,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 28,
+    "full_charge_forward_ticks": 28,
+    "low_charge_ticks": 60,
+    "low_charge_back_ticks": 0,
+    "hits": 11,
+    "events": {
+      "critical": 0,
+      "boosted": 11,
+      "strong": 11,
+      "sweep": 0,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 11,
+    "opponent_movement": {
+      "observation_ticks": 147,
+      "forward_ticks": 147,
+      "back_ticks": 0,
+      "lateral_ticks": 20,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 33,
+      "full_charge_forward_ticks": 33,
+      "low_charge_ticks": 60,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 1,
+      "boosted": 1,
+      "strong": 10,
+      "sweep": 5,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 4,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 10,
+      "incoming_fresh_sampled": 10,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "incoming_fresh_sampled": 11,
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 2,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 9,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.4864864864864864,
+    "mean_charge_on_press": 0.9818181818181818
+  },
+  {
+    "id": "round-003",
+    "rtt": 0,
+    "pair": 0,
+    "seat": 0,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 2.4885285,
+    "opponent_hp": 0.0,
+    "ticks": 139.0,
+    "angle": -2.5078204182038384,
+    "gap": 7.295595589150554,
+    "observation_ticks": 140,
+    "forward_ticks": 140,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 100,
+    "full_charge_ticks": 32,
+    "full_charge_forward_ticks": 32,
+    "low_charge_ticks": 54,
+    "low_charge_back_ticks": 0,
+    "hits": 9,
+    "events": {
+      "critical": 4,
+      "boosted": 4,
+      "strong": 9,
+      "sweep": 1,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 140,
+      "forward_ticks": 140,
+      "back_ticks": 0,
+      "lateral_ticks": 23,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 27,
+      "full_charge_forward_ticks": 27,
+      "low_charge_ticks": 60,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 1,
+      "strong": 9,
+      "sweep": 4,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "incoming_fresh_sampled": 10,
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 8,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 8,
+      "incoming_fresh_sampled": 9,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.4285714285714286,
+    "mean_charge_on_press": 0.984
+  },
+  {
+    "id": "round-004",
+    "rtt": 0,
+    "pair": 0,
+    "seat": 0,
+    "policy": "learned-1",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 0.33173704,
+    "opponent_hp": 0.0,
+    "ticks": 135.0,
+    "angle": -2.5078204182038384,
+    "gap": 7.295595589150554,
+    "observation_ticks": 136,
+    "forward_ticks": 133,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 82,
+    "full_charge_ticks": 27,
+    "full_charge_forward_ticks": 26,
+    "low_charge_ticks": 55,
+    "low_charge_back_ticks": 0,
+    "hits": 10,
+    "events": {
+      "critical": 3,
+      "boosted": 3,
+      "strong": 10,
+      "sweep": 0,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 136,
+      "forward_ticks": 136,
+      "back_ticks": 0,
+      "lateral_ticks": 21,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 14,
+      "full_charge_forward_ticks": 14,
+      "low_charge_ticks": 68,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 1,
+      "boosted": 1,
+      "strong": 9,
+      "sweep": 2,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "incoming_fresh_sampled": 11,
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 5,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 9,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 6,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 8,
+      "incoming_fresh_sampled": 10,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.4705882352941178,
+    "mean_charge_on_press": 0.98
+  },
+  {
+    "id": "round-005",
+    "rtt": 0,
+    "pair": 0,
+    "seat": 0,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 0.0,
+    "opponent_hp": 3.2750604,
+    "ticks": 132.0,
+    "angle": -2.5078204182038384,
+    "gap": 7.295595589150554,
+    "observation_ticks": 133,
+    "forward_ticks": 124,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 28,
+    "full_charge_forward_ticks": 28,
+    "low_charge_ticks": 54,
+    "low_charge_back_ticks": 0,
+    "hits": 9,
+    "events": {
+      "critical": 0,
+      "boosted": 9,
+      "strong": 9,
+      "sweep": 0,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 9,
+    "opponent_movement": {
+      "observation_ticks": 133,
+      "forward_ticks": 133,
+      "back_ticks": 0,
+      "lateral_ticks": 21,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 28,
+      "full_charge_forward_ticks": 28,
+      "low_charge_ticks": 55,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 2,
+      "boosted": 1,
+      "strong": 8,
+      "sweep": 2,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "incoming_fresh_sampled": 10,
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 8,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 7,
+      "incoming_fresh_sampled": 9,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.3533834586466165,
+    "mean_charge_on_press": 0.9866666666666667
+  },
+  {
+    "id": "round-006",
+    "rtt": 0,
+    "pair": 1,
+    "seat": 0,
+    "policy": "learned-1",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 0.32086182,
+    "opponent_hp": 0.0,
+    "ticks": 130.0,
+    "angle": 0.15548659940442677,
+    "gap": 4.05479062965569,
+    "observation_ticks": 130,
+    "forward_ticks": 122,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 94,
+    "full_charge_ticks": 22,
+    "full_charge_forward_ticks": 22,
+    "low_charge_ticks": 54,
+    "low_charge_back_ticks": 0,
+    "hits": 10,
+    "events": {
+      "critical": 1,
+      "boosted": 9,
+      "strong": 10,
+      "sweep": 0,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 131,
+      "forward_ticks": 131,
+      "back_ticks": 0,
+      "lateral_ticks": 24,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 23,
+      "full_charge_forward_ticks": 23,
+      "low_charge_ticks": 56,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 1,
+      "boosted": 1,
+      "strong": 9,
+      "sweep": 6,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "incoming_fresh_sampled": 10,
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 9,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 2,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 8,
+      "incoming_fresh_sampled": 10,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.5384615384615385,
+    "mean_charge_on_press": 0.984
+  },
+  {
+    "id": "round-007",
+    "rtt": 0,
+    "pair": 1,
+    "seat": 1,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 0.0,
+    "opponent_hp": 1.3850596,
+    "ticks": 160.0,
+    "angle": 0.15548659940442677,
+    "gap": 4.05479062965569,
+    "observation_ticks": 161,
+    "forward_ticks": 151,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 41,
+    "full_charge_forward_ticks": 41,
+    "low_charge_ticks": 60,
+    "low_charge_back_ticks": 0,
+    "hits": 10,
+    "events": {
+      "critical": 0,
+      "boosted": 10,
+      "strong": 10,
+      "sweep": 0,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 162,
+      "forward_ticks": 162,
+      "back_ticks": 0,
+      "lateral_ticks": 28,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 42,
+      "full_charge_forward_ticks": 42,
+      "low_charge_ticks": 61,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 1,
+      "strong": 10,
+      "sweep": 4,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "own_fresh_hits": 10,
+      "window_sampled": 10,
+      "window_in_own_reach": 2,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 10,
+      "incoming_fresh_sampled": 11
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 10,
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 1,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 9,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.2422360248447204,
+    "mean_charge_on_press": 0.992
+  },
+  {
+    "id": "round-008",
+    "rtt": 0,
+    "pair": 1,
+    "seat": 1,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 2.7442172,
+    "opponent_hp": 0.0,
+    "ticks": 124.0,
+    "angle": 0.15548659940442677,
+    "gap": 4.05479062965569,
+    "observation_ticks": 125,
+    "forward_ticks": 125,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 95,
+    "full_charge_ticks": 29,
+    "full_charge_forward_ticks": 29,
+    "low_charge_ticks": 48,
+    "low_charge_back_ticks": 0,
+    "hits": 9,
+    "events": {
+      "critical": 5,
+      "boosted": 3,
+      "strong": 9,
+      "sweep": 1,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 9,
+    "opponent_movement": {
+      "observation_ticks": 126,
+      "forward_ticks": 126,
+      "back_ticks": 0,
+      "lateral_ticks": 19,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 23,
+      "full_charge_forward_ticks": 23,
+      "low_charge_ticks": 56,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 1,
+      "boosted": 1,
+      "strong": 7,
+      "sweep": 2,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 6,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 8,
+      "incoming_fresh_sampled": 9,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "incoming_fresh_sampled": 9,
+      "own_fresh_hits": 9,
+      "window_sampled": 9,
+      "window_in_own_reach": 7,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 7
+    },
+    "sampled_cps": 1.44,
+    "mean_charge_on_press": 0.9733333333333333
+  },
+  {
+    "id": "round-009",
+    "rtt": 0,
+    "pair": 1,
+    "seat": 1,
+    "policy": "learned-1",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 2.9900045,
+    "opponent_hp": 0.0,
+    "ticks": 165.0,
+    "angle": 0.15548659940442677,
+    "gap": 4.05479062965569,
+    "observation_ticks": 167,
+    "forward_ticks": 158,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 108,
+    "full_charge_ticks": 46,
+    "full_charge_forward_ticks": 45,
+    "low_charge_ticks": 61,
+    "low_charge_back_ticks": 0,
+    "hits": 11,
+    "events": {
+      "critical": 0,
+      "boosted": 10,
+      "strong": 11,
+      "sweep": 0,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "landmarks": {
+      "3": {
+        "entry_tick": 104,
+        "returns": {
+          "cycles": 0,
+          "exposure_ticks": 1,
+          "end": "return"
+        },
+        "active": {
+          "cycles": 0,
+          "exposure_ticks": 1,
+          "end": "return"
+        }
+      }
+    },
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 11,
+    "opponent_movement": {
+      "observation_ticks": 167,
+      "forward_ticks": 167,
+      "back_ticks": 0,
+      "lateral_ticks": 25,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 56,
+      "full_charge_forward_ticks": 56,
+      "low_charge_ticks": 58,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 1,
+      "strong": 9,
+      "sweep": 3,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 9,
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 1,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 10,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "own_fresh_hits": 9,
+      "window_sampled": 9,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 9,
+      "incoming_fresh_sampled": 11
+    },
+    "sampled_cps": 1.3173652694610778,
+    "mean_charge_on_press": 0.9890909090909091
+  },
+  {
+    "id": "round-010",
+    "rtt": 0,
+    "pair": 1,
+    "seat": 0,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 0.0,
+    "opponent_hp": 3.567505,
+    "ticks": 115.0,
+    "angle": 0.15548659940442677,
+    "gap": 4.05479062965569,
+    "observation_ticks": 115,
+    "forward_ticks": 115,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 82,
+    "full_charge_ticks": 22,
+    "full_charge_forward_ticks": 22,
+    "low_charge_ticks": 48,
+    "low_charge_back_ticks": 0,
+    "hits": 8,
+    "events": {
+      "critical": 1,
+      "boosted": 2,
+      "strong": 8,
+      "sweep": 1,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 8,
+    "opponent_movement": {
+      "observation_ticks": 117,
+      "forward_ticks": 117,
+      "back_ticks": 0,
+      "lateral_ticks": 12,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 24,
+      "full_charge_forward_ticks": 24,
+      "low_charge_ticks": 48,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 5,
+      "boosted": 1,
+      "strong": 9,
+      "sweep": 0,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 7
+      },
+      "own_fresh_hits": 8,
+      "window_sampled": 7,
+      "window_in_own_reach": 4,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 7,
+      "incoming_fresh_sampled": 9,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "incoming_fresh_sampled": 8,
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 8,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.391304347826087,
+    "mean_charge_on_press": 0.98
+  },
+  {
+    "id": "round-011",
+    "rtt": 0,
+    "pair": 1,
+    "seat": 0,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 1.6333618,
+    "opponent_hp": 0.0,
+    "ticks": 154.0,
+    "angle": 0.15548659940442677,
+    "gap": 4.05479062965569,
+    "observation_ticks": 155,
+    "forward_ticks": 145,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 35,
+    "full_charge_forward_ticks": 35,
+    "low_charge_ticks": 60,
+    "low_charge_back_ticks": 0,
+    "hits": 11,
+    "events": {
+      "critical": 0,
+      "boosted": 11,
+      "strong": 11,
+      "sweep": 0,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 11,
+    "opponent_movement": {
+      "observation_ticks": 156,
+      "forward_ticks": 156,
+      "back_ticks": 0,
+      "lateral_ticks": 29,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 37,
+      "full_charge_forward_ticks": 37,
+      "low_charge_ticks": 60,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 1,
+      "strong": 9,
+      "sweep": 4,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 10,
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 2,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 10,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "own_fresh_hits": 10,
+      "window_sampled": 10,
+      "window_in_own_reach": 1,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 9,
+      "incoming_fresh_sampled": 11
+    },
+    "sampled_cps": 1.4193548387096775,
+    "mean_charge_on_press": 0.9927272727272727
+  },
+  {
+    "id": "round-012",
+    "rtt": 100,
+    "pair": 0,
+    "seat": 1,
+    "policy": "learned-1",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 1.8999283,
+    "opponent_hp": 0.0,
+    "ticks": 124.0,
+    "angle": -0.5847630964818222,
+    "gap": 5.662266292134291,
+    "observation_ticks": 125,
+    "forward_ticks": 123,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 78,
+    "full_charge_ticks": 16,
+    "full_charge_forward_ticks": 16,
+    "low_charge_ticks": 55,
+    "low_charge_back_ticks": 0,
+    "hits": 10,
+    "events": {
+      "critical": 2,
+      "boosted": 3,
+      "strong": 10,
+      "sweep": 2,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 124,
+      "forward_ticks": 124,
+      "back_ticks": 0,
+      "lateral_ticks": 24,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 14,
+      "full_charge_forward_ticks": 14,
+      "low_charge_ticks": 60,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 1,
+      "boosted": 1,
+      "strong": 7,
+      "sweep": 2,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 8,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 9,
+      "incoming_fresh_sampled": 10,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "incoming_fresh_sampled": 10,
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 8,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.6,
+    "mean_charge_on_press": 0.968
+  },
+  {
+    "id": "round-013",
+    "rtt": 100,
+    "pair": 0,
+    "seat": 1,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 0.0,
+    "opponent_hp": 1.1000056,
+    "ticks": 151.0,
+    "angle": -0.5847630964818222,
+    "gap": 5.662266292134291,
+    "observation_ticks": 152,
+    "forward_ticks": 152,
+    "back_ticks": 0,
+    "lateral_ticks": 3,
+    "jump_key_ticks": 106,
+    "full_charge_ticks": 32,
+    "full_charge_forward_ticks": 32,
+    "low_charge_ticks": 60,
+    "low_charge_back_ticks": 0,
+    "hits": 10,
+    "events": {
+      "critical": 0,
+      "boosted": 4,
+      "strong": 10,
+      "sweep": 1,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 11,
+    "opponent_movement": {
+      "observation_ticks": 152,
+      "forward_ticks": 152,
+      "back_ticks": 0,
+      "lateral_ticks": 26,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 21,
+      "full_charge_forward_ticks": 21,
+      "low_charge_ticks": 73,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 1,
+      "strong": 11,
+      "sweep": 4,
+      "fresh": 12,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "own_fresh_hits": 10,
+      "window_sampled": 10,
+      "window_in_own_reach": 9,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 10,
+      "incoming_fresh_sampled": 12
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 11
+      },
+      "incoming_fresh_sampled": 10,
+      "own_fresh_hits": 12,
+      "window_sampled": 11,
+      "window_in_own_reach": 8,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 10,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.4473684210526316,
+    "mean_charge_on_press": 0.9745454545454545
+  },
+  {
+    "id": "round-014",
+    "rtt": 100,
+    "pair": 0,
+    "seat": 1,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 0.6167927,
+    "opponent_hp": 0.0,
+    "ticks": 130.0,
+    "angle": -0.5847630964818222,
+    "gap": 5.662266292134291,
+    "observation_ticks": 130,
+    "forward_ticks": 119,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 9,
+    "full_charge_forward_ticks": 9,
+    "low_charge_ticks": 61,
+    "low_charge_back_ticks": 0,
+    "hits": 11,
+    "events": {
+      "critical": 0,
+      "boosted": 11,
+      "strong": 11,
+      "sweep": 0,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 11,
+    "opponent_movement": {
+      "observation_ticks": 131,
+      "forward_ticks": 131,
+      "back_ticks": 0,
+      "lateral_ticks": 23,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 9,
+      "full_charge_forward_ticks": 9,
+      "low_charge_ticks": 69,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 1,
+      "boosted": 1,
+      "strong": 9,
+      "sweep": 3,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 10,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10,
+      "incoming_fresh_sampled": 11,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 11,
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 10,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 8,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.6923076923076923,
+    "mean_charge_on_press": 0.9672727272727273
+  },
+  {
+    "id": "round-015",
+    "rtt": 100,
+    "pair": 0,
+    "seat": 0,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 0.0,
+    "opponent_hp": 1.3850608,
+    "ticks": 137.0,
+    "angle": -0.5847630964818222,
+    "gap": 5.662266292134291,
+    "observation_ticks": 138,
+    "forward_ticks": 128,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 19,
+    "full_charge_forward_ticks": 19,
+    "low_charge_ticks": 60,
+    "low_charge_back_ticks": 0,
+    "hits": 10,
+    "events": {
+      "critical": 0,
+      "boosted": 10,
+      "strong": 10,
+      "sweep": 0,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 138,
+      "forward_ticks": 138,
+      "back_ticks": 0,
+      "lateral_ticks": 29,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 9,
+      "full_charge_forward_ticks": 9,
+      "low_charge_ticks": 73,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 2,
+      "boosted": 1,
+      "strong": 11,
+      "sweep": 4,
+      "fresh": 12,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 12,
+      "own_fresh_hits": 10,
+      "window_sampled": 10,
+      "window_in_own_reach": 10,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 11
+      },
+      "own_fresh_hits": 12,
+      "window_sampled": 11,
+      "window_in_own_reach": 11,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10,
+      "incoming_fresh_sampled": 10,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.4492753623188406,
+    "mean_charge_on_press": 0.976
+  },
+  {
+    "id": "round-016",
+    "rtt": 100,
+    "pair": 0,
+    "seat": 0,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 0.27184963,
+    "opponent_hp": 0.0,
+    "ticks": 139.0,
+    "angle": -0.5847630964818222,
+    "gap": 5.662266292134291,
+    "observation_ticks": 140,
+    "forward_ticks": 140,
+    "back_ticks": 0,
+    "lateral_ticks": 8,
+    "jump_key_ticks": 93,
+    "full_charge_ticks": 19,
+    "full_charge_forward_ticks": 19,
+    "low_charge_ticks": 61,
+    "low_charge_back_ticks": 0,
+    "hits": 11,
+    "events": {
+      "critical": 0,
+      "boosted": 5,
+      "strong": 11,
+      "sweep": 1,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 11,
+    "opponent_movement": {
+      "observation_ticks": 140,
+      "forward_ticks": 140,
+      "back_ticks": 0,
+      "lateral_ticks": 19,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 11,
+      "full_charge_forward_ticks": 11,
+      "low_charge_ticks": 72,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 1,
+      "strong": 7,
+      "sweep": 3,
+      "fresh": 12,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 12,
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 8,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 10,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 11
+      },
+      "own_fresh_hits": 12,
+      "window_sampled": 11,
+      "window_in_own_reach": 10,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 6,
+      "incoming_fresh_sampled": 11,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.5714285714285714,
+    "mean_charge_on_press": 0.9709090909090908
+  },
+  {
+    "id": "round-017",
+    "rtt": 100,
+    "pair": 0,
+    "seat": 0,
+    "policy": "learned-1",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 3.0586393,
+    "opponent_hp": 0.0,
+    "ticks": 125.0,
+    "angle": -0.5847630964818222,
+    "gap": 5.662266292134291,
+    "observation_ticks": 126,
+    "forward_ticks": 124,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 72,
+    "full_charge_ticks": 16,
+    "full_charge_forward_ticks": 16,
+    "low_charge_ticks": 56,
+    "low_charge_back_ticks": 0,
+    "hits": 10,
+    "events": {
+      "critical": 2,
+      "boosted": 3,
+      "strong": 10,
+      "sweep": 1,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 126,
+      "forward_ticks": 126,
+      "back_ticks": 0,
+      "lateral_ticks": 23,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 15,
+      "full_charge_forward_ticks": 15,
+      "low_charge_ticks": 60,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 1,
+      "strong": 9,
+      "sweep": 4,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "incoming_fresh_sampled": 10,
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 7,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 9,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 8,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 8,
+      "incoming_fresh_sampled": 10,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.5873015873015872,
+    "mean_charge_on_press": 0.968
+  },
+  {
+    "id": "round-018",
+    "rtt": 100,
+    "pair": 1,
+    "seat": 1,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 1.4243302,
+    "opponent_hp": 0.0,
+    "ticks": 145.0,
+    "angle": 0.3840810024345527,
+    "gap": 7.699318307180307,
+    "observation_ticks": 146,
+    "forward_ticks": 146,
+    "back_ticks": 0,
+    "lateral_ticks": 3,
+    "jump_key_ticks": 98,
+    "full_charge_ticks": 36,
+    "full_charge_forward_ticks": 36,
+    "low_charge_ticks": 56,
+    "low_charge_back_ticks": 0,
+    "hits": 10,
+    "events": {
+      "critical": 1,
+      "boosted": 6,
+      "strong": 10,
+      "sweep": 0,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 146,
+      "forward_ticks": 146,
+      "back_ticks": 0,
+      "lateral_ticks": 18,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 38,
+      "full_charge_forward_ticks": 38,
+      "low_charge_ticks": 59,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 1,
+      "boosted": 1,
+      "strong": 8,
+      "sweep": 2,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 6,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 9,
+      "incoming_fresh_sampled": 10,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "incoming_fresh_sampled": 10,
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 6,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 7,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.36986301369863,
+    "mean_charge_on_press": 0.98
+  },
+  {
+    "id": "round-019",
+    "rtt": 100,
+    "pair": 1,
+    "seat": 1,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 0.0,
+    "opponent_hp": 1.3850605,
+    "ticks": 136.0,
+    "angle": 0.3840810024345527,
+    "gap": 7.699318307180307,
+    "observation_ticks": 137,
+    "forward_ticks": 127,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 21,
+    "full_charge_forward_ticks": 21,
+    "low_charge_ticks": 60,
+    "low_charge_back_ticks": 0,
+    "hits": 10,
+    "events": {
+      "critical": 0,
+      "boosted": 10,
+      "strong": 10,
+      "sweep": 0,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 137,
+      "forward_ticks": 137,
+      "back_ticks": 0,
+      "lateral_ticks": 25,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 23,
+      "full_charge_forward_ticks": 23,
+      "low_charge_ticks": 61,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 2,
+      "boosted": 1,
+      "strong": 10,
+      "sweep": 2,
+      "fresh": 11,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 8,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 9,
+      "incoming_fresh_sampled": 11,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 10
+      },
+      "incoming_fresh_sampled": 10,
+      "own_fresh_hits": 11,
+      "window_sampled": 10,
+      "window_in_own_reach": 8,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 9,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.4598540145985401,
+    "mean_charge_on_press": 0.972
+  },
+  {
+    "id": "round-020",
+    "rtt": 100,
+    "pair": 1,
+    "seat": 0,
+    "policy": "learned-1",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 4.911886,
+    "opponent_hp": 0.0,
+    "ticks": 109.0,
+    "angle": 0.3840810024345527,
+    "gap": 7.699318307180307,
+    "observation_ticks": 110,
+    "forward_ticks": 110,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 71,
+    "full_charge_ticks": 13,
+    "full_charge_forward_ticks": 13,
+    "low_charge_ticks": 49,
+    "low_charge_back_ticks": 0,
+    "hits": 9,
+    "events": {
+      "critical": 3,
+      "boosted": 1,
+      "strong": 9,
+      "sweep": 1,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 9,
+    "opponent_movement": {
+      "observation_ticks": 110,
+      "forward_ticks": 110,
+      "back_ticks": 0,
+      "lateral_ticks": 20,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 15,
+      "full_charge_forward_ticks": 15,
+      "low_charge_ticks": 54,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 1,
+      "strong": 7,
+      "sweep": 3,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 8,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 8,
+      "incoming_fresh_sampled": 9,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "incoming_fresh_sampled": 9,
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 7,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.6363636363636365,
+    "mean_charge_on_press": 0.9688888888888889
+  },
+  {
+    "id": "round-021",
+    "rtt": 100,
+    "pair": 1,
+    "seat": 0,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 2.208119,
+    "opponent_hp": 0.0,
+    "ticks": 126.0,
+    "angle": 0.3840810024345527,
+    "gap": 7.699318307180307,
+    "observation_ticks": 127,
+    "forward_ticks": 127,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 85,
+    "full_charge_ticks": 30,
+    "full_charge_forward_ticks": 30,
+    "low_charge_ticks": 49,
+    "low_charge_back_ticks": 0,
+    "hits": 9,
+    "events": {
+      "critical": 3,
+      "boosted": 3,
+      "strong": 9,
+      "sweep": 0,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 9,
+    "opponent_movement": {
+      "observation_ticks": 127,
+      "forward_ticks": 127,
+      "back_ticks": 0,
+      "lateral_ticks": 20,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 34,
+      "full_charge_forward_ticks": 34,
+      "low_charge_ticks": 49,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 2,
+      "boosted": 1,
+      "strong": 8,
+      "sweep": 3,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 5,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 8,
+      "incoming_fresh_sampled": 9,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "incoming_fresh_sampled": 9,
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 4,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 7,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.4173228346456692,
+    "mean_charge_on_press": 0.9777777777777777
+  },
+  {
+    "id": "round-022",
+    "rtt": 100,
+    "pair": 1,
+    "seat": 1,
+    "policy": "learned-1",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 4.7003365,
+    "opponent_hp": 0.0,
+    "ticks": 109.0,
+    "angle": 0.3840810024345527,
+    "gap": 7.699318307180307,
+    "observation_ticks": 110,
+    "forward_ticks": 110,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 67,
+    "full_charge_ticks": 12,
+    "full_charge_forward_ticks": 12,
+    "low_charge_ticks": 50,
+    "low_charge_back_ticks": 0,
+    "hits": 9,
+    "events": {
+      "critical": 3,
+      "boosted": 1,
+      "strong": 9,
+      "sweep": 1,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 9,
+    "opponent_movement": {
+      "observation_ticks": 110,
+      "forward_ticks": 110,
+      "back_ticks": 0,
+      "lateral_ticks": 23,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 19,
+      "full_charge_forward_ticks": 19,
+      "low_charge_ticks": 50,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 0,
+      "boosted": 1,
+      "strong": 9,
+      "sweep": 6,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 8,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 8,
+      "incoming_fresh_sampled": 9,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "incoming_fresh_sampled": 9,
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 7,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 8,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.6363636363636365,
+    "mean_charge_on_press": 0.9644444444444444
+  },
+  {
+    "id": "round-023",
+    "rtt": 100,
+    "pair": 1,
+    "seat": 0,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/response/specialist-a.net",
+    "hp": 0.0,
+    "opponent_hp": 2.990005,
+    "ticks": 123.0,
+    "angle": 0.3840810024345527,
+    "gap": 7.699318307180307,
+    "observation_ticks": 124,
+    "forward_ticks": 115,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 21,
+    "full_charge_forward_ticks": 21,
+    "low_charge_ticks": 54,
+    "low_charge_back_ticks": 0,
+    "hits": 9,
+    "events": {
+      "critical": 0,
+      "boosted": 9,
+      "strong": 9,
+      "sweep": 0,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "fresh_classification": "native post-contact hurt animation",
+    "defender_input_recorded": true,
+    "physical_presses": 9,
+    "opponent_movement": {
+      "observation_ticks": 124,
+      "forward_ticks": 124,
+      "back_ticks": 0,
+      "lateral_ticks": 21,
+      "jump_key_ticks": 1,
+      "full_charge_ticks": 22,
+      "full_charge_forward_ticks": 22,
+      "low_charge_ticks": 55,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 3,
+      "boosted": 1,
+      "strong": 10,
+      "sweep": 1,
+      "fresh": 10,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "own_fresh_hits": 9,
+      "window_sampled": 8,
+      "window_in_own_reach": 7,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 8,
+      "incoming_fresh_sampled": 10,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "fresh hit plus ten ticks",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "incoming_fresh_sampled": 9,
+      "own_fresh_hits": 10,
+      "window_sampled": 9,
+      "window_in_own_reach": 7,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 9,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.4516129032258065,
+    "mean_charge_on_press": 0.9733333333333333
+  }
+]

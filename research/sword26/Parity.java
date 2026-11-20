@@ -23,13 +23,19 @@ public final class Parity {
         var a=new Model.Body();var b=new Model.Body();load(a,left.getFirst());load(b,right.getFirst());
         for(int i=0;i<12;i++){a.snapshot(i);b.snapshot(i);}
         int firstDivergence=-1,firstModel=-1,firstNative=-1;
+        int sprintTrials=0,sprintErrors=0;
         for(int t=0;t+1<Math.min(left.size(),right.size());t++){
             var ra=left.get(t);var rb=right.get(t);
             for(var side:List.of(left,right)){
                 var local=new Model.Body();var row=side.get(t);load(local,row);Model.move(local,t);
-                errors.add(error(local,side.get(t+1)));
+                var next=side.get(t+1);
+                errors.add(error(local,next));
+                if(row.sprint&&row.keys.forward()>0&&row.keys.click()&&row.charge>=.9){
+                    sprintTrials++;
+                    if(local.sprint!=next.sprint)sprintErrors++;
+                }
             }
-            var va=Model.view(a,b,t,2*lag+1,lag);var vb=Model.view(b,a,t,2*lag+1,lag);
+            var va=Model.view(a,b,t,2*lag+1+Model.EXTRA_DISPLAY,lag);var vb=Model.view(b,a,t,2*lag+1+Model.EXTRA_DISPLAY,lag);
             // Replay the logged look direction together with the physical controls.
             a.yaw=ra.yaw;b.yaw=rb.yaw;
             var ka=withYaw(ra,va);var kb=withYaw(rb,vb);
@@ -43,8 +49,8 @@ public final class Parity {
             if(firstNative<0&&(ra.hp<20||rb.hp<20))firstNative=t;
         }
         Collections.sort(errors);Collections.sort(free);
-        System.out.printf(Locale.ROOT,"steps=%d travel_median=%.5f travel_p95=%.5f replay_median=%.3f first_quarter_block=%d first_model_damage=%d first_observed_damage=%d%n",
-            errors.size(),errors.get(errors.size()/2),errors.get((int)(.95*errors.size())),free.get(free.size()/2),firstDivergence,firstModel,firstNative);
+        System.out.printf(Locale.ROOT,"steps=%d travel_median=%.5f travel_p95=%.5f replay_median=%.3f first_quarter_block=%d first_model_damage=%d first_observed_damage=%d sprint_trials=%d sprint_errors=%d%n",
+            errors.size(),errors.get(errors.size()/2),errors.get((int)(.95*errors.size())),free.get(free.size()/2),firstDivergence,firstModel,firstNative,sprintTrials,sprintErrors);
     }
     static Keys withYaw(Row r,View v){var k=r.keys;return new Keys(k.forward(),k.side(),k.sprint(),k.jump(),k.click(),angle(r.yaw-targetYaw(v)));}
 }

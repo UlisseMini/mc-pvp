@@ -25,6 +25,12 @@ PORT = 25663
 BOT_NAMES = ["SwordLabA", "SwordLabB"]
 
 
+def save_json(path, value):
+    pending = path.with_suffix(".tmp")
+    pending.write_text(json.dumps(value,indent=2))
+    pending.replace(path)
+
+
 async def wait_for(check, procs, seconds, reason):
     deadline = time.monotonic() + seconds
     while not check():
@@ -108,6 +114,7 @@ async def run(args):
     (server/"whitelist.json").write_text(json.dumps(allowed))
     (server/"server.properties").write_text(
         f"server-ip=127.0.0.1\nserver-port={PORT}\nonline-mode=false\nenforce-secure-profile=false\n"
+        "white-list=true\nenforce-whitelist=true\n"
         "level-name=court\nlevel-type=minecraft:flat\ndifficulty=normal\nspawn-protection=0\n"
         "view-distance=3\nsimulation-distance=3\nsync-chunk-writes=false\nmax-players=4\n")
     run_dir=Path(tempfile.mkdtemp(prefix="native-",dir=BUILD))
@@ -157,20 +164,25 @@ async def run(args):
         await wait_for(joined,procs,3600 if args.human else 120,"Client join timed out")
         await asyncio.sleep(2)
         metadata={"agent":agent_jar.name,"backend":"Linux virtual X11 framebuffer with Mesa software rendering","weights_sha256":hashlib.sha256(args.weights.read_bytes()).hexdigest(),"seed":seed,"names":names,"version":"26.3","pairs":args.pairs,"rtts":args.rtts,"speed":args.speed,"blind":args.blind,"opponents":args.opponents,"extra_weights":[{"file":str(w),"sha256":hashlib.sha256(w.read_bytes()).hexdigest()} for w in args.extra_weights]}
-        (run_dir/"metadata.json").write_text(json.dumps(metadata,indent=2))
+        metadata["primary_file"]=args.weights.name
+        metadata["opponent_hashes"]={p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+                                     for p in args.opponents if p not in ("wtap","hold")}
+        save_json(run_dir/"metadata.json",metadata)
         results=[]
         if args.resume:
             previous=json.loads((args.resume/"metadata.json").read_text())
+            if previous.get("blind",False)!=args.blind or previous.get("opponent_hashes",{})!=metadata["opponent_hashes"]:
+                raise ValueError("Resume requires the same blind setting and verified opponent weights")
             for key in ("weights_sha256","seed","names","version","pairs","rtts","speed","opponents","extra_weights"):
                 if previous[key]!=metadata[key]:raise ValueError(f"Resume mismatch on {key}")
             results=json.loads((args.resume/"results.json").read_text())
             metadata["resumed_from"]=str(args.resume)
             metadata["previous_completed"]=len(results)
-            (run_dir/"metadata.json").write_text(json.dumps(metadata,indent=2))
+            save_json(run_dir/"metadata.json",metadata)
             for row in results:
                 for file in args.resume.glob(row["id"]+"*"):
                     shutil.copyfile(file,run_dir/file.name)
-            (run_dir/"results.json").write_text(json.dumps(results,indent=2))
+            save_json(run_dir/"results.json",results)
         skip=len(results);scheduled=0
         for rtt in args.rtts:
             latency[0]=rtt/args.speed
@@ -198,7 +210,8 @@ async def run(args):
                     await wait_for(result.exists,procs,70,"Native round failed to finish")
                     a,b,t=map(float,result.read_text().split())
                     row=dict(id=idx,rtt=rtt,pair=pair,seat=seat,policy=policy,rival=rival,hp=a if seat==0 else b,opponent_hp=b if seat==0 else a,ticks=t,angle=angle,gap=gap)
-                    results.append(row);(run_dir/"results.json").write_text(json.dumps(results,indent=2))
+                    results.append(row)
+                    save_json(run_dir/"results.json",results)
                     print(f"Round {len(results)} complete." if args.blind else row,flush=True)
                     await asyncio.sleep(1)
     finally:

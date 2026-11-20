@@ -1,0 +1,26 @@
+{
+  "reason": "The observed player repeatedly backed up and strafed in the independent panel. Test its forward decisions in fresh matches. This follow-up used the old panel for diagnosis.",
+  "policies": [
+    "frozen/opponents/population.net",
+    "forward-held.net",
+    "plain W-tap"
+  ],
+  "rival": "plain W-tap",
+  "native_seed": 477821,
+  "native_pairs": 2,
+  "model_seed": 7166521,
+  "model_pairs": 16,
+  "rtts_ms": [
+    0,
+    100
+  ],
+  "seats": [
+    0,
+    1
+  ],
+  "round_ticks": 600,
+  "sha256": {
+    "population.net": "bb8c34cb1c2f55084b758e80c51446d3be13f86e9f17e936ad2a2c7083d7bfdb",
+    "forward-held.net": "e54de1b5487d3d7b38287b76f4e6c4f13615083f065ad944dc30820b608f3c88"
+  }
+}

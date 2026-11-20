@@ -18,7 +18,7 @@ public final class Referee {
     static int immunity;
     static float charge;
     public static void beforeAttack(net.minecraft.world.entity.player.Player p,net.minecraft.world.entity.Entity target){
-        immunity=target.getInvulnerableTime();charge=p.getAttackStrengthScale(.5f);
+        immunity=target instanceof net.minecraft.world.entity.LivingEntity living?living.damageCooldownTime:0;charge=p.getAttackStrengthScale(.5f);
         boostedAttack=p.isSprinting()&&p.getAttackStrengthScale(.5f)>.9f;
     }
     public static void contact(net.minecraft.world.entity.player.Player attacker,net.minecraft.world.entity.Entity target,
@@ -39,7 +39,7 @@ public final class Referee {
         p.setItemSlot(EquipmentSlot.LEGS,new ItemStack(Items.DIAMOND_LEGGINGS));
         p.setItemSlot(EquipmentSlot.FEET,new ItemStack(Items.DIAMOND_BOOTS));
         p.removeAllEffects();p.setHealth(20);p.getFoodData().setFoodLevel(20);p.getFoodData().setSaturation(20);
-        p.setInvulnerableTime(0);p.setDeltaMovement(Vec3.ZERO);p.resetFallDistance();p.setSprinting(false);
+        p.setInvulnerableTime(0);p.damageCooldownTime=0;p.hurtTime=0;p.setDeltaMovement(Vec3.ZERO);p.resetFallDistance();p.setSprinting(false);
     }
     static void write(String file,String content)throws IOException{
         var root=(file.equals("A")||file.equals("B"))?Path.of(System.getProperty("sword.spool")):dir;
@@ -75,15 +75,15 @@ public final class Referee {
                 write("A",fields[0]+"\t"+fields[2]+"\t"+start+"\t"+fields[5]);
                 write("B",fields[0]+"\t"+fields[1]+"\t"+start+"\t"+fields[6]);
                 trace=new PrintWriter(Files.newBufferedWriter(dir.resolve(fields[0]+"-server.tsv")));
-                trace.println("tick\thpA\thpB\tax\tay\taz\tbx\tby\tbz\tchargeA\tchargeB\tsprintA\tsprintB\thurtA\thurtB\tepochMs");
+                trace.println("tick\thpA\thpB\tax\tay\taz\tbx\tby\tbz\tchargeA\tchargeB\tsprintA\tsprintB\thurtA\thurtB\tepochMs\tdamageCooldownA\tdamageCooldownB");
                 contacts=new PrintWriter(Files.newBufferedWriter(dir.resolve(fields[0]+"-contacts.tsv")));
-                contacts.println("tick\tattacker\tdefender\tcritical\tsweep\tstrong\tboosted\tdefenderHP\thurt\tpreImmunity\tcharge\tepochMs");
+                contacts.println("tick\tattacker\tdefender\tcritical\tsweep\tstrong\tboosted\tdefenderHP\thurt\tpreDamageCooldown\tcharge\tepochMs");
                 round=fields;tick=-32;Files.delete(req);return;
             }
             ServerPlayer a=s.getPlayerList().getPlayerByName(round[1]),b=s.getPlayerList().getPlayerByName(round[2]);
             if(a==null||b==null){throw new IOException("Player left during "+round[0]);}
             float ha=a.getHealth(),hb=b.getHealth();
-            trace.printf(Locale.ROOT,"%d\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%b\t%b\t%d\t%d\t%d%n",tick,ha,hb,a.getX(),a.getY(),a.getZ(),b.getX(),b.getY(),b.getZ(),a.getAttackStrengthScale(0),b.getAttackStrengthScale(0),a.isSprinting(),b.isSprinting(),a.hurtTime,b.hurtTime,System.currentTimeMillis());
+            trace.printf(Locale.ROOT,"%d\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%b\t%b\t%d\t%d\t%d\t%d\t%d%n",tick,ha,hb,a.getX(),a.getY(),a.getZ(),b.getX(),b.getY(),b.getZ(),a.getAttackStrengthScale(0),b.getAttackStrengthScale(0),a.isSprinting(),b.isSprinting(),a.hurtTime,b.hurtTime,System.currentTimeMillis(),a.damageCooldownTime,b.damageCooldownTime);
             if(ha<=0||hb<=0||++tick>=Model.LIMIT){
                 trace.close();contacts.close();write("A","");write("B","");write(round[0]+".result",ha+"\t"+hb+"\t"+tick);round=null;
             }

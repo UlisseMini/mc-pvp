@@ -7,6 +7,9 @@ import static sword.Fighter.*;
  * Movement, contact and transport are approximations checked against the native runner. */
 final class Model {
     static final int LIMIT=600;
+    // Optional timing model fitted to independent development client recordings.
+    static final int EXTRA_DISPLAY="measured".equals(System.getProperty("sword.transport"))?1:0;
+    static final int EXTRA_IMPULSE=EXTRA_DISPLAY;
     static final class Body {
         double x,y,z,vx,vy,vz,yaw,hp=20,lastDamage;
         int age=20,immune,hurt,jumpDelay,miss;
@@ -83,7 +86,7 @@ final class Model {
         if(fresh){vx=vx*.5+.4*dx/d;vz=vz*.5+.4*dz/d;vy=b.ground?Math.min(.4,vy*.5+.4):vy;}
         if(boosted){vx=vx*.5-.5*Math.sin(Math.toRadians(a.yaw));vz=vz*.5+.5*Math.cos(Math.toRadians(a.yaw));
             if(b.ground)vy=Math.min(.4,vy*.5+.5);a.serverSprint=false;a.vx*=.6;a.vz*=.6;}
-        if(fresh||boosted){var slot=b.pendingVelocity[(tick+down)%12];slot[0]=1;slot[1]=vx;slot[2]=vy;slot[3]=vz;}
+        if(fresh||boosted){var slot=b.pendingVelocity[(tick+down+EXTRA_IMPULSE)%12];slot[0]=1;slot[1]=vx;slot[2]=vy;slot[3]=vz;}
     }
     static void move(Body a,int tick){
         var push=a.pendingVelocity[tick%12];if(push[0]!=0){a.vx=push[1];a.vy=push[2];a.vz=push[3];push[0]=0;}
@@ -115,7 +118,7 @@ final class Model {
         a.yaw=Math.toDegrees(angle)-90;b.yaw=a.yaw+180;
         for(int i=0;i<12;i++){a.snapshot(i);b.snapshot(i);}
         int t=0;for(;t<LIMIT&&a.hp>0&&b.hp>0;t++){
-            var va=view(a,b,t,scene.delayB+scene.delayA+1,scene.delayA);var vb=view(b,a,t,scene.delayA+scene.delayB+1,scene.delayB);
+            var va=view(a,b,t,scene.delayB+scene.delayA+1+EXTRA_DISPLAY,scene.delayA);var vb=view(b,a,t,scene.delayA+scene.delayB+1+EXTRA_DISPLAY,scene.delayB);
             double prevA=a.hp,prevB=b.hp;
             boolean prefix=t<start.prefix.size();
             Keys ka,kb;

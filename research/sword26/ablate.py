@@ -10,7 +10,8 @@ def ablate(path,folder):
     if struct.unpack(">II",raw[:8])!=(0x53575431,132):
         raise ValueError("This audit requires a trained six-head decision tree")
     original=struct.unpack(">132d",raw[8:])
-    for label,head,value in [("jump-released",3,-1),("jump-held",3,1),("sprint-held",2,1)]:
+    for label,head,value in [("jump-released",3,-1),("jump-held",3,1),("sprint-held",2,1),
+                             ("forward-held",0,1),("side-neutral",1,0)]:
         w=list(original);base=22*head+14
         w[base:base+8]=[value]*8
         dest=folder/(label+".net")
