@@ -28,7 +28,7 @@ def compare(run,dest,poll_cadence=False):
             rows.append('\t'.join(map(str,[run,m['id'],m['rtt'],m['seat'],m['angle'],*lineup])))
         spec.write_text('\n'.join(rows)+'\n')
         output=subprocess.check_output(['nice','-n','15',jdk()/'java','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-Xmx384m','-Dsword.pollForecast='+str(poll_cadence).lower(),
-                                       '-cp',compile_sim(),'sword.ClockPrediction',spec],text=True)
+                                       '-Dsword.aimProfile='+meta.get('aim_profile','tournament'),'-cp',compile_sim(),'sword.ClockPrediction',spec],text=True)
     results=list(csv.DictReader(io.StringIO(output)))
     for row,m in zip(results,rounds,strict=True):
         if row['id']!=m['id']:raise ValueError('Unexpected round ordering')
