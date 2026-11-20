@@ -5,5 +5,6 @@
   "pilot": "One fresh opening per RTT, both seats, champion opponent. Retain W-tap and incumbent controls. Rank by Java fight score, then HP margin. Use this panel exclusively for nomination.",
   "promotion": "Carry the pilot winner alongside both original nominees to the ordinary-Java promotion panel on new opening seeds; final challenge always uses two fresh panels. The pilot games do not count for promotion or confirmation.",
   "final_rechallenge": "Score the whole archived pool for the final nomination. Any prior credible ordinary-Java counter to the still-current champion also enters the final test and opposing field, even if its simulator ranking falls.",
-  "standing_opponents": "Keep the original Java champion and retreating rival as reference opponents after the first promotion, along with the current champion. Deduplicate identical weights."
+  "standing_opponents": "Keep the original Java champion and retreating rival as reference opponents after the first promotion, along with the current champion. Deduplicate identical weights.",
+  "followup_to_native_counter": "If an independently tested counter still beats the current Java champion and falls short across the field, give its opponents 12 extra training slots alongside the ordinary 38-slot generalist field. Also nominate a response by the worst of its matchups against the actual champion and verified counter(s), and test it against them in Java. No action or technique enters the objective."
 }

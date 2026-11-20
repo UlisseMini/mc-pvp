@@ -151,7 +151,7 @@ def train_stage(jar,work,role,entry,gens,seed,rivals,parents=None,clock="off"):
     return out
 
 
-def run_season(index,native,main,pool,final=False):
+def run_season(index,native,main,pool,final=False,native_threats=()):
     work=WORK/("season-%03d"%index);work.mkdir(parents=True,exist_ok=True)
     dest=EVIDENCE/("season-%03d"%index);dest.mkdir(exist_ok=True)
     if (dest/"result.json").exists():return json.loads((dest/"result.json").read_text())
@@ -167,7 +167,10 @@ def run_season(index,native,main,pool,final=False):
     cumulative=[];s=0
     for w in weights:s+=w;cumulative.append(s)
     mixture=[pool[next((j for j,v in enumerate(cumulative) if v>=u),len(pool)-1)] for u in quantiles]
-    rivals=[main,native,*mixture];parents=[p for p in unique([main,native,*pool]) if p.read_bytes()[:4]==b"SWT1"]
+    by_digest={hash_policy(p):p for p in pool}
+    verified=[by_digest[hash_policy(p)] for p in unique(native_threats)]
+    replies=[verified[i%len(verified)] for i in range(12)] if verified else []
+    rivals=[main,native,*mixture,*replies];parents=[p for p in unique([main,native,*pool]) if p.read_bytes()[:4]==b"SWT1"]
     rng.shuffle(parents)
     gens=320 if final else 144
     main_out=train_stage(jar,work,"main","Refine",gens,seed+1,rivals,parents)
@@ -202,6 +205,10 @@ def run_season(index,native,main,pool,final=False):
     choice=unique([*sorted(actors,key=lambda p:breadth(sel,p,rivals),reverse=True)[:4],
                    *sorted(actors,key=lambda p:field_score(sel,p,main),reverse=True)[:3],
                    *sorted(actors,key=lambda p:field_score(sel,p,native),reverse=True)[:3]])
+    if verified:
+        def coverage(data,p):
+            return min(field_score(data,p,rival) for rival in unique([native,*verified]))
+        choice=unique([*choice,*sorted(actors,key=lambda p:coverage(sel,p),reverse=True)[:3]])
     sparse=index>=14
     if sparse:
         check_actors=unique([main,native,*choice])
@@ -220,8 +227,9 @@ def run_season(index,native,main,pool,final=False):
     native_counter=max(choice,key=lambda p:field_score(check,p,native))
     past=max(field_score(check,p,main) for p in rivals)
     new_counter=field_score(check,counter,main)>=max(.55,past+.025)
+    defender=max(choice,key=lambda p:coverage(check,p)) if verified else None
     candidates=[]
-    for p in unique([best,successor,counter,native_counter]):
+    for p in unique([best,successor,counter,native_counter]+([defender] if defender else [])):
         arc=write_fighter(p)
         candidates.append(dict(file=str(arc.relative_to(SRC)),source=str(p.relative_to(BUILD) if p.is_relative_to(BUILD) else p.relative_to(SRC)),
                                sha256=hash_policy(p),breadth=breadth(check,p,rivals),against_main=field_score(check,p,main),
@@ -233,6 +241,9 @@ def run_season(index,native,main,pool,final=False):
                 main_breadth=breadth(check,main,rivals),wtap_breadth=breadth(check,"wtap",rivals),
                 wtap_vs_main=field_score(check,"wtap",main),wtap_vs_native=field_score(check,"wtap",native),
                 finalists=candidates,opponent_mix={str(p.relative_to(SRC)):w for p,w in zip(pool,weights)})
+    if verified:
+        result["native_threats"]=[str(p.relative_to(SRC)) for p in verified]
+        result["defender"]=stored(defender)
     files=["payoffs.tsv","confirmation.tsv","resources.jsonl"]
     if timing:files+=["payoffs-phase.tsv","confirmation-phase.tsv"]
     if sparse:files.extend(f.name for f in work.glob("archive-replies*.tsv"))

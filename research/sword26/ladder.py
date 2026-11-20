@@ -144,7 +144,7 @@ def native_wave(index,main,inc,pool,history,final):
     decision=dst/"decision.json"
     if decision.exists():return json.loads(decision.read_text())
     wa=WORK/tag;wa.mkdir(exist_ok=True)
-    candidates=unique([main,*[SRC/s[k] for s in history for k in ("main","best","counter","native_counter")]])
+    candidates=unique([main,*[SRC/s[k] for s in history for k in ("main","best","counter","native_counter","defender") if k in s]])
     if final:
         candidates=unique([*candidates,*pool])
     candidates=[p for p in candidates if not same(p,inc)]
@@ -164,14 +164,19 @@ def native_wave(index,main,inc,pool,history,final):
     if index>=10 and (final or index>=15):
         pilot_winner=native_scout(index,jar,wa,dst,candidates,inc,base,general,direct)
         choices=unique([*choices,pilot_winner])
-    if final:
-        verified=[]
-        for record in sorted(EVIDENCE.glob("java-*/decision.json")):
-            old=json.loads(record.read_text())
-            if same(SRC/old["old_champion"],inc):
-                verified.extend(SRC/p for p in old["credible_counters"])
-        choices=unique([*choices,*verified])
+    verified=[]
+    for record in sorted(EVIDENCE.glob("java-*/decision.json")):
+        old=json.loads(record.read_text())
+        if same(SRC/old["old_champion"],inc):
+            verified.extend(SRC/p for p in old["credible_counters"])
+    if verified:
+        field=unique([inc,*verified])
+        canonical={hash_policy(p):p for p in unique([inc,*ANCHORS,*pool])}
+        safe=max(candidates,key=lambda p:min(field_score(merits,p,canonical[hash_policy(b)]) for b in field))
+        choices=unique([*choices,safe])
         opponents=unique([*opponents,*verified])
+    if final:
+        choices=unique([*choices,*verified])
         fresh_dir=train_stage(jar,wa,"outside","League",360,base+4811,[])
         outsider=write_fighter(sorted(fresh_dir.glob("gen-*.net"))[-1])
         opponents.append(outsider)
@@ -206,11 +211,11 @@ def run():
     while state["status"]=="running":
         i=state["season"]+1;final=state["stale"]>=3
         inc=SRC/state["incumbent"];main=SRC/state["main"];pool=unique([SRC/p for p in state["pool"]])
-        s=run_season(i,inc,main,pool,final)
+        s=run_season(i,inc,main,pool,final,[SRC/p for p in state["counter_signatures"]])
         changed=s["advanced"] or s["new_counter"]
         state["stale"]=0 if changed else state["stale"]+1
         state["season"]=i;state["main"]=s["main"];state["history"].append(i)
-        pool=unique([*pool,*[SRC/s[k] for k in ("main","best","counter","native_counter")]])
+        pool=unique([*pool,*[SRC/s[k] for k in ("main","best","counter","native_counter","defender") if k in s]])
         print(f"Season {i}: advanced={s['advanced']} new counter={s['new_counter']} consecutive flat={state['stale']}",flush=True)
         due=(i==3 or (i-state["last_java"]>=6) or (final and not changed))
         if due:
