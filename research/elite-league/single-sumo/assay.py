@@ -5,7 +5,8 @@ from collections import defaultdict
 from learner import *
 from league_tournament import stats,interval
 
-CP=os.pathsep.join(map(str,(BUILD/'classes',ROOT/'build/elite-league/sumo-confidence/classes',ROOT/'build/elite-league/sumo-inputs/classes')))
+from build import sim_paths
+CP=os.pathsep.join(map(str,sim_paths()))
 def java_rows(program,rows,args=(),mode=None):
     with tempfile.TemporaryDirectory(dir=BUILD) as tmp:
         plan=Path(tmp)/'in';out=Path(tmp)/'out'
@@ -47,17 +48,33 @@ def development(g,folder,spec):
             response_scores={r:float(np.mean([v[r] for v in valid])) if valid else None for r in responses})
         for name in responses:means[style,name]=[np.mean([v[name] for v in buckets[style,i] if v['cut'] is not None])
                         if any(v['cut'] is not None for v in buckets[style,i]) else None for i in range(len(CLOCKS['dev']))]
-    reversals=[];tests=len(responses)*(len(responses)-1)
-    for early,late in combinations(responses,2):
-        for a,b in [(early,late),(late,early)]:
-            delta=[]
-            for style,x,y in [('early',a,b),('late',b,a)]:
-                pairs=[s-t for s,t in zip(means[style,x],means[style,y]) if s is not None and t is not None]
-                if len(pairs)<6:break
-                delta.append([float(np.mean(pairs)),*lower_contrast(pairs,.05/(tests*2))])
-            if len(delta)==2 and all(d[1]>0 for d in delta):
-                reversals.append(dict(early=a,late=b,effects=delta))
-    result=dict(coverage=summary,verified_reversals=reversals,eligible_for_sealed_test=bool(reversals),
+    # Choose the response pair with a separate training-clock discovery cohort.
+    # The eight development timing donors then evaluate only that preselected orientation.
+    search_keys,search_rows=inputs(actor,spec['dev'],CLOCKS['train'],17,g)
+    discovery=java_rows('ResponseReversal',search_rows,[','.join(responses)])
+    trial_means={}
+    for style in spec['dev']:
+        vs=[v for k,v in zip(search_keys,discovery) if k[0]==style and v['cut'] is not None]
+        trial_means[style]={r:float(np.mean([v[r] for v in vs])) for r in responses} if vs else {}
+    candidates=[]
+    for a in responses:
+        for b in responses:
+            if a==b or any(not v for v in trial_means.values()):continue
+            gains=[trial_means['early'][a]-trial_means['early'][b],trial_means['late'][b]-trial_means['late'][a]]
+            candidates.append((min(gains),sum(gains),a,b))
+    selected=max(candidates) if candidates else None
+    reversals=[];delta=[]
+    if selected and selected[0]>0:
+        _,_,a,b=selected
+        for style,x,y in [('early',a,b),('late',b,a)]:
+            pairs=[u-v for u,v in zip(means[style,x],means[style,y]) if u is not None and v is not None]
+            if len(pairs)<6:break
+            delta.append([float(np.mean(pairs)),*lower_contrast(pairs,.05/2)])
+        if len(delta)==2 and all(d[1]>0 for d in delta):
+            reversals.append(dict(early=a,late=b,effects=delta))
+    traces={'discovery':list(zip(search_keys,discovery)),'confirmation':list(zip(keys,evaluated))}
+    freeze(folder/'development-continuations.json.gz',gzip.compress(json.dumps(traces,separators=(',',':')).encode(),mtime=0))
+    result=dict(coverage=summary,discovery=trial_means,selected_on_training_clocks=selected,confirmation_contrasts=delta,verified_reversals=reversals,eligible_for_sealed_test=bool(reversals),
         wtap_column='response_scores.wtap is W-tap from the identical fork in each style')
     write_json(out,result,fixed=True);return result
 
@@ -73,22 +90,26 @@ def donors(records):
         c=r.get('context')
         if c:bins[key[0],*key[3:6],*c[6:]].append(i)
     order=list(range(len(records)));random.Random(92756).shuffle(order)
-    choices={'early':[],'late':[]};limits=np.array([1000,100,100,.25,.1,.1])
+    choices={'early':[],'late':[]};coverage={s:dict(eligible=0,has_same=0,has_opposite=0,has_both=0) for s in choices};limits=np.array([1000,100,100,.25,.1,.1])
     # Index arrays in each cell once to keep the caliper search bounded.
     index={k:(np.array(v),np.array([records[i][1]['context'][:6] for i in v]),np.array([records[i][0][1] for i in v])) for k,v in bins.items()}
     for i in order:
         k,r,row=records[i];style=k[0];c=r.get('context')
-        if not c or len(choices[style])>=256:continue
+        if not c:continue
+        coverage[style]['eligible']+=1
         selected=[];rng=np.random.default_rng(7812997+i)
         for s in [style,'late' if style=='early' else 'early']:
             idx=index.get((s,*k[3:6],*c[6:]))
-            if idx is None:break
+            if idx is None:continue
             ids,ctx,clocks=idx
             ok=(clocks!=k[1]) & np.all(abs(ctx-c[:6])<=limits,axis=1)
-            if not ok.any():break
+            if not ok.any():continue
+            coverage[style]['has_same' if s==style else 'has_opposite']+=1
             selected.append(int(rng.choice(ids[ok])))
-        if len(selected)==2:choices[style].append((i,*selected))
-    return choices
+        if len(selected)==2:
+            coverage[style]['has_both']+=1
+            if len(choices[style])<256:choices[style].append((i,*selected))
+    return choices,coverage
 
 def evaluate(g):
     folder=EVIDENCE/f'g{g:03d}';spec=json.loads((folder/'assay.json').read_text())
@@ -102,7 +123,7 @@ def evaluate(g):
         keys,rows=inputs(actor,spec['test'],clocks,rep,g)
         result=gzdata(folder/'memory'/f'catalog-{rep:02}.jsonl.gz',lambda:java_rows('MemoryAssay',rows,mode='catalog'))
         dataset.extend(zip(keys,result,rows))
-        choices=donors(dataset)
+        choices,coverage=donors(dataset)
         if min(map(len,choices.values()))>=spec['matches_per_test_style']:break
     # Both versions execute the same opening. At equal pre-cue states a different assigned future style must have zero effect.
     with tempfile.TemporaryDirectory(dir=BUILD) as temp:
@@ -110,6 +131,13 @@ def evaluate(g):
         plan.write_text(''.join('\t'.join(map(str,row))+'\n' for _,_,row in dataset[:128]))
         subprocess.run(['java','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-Xmx600m','-cp',CP,'PreCueCheck',plan,out],check=True)
         negative=json.loads(out.read_text())
+    with tempfile.TemporaryDirectory(dir=BUILD) as temp:
+        plan=Path(temp)/'input';out=Path(temp)/'switches'
+        paired=dataset[:len(clocks)*8*2]
+        plan.write_text(''.join('\t'.join(map(str,row))+'\n' for _,_,row in paired))
+        subprocess.run(['java','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-Xmx600m','-cp',CP,'SwitchLatency',plan,out],check=True)
+        switch_rows=[dict(key=paired[2*i][0][1:],**json.loads(line)) for i,line in enumerate(out.read_text().splitlines())]
+        write_json(folder/'memory/switch-stay.json',switch_rows,fixed=True)
     ordinary={}
     worker=Worker()
     try:
@@ -140,7 +168,7 @@ def evaluate(g):
     analysis={};both=True
     for style in choices:
         v=[r for r in frozen if r['key'][0]==style];pool=[b for k,b,_ in dataset if k[0]==style]
-        h={'total':len(pool),'eligible':sum('context' in r for r in pool),'matched':len(v),
+        h={'total':len(pool),'eligible':sum('context' in r for r in pool),'matched':len(v),'donor_coverage':coverage[style],
            'ordinary_wld':[sum(r['outcome']==q for r in pool) for q in (1,0,.5)],
            'seconds_quantiles':(np.quantile([r['time'] for r in pool],[.1,.5,.9])/1000).tolist(),
            'fresh_hits_quantiles':np.quantile([r['fresh'] for r in pool],[.1,.5,.9]).tolist()}

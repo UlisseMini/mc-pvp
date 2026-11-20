@@ -1,6 +1,7 @@
 """Replay local native observations on the actual Java 8 bridge and Java 17 roller."""
 import gzip
 from learner import *
+from build import sim_paths
 import sys
 sys.path.insert(0,str(ROOT))
 from forge_runtime import JAVA8
@@ -31,7 +32,7 @@ def run():
     result={}
     for kind in ('gru','mlp'):
         outs=[]
-        for j,cp in ((JAVA8,[classes,BUILD/'bridge.jar']),('java',[classes,BUILD/'classes',ROOT/'build/elite-league/sumo-confidence/classes'])):
+        for j,cp in ((JAVA8,[classes,BUILD/'bridge.jar']),('java',[classes,*sim_paths()])):
             outs.append(subprocess.check_output([j,'-XX:+UseSerialGC','-cp',os.pathsep.join(map(str,cp)),
                          'LeagueTrace',BUILD/(kind+'.net'),trace],text=True).strip())
         if outs[0]!=outs[1]:raise AssertionError((kind,outs))

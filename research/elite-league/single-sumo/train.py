@@ -15,6 +15,8 @@ def fit(path, total):
     if state.is_file():
         old=torch.load(state,map_location="cpu",weights_only=False)
         net.load_state_dict(old["net"]); opt.load_state_dict(old["opt"]);step=old["step"];logs=old["logs"]
+        if step!=logs[-1]["update"]:raise ValueError("Checkpoint and progress disagree")
+        net.export(path/"current.net");write_json(path/"progress.json",logs[-1])
     elif cfg["warm"]:
         net.load_state_dict(torch.load(cfg["warm"],map_location="cpu",weights_only=False)["net"])
     roller=Worker()

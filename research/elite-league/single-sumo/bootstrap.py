@@ -2,7 +2,7 @@
 from learner import *
 from assay import CP
 
-def fit(path,kind,teacher,updates=32,teacher_map=None):
+def fit(path,kind,teacher,updates=32,teacher_map=None,until=None):
     spec=dict(kind=kind,teacher=teacher,updates=updates,duels_per_update=32,training_clocks=CLOCKS['train'],
               curriculum='12 teacher-only updates, then 35 percent teacher on mixed student trajectories',
               seed=9831717,objective='conditional physical action cross entropy',clip_grad=.6,lr=.001)
@@ -11,9 +11,13 @@ def fit(path,kind,teacher,updates=32,teacher_map=None):
     torch.manual_seed(spec['seed']);model=Actor(kind);optimizer=torch.optim.Adam(model.parameters(),lr=spec['lr'])
     rng=random.Random(spec['seed']);logs=[];path.mkdir(exist_ok=True,parents=True)
     if (path/'trainer.pt').exists():return
+    checkpoint=path/'bootstrap-state.pt'
+    if checkpoint.exists():
+        state=torch.load(checkpoint,map_location='cpu',weights_only=False);model.load_state_dict(state['net'])
+        optimizer.load_state_dict(state['opt']);rng.setstate(state['rng']);logs=state['logs']
     with tempfile.TemporaryDirectory(dir=BUILD) as temp:
         temp=Path(temp);net=temp/'actor.net';plan=temp/'plan';data=temp/'data'
-        for step in range(updates):
+        for step in range(len(logs),min(updates,until if until is not None else updates)):
             model.export(net);portion=1 if step<12 else .35
             rows=[]
             pings=[x for x in range(151) if x not in (31,109)]
@@ -39,7 +43,9 @@ def fit(path,kind,teacher,updates=32,teacher_map=None):
                     optimizer.zero_grad();loss.backward();nn.utils.clip_grad_norm_(model.parameters(),.6,error_if_nonfinite=True);optimizer.step()
                     losses.append(float(loss))
             logs.append(dict(step=step+1,loss=float(np.mean(losses)),score=float(np.mean(scores)),heads=sum(map(len,ep))))
-            write_json(path/'progress.json',logs[-1])
+            buf=io.BytesIO();torch.save(dict(net=model.state_dict(),opt=optimizer.state_dict(),rng=rng.getstate(),logs=logs),buf)
+            atomic(checkpoint,buf.getvalue());write_json(path/'progress.json',logs[-1])
+    if len(logs)<updates:return
     with torch.no_grad():
         # The supervised control loss supplies no value targets. Start the PPO critic at zero.
         model.head.weight[-1].zero_();model.head.bias[-1].zero_()

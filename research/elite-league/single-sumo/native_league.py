@@ -86,7 +86,8 @@ def certify(mid,trial,bridge):
     assert raw['duration_limit_ms']==120000
     # Audit runs its JVM against all original research dependencies plus this league's implementation.
     # The Java launcher accepts a path-list here.
-    audit.class_path=lambda:os.pathsep.join(map(str,(BUILD/'classes',ROOT/'build/elite-league/sumo-confidence/classes',ROOT/'build/elite-league/sumo-inputs/classes')))
+    from build import sim_paths
+    audit.class_path=lambda:os.pathsep.join(map(str,sim_paths()))
     score=verify_match(mid,trial,BUILD/'native-scores')
     if not score['valid']:return score
     min_ns=math.ceil(1e9/trial['cps_cap']);intervals={};all_heads={}

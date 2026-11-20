@@ -22,17 +22,21 @@ def teachers(g):
         distillation_updates=128,ppo_updates=256,duels_per_ppo_update=64)
     write_json(path,result,fixed=True);return result
 
-def run(g,kind):
+def run(g,kind,until):
     folder=EVIDENCE/f'g{g:03d}';d=folder/('mentor-'+kind);table=teachers(g)
     if not (d/'init/trainer.pt').exists():
-        fit(d/'init',kind,'field teacher',table['distillation_updates'],table['selected'])
+        fit(d/'init',kind,'field teacher',table['distillation_updates'],table['selected'],until)
+    if not (d/'init/trainer.pt').exists():return
     cfg=json.loads((folder/('main' if kind=='gru' else 'mlp')/'config.json').read_text())
     configure(d/'ppo',kind,kind,cfg['seed']+31415,cfg['draw_seed']+31415,cfg['incumbent'],cfg['counter'],
               cfg['families'],cfg['scores'],d/'init/trainer.pt')
 if __name__=='__main__':
     g=int(sys.argv[1]);kind=sys.argv[2]
-    if len(sys.argv)>3 and sys.argv[3]=='init':run(g,kind)
+    if len(sys.argv)>3 and sys.argv[3]=='init':run(g,kind,int(sys.argv[4]))
     else:
-        subprocess.run([sys.executable,HERE.parent/'cpu_limit.py','nice','-n','8',sys.executable,__file__,str(g),kind,'init'],check=True)
+        d=EVIDENCE/f'g{g:03d}'/('mentor-'+kind)/'init'
+        while not (d/'trainer.pt').exists():
+            step=json.loads((d/'progress.json').read_text())['step'] if (d/'progress.json').exists() else 0
+            subprocess.run([sys.executable,HERE.parent/'cpu_limit.py','nice','-n','8',sys.executable,__file__,str(g),kind,'init',str(step+8)],check=True)
         p=EVIDENCE/f'g{g:03d}'/('mentor-'+kind)/'ppo'
         train(p,256);pin_model(p)

@@ -21,6 +21,8 @@ def stage(g):
     if decision.exists():return read(decision)
     initialize(g);freeze_promotion_styles(g)
     train_generation(g,0)
+    from secondary import declare
+    declare(g)
     rank=read(folder/'tournament.json');nom=nomination(g);field=nom['field']
     write_json(folder/'nomination.json',nom,fixed=True)
     tournament_name=publish_winner(g,nom);gate=read(folder/'counter.json')

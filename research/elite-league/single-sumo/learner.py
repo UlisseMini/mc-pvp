@@ -104,7 +104,8 @@ class Worker:
     def __init__(self,cps=7):
         if cps not in (7,20):raise ValueError(cps)
         self.tmp=tempfile.TemporaryDirectory(dir=BUILD); self.folder=Path(self.tmp.name)
-        cp=os.pathsep.join(str(p) for p in (BUILD/"classes",ROOT/"build/elite-league/sumo-confidence/classes",ROOT/"build/elite-league/sumo-inputs/classes"))
+        from build import sim_paths
+        cp=os.pathsep.join(map(str,sim_paths(training=True)))
         self.proc=subprocess.Popen(["java","-ea",f"-Dleague.cps={cps}","-XX:ActiveProcessorCount=2","-XX:+UseSerialGC","-Xms128m","-Xmx1400m","-cp",cp,"LeagueWorker","2"],
                                    cwd=ROOT,text=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE)
     def run(self, schedule, collect):

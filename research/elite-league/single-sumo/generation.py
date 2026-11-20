@@ -21,6 +21,11 @@ def initialize(g):
         gate=read(prev/'counter.json')
         if gate['confirmed']:counter=gate['challenger']
         else:counter=last['counter']
+        # Supplemental models join as a complete predeclared set. Failed response searches stay evaluation-only.
+        from secondary import enrollment
+        extra,groups=enrollment(g)
+        field.update(extra)
+        for family,names in groups.items():families.setdefault(family,[]).extend(names)
         scores=next(r['family'] for r in rounds['ranking'] if r['name']==f'sg{g-1:03d}-main')
         warm_r=prev/'main/trainer.pt';warm_m=prev/'mlp/trainer.pt'
     freeze_assay(g,folder)

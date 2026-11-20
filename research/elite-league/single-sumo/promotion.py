@@ -14,6 +14,9 @@ def nomination(g):
     folder=EVIDENCE/f'g{g:03d}';d=read(folder/'tournament.json');c=read(folder/'generation.json')
     field=d['field'];inc=c['incumbent'];rank=d['ranking'];w=rank[0]['name'];challenger=next(x['name'] for x in rank if x['name']!=inc)
     # Compare the actual top eligible challenger even if the incumbent won the development tournament.
+    def distinct(n):
+        return min((f for f in FIELD if f not in ('wtap',n) and field[f]['sha256']!=field[n]['sha256']),
+                   key=lambda f:(d['matrix'][n][f]['score'],f))
     def weak(n):
         r=next(x for x in rank if x['name']==n)
         return min(d['families'][r['worst_family']],key=lambda f:(d['matrix'][n][f]['score'],f))
@@ -26,7 +29,8 @@ def nomination(g):
         n=f'sg{g:03d}-seal-{style}';field[n]=ref;core.append(n)
     membership={n:next((f for f,ns in d['families'].items() if n in ns),'withheld '+n) for n in core}
     return dict(winner=w,challenger=challenger,incumbent=inc,core=core,families=membership,field=field,
-                main_weakest=weak(f'sg{g:03d}-main'),challenger_weakest=weak(challenger))
+                main_weakest=distinct(f'sg{g:03d}-main'),challenger_weakest=distinct(challenger),
+                weakest_distinct={n:distinct(n) for n in [inc,*[f'sg{g:03d}-{tag}' for tag in ('main','mlp','counter')]]})
 def summary(values,foes,family,challenger,inc):
     # shape is blocks x three arms x opponents, all seat and RTT cells already equally balanced.
     families=list(dict.fromkeys(family[f] for f in foes));index=[[foes.index(f) for f in foes if family[f]==s] for s in families]
@@ -76,6 +80,7 @@ def actual_name(n,field):
     if field[n]['reference'].endswith('.net'):return publish(n,field[n],f'Frozen 7 CPS sumo league policy {n}')
     return alias(n)
 def native_panel(g,nom,eligible):
+    if not eligible:return native_diagnostics(g,nom)
     folder=EVIDENCE/f'g{g:03d}';field=nom['field']
     arms=[nom['challenger'],nom['incumbent'],'wtap'] if eligible else [f'sg{g:03d}-main',nom['incumbent'],'wtap']
     foes=nom['core'] if eligible else list(dict.fromkeys(['wtap',nom['main_weakest']]))
@@ -131,3 +136,44 @@ def promote_title(g,nom):
     freeze(folder/'previous-best.properties',current.read_bytes())
     data=(ROOT/'policies'/(name+'.properties')).read_bytes()
     freeze(folder/'promoted-best.properties',data);atomic(current,data)
+
+def native_diagnostics(g,nom):
+    folder=EVIDENCE/f'g{g:03d}';field=nom['field'].copy();inc=nom['incumbent']
+    pairs={n:list(dict.fromkeys(['wtap',foe,inc])) for n,foe in nom['weakest_distinct'].items() if n!=inc}
+    if g==1:
+        name='sg001-seven-clone';p=EVIDENCE/'bootstrap-sumo-seven-first/initial.net'
+        field[name]=dict(reference=str(p.relative_to(ROOT)),sha256=hashlib.sha256(p.read_bytes()).hexdigest())
+        # This is a known teacher's imitation. Include the teacher in the native check.
+        panels=[r for r in (folder/'initialization-panel').glob('*.json') if r.stem not in ('wtap',)]
+        worst=min(panels,key=lambda r:read(r)['sg001-init-sumo-seven-first']['score']).stem if panels else BASE_COUNTER
+        pairs[name]=list(dict.fromkeys(['wtap',inc,BASE_COUNTER,worst]))
+    foes=sorted({f for fs in pairs.values() for f in fs}|{'wtap',nom['weakest_distinct'][inc],BASE_COUNTER})
+    pairs[inc]=foes;pairs['wtap']=foes
+    arms=list(pairs);plan={};lookup={}
+    with window() as bridge:
+        names={n:actual_name(n,field) for n in set(arms)|set(foes)}
+        for block in range(8):
+            part=[]
+            for j,foe in enumerate(foes):
+                cell=(block+3*j)%8;side='ab'[cell%2];a,b=RTTS[cell//2]
+                for k,arm in enumerate(arms):
+                    if foe not in pairs[arm]:continue
+                    q=f'sg{g:03d}-nd-b{block:02}-f{j:02}-a{k}'
+                    v=fixture.trial(q,names[arm],names[foe],side,a,b)
+                    v.update(cps_cap=7,block=block,command=v['command'].replace(' cps=20 ',' cps=7 '))
+                    lookup[q]=(arm,foe);part.append((q,v))
+            random.Random(37811+block).shuffle(part);plan.update(part)
+        records=cohort(folder/'native-diagnostic',plan,bridge)
+    details=[];summary_cells={}
+    for q,r in records.items():
+        t=plan[q];arm,foe=lookup[q]
+        details.append(dict(arm=arm,foe=foe,seat=t['side'],own=t['rtt'],other=t['opponent_rtt'],block=t['block'],mid=r['mid'],score=r['score']))
+    for n,fs in pairs.items():
+        summary_cells[n]={}
+        for foe in fs:
+            def cell(who):
+                a=[r['score'] for r in details if r['arm']==who and r['foe']==foe]
+                return dict(wins=a.count(1),draws=a.count(.5),losses=a.count(0),score=float(np.mean(a)))
+            summary_cells[n][foe]=dict(actor=cell(n),wtap=cell('wtap'))
+    report=dict(passed=False,scope='native diagnostics, eight independent blocks',pairs=pairs,cells=summary_cells,games=details)
+    write_json(folder/'promotion-native.json',report,fixed=True);return report
