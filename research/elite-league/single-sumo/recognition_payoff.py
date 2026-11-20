@@ -48,11 +48,11 @@ def choose():
     return a,b,fixed
 
 @torch.no_grad()
-def decisions(x):
+def decisions(x, seed=SEED):
     n=len(x); t=torch.tensor(x[:,:,:CUTOFF]).flatten(0,1)
     r=Identifier(True);m=Identifier(False)
     for name,model in [('history',r),('one-head',m)]:
-        model.load_state_dict(torch.load(OUT/f'{name}-{SEED}.pt',weights_only=True))
+        model.load_state_dict(torch.load(OUT/f'{name}-{seed}.pt',weights_only=True))
     _,h=r.encoder(t[:,:-6])
     def tail(h):return r.readout(r.encoder(t[:,-6:],h)[0][:,-1]).argmax(-1).reshape(n,2).numpy()
     return {'history':tail(h),'opposite-history':tail(h.reshape(1,n,2,-1).flip(2).reshape_as(h).contiguous()),

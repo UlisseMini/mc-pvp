@@ -2,13 +2,13 @@
 from pathlib import Path
 from scipy import stats
 from learner import ROOT,CLOCKS,np,json,write_json
-from recognition_payoff import FOLDER,responders,outcomes,dataset,decisions
+from recognition_payoff import FOLDER,SEED,responders,outcomes,dataset,decisions
 
-def run(split):
+def run(split, seed=SEED):
     clocks=CLOCKS['dev'] if split=='dev' else json.loads((FOLDER/'prospective/calendars/manifest.json').read_text())['selected']
     r=outcomes(split,responders(),None if split=='dev' else clocks)
     x,_,donor=dataset(split,None if split=='dev' else clocks)
-    act=decisions(x);table=json.loads((FOLDER/('routed-'+split+'.json')).read_text())
+    act=decisions(x,seed);table=json.loads((FOLDER/('routed-'+split+'.json')).read_text())
     def scored(route):return np.where(route==0,r['routed-0'],r['routed-1'])
     arms={'history':scored(act['history']),'fixed':r[table['fixed']],'swapped':scored(act['opposite-history'])}
     periods=[];groups=[]
@@ -54,9 +54,16 @@ def run(split):
             result.update(independent_seed_95=ci(.95),independent_seed_97_5=ci(.975),
                 df=df,independent_seed_t_p=float(2*stats.t.sf(abs(m/se),df)))
         results[name]=result
-    write_json(FOLDER/('timing-uncertainty-'+split+'.json'),dict(groups=groups,results=results,
-        interpretation='whole donor match interval overlap is a conservative dependence sensitivity; even disjoint times on one machine may share conditions'),fixed=True)
+    report=dict(groups=groups,results=results,
+        interpretation='whole donor match interval overlap is a conservative dependence sensitivity; even disjoint times on one machine may share conditions')
+    if seed==SEED:
+        file=FOLDER/('timing-uncertainty-'+split+'.json')
+    else:
+        file=FOLDER/'classifier-seeds'/f'{split}-{seed}.json'
+        report.update(classifier_seed=seed,matched_plain_wtap=table['cells']['wtap-from-spawn'],
+                      setup='secondary sensitivity; shared match fixtures and same frozen response policies across all classifier seeds')
+    write_json(file,report,fixed=True)
     print([(g['matches']) for g in groups]);print(results)
 if __name__=='__main__':
     import sys
-    run(sys.argv[1] if len(sys.argv)>1 else 'dev')
+    run(sys.argv[1] if len(sys.argv)>1 else 'dev',int(sys.argv[2]) if len(sys.argv)>2 else SEED)

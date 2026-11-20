@@ -89,10 +89,23 @@ def summarize(scope,count):
     values={k:np.stack(v) for k,v in values.items()};out={}
     for k,v in {**values,**{'actual minus '+s:values['actual']-values[s] for s in ['fixed','swapped']}}.items():
         paired=v.mean(axis=3);d,r,c=paired.shape;means=paired.mean(axis=(1,2));vv=paired.var(axis=1,ddof=1)/(r*(d*c)**2)
-        se=np.sqrt(vv.sum());df=vv.sum()**2/((vv**2).sum()/(r-1));m=float(means.mean())
+        se=np.sqrt(vv.sum());m=float(means.mean())
         def ci(q,s,df):
             radius=stats.t.ppf((1+q)/2,df)*s;return [float(m-radius),float(m+radius)]
-        result=dict(mean=m,by_clock=means.tolist(),conditional_95=ci(.95,se,df),conditional_97_5=ci(.975,se,df),by_opponent=v.mean(axis=(0,1,2)).tolist())
+        result=dict(mean=m,by_clock=means.tolist(),by_opponent=v.mean(axis=(0,1,2)).tolist())
+        if se>0:
+            df=vv.sum()**2/((vv**2).sum()/(r-1))
+            result.update(conditional_95=ci(.95,se,df),conditional_97_5=ci(.975,se,df))
+            if k not in names:result['paired_t_p']=float(2*stats.t.sf(abs(m/se),df))
+        else:
+            # The deterministic W-tap arm can repeat perfectly inside every fixed cell.
+            # Keep a finite-sample bound even when no sampling variance was observed.
+            low,high=(0,1) if k in names else (-1,1)
+            def bounded(q):
+                radius=(high-low)*np.sqrt(np.log(2/(1-q))/(2*paired.size))
+                return [max(low,m-radius),min(high,m+radius)]
+            result.update(conditional_95=bounded(.95),conditional_97_5=bounded(.975),
+                          interval_method='Hoeffding bound for independent paired fixtures; zero observed within-cell variance')
         if scope=='spaced':result.update(clock_95=ci(.95,stats.sem(means),d-1),clock_97_5=ci(.975,stats.sem(means),d-1))
         if k in names:result.update(wins=int((v==1).sum()),draws=int((v==.5).sum()),losses=int((v==0).sum()))
         out[k]=result
@@ -106,4 +119,6 @@ def run(scope):
     summarize(scope,count)
 if __name__=='__main__':
     if sys.argv[1]=='one':clock_games(sys.argv[2],int(sys.argv[3]))
+    elif sys.argv[1]=='summarize':
+        scope=sys.argv[2];summarize(scope,8 if scope=='fresh-seeds' else protocol()['spaced_count'])
     else:run(sys.argv[1])
