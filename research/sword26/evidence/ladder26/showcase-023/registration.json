@@ -1,0 +1,25 @@
+{
+  "actors": [
+    "evidence/ladder26/fighters/aa9e5afc8d9d79d6.net"
+  ],
+  "opponents": [
+    "evidence/ladder26/fighters/62476e8c5c6ffaff.net"
+  ],
+  "actor_hashes": [
+    "aa9e5afc8d9d79d67c69d5ba191393bda59c786022d89bb21f2476e72426068b"
+  ],
+  "opponent_hashes": [
+    "62476e8c5c6ffaff945d94454908c9dad885856e306710b49a2ba7deb8476314"
+  ],
+  "seed": 37184278,
+  "pairs": 1,
+  "clock": "scheduled Java frame export",
+  "rtts": [
+    0
+  ],
+  "size": [
+    1280,
+    720
+  ],
+  "aim_profile": "perfect"
+}

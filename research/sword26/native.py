@@ -171,7 +171,11 @@ async def run(args):
         f"server-ip=127.0.0.1\nserver-port={PORT}\nonline-mode=false\nenforce-secure-profile=false\n"
         "white-list=true\nenforce-whitelist=true\n"
         "level-name=court\nlevel-type=minecraft:flat\ndifficulty=normal\nspawn-protection=0\n"
-        "view-distance=3\nsimulation-distance=3\nsync-chunk-writes=false\nmax-players=4\n")
+        "view-distance=3\nsimulation-distance=3\nsync-chunk-writes=false\nmax-players=4\n"
+        # Offline rendering can accumulate a minute of wall-clock lag even while
+        # both clients advance every logical tick. The round and packet fences
+        # have their own real-time deadlines.
+        + ("max-tick-time=-1\n" if args.export_frames else ""))
     run_dir=Path(tempfile.mkdtemp(prefix="native-",dir=BUILD))
     spool=Path(tempfile.mkdtemp(prefix="sword26-controls-"))
     print(f"Round recordings: {run_dir}",flush=True)
