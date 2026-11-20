@@ -11,6 +11,8 @@ Both policies use seven CPS in the simulator. Each row compares two frozen speci
 
 For the 32k specialist, changing floors averaged -10.2 percentage points (approximate 95% interval -16.2 to -4.1) in outright wins across both start distances. Moving the spawns from eight to ten blocks averaged +0.0 percentage points (approximate 95% interval -7.8 to +7.8) across both floors. These are paired estimates across eight timing donors.
 
+Of the 208 fixtures it won on the smaller floor, 168 remained wins on the larger floor, 31 became draws and 9 became losses.
+
 All 19 draws in the recorded 221-block opening lasted the full 120 seconds. The two players dealt a median of 269 fresh hits between them per draw. The median last fresh hit landed 0.34 seconds before timeout.
 
 The six recorded-opening arms reproduced all 768 previously measured outcomes and terminal times. Each synthetic comparison uses the same seat, two RTTs, event calendar and action seeds as its recorded counterpart. The larger floor also has its recorded block materials and edges.

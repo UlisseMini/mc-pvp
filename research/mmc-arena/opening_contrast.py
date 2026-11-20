@@ -6,6 +6,7 @@ from pathlib import Path
 from statistics import mean, median, stdev
 import struct
 import subprocess
+import sys
 import tempfile
 
 from build_maps import BUILD, HERE, ROOT, compile_java
@@ -94,6 +95,14 @@ def main():
                         rtt={f'{a}/{b}':summarize([g for g,c in zip(games,cells) if c[3:5]==(a,b)]) for a,b in sorted({c[3:5] for c in cells})})
                     record(DEST/(key+'.json.gz'),gzip.compress(json.dumps(games,separators=(',',':')).encode(),mtime=0))
     write_json(DEST/'results.json',results,fixed=True)
+    report()
+
+
+def report():
+    results=read(DEST/'results.json')
+    arms=(*STAGES,'wtap')
+    repetitions=read(OUT/'tournaments/checkpoint32k/protocol.json')['model_repetitions']
+    cells=make_panel(CLOCKS['dev'],repetitions)
     effects={arm:{k:paired_effect(arm,cells,k=='floor') for k in ('floor','gap')} for arm in arms}
     write_json(DEST/'paired-effects.json',effects,fixed=True)
     lines=['# How much of the change comes from the opening distance?','',
@@ -112,7 +121,12 @@ def main():
         lo,hi=value['approximate_95_percent_interval']
         return f"{100*value['mean']:+.1f} percentage points (approximate 95% interval {100*lo:+.1f} to {100*hi:+.1f})"
     timeouts=results['mmc-221/10/32k']
+    prior_wins=[]
+    for gap in (8,10):
+        matches=[json.loads(gzip.decompress((DEST/f'{arena}/{gap}/32k.json.gz').read_bytes())) for arena in MAPS]
+        prior_wins.extend(large[0] for small,large in zip(*matches,strict=True) if small[0]==1)
     lines.extend(['',f"For the 32k specialist, changing floors averaged {describe('floor')} in outright wins across both start distances. Moving the spawns from eight to ten blocks averaged {describe('gap')} across both floors. These are paired estimates across eight timing donors.",
+         '',f"Of the {len(prior_wins)} fixtures it won on the smaller floor, {prior_wins.count(1)} remained wins on the larger floor, {prior_wins.count(.5)} became draws and {prior_wins.count(0)} became losses.",
          '',f"All {timeouts['timeouts']} draws in the recorded 221-block opening lasted the full 120 seconds. The two players dealt a median of {timeouts['median_fresh_hits_in_timeout']} fresh hits between them per draw. The median last fresh hit landed {(120000-timeouts['median_last_fresh_ms_in_timeout'])/1000:.2f} seconds before timeout.",
          '','The six recorded-opening arms reproduced all 768 previously measured outcomes and terminal times. Each synthetic comparison uses the same seat, two RTTs, event calendar and action seeds as its recorded counterpart. The larger floor also has its recorded block materials and edges.',
          '', '[Paired estimates](paired-effects.json) · [Seat, RTT and timeout breakdown](results.json) · [Matched native tests on the recorded openings](../tournaments/checkpoint32k/results.md)'])
@@ -120,4 +134,6 @@ def main():
 
 
 if __name__=='__main__':
-    main()
+    if sys.argv[1:]==['--report']:report()
+    elif not sys.argv[1:]:main()
+    else:raise SystemExit('Usage: opening_contrast.py [--report]')
