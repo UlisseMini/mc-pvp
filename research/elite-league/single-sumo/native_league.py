@@ -57,7 +57,7 @@ def reconcile(plan):
         except (OSError,ValueError):continue
         if g.get('request') in plan:games[g['request']]=g['id']
     return games
-def play(plan,out,bridge):
+def play(plan,out,bridge,block_barrier=False):
     from shutil import disk_usage
     from forge_window import server_hash
     if out.exists():
@@ -87,7 +87,14 @@ def play(plan,out,bridge):
         return allowed
     batch=native_trials.load_batch()
     found=reconcile(plan)
-    batch.run(plan,3,out,2,True,found,2,capacity_limit=slots)
+    if block_barrier:
+        for block in sorted({t['block'] for t in plan.values()}):
+            requests={q for q,t in plan.items() if t['block']==block}
+            if not requests.issubset(found):
+                batch.run(plan,3,out,2,True,found,2,only_requests=requests,capacity_limit=slots)
+                found=read(out)['matches']
+        batch.save(out,plan,found)
+    else:batch.run(plan,3,out,2,True,found,2,capacity_limit=slots)
     return read(out)['matches']
 def certify(mid,trial,bridge):
     raw=read(ROOT/'runtime/results'/(mid+'.json'));assert raw['mode']=='sumo'
@@ -118,7 +125,7 @@ def certify(mid,trial,bridge):
     return dict(valid=True,mid=mid,score=.5 if not raw['winner'] else int(raw['winner']==raw[trial['side']]),
                 controls=score['sides'],minimum_physical_ns=intervals,local_timing_heads=all_heads,
                 reason=raw['reason'],duration=(raw['finish']-raw['start'])/1000)
-def cohort(folder,plan,bridge):
+def cohort(folder,plan,bridge,block_barrier=False):
     folder.mkdir(parents=True,exist_ok=True);records={};rejected=[]
     from forge_window import server_hash
     stamp=folder/'native-build.json'
@@ -128,10 +135,11 @@ def cohort(folder,plan,bridge):
         versions={tuple(c[k] for k in fields) for c in clients}
         if len(versions)!=1 or clients[0]['bridge_sha256']!=bridge:raise ValueError('Mixed native cohort runtime')
         write_json(stamp,dict(server=server_hash(),**dict(zip(fields,versions.pop()))),fixed=True)
-    write_json(folder/'protocol.json',dict(plan=plan,bridge=bridge),fixed=True)
+    scheduling={'block_barrier':True} if block_barrier else {}
+    write_json(folder/'protocol.json',dict(plan=plan,bridge=bridge,**scheduling),fixed=True)
     todo=plan.copy();links={q:q for q in todo}
     for attempt in range(8):
-        found=play(todo,folder/f'attempt-{attempt}.json',bridge);next_todo={};next_links={}
+        found=play(todo,folder/f'attempt-{attempt}.json',bridge,block_barrier);next_todo={};next_links={}
         for q,mid in found.items():
             src=links[q];evidence=folder/'audits'/(mid+'.json')
             if evidence.exists():r=read(evidence)

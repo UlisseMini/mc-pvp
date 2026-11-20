@@ -1,5 +1,4 @@
 """Learn an in-duel response from counterfactual ring-out rewards, with no opponent ID labels."""
-from pathlib import Path
 from recognition import Identifier
 from recognition_payoff import FOLDER,FOES,CUTOFF,dataset,responders,outcomes,lower_contrast
 from learner import torch,np,json,io,atomic,write_json

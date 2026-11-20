@@ -88,7 +88,7 @@ def native_panel(g,nom,eligible):
     with window() as bridge:
         aa=[actual_name(n,field) for n in arms];ff=[actual_name(n,field) for n in foes]
         plan=fixtures(f'sg{g:03d}-'+('confirm' if eligible else 'diag'),aa,ff,blocks,7)
-        records=cohort(folder/('native-confirm' if eligible else 'native-diagnostic'),plan,bridge)
+        records=cohort(folder/('native-confirm' if eligible else 'native-diagnostic'),plan,bridge,block_barrier=eligible)
     v=np.empty((blocks,3,len(foes)));details=[]
     for q,t in plan.items():
         # Same actor name can occur in several roles; the frozen request IDs carry their role indices.

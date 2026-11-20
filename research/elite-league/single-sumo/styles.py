@@ -37,9 +37,9 @@ def freeze_assay(gen,folder):
     k=(gen-1)%len(fast)
     test=build(folder/'unopened-styles',backbones[k],fast[k]+gen//4,slow[k]-gen//4,1+gen%4)
     dev=build(folder/'development-styles',INCUMBENT,50,180,0)
-    data=dict(generation=gen,test=test,dev=dev,first_future_id=latest+4,calendar_count=32,
+    data=dict(generation=gen,test=test,dev=dev,first_future_id=latest+4,calendar_count=32,minimum_gap_ms=60000,
               dev_fast_ms=50,dev_slow_ms=180,test_fast_ms=fast[k]+gen//4,test_slow_ms=slow[k]-gen//4,
-              capture_rule='first 32 eligible consecutive bot-bot sumo calendars with complete input, movement and server streams; no outcome filter',
+              capture_rule='first 32 eligible complete bot-only sumo timing recordings, each starting at least 60 seconds after the previous donor finished; no outcome filter',
               matches_per_test_style=256,match_tolerance=[1000,100,100,.25,.1,.1],
               max_scenarios_per_test_style=8192,student_control='same-generation equal-parameter MLP',
               pre_cue_control='opening identical until opponent receives hurt; independently assigned style',

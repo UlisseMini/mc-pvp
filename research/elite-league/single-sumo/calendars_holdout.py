@@ -31,6 +31,7 @@ def collect(folder):
     done=storage/'manifest.json'
     if done.exists():return
     rejected={};selected=[];num=spec['first_future_id'];last_completion=time.monotonic()
+    after=0
     while len(selected)<spec['calendar_count']:
         mid=f'm{num:04d}';path=ROOT/'runtime/results'/(mid+'.json')
         if not path.exists():
@@ -44,6 +45,7 @@ def collect(folder):
         game=json.loads(path.read_text());out=storage/(mid+'.txt.gz');bad=storage/(mid+'.invalid.json')
         if game['mode']!='sumo' or any(not game[k].startswith('LabSlot') for k in 'ab'):
             rejected[mid]='outside bot-bot sumo cohort'
+        elif game['start']<after:rejected[mid]='within the registered interval between donors'
         elif bad.exists():rejected[mid]=json.loads(bad.read_text())['reason']
         else:
             if not out.exists():
@@ -56,7 +58,9 @@ def collect(folder):
                     if time.time()-game['finish']/1000<90:time.sleep(3);continue
                     rejected[mid]=str(e);write_json(bad,{'reason':str(e)},fixed=True)
                 else:freeze(out,gzip.compress(encoded,mtime=0))
-            if out.exists():selected.append(str(out.relative_to(ROOT)))
+            if out.exists():
+                selected.append(str(out.relative_to(ROOT)))
+                if 'minimum_gap_ms' in spec:after=game['finish']+spec['minimum_gap_ms']
         num+=1;last_completion=time.monotonic()
     write_json(done,dict(selected=selected,rejected=rejected,first=spec['first_future_id'],last=num-1),fixed=True)
 
@@ -64,19 +68,25 @@ def prefill(folder):
     """Batch completed timing-only captures in their original enrollment order."""
     storage=folder/'calendars';storage.mkdir(exist_ok=True)
     spec=json.loads((folder/'assay.json').read_text());num=spec['first_future_id'];count=0;written=0
+    after=0
     while count<spec['calendar_count'] and written<8 and not (storage/'manifest.json').exists():
         mid=f'm{num:04d}';path=ROOT/'runtime/results'/(mid+'.json');num+=1
         if not path.exists():break
         game=json.loads(path.read_text())
-        if game['mode']!='sumo' or any(not game[k].startswith('LabSlot') for k in 'ab'):continue
+        if game['start']<after or game['mode']!='sumo' or any(not game[k].startswith('LabSlot') for k in 'ab'):continue
         if (storage/(mid+'.invalid.json')).is_file():continue
         out=storage/(mid+'.txt.gz')
         if not out.exists():
-            # Let the ordinary collector adjudicate incomplete or invalid captures.
             try:raw=tape(mid,maximum_ticks=160,explicit_polls=True,movement_flush=True).encode()
-            except (OSError,ValueError,KeyError,StopIteration,EOFError):break
+            except (OSError,ValueError,KeyError,StopIteration,EOFError) as exc:
+                if time.time()-game['finish']/1000<90:break
+                why=type(exc).__name__+(': '+str(exc) if str(exc) else '')
+                write_json(storage/(mid+'.invalid.json'),dict(reason=why),fixed=True)
+                written+=1
+                continue
             freeze(out,gzip.compress(raw,mtime=0));written+=1
         count+=1
+        if 'minimum_gap_ms' in spec:after=game['finish']+spec['minimum_gap_ms']
     return written
 if __name__=='__main__':
     if sys.argv[1]=='one':

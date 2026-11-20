@@ -12,7 +12,7 @@ def search(g):
     spec=folder/'assay.json'
     if not spec.exists():
         last=max(int(p.stem[1:]) for p in (ROOT/'runtime/results').glob('m[0-9]*.json') if p.stem[1:].isdigit())
-        write_json(spec,dict(first_future_id=last+4,calendar_count=32,opponent=inc,
+        write_json(spec,dict(first_future_id=last+4,calendar_count=32,minimum_gap_ms=60000,opponent=inc,
             control='PPO from W-tap imitation must improve on that frozen initialization against the original incumbent',
             budget=32768),fixed=True)
     # Independently frozen searches; original known weakness is a positive control for learning.
@@ -69,7 +69,7 @@ def native_check(g,folder,field,inc):
         names[t]=actual_name(n,{n:field[t]})
     foes=list(dict.fromkeys([inc,INCUMBENT,'wtap']))
     plan=fixtures(f'sg{g:03d}-plateau',[names[t] for t in roles],[actual_name(n,field) for n in foes],64,7)
-    with window() as bridge:results=cohort(folder/'native',plan,bridge)
+    with window() as bridge:results=cohort(folder/'native',plan,bridge,block_barrier=True)
     records={};rows={}
     for t in roles:
         rows[t]={}

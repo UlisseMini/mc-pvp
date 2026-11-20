@@ -31,13 +31,14 @@ def extension(target,start,count):
         out.append([target,rng.choice(CLOCKS['train']),rng.choice('ab'),rng.choice(options),rng.choice(options),rng.getrandbits(60),rng.getrandbits(60)])
     return out
 
-def train_target(target,n_updates):
-    early,matched,orig=budgets(target);total=16384;folder=DIR/('dedicated-'+target);folder.mkdir(exist_ok=True,parents=True)
+def train_target(target,n_updates,wins_only=False):
+    early,matched,orig=budgets(target);total=16384
+    folder=DIR/(('ringout-only-' if wins_only else 'dedicated-')+target);folder.mkdir(exist_ok=True,parents=True)
     with (folder/'fit.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
-        _train_target(target,n_updates,early,matched,orig,total,folder)
+        _train_target(target,n_updates,early,matched,orig,total,folder,wins_only)
 
-def _train_target(target,n_updates,early,matched,orig,total,folder):
+def _train_target(target,n_updates,early,matched,orig,total,folder,wins_only):
     milestones=[early,matched,total]
     torch.manual_seed(3176221);model=Actor('mlp')
     model.load_state_dict(torch.load(DIR/'shared-mlp/trainer.pt',map_location='cpu',weights_only=False)['net'])
@@ -55,7 +56,8 @@ def _train_target(target,n_updates,early,matched,orig,total,folder):
             target_stop=next(m for m in milestones if m>seen);n=min(64,target_stop-seen)
             fixtures=orig[seen:seen+n] if seen<matched else extension(target,seen-matched,n)
             weights=w.folder/'actor.net';model.export(weights)
-            t=time.monotonic();rows=w.run([[weights,*r] for r in fixtures],True);ep=prepare(rows)
+            t=time.monotonic();rows=w.run([[weights,*r] for r in fixtures],True)
+            ep=prepare([(float(v==1),duration,data) for v,duration,data in rows] if wins_only else rows)
             metrics=train_update(model,opt,ep,5176201+steps)
             seen+=len(rows);steps+=1;log.append(dict(duels=seen,update=steps,heads=sum(map(len,ep)),seconds=time.monotonic()-t,score=float(np.mean([r[0] for r in rows])),**metrics))
             buf=io.BytesIO();torch.save(dict(seen=seen,steps=steps,log=log,net=model.state_dict(),opt=opt.state_dict()),buf);atomic(state,buf.getvalue())
@@ -66,4 +68,4 @@ def _train_target(target,n_updates,early,matched,orig,total,folder):
 if __name__=='__main__':
     import sys
     protocol()
-    if len(sys.argv)>1:train_target(sys.argv[1],int(sys.argv[2]))
+    if len(sys.argv)>1:train_target(sys.argv[1],int(sys.argv[2]),sys.argv[3:]==['wins-only'])
