@@ -1,7 +1,7 @@
 {
-  "season": 14,
+  "season": 19,
   "incumbent": "evidence/ladder26/fighters/62476e8c5c6ffaff.net",
-  "main": "evidence/ladder26/fighters/62476e8c5c6ffaff.net",
+  "main": "evidence/ladder26/fighters/3d564063354546bd.net",
   "pool": [
     "evidence/league26/fighter.net",
     "evidence/random26/fighter.net",
@@ -40,7 +40,14 @@
     "evidence/ladder26/fighters/c480317db0499c36.net",
     "evidence/ladder26/fighters/62476e8c5c6ffaff.net",
     "evidence/ladder26/fighters/a33e7fd8995e7864.net",
-    "evidence/ladder26/fighters/4351162bb4aee676.net"
+    "evidence/ladder26/fighters/4351162bb4aee676.net",
+    "evidence/ladder26/fighters/011b7e4c95139893.net",
+    "evidence/ladder26/fighters/85661d27efe026c4.net",
+    "evidence/ladder26/fighters/b3f3ce8f7f285353.net",
+    "evidence/ladder26/fighters/058f75aa354ee06e.net",
+    "evidence/ladder26/fighters/c291041880f36572.net",
+    "evidence/ladder26/fighters/3d564063354546bd.net",
+    "evidence/ladder26/fighters/ca0a8116355ca725.net"
   ],
   "stale": 0,
   "last_java": 14,
@@ -58,7 +65,12 @@
     11,
     12,
     13,
-    14
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
   ],
   "promotions": [
     9,
