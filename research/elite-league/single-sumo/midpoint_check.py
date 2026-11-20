@@ -2,6 +2,7 @@
 from pathlib import Path
 from statistics import mean
 import hashlib
+import sys
 from learner import CLOCKS,EVIDENCE,ROOT,write_json
 from long_confirm import RUN,read,score
 
@@ -65,4 +66,29 @@ def report():
     from learner import freeze
     freeze(DEST/'README.md',('\n'.join(lines)+'\n').encode())
 
-if __name__=='__main__':main()
+def follow_budget(n):
+    clocks=register()
+    folder=DEST/f'after-{n}'
+    hashes={k:hashlib.sha256((RUN/k/f'n{n}.net').read_bytes()).hexdigest() for k in TARGETS}
+    write_json(folder/'protocol.json',dict(duels=n,models=hashes,reference='../protocol.json',
+            design='Same exposed 24 timing donors, 1536 original action seeds, both pings, seats and frozen opponents as the first two checkpoints. Repeat each new checkpoint against its own target and plain W-tap. Reuse unchanged matched W-tap outcomes.'),fixed=True)
+    lines=[f'# Timing transfer after {n:,} training fights','',
+           'Each specialist faces its frozen opponent on 24 timing recordings at seven CPS. Every column uses the same 1,536 fixtures on the original training floor. Entries are wins/draws/losses.','',
+           f'| Frozen opponent | 16k specialist | 32k specialist | {n//1024}k specialist | Plain W-tap |',
+           '| --- | --- | --- | --- | --- |']
+    for k,label in [('incumbent','Frozen best-sumo'),('seven','Sumo Seven'),('g1','League winner 001')]:
+        score(k,n,clocks,SEED,4,folder/k,selected_only=True)
+        def cell(aggregate):return '/'.join(str(aggregate[s]) for s in ('wins','draws','losses'))
+        early,prior,wt=(read(DEST/k/v/'target.json') for v in ('16384','32768','wtap'))
+        final=read(folder/k/str(n)/'target.json')
+        if any(a[:6]!=b[:6] for a,b in zip(prior['games'],final['games'],strict=True)):raise ValueError('Unpaired timing comparison')
+        lines.append('| '+' | '.join([label,*map(cell,[early,prior,final,wt])])+' |')
+    lines.extend(['','The three original specialist branches use their original, separate development panel for selection. The four sealed floor shapes remain reserved for the final weights.','',
+                  '[Frozen weights and fixtures](protocol.json) · [Original timing comparison](../README.md)'])
+    from learner import freeze
+    freeze(folder/'README.md',('\n'.join(lines)+'\n').encode())
+
+
+if __name__=='__main__':
+    if len(sys.argv)==2:follow_budget(int(sys.argv[1]))
+    else:main()

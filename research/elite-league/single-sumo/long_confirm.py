@@ -37,7 +37,7 @@ def register():
         arms='final frozen training-map selection, 16k control and plain W-tap; each against target and W-tap',
         cases='four fixed pairs plus four independently sampled RTT pairs in [0,150] per donor/rep, each mirrored across actor seats; eight replications per clock, 4096 games per matchup',
         score='outright wins, separate draws and losses, seat, donor and RTT group; these are simulator confirmations'),fixed=True)
-def score(key,selected,clocks=None,seed=46197541,replications=8,destination=None):
+def score(key,selected,clocks=None,seed=46197541,replications=8,destination=None,selected_only=False):
     folder=RUN/key;_,_,_,target=sources(key)
     if clocks is None:
         clocks=read(FOLDER/'replication/spaced/manifest.json')['selected'];assert len(clocks)==32
@@ -52,7 +52,8 @@ def score(key,selected,clocks=None,seed=46197541,replications=8,destination=None
                     cases.append((i,rep,j,seat,a,b,clock,rng.getrandbits(60),rng.getrandbits(60)))
     w=Worker()
     try:
-        for label in dict.fromkeys([str(selected),str(BASE),'wtap']):
+        labels=[str(selected)] if selected_only else dict.fromkeys([str(selected),str(BASE),'wtap'])
+        for label in labels:
             actor='wtap' if label=='wtap' else folder/f'n{label}.net'
             for tag,foe in [('target',target),('wtap','wtap')]:
                 out=destination/label/(tag+'.json')
