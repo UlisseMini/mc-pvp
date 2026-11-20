@@ -98,6 +98,8 @@ def assess(budget,split='dev',root=None,opponents=None,arms=None,bank_loader=Non
     for h in HORIZONS:
         models=load_models(budget,h,narm,nfoe,root);role='blind' if h<0 else 'memory-'+str(h)
         full=matches(models,worlds,ctx,rivals,tapes)
+        opening=full['choices'][:,0].reshape(nclock,nrep,nfoe)
+        if not np.all(opening==opening[:,:,:1]):raise ValueError('Opponent identity affected a choice before game one')
         won[role]=full['won']
         choice_counts[role]={name:np.stack([(full['choices'][rivals==i]==j).sum(0) for j in range(narm)]).tolist()
                              for i,name in enumerate(names)}

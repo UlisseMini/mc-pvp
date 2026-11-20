@@ -106,6 +106,9 @@ def evaluate(budget,split):
     modes={'no-memory':(0,False,True),'last-game':(1,False,True),'last-three':(3,False,True),
            'greedy':(9,False,True),'outcomes-only':(9,False,False),'lookahead':(9,True,True)}
     runs={k:play(edges,probs,worlds,ctx,rivals,tapes,*args) for k,args in modes.items()}
+    for v in runs.values():
+        opening=v['act'][:,0].reshape(nc,nr,nf)
+        if not np.all(opening==opening[:,:,:1]):raise ValueError('Belief used information from an unplayed game')
     for mode in ('same','wrong'):
         runs[mode]=play(edges,probs,worlds,ctx,rivals,tapes,9,True,True,mode,runs['lookahead'])
     won={k:v['won'] for k,v in runs.items()}

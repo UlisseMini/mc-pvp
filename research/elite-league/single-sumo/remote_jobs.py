@@ -89,10 +89,22 @@ if __name__=='__main__':
                         receipt='whole-memory-16.json' if task=='field' else 'whole-memory-02.json'
                         start('series-memory-'+task,'series_memory.py',[task],folder/'dev'/receipt)
                 reversal=series/'archive-reversal'
+                if (ROOT/SCRIPTS/'series_public.py').is_file():
+                    for task,last in [('field',16),('archive-reversal',16),('diverse-experts',8)]:
+                        folder=series if task=='field' else series/task
+                        if (OUT/folder/'protocol.json').exists():start('series-clock-'+task,'series_public.py',[task],folder/'dev'/f'displayed-clock-{last:02}.json')
+                if (OUT/series/'diverse-experts/protocol.json').is_file():
+                    start('series-diverse','series_expand.py',[],series/'diverse-experts/dev/library-08.json')
+                if (OUT/series/'reward-ablation.json').is_file():
+                    for task in ('field','archive-reversal'):
+                        folder=series if task=='field' else reversal
+                        start('series-reward-'+task,'series_objective.py',[task],folder/'ringout-reward/dev/reward-comparison.json')
                 if (OUT/reversal/'protocol.json').is_file():
                     start('series-archive','series_archive.py',[],reversal/'dev/whole-memory-16.json')
                     if (OUT/reversal/'prospective/calendars/manifest.json').is_file():
                         start('series-archive-fresh','series_archive.py',['fresh'],reversal/'fresh/unrestricted.json')
+                        if (OUT/series/'reward-ablation.json').is_file():
+                            start('series-archive-reward-fresh','series_objective.py',['archive-reversal','fresh'],reversal/'ringout-reward/fresh/reward-comparison.json')
                 if (OUT/series/'belief/protocol.json').is_file():
                     start('series-belief','series_bayes.py',['dev'],series/'belief/dev/evaluation-16.json')
                 if (OUT/series/'prospective/calendars/manifest.json').is_file():

@@ -116,7 +116,7 @@ def play(model,worlds,cues):
     return history[:,:-1],torch.stack(controls,1),torch.stack(actions,1),torch.stack(logps,1),torch.stack(values,1),torch.stack(outcomes,1)
 
 
-def fit(stats,cues,budget,horizon,seed,updates=None,batch=BATCH,folder=None):
+def fit(stats,cues,budget,horizon,seed,updates=None,batch=BATCH,folder=None,objective='series'):
     folder=FOLDER/f'learn-{budget:02}'/f'h{horizon}-s{seed}' if folder is None else folder
     if (folder/'trained.json').is_file():return
     torch.manual_seed(seed)
@@ -134,7 +134,11 @@ def fit(stats,cues,budget,horizon,seed,updates=None,batch=BATCH,folder=None):
         hist,x,a,old,v,won=play(net,worlds,ctx)
         delta=2*won-1
         # The terminal majority dominates. A small ring-out reward also grades play after clinching.
-        target=delta.sum(1).sign()[:,None]+.15*delta.flip(1).cumsum(1).flip(1)/ROUNDS
+        if objective=='series':
+            target=delta.sum(1).sign()[:,None]+.15*delta.flip(1).cumsum(1).flip(1)/ROUNDS
+        elif objective=='ringouts':
+            target=(2*(won==1).float()-1).flip(1).cumsum(1).flip(1)/ROUNDS
+        else:raise ValueError('Unknown ten-game training reward')
         advantage=target-v;advantage=(advantage-advantage.mean())/(advantage.std()+1e-6)
         for _ in range(3):
             logits,q,values,ids=net(hist,x)
@@ -151,7 +155,7 @@ def fit(stats,cues,budget,horizon,seed,updates=None,batch=BATCH,folder=None):
             write_json(folder/'progress.json',curve[-1])
     out=io.BytesIO();torch.save(net.state_dict(),out);atomic(folder/'actor.pt',out.getvalue())
     write_json(folder/'trained.json',dict(updates=total,sampled_series=total*batch,sampled_rounds=ROUNDS*total*batch,sha256=hashlib.sha256(out.getvalue()).hexdigest(),
-               horizon=horizon,seed=seed,learning_curve=curve),fixed=True)
+               horizon=horizon,seed=seed,objective=objective,learning_curve=curve),fixed=True)
 
 
 def run(horizon):

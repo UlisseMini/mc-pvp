@@ -35,9 +35,11 @@ def collect(budget,study=FOLDER):
 def native(budget,study=FOLDER):
     import numpy as np
     from series_bayes import choose_public
+    from series_public import observed
     sys.path.insert(0,str(ROOT/'research/mmc-arena'))
     from validation import assessment_bridge
-    archive=study!=FOLDER
+    archive=study!=FOLDER;expanded=study.name=='diverse-experts'
+    ringout_study=study.name=='ringout-reward'
     spec=read(study/'protocol.json');foes=dict(spec['field']);experts=list(spec['experts'])
     field_size=len(foes)
     if archive:foes['wtap']=read(FOLDER/'protocol.json')['field']['wtap']
@@ -45,9 +47,12 @@ def native(budget,study=FOLDER):
     report=read(study/'dev'/f'evaluation-{budget:02}.json')['scores']['memory-9']['opponents']
     weakest=min(report,key=lambda n:(report[n]['series'][0],report[n]['ringouts'][0],n))
     if archive:
-        targets=['wtap',*spec['field']]
-        modes=['memory','scoreboard','last-game','wtap','broad',*experts]
+        targets=list(dict.fromkeys(('wtap',weakest,'sumo-seven-first'))) if expanded else ['wtap',*spec['field']]
+        modes=['memory','scoreboard','memory-eight','wtap','broad',*spec['extra']] if expanded else ['memory','scoreboard','last-game','wtap','broad',*experts]
         broad=live(read(FOLDER/'protocol.json')['experts']['original-mixture'])
+        if expanded:
+            previous_order=list(read(FOLDER/'protocol.json')['experts'])
+            previous=load_models(budget,9,len(previous_order),field_size)
     else:
         badge=read(FOLDER/'belief/dev'/f'evaluation-{budget:02}.json')['scores']['lookahead']['opponents']
         belief_weak=min(badge,key=lambda n:(badge[n]['series'][0],badge[n]['ringouts'][0],n))
@@ -64,25 +69,47 @@ def native(budget,study=FOLDER):
     write_json(folder/'series.json',dict(opponents=targets,arms=modes,replicates=paired,expert_order=experts,
         scope='Ten consecutive logical games against the same policy; fresh native regulation worlds and both players reset each time. Adaptive arms carry only public results, elapsed fight time, pings and their own selected expert.'),fixed=True)
     for g in range(ROUNDS):
-        plan={};rows={}
+        plan={};rows={};tables={}
         for (rep,target,arm),events in records.items():
             t=targets.index(target);j=modes.index(arm)
             side='ab'[(rep+g+t)%2];own,other=RTTS[(g+rep//2+t)%len(RTTS)]
-            a=choose(models[arm],events,own,other,len(experts)) if arm in models else experts.index(arm) if arm in experts else 0
-            if arm=='fixed':a=experts.index('original-mixture')
-            if arm.startswith('belief'):a=choose_public(edges,probs,events,own,other,arm=='belief')
-            tag='series10-archive' if archive else 'series10'
+            tag='series10-ringouts' if ringout_study else 'series10-diverse' if expanded else 'series10-archive' if archive else 'series10'
             key=f'{tag}-{budget}-r{rep}-f{t}-a{j}-g{g}'
+            # Commit the complete response to any possible displayed ping pair, before this fight exists.
+            table={}
+            for a_ping,b_ping in RTTS:
+                if arm in models:action=choose(models[arm],events,a_ping,b_ping,len(experts))
+                elif arm=='memory-eight':
+                    previous_events=[(previous_order.index(experts[k]),*rest) for k,*rest in events]
+                    action=experts.index(previous_order[choose(previous,previous_events,a_ping,b_ping,len(previous_order))])
+                elif arm.startswith('belief'):action=choose_public(edges,probs,events,a_ping,b_ping,arm=='belief')
+                elif arm in experts:action=experts.index(arm)
+                elif arm=='fixed':action=experts.index('original-mixture')
+                else:action=0
+                table[f'{a_ping}/{b_ping}']=action
+            tables[key]=table;a=table[f'{own}/{other}']
             player=wt if arm=='wtap' else broad if arm=='broad' else actors[experts[a]]
             trial=fixture.trial(key,player,live(foes[target]),side,own,other)
             trial.update(cps_cap=7,command=trial['command'].replace(' cps=20 ',' cps=7 '),block=g)
             plan[key]=trial;rows[key]=(rep,target,arm,a,own,other)
         # Rotate the queue so one arm does not always play earlier on the server.
         keys=list(plan);np.random.default_rng(31078+g).shuffle(keys)
+        write_json(folder/f'g{g:02}'/'before-game-choices.json',tables,fixed=True)
         audits=fair_cohort(folder/f'g{g:02}',{k:plan[k] for k in keys},bridge,server=stamp['server'])
+        witness={}
         for k,(rep,target,arm,a,own,other) in rows.items():
             game=audits[k]
-            records[rep,target,arm].append([a,float(game['score']),1000*game['duration'],own,other])
+            sight=observed(game['mid'],plan[k]['side'])
+            # Referee data is an offline audit. Only the participant's visible messages enter memory.
+            start=read(ROOT/'runtime/results'/(game['mid']+'.json'))['start']
+            public_pair=(sight['own_ping'],sight['opponent_ping'])
+            if sight['countdown_received_ms']>start or public_pair!=(own,other) or tables[k]['%d/%d'%public_pair]!=a:
+                raise ValueError('Countdown did not certify the applied series controls '+game['mid'])
+            if sight['score']!=game['score'] or abs(sight['displayed_duration_ms']-1000*game['duration'])>51:
+                raise ValueError('Participant and referee results diverged '+game['mid'])
+            witness[k]=dict(match=game['mid'],side=plan[k]['side'],**sight)
+            records[rep,target,arm].append([a,sight['score'],sight['displayed_duration_ms'],*public_pair])
+        write_json(folder/f'g{g:02}'/'public-observations.json',witness,fixed=True)
     result={}
     for arm in modes:
         result[arm]={}
@@ -131,4 +158,18 @@ def follow_archive():
 
 if __name__=='__main__':
     if sys.argv[1:]==['archive']:follow_archive()
+    elif sys.argv[1:]==['reward-archive']:
+        study=FOLDER/'archive-reversal/ringout-reward'
+        wait_for([str(study.relative_to(OUT))+'/protocol.json'])
+        collect(2,study)
+        native(2,study)
+    elif sys.argv[1:]==['diverse']:
+        study=FOLDER/'diverse-experts';prefix=str(study.relative_to(OUT))+'/'
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            jobs=[]
+            for budget in (2,8):
+                collect(budget,study)
+                wait_for([prefix+f'dev/whole-memory-{budget:02}.json',prefix+f'dev/library-{budget:02}.json'])
+                jobs.append(pool.submit(native,budget,study))
+            for job in jobs:job.result()
     else:follow()
