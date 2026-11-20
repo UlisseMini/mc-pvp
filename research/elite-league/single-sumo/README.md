@@ -59,3 +59,12 @@ Play the generation-one winner with `/duel sumo-league-001 sumo preset=mmc cps=7
 The weakest matchup is sensitive to ping. Against sumo-seven-first the winner scored 68.8% with 31 ms of its own RTT and 109 ms for its opponent. Reversing those pings reduced its score to 18.8%. Equal-ping scores were 51.6% at 31 ms and 53.1% at 109 ms. This 48.0% overall matchup kept the live title promotion gate closed. The tournament winner keeps its own permanent duel alias. [Tournament, including all seat and RTT cells](evidence/g001/tournament.json) · [Published controls](../../../policies/sumo-league-001.properties)
 
 A separate recognition test trained classifiers to distinguish frozen best-sumo from sumo-seven-first during a common opening. At spawn the two opponents gave identical inputs and balanced accuracy was 50%. After 24 local decisions the current observation gave 51–53% accuracy across three trained classifiers. GRUs reading the preceding observations scored 74–100%. Every pair survived to this decision. Whether the information changes ring-outs requires testing different responses from the same match state. [Recognition results](evidence/id-oracle/recognition/results.json)
+
+The interim specialist comparison also ran on the main Forge server. These 48 independent bouts included both seats and all four 31/109 ms ping combinations. Both participants used the seven-CPS cap. All 48 replays passed the physical-input audit. The shortest interval between actual clicks was 142.881 ms.
+
+| Native opponent | ID-informed MLP W / D / L | Dedicated MLP W / D / L | Plain W-tap W / D / L |
+| --- | ---: | ---: | ---: |
+| Frozen best-sumo | 8 / 0 / 0 | 7 / 0 / 1 | 1 / 0 / 7 |
+| Sumo-seven-first | 1 / 0 / 7 | 0 / 2 / 6 | 1 / 0 / 7 |
+
+Both specialist draws came at 31/31 ms, once in each seat. Eight native bouts per arm can reveal a large failure and leave considerable uncertainty about smaller score differences. [Native per-seat and per-RTT results](evidence/id-oracle/native-u064/summary.json) · [Verified physical controls](evidence/id-oracle/native-u064/verified.json)

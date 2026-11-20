@@ -59,8 +59,13 @@ def decisions(x):
     return {'history':tail(h),'opposite-history':tail(h.reshape(1,n,2,-1).flip(2).reshape_as(h).contiguous()),
             'reset-history':tail(torch.zeros_like(h)),'one-head':m(t[:,-1:])[:,-1].argmax(-1).reshape(n,2).numpy()}
 
-def measure(split,clocks=None):
-    a,b,fixed=choose();refs=responders(); payoff=outcomes(split,refs,clocks)
+def measure(split,clocks=None,trained_branches=False):
+    a,b,fixed=choose();refs=responders()
+    if trained_branches:
+        a,b='routed-0','routed-1'
+        discovery=json.loads((FOLDER/'selection.json').read_text())['training']
+        fixed=max((a,b),key=lambda n:np.mean(discovery[n]))
+    payoff=outcomes(split,refs,clocks)
     x,length,donor=dataset(split,clocks); routing=decisions(x)
     truth=np.broadcast_to([0,1],length.shape); eligible=length>=CUTOFF
     assert np.array_equal(eligible,payoff['cut']!=None)
@@ -93,6 +98,13 @@ def measure(split,clocks=None):
         correct={k:float((v[eligible]==truth[eligible]).mean()) for k,v in routing.items()},
         history_gain=gains,response_advantages=opposing,
         qualifies=bool(min(gains['fixed'][1],gains['opposite-history'][1],*(c[1] for c in opposing))>0))
-    write_json(FOLDER/(split+'.json'),result,fixed=True)
+    if trained_branches:
+        unrestricted=json.loads((FOLDER/'selection.json').read_text())['fixed']
+        result.update(branches=[a,b],fixed=fixed,strongest_unrestricted=unrestricted,
+            history_minus_unrestricted=contrast((arms['history']-payoff[unrestricted]).mean(axis=1)))
+    write_json(FOLDER/(('routed-'+split if trained_branches else split)+'.json'),result,fixed=True)
     return result
-if __name__=='__main__':measure('dev')
+if __name__=='__main__':
+    import sys
+    if 'routed' in sys.argv[1:]:measure('dev',trained_branches=True)
+    else:measure('dev')

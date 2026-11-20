@@ -36,9 +36,9 @@ def stage(g):
         clocks(folder);governed(HERE/'stage_task.py','model',str(g))
         model=read(folder/'promotion-model.json')['passed']
     # All learners still receive their matched development signature when the title gate is closed.
+    winner_controls(g,nom)
     if not (folder/'promotion-native.json').exists():native_panel(g,nom,model)
     native=read(folder/'promotion-native.json')['passed']
-    winner_controls(g,nom)
     if model and native:
         governed(HERE/'stage_task.py','transfer',str(g));transfer20(g,nom);promote_title(g,nom)
     # Independently gate spending the style holdout on existence of opposite responses in development.

@@ -20,6 +20,12 @@ def enrollment(gen):
         result=json.loads((d/'result.json').read_text());name=f'sg{gen:03d}-response-'+('wt' if teacher=='wtap' else 's7')
         field[name]=pin_model(d)
         if result['confirmed']:families.setdefault('demonstration responses',[]).append(name)
+    nomination=json.loads((p/'nomination.json').read_text())
+    if nomination['winner']!=nomination['incumbent']:
+        subprocess.run([sys.executable,HERE/'frontier.py',str(gen-1),'native'],check=True)
+        response=json.loads((p/'winner-response/result.json').read_text())
+        name=response['name'];field[name]=response['policy']
+        if response['confirmed']:families.setdefault('tournament winner responses',[]).append(name)
     return field,families
 
 def declare(g):
