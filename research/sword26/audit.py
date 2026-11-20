@@ -1,6 +1,7 @@
 """Read-only analysis of referee events and replay keys from finished real games."""
 import csv
 import json
+import math
 import statistics
 from collections import Counter
 from pathlib import Path
@@ -81,6 +82,15 @@ def audit(run):
         events=rows(run/(stem+"-contacts.tsv"))
         classify_contacts(events)
         server=rows(run/(stem+"-server.tsv"))
+        countdown=run/(stem+"-countdown.tsv")
+        targets={r["name"]:r for r in rows(countdown)} if countdown.is_file() else {}
+        spawn_errors={}
+        for side,tape in ((who,keys),(1-who,opponent_keys)):
+            if not tape:continue
+            seat="AB"[side]
+            target=targets.get("SwordLab"+seat)
+            expected=[float(target[k] if target else server[0][seat.lower()+k]) for k in "xyz"]
+            spawn_errors[seat]=math.dist(expected,[float(tape[0][k]) for k in "xyz"])
         own=[e for e in events if e["attacker"]==name]
         pressed=[k for k in keys if k["press"]=="true"]
         cycles={}
@@ -103,7 +113,7 @@ def audit(run):
             branch={**signal,**survival(events,ix,name,m["ticks"]),
                     "switch_delay_ms":None if switch is None else int(switch["epochMs"])-int(signal["epochMs"])}
         output.append({**m,**movement(keys),"hits":len(own),"events":count_events(own),"landmarks":cycles,
-                       "branch":branch,
+                       "branch":branch,"first_input_spawn_error_blocks":spawn_errors,
                        "fresh_classification":"native damage cooldown" if events and "preDamageCooldown" in events[0] else "native post-contact hurt animation",
                        "defender_input_recorded":bool(opponent_keys),"physical_presses":len(pressed),
                        "opponent_movement":movement(opponent_keys),"opponent_events":count_events(e for e in events if e["attacker"]!=name),

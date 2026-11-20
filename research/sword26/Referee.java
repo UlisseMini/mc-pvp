@@ -5,6 +5,7 @@ import java.io.*;
 import java.util.Locale;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.*;
 import net.minecraft.world.phys.Vec3;
@@ -58,10 +59,26 @@ public final class Referee {
         }catch(IOException e){throw new UncheckedIOException(e);}
     }
     static boolean initialized;
+    static Vec3 spawnA, spawnB;
+    static float facingA, facingB;
+    static long releaseTime;
     static void cmd(MinecraftServer s,String c){s.getCommands().performPrefixedCommand(s.createCommandSourceStack(),c);}
-    static void prepare(MinecraftServer s,ServerPlayer p,double x,double z,double yaw){
+    static void teleportToSpawn(MinecraftServer s,ServerPlayer p,double x,double z,double yaw){
         String name=p.getGameProfile().name();
         cmd(s,String.format(Locale.ROOT,"tp %s %.4f 101 %.4f %.2f 0",name,x,z,yaw));
+    }
+    static String settleSpawn(MinecraftServer s, ServerPlayer p, Vec3 spawn, float yaw) {
+        double drift=p.position().distanceTo(spawn);
+        boolean correct=drift>0 && now()<releaseTime;
+        if(correct){
+            teleportToSpawn(s,p,spawn.x,spawn.z,yaw);
+            p.setDeltaMovement(Vec3.ZERO);
+            p.connection.send(new ClientboundSetEntityMotionPacket(p));
+        }
+        return p.getGameProfile().name()+"\t"+spawn.x+"\t"+spawn.y+"\t"+spawn.z+"\t"+drift+"\t"+correct+"\n";
+    }
+    static void prepare(MinecraftServer s,ServerPlayer p,double x,double z,double yaw){
+        teleportToSpawn(s,p,x,z,yaw);
         p.getInventory().clearContent();
         p.setItemSlot(EquipmentSlot.MAINHAND,new ItemStack(Items.DIAMOND_SWORD));
         p.setItemSlot(EquipmentSlot.HEAD,new ItemStack(Items.DIAMOND_HELMET));
@@ -104,10 +121,12 @@ public final class Referee {
                 double angle=Double.parseDouble(fields[3]),gap=Double.parseDouble(fields[4]);
                 double x=Math.cos(angle)*gap/2,z=Math.sin(angle)*gap/2,yaw=Math.toDegrees(angle)-90;
                 prepare(s,a,-x,-z,yaw);prepare(s,b,x,z,yaw+180);
+                spawnA=a.position();spawnB=b.position();facingA=a.getYRot();facingB=b.getYRot();
                 requestedHits=fields.length>8?Integer.parseInt(fields[8]):0;
                 branchSeat=requestedHits>0?Integer.parseInt(fields[7]):-1;
                 branched=false;streak=0;
                 long start=(System.getProperty("sword.clock")==null?now():Lockstep.time())+1600/Integer.getInteger("sword.speed",1);
+                releaseTime=start;
                 write("A",fields[0]+"\t"+fields[2]+"\t"+start+"\t"+fields[5]+(requestedHits==0?"":branchSeat==0?"\topening":"\tdefender"));
                 write("B",fields[0]+"\t"+fields[1]+"\t"+start+"\t"+fields[6]+(requestedHits==0?"":branchSeat==1?"\topening":"\tdefender"));
                 trace=new PrintWriter(Files.newBufferedWriter(dir.resolve(fields[0]+"-server.tsv")));
@@ -118,6 +137,12 @@ public final class Referee {
             }
             ServerPlayer a=s.getPlayerList().getPlayerByName(round[1]),b=s.getPlayerList().getPlayerByName(round[2]);
             if(a==null||b==null){throw new IOException("Player left during "+round[0]);}
+            // During the neutral countdown, stale motion after the teleport can shift
+            // a free-running client. Re-seat it after its movement reports settle.
+            if(!Lockstep.ENABLED&&tick==-16&&!round[5].equals("human")&&!round[6].equals("human")){
+                write(round[0]+"-countdown.tsv","name\tx\ty\tz\tdriftBlocks\tcorrected\n"+
+                      settleSpawn(s,a,spawnA,facingA)+settleSpawn(s,b,spawnB,facingB));
+            }
             if(Lockstep.ENABLED&&tick==-9){
                 long calendar=Double.doubleToLongBits(Double.parseDouble(round[3]));
                 int phaseA=(int)(calendar&1),phaseB=(int)((calendar>>>1)&1);

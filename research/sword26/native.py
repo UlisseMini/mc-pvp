@@ -32,6 +32,23 @@ def save_json(path, value):
     pending.replace(path)
 
 
+def load_openings(path, rtts, pairs):
+    if path is None:
+        return {}
+    openings = {}
+    for row in json.loads(path.read_text()):
+        key = row["rtt"], row["pair"]
+        pose = row["angle"], row["gap"]
+        if not all(math.isfinite(v) for v in pose) or not 3.5 <= pose[1] <= 8:
+            raise ValueError(f"Invalid opening geometry at {key}")
+        if openings.setdefault(key, pose) != pose:
+            raise ValueError(f"Inconsistent opening geometry at {key}")
+    missing = {(rtt, pair) for rtt in rtts for pair in range(pairs)} - openings.keys()
+    if missing:
+        raise ValueError(f"Missing recorded openings {sorted(missing)}")
+    return openings
+
+
 async def wait_for(check, procs, seconds, reason):
     deadline = time.monotonic() + seconds
     while not check():
@@ -87,6 +104,7 @@ async def run(args):
     if args.human and (not re.fullmatch(r"[A-Za-z0-9_]{1,16}",args.human) or args.human in BOT_NAMES):
         raise ValueError("Enter your own Java player name")
     if args.pairs<1 or any(rtt<0 for rtt in args.rtts):raise ValueError("Provide positive pairs and nonnegative RTTs")
+    openings = load_openings(args.openings_from, args.rtts, args.pairs)
     if platform.system()=="Darwin":
         from headless import run_in_guest
         params=["--weights",str(args.weights.resolve()),"--pairs",str(args.pairs),"--seed",str(args.seed),"--speed",str(args.speed),
@@ -94,6 +112,19 @@ async def run(args):
         if args.blind:params+=["--blind"]
         if args.landmark:params+=["--landmark",str(args.landmark)]
         if args.clock:params+=["--clock",args.clock]
+        if args.openings_from:
+            path = args.openings_from.resolve()
+            if not any(path.is_relative_to(root) for root in (SRC, BUILD)):
+                # The headless guest only mounts the source and build folders.
+                manifests = BUILD / "opening-manifests"
+                manifests.mkdir(parents=True, exist_ok=True)
+                content = json.dumps([dict(rtt=r, pair=i, angle=a, gap=g)
+                                      for (r, i), (a, g) in sorted(openings.items())]).encode()
+                path = manifests / (hashlib.sha256(content).hexdigest() + ".json")
+                with tempfile.NamedTemporaryFile(dir=manifests, delete=False) as tmp:
+                    tmp.write(content)
+                Path(tmp.name).replace(path)
+            params+=["--openings-from",str(path)]
         if args.resume:params+=["--resume",str(args.resume.resolve())]
         if args.human:params+=["--human",args.human]
         run_in_guest(params)
@@ -175,6 +206,10 @@ async def run(args):
         metadata["primary_file"]=args.weights.name
         metadata["landmark"]=args.landmark
         metadata["clock"]=args.clock
+        if args.openings_from:
+            metadata["opening_geometry"] = [
+                dict(rtt=rtt, pair=pair, angle=openings[rtt,pair][0], gap=openings[rtt,pair][1])
+                for rtt in args.rtts for pair in range(args.pairs)]
         metadata["opponent_hashes"]={p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
                                      for p in args.opponents if p not in ("wtap","hold")}
         save_json(run_dir/"metadata.json",metadata)
@@ -182,6 +217,7 @@ async def run(args):
         if args.resume:
             previous=json.loads((args.resume/"metadata.json").read_text())
             if previous.get("clock")!=args.clock:raise ValueError("Resume requires the same game clock")
+            if previous.get("opening_geometry")!=metadata.get("opening_geometry"):raise ValueError("Resume requires the same opening geometry")
             if previous.get("landmark",0)!=args.landmark:raise ValueError("Resume requires the same acquisition protocol")
             if previous.get("blind",False)!=args.blind or previous.get("opponent_hashes",{})!=metadata["opponent_hashes"]:
                 raise ValueError("Resume requires the same blind setting and verified opponent weights")
@@ -203,6 +239,8 @@ async def run(args):
             latency[0]=rtt/args.speed
             for pair in range(args.pairs):
                 angle=rng.uniform(-math.pi,math.pi);gap=rng.uniform(3.5,8)
+                if openings:
+                    angle,gap=openings[rtt,pair]
                 candidates=[args.weights,*args.extra_weights]
                 policies=[("learned" if i==0 else f"learned-{i}",str(w.resolve())) for i,w in enumerate(candidates)]
                 policies.append(("wtap","wtap"))
@@ -254,6 +292,7 @@ if __name__=="__main__":
     parser.add_argument("--opponents",nargs="+",default=["wtap"])
     parser.add_argument("--speed",type=int,default=1)
     parser.add_argument("--resume",type=Path)
+    parser.add_argument("--openings-from",type=Path,help="Replay angle and distance by RTT and pair from a recorded results JSON or opening list")
     parser.add_argument("--blind",action="store_true",help="Mix the trained bot and the control against the same human")
     parser.add_argument("--landmark",type=int,default=0,help="Use the common W-tap opening until this many unanswered fresh hits after the defender begins pressing")
     parser.add_argument("--clock",choices=["realtime","fast"],help="Run the native clients and server on an ordered network tick schedule")

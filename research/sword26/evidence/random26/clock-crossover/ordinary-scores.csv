@@ -1,0 +1,9 @@
+opponent,added_rtt_ms,opening,seat,policy,learned_hp,opponent_hp,wtap_hp,wtap_opponent_hp,learned_presses_per_second,wtap_presses_per_second,learned_critical,wtap_critical,learned_fresh,wtap_fresh,learned_upgrades,wtap_upgrades,learned_round,wtap_round
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0,0,0,learned,0.0,5.9698553,0.0,2.990004,1.647,1.22,1,0,7,9,0,0,round-000,round-003
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0,0,1,learned,0.0,2.9900053,0.0,1.1000042,1.593,1.143,0,0,9,10,0,0,round-002,round-001
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0,1,0,learned,1.1000044,0.0,0.0,1.1000042,1.527,1.242,2,0,10,10,0,0,round-005,round-004
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0,1,1,learned,3.567505,0.0,0.0,4.880004,1.488,1.314,4,0,9,8,0,0,round-006,round-007
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,100,0,0,learned,0.0,4.8800044,0.0,2.9900053,1.194,1.29,0,0,8,9,0,0,round-011,round-009
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,100,0,1,learned,0.20750427,0.0,0.0,4.880004,1.633,1.333,6,0,8,8,0,0,round-010,round-008
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,100,1,0,learned,2.189854,0.0,0.0,1.1000051,1.471,1.342,2,0,10,10,0,0,round-013,round-012
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,100,1,1,learned,3.8525596,0.0,0.0,1.1000042,1.613,1.064,2,0,10,10,0,0,round-015,round-014

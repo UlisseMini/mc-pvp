@@ -100,11 +100,22 @@ public final class KernelReplay {
     static String event(int tick,int seat,boolean fresh,boolean crit,boolean boost,float charge){
         return tick+"/"+seat+"/"+fresh+"/"+crit+"/"+boost+"/"+Float.floatToIntBits(charge);
     }
+    // Offline sensitivity check. A negative tick preserves the recorded clock.
+    private static final int REVERSE_UPLINK_TICK = Integer.getInteger("sword.reverseUplinkTick", -1);
+    static void handle(int t, int seat, FastDuel.Seat player, FastDuel.Seat other, List<String> events) {
+        int before = player.stats.hits;
+        player.handle(t, other);
+        if (player.stats.hits != before)
+            events.add(event(t,seat,player.stats.lastFresh==t,player.lastCritical,player.lastBoost,player.lastCharge));
+    }
     static void execute(int t,FastDuel.Seat a,FastDuel.Seat b,List<String> events){
-        int beforeA=a.stats.hits,beforeB=b.stats.hits;
-        a.handle(t,b);b.handle(t,a);
-        if(a.stats.hits!=beforeA)events.add(event(t,0,a.stats.lastFresh==t,a.lastCritical,a.lastBoost,a.lastCharge));
-        if(b.stats.hits!=beforeB)events.add(event(t,1,b.stats.lastFresh==t,b.lastCritical,b.lastBoost,b.lastCharge));
+        if (t == REVERSE_UPLINK_TICK) {
+            handle(t,1,b,a,events);
+            handle(t,0,a,b,events);
+        } else {
+            handle(t,0,a,b,events);
+            handle(t,1,b,a,events);
+        }
         a.broadcast(t,b);b.broadcast(t,a);a.serverTick(b);b.serverTick(a);
     }
 }

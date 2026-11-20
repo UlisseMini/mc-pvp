@@ -1,0 +1,17 @@
+round,seat,policy,deliberate_offset,precheck_drift,corrected,first_input_error
+round-000,A,learned,False,0.0,false,0.0
+round-000,B,learned,True,0.25,true,0.0
+round-001,A,learned,False,0.0,false,0.0
+round-001,B,learned,True,0.25,true,0.0
+round-002,A,wtap,False,0.07917029354863281,true,0.0
+round-002,B,wtap,True,0.25,true,0.0
+round-003,A,wtap,False,0.0,false,0.0
+round-003,B,wtap,True,0.25,true,0.0
+round-004,A,learned,False,0.0,false,0.0
+round-004,B,learned,False,0.0,false,0.0
+round-005,A,wtap,False,0.0,false,0.0
+round-005,B,wtap,False,0.0,false,0.0
+round-006,A,learned,False,0.08141595394041595,true,0.0
+round-006,B,learned,False,0.0,false,0.0
+round-007,A,wtap,False,0.0,false,0.0
+round-007,B,wtap,False,0.0,false,0.0

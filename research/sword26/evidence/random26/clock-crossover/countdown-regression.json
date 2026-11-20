@@ -1,0 +1,21 @@
+{
+  "purpose": "Ordinary Java spawn regression after detecting two displaced W-tap reference openings. These rounds are a setup test and are separate from the two-clock strength comparison.",
+  "clock": "ordinary TCP, 20 TPS, 0 ms added RTT",
+  "weights": "Frozen option 5 and its matched W-tap arm against option 4, both seats.",
+  "geometry": "ordinary-openings.json, both zero-latency openings",
+  "shuffle_seed": 910426,
+  "injected_rounds": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "unchanged_rounds": [
+    4,
+    5,
+    6,
+    7
+  ],
+  "injection": "On the private console, 180 ms after observing the referee consume the request, issue execute at SwordLabB run tp SwordLabB ~0.25 ~ ~. All keys remain under their usual control after release.",
+  "expected": "In all eight rounds both clients occupy their requested coordinates on poll zero. The referee must detect and correct the injected displacement on each of the first four rounds. Retain the scores and both traces but exclude them from the clock crossover."
+}

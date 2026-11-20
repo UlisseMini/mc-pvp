@@ -1,0 +1,24 @@
+{
+  "question": "Does the clock comparison persist when each Java clock plays both historical geometry sets? Diagnostic on previously exposed openings.",
+  "panels": [
+    "Replay the four archived ordinary TCP geometries in scheduled Java, by RTT.",
+    "Replay the four archived scheduled geometries in ordinary Java with normal speed and independently running clients."
+  ],
+  "matched": [
+    "opening angle and separation",
+    "both seats at 0 and 100 ms",
+    "option 5 or plain W-tap against option 4",
+    "kit, input policies, aim and press ceiling"
+  ],
+  "unmatched": "The normal network, tracker phase, entity ordering and wall-clock scheduling of free-running Java are observed as available, never forced to match lockstep.",
+  "order_seed": 8127905,
+  "changes": "Opening selection only. Combat, timing, weights and simulator rules unchanged.",
+  "weights_sha256": {
+    "option5": "7fe78ecc393bbe9a8e125b791faa8f50830a92ab4c4fdfa535014ce18be030e2",
+    "option4": "2708fdc8d7e6883ee61a1ed05fe1d05b0bc0fdbf1069dde492e08bbc10317520"
+  },
+  "checks": [
+    "Verify identical scheduled Java and model contacts and terminal HP, keys, observed geometry and winner for each crossover arm.",
+    "Compare the Java winner, first contact and per-client tick stamps by fixed geometry, seat and latency in both arms. Report each panel and small samples."
+  ]
+}

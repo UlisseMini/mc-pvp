@@ -40,6 +40,10 @@ The output folder contains server health and positions, accepted attack events, 
 
 For a faster real-game comparison, add `--clock fast` and supply one RTT such as `--rtts 100`. This runs both real clients and the dedicated server through their normal game ticks under a shared packet schedule. Rendering is skipped during loaded gameplay. `--clock realtime` paces the same schedule at normal speed. Omit `--clock` for the independent TCP and render timing used in ordinary match confirmation. All three modes keep the bot windows inside Linux.
 
+Use the fast simulator for training and candidate selection. For a promotion, freeze the weights and compare the challenger, incumbent and plain W-tap on fresh ordinary Java openings with the same opponent pool, both seats and each declared latency. Report results by opening and latency. Keep previously inspected openings for diagnosis and reserve fresh ones for the next promotion.
+
+When two clocks give different results, pass `--openings-from PATH` to reuse an earlier run’s `results.json` or a saved list of opening angles and distances. The runner matches geometry by latency and opening number. The clients and TCP still run on independent clocks in ordinary Java. Scheduled Java tests reproducible trajectories, while ordinary Java tests whether the training distribution predicts playing strength. Investigate discrepancies alongside training and record the first observable difference before changing a physics constant. [Matched-clock investigation](SIMULATOR.md#the-same-openings-on-both-java-clocks)
+
 The recorded comparisons also travel with the project. For example, these commands rebuild the independent-opponent replay from its saved traces. Round 7, view B shows the retreating rival fighting the default bot.
 
 ```sh
