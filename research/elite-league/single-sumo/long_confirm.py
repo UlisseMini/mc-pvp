@@ -1,5 +1,6 @@
 """Out-of-sample confirmation of the default-map checkpoint selected by each training branch."""
 import json
+import hashlib
 import random
 import sys
 import subprocess
@@ -8,8 +9,29 @@ from pathlib import Path
 from long_specialist import RUN,BASE,sources
 from learner import RTTS,ROOT,HERE,Worker,write_json
 from history_replication import FOLDER
+from native_league import publish
 
 def read(p):return json.loads(p.read_text())
+
+def publish_improvements(key):
+    """Give each new development high score its own immutable, playable seven-CPS policy."""
+    folder = RUN/key
+    label,opponent = {'incumbent':('frozen','the frozen best-sumo'), 'seven':('seven','Sumo Seven'),
+                      'g1':('league001','league winner 001')}[key]
+    best = -1
+    for result in sorted((folder/'development').glob('*/comparison.json'),key=lambda p:int(p.parent.name)):
+        row=read(result)
+        budget=row['trained_fights']
+        if row['current']['wins']<=best:continue
+        best=row['current']['wins']
+        if budget<=BASE:continue
+        actor=folder/f'n{budget}.net'
+        ref=dict(reference=str(actor.relative_to(ROOT)),sha256=hashlib.sha256(actor.read_bytes()).hexdigest())
+        name=f'sumo-counter-{label}-{budget//1024}k'
+        publish(name,ref,f'7 CPS, {budget}-fight specialist against {opponent}')
+        write_json(folder/'public'/f'n{budget}.json',dict(name=name,weights=ref,budget=budget,
+                  development=row['current'],matched_plain_wtap=row['plain_wtap'],
+                  scope='specialist development high score on its fixed opponent, original training floor'),fixed=True)
 def register():
     write_json(RUN/'confirmation.json',dict(seed=46197541,donors='32 nonoverlapping prospective timing calendars in recognition/payoff/replication/spaced; no specialist fitted or selected on these matches',
         arms='final frozen training-map selection, 16k control and plain W-tap; each against target and W-tap',
@@ -49,6 +71,7 @@ def run():
     register();pending=set(('incumbent','seven','g1'))
     while pending:
         for key in sorted(pending):
+            publish_improvements(key)
             p=RUN/key/'selection.json';manifest=FOLDER/'replication/spaced/manifest.json'
             if not p.exists() or not manifest.exists():continue
             d=read(p)

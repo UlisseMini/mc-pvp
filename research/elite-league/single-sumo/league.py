@@ -60,7 +60,12 @@ def main():
         g=1;idle=0
         while True:
             if (BUILD/'stop-after-current').exists():return
-            result=stage(g);print(result,flush=True)
+            decision=EVIDENCE/f'g{g:03d}'/'decision.json'
+            if not decision.is_file():
+                # Pick up the declared entrants and runtime for this generation at its boundary.
+                # Interrupted workers resume from the immutable generation and match ledgers.
+                subprocess.run([sys.executable,'-u',__file__,'stage',str(g)],check=True)
+            result=read(decision);print(result,flush=True)
             idle=0 if result['promoted'] or result['novel'] else idle+1
             if idle>=3:
                 folder=EVIDENCE/f'g{g:03d}'
@@ -70,4 +75,11 @@ def main():
                     return
                 idle=0
             g+=1
-if __name__=='__main__':main()
+if __name__=='__main__':
+    parser=argparse.ArgumentParser()
+    parser.add_argument('operation',nargs='?',choices=['stage'])
+    parser.add_argument('generation',nargs='?',type=int)
+    args=parser.parse_args()
+    if args.operation=='stage' and args.generation is not None:stage(args.generation)
+    elif args.operation is None and args.generation is None:main()
+    else:parser.error('stage requires a generation number')
