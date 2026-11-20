@@ -5,7 +5,7 @@ import java.util.Base64;
 
 /** Java 8 inference shared by the Forge player and tournament. One instance per fighter per bout. */
 public final class DuelNetwork {
-    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION, ROUTER, TACTIC, RESPONSE, PAIR, PING_MLP, INPUT8, INPUT32, GRU32, LEAGUE_MLP180, LEAGUE_MLP360 }
+    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION, ROUTER, TACTIC, RESPONSE, PAIR, PING_MLP, INPUT8, INPUT32, GRU32, LEAGUE_MLP180, LEAGUE_MLP360, LEAGUE_ADAPT24 }
     public static final int INPUTS=22, HIDDEN=8, OUTPUTS=5;
     public static final int STRIDE=12;
     private final Family family;
@@ -23,7 +23,7 @@ public final class DuelNetwork {
 
     private SumoLeaguePolicy league;
     public SumoLeaguePolicy league(){return league;}
-    public static boolean leagueFamily(Family f){return f==Family.GRU32||f==Family.LEAGUE_MLP180||f==Family.LEAGUE_MLP360;}
+    public static boolean leagueFamily(Family f){return f==Family.GRU32||f==Family.LEAGUE_MLP180||f==Family.LEAGUE_MLP360||f==Family.LEAGUE_ADAPT24;}
     private static int leagueWidth(Family f){return f==Family.GRU32?32:f==Family.LEAGUE_MLP360?360:180;}
     private SumoInputs extra;
     private double decisionTime,pressAge=Double.POSITIVE_INFINITY;
@@ -31,6 +31,7 @@ public final class DuelNetwork {
     public static boolean study(Family f){return f==Family.INPUT8||f==Family.INPUT32;}
     public static int width(Family f){return f==Family.INPUT32?32:HIDDEN;}
     public static int size(Family f) {
+        if(f==Family.LEAGUE_ADAPT24)return SumoLeaguePolicy.Adapted.SIZE;
         if(leagueFamily(f))return SumoLeaguePolicy.size(f==Family.GRU32,leagueWidth(f));
         if(study(f))return width(f)*(SumoInputs.COUNT+1)+OUTPUTS*(width(f)+1)+1;
         if(f==Family.PAIR)return PairedExperts.SIZE;
@@ -53,7 +54,8 @@ public final class DuelNetwork {
             if(mask!=(int)mask || mask<0 || mask>127)throw new IllegalArgumentException("Unknown study feature mask");
             extra=new SumoInputs((int)mask);
         }
-        if(leagueFamily(family))league=new SumoLeaguePolicy(family==Family.GRU32,leagueWidth(family),weights);
+        if(family==Family.LEAGUE_ADAPT24)league=new SumoLeaguePolicy.Adapted(weights);
+        else if(leagueFamily(family))league=new SumoLeaguePolicy(family==Family.GRU32,leagueWidth(family),weights);
         if(family==Family.PAIR)pair=new PairedExperts(weights);
         if(family==Family.RESPONSE)response=new TradeResponse(weights);
         if(family==Family.TACTIC)tactics=new CombatTactics(weights);

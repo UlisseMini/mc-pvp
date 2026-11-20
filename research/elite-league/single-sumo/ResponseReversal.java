@@ -9,6 +9,12 @@ final class ResponseReversal {
         final ArrayList<DuelEnv.Player> options=new ArrayList<>();int choice,cues,heads; int[] observed; boolean measure;
         double tOwn=Double.NEGATIVE_INFINITY,tFoe=Double.NEGATIVE_INFINITY,cut=Double.NaN;
         Primed(int own){super("response-probe",0,own,0);}
+        void continueWith(int index){
+            DuelEnv.Player actor=options.get(index);
+            options.clear();
+            options.add(actor);
+            choice=0;
+        }
         @Override Primed copy(){var c=new Primed(rtt);c.choice=choice;c.cues=cues;c.heads=heads;c.tOwn=tOwn;c.tFoe=tFoe;c.cut=cut;
             for(var p:options)c.options.add(p.copy());return c;}
         public void received(PeriodicComboClock.PacketObservation o){for(var p:options)p.received(o);}
@@ -41,6 +47,7 @@ final class ResponseReversal {
             String row;while((row=in.readLine())!=null){
                 var t=MemoryAssay.trial(row.split("\t"));
                 var e=new DuelEnv(t.base(),t.seat()?t.own():t.other(),t.seat()?t.other():t.own());var orig=create(t,e,responses);
+                ((Primed)orig.our()).continueWith(0);
                 orig.finish();double cut=((Primed)orig.our()).cut;
                 var v=new LinkedHashMap<String,Object>();v.put("full",orig.reward());v.put("cut",cut);
                 if(Double.isFinite(cut)){
@@ -52,7 +59,7 @@ final class ResponseReversal {
                         while(a.observed==null && base.advance()){}
                         v.put("response_buttons",a.observed);
                     }else for(int i=0;i<=responses.length;i++){
-                        var b=e.new Game(base,base.a.copy(),base.b.copy());((Primed)b.our()).choice=i;b.finish();
+                        var b=e.new Game(base,base.a.copy(),base.b.copy());((Primed)b.our()).continueWith(i);b.finish();
                         if(i==0&&b.reward()!=orig.reward())throw new AssertionError("Ordinary continuation diverged");
                         v.put(i==0?"intact":responses[i-1],b.reward());
                     }

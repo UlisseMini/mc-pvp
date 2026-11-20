@@ -68,3 +68,24 @@ The interim specialist comparison also ran on the main Forge server. These 48 in
 | Sumo-seven-first | 1 / 0 / 7 | 0 / 2 / 6 | 1 / 0 / 7 |
 
 Both specialist draws came at 31/31 ms, once in each seat. Eight native bouts per arm can reveal a large failure and leave considerable uncertainty about smaller score differences. [Native per-seat and per-RTT results](evidence/id-oracle/native-u064/summary.json) · [Verified physical controls](evidence/id-oracle/native-u064/verified.json)
+
+## The seven-CPS reference opponent
+
+`sumo-seven-first` is the first completed seven-CPS PPO response to frozen `best-sumo` (v4-ppo-g0496). It uses the older 32-unit feedforward INPUT32 actor. Starting from the previous 20-CPS specialist, seed 1801 trained for 1,024 batches of 32 simulated duels. Development selection retained update 640, equivalent to 20,480 bouts after the warm start. Training varied both RTTs and seats. Ring-out was the reward. Use `/duel sumo-seven-first sumo preset=mmc cps=7` to reproduce its training cap. [Original schedule](../sumo-confidence/seven/protocol.md) · [Checkpoint selection](../sumo-confidence/specialist/fits/seven-ppo-specialist-1801.csv)
+
+It won all 32 native pilot fights at 7/7 against its target. Plain W-tap lost all eight native reference fights. At 20/20 the unchanged specialist went 10–22 and W-tap went 1–7. In the matched 7/7 simulator pilot, the specialist got the first fresh hit twice and won 32 times. Replacing its forward/sprint and strafe commands before either hurt cue with plain W-tap reduced its score by 17.2 points. Suppressing a selected near-hit jump in 29 paired games increased outward travel over the following 250 ms by 0.34 blocks on average. Those interventions preserved all 29 wins. [Matched native games and model interventions](../sumo-confidence/seven/pilot/cap-transfer.json)
+
+## Can history change a ring-out?
+
+Two independently trained 180-unit response policies prefer different opponents. A learned GRU read 24 input heads from a common opening and then selected a response for the rest of the duel. Opponent names were used to train this classifier. Its deployed inputs consist entirely of the player's own observations. Each alternative continued from the same clock, both players and queued events. The paired results cover 512 regulation matches on eight development timing donors.
+
+| Two-opponent average | Score | Plain W-tap from spawn |
+| --- | ---: | ---: |
+| GRU chooses a learned response from the first 24 observations | 64.65% | 14.84% |
+| Better of those two fixed responses on training clocks | 62.70% | 14.84% |
+| Last observation alone chooses a response | 56.84% | 14.84% |
+| Replace history through head 18 with the opposite opponent, preserve the last six observations | 56.93% | 14.84% |
+| Referee supplies the actual opponent ID | 69.92% | 14.84% |
+| Strongest unrestricted fixed continuation, sumo-cap-ramp | 75.78% | 14.84% |
+
+The GRU gained 1.95 percentage points over the better fixed learned branch and 7.71 points over the swapped history. Donor-paired intervals were +0.84 to +3.06 and +5.87 to +9.56 points, respectively. With access to all nine continuations, the strongest training-clock choice was sumo-cap-ramp against both opponents. This makes it possible to distinguish context-dependent improvement within a learned pair from the strength of the best available fixed strategy. The complete client controller reproduced all 512 counterfactual scores for each of five assignments. The Forge Java 8 and simulator Java 17 implementations returned identical actions on 897 recorded local observations for all five. A prospective timing panel and native ring-outs provide separate transfer tests. [Paired development results](evidence/id-oracle/recognition/payoff/routed-dev.json) · [Unrestricted comparison](evidence/id-oracle/recognition/payoff/dev.json) · [Executable client parity](evidence/id-oracle/recognition/payoff/client/parity.json)

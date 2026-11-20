@@ -37,6 +37,7 @@ final class NetworkChecks {
         for(var family:DuelNetwork.Family.values()){
             float[] w=new float[DuelNetwork.size(family)];for(int i=0;i<w.length;i++)w[i]=(float)rng.nextGaussian();
             if(DuelNetwork.study(family))w[w.length-1]=lab.SumoInputs.MOTION|lab.SumoInputs.TIMING;
+            if(family==DuelNetwork.Family.LEAGUE_ADAPT24)w[w.length-1]=0;
             var n=new DuelNetwork(family,w);var m=DuelNetwork.decode(DuelNetwork.encode(family,w));DuelNetwork fork=null;
             for(int i=0;i<100;i++){
                 if(i==35)fork=n.copy();

@@ -4,8 +4,7 @@ from itertools import product
 from recognition import DIR, OUT, FOES, Identifier, dataset, fixtures
 from dedicated import budgets
 from assay import java_rows, lower_contrast
-from learner import ROOT, BUILD, CLOCKS, RTTS, freeze, write_json, json, np, torch
-from pathlib import Path
+from learner import ROOT, freeze, write_json, json, np, torch
 
 FOLDER = OUT/'payoff'
 CUTOFF, SEED = 24, 621
@@ -106,5 +105,8 @@ def measure(split,clocks=None,trained_branches=False):
     return result
 if __name__=='__main__':
     import sys
-    if 'routed' in sys.argv[1:]:measure('dev',trained_branches=True)
+    if 'sealed' in sys.argv[1:]:
+        clocks=json.loads((FOLDER/'prospective/calendars/manifest.json').read_text())['selected']
+        measure('sealed',clocks,trained_branches=True)
+    elif 'routed' in sys.argv[1:]:measure('dev',trained_branches=True)
     else:measure('dev')

@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -30,6 +31,9 @@ def run():
     if not all(p.is_dir() for p in old):raise RuntimeError('Build the frozen sumo-confidence and sumo-inputs simulator dependencies first')
     BUILD.mkdir(exist_ok=True,parents=True);lab=ROOT/'src/lab';shared=[lab/'DuelNetwork.java',lab/'SumoLeaguePolicy.java']
     sources=[*shared,HERE.parent/'Arena.java',HERE.parent/'NetworkChecks.java',*(p for p in sorted(HERE.glob('*.java')) if p.name!='LeagueTrace.java')]
+    for name in re.findall(r'^import lab\.(\w+);$',(HERE.parent/'Arena.java').read_text(),re.MULTILINE):
+        dependency=lab/(name+'.java')
+        if dependency not in sources:sources.append(dependency)
     inherited={}
     for folder in old:
         for file in folder.rglob('*.class'):inherited.setdefault(str(file.relative_to(folder)),file.read_bytes())

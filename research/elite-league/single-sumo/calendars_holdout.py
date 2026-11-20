@@ -59,7 +59,27 @@ def collect(folder):
             if out.exists():selected.append(str(out.relative_to(ROOT)))
         num+=1;last_completion=time.monotonic()
     write_json(done,dict(selected=selected,rejected=rejected,first=spec['first_future_id'],last=num-1),fixed=True)
+
+def prefill(folder):
+    """Batch completed timing-only captures in their original enrollment order."""
+    storage=folder/'calendars';storage.mkdir(exist_ok=True)
+    spec=json.loads((folder/'assay.json').read_text());num=spec['first_future_id'];count=0;written=0
+    while count<spec['calendar_count'] and written<8 and not (storage/'manifest.json').exists():
+        mid=f'm{num:04d}';path=ROOT/'runtime/results'/(mid+'.json');num+=1
+        if not path.exists():break
+        game=json.loads(path.read_text())
+        if game['mode']!='sumo' or any(not game[k].startswith('LabSlot') for k in 'ab'):continue
+        if (storage/(mid+'.invalid.json')).is_file():continue
+        out=storage/(mid+'.txt.gz')
+        if not out.exists():
+            # Let the ordinary collector adjudicate incomplete or invalid captures.
+            try:raw=tape(mid,maximum_ticks=160,explicit_polls=True,movement_flush=True).encode()
+            except (OSError,ValueError,KeyError,StopIteration,EOFError):break
+            freeze(out,gzip.compress(raw,mtime=0));written+=1
+        count+=1
+    return written
 if __name__=='__main__':
     if sys.argv[1]=='one':
         sys.stdout.write(tape(sys.argv[2],maximum_ticks=160,explicit_polls=True,movement_flush=True))
+    elif sys.argv[1]=='prefill':prefill(Path(sys.argv[2]).resolve())
     else:collect(Path(sys.argv[1]).resolve())
