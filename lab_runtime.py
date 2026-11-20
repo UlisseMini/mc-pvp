@@ -268,8 +268,17 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
                     initialized=True;print('All clients connected. /bots, /duel <bot>, /mode diamond, /blocksound, /matches, /watch.',flush=True)
                 elif time.time()>client_deadline:raise RuntimeError('Bot startup did not produce healthy native heartbeats; inspect slot logs (no backend fallback)')
             for request in sorted((RUNTIME/'manager/inbox').glob('*.json')):
-                payload=json.loads(request.read_text());request.unlink()
-                command=payload['command']
+                # Older clients may still be writing directly to the final filename.
+                try:
+                    payload=json.loads(request.read_text())
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    if time.time()-request.stat().st_mtime>30:
+                        request.rename(request.with_suffix('.invalid'))
+                    continue
+                command=payload.get('command') if isinstance(payload,dict) else None
+                if not initialized and isinstance(command,str) and command.startswith('lab '):
+                    continue
+                request.unlink()
                 if command=='shutdown':stop.set();break
                 if command=='reload-bots':
                     state=json.loads((RUNTIME/'status.json').read_text());busy={m[k] for m in state['matches'] for k in ('a','b')}
@@ -307,7 +316,13 @@ def send(command):
     except (FileNotFoundError,ProcessLookupError,PermissionError,json.JSONDecodeError) as error:
         raise RuntimeError('PvP Lab is stopped. Double-click Start PvP Lab.command first.') from error
     inbox=RUNTIME/'manager/inbox';inbox.mkdir(parents=True,exist_ok=True)
-    path=inbox/(str(uuid.uuid4())+'.json');path.write_text(json.dumps({'command':command}))
+    path=inbox/(str(uuid.uuid4())+'.json')
+    temporary=path.with_suffix('.tmp')
+    try:
+        temporary.write_text(json.dumps({'command':command}))
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def verify_ux():
