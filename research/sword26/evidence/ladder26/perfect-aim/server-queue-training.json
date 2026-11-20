@@ -1,0 +1,7 @@
+{
+  "first_season": 29,
+  "phase_packet_processing": "before_server_tick",
+  "basis": "Both reserved 128-fight Java panels gave lower mean squared scoring error under the native queue. Independent-phase errors changed from 0.128939 to about 0.1137 on A and 0.130050 to about 0.1236 on B. The 128 B predictions committed in advance improved from 0.13005 to 0.12382. The stock 26.3 server drains this queue before its world tick.",
+  "applicability": "Use the tick queue for variable and mixed-phase training, selections, counter searches and nominations from this season. Preserve the exact scheduled kernel and the original continuous-delivery code for reproducing prior seasons. Actual Java determines promotion.",
+  "sample_control": "A matched W-tap arm used the same timing in each comparison. No recorded evaluation calendar, opponent action tape, or native hit label is a training input."
+}

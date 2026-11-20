@@ -43,9 +43,18 @@ def lines(path, values):
     return path
 
 
+def queued_clock(work):
+    settings=EVIDENCE/"perfect-aim/server-queue-training.json"
+    group,_,suffix=work.name.partition("-")
+    if group not in ("season","java") or not suffix.isdigit() or not settings.exists():
+        return False
+    return int(suffix)>=json.loads(settings.read_text())["first_season"]
+
+
 def java(jar, work, name, args, output=None, clock="off"):
     cmd = ["/usr/bin/nice","-n","12",jdk()/"java","-Xmx768m","-XX:+UseSerialGC","-XX:ActiveProcessorCount=4",
-           "-XX:CICompilerCount=2","-Dsword.transport=lockstep","-Dsword.aimProfile="+AIM_PROFILE,"-Dsword.phaseClock="+clock,"-cp",jar,*args]
+           "-XX:CICompilerCount=2","-Dsword.transport=lockstep","-Dsword.aimProfile="+AIM_PROFILE,"-Dsword.phaseClock="+clock,
+           "-Dsword.serverPacketBatch="+str(clock!="off" and queued_clock(work)).lower(),"-cp",jar,*args]
     target = output or work/(name+".log")
     temp = target.with_suffix(".running")
     started = time.monotonic()
@@ -242,6 +251,8 @@ def run_season(index,native,main,pool,final=False,native_threats=()):
                 main_breadth=breadth(check,main,rivals),wtap_breadth=breadth(check,"wtap",rivals),
                 wtap_vs_main=field_score(check,"wtap",main),wtap_vs_native=field_score(check,"wtap",native),
                 finalists=candidates,opponent_mix={str(p.relative_to(SRC)):w for p,w in zip(pool,weights)})
+    if queued_clock(work):
+        result["phase_packet_processing"]="before_server_tick"
     if verified:
         result["native_threats"]=[str(p.relative_to(SRC)) for p in verified]
         result["defender"]=stored(defender)

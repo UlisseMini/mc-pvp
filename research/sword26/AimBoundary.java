@@ -1,6 +1,8 @@
 package sword;
 
 import java.util.Locale;
+import java.util.HashMap;
+import java.util.Map;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -32,6 +34,32 @@ public final class AimBoundary {
         return box.clip(eye,end).map(eye::distanceTo).orElse(Double.POSITIVE_INFINITY);
     }
 
+    static long lookup(float angle,boolean yaw){
+        double scaled=((yaw?-angle:angle)*.017453292f)*FlatPhysics.SCALE;
+        return ((long)scaled<<32)|((long)(scaled+16384)&0xffffffffL);
+    }
+    static int tableKey(long pair){
+        return ((int)(pair>>>32)&65535)<<16|((int)pair&65535);
+    }
+    static void directions(Map<Integer,Float> out,boolean yaw,float low,float high,long a,long b){
+        // The two unwrapped lookup indices are monotone in the input angle.
+        // Equal endpoint pairs certify the entire intervening float interval.
+        if(a==b){out.putIfAbsent(tableKey(a),low);return;}
+        float mid=(float)((low+(double)high)/2);
+        if(mid==low||mid==high){
+            out.putIfAbsent(tableKey(a),low);out.putIfAbsent(tableKey(b),high);return;
+        }
+        long m=lookup(mid,yaw);
+        directions(out,yaw,low,mid,a,m);directions(out,yaw,mid,high,m,b);
+    }
+    static float[] directions(boolean yaw,float limit){
+        var samples=new HashMap<Integer,Float>();
+        directions(samples,yaw,-limit,limit,lookup(-limit,yaw),lookup(limit,yaw));
+        float[] values=new float[samples.size()];int i=0;
+        for(float angle:samples.values())values[i++]=angle;
+        return values;
+    }
+
     public static void main(String[] args){
         net.minecraft.SharedConstants.tryDetectVersion();
         net.minecraft.server.Bootstrap.bootStrap();
@@ -43,24 +71,33 @@ public final class AimBoundary {
         float bestYaw=0,bestPitch=0;
         // Positive and negative revolutions cover the two ways that truncation
         // of sine and cosine lookup indices can treat equivalent bearings.
-        for(int i=-65536;i<65536;i++){
-            float yaw=(float)((i+.5)*360/65536.);
+        float[] pitches=directions(false,90);
+        int feasibleHeadings=0;
+        for(float yaw:directions(true,360)){
             var direction=Entity.calculateViewVector(0,yaw);
             // Native X/Z products are floats. Widen both horizontal faces by a
             // millionth of a block, beyond their rounding at this reach.
             double relaxed=horizontalEntry(box,eye,direction,1e-6);
-            lower=Math.min(lower,Math.hypot(relaxed,dy));
+            double bound=Math.hypot(relaxed,dy);
+            lower=Math.min(lower,bound);
             double horizontal=horizontalEntry(box,eye,direction,0);
-            if(horizontal>3.01)continue;
-            double pitch=-Math.toDegrees(Math.atan2(dy,horizontal));
-            for(int j=-24;j<=24;j++){
-                float p=(float)Math.clamp(pitch+j*(360./65536)/4,-90,90);
-                double d=clippedDistance(box,eye,yaw,p);
-                if(d<best){best=d;bestYaw=yaw;bestPitch=p;}
+            if(bound<REACH){
+                feasibleHeadings++;
+                for(float p:pitches){
+                    double d=clippedDistance(box,eye,yaw,p);
+                    if(d<best){best=d;bestYaw=yaw;bestPitch=p;}
+                }
+            }else if(horizontal<=3.01){
+                double pitch=-Math.toDegrees(Math.atan2(dy,horizontal));
+                for(int j=-24;j<=24;j++){
+                    float p=(float)Math.clamp(pitch+j*(360./65536)/4,-90,90);
+                    double d=clippedDistance(box,eye,yaw,p);
+                    if(d<best){best=d;bestYaw=yaw;bestPitch=p;}
+                }
             }
         }
         double recorded=clippedDistance(box,eye,(float)n[6],(float)n[7]);
-        System.out.printf(Locale.ROOT,"AIM_DISTANCE,%.12f,%.12f,%.12f,%.12f,%.8f,%.8f%n",
-            Math.sqrt(box.distanceToSqr(eye)),recorded,lower,best,bestYaw,bestPitch);
+        System.out.printf(Locale.ROOT,"AIM_DISTANCE,%.12f,%.12f,%.12f,%.12f,%.8f,%.8f,%d,%d%n",
+            Math.sqrt(box.distanceToSqr(eye)),recorded,lower,best,bestYaw,bestPitch,feasibleHeadings,pitches.length);
     }
 }

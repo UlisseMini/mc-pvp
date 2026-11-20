@@ -14,7 +14,7 @@ from aim_audit import audit as audit_aim
 from recordings import archive_panel,trim_after_knockout
 from report import export
 from showcase import record as record_exhibition
-from season import AIM_PROFILE, ANCHORS, EVIDENCE, WORK, PLAN, SRC, both_clocks, compile_sim, field_score, hash_policy, run_season, save, train_stage, unique, write_fighter
+from season import AIM_PROFILE, ANCHORS, EVIDENCE, WORK, PLAN, SRC, both_clocks, compile_sim, field_score, hash_policy, queued_clock, run_season, save, train_stage, unique, write_fighter
 
 
 def local(path):
@@ -156,7 +156,7 @@ def native_scout(index, jar, work, dest, candidates, inc, base, general, direct)
     return winner
 
 
-def native_wave(index,main,inc,pool,history,final):
+def native_wave(index,main,inc,pool,history,final,known_replies=()):
     tag=f"java-{index:03d}"
     dst=EVIDENCE/tag;dst.mkdir(exist_ok=True)
     decision=dst/"decision.json"
@@ -182,7 +182,7 @@ def native_wave(index,main,inc,pool,history,final):
     if index>=10 and (final or index>=15):
         pilot_winner=native_scout(index,jar,wa,dst,candidates,inc,base,general,direct)
         choices=unique([*choices,pilot_winner])
-    verified=[]
+    verified=list(known_replies)
     for record in sorted(EVIDENCE.glob("java-*/decision.json")):
         old=json.loads(record.read_text())
         if old.get("aim_profile","tournament")==AIM_PROFILE and same(SRC/old["old_champion"],inc):
@@ -200,9 +200,11 @@ def native_wave(index,main,inc,pool,history,final):
         opponents.append(outsider)
     choices=[write_fighter(p) for p in choices]
     actors=[*choices,inc]
-    save(dst/"nomination.json",dict(general=local(choices[0]),challengers=[local(p) for p in choices],incumbent=local(inc),
-                                     model_direct={local(p):field_score(merits,p,inc) for p in [general,direct,inc]},
-                                     model_wtap_direct=field_score(merits,"wtap",inc),final_challenge=final))
+    nomination=dict(general=local(choices[0]),challengers=[local(p) for p in choices],incumbent=local(inc),
+                    model_direct={local(p):field_score(merits,p,inc) for p in [general,direct,inc]},
+                    model_wtap_direct=field_score(merits,"wtap",inc),final_challenge=final)
+    if queued_clock(wa):nomination["phase_packet_processing"]="before_server_tick"
+    save(dst/"nomination.json",nomination)
     active=index>=14
     suffixes=("a","b");seed_offset=0
     if index==14 and (EVIDENCE/(tag+"-a")/"registration.json").exists():
@@ -269,7 +271,8 @@ def run():
         due=(len(state["history"])==3 or (i-state["last_java"]>=6) or (final and not changed))
         if due:
             hist=[json.loads((EVIDENCE/("season-%03d"%n)/"result.json").read_text()) for n in state["history"] if n>state["last_java"]]
-            outcome=native_wave(i,SRC/state["main"],inc,pool,hist,final and not changed)
+            outcome=native_wave(i,SRC/state["main"],inc,pool,hist,final and not changed,
+                                [SRC/p for p in state["counter_signatures"]])
             state["last_java"]=i;state["reference_pending"]=False
             print("Native result",json.dumps(outcome),flush=True)
             if outcome["promoted"]:
