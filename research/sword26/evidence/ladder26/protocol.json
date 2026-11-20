@@ -1,0 +1,48 @@
+{
+  "engine": "Java 26.3 flat-court sword duel, production simulator at 33fb0c8b",
+  "seed": 202611209,
+  "incumbent": "evidence/league26/fighter.net",
+  "anchors": [
+    "evidence/league26/fighter.net",
+    "evidence/random26/fighter.net",
+    "evidence/frozen/opponents/population.net",
+    "evidence/neural26/fighter.net",
+    "champion.net",
+    "evidence/transfer/challenger.net"
+  ],
+  "hashes": {
+    "evidence/league26/fighter.net": "2708fdc8d7e6883ee61a1ed05fe1d05b0bc0fdbf1069dde492e08bbc10317520",
+    "evidence/random26/fighter.net": "7fe78ecc393bbe9a8e125b791faa8f50830a92ab4c4fdfa535014ce18be030e2",
+    "evidence/frozen/opponents/population.net": "bb8c34cb1c2f55084b758e80c51446d3be13f86e9f17e936ad2a2c7083d7bfdb",
+    "evidence/neural26/fighter.net": "b1b00273c04c9a457e7bf4b8631a872903818ff8e0fbfda434122f811e8f32b4",
+    "champion.net": "f6f2887237cc188680dc96c9dcc753880e6717fcef255fb5796bedbf557d033c",
+    "evidence/transfer/challenger.net": "3761f029e425faf2ec2274c3ac17f2158dd7d1cfc0e14080fac2978ba826c862"
+  },
+  "training": "Ongoing main and champion-targeting responses, archived hard opponents, empirical opponent mixture, and complete-state action forks. Generic outcomes and HP. W-tap reserved for grading.",
+  "comparison": "Balance both seats and zero/100 ms added RTT, fixed kit, own inputs and bounded aim. Freeze each finalist before fresh ordinary Java. Keep all successful counters; compare each finalist and a W-tap control to the same rivals.",
+  "promotion": "A fresh ordinary Java majority directly against the incumbent, plus more total wins than the incumbent on a common multi-opponent field and more than plain W-tap. Count draws as half. Require a second independent opening panel for a close or split result. Audit start geometry and report per-latency spread.",
+  "stopping": "Look for three fresh independent search seasons without improved generalist performance or a new effective counter, then spend a larger independent search budget on a final challenge. Verify the strongest counter and finalist against the current incumbent in ordinary Java. A known counter that continues winning is a remaining vulnerability; do not describe that single policy as unbeatable. Continue if new transferable counters or a promoted champion appear.",
+  "cpu": "12 logical host cores. Three or four low-priority rollout workers with a small serial-GC JVM, or one headless four-vCPU guest for native tests. Heavy training and the game guest run at different times. Record process usage and wall time.",
+  "validation": "Development panels and model selection openings stay separate from subsequent fresh Java promotions and final audits. Each new search and evaluation uses a different seed.",
+  "season_design": {
+    "ordinary_generations": 144,
+    "final_generations": 320,
+    "fresh_population_multiplier": 2,
+    "branch_states_per_control": [
+      768,
+      2048
+    ],
+    "short_intervention_ticks": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "payoff_matrix_mixture": "50% symmetric empirical regret-matching mixture, 30% recent main vulnerability, 20% uniform",
+    "confirmation_openings_per_latency": 96,
+    "practical_model_improvement": "Generalist: >1.2 percentage points in 75% mean / 25% lowest-quarter matchup score and >51.5% against preceding main on fresh confirmation. Counter: at least 55% against current main and 2.5 percentage points above the strongest archived response. Draws count half.",
+    "strongest_search": "320 generations in each main and direct response population, 640 independent fresh population generations, 2048 full-history fork states per physical control, 480 recurrent PPO updates.",
+    "native_schedule": "First nominations after three seasons, then after six or at a confirmed plateau. Nominate the strongest across the learned field and strongest direct response to the live champion. Ordinary Java tests both with the incumbent and W-tap on identical requested openings; all arms in a cell need first-input pose error <= 1e-5 blocks. Retain every result.",
+    "native_confirmation": "Extra fresh panel when an apparent promotion has less than 75% head-to-head, a losing latency, a specialist alone appears to win, an unqualified opening occurred, or final search produced a possible promotion."
+  }
+}
