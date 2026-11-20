@@ -1,0 +1,43 @@
+{
+  "seed": 71244591,
+  "champion": "evidence/ladder26/fighters/aa9e5afc8d9d79d6.net",
+  "proposed": [
+    "evidence/ladder26/fighters/45b036297b60d75d.net",
+    "evidence/ladder26/fighters/95d2597982785ca9.net"
+  ],
+  "stages": {
+    "general": 384,
+    "response": 384,
+    "fresh": 640
+  },
+  "scores": [
+    {
+      "fighter": "evidence/ladder26/fighters/45b036297b60d75d.net",
+      "direct": 0.5419921875,
+      "breadth": 0.7309244791666667,
+      "fixed_direct": 0.544921875,
+      "queued_direct": 0.5390625
+    },
+    {
+      "fighter": "evidence/ladder26/fighters/95d2597982785ca9.net",
+      "direct": 0.6552734375,
+      "breadth": 0.5740559895833334,
+      "fixed_direct": 0.73046875,
+      "queued_direct": 0.580078125
+    },
+    {
+      "fighter": "evidence/ladder26/fighters/aa9e5afc8d9d79d6.net",
+      "direct": 0.5,
+      "breadth": 0.7212076822916667,
+      "fixed_direct": 0.5,
+      "queued_direct": 0.5
+    },
+    {
+      "fighter": "wtap",
+      "direct": 0.03515625,
+      "breadth": 0.11864013671875,
+      "fixed_direct": 0.05078125,
+      "queued_direct": 0.01953125
+    }
+  ]
+}
