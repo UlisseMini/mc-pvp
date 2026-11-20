@@ -1,0 +1,26 @@
+{
+  "seed": 71337161,
+  "pairs_per_rtt": 160,
+  "rtts": [
+    0,
+    100
+  ],
+  "clocks": [
+    "fixed",
+    "queued"
+  ],
+  "entrants": [
+    "evidence/ladder26/fighters/45b036297b60d75d.net",
+    "evidence/ladder26/fighters/95d2597982785ca9.net"
+  ],
+  "opponents": {
+    "champion": "evidence/ladder26/fighters/aa9e5afc8d9d79d6.net",
+    "retreating": "evidence/frozen/opponents/population.net"
+  },
+  "landmarks": [
+    3,
+    5,
+    10
+  ],
+  "acquisition": "Full identical W-tap prefix in each matched state; compare switching the primed policy against continuing W-tap."
+}

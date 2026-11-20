@@ -3,9 +3,31 @@
   "champion": "evidence/ladder26/fighters/aa9e5afc8d9d79d6.net",
   "population": "evidence/ladder26/season-028/result.json",
   "seed": 71244591,
-  "training_generations": {"general": 384, "response": 384, "fresh": 640},
+  "training_generations": {
+    "general": 384,
+    "response": 384,
+    "fresh": 640
+  },
   "training": "All train on the independently phased clients with real server tick packet queueing and only the existing fight payoff. Use one low-priority host core alongside native evaluation. Keep seasons 21 through 28 unchanged.",
   "selection": "Compare evenly spaced checkpoints against the champion and eight diverse weight-stratified population opponents, 48 common openings per RTT and both seats under the corrected variable clock.",
   "confirmation": "Carry the four strongest direct and four strongest broad policies into a fresh 128-pair comparison against the training archive. Repeat on the fixed scheduled and corrected variable clocks. Store both latency-specific scores and the W-tap baseline. Select one broad and one direct finalist.",
-  "native": "Test selected finalists against the Java champion with W-tap on fresh ordinary Java openings after the already-registered season 28 tournament. Any promotion requires wins across the native opponent field and in the direct matchup."
+  "native": "Test selected finalists against the Java champion with W-tap on fresh ordinary Java openings after the already-registered season 28 tournament. Any promotion requires wins across the native opponent field and in the direct matchup.",
+  "native_direct": {
+    "seed": 71509211,
+    "pairs_per_rtt": 4,
+    "rtts_ms": [
+      100,
+      0
+    ],
+    "opponents": "The champion decided by the original season 28 A/B tournament. A byte-identical finalist that has already played at least 16 direct games against that same champion is credited those results. All new finalists face the champion from both seats, on the same native openings as W-tap."
+  },
+  "native_field": {
+    "seed": 71610974,
+    "pairs_per_rtt": 3,
+    "rtts_ms": [
+      0,
+      100
+    ],
+    "qualification": "More than half of eligible direct points, or recheck for an unqualified opening. Full field includes the current champion, starting champion, retreating fighter and option 4, deduplicated. To promote, beat the champion directly in aggregate and exceed both champion and W-tap on the same field. Keep direct winners as specialist challenges even when they miss the broader promotion."
+  }
 }
