@@ -28,11 +28,15 @@ def initialize(g):
         for family,names in groups.items():families.setdefault(family,[]).extend(names)
         verdict=prev/'plateau/verdict.json'
         if verdict.exists():
-            answers={n:v for n,v in read(verdict).get('responses',{}).items() if v['opponent']==inc}
+            outcome=read(verdict)
+            answers={n:v for n,v in outcome.get('responses',{}).items() if v['opponent']==inc}
             for n,v in answers.items():
                 field[n]={k:v[k] for k in ('reference','sha256')}
                 families.setdefault('doubled-budget responses',[]).append(n)
             if answers:counter=max(answers,key=lambda n:answers[n]['score'])
+            known=outcome.get('confirmed_archive_weakness')
+            if known and known['opponent']==inc and (not answers or known['score']>answers[counter]['score']):
+                counter=known['name']
         scores=next(r['family'] for r in rounds['ranking'] if r['name']==f'sg{g-1:03d}-main')
         warm_r=prev/'main/trainer.pt';warm_m=prev/'mlp/trainer.pt'
     freeze_assay(g,folder)

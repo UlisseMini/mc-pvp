@@ -39,7 +39,7 @@ def family_usage(roots,all_research=False):
 def supervised():
     return os.environ.get('ELITE_GOVERNED_GROUP')==str(os.getpgrp())
 
-def main(cmd,audit=False,policy=False):
+def main(cmd,audit=False,policy=False,terrain=False):
     if supervised():
         return subprocess.call(cmd)
     budget=lab_cpu_budget()
@@ -48,7 +48,7 @@ def main(cmd,audit=False,policy=False):
     state=ROOT/'build/elite-league';state.mkdir(exist_ok=True,parents=True)
     # One replay reader can use spare capacity while a long single-threaded
     # simulation owns the rollout slot. Both governors measure total lab usage.
-    lane='replay-reader.lock' if audit else 'policy-training.lock' if policy else 'rollout.lock'
+    lane='terrain-reader.lock' if terrain else 'replay-reader.lock' if audit else 'policy-training.lock' if policy else 'rollout.lock'
     with (state/lane).open('a') as lock:
         fcntl.flock(lock.fileno(),fcntl.LOCK_EX)
         manager=ROOT/'runtime/manager.json'
@@ -60,13 +60,19 @@ def main(cmd,audit=False,policy=False):
         running=True
         try:
             prev=family_usage((lab_pid(),child.pid),True);now=time.monotonic();credit=0.
+            last_signal=now
             while child.poll() is None:
                 time.sleep(.25)
                 cur=family_usage((lab_pid(),child.pid),True);end=time.monotonic()
                 work=sum(max(0,v-prev.get(k,v)) for k,v in cur.items())
-                credit=min(.13*target,credit+target*(end-now)-work)
+                # Long spikes from another experiment can occur while this entire group
+                # is stopped. Resume borrowing spare capacity once the spike has passed.
+                credit=max(-2*target,min(.13*target,credit+target*(end-now)-work))
                 desired=credit>=0
-                if desired!=running and child.poll() is None:
+                # A signal can take effect despite a group-level error during exec,
+                # or a process can stop independently. Reassert the desired state.
+                if (desired!=running or end-last_signal>=2) and child.poll() is None:
+                    last_signal=end
                     try:os.killpg(child.pid,signal.SIGCONT if desired else signal.SIGSTOP)
                     except (ProcessLookupError,PermissionError):
                         # Darwin can return EPERM during the exec/exit transition of /usr/bin/nice.
@@ -96,4 +102,5 @@ if __name__=='__main__':
             del sys.argv[2:5]
         os.execvp(sys.argv[2],sys.argv[2:])
     audit=sys.argv[1:2]==['--audit'];policy=sys.argv[1:2]==['--policy']
-    sys.exit(main(sys.argv[2:] if audit or policy else sys.argv[1:],audit,policy))
+    terrain=sys.argv[1:2]==['--terrain']
+    sys.exit(main(sys.argv[2:] if audit or policy or terrain else sys.argv[1:],audit,policy,terrain))

@@ -15,7 +15,7 @@ def run():
         base=server_hash();new=server(base)
         record(release,json.dumps(dict(base=base,server=new),sort_keys=True).encode())
     ids=json.loads(release.read_text())
-    with window(server=ids['server'],retain=True) as bridge:
+    with window(server=ids['server']) as bridge:
         for entry in json.loads((OUT/'catalog.json').read_text()):
             name=entry['name'];request='lab mapgeometry '+name
             file=ROOT/'runtime/map-geometry'/(name+'.boxes')

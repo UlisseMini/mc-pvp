@@ -8,7 +8,7 @@ from league_tournament import stats
 from build import sim_paths
 from id_native import native_name
 from native_league import alias,fixtures,cohort,WT,RTTS
-from forge_window import window
+from forge_window import cohort_window
 
 FOE=BASE_COUNTER
 OUT=DIR/('ringout-only-'+FOE)
@@ -47,7 +47,7 @@ def evaluate():
 def native():
     models=[native_name(OUT/'n16384.net'),native_name(DIR/('dedicated-'+FOE)/'n16384.net'),WT]
     plan=fixtures('sg-draw-reward',models,[alias(FOE),WT],8,7)
-    with window() as bridge:results=cohort(OUT/'native',plan,bridge)
+    with cohort_window(OUT/'native') as bridge:results=cohort(OUT/'native',plan,bridge)
     cells={}
     for foe in (alias(FOE),WT):
         cells[foe]={}

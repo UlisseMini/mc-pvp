@@ -42,10 +42,13 @@ final class ResponseReversal {
         return e.new Game(t.seat(),p,LeagueWorker.player(t.foe(),t.other(),t.own(),e,t.bSeed()));
     }
     public static void main(String[] args)throws Exception{
-        LeagueWorker.load();String[] responses=args[2].split(",");
+        LeagueWorker.load();boolean perRow="--per-row".equals(args[2]);
+        String[] shared=perRow?null:args[2].split(",");
         try(var out=Files.newBufferedWriter(Path.of(args[1]));var in=Files.newBufferedReader(Path.of(args[0]))){
             String row;while((row=in.readLine())!=null){
-                var t=MemoryAssay.trial(row.split("\t"));
+                String[] fields=row.split("\t");
+                String[] responses=perRow?Arrays.copyOfRange(fields,8,fields.length):shared;
+                var t=MemoryAssay.trial(fields);
                 var e=new DuelEnv(t.base(),t.seat()?t.own():t.other(),t.seat()?t.other():t.own());var orig=create(t,e,responses);
                 ((Primed)orig.our()).continueWith(0);
                 orig.finish();double cut=((Primed)orig.our()).cut;

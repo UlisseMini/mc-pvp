@@ -130,6 +130,8 @@ def window(bridge_path=None,server=None,admit=None):
         if newhash==pinned['bridge']:target=b/'old'
         elif newhash==oldhash:target=origin
         else:snapshot(target,bridge,settings_source=b/'old')
+        public_agent=ROOT/'build/lab-agent.jar'
+        public_was_origin=oldserver!=server and sha(public_agent)==oldserver
         paused=schedulers()
         journal.write_text(json.dumps(dict(settings=settings,schedulers=paused,at=time.time(),old=oldhash,new=newhash,
             restore=str(origin),old_server=oldserver,requested_server=server)))
@@ -144,5 +146,12 @@ def window(bridge_path=None,server=None,admit=None):
             # Preserve an unrelated release that independently took over the main process.
             active=reliable(active_bridge)
             replaced=active and (active not in (oldhash,newhash) or server_hash() not in (oldserver,server))
-            if not replaced:switch(origin,settings,oldserver)
+            restore_server=server if public_was_origin and sha(public_agent)==server else oldserver
+            if not replaced:switch(origin,settings,restore_server)
             resume_paused(paused);journal.unlink(missing_ok=True)
+
+
+def cohort_window(folder,bridge_path=None):
+    """Resume an admitted panel on its frozen binary. Fresh panels use the current main release."""
+    stamp=folder/'native-build.json'
+    return window(bridge_path,server=read(stamp)['server'] if stamp.exists() else None)

@@ -26,6 +26,35 @@ def enrollment(gen):
         response=json.loads((p/'winner-response/result.json').read_text())
         name=response['name'];field[name]=response['policy']
         if response['confirmed']:families.setdefault('tournament winner responses',[]).append(name)
+        if response['confirmed']:
+            subprocess.run([sys.executable,HERE/'frontier_generalist.py',str(gen-1)],check=True)
+            mixed=json.loads((p/'frontier-generalists/weights.json').read_text())
+            for source,ref in mixed.items():
+                name=f'sg{gen:03d}-mix-{source}'
+                field[name]=ref;families.setdefault('frontier generalists',[]).append(name)
+    if gen==2:
+        # Both policies always play the same physical controller, irrespective of the opponent.
+        source=EVIDENCE/'id-oracle'
+        for label,folder in [('draw','dedicated-sumo-seven-first'),('wins','ringout-only-sumo-seven-first')]:
+            net=source/folder/'n16384.net';name='sg002-seven-'+label
+            field[name]=dict(reference=str(net.relative_to(ROOT)),sha256=hashlib.sha256(net.read_bytes()).hexdigest())
+            families.setdefault('Seven specialists',[]).append(name)
+    if gen==3:
+        from oracle_student import OUT, ROLES
+        subprocess.run([sys.executable,HERE/'oracle_student.py','run'],check=True)
+        for role in ROLES:
+            name='sg003-student-'+role;field[name]=pin_model(OUT/role/'ppo')
+            families.setdefault('oracle-distilled students',[]).append(name)
+    if gen==3:
+        # All three weights come from the same predeclared training budget on the original platform.
+        import time
+        from long_specialist import RUN
+        for key in ('incumbent','seven','g1'):
+            net=RUN/key/'n32768.net'
+            while not net.exists():time.sleep(5)
+            name='sg003-long-'+key
+            field[name]=dict(reference=str(net.relative_to(ROOT)),sha256=hashlib.sha256(net.read_bytes()).hexdigest())
+            families.setdefault('32k single-opponent PPO',[]).append(name)
     return field,families
 
 def declare(g):

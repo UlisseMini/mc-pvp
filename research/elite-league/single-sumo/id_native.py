@@ -2,7 +2,7 @@
 from id_evaluate import arm_paths
 from opponent_id import DIR,runtime
 from native_league import *
-from forge_window import window
+from forge_window import cohort_window
 from assay import lower_contrast
 
 def protocol():
@@ -36,7 +36,7 @@ def early_native():
         for q,t in block.items():roles[q]=[foe,['informed','dedicated','wtap'][arms.index(t['arm'])]]
     keys=sorted(plan);random.Random(398713).shuffle(keys);plan={q:plan[q] for q in keys}
     write_json(out/'design.json',dict(sources=roles,blocks=8,duels=len(plan),scope='interim exposure-matched native diagnostic'),fixed=True)
-    with window() as bridge:game=cohort(out,plan,bridge)
+    with cohort_window(out) as bridge:game=cohort(out,plan,bridge)
     cells={}
     for foe in [INCUMBENT,BASE_COUNTER]:
         cells[foe]={}
@@ -78,7 +78,7 @@ def play_native(target,secondary=False):
     write_json(out/'assignments.json',dict(target=target,weakest=weakest,labels=labels,sources=allocation),fixed=True)
     bridge=BUILD/spec['forge']['jar']
     if hashlib.sha256(bridge.read_bytes()).hexdigest()!=spec['forge']['sha256']:raise ValueError('Native binary changed')
-    with window(bridge) as running:
+    with cohort_window(out/'games',bridge) as running:
         scores=cohort(out/'games',plan,running)
     def counts(g):
         return dict(wins=g.count(1),draws=g.count(.5),losses=g.count(0),score=float(np.mean(g)))

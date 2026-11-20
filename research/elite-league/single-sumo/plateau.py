@@ -9,12 +9,20 @@ import sys
 def search(g):
     folder=EVIDENCE/f'g{g:03d}'/'plateau';cfg=initialize(g);field=cfg['field'].copy()
     inc=cfg['incumbent'];source=EVIDENCE/f'g{g:03d}'/'main/trainer.pt'
+    tournament=json.loads((folder.parent/'tournament.json').read_text())
     spec=folder/'assay.json'
     if not spec.exists():
         last=max(int(p.stem[1:]) for p in (ROOT/'runtime/results').glob('m[0-9]*.json') if p.stem[1:].isdigit())
+        candidates=[n for n,v in tournament['field'].items() if v['sha256']!=field[inc]['sha256']]
+        known=max(candidates,key=lambda n:(tournament['matrix'][n][inc]['score'],n))
         write_json(spec,dict(first_future_id=last+4,calendar_count=32,minimum_gap_ms=60000,opponent=inc,
             control='PPO from W-tap imitation must improve on that frozen initialization against the original incumbent',
-            budget=32768),fixed=True)
+            known_response=known,known_hash=tournament['field'][known]['sha256'],budget=32768),fixed=True)
+    registered=json.loads(spec.read_text());searches=['ppo','evolution']
+    if 'known_response' in registered:
+        known=registered['known_response'];field['known']=tournament['field'][known]
+        if field['known']['sha256']!=registered['known_hash']:raise ValueError('Frozen archive response changed')
+        searches.append('known')
     # Independently frozen searches; original known weakness is a positive control for learning.
     jobs=[('ppo',inc,source),('positive',INCUMBENT,EVIDENCE/'bootstrap-wtap/trainer.pt')]
     for i,(tag,opp,warm) in enumerate(jobs):
@@ -31,6 +39,7 @@ def search(g):
     init=EVIDENCE/'bootstrap-wtap/initial.net'
     field['positive-init']=dict(reference=str(init.relative_to(ROOT)),sha256=hashlib.sha256(init.read_bytes()).hexdigest())
     opponents=[('ppo',inc),('evolution',inc),('positive',INCUMBENT),('positive-init',INCUMBENT),('wtap',inc),('original-wtap',INCUMBENT)]
+    if 'known' in searches:opponents.append(('known',inc))
     w=Worker();report={}
     try:
         for tag,opp in opponents:
@@ -50,26 +59,28 @@ def search(g):
     report['positive_gain_bounds']=lower_contrast(difference('positive','positive-init'))
     report['responses']={f'sg{g:03d}-extra-{t}':dict(**field[t],opponent=inc,score=report[t]['score'])
         for t in ('ppo','evolution') if report[t]['bounds'][0]>.55}
-    stop=bool(report['ppo']['bounds'][1]<.55 and report['evolution']['bounds'][1]<.55
+    if 'known' in searches and report['known']['bounds'][0]>.55:
+        report['confirmed_archive_weakness']=dict(name=known,opponent=inc,score=report['known']['score'])
+    stop=bool(all(report[t]['bounds'][1]<.55 for t in searches)
         and report['positive']['bounds'][0]>.55 and report['positive_gain_bounds'][0]>0)
     report['simulation_plateau']=stop
-    if stop:report['native']=native_check(g,folder,field,inc)
+    if stop:report['native']=native_check(g,folder,field,inc,searches)
     report['budgeted_plateau']=bool(stop and report['native']['passed'])
     write_json(folder/'verdict.json',report,fixed=True);return report
 
-def native_check(g,folder,field,inc):
-    from native_league import WT,fixtures,cohort
+def native_check(g,folder,field,inc,searches):
+    from native_league import WT,fixtures,cohort,publish
     from promotion import actual_name
-    from forge_window import window
-    roles=['ppo','evolution','positive','positive-init','wtap']
+    from forge_window import cohort_window
+    roles=[*searches,'positive','positive-init','wtap']
     names={}
     for t in roles:
         if t=='wtap':names[t]=WT;continue
         n=f'sg{g:03d}-extra-{t}'
-        names[t]=actual_name(n,{n:field[t]})
+        names[t]=publish(n,field[t],f'Frozen plateau check at 7 CPS: {t}')
     foes=list(dict.fromkeys([inc,INCUMBENT,'wtap']))
     plan=fixtures(f'sg{g:03d}-plateau',[names[t] for t in roles],[actual_name(n,field) for n in foes],64,7)
-    with window() as bridge:results=cohort(folder/'native',plan,bridge,block_barrier=True)
+    with cohort_window(folder/'native') as bridge:results=cohort(folder/'native',plan,bridge,block_barrier=True)
     records={};rows={}
     for t in roles:
         rows[t]={}
@@ -78,6 +89,6 @@ def native_check(g,folder,field,inc):
             vals=[results[q]['score'] for q in subset];rows[t][n]=vals
             records[t+' / '+n]=dict(wins=vals.count(1),draws=vals.count(.5),losses=vals.count(0),bounds=interval(vals))
     gain=lower_contrast(np.array(rows['positive'][INCUMBENT])-rows['positive-init'][INCUMBENT])
-    passed=(all(records[t+' / '+inc]['bounds'][1]<.55 for t in ('ppo','evolution'))
+    passed=(all(records[t+' / '+inc]['bounds'][1]<.55 for t in searches)
         and records['positive / '+INCUMBENT]['bounds'][0]>.55 and gain[0]>0)
     return dict(cells=records,positive_gain_bounds=gain,passed=bool(passed))

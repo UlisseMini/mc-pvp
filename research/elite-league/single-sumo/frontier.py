@@ -5,7 +5,8 @@ import subprocess
 from train import configure
 from run_training import train
 from league_tournament import EVIDENCE, HERE, Worker, counter_gate, games, stats, pin_model, write_json
-from promotion import read, actual_name, fixtures, cohort, window, WT, RTTS
+from promotion import read, actual_name, fixtures, cohort, WT, RTTS
+from forge_window import cohort_window
 
 def search(g):
     parent=EVIDENCE/f'g{g:03d}';folder=parent/'winner-response'
@@ -52,7 +53,7 @@ def native(g, result):
     arms=[actual_name(result['name'],field),WT]
     foes={f:actual_name(f,field) for f in result['matched']}
     plan=fixtures(f'sg{g:03d}-wr',arms,list(foes.values()),8,7)
-    with window() as bridge:records=cohort(folder/'native',plan,bridge)
+    with cohort_window(folder/'native') as bridge:records=cohort(folder/'native',plan,bridge)
     cells={}
     for foe,alias in foes.items():
         cells[foe]={}

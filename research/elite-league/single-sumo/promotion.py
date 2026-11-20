@@ -1,7 +1,7 @@
 """Matched model and native promotion with independent timing blocks and simultaneous one-sided bounds."""
 from collections import defaultdict
 from native_league import *
-from forge_window import window
+from forge_window import cohort_window, window
 from styles import build as make_styles
 
 def freeze_promotion_styles(g):
@@ -85,7 +85,7 @@ def native_panel(g,nom,eligible):
     arms=[nom['challenger'],nom['incumbent'],'wtap'] if eligible else [f'sg{g:03d}-main',nom['incumbent'],'wtap']
     foes=nom['core'] if eligible else list(dict.fromkeys(['wtap',nom['main_weakest']]))
     blocks=64 if eligible else 8
-    with window() as bridge:
+    with cohort_window(folder/('native-confirm' if eligible else 'native-diagnostic')) as bridge:
         aa=[actual_name(n,field) for n in arms];ff=[actual_name(n,field) for n in foes]
         plan=fixtures(f'sg{g:03d}-'+('confirm' if eligible else 'diag'),aa,ff,blocks,7)
         records=cohort(folder/('native-confirm' if eligible else 'native-diagnostic'),plan,bridge,block_barrier=eligible)
@@ -107,7 +107,7 @@ def winner_controls(g,nom):
     folder=EVIDENCE/f'g{g:03d}'/'published-winner';done=folder/'result.json'
     if done.exists():return read(done)
     name=publish_winner(g,nom);plan=fixtures(f'sg{g:03d}-published',[name,WT],[WT],8,7)
-    with window() as bridge:records=cohort(folder,plan,bridge)
+    with cohort_window(folder) as bridge:records=cohort(folder,plan,bridge)
     score={}
     for n in (name,WT):
         outcomes=[r['score'] for q,r in records.items() if plan[q]['arm']==n]
@@ -117,7 +117,7 @@ def winner_controls(g,nom):
     write_json(done,result,fixed=True);return result
 def transfer20(g,nom):
     folder=EVIDENCE/f'g{g:03d}';field=nom['field'];a=nom['challenger'];i=nom['incumbent']
-    with window() as bridge:
+    with cohort_window(folder/'native-20-transfer') as bridge:
         arms=[actual_name(n,field) for n in [a,i,'wtap']]
         plan=fixtures(f'sg{g:03d}-x20',arms,[WT],16,20)
         return cohort(folder/'native-20-transfer',plan,bridge)
@@ -163,7 +163,7 @@ def native_diagnostics(g,nom):
     foes=sorted({f for fs in pairs.values() for f in fs}|{'wtap',nom['weakest_distinct'][inc],BASE_COUNTER})
     pairs[inc]=foes;pairs['wtap']=foes
     arms=list(pairs);plan={};lookup={}
-    with window() as bridge:
+    with cohort_window(folder/'native-diagnostic') as bridge:
         names={n:actual_name(n,field) for n in set(arms)|set(foes)}
         for block in range(8):
             part=[]
