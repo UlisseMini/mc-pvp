@@ -117,7 +117,9 @@ def native_scout(index, jar, work, dest, candidates, inc, base, general, direct)
         return min(calibrated[str(p),str(inc)])
     available=[p for p in versions if not same(p,inc)]
     robust=max(available,key=robust_direct)
-    near=max(descendants,key=robust_direct) if descendants else robust
+    representatives={hash_policy(p):p for p in versions}
+    distinct_descendants=unique([representatives[hash_policy(p)] for p in descendants])
+    near=max(distinct_descendants,key=robust_direct) if distinct_descendants else robust
     shortlist=unique([general,direct,robust,near])
     by_score=sorted(available,key=robust_direct,reverse=True)
     shortlist=unique([*shortlist,*by_score])[:4]

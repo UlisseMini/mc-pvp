@@ -202,7 +202,15 @@ def run_season(index,native,main,pool,final=False):
     choice=unique([*sorted(actors,key=lambda p:breadth(sel,p,rivals),reverse=True)[:4],
                    *sorted(actors,key=lambda p:field_score(sel,p,main),reverse=True)[:3],
                    *sorted(actors,key=lambda p:field_score(sel,p,native),reverse=True)[:3]])
-    check=both_clocks(jar,work,"confirmation",[*unique([*choice,*rivals]),"wtap"],rivals,seed+12,96,timing)
+    sparse=index>=14
+    if sparse:
+        check_actors=unique([main,native,*choice])
+        check=both_clocks(jar,work,"confirmation",[*check_actors,"wtap"],rivals,seed+12,96,timing)
+        missing=[p for p in rivals if p not in check_actors]
+        if missing:
+            check.update(both_clocks(jar,work,"archive-replies",missing,[main],seed+12,96,timing))
+    else:
+        check=both_clocks(jar,work,"confirmation",[*unique([*choice,*rivals]),"wtap"],rivals,seed+12,96,timing)
     ordered=sorted(choice,key=lambda p:breadth(check,p,rivals),reverse=True)
     best=ordered[0]
     advancing=[p for p in ordered if breadth(check,p,rivals)>breadth(check,main,rivals)+.012
@@ -227,6 +235,7 @@ def run_season(index,native,main,pool,final=False):
                 finalists=candidates,opponent_mix={str(p.relative_to(SRC)):w for p,w in zip(pool,weights)})
     files=["payoffs.tsv","confirmation.tsv","resources.jsonl"]
     if timing:files+=["payoffs-phase.tsv","confirmation-phase.tsv"]
+    if sparse:files.extend(f.name for f in work.glob("archive-replies*.tsv"))
     for f in files:shutil.copyfile(work/f,dest/f)
     save(dest/"result.json",result)
     return result
