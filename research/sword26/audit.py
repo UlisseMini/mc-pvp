@@ -7,6 +7,7 @@ from collections import Counter
 from pathlib import Path
 import sys
 from spacing import measure
+from first_ko import adjudicate
 
 
 def rows(path):
@@ -73,6 +74,7 @@ def survival(events, index, name, end_tick):
 
 def audit(run):
     matches=json.loads((run/"results.json").read_text())
+    names=json.loads((run/"metadata.json").read_text())["names"]
     output=[]
     for m in matches:
         who=int(m["seat"]);name="SwordLab"+"AB"[who];stem=m["id"]
@@ -80,8 +82,15 @@ def audit(run):
         opponent_file=run/(stem+"-"+"AB"[1-who]+".tsv")
         opponent_keys=rows(opponent_file) if opponent_file.exists() else []
         events=rows(run/(stem+"-contacts.tsv"))
-        classify_contacts(events)
         server=rows(run/(stem+"-server.tsv"))
+        m,cut=adjudicate(m,events,server,names)
+        if cut is not None:
+            events=events[:cut+1]
+            end=m["first_ko_epoch_ms"]
+            keys=[r for r in keys if int(r["epochMs"])<=end]
+            opponent_keys=[r for r in opponent_keys if int(r["epochMs"])<=end]
+            server=[r for r in server if int(r["epochMs"])<=end]
+        classify_contacts(events)
         countdown=run/(stem+"-countdown.tsv")
         targets={r["name"]:r for r in rows(countdown)} if countdown.is_file() else {}
         spawn_errors={}

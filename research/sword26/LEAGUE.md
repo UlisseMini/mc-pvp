@@ -53,3 +53,15 @@ The independent replication promoted the season 7 specialist `1ed6988f` after se
 | Both panels and opponents | 24/32 | 23/32 | 20/32 | 10/32 |
 
 This fighter wins damage trades, with a distinct weakness after entering an established combo. Against the retreating rival, switching to it after a common three-hit W-tap entry produced zero further unanswered fresh-hit cycles across 26 fixed-clock and 223 variable-clock starts. Continuing W-tap completed 17 and 100 more cycles, respectively. These totals count correlated cycles across the available starts. Independent native fights in the first panel had no three-hit entry for this fighter. [Fixed-clock continuations](evidence/ladder26/java-009/maintenance-retreating-off.csv) · [Variable-clock continuations](evidence/ladder26/java-009/maintenance-retreating-on.csv) · [Promotion decision](evidence/ladder26/java-009/decision.json)
+
+## First-knockout correction
+
+The referee sampled health once per server tick. In three season 14 panel A bouts, a player died and respawned between samples. The match continued and the first winner eventually lost the second exchange. The server's contact log identifies the first knockout in all three. Earlier Java panels 3A, 9A and 9B had no such result. The original option 6 promotion remains 15/16 head-to-head. The corrected referee latches both health values at the first lethal contact. Ordinary Java results and watch-room replays now use that event. The original scores and uncut recordings are retained. [Affected rounds](evidence/ladder26/first-knockout-revisions.csv) · [Original panel A scores](evidence/ladder26/java-014-a/historical-poll-scores/ordinary-scores.csv)
+
+| Season 14, first panel | Generalist | Direct response | Incumbent | W-tap |
+|---|---:|---:|---:|---:|
+| Original end-of-tick scores | 22/32 | 20/32 | 18/32 | 14/32 |
+| First-knockout scores | 23/32 | 21/32 | 18/32 | 13/32 |
+| First knockout directly against incumbent | 5/8 | 6/8 | 4/8 | 0/8 |
+
+On the 1,841 scored contacts up to the first knockout, supplying the Java pre-hit state reproduced all 1,841 resulting health values and motion-packet presence decisions. All 1,840 emitted knockback vectors matched. The simulator still overestimated the direct response against the incumbent. From the eight actual starting poses it predicted roughly 99.7% under varying phases and won 6/8 in Java. Exact accepted-hit mechanics leave differences in which attacks land. [Corrected Java panel](evidence/ladder26/java-014-a/ordinary-scores.csv) · [Contact parity](evidence/ladder26/java-014-a/conditional-contact-parity.csv)

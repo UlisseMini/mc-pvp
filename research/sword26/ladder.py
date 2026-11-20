@@ -10,7 +10,7 @@ import sys
 import time
 from pathlib import Path
 
-from recordings import archive_panel
+from recordings import archive_panel,trim_after_knockout
 from report import export
 from season import ANCHORS, EVIDENCE, WORK, PLAN, SRC, both_clocks, compile_sim, field_score, hash_policy, run_season, save, train_stage, unique, write_fighter
 
@@ -32,7 +32,9 @@ def guest_cpu():
 def native_panel(tag, actors, opponents, seed, pairs):
     dest=EVIDENCE/tag;work=WORK/tag
     dest.mkdir(exist_ok=True);work.mkdir(exist_ok=True)
-    if (dest/"panel.json").exists():return json.loads((dest/"panel.json").read_text())
+    if (dest/"panel.json").exists():
+        cached=json.loads((dest/"panel.json").read_text())
+        if cached.get("score_rule")=="first_lethal_contact":return cached
     registration=dict(actors=[local(p) for p in actors],opponents=[local(p) for p in opponents],
                       actor_hashes=[hash_policy(p) for p in actors],opponent_hashes=[hash_policy(p) for p in opponents],
                       seed=seed,pairs=pairs,clock="ordinary TCP",rtts=[0,100])
@@ -67,6 +69,7 @@ def native_panel(tag, actors, opponents, seed, pairs):
         raise ValueError("Native roster changed")
     data=export(run,dest,"ordinary")
     archive_panel(tag,run)
+    trim_after_knockout(tag,run)
     if len(data)!=count:raise ValueError(f"Incomplete Java panel for {tag}")
     labels=["learned" if i==0 else f"learned-{i}" for i in range(len(actors))]
     actor_names={k:local(v) for k,v in zip(labels,actors)}|{"wtap":"wtap"}
@@ -78,7 +81,7 @@ def native_panel(tag, actors, opponents, seed, pairs):
                hp=r["hp"],enemy_hp=r["opponent_hp"],score=1 if r["opponent_hp"]==0 else 0 if r["hp"]==0 else .5,
                qualified=(r["rtt"],r["pair"],r["seat"],r["rival"]) not in bad)
         scores.append(s)
-    result=dict(run=run.name,scores=scores,unqualified_cells=len(bad))
+    result=dict(run=run.name,scores=scores,unqualified_cells=len(bad),score_rule="first_lethal_contact")
     save(dest/"panel.json",result)
     return result
 

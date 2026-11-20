@@ -21,7 +21,12 @@ public final class ContactParity {
         var previousHealth = new HashMap<String, Float>();
         int healthExact = 0, presenceExact = 0, comparable = 0, impulsesExact = 0, unknown = 0;
         double maxError = 0;
-        for (String line : lines.subList(1, lines.size())) {
+        int end=lines.size();
+        if(!Boolean.getBoolean("sword.includePostKnockout")){
+            int health=columns.indexOf("defenderHP");
+            for(int i=1;i<lines.size();i++)if(Float.parseFloat(lines.get(i).split("\t")[health])<=0){end=i+1;break;}
+        }
+        for (String line : lines.subList(1, end)) {
             var r = Arrays.asList(line.split("\t"));
             java.util.function.Function<String, String> get = name -> r.get(columns.indexOf(name));
             java.util.function.ToDoubleFunction<String> number = name -> Double.parseDouble(get.apply(name));
@@ -53,7 +58,7 @@ public final class ContactParity {
             maxError = Math.max(maxError, error);
         }
         System.out.printf(Locale.ROOT, "%s,%d,%d,%d,%d,%d,%d,%.10g%n",
-                          file.getFileName().toString().replace("-contacts.tsv", ""), lines.size()-1, healthExact,
+                          file.getFileName().toString().replace("-contacts.tsv", ""), end-1, healthExact,
                           presenceExact, comparable, impulsesExact, unknown, maxError);
     }
 }

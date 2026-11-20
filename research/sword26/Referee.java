@@ -17,6 +17,7 @@ public final class Referee {
     static long now(){return System.getProperty("sword.clock")==null?System.currentTimeMillis():Lockstep.time()+15;}
     static PrintWriter trace,contacts;
     static boolean boostedAttack;
+    static final RoundOutcome outcome=new RoundOutcome();
     static int immunity;
     static float charge;
     static net.minecraft.world.entity.Entity attackTarget;
@@ -35,11 +36,12 @@ public final class Referee {
     }
     public static void contact(net.minecraft.world.entity.player.Player attacker,net.minecraft.world.entity.Entity target,
                                boolean critical,boolean sweep,boolean strong,boolean special){
-        if(round!=null&&contacts!=null&&target instanceof ServerPlayer defender){
+        if(round!=null&&contacts!=null&&!outcome.finished()&&target instanceof ServerPlayer defender){
             Vec3 packet=packetVelocity==null?new Vec3(Double.NaN,Double.NaN,Double.NaN):packetVelocity;
             contacts.printf(Locale.ROOT,"%d\t%s\t%s\t%b\t%b\t%b\t%b\t%s\t%d\t%d\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%b\t%s\t%s\t%s%n",
                 tick,attacker.getGameProfile().name(),defender.getGameProfile().name(),critical,sweep,strong,boostedAttack,defender.getHealth(),defender.hurtTime,immunity,charge,now(),
                 beforeVelocity.x,beforeVelocity.y,beforeVelocity.z,packet.x,packet.y,packet.z,targetGround,defender.getX()-attacker.getX(),defender.getZ()-attacker.getZ(),attacker.getYRot());
+            outcome.contact(attacker.getGameProfile().name().equals(round[1]),attacker.getHealth(),defender.getHealth());
             if(requestedHits>0&&!branched)checkLandmark(attacker,defender);
         }
         attackTarget=null;
@@ -136,7 +138,7 @@ public final class Referee {
                 trace.println("tick\thpA\thpB\tax\tay\taz\tbx\tby\tbz\tchargeA\tchargeB\tsprintA\tsprintB\thurtA\thurtB\tepochMs\tdamageCooldownA\tdamageCooldownB\taxVelocity\tayVelocity\tazVelocity\tbxVelocity\tbyVelocity\tbzVelocity\taGround\tbGround");
                 contacts=new PrintWriter(Files.newBufferedWriter(dir.resolve(fields[0]+"-contacts.tsv")));
                 contacts.println("tick\tattacker\tdefender\tcritical\tsweep\tstrong\tboosted\tdefenderHP\thurt\tpreDamageCooldown\tcharge\tepochMs\tserverVX\tserverVY\tserverVZ\tpacketVX\tpacketVY\tpacketVZ\tdefenderGround\tdx\tdz\tattackerYaw");
-                round=fields;tick=-32;Files.delete(req);return;
+                outcome.reset();round=fields;tick=-32;Files.delete(req);return;
             }
             ServerPlayer a=s.getPlayerList().getPlayerByName(round[1]),b=s.getPlayerList().getPlayerByName(round[2]);
             if(a==null||b==null){throw new IOException("Player left during "+round[0]);}
@@ -152,7 +154,7 @@ public final class Referee {
                 Lockstep.alignTracker(a,b,phaseA);Lockstep.alignTracker(b,a,phaseB);
                 write(round[0]+"-clock.tsv","phaseA\tphaseB\n"+phaseA+"\t"+phaseB);
             }
-            float ha=a.getHealth(),hb=b.getHealth();
+            float ha=outcome.healthA(a.getHealth()),hb=outcome.healthB(b.getHealth());
             trace.printf(Locale.ROOT,"%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%b\t%b\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%b\t%b%n",tick,ha,hb,a.getX(),a.getY(),a.getZ(),b.getX(),b.getY(),b.getZ(),a.getAttackStrengthScale(0),b.getAttackStrengthScale(0),a.isSprinting(),b.isSprinting(),a.hurtTime,b.hurtTime,now(),a.damageCooldownTime,b.damageCooldownTime,a.getDeltaMovement().x,a.getDeltaMovement().y,a.getDeltaMovement().z,b.getDeltaMovement().x,b.getDeltaMovement().y,b.getDeltaMovement().z,a.onGround(),b.onGround());
             if(ha<=0||hb<=0||++tick>=Model.LIMIT){
                 trace.close();contacts.close();write("A","");write("B","");write(round[0]+".result",ha+"\t"+hb+"\t"+tick);round=null;

@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
+from first_ko import correction
 from season import hash_policy
 from setup import SRC, compile_sim, jdk
 
@@ -18,6 +19,7 @@ def compare(run,dest):
     arms={'wtap':'wtap','learned':paths[meta['weights_sha256']]}
     arms.update({f'learned-{i}':paths[p['sha256']] for i,p in enumerate(meta['extra_weights'],1)})
     rounds=json.loads((run/'results.json').read_text())
+    for m in rounds:m.update(correction(run,m["id"],m["seat"],m["hp"],m["opponent_hp"],m["ticks"]))
     with tempfile.TemporaryDirectory() as td:
         spec=Path(td)/'rounds.tsv';rows=[]
         for m in rounds:

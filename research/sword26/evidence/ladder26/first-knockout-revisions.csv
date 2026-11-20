@@ -1,0 +1,4 @@
+panel,id,actor,rtt,seat,old_hp,old_enemy,old_ticks,hp,enemy,ticks
+java-014-a,round-008,learned-1,0,1,0.0,6.612501,251.0,7.1899996,0.0,111
+java-014-a,round-029,learned,0,0,0.0,20.0,192.0,1.6775038,0.0,166
+java-014-a,round-040,wtap,0,1,16.7975,0.0,242.0,0.0,4.880004,163

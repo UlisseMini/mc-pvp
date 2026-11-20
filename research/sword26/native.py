@@ -212,6 +212,7 @@ async def run(args):
         await asyncio.sleep(2)
         metadata={"agent":agent_jar.name,"backend":"Linux virtual X11 framebuffer with Mesa software rendering","weights_sha256":hashlib.sha256(args.weights.read_bytes()).hexdigest(),"seed":seed,"names":names,"version":"26.3","pairs":args.pairs,"rtts":args.rtts,"speed":args.speed,"blind":args.blind,"opponents":args.opponents,"extra_weights":[{"file":str(w),"sha256":hashlib.sha256(w.read_bytes()).hexdigest()} for w in args.extra_weights]}
         metadata["primary_file"]=args.weights.name
+        metadata["referee_score_rule"]="first_lethal_contact"
         metadata["landmark"]=args.landmark
         metadata["clock"]=args.clock
         if args.openings_from:

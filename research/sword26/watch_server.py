@@ -12,6 +12,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 from recordings import ARCHIVE,archive_panel
+from first_ko import correction
 
 SRC = Path(__file__).resolve().parent
 ROOT = SRC.parents[1] / "build/sword26"
@@ -91,7 +92,9 @@ def snapshot():
                     labels.setdefault(Path(roster["opponents"][-1]).stem,"Independent rival")
             ended=(reg.parent/"panel.json").exists(); total=4*roster["pairs"]*len(roster["opponents"])*(len(actors)+1)
             panels.append(dict(tag=tag,done=len(results),total=total,finished=ended,when=reg.stat().st_mtime))
+            archived_scores=read(ARCHIVE/tag/"first-ko-corrections.json",{})
             for row in results:
+                row=row|archived_scores.get(row["id"],{})|correction(run,row["id"],row["seat"],row["hp"],row["opponent_hp"],row["ticks"])
                 label=row["policy"]
                 actor="wtap" if label=="wtap" else actors[0 if label=="learned" else int(label.split("-")[1])]
                 rid=row["id"]
@@ -134,6 +137,14 @@ def trace(run,rid):
     frames=[[int(r["epochMs"])-epoch,*[float(r[c]) for c in ("ax","ay","az","bx","by","bz","hpA","hpB")]] for r in raw]
     with (run/(rid+"-contacts.tsv")).open() as f:
         hits=[[int(r["epochMs"])-epoch,r["attacker"][-1],r["critical"]=="true"] for r in csv.DictReader(f,delimiter="\t")]
+    match=next(r for r in read(run/"results.json") if r["id"]==rid)
+    fixed=correction(run,rid,match["seat"],match["hp"],match["opponent_hp"],match["ticks"])
+    if fixed:
+        end=fixed["first_ko_epoch_ms"]-epoch
+        frames=[f for f in frames if f[0]<=end];hits=[e for e in hits if e[0]<=end]
+        hp=[fixed["hp"],fixed["opponent_hp"]]
+        if match["seat"]==1:hp.reverse()
+        frames.append([end,*frames[-1][1:7],*hp])
     return {"frames":frames,"hits":hits}
 
 

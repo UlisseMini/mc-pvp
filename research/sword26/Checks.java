@@ -20,6 +20,12 @@ public final class Checks {
     }
     public static void main(String[] args)throws Exception{
         airborneSprint(false);airborneSprint(true);
+        var resultLatch=new RoundOutcome();
+        resultLatch.contact(false,7.1899996f,0);
+        resultLatch.contact(true,6.612501f,0);
+        check(resultLatch.healthA(20)==0 && resultLatch.healthB(0)==7.1899996f,"A respawn or later kill reversed the first knockout");
+        resultLatch.reset();
+        check(!resultLatch.finished() && resultLatch.healthA(20)==20,"The next round inherited a knockout");
         check(Model.rayBox(0,-1.62,3.29,0,0,1),"Reach at near face");
         check(!Model.rayBox(0,-1.62,3.32,0,0,1),"Reach past far boundary");
         check(!Model.rayBox(2,-1.62,2,0,0,1),"Ray direction");
