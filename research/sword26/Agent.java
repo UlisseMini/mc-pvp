@@ -14,6 +14,18 @@ public final class Agent {
             }
             private byte[] edit(String name,byte[] bytes){
                 boolean client="net/minecraft/client/Minecraft".equals(name);
+                boolean clock=System.getProperty("sword.clock")!=null;
+                if(clock&&"net/minecraft/network/Connection".equals(name))return ClockHooks.transform(name,bytes);
+                if("net/minecraft/network/protocol/game/ClientboundSetEntityMotionPacket".equals(name)&&System.getProperty("sword.run")!=null){
+                    var api=ClassFile.of();
+                    return api.transformClass(api.parse(bytes),ClassTransform.transformingMethodBodies(
+                        m->m.methodName().equalsString("<init>")&&m.methodType().equalsString("(Lnet/minecraft/world/entity/Entity;)V"),
+                        new CodeTransform(){
+                            public void atStart(CodeBuilder c){c.aload(1).invokestatic(ClassDesc.of("sword.Referee"),"motionPacket",
+                                MethodTypeDesc.ofDescriptor("(Lnet/minecraft/world/entity/Entity;)V"));}
+                            public void accept(CodeBuilder c,CodeElement e){c.with(e);}
+                        }));
+                }
                 if("net/minecraft/world/entity/player/Player".equals(name)&&System.getProperty("sword.run")!=null){
                     var api=ClassFile.of();
                     var capture=ClassTransform.transformingMethodBodies(m->m.methodName().equalsString("attack"),new CodeTransform(){
@@ -37,7 +49,7 @@ public final class Agent {
                 var game=ClassDesc.of(name.replace('/','.'));
                 var hook=ClassDesc.of(client?"sword.ClientKeys":"sword.Referee");
                 var api=ClassFile.of();
-                ClassModel model=api.parse(bytes);
+                ClassModel model=api.parse(clock?ClockHooks.transform(name,bytes):bytes);
                 if(client&&Integer.getInteger("sword.speed",1)>1){
                     int speed=Integer.getInteger("sword.speed");
                     byte[] fast=api.transformClass(model,ClassTransform.transformingMethodBodies(
@@ -52,9 +64,15 @@ public final class Agent {
                 return api.transformClass(model,ClassTransform.transformingMethodBodies(
                     m->m.methodName().equalsString(client?"tick":"tickServer"),new CodeTransform(){
                         public void atStart(CodeBuilder code){
+                            if(clock&&client)code.aload(0).invokestatic(ClockHooks.CLIENT,"beforeTick",ClockHooks.MC);
                             code.aload(0).invokestatic(hook,"tick",MethodTypeDesc.of(ConstantDescs.CD_void,game));
                         }
-                        public void accept(CodeBuilder code,CodeElement element){code.with(element);}
+                        public void accept(CodeBuilder code,CodeElement element){
+                            if(clock&&client&&element instanceof java.lang.classfile.instruction.ReturnInstruction){
+                                code.aload(0).invokestatic(ClockHooks.CLIENT,"afterTick",ClockHooks.MC);
+                            }
+                            code.with(element);
+                        }
                     }));
             }
         });

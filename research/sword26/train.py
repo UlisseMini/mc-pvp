@@ -5,15 +5,15 @@ import subprocess
 import time
 from setup import BUILD, SRC, jdk
 
-SOURCES = ["Fighter","Model","TreePolicy","Train","PolicyGradient","League","Refine","Starts","Cup"]
+SOURCES = ["Fighter","Model","FastDuel","FlatPhysics","TreePolicy","Train","PolicyGradient","League","Refine","Starts","Cup"]
 
 
-def train(dest,scale):
+def train(dest,scale,engine="flat26"):
     dest.mkdir(parents=True,exist_ok=False)
     classes=dest/"classes";classes.mkdir()
     subprocess.run([jdk()/"javac","-d",classes,*[SRC/(name+".java") for name in SOURCES]],check=True)
     def run(name,*args,output=None):
-        subprocess.run([jdk()/"java","-Xmx1g","-cp",classes,"sword."+name,*map(str,args)],check=True,stdout=output)
+        subprocess.run([jdk()/"java","-Xmx1g","-Dsword.transport="+("lockstep" if engine=="flat26" else "historical"),"-cp",classes,"sword."+name,*map(str,args)],check=True,stdout=output)
     def count(n):return max(16,int(n*scale))
     def field(folder,number):
         files=sorted(folder.glob("gen-*.net"))
@@ -43,4 +43,5 @@ if __name__=="__main__":
     args=argparse.ArgumentParser()
     args.add_argument("--out",type=Path,default=BUILD/("training-"+str(int(time.time()))))
     args.add_argument("--scale",type=float,default=1)
-    opts=args.parse_args();train(opts.out.resolve(),opts.scale)
+    args.add_argument("--engine",choices=["flat26","historical"],default="flat26")
+    opts=args.parse_args();train(opts.out.resolve(),opts.scale,opts.engine)

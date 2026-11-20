@@ -111,6 +111,7 @@ final class Model {
         return duel(left,right,new Start(scene,List.of()),null);
     }
     static Score duel(Controller left,Controller right,Start start,Observer observer){
+        if("lockstep".equals(System.getProperty("sword.transport")))return FastDuel.duel(left,right,start,observer);
         Scene scene=start.scene;
         var rng=new SplittableRandom(scene.seed);Body a=new Body(),b=new Body();
         double gap=rng.nextDouble(3.5,8),angle=rng.nextDouble(2*Math.PI);

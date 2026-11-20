@@ -1,0 +1,40 @@
+{
+  "selected": "proposal-0.net",
+  "sha256": "3761f029e425faf2ec2274c3ac17f2158dd7d1cfc0e14080fac2978ba826c862",
+  "scores": [
+    {
+      "file": "proposal-0.net",
+      "opponent_means": {
+        "champion.net": 1.098375108125,
+        "population.net": 1.088226990625
+      },
+      "score": 1.09076402
+    },
+    {
+      "file": "proposal-1.net",
+      "opponent_means": {
+        "champion.net": 0.528896039375,
+        "population.net": 0.05545312575
+      },
+      "score": 0.17381385415624998
+    },
+    {
+      "file": "proposal-2.net",
+      "opponent_means": {
+        "champion.net": -0.5582340624375,
+        "population.net": 1.1023647593750001
+      },
+      "score": -0.14308435698437494
+    },
+    {
+      "file": "proposal-3.net",
+      "opponent_means": {
+        "population.net": 1.1108437818749999,
+        "champion.net": -0.505546917
+      },
+      "score": -0.10144924228125002
+    }
+  ],
+  "source_run": "native-ilylt_tj",
+  "seed": 1209842
+}

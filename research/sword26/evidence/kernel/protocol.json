@@ -1,0 +1,29 @@
+{
+  "version": "26.3",
+  "engine_sources": {
+    "FastDuel.java": "b8e8837156647b1075336a993f0bd38219b80e1ec01cb5d3bef8ca62f81e7260",
+    "FlatPhysics.java": "d3dfd230c60f8e2f0e01be8334d649084ffd1cdce59daef30c14f9ddcd10f7c0",
+    "Fighter.java": "91d4ea30a67b6a616f8a74ec4cae735e5ddbfa306223d7e05959f5b015fe75fc",
+    "TreePolicy.java": "f0feaa93ddf3bd8815c8e714f5b9686832071af28d86d1c89ef2428d3cd4961a",
+    "Controls.java": "35874f5500b7baf4fa6513d9d18cb638749942063a215948c9edde9af033ac9d"
+  },
+  "development_clock_seeds": [
+    968121,
+    826433,
+    417992,
+    474229
+  ],
+  "prospective_clock_seeds": {
+    "0": 529176,
+    "100": 362441
+  },
+  "candidate": "evidence/transfer/challenger.net",
+  "opponents": [
+    "wtap",
+    "evidence/frozen/opponents/population.net",
+    "evidence/response/alternative.net"
+  ],
+  "fast_openings_per_latency": 4,
+  "paced_openings_per_latency": 1,
+  "comparison": "Both seats and candidate/W-tap control at each opening. Initialize simulator once using the native opening and tracker phases. Test once from keys and look, and once with policies taking all decisions. No mid-duel game data is fed back. Score ordered hits, criticals, sprint hits, terminal HP and winner, own/display position trajectories and all physical keys. Count unmatched and unfinished replays as failures. Paced and fast Java independently replay the first opening of each latency on the same clock. Ordinary free-running TCP evaluation has a different arrival schedule; report separately."
+}

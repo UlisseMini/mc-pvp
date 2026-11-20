@@ -21,7 +21,8 @@ import uuid
 from replay import build as build_replay
 from setup import BUILD, SRC, jdk, compile_agent, setup
 
-PORT = 25663
+PORT = int(os.environ.get("SWORD26_PORT",25663))
+WORKER = Path(os.environ.get("SWORD26_WORKER_HOME", BUILD))
 BOT_NAMES = ["SwordLabA", "SwordLabB"]
 
 
@@ -79,6 +80,10 @@ async def proxy(reader, writer, latency):
 
 
 async def run(args):
+    if args.clock and (args.human or args.speed!=1 or len(args.rtts)!=1 or args.rtts[0]%100):
+        raise ValueError("Use two bots and one RTT in whole 100 ms increments for a fixed tick clock")
+    if args.landmark and (args.human or args.landmark<1):
+        raise ValueError("Landmark comparisons require two bots and a positive hit count")
     if args.human and (not re.fullmatch(r"[A-Za-z0-9_]{1,16}",args.human) or args.human in BOT_NAMES):
         raise ValueError("Enter your own Java player name")
     if args.pairs<1 or any(rtt<0 for rtt in args.rtts):raise ValueError("Provide positive pairs and nonnegative RTTs")
@@ -87,6 +92,8 @@ async def run(args):
         params=["--weights",str(args.weights.resolve()),"--pairs",str(args.pairs),"--seed",str(args.seed),"--speed",str(args.speed),
                 "--rtts",*map(str,args.rtts),"--opponents",*args.opponents,"--extra-weights",*[str(w.resolve()) for w in args.extra_weights]]
         if args.blind:params+=["--blind"]
+        if args.landmark:params+=["--landmark",str(args.landmark)]
+        if args.clock:params+=["--clock",args.clock]
         if args.resume:params+=["--resume",str(args.resume.resolve())]
         if args.human:params+=["--human",args.human]
         run_in_guest(params)
@@ -97,8 +104,8 @@ async def run(args):
     if not args.weights.is_file():
         raise ValueError(f"Missing trained weights at {args.weights}")
     # Require this project's previously accepted server EULA or an explicit local acceptance.
-    server = BUILD/"native-server"
-    server.mkdir(exist_ok=True)
+    server = WORKER/"native-server"
+    server.mkdir(parents=True,exist_ok=True)
     accepted = SRC.parents[1]/"runtime/server/eula.txt"
     if not (server/"eula.txt").exists() and accepted.is_file():
         shutil.copyfile(accepted,server/"eula.txt")
@@ -131,6 +138,7 @@ async def run(args):
         return proc
     agent="-javaagent:"+str(agent_jar)
     java=jdk()/"java"
+    clock_flags=["-Dsword.clock="+args.clock] if args.clock else []
     latency=[0]
     servers=[]
     try:
@@ -144,16 +152,16 @@ async def run(args):
                         dest.parent.mkdir(parents=True,exist_ok=True)
                         dest.write_bytes(bundle.read(entry))
         server_cp=os.pathsep.join(str(p) for p in [agent_jar,*sorted((server/"versions").rglob("*.jar")),*sorted((server/"libraries").rglob("*.jar"))])
-        launch("server",[java,"-Xmx1G",agent,f"-Dsword.speed={args.speed}","-Dsword.run="+str(run_dir),"-Dsword.spool="+str(spool),"-cp",server_cp,"net.minecraft.server.Main","nogui"],server)
+        launch("server",[java,"-Xmx1G",agent,*clock_flags,f"-Dsword.speed={args.speed}","-Dsword.run="+str(run_dir),"-Dsword.spool="+str(spool),"-cp",server_cp,"net.minecraft.server.Main","nogui"],server)
         await wait_for(lambda:(run_dir/"ready").exists(),procs,100,"Server startup timed out")
         for seat in range(1 if args.human else 2):
-            name=BOT_NAMES[seat];folder=BUILD/name
+            name=BOT_NAMES[seat];folder=WORKER/name
             folder.mkdir(exist_ok=True)
             (folder/"options.txt").write_text("onboardAccessibility:false\npauseOnLostFocus:false\ntutorialStep:none\nrenderDistance:3\nsimulationDistance:5\nenableVsync:false\nmaxFps:50\nmusic:0.0\nsoundCategory_master:0.0\n")
-            launch(name,["xvfb-run","-a","-s","-screen 0 480x320x24 -nolisten tcp","env","LIBGL_ALWAYS_SOFTWARE=1","GALLIUM_DRIVER=llvmpipe","LP_NUM_THREADS=1","ALSOFT_DRIVERS=null","SDL_VIDEO_DRIVER=x11","SDL_VIDEODRIVER=x11",java,"-Xmx1000M","-Djava.awt.headless=true","--enable-native-access=ALL-UNNAMED","--add-exports","java.base/jdk.internal.misc=ALL-UNNAMED",
-                agent,f"-Dsword.speed={args.speed}","-Dsword.control="+str(spool/("AB"[seat])),"-Dsword.logs="+str(run_dir),"-cp",(BUILD/"linux-classpath").read_text(),"net.minecraft.client.main.Main",
+            launch(name,["xvfb-run","-a","-s","-screen 0 480x320x24 -nolisten tcp","env","LIBGL_ALWAYS_SOFTWARE=1","GALLIUM_DRIVER=llvmpipe","LP_NUM_THREADS=1","ALSOFT_DRIVERS=null","SDL_VIDEO_DRIVER=x11","SDL_VIDEODRIVER=x11",java,"-Xmx1000M",f"-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/sword26-lwjgl-{PORT}-{seat}","-Djava.awt.headless=true","--enable-native-access=ALL-UNNAMED","--add-exports","java.base/jdk.internal.misc=ALL-UNNAMED",
+                agent,*clock_flags,"-Dsword.spool="+str(spool),f"-Dsword.speed={args.speed}","-Dsword.control="+str(spool/("AB"[seat])),"-Dsword.logs="+str(run_dir),"-cp",(BUILD/"linux-classpath").read_text(),"net.minecraft.client.main.Main",
                 "--username",name,"--version","26.3","--gameDir",folder,"--assetsDir",BUILD/"assets","--assetIndex","34",
-                "--accessToken","0","--width","360","--height","240","--quickPlayMultiplayer",f"127.0.0.1:{PORT+seat+1}"],folder)
+                "--accessToken","0","--width","360","--height","240","--quickPlayMultiplayer",f"127.0.0.1:{PORT if args.clock else PORT+seat+1}"],folder)
         names=[BOT_NAMES[0],args.human or BOT_NAMES[1]]
         if args.human:
             print(f"Join Java 26.3 Multiplayer at 127.0.0.1:{PORT} as {args.human}.",flush=True)
@@ -165,12 +173,16 @@ async def run(args):
         await asyncio.sleep(2)
         metadata={"agent":agent_jar.name,"backend":"Linux virtual X11 framebuffer with Mesa software rendering","weights_sha256":hashlib.sha256(args.weights.read_bytes()).hexdigest(),"seed":seed,"names":names,"version":"26.3","pairs":args.pairs,"rtts":args.rtts,"speed":args.speed,"blind":args.blind,"opponents":args.opponents,"extra_weights":[{"file":str(w),"sha256":hashlib.sha256(w.read_bytes()).hexdigest()} for w in args.extra_weights]}
         metadata["primary_file"]=args.weights.name
+        metadata["landmark"]=args.landmark
+        metadata["clock"]=args.clock
         metadata["opponent_hashes"]={p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
                                      for p in args.opponents if p not in ("wtap","hold")}
         save_json(run_dir/"metadata.json",metadata)
         results=[]
         if args.resume:
             previous=json.loads((args.resume/"metadata.json").read_text())
+            if previous.get("clock")!=args.clock:raise ValueError("Resume requires the same game clock")
+            if previous.get("landmark",0)!=args.landmark:raise ValueError("Resume requires the same acquisition protocol")
             if previous.get("blind",False)!=args.blind or previous.get("opponent_hashes",{})!=metadata["opponent_hashes"]:
                 raise ValueError("Resume requires the same blind setting and verified opponent weights")
             for key in ("weights_sha256","seed","names","version","pairs","rtts","speed","opponents","extra_weights"):
@@ -184,6 +196,9 @@ async def run(args):
                     shutil.copyfile(file,run_dir/file.name)
             save_json(run_dir/"results.json",results)
         skip=len(results);scheduled=0
+        if args.clock:
+            pending=spool/"clock-start.tmp"
+            pending.write_text(str(args.rtts[0]//100));pending.replace(spool/"clock-start")
         for rtt in args.rtts:
             latency[0]=rtt/args.speed
             for pair in range(args.pairs):
@@ -205,15 +220,17 @@ async def run(args):
                     idx=f"round-{len(results):03d}"
                     lineup=[rival,rival];lineup[seat]=path
                     fields=[idx,*names,str(angle),str(gap),*lineup]
+                    if args.landmark:fields.extend([str(seat),str(args.landmark)])
+                    requested_at=time.monotonic()
                     tmp=run_dir/"request.tmp";tmp.write_text("\t".join(fields));tmp.replace(run_dir/"request")
                     result=run_dir/(idx+".result")
                     await wait_for(result.exists,procs,70,"Native round failed to finish")
                     a,b,t=map(float,result.read_text().split())
-                    row=dict(id=idx,rtt=rtt,pair=pair,seat=seat,policy=policy,rival=rival,hp=a if seat==0 else b,opponent_hp=b if seat==0 else a,ticks=t,angle=angle,gap=gap)
+                    row=dict(id=idx,wall_seconds=time.monotonic()-requested_at,rtt=rtt,pair=pair,seat=seat,policy=policy,rival=rival,hp=a if seat==0 else b,opponent_hp=b if seat==0 else a,ticks=t,angle=angle,gap=gap)
                     results.append(row)
                     save_json(run_dir/"results.json",results)
                     print(f"Round {len(results)} complete." if args.blind else row,flush=True)
-                    await asyncio.sleep(1)
+                    if args.clock!="fast":await asyncio.sleep(1)
     finally:
         for listener in servers:listener.close()
         for proc,_ in reversed(procs):
@@ -238,6 +255,8 @@ if __name__=="__main__":
     parser.add_argument("--speed",type=int,default=1)
     parser.add_argument("--resume",type=Path)
     parser.add_argument("--blind",action="store_true",help="Mix the trained bot and the control against the same human")
+    parser.add_argument("--landmark",type=int,default=0,help="Use the common W-tap opening until this many unanswered fresh hits after the defender begins pressing")
+    parser.add_argument("--clock",choices=["realtime","fast"],help="Run the native clients and server on an ordered network tick schedule")
     args=parser.parse_args()
     args.opponents=[p if p in ("wtap","hold") else str(Path(p).resolve()) for p in args.opponents]
     if args.human:args.rtts=[0]

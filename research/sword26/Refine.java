@@ -22,6 +22,17 @@ public final class Refine {
         var rng=new Random(Long.parseLong(args[2]));
         List<double[]> reference=new ArrayList<>(),parents=new ArrayList<>();
         for(int i=3;i<args.length;i++){var w=read(Path.of(args[i]));reference.add(w);if(w.length==TreePolicy.COUNT)parents.add(w);}
+        String seedFile=System.getProperty("sword.parentFile");
+        if(seedFile!=null){
+            parents.clear();
+            for(String file:Files.readAllLines(Path.of(seedFile))){
+                var weights=read(Path.of(file));
+                if(weights.length!=TreePolicy.COUNT)throw new IllegalArgumentException("A breeding parent must be a tree policy");
+                parents.add(weights);
+            }
+            if(parents.isEmpty())throw new IllegalArgumentException("At least one breeding parent is required");
+        }
+        var donors=List.copyOf(parents);
         int fixed=reference.size();
         var pool=Executors.newFixedThreadPool(4);
         try(var log=Files.newBufferedWriter(dir.resolve("training.tsv"))){
@@ -37,7 +48,17 @@ public final class Refine {
                 }
                 var work=new ArrayList<Callable<Ranked>>();
                 for(int i=0;i<56;i++){
-                    double[] w=i<Math.min(12,parents.size())?parents.get(i):TreePolicy.child(parents.get(rng.nextInt(parents.size())),parents.get(rng.nextInt(parents.size())),rng);
+                    double[] w;
+                    if(i<Math.min(12,parents.size()))w=parents.get(i);
+                    else if(seedFile!=null&&i%4==0){
+                        w=parents.get(rng.nextInt(parents.size())).clone();
+                        for(int head=0;head<TreePolicy.HEADS;head++)if(rng.nextBoolean()){
+                            var source=rng.nextBoolean()?donors:parents;
+                            var donor=source.get(rng.nextInt(source.size()));
+                            int offset=head*TreePolicy.SIZE;
+                            System.arraycopy(donor,offset,w,offset,TreePolicy.SIZE);
+                        }
+                    }else w=TreePolicy.child(parents.get(rng.nextInt(parents.size())),parents.get(rng.nextInt(parents.size())),rng);
                     work.add(()->new Ranked(score(w,panel),w));
                 }
                 var contenders=new ArrayList<Ranked>();for(var f:pool.invokeAll(work))contenders.add(f.get());

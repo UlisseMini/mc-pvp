@@ -1,0 +1,17 @@
+{
+  "purpose": "One outcome-trained policy for varied opponents, with checkpoint selection using actual Minecraft matches.",
+  "development_opponents": ["champion.net", "evidence/frozen/opponents/population.net"],
+  "other_learned_parents": ["evidence/response/alternative.net", "evidence/response/specialist-a.net", "evidence/response/specialist-b.net", "evidence/frozen/opponents/gradient.net"],
+  "split": "Earlier independent policies are now development partners. No old evaluation opening or trace is used for training. The new transfer opponent is independently initialized from the registered seeds and is inaccessible to candidate generation and selection.",
+  "proposal_seeds": [1624041, 9347203, 7055519, 8155047],
+  "proposal_generations": 112,
+  "selection_seed": 12356571,
+  "native_development_seed": 1209842,
+  "native_development": "One opening per latency, both seats, all four proposals against both learned development opponents, three-times game speed. Rank by 0.5 mean opponent payoff plus 0.5 worst opponent payoff. A kill earns +1, death -1, time limit 0, plus 0.5 times final health differential divided by 20. Ignore the control rows. Ties use candidate order.",
+  "unseen_opponent": {"population_seed": 120845, "population_generations": 200, "tree_seed": 8423445, "tree_generations": 420},
+  "validation_native_seed": 6305881,
+  "validation_model_seed": 8296903,
+  "validation_opponents": ["plain W-tap", "old champion", "retreating opponent", "unseen opponent"],
+  "validation": "Freeze one native-selected checkpoint before validation. Two new randomly oriented paired openings per opponent per latency in both seats, at normal speed. Equal 0/100 ms RTT. All candidate and plain W-tap arms use identical rules. Model uses 16 new paired openings per latency. Report win rates by matchup and latency, health spread, input audit, K3/K5/K10 and common-prefix model forks. No human data.",
+  "practice_promotion": "To replace the default in regulation duels, win a majority against each previous playable bot, at least half against the unseen bot, and have more total wins than the matched control in real Minecraft. Established-combo maintenance is a separate promotion test."
+}

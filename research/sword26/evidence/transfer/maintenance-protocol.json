@@ -1,0 +1,9 @@
+{
+  "native_seed": 815929,
+  "pairs_per_latency": 4,
+  "rtts_ms": [0, 100],
+  "opponent": "Former independent tree opponent, now development",
+  "protocol": "Both arms open with identical plain W-tap. The rival plays from the start. After its first local physical press, the referee counts unanswered fresh damage. On the third such hit the arm switches to its assigned policy on its next input poll. The suffix policy was primed with the opening keys and observations. Death or timeout before entry is reported. Round end censors the suffix. Record entry tick, distance, health, grounding, defender start, and actual input switch. Same-tick returns are counted. K5 and K10 in the regular matches and during a K3 continuation are descriptive.",
+  "independent_runs": true,
+  "model": "The Grade and Maintenance files in the parent directory use the registered model seed, both seats, both equal-RTT settings and 16 openings per latency. Model suffix arms branch the same W-tap prefix."
+}
