@@ -38,7 +38,7 @@ def train_target(target,n_updates,wins_only=False):
         fcntl.flock(lock,fcntl.LOCK_EX)
         _train_target(target,n_updates,early,matched,orig,total,folder,wins_only)
 
-def _train_target(target,n_updates,early,matched,orig,total,folder,wins_only):
+def _train_target(target,n_updates,early,matched,orig,total,folder,wins_only,fixture_extension=extension):
     milestones=[early,matched,total]
     torch.manual_seed(3176221);model=Actor('mlp')
     model.load_state_dict(torch.load(DIR/'shared-mlp/trainer.pt',map_location='cpu',weights_only=False)['net'])
@@ -54,7 +54,7 @@ def _train_target(target,n_updates,early,matched,orig,total,folder,wins_only):
         for _ in range(n_updates):
             if seen==total:break
             target_stop=next(m for m in milestones if m>seen);n=min(64,target_stop-seen)
-            fixtures=orig[seen:seen+n] if seen<matched else extension(target,seen-matched,n)
+            fixtures=orig[seen:seen+n] if seen<matched else fixture_extension(target,seen-matched,n)
             weights=w.folder/'actor.net';model.export(weights)
             t=time.monotonic();rows=w.run([[weights,*r] for r in fixtures],True)
             ep=prepare([(float(v==1),duration,data) for v,duration,data in rows] if wins_only else rows)
