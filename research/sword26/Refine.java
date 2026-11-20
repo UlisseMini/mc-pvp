@@ -34,7 +34,7 @@ public final class Refine {
         }
         var donors=List.copyOf(parents);
         int fixed=reference.size();
-        var pool=Executors.newFixedThreadPool(4);
+        var pool=Executors.newFixedThreadPool(Math.min(4,Runtime.getRuntime().availableProcessors()));
         try(var log=Files.newBufferedWriter(dir.resolve("training.tsv"))){
             log.write("generation\tbest\tduels\n");
             for(int gen=0;gen<gens;gen++){

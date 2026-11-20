@@ -1,0 +1,11 @@
+{
+  "registered_during": "Season 28 ordinary Java panel A, before viewing any of its scores.",
+  "champion": "evidence/ladder26/fighters/aa9e5afc8d9d79d6.net",
+  "population": "evidence/ladder26/season-028/result.json",
+  "seed": 71244591,
+  "training_generations": {"general": 384, "response": 384, "fresh": 640},
+  "training": "All train on the independently phased clients with real server tick packet queueing and only the existing fight payoff. Use one low-priority host core alongside native evaluation. Keep seasons 21 through 28 unchanged.",
+  "selection": "Compare evenly spaced checkpoints against the champion and eight diverse weight-stratified population opponents, 48 common openings per RTT and both seats under the corrected variable clock.",
+  "confirmation": "Carry the four strongest direct and four strongest broad policies into a fresh 128-pair comparison against the training archive. Repeat on the fixed scheduled and corrected variable clocks. Store both latency-specific scores and the W-tap baseline. Select one broad and one direct finalist.",
+  "native": "Test selected finalists against the Java champion with W-tap on fresh ordinary Java openings after the already-registered season 28 tournament. Any promotion requires wins across the native opponent field and in the direct matchup."
+}
