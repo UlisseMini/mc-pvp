@@ -196,7 +196,7 @@ async def run(args):
         for seat in range(1 if args.human else 2):
             name=BOT_NAMES[seat];folder=worker/name
             folder.mkdir(exist_ok=True)
-            (folder/"options.txt").write_text(f"onboardAccessibility:false\npauseOnLostFocus:false\ntutorialStep:none\nrenderDistance:3\nsimulationDistance:5\nenableVsync:false\ninactivityFpsLimit:\"minimized\"\nmaxFps:{fps}\nmusic:0.0\nsoundCategory_master:0.0\n"+("graphicsMode:0\nrenderClouds:false\nparticles:2\nentityShadows:false\ngamma:1.0\nguiScale:2\nchatVisibility:2\n" if args.showcase else ""))
+            (folder/"options.txt").write_text(f"onboardAccessibility:false\npauseOnLostFocus:false\ntutorialStep:none\nrenderDistance:3\nsimulationDistance:5\nenableVsync:false\ninactivityFpsLimit:\"minimized\"\nmaxFps:{fps}\nmusic:0.0\nsoundCategory_master:0.0\n"+('ao:false\nbiomeBlendRadius:0\ncloudRange:32\nrenderClouds:"false"\nparticles:2\nentityShadows:false\nmipmapLevels:0\ngamma:1.0\nguiScale:2\nchatVisibility:2\n' if args.showcase else ""))
             launch(name,["xvfb-run","-a","-s",f"-screen 0 {width+120}x{height+80}x24 -nolisten tcp","env","LIBGL_ALWAYS_SOFTWARE=1","GALLIUM_DRIVER=llvmpipe","LP_NUM_THREADS=1","ALSOFT_DRIVERS=null","SDL_VIDEO_DRIVER=x11","SDL_VIDEODRIVER=x11",java,"-Xmx1000M",f"-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/sword26-lwjgl-{PORT}-{seat}","-Djava.awt.headless=true","--enable-native-access=ALL-UNNAMED","--add-exports","java.base/jdk.internal.misc=ALL-UNNAMED",
                 agent,*clock_flags,"-Dsword.spool="+str(spool),f"-Dsword.speed={args.speed}","-Dsword.control="+str(spool/("AB"[seat])),"-Dsword.logs="+str(run_dir),"-cp",(BUILD/"linux-classpath").read_text(),"net.minecraft.client.main.Main",
                 "--username",name,"--version","26.3","--gameDir",folder,"--assetsDir",BUILD/"assets","--assetIndex","34",
@@ -209,7 +209,7 @@ async def run(args):
             log=(run_dir/"server.log").read_text(errors="replace")
             return all(n+" joined the game" in log for n in names)
         await wait_for(joined,procs,3600 if args.human else 120,"Client join timed out")
-        await asyncio.sleep(2)
+        await asyncio.sleep(45 if args.showcase else 2)
         metadata={"agent":agent_jar.name,"backend":"Linux virtual X11 framebuffer with Mesa software rendering","weights_sha256":hashlib.sha256(args.weights.read_bytes()).hexdigest(),"seed":seed,"names":names,"version":"26.3","pairs":args.pairs,"rtts":args.rtts,"speed":args.speed,"blind":args.blind,"opponents":args.opponents,"extra_weights":[{"file":str(w),"sha256":hashlib.sha256(w.read_bytes()).hexdigest()} for w in args.extra_weights]}
         metadata["primary_file"]=args.weights.name
         metadata["referee_score_rule"]="first_lethal_contact"
