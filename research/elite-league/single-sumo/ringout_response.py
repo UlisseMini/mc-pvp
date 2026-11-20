@@ -7,7 +7,7 @@ from id_evaluate import make_panel,CLOCKS
 from league_tournament import stats
 from build import sim_paths
 from id_native import native_name
-from native_league import alias,fixtures,cohort,WT,RTTS
+from native_league import alias,fixtures,cohort,WT,RTTS,read,atomic
 from forge_window import cohort_window
 
 FOE=BASE_COUNTER
@@ -59,10 +59,30 @@ def native():
             cells[foe][arm]=dict(**tally(qs),seat={s:tally([q for q in qs if plan[q]['side']==s]) for s in 'ab'},
                 rtt={f'{a}/{b}':tally([q for q in qs if (plan[q]['rtt'],plan[q]['opponent_rtt'])==(a,b)]) for a,b in RTTS})
     write_json(OUT/'native/summary.json',cells,fixed=True)
+    report()
+
+def report():
+    model=read(OUT/'development.json')
+    native_results=read(OUT/'native/summary.json')
+    labels=['wins-only','original','wtap']
+    names=[native_name(OUT/'n16384.net'),native_name(DIR/('dedicated-'+FOE)/'n16384.net'),WT]
+    def cell(q):return '/'.join(str(q[s]) for s in ('wins','draws','losses'))
+    rows=['# Rewarding ring-outs against Sumo Seven','',
+          'Two specialists started from identical MLP weights and trained on the same 16,384 seven-CPS fights. The original reward assigned a draw half a win. The second specialist received credit only for a ring-out. Entries are wins/draws/losses.','',
+          '| Test | Opponent | Ring-out reward | Half credit for draws | Plain W-tap |',
+          '| --- | --- | --- | --- | --- |']
+    for foe,display in [(FOE,'Sumo Seven'),('wtap','Plain W-tap')]:
+        rows.append('| '+' | '.join(['Simulator',display,*[cell(model[foe][a]) for a in labels]])+' |')
+        rows.append('| '+' | '.join(['Main Minecraft server',display,*[cell(native_results[alias(foe)][a]) for a in names]])+' |')
+    verified=read(OUT/'native/verified.json')
+    rows.extend(['',f"The Minecraft comparison has {len(verified['matches'])} verified duels and {len(verified['invalid'])} invalid attempts. Each arm played both seats at 31/31, 109/109, 31/109 and 109/31 ms. These runs tested the 16k policies on the original training floor.",
+                 '','[Native seat and ping breakdown](native/summary.json) · [Recorded native controls](native/verified.json) · [Simulator breakdown](development.json)'])
+    atomic(OUT/'README.md',('\n'.join(rows)+'\n').encode())
 
 if __name__=='__main__':
     if sys.argv[1:]==['diagnose']:diagnostic()
     elif sys.argv[1:]==['score']:evaluate()
+    elif sys.argv[1:]==['report']:report()
     else:
         write_json(OUT/'protocol.json',dict(target=FOE,opponent_fixture_order='identical to the original single-opponent specialist, including checkpoint boundaries',
             initialization='same shared 180-unit MLP; identical optimizer, training seed and physical button sampling',
