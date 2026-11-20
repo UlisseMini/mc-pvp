@@ -6,8 +6,6 @@ import json
 import mimetypes
 from pathlib import Path
 import re
-import shutil
-import socket
 import threading
 import time
 import webbrowser
@@ -30,14 +28,14 @@ def read(path, default=None):
     except (OSError, ValueError):return default
 
 
-def short(path):
+def short(path, labels=None):
     s = str(path)
     for tail, name in [("evidence/league26/fighter.net","Option 4"),("evidence/random26/fighter.net","Option 5"),
                        ("frozen/opponents/population.net","Retreating rival"),("1ed6988fc1d29b7d.net","Trade specialist"),
                        ("evidence/neural26/fighter.net","Recurrent fighter")]:
         if s.endswith(tail):return name
     if s=="wtap":return "W-tap"
-    return "Fighter " + Path(s).stem[:6]
+    return (labels or {}).get(Path(s).stem,"Fighter "+Path(s).stem[:6])
 
 
 def run_for(tag):
@@ -67,10 +65,14 @@ def snapshot():
     with lock:
         if cached and time.monotonic()-cached[0]<3:return cached[1]
         state=read(EVIDENCE/"state.json",{})
-        seasons=[]
+        seasons=[];labels={}
         for path in sorted(EVIDENCE.glob("season-*/result.json")):
             s=read(path)
             if not s:continue
+            for fighter in s["finalists"]:
+                file=fighter["file"];stem=Path(file).stem
+                role="main" if file==s["main"] else "generalist" if file==s["best"] else "counter" if file==s["native_counter"] else "response"
+                labels.setdefault(stem,f"Season {s['index']} {role}")
             main=next(x for x in s["finalists"] if x["file"]==s["main"])
             seasons.append(dict(n=s["index"],main=main["breadth"],wt=s["wtap_breadth"],advanced=s["advanced"]))
         bouts=[];panels=[]
@@ -81,6 +83,10 @@ def snapshot():
             roster=read(reg,{})
             results=read(run/"results.json",[])
             actors=roster["actors"];meta=read(run/"metadata.json",{})
+            if tag.startswith("java-") and len(roster["opponents"])>=3:
+                wave=read(EVIDENCE/tag.rsplit("-",1)[0]/"nomination.json",{})
+                if wave.get("final_challenge"):
+                    labels.setdefault(Path(roster["opponents"][-1]).stem,"Independent rival")
             ended=(reg.parent/"panel.json").exists(); total=4*roster["pairs"]*len(roster["opponents"])*(len(actors)+1)
             panels.append(dict(tag=tag,done=len(results),total=total,finished=ended,when=reg.stat().st_mtime))
             for row in results:
@@ -90,7 +96,7 @@ def snapshot():
                 if not ROUND.fullmatch(rid):continue
                 clip=run/"videos"/(rid+".mp4")
                 has_video=clip.is_file()
-                bouts.append(dict(id=tag+"/"+rid,tag=tag,number=int(rid[6:])+1,actor=short(actor),rival=short(row["rival"]),
+                bouts.append(dict(id=tag+"/"+rid,tag=tag,number=int(rid[6:])+1,actor=short(actor,labels),rival=short(row["rival"],labels),
                                   rtt=row["rtt"],seat="AB"[row["seat"]],hp=row["hp"],otherHP=row["opponent_hp"],
                                   ticks=row["ticks"],video=has_video,fps=meta.get("video",{}).get("fps",50),
                                   when=reg.stat().st_mtime))
@@ -107,13 +113,13 @@ def snapshot():
         for file in sorted(EVIDENCE.glob("java-*/decision.json")):
             d=read(file)
             if not d:continue
-            decisions.append(dict(season=int(file.parent.name.split("-")[1]),champion=short(d["champion"]),
-                promoted=d["promoted"],rival=short(d["old_champion"]),fighters=[
-                    dict(name=short(k),overall=v,direct=d["native_direct"][k]) for k,v in d["native_overall"].items()
+            decisions.append(dict(season=int(file.parent.name.split("-")[1]),champion=short(d["champion"],labels),
+                promoted=d["promoted"],rival=short(d["old_champion"],labels),fighters=[
+                    dict(name=short(k,labels),overall=v,direct=d["native_direct"][k]) for k,v in d["native_overall"].items()
                 ]+[dict(name="W-tap",overall=d["wtap_overall"],direct=d["wtap_direct"])]))
         current=next((p for p in panels if not p["finished"] and p["done"]<p["total"]),None)
         latest=seasons[-1]["n"] if seasons else 0
-        result=dict(status=state.get("status","running"),champion=short(state.get("incumbent","evidence/league26/fighter.net")),
+        result=dict(status=state.get("status","running"),champion=short(state.get("incumbent","evidence/league26/fighter.net"),labels),
                     season=latest,trainingGames=games,history=seasons,decisions=decisions,matches=bouts,panel=current)
         cached=(time.monotonic(),result)
         return result

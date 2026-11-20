@@ -99,6 +99,9 @@ function render(data){
  else if(following&&selected&&!selected.video&&rows.some(m=>m.video)&&!playing)select(rows.find(m=>m.video));
  else showLibrary();
  chart();$('chartTable').replaceChildren(table(data.history.map(v=>[v.n,pct(v.main),pct(v.wt)]),['Season','Main fighter','W-tap']));
+ const live=$('liveScores');live.replaceChildren();
+ if(panel){const arms=new Map();for(const m of data.matches){if(m.tag!==panel.tag)continue;const v=arms.get(m.actor)||[0,0];v[0]+=m.otherHP===0?1:m.hp===0?0:.5;v[1]++;arms.set(m.actor,v)}
+  const section=elem('section','');section.append(elem('h3',panelName(panel.tag)+' · In progress'),table([...arms].sort((a,b)=>b[1][0]/b[1][1]-a[1][0]/a[1][1]).map(([name,[points,n]])=>[name,points+'/'+n]),['Fighter','Score / played']));live.append(section)}
  const res=$('decisions');res.replaceChildren();
  for(const d of [...data.decisions].reverse()){const block=elem('section','');block.append(elem('h3','Season '+d.season+' · '+(d.promoted?'Promoted ':'Retained ')+d.champion),table(d.fighters.map(v=>[v.name,v.overall.join('/'),v.direct.join('/')]),['Fighter','Field','vs incumbent']));res.append(block)}
 }
