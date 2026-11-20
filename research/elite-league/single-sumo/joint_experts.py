@@ -59,7 +59,7 @@ def sample(split,seed,step,foes):
 
 
 @torch.no_grad()
-def rollout(worker,net,refs,rivals,schedules,field,training):
+def rollout(worker,net,refs,rivals,schedules,field,training,erase=False):
     b=len(rivals);na=len(refs);h=torch.zeros(1,b,48)
     wins=[];events=[];actions=[];logps=[];values=[];pings=[];trajectories=[]
     for g in range(10):
@@ -75,6 +75,8 @@ def rollout(worker,net,refs,rivals,schedules,field,training):
         public=visible_feedback(win,ms,p.numpy())
         event=net.event(torch.from_numpy(np.concatenate((physical,public),1)),choices,na)
         h=net.memory(net.encoder(event)[:,None],h)[1]
+        if erase:
+            h.zero_()
         wins.append(torch.from_numpy(win));pings.append(p);events.append(event);values.append(val);actions.append(choices);logps.append(dist.log_prob(choices))
         if training:trajectories.append(played)
     return tuple(torch.stack(v,1) for v in (wins,events,actions,logps,values,pings)),trajectories
@@ -93,12 +95,25 @@ def router_step(router,opt,batch):
         opt.zero_grad();loss.backward();torch.nn.utils.clip_grad_norm_(router.parameters(),.8);opt.step()
 
 
-def grade(worker,net,refs,names,field,out,step):
+def grade(worker,net,refs,names,field,out,step,homogeneous=False):
     foes,tapes=sample('dev',0,0,names)
     batch,_=rollout(worker,net,refs,foes,tapes,field,False);w=batch[0].numpy()
     parent=read(STUDY/'small'/f'seed-{SEED}'/'dev-u512.json')['scores']
-    if step==0 and tally(w)!=parent['memory']['games']:raise ValueError('Real parent replay differs from frozen router')
-    if step==0:
+    erased = None
+    if homogeneous:
+        reset_batch, _ = rollout(worker,net,refs,foes,tapes,field,False,erase=True)
+        erased = reset_batch[0].numpy()
+        if net.blind and not np.array_equal(w, erased):
+            raise ValueError('Removing hidden state changed a blind physical rollout')
+    if step==0 and homogeneous:
+        from expert_population import load
+        _,_,_,_,all_actors,_,_,_=load('dev','small')
+        actor=list(read(LIB/'protocol.json')['experts']).index('original-mixture')
+        broad=all_actors[...,actor,0].permute(0,1,3,2).reshape(-1,10).numpy()
+        if not np.array_equal(w,broad) or not np.array_equal(erased,broad):
+            raise ValueError('Three identical initial experts must reproduce every original generalist fight')
+    if step==0 and not homogeneous:
+        if tally(w)!=parent['memory']['games']:raise ValueError('Real parent replay differs from frozen router')
         from expert_population import load,play
         xx,ss,cc,*_=load('dev','small')
         n,r,g,nf,na=ss.shape
@@ -111,7 +126,12 @@ def grade(worker,net,refs,names,field,out,step):
     n=len(CLOCKS['dev']);diff=((w==1).astype(float)-(base==1)).reshape(n,4,-1).mean(2)
     side=np.array([[v[1] for v in s] for s in tapes]);p=batch[-1].numpy()
     buf=io.BytesIO();np.savez_compressed(buf,wins=w,actions=batch[2].numpy());atomic(out/f'u{step:03}.npz',buf.getvalue())
-    write_json(out/f'u{step:03}.json',dict(physical_fights=step*BATCH*10,games=tally(w),series=tally(series(w)),
+    memory_grade = {}
+    if homogeneous:
+        d=((w==1).astype(float)-(erased==1)).reshape(n,4,-1).mean(2)
+        memory_grade = dict(memory_erased=tally(erased),memory_minus_erased=float(d.mean()),memory_conditional_95=bootstrap(d),
+            opener=tally(w[:,0]),rematches=tally(w[:,1:]),expert_choices=torch.bincount(batch[2].flatten(),minlength=len(refs)).tolist())
+    write_json(out/f'u{step:03}.json',dict(**memory_grade,physical_fights=step*BATCH*10,games=tally(w),series=tally(series(w)),
         opponents={f:tally(w[np.array(foes)==f]) for f in names},seat={s:tally(w[side==j]) for j,s in enumerate('ab')},
         rtt={f'{a}/{b}':tally(w[(p[...,0]==a)&(p[...,1]==b)]) for a,b in RTTS},
         fixed_controls={k:parent[k]['games'] for k in ('memory','wtap','literal-dedicated','known-id-lookup','original-mixture','weakest-mixture')},
@@ -119,15 +139,20 @@ def grade(worker,net,refs,names,field,out,step):
 
 
 def run(mode):
-    if mode not in ('router-only','joint','joint-local','joint-slow','joint-local-slow'):
+    homogeneous = mode in ('joint-broad','joint-broad-blind')
+    if not homogeneous and mode not in ('router-only','joint','joint-local','joint-slow','joint-local-slow'):
         raise ValueError('Unregistered joint learner')
-    limit=CHECKPOINTS[-1] if mode in ('router-only','joint') else 64
+    checkpoints=(0,64,256,410,1024) if homogeneous else CHECKPOINTS
+    limit=checkpoints[-1] if homogeneous or mode in ('router-only','joint') else 64
     config=read(STUDY/'protocol.json');names=config['small'];library=read(LIB/'protocol.json')
     parent=STUDY/'small'/f'seed-{SEED}'/'memory/u512.pt'
     while not (STUDY/'small'/f'seed-{SEED}'/'dev-u512.json').exists():time.sleep(5)
     out=DEST/mode;out.mkdir(parents=True,exist_ok=True);torch.manual_seed(93720)
-    router=Router(len(names),False);router.load_state_dict(torch.load(parent,weights_only=True));opt=torch.optim.Adam(router.parameters(),lr=.0002)
-    source=[ROOT/library['experts'][config['pairs'][f]]['reference'] for f in names]
+    router=Router(len(names),mode=='joint-broad-blind')
+    if not homogeneous:
+        router.load_state_dict(torch.load(parent,weights_only=True))
+    opt=torch.optim.Adam(router.parameters(),lr=.0002)
+    source=[ROOT/library['experts']['original-mixture' if homogeneous else config['pairs'][f]]['reference'] for f in names]
     nets=[load_buttons(p) for p in source];opts=[torch.optim.Adam(n.parameters(),lr=.000002 if mode.endswith('-slow') else .00002) for n in nets]
     refs=[out/f'live-expert-{i}.net' for i in range(len(nets))];checkpoint=out/'resume.pt'
     step=0
@@ -140,16 +165,18 @@ def run(mode):
         while True:
             for n,p in zip(nets,refs):n.export(p)
             if step==0 and any(a.read_bytes()!=b.read_bytes() for a,b in zip(source,refs)):raise ValueError('Warm expert weights changed')
-            if step in CHECKPOINTS and not (out/f'u{step:03}.json').exists():
-                grade(worker,router,refs,names,library['field'],out,step)
-                for j,n in enumerate(nets):n.export(out/f'u{step:03}-expert-{j}.net')
-                buf=io.BytesIO();torch.save(router.state_dict(),buf);atomic(out/f'u{step:03}-router.pt',buf.getvalue())
+            if step in checkpoints:
+                if not (out/f'u{step:03}.json').exists():
+                    grade(worker,router,refs,names,library['field'],out,step,homogeneous)
+                if not (out/f'u{step:03}-router.pt').exists():
+                    for j,n in enumerate(nets):n.export(out/f'u{step:03}-expert-{j}.net')
+                    buf=io.BytesIO();torch.save(router.state_dict(),buf);atomic(out/f'u{step:03}-router.pt',buf.getvalue())
             if step==limit:break
             foes,tapes=sample('train',428012,step,names)
             batch,played=rollout(worker,router,refs,foes,tapes,library['field'],True);router_step(router,opt,batch)
             if mode!='router-only':
                 centered=2*(batch[0]==1).float()-1
-                total=centered if '-local' in mode else centered.flip(1).cumsum(1).flip(1)
+                total=centered if homogeneous or '-local' in mode else centered.flip(1).cumsum(1).flip(1)
                 for arm,(n,o) in enumerate(zip(nets,opts)):
                     samples=[((float(total[k,g])+1)/2,ms,array) for g,rounds in enumerate(played)
                              for k,(_,ms,array) in enumerate(rounds) if int(batch[2][k,g])==arm]

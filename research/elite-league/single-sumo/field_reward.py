@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 
-from expert_population import Actor, SEED, STUDY, fit, play
+from expert_population import Actor, SEED, STUDY, fit, play, training_opponents
 from learner import CLOCKS, RTTS, Worker, atomic, write_json
 from remote_league import read
 from reward_router_debug import sample
@@ -88,7 +88,7 @@ def data(split):
     return torch.from_numpy(combined), world[...,0], cues, wt
 
 
-def value_fit(data, folder, seed, limit):
+def value_fit(data, folder, seed, limit, change_rate=0.):
     x, w, c, _ = data
     nc, nr, ng, nf, na = w.shape
     torch.manual_seed(seed)
@@ -106,7 +106,7 @@ def value_fit(data, folder, seed, limit):
         start = old['step']
     for step in range(start+1, limit+1):
         b = 96
-        ids = torch.randint(nf, (b, 1), generator=rng)
+        ids = training_opponents(nf, b, ng, rng, change_rate, seed+71809*(step-1))
         indices = [torch.randint(k, (b, ng), generator=rng) for k in (nc, nr, ng)]
         ping = c[*indices][...,1:].float()
         a, event, won, *_ = sample(net, x[*indices, ids], w[*indices, ids], ping, 'q', .3)

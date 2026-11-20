@@ -69,6 +69,7 @@ def grade():
         id_library_gain=float(delta.mean()),conditional_fixed_timing_95=bootstrap(delta),training_schedules_per_clock=2)
     write_json(FOLDER/'crossplay'/f'covered-{len(diag):02}.json',receipt,fixed=True)
     route_expansion(tr,bins,v,p,c,wt,experts,foes,len(diag))
+    return len(diag)
 
 
 def route_expansion(train,train_bins,world,bins,ctx,wt,experts,foes,covered):
@@ -121,6 +122,7 @@ def follow():
     rel=str(FOLDER.relative_to(OUT))+'/'
     grade_command='cd '+REMOTE+'/research/elite-league/single-sumo && ~/mc-sumo-league/venv/bin/python expanded_crossplay.py'
     while todo:
+        before=len(todo)
         for f in list(todo):
             path=FOLDER/'counters'/(f+'.json')
             if not path.exists():continue
@@ -131,13 +133,16 @@ def follow():
             col=rel+'crossplay/columns/'+f+'.json'
             if available(col):
                 retrieve([col]);todo.remove(f)
+        if len(todo)!=before:
+            # Score each complete expansion on the original fixtures. The remote count
+            # can include another column that finished during the artifact transfer.
+            coverage=int(invoke([*SSH,grade_command+' grade']).splitlines()[-1])
+            retrieve([rel+f'crossplay/covered-{coverage:02}.json',rel+f'crossplay/routed-{coverage:02}.json'])
         if todo:time.sleep(30)
-    invoke([*SSH,grade_command+' grade'])
-    retrieve([rel+'crossplay/covered-27.json',rel+'crossplay/routed-27.json'])
 
 
 if __name__=='__main__':
-    if sys.argv[1]=='grade':grade()
+    if sys.argv[1]=='grade':print(grade())
     elif sys.argv[1]=='follow':follow()
     elif sys.argv[1]=='start':
         from remote_jobs import start

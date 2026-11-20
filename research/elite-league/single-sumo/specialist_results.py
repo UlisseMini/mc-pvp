@@ -46,6 +46,14 @@ def groups():
             for step in (512, 2048):
                 folder=f'expert-population/full-field/{method}-{seed}/'
                 yield [folder+f'u{step}.pt',folder+f'dev-u{step}.json']
+    for group, step in [('small', 512), ('seven', 2048)]:
+        for seed in (22819, 22820):
+            path=f'expert-population/changed-opponent/reward-training/{group}/seed-{seed}/'
+            yield [path+f'u{step}.pt', path+'dev.json']
+    for mode in ('joint-broad', 'joint-broad-blind'):
+        for step in (0, 64, 256, 410, 1024):
+            prefix=f'expert-population/joint/{mode}/u{step:03}'
+            yield [prefix+f'-expert-{j}.net' for j in range(3)]+[prefix+'-router.pt',prefix+'.json']
     for count in (7,27):yield [f'expanded-library/crossplay/covered-{count:02}.json',f'expanded-library/crossplay/routed-{count:02}.json']
 
 

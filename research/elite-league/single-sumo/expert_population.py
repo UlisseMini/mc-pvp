@@ -120,7 +120,25 @@ def play(net,obs,w,p,greedy,donor=None,erase=False):
     return tuple(torch.stack(x,1) for x in (acts,events,wins,values,logps))
 
 
-def fit(data,folder,total,blind,seed):
+def training_opponents(nf, batch, games, generator, change_rate, change_seed):
+    initial = torch.randint(nf, (batch, 1), generator=generator)
+    if change_rate == 0:
+        return initial
+    if nf < 2 or not 0 < change_rate <= 1:
+        raise ValueError('An opponent change needs two distinct policies and a valid probability')
+    # A separate generator leaves fixtures, seats and pings paired with stationary training.
+    changes = torch.Generator().manual_seed(change_seed)
+    switch = torch.rand(batch, games-1, generator=changes) < change_rate
+    offset = torch.randint(1, nf, (batch, games-1), generator=changes)
+    current = initial[:,0]
+    result = [current]
+    for i in range(games-1):
+        current = torch.where(switch[:,i], (current + offset[:,i]) % nf, current)
+        result.append(current)
+    return torch.stack(result, dim=1)
+
+
+def fit(data,folder,total,blind,seed,change_rate=0.):
     x,w,c,*_=data;nc,nr,ng,nf,na=w.shape;b=96
     net=Actor(na,blind);opt=torch.optim.Adam(net.parameters(),lr=.0007);rng=torch.Generator().manual_seed(seed+41)
     ckpt=folder/'resume.pt';step=0;history=[]
@@ -128,7 +146,7 @@ def fit(data,folder,total,blind,seed):
         d=torch.load(ckpt,weights_only=True);net.load_state_dict(d['net']);opt.load_state_dict(d['opt'])
         rng.set_state(d['gen']);torch.set_rng_state(d['torch']);step=d['step'];history=d['curve']
     for k in range(step,total):
-        fi=torch.randint(nf,(b,1),generator=rng);ii=[torch.randint(s,(b,ng),generator=rng) for s in (nc,nr,ng)]
+        fi=training_opponents(nf,b,ng,rng,change_rate,seed+71809*k);ii=[torch.randint(s,(b,ng),generator=rng) for s in (nc,nr,ng)]
         current=x[*ii,fi];scores=w[*ii,fi];p=c[*ii][...,1:].float()
         a,events,won,values,old=play(net,current,scores,p,False)
         returns=(won==1).float();delta=returns+F.pad(values[:,1:],(0,1))-values
