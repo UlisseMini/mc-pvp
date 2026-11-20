@@ -1,5 +1,7 @@
 """Freeze exact duelable actors and run the prospectively blocked native comparison."""
 import argparse
+from contextlib import ExitStack,contextmanager
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -13,7 +15,7 @@ BUILD=ROOT/'build/elite-league/sumo-confidence'
 sys.path.insert(0,str(D.parent/'sumo-inputs'))
 from live import WT,ping,freeze,read,sha,load_batch
 from native_trials import ready,active_bridge
-from cpu_limit import family_usage
+from cpu_limit import family_usage,lab_cpu_budget
 OLD=ping.OLD
 NEW='sumo-vote-final'
 FOES=[WT,'shift-check-v4-4','sumo-two-ping','sumo-own-ping']
@@ -31,16 +33,40 @@ def pin():
         source=ROOT/'policies'/(name+'.properties')
         target=folder/source.name
         if not target.exists():shutil.copyfile(source,target)
-        if sha(source)!=sha(target):raise ValueError('Frozen actor changed: '+name)
+        if name!='best-sumo' and sha(source)!=sha(target):raise ValueError('Frozen actor changed: '+name)
         pinset[name]=sha(target)
-        weights=props(name).get('duel_network')
+        weights=dict(l.split('=',1) for l in target.read_text().splitlines() if '=' in l).get('duel_network')
         if weights:
             path=folder/(name+'.net')
             if not path.exists():path.write_text(weights+'\n')
             assert path.read_text().strip()==weights
-    assert props(OLD)['duel_network']==props('best-sumo')['duel_network']
+    assert (folder/(OLD+'.net')).read_bytes()==(folder/'best-sumo.net').read_bytes()
     assert (folder/(NEW+'.net')).read_bytes()==(D.parent/'sumo-inputs/ensemble/member.net').read_bytes()
-    freeze(D/'pins.json',{'policies':pinset,'bridge':active_bridge(),'server':sha(ROOT/'build/lab-agent.jar')})
+    if (D/'pins.json').exists():
+        if read(D/'pins.json')['policies']!=pinset:raise ValueError('Frozen policy registry changed')
+    else:freeze(D/'pins.json',{'policies':pinset,'bridge':active_bridge(),'server':sha(ROOT/'build/lab-agent.jar')})
+
+def archived_cohort():
+    source=D.parent/'single-sumo/forge_window.py'
+    spec=importlib.util.spec_from_file_location('confidence_forge_window',source)
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    return module
+
+# The standalone campaign shares one drained runtime across adjacent blocks to avoid repeated server restarts.
+_campaign=None
+@contextmanager
+def pinned_block(runtime,bridge,pins,planned):
+    global _campaign
+    if _campaign is None:
+        with runtime.window(bridge,server=pins['server']) as live:yield live
+        return
+    if _campaign['live'] is None:
+        _campaign['live']=_campaign['stack'].enter_context(runtime.window(bridge,server=pins['server']))
+        _campaign['time']=time.monotonic();_campaign['matches']=0
+    yield _campaign['live']
+    _campaign['matches']+=planned
+    if _campaign['matches']>=48 or time.monotonic()-_campaign['time']>=900:
+        _campaign['stack'].close();_campaign['live']=None
 
 def general(block):
     rows=[]
@@ -62,6 +88,7 @@ def play(name,plan):
         saved=read(path)
         if saved['plan']!=plan:raise ValueError('Changed schedule: '+name)
         found=saved['matches']
+        if set(found)==set(plan) and len(set(found.values()))==len(plan):return
     earliest=(D/'protocol.md').stat().st_mtime-60
     for f in (ROOT/'runtime/results').glob('m*.json'):
         if f.stat().st_mtime<earliest:continue
@@ -75,9 +102,24 @@ def play(name,plan):
     pins=read(D/'pins.json')
     for k,h in pins['policies'].items():
         if k!='best-sumo' and sha(ROOT/'policies'/(k+'.properties'))!=h:raise ValueError('Policy changed '+k)
-    if not ready(pins['bridge']) or sha(ROOT/'build/lab-agent.jar')!=pins['server']:
-        raise RuntimeError('Live runtime differs from the frozen runtime')
-    load_batch().run(plan,3,path,2,True,found,2,capacity_limit=capacity)
+    cohort=archived_cohort()
+    bridge=ROOT/'build/elite-league/sumo-inputs-runtime/bridge.jar'
+    if sha(bridge)!=pins['bridge']:raise ValueError('Frozen client artifact differs')
+    with pinned_block(cohort,bridge,pins,len(plan)-len(found)) as live:
+        if live!=pins['bridge'] or cohort.server_hash()!=pins['server']:
+            raise RuntimeError('Live runtime differs from the frozen runtime')
+        missing=None
+        def available():
+            nonlocal missing
+            try:ok=ready(live) and cohort.server_hash()==pins['server']
+            except (OSError,ValueError,KeyError):ok=False
+            if not ok:
+                if missing is None:missing=time.monotonic()
+                if time.monotonic()-missing>45:raise RuntimeError('Frozen runtime was replaced during a native cohort')
+                return 0
+            missing=None
+            return capacity()
+        load_batch().run(plan,3,path,2,True,found,2,capacity_limit=available)
 
 previous=None
 last_jobs=2
@@ -89,7 +131,8 @@ def capacity():
     pid=read(ROOT/'runtime/manager.json')['pid'];cur=family_usage([pid],True)
     if previous:
         before,old=previous;load=sum(max(0,v-old.get(k,v)) for k,v in cur.items())/(now-before)
-        last_jobs=3 if load<4.55 else 2 if load<5.3 else 1
+        budget=lab_cpu_budget()
+        last_jobs=3 if load<budget-.7 else 2 if load<budget-.1 else 1
     previous=now,cur
     return last_jobs
 
@@ -110,4 +153,8 @@ def main():
     finish()
     seven_fill(16,only_ready=False)
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    sys.modules['study']=sys.modules[__name__]
+    with ExitStack() as stack:
+        _campaign=dict(stack=stack,live=None)
+        main()

@@ -61,7 +61,8 @@ def serve(settings):
         return [sys.executable,__file__,'gate',str(slot),str(launch_epoch),*map(str,command)]
     forge_runtime.bot_command=stagger
     asyncio.run(lab_runtime.serve(frame_sleep_ms=settings['frame_sleep_ms'],slot_backends=','.join(settings['bot_backends']),
-                                  bot_slots=settings['bot_slots'],port_offset=settings['port_offset'],client_start_timeout=285))
+                                  bot_slots=settings['bot_slots'],port_offset=settings['port_offset'],client_start_timeout=285,
+                                  server_agent=settings.get('server_agent')))
 
 def set_artifacts(folder,hashes,previous):
     for n,r in hashes.items():

@@ -81,8 +81,8 @@ def sandbox_test():
         Path(canary).unlink(missing_ok=True);Path(canary+'.write').unlink(missing_ok=True)
 
 
-def logging_test():
-    args=['-Dlab.root='+str(ROOT),'-Dlab.role=server','-javaagent:'+str(BUILD/'lab-agent.jar'),
+def logging_test(agent=None):
+    args=['-Dlab.root='+str(ROOT),'-Dlab.role=server','-javaagent:'+str(agent or BUILD/'lab-agent.jar'),
           '-cp',str(BUILD/'classes')+os.pathsep+str(CACHE/'server.jar'),'lab.LoggingProbe']
     result=subprocess.run(sandbox_java(args),capture_output=True,text=True,timeout=20,env=clean_environment())
     if result.returncode:raise RuntimeError('Legacy logging probe failed: '+result.stdout+result.stderr)
@@ -171,7 +171,7 @@ max-tick-time=60000
     assets=CACHE/'assets';assets.mkdir(exist_ok=True)
 
 
-async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots=8,port_offset=0,client_start_timeout=150):
+async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots=8,port_offset=0,client_start_timeout=150,server_agent=None):
     global BOT_SLOTS
     if bot_backend not in ('legacy','forge') or not 1<=bot_slots<=8:raise ValueError('Choose legacy/forge and 1–8 bot slots')
     if not 0<=port_offset<=39000:raise ValueError('Invalid local port offset')
@@ -184,7 +184,12 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
     lock=open(lock_file,'w')
     try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     except BlockingIOError:raise RuntimeError('PvP Lab is already running')
-    verify_cache();sandbox_test();logging_test();configure(port_offset)
+    agent=Path(server_agent).resolve() if server_agent else BUILD/'lab-agent.jar'
+    verify_cache();sandbox_test()
+    agent_hash=hashlib.sha256(agent.read_bytes()).hexdigest()
+    if server_agent and agent!=(BUILD/'agents'/(agent_hash+'.jar')).resolve():
+        raise ValueError('Archived lab agents must match their content-addressed build path')
+    logging_test(agent);configure(port_offset)
     # Independent loopback capture ingress; never routes data through Minecraft.
     import importlib.util
     capture_spec=importlib.util.spec_from_file_location('practice_capture_ingest',ROOT/'practice-client/capture_ingest.py')
@@ -206,7 +211,7 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
         if replace is None:processes.append(process)
         else:processes[replace]=process
         return process
-    base=['-Xms128M','-Xmx1024M','-XX:ActiveProcessorCount=2','-Dlab.root='+str(ROOT),'-javaagent:'+str(BUILD/'lab-agent.jar')]
+    base=['-Xms128M','-Xmx1024M','-XX:ActiveProcessorCount=2','-Dlab.root='+str(ROOT),'-javaagent:'+str(agent)]
     server=launch('server',[*base,'-Xmx2048M','-Dlab.role=server','-Dlog4j.configurationFile='+str(CACHE/'server-logging.xml'),'-jar',CACHE/'server.jar','nogui'],RUNTIME/'server')
     try:
         print('Starting the sandboxed real Minecraft server...',flush=True)
@@ -229,7 +234,7 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
                 command=forge_runtime.bot_command(i,25570+port_offset+i,frame_sleep_ms,forge_classpath)
                 launch(f'bot{i}',command,bot,replace,complete_command=True)
                 return
-            digest=hashlib.sha256((BUILD/'lab-agent.jar').read_bytes()).hexdigest()
+            digest=agent_hash
             (bot/'client-runtime.json').write_text(json.dumps({'role':'bot','backend':'legacy','slot':i,'agent_sha256':digest}))
             (bot/'runtime.properties').write_text(f'role=bot\nbackend=legacy\nslot={i}\nagent_sha256={digest}\n')
             launch(f'bot{i}',[*base,'-Dlab.agent_sha256='+digest,'-Dlab.role=client','-Dlab.backend=legacy',f'-Dlab.slot={i}',f'-Dlab.port={25570+port_offset+i}',
@@ -241,7 +246,7 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
         for i in range(BOT_SLOTS):
             proxies.append(await latency_proxy(25570+port_offset+i,RUNTIME/f'proxy/slot{i}.properties',25566+port_offset))
             start_bot(i)
-        (RUNTIME/'manager.json').write_text(json.dumps({'pid':os.getpid(),'address':f'127.0.0.1:{25565+port_offset}','version':'1.8.9','started':time.time(),'frame_sleep_ms':frame_sleep_ms,'bot_backends':backends,'bot_slots':BOT_SLOTS,'port_offset':port_offset}))
+        (RUNTIME/'manager.json').write_text(json.dumps({'pid':os.getpid(),'address':f'127.0.0.1:{25565+port_offset}','version':'1.8.9','started':time.time(),'frame_sleep_ms':frame_sleep_ms,'bot_backends':backends,'bot_slots':BOT_SLOTS,'port_offset':port_offset,'server_agent_sha256':agent_hash}))
         print(f'Server address: 127.0.0.1:{25565+port_offset} (Minecraft Java 1.8.9). Waiting for {BOT_SLOTS} real clients: {backends}.',flush=True)
         initialized=False;client_deadline=time.time()+client_start_timeout
         while not stop.is_set():

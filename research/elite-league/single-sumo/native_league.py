@@ -54,18 +54,24 @@ def reconcile(plan):
     return games
 def play(plan,out,bridge):
     from shutil import disk_usage
+    from forge_window import server_hash
     if out.exists():
         d=read(out)
         if d['plan']!=plan:raise ValueError('Frozen native fixture changed')
         if len(d['matches'])==len(plan):return d['matches']
     out.parent.mkdir(parents=True,exist_ok=True)
     if not native_trials.ready(bridge):raise RuntimeError('Waiting for designated Forge bridge')
-    sample=None;allowed=2
+    sample=None;allowed=2;expected_server=server_hash();missing=None
     def slots():
-        nonlocal sample,allowed
-        try:ready=native_trials.ready(bridge)
+        nonlocal sample,allowed,missing
+        try:ready=native_trials.ready(bridge) and server_hash()==expected_server
         except (OSError,ValueError,KeyError):return 0
-        if not ready or disk_usage(ROOT).free<9*1024**3:return 0
+        if not ready:
+            if missing is None:missing=time.monotonic()
+            if time.monotonic()-missing>60:raise RuntimeError('Main Minecraft runtime changed during a frozen fixture')
+            return 0
+        missing=None
+        if disk_usage(ROOT).free<9*1024**3:return 0
         now=time.monotonic()
         if sample is None or now-sample[0]>=3:
             current=family_usage([read(ROOT/'runtime/manager.json')['pid']],True)
@@ -109,6 +115,14 @@ def certify(mid,trial,bridge):
                 reason=raw['reason'],duration=(raw['finish']-raw['start'])/1000)
 def cohort(folder,plan,bridge):
     folder.mkdir(parents=True,exist_ok=True);records={};rejected=[]
+    from forge_window import server_hash
+    stamp=folder/'native-build.json'
+    if stamp.exists() or not (folder/'attempt-0.json').exists():
+        clients=[read(ROOT/f'runtime/bots/{i}/client-runtime.json') for i in range(8)]
+        fields=('bridge_sha256','module_sha256','headless_sha256','java_sha256')
+        versions={tuple(c[k] for k in fields) for c in clients}
+        if len(versions)!=1 or clients[0]['bridge_sha256']!=bridge:raise ValueError('Mixed native cohort runtime')
+        write_json(stamp,dict(server=server_hash(),**dict(zip(fields,versions.pop()))),fixed=True)
     write_json(folder/'protocol.json',dict(plan=plan,bridge=bridge),fixed=True)
     todo=plan.copy();links={q:q for q in todo}
     for attempt in range(8):
