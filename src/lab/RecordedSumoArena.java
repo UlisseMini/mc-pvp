@@ -8,10 +8,17 @@ import java.util.*;
 final class RecordedSumoArena {
     private static final Map<Integer,RecordedSumoMap> placed=new HashMap<>();
     private static final Map<Integer,Object> states=new HashMap<>();
+    private static final Map<Object,Integer> wireStates=new IdentityHashMap<>();
     private static final int EXPORT_ARENA=30;
     private static long exportTick;
     private static Object nativeState(int id){
         return states.computeIfAbsent(id,k->R.call(R.call(R.cls("net.minecraft.block.Block"),"getBlockById",k>>4),"getStateFromMeta",k&15));
+    }
+    private static int wireState(Object state){
+        return wireStates.computeIfAbsent(state,s->{
+            Object block=R.call(s,"getBlock");
+            return ((int)R.call(R.cls("net.minecraft.block.Block"),"getIdFromBlock",block)<<4)|(int)R.call(block,"getMetaFromState",s);
+        });
     }
     static void clear(Object world,int arena){
         RecordedSumoMap previous=placed.get(arena);
@@ -41,13 +48,14 @@ final class RecordedSumoArena {
         for(int y=map.y0;y<map.y0+map.height;y++)for(int z=map.z0;z<map.z0+map.depth;z++)for(int x=map.x0;x<map.x0+map.width;x++){
             int id=build?map.state(x,y,z):0;
             var p=pos(arena,x,y,z);var expected=nativeState(id);var actual=R.call(world,"getBlockState",p);
-            if(!expected.equals(actual)){
+            if(wireState(actual)!=id){
                 R.call(world,"setBlockState",p,expected,2);
                 actual=R.call(world,"getBlockState",p);
             }
-            if(!expected.equals(actual))throw new IllegalStateException("Sumo volume placement failed for "+map.name+" at "+x+","+y+","+z);
-            Object block=R.call(actual,"getBlock");
-            int observed=((int)R.call(R.cls("net.minecraft.block.Block"),"getIdFromBlock",block)<<4)|(int)R.call(block,"getMetaFromState",actual);
+            // A chunk may decode a different derived stair shape for the same wire metadata.
+            // Minecraft resolves the physical shape from its neighbors at collision time.
+            int observed=wireState(actual);
+            if(observed!=id)throw new IllegalStateException("Sumo volume placement failed for "+map.name+" at "+x+","+y+","+z+": "+observed+" vs "+id);
             hash.update((byte)(observed>>8));hash.update((byte)observed);
         }
         String result=RecordedSumoMap.hex(hash.digest());
@@ -72,7 +80,7 @@ final class RecordedSumoArena {
                 file.writeUTF(map.hash);
                 for(int y=map.y0;y<map.y0+map.height;y++)for(int z=map.z0;z<map.z0+map.depth;z++)for(int x=map.x0;x<map.x0+map.width;x++){
                     Object p=pos(arena,x,y,z);Object state=R.call(world,"getBlockState",p);Object block=R.call(state,"getBlock");
-                    if(!nativeState(map.state(x,y,z)).equals(state))
+                    if(wireState(state)!=map.state(x,y,z))
                         throw new IllegalStateException("Terrain changed after placement: "+map.name+" at "+x+","+y+","+z);
                     List<Object> boxes=new ArrayList<>();R.call(block,"addCollisionBoxesToList",world,p,state,mask,boxes,null);
                     file.writeFloat((float)R.num(block,"slipperiness"));file.writeInt(boxes.size());

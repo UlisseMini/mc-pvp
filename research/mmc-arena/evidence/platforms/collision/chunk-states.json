@@ -1,0 +1,823 @@
+{
+  "all_wire_states_exact": true,
+  "derived_object_differences": 68,
+  "states": [
+    {
+      "decoded": "minecraft:air",
+      "from_chunk": "minecraft:air",
+      "object_equal": true,
+      "state": 0
+    },
+    {
+      "decoded": "minecraft:stone[variant=stone]",
+      "from_chunk": "minecraft:stone[variant=stone]",
+      "object_equal": true,
+      "state": 16
+    },
+    {
+      "decoded": "minecraft:stone[variant=andesite]",
+      "from_chunk": "minecraft:stone[variant=andesite]",
+      "object_equal": true,
+      "state": 21
+    },
+    {
+      "decoded": "minecraft:stone[variant=smooth_andesite]",
+      "from_chunk": "minecraft:stone[variant=smooth_andesite]",
+      "object_equal": true,
+      "state": 22
+    },
+    {
+      "decoded": "minecraft:cobblestone",
+      "from_chunk": "minecraft:cobblestone",
+      "object_equal": true,
+      "state": 64
+    },
+    {
+      "decoded": "minecraft:planks[variant=oak]",
+      "from_chunk": "minecraft:planks[variant=oak]",
+      "object_equal": true,
+      "state": 80
+    },
+    {
+      "decoded": "minecraft:planks[variant=spruce]",
+      "from_chunk": "minecraft:planks[variant=spruce]",
+      "object_equal": true,
+      "state": 81
+    },
+    {
+      "decoded": "minecraft:planks[variant=birch]",
+      "from_chunk": "minecraft:planks[variant=birch]",
+      "object_equal": true,
+      "state": 82
+    },
+    {
+      "decoded": "minecraft:planks[variant=jungle]",
+      "from_chunk": "minecraft:planks[variant=jungle]",
+      "object_equal": true,
+      "state": 83
+    },
+    {
+      "decoded": "minecraft:planks[variant=acacia]",
+      "from_chunk": "minecraft:planks[variant=acacia]",
+      "object_equal": true,
+      "state": 84
+    },
+    {
+      "decoded": "minecraft:sand[variant=sand]",
+      "from_chunk": "minecraft:sand[variant=sand]",
+      "object_equal": true,
+      "state": 192
+    },
+    {
+      "decoded": "minecraft:sand[variant=red_sand]",
+      "from_chunk": "minecraft:sand[variant=red_sand]",
+      "object_equal": true,
+      "state": 193
+    },
+    {
+      "decoded": "minecraft:coal_ore",
+      "from_chunk": "minecraft:coal_ore",
+      "object_equal": true,
+      "state": 256
+    },
+    {
+      "decoded": "minecraft:log[axis=x,variant=oak]",
+      "from_chunk": "minecraft:log[axis=x,variant=oak]",
+      "object_equal": true,
+      "state": 276
+    },
+    {
+      "decoded": "minecraft:log[axis=z,variant=oak]",
+      "from_chunk": "minecraft:log[axis=z,variant=oak]",
+      "object_equal": true,
+      "state": 280
+    },
+    {
+      "decoded": "minecraft:leaves[check_decay=false,decayable=false,variant=oak]",
+      "from_chunk": "minecraft:leaves[check_decay=false,decayable=false,variant=oak]",
+      "object_equal": true,
+      "state": 292
+    },
+    {
+      "decoded": "minecraft:leaves[check_decay=false,decayable=false,variant=jungle]",
+      "from_chunk": "minecraft:leaves[check_decay=false,decayable=false,variant=jungle]",
+      "object_equal": true,
+      "state": 295
+    },
+    {
+      "decoded": "minecraft:leaves[check_decay=true,decayable=false,variant=jungle]",
+      "from_chunk": "minecraft:leaves[check_decay=true,decayable=false,variant=jungle]",
+      "object_equal": true,
+      "state": 303
+    },
+    {
+      "decoded": "minecraft:sandstone[type=sandstone]",
+      "from_chunk": "minecraft:sandstone[type=sandstone]",
+      "object_equal": true,
+      "state": 384
+    },
+    {
+      "decoded": "minecraft:sandstone[type=smooth_sandstone]",
+      "from_chunk": "minecraft:sandstone[type=smooth_sandstone]",
+      "object_equal": true,
+      "state": 386
+    },
+    {
+      "decoded": "minecraft:wool[color=white]",
+      "from_chunk": "minecraft:wool[color=white]",
+      "object_equal": true,
+      "state": 560
+    },
+    {
+      "decoded": "minecraft:wool[color=gray]",
+      "from_chunk": "minecraft:wool[color=gray]",
+      "object_equal": true,
+      "state": 567
+    },
+    {
+      "decoded": "minecraft:wool[color=silver]",
+      "from_chunk": "minecraft:wool[color=silver]",
+      "object_equal": true,
+      "state": 568
+    },
+    {
+      "decoded": "minecraft:wool[color=blue]",
+      "from_chunk": "minecraft:wool[color=blue]",
+      "object_equal": true,
+      "state": 571
+    },
+    {
+      "decoded": "minecraft:wool[color=brown]",
+      "from_chunk": "minecraft:wool[color=brown]",
+      "object_equal": true,
+      "state": 572
+    },
+    {
+      "decoded": "minecraft:wool[color=red]",
+      "from_chunk": "minecraft:wool[color=red]",
+      "object_equal": true,
+      "state": 574
+    },
+    {
+      "decoded": "minecraft:wool[color=black]",
+      "from_chunk": "minecraft:wool[color=black]",
+      "object_equal": true,
+      "state": 575
+    },
+    {
+      "decoded": "minecraft:gold_block",
+      "from_chunk": "minecraft:gold_block",
+      "object_equal": true,
+      "state": 656
+    },
+    {
+      "decoded": "minecraft:iron_block",
+      "from_chunk": "minecraft:iron_block",
+      "object_equal": true,
+      "state": 672
+    },
+    {
+      "decoded": "minecraft:double_stone_slab[seamless=false,variant=stone]",
+      "from_chunk": "minecraft:double_stone_slab[seamless=false,variant=stone]",
+      "object_equal": true,
+      "state": 688
+    },
+    {
+      "decoded": "minecraft:double_stone_slab[seamless=false,variant=cobblestone]",
+      "from_chunk": "minecraft:double_stone_slab[seamless=false,variant=cobblestone]",
+      "object_equal": true,
+      "state": 691
+    },
+    {
+      "decoded": "minecraft:double_stone_slab[seamless=false,variant=brick]",
+      "from_chunk": "minecraft:double_stone_slab[seamless=false,variant=brick]",
+      "object_equal": true,
+      "state": 692
+    },
+    {
+      "decoded": "minecraft:double_stone_slab[seamless=false,variant=stone_brick]",
+      "from_chunk": "minecraft:double_stone_slab[seamless=false,variant=stone_brick]",
+      "object_equal": true,
+      "state": 693
+    },
+    {
+      "decoded": "minecraft:stone_slab[half=bottom,variant=stone]",
+      "from_chunk": "minecraft:stone_slab[half=bottom,variant=stone]",
+      "object_equal": true,
+      "state": 704
+    },
+    {
+      "decoded": "minecraft:stone_slab[half=bottom,variant=stone_brick]",
+      "from_chunk": "minecraft:stone_slab[half=bottom,variant=stone_brick]",
+      "object_equal": true,
+      "state": 709
+    },
+    {
+      "decoded": "minecraft:stone_slab[half=top,variant=stone]",
+      "from_chunk": "minecraft:stone_slab[half=top,variant=stone]",
+      "object_equal": true,
+      "state": 712
+    },
+    {
+      "decoded": "minecraft:stone_slab[half=top,variant=cobblestone]",
+      "from_chunk": "minecraft:stone_slab[half=top,variant=cobblestone]",
+      "object_equal": true,
+      "state": 715
+    },
+    {
+      "decoded": "minecraft:stone_slab[half=top,variant=brick]",
+      "from_chunk": "minecraft:stone_slab[half=top,variant=brick]",
+      "object_equal": true,
+      "state": 716
+    },
+    {
+      "decoded": "minecraft:stone_slab[half=top,variant=stone_brick]",
+      "from_chunk": "minecraft:stone_slab[half=top,variant=stone_brick]",
+      "object_equal": true,
+      "state": 717
+    },
+    {
+      "decoded": "minecraft:brick_block",
+      "from_chunk": "minecraft:brick_block",
+      "object_equal": true,
+      "state": 720
+    },
+    {
+      "decoded": "minecraft:mossy_cobblestone",
+      "from_chunk": "minecraft:mossy_cobblestone",
+      "object_equal": true,
+      "state": 768
+    },
+    {
+      "decoded": "minecraft:oak_stairs[facing=east,half=top,shape=straight]",
+      "from_chunk": "minecraft:oak_stairs[facing=east,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 852
+    },
+    {
+      "decoded": "minecraft:oak_stairs[facing=west,half=top,shape=straight]",
+      "from_chunk": "minecraft:oak_stairs[facing=west,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 853
+    },
+    {
+      "decoded": "minecraft:oak_stairs[facing=south,half=top,shape=straight]",
+      "from_chunk": "minecraft:oak_stairs[facing=south,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 854
+    },
+    {
+      "decoded": "minecraft:oak_stairs[facing=north,half=top,shape=straight]",
+      "from_chunk": "minecraft:oak_stairs[facing=north,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 855
+    },
+    {
+      "decoded": "minecraft:stone_stairs[facing=east,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:stone_stairs[facing=east,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 1072
+    },
+    {
+      "decoded": "minecraft:stone_stairs[facing=west,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:stone_stairs[facing=west,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 1073
+    },
+    {
+      "decoded": "minecraft:stone_stairs[facing=south,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:stone_stairs[facing=south,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 1074
+    },
+    {
+      "decoded": "minecraft:stone_stairs[facing=north,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:stone_stairs[facing=north,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 1075
+    },
+    {
+      "decoded": "minecraft:stone_stairs[facing=east,half=top,shape=straight]",
+      "from_chunk": "minecraft:stone_stairs[facing=east,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 1076
+    },
+    {
+      "decoded": "minecraft:stone_stairs[facing=west,half=top,shape=straight]",
+      "from_chunk": "minecraft:stone_stairs[facing=west,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 1077
+    },
+    {
+      "decoded": "minecraft:stone_stairs[facing=south,half=top,shape=straight]",
+      "from_chunk": "minecraft:stone_stairs[facing=south,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 1078
+    },
+    {
+      "decoded": "minecraft:stone_stairs[facing=north,half=top,shape=straight]",
+      "from_chunk": "minecraft:stone_stairs[facing=north,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 1079
+    },
+    {
+      "decoded": "minecraft:clay",
+      "from_chunk": "minecraft:clay",
+      "object_equal": true,
+      "state": 1312
+    },
+    {
+      "decoded": "minecraft:fence[east=false,north=false,south=false,west=false]",
+      "from_chunk": "minecraft:fence[east=false,north=false,south=false,west=false]",
+      "object_equal": true,
+      "state": 1360
+    },
+    {
+      "decoded": "minecraft:glowstone",
+      "from_chunk": "minecraft:glowstone",
+      "object_equal": true,
+      "state": 1424
+    },
+    {
+      "decoded": "minecraft:stained_glass[color=white]",
+      "from_chunk": "minecraft:stained_glass[color=white]",
+      "object_equal": true,
+      "state": 1520
+    },
+    {
+      "decoded": "minecraft:stained_glass[color=light_blue]",
+      "from_chunk": "minecraft:stained_glass[color=light_blue]",
+      "object_equal": true,
+      "state": 1523
+    },
+    {
+      "decoded": "minecraft:stained_glass[color=blue]",
+      "from_chunk": "minecraft:stained_glass[color=blue]",
+      "object_equal": true,
+      "state": 1531
+    },
+    {
+      "decoded": "minecraft:stained_glass[color=red]",
+      "from_chunk": "minecraft:stained_glass[color=red]",
+      "object_equal": true,
+      "state": 1534
+    },
+    {
+      "decoded": "minecraft:stained_glass[color=black]",
+      "from_chunk": "minecraft:stained_glass[color=black]",
+      "object_equal": true,
+      "state": 1535
+    },
+    {
+      "decoded": "minecraft:stonebrick[variant=stonebrick]",
+      "from_chunk": "minecraft:stonebrick[variant=stonebrick]",
+      "object_equal": true,
+      "state": 1568
+    },
+    {
+      "decoded": "minecraft:stonebrick[variant=mossy_stonebrick]",
+      "from_chunk": "minecraft:stonebrick[variant=mossy_stonebrick]",
+      "object_equal": true,
+      "state": 1569
+    },
+    {
+      "decoded": "minecraft:brown_mushroom_block[variant=all_stem]",
+      "from_chunk": "minecraft:brown_mushroom_block[variant=all_stem]",
+      "object_equal": true,
+      "state": 1599
+    },
+    {
+      "decoded": "minecraft:brick_stairs[facing=east,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:brick_stairs[facing=east,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 1728
+    },
+    {
+      "decoded": "minecraft:brick_stairs[facing=west,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:brick_stairs[facing=west,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 1729
+    },
+    {
+      "decoded": "minecraft:brick_stairs[facing=south,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:brick_stairs[facing=south,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 1730
+    },
+    {
+      "decoded": "minecraft:brick_stairs[facing=north,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:brick_stairs[facing=north,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 1731
+    },
+    {
+      "decoded": "minecraft:brick_stairs[facing=east,half=top,shape=straight]",
+      "from_chunk": "minecraft:brick_stairs[facing=east,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 1732
+    },
+    {
+      "decoded": "minecraft:brick_stairs[facing=west,half=top,shape=straight]",
+      "from_chunk": "minecraft:brick_stairs[facing=west,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 1733
+    },
+    {
+      "decoded": "minecraft:brick_stairs[facing=south,half=top,shape=straight]",
+      "from_chunk": "minecraft:brick_stairs[facing=south,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 1734
+    },
+    {
+      "decoded": "minecraft:brick_stairs[facing=north,half=top,shape=straight]",
+      "from_chunk": "minecraft:brick_stairs[facing=north,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 1735
+    },
+    {
+      "decoded": "minecraft:stone_brick_stairs[facing=east,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:stone_brick_stairs[facing=east,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 1744
+    },
+    {
+      "decoded": "minecraft:stone_brick_stairs[facing=west,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:stone_brick_stairs[facing=west,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 1745
+    },
+    {
+      "decoded": "minecraft:stone_brick_stairs[facing=south,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:stone_brick_stairs[facing=south,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 1746
+    },
+    {
+      "decoded": "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 1747
+    },
+    {
+      "decoded": "minecraft:stone_brick_stairs[facing=east,half=top,shape=straight]",
+      "from_chunk": "minecraft:stone_brick_stairs[facing=east,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 1748
+    },
+    {
+      "decoded": "minecraft:stone_brick_stairs[facing=west,half=top,shape=straight]",
+      "from_chunk": "minecraft:stone_brick_stairs[facing=west,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 1749
+    },
+    {
+      "decoded": "minecraft:stone_brick_stairs[facing=south,half=top,shape=straight]",
+      "from_chunk": "minecraft:stone_brick_stairs[facing=south,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 1750
+    },
+    {
+      "decoded": "minecraft:stone_brick_stairs[facing=north,half=top,shape=straight]",
+      "from_chunk": "minecraft:stone_brick_stairs[facing=north,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 1751
+    },
+    {
+      "decoded": "minecraft:end_stone",
+      "from_chunk": "minecraft:end_stone",
+      "object_equal": true,
+      "state": 1936
+    },
+    {
+      "decoded": "minecraft:lit_redstone_lamp",
+      "from_chunk": "minecraft:lit_redstone_lamp",
+      "object_equal": true,
+      "state": 1984
+    },
+    {
+      "decoded": "minecraft:double_wooden_slab[variant=spruce]",
+      "from_chunk": "minecraft:double_wooden_slab[variant=spruce]",
+      "object_equal": true,
+      "state": 2001
+    },
+    {
+      "decoded": "minecraft:wooden_slab[half=top,variant=spruce]",
+      "from_chunk": "minecraft:wooden_slab[half=top,variant=spruce]",
+      "object_equal": true,
+      "state": 2025
+    },
+    {
+      "decoded": "minecraft:sandstone_stairs[facing=east,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:sandstone_stairs[facing=east,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2048
+    },
+    {
+      "decoded": "minecraft:sandstone_stairs[facing=west,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:sandstone_stairs[facing=west,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2049
+    },
+    {
+      "decoded": "minecraft:sandstone_stairs[facing=south,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:sandstone_stairs[facing=south,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2050
+    },
+    {
+      "decoded": "minecraft:sandstone_stairs[facing=north,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:sandstone_stairs[facing=north,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2051
+    },
+    {
+      "decoded": "minecraft:spruce_stairs[facing=east,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:spruce_stairs[facing=east,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2144
+    },
+    {
+      "decoded": "minecraft:spruce_stairs[facing=west,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:spruce_stairs[facing=west,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2145
+    },
+    {
+      "decoded": "minecraft:spruce_stairs[facing=south,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:spruce_stairs[facing=south,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2146
+    },
+    {
+      "decoded": "minecraft:spruce_stairs[facing=north,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:spruce_stairs[facing=north,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2147
+    },
+    {
+      "decoded": "minecraft:spruce_stairs[facing=east,half=top,shape=straight]",
+      "from_chunk": "minecraft:spruce_stairs[facing=east,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2148
+    },
+    {
+      "decoded": "minecraft:spruce_stairs[facing=west,half=top,shape=straight]",
+      "from_chunk": "minecraft:spruce_stairs[facing=west,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2149
+    },
+    {
+      "decoded": "minecraft:spruce_stairs[facing=south,half=top,shape=straight]",
+      "from_chunk": "minecraft:spruce_stairs[facing=south,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2150
+    },
+    {
+      "decoded": "minecraft:spruce_stairs[facing=north,half=top,shape=straight]",
+      "from_chunk": "minecraft:spruce_stairs[facing=north,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2151
+    },
+    {
+      "decoded": "minecraft:birch_stairs[facing=east,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:birch_stairs[facing=east,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2160
+    },
+    {
+      "decoded": "minecraft:birch_stairs[facing=west,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:birch_stairs[facing=west,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2161
+    },
+    {
+      "decoded": "minecraft:birch_stairs[facing=south,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:birch_stairs[facing=south,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2162
+    },
+    {
+      "decoded": "minecraft:birch_stairs[facing=north,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:birch_stairs[facing=north,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2163
+    },
+    {
+      "decoded": "minecraft:birch_stairs[facing=east,half=top,shape=straight]",
+      "from_chunk": "minecraft:birch_stairs[facing=east,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2164
+    },
+    {
+      "decoded": "minecraft:birch_stairs[facing=west,half=top,shape=straight]",
+      "from_chunk": "minecraft:birch_stairs[facing=west,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2165
+    },
+    {
+      "decoded": "minecraft:birch_stairs[facing=south,half=top,shape=straight]",
+      "from_chunk": "minecraft:birch_stairs[facing=south,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2166
+    },
+    {
+      "decoded": "minecraft:birch_stairs[facing=north,half=top,shape=straight]",
+      "from_chunk": "minecraft:birch_stairs[facing=north,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2167
+    },
+    {
+      "decoded": "minecraft:jungle_stairs[facing=east,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:jungle_stairs[facing=east,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2176
+    },
+    {
+      "decoded": "minecraft:jungle_stairs[facing=west,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:jungle_stairs[facing=west,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2177
+    },
+    {
+      "decoded": "minecraft:jungle_stairs[facing=south,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:jungle_stairs[facing=south,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2178
+    },
+    {
+      "decoded": "minecraft:jungle_stairs[facing=north,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:jungle_stairs[facing=north,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2179
+    },
+    {
+      "decoded": "minecraft:jungle_stairs[facing=east,half=top,shape=straight]",
+      "from_chunk": "minecraft:jungle_stairs[facing=east,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2180
+    },
+    {
+      "decoded": "minecraft:jungle_stairs[facing=west,half=top,shape=straight]",
+      "from_chunk": "minecraft:jungle_stairs[facing=west,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2181
+    },
+    {
+      "decoded": "minecraft:jungle_stairs[facing=south,half=top,shape=straight]",
+      "from_chunk": "minecraft:jungle_stairs[facing=south,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2182
+    },
+    {
+      "decoded": "minecraft:jungle_stairs[facing=north,half=top,shape=straight]",
+      "from_chunk": "minecraft:jungle_stairs[facing=north,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2183
+    },
+    {
+      "decoded": "minecraft:beacon",
+      "from_chunk": "minecraft:beacon",
+      "object_equal": true,
+      "state": 2208
+    },
+    {
+      "decoded": "minecraft:cobblestone_wall[east=false,north=false,south=false,up=false,variant=cobblestone,west=false]",
+      "from_chunk": "minecraft:cobblestone_wall[east=false,north=false,south=false,up=false,variant=cobblestone,west=false]",
+      "object_equal": true,
+      "state": 2224
+    },
+    {
+      "decoded": "minecraft:redstone_block",
+      "from_chunk": "minecraft:redstone_block",
+      "object_equal": true,
+      "state": 2432
+    },
+    {
+      "decoded": "minecraft:quartz_block[variant=default]",
+      "from_chunk": "minecraft:quartz_block[variant=default]",
+      "object_equal": true,
+      "state": 2480
+    },
+    {
+      "decoded": "minecraft:quartz_block[variant=chiseled]",
+      "from_chunk": "minecraft:quartz_block[variant=chiseled]",
+      "object_equal": true,
+      "state": 2481
+    },
+    {
+      "decoded": "minecraft:quartz_stairs[facing=east,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:quartz_stairs[facing=east,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2496
+    },
+    {
+      "decoded": "minecraft:quartz_stairs[facing=west,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:quartz_stairs[facing=west,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2497
+    },
+    {
+      "decoded": "minecraft:quartz_stairs[facing=south,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:quartz_stairs[facing=south,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2498
+    },
+    {
+      "decoded": "minecraft:quartz_stairs[facing=north,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:quartz_stairs[facing=north,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2499
+    },
+    {
+      "decoded": "minecraft:stained_hardened_clay[color=lime]",
+      "from_chunk": "minecraft:stained_hardened_clay[color=lime]",
+      "object_equal": true,
+      "state": 2549
+    },
+    {
+      "decoded": "minecraft:stained_hardened_clay[color=cyan]",
+      "from_chunk": "minecraft:stained_hardened_clay[color=cyan]",
+      "object_equal": true,
+      "state": 2553
+    },
+    {
+      "decoded": "minecraft:stained_hardened_clay[color=purple]",
+      "from_chunk": "minecraft:stained_hardened_clay[color=purple]",
+      "object_equal": true,
+      "state": 2554
+    },
+    {
+      "decoded": "minecraft:stained_hardened_clay[color=green]",
+      "from_chunk": "minecraft:stained_hardened_clay[color=green]",
+      "object_equal": true,
+      "state": 2557
+    },
+    {
+      "decoded": "minecraft:stained_hardened_clay[color=red]",
+      "from_chunk": "minecraft:stained_hardened_clay[color=red]",
+      "object_equal": true,
+      "state": 2558
+    },
+    {
+      "decoded": "minecraft:acacia_stairs[facing=east,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:acacia_stairs[facing=east,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2608
+    },
+    {
+      "decoded": "minecraft:acacia_stairs[facing=west,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:acacia_stairs[facing=west,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2609
+    },
+    {
+      "decoded": "minecraft:acacia_stairs[facing=south,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:acacia_stairs[facing=south,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2610
+    },
+    {
+      "decoded": "minecraft:acacia_stairs[facing=north,half=bottom,shape=straight]",
+      "from_chunk": "minecraft:acacia_stairs[facing=north,half=bottom,shape=outer_right]",
+      "object_equal": false,
+      "state": 2611
+    },
+    {
+      "decoded": "minecraft:acacia_stairs[facing=east,half=top,shape=straight]",
+      "from_chunk": "minecraft:acacia_stairs[facing=east,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2612
+    },
+    {
+      "decoded": "minecraft:acacia_stairs[facing=west,half=top,shape=straight]",
+      "from_chunk": "minecraft:acacia_stairs[facing=west,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2613
+    },
+    {
+      "decoded": "minecraft:acacia_stairs[facing=south,half=top,shape=straight]",
+      "from_chunk": "minecraft:acacia_stairs[facing=south,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2614
+    },
+    {
+      "decoded": "minecraft:acacia_stairs[facing=north,half=top,shape=straight]",
+      "from_chunk": "minecraft:acacia_stairs[facing=north,half=top,shape=outer_right]",
+      "object_equal": false,
+      "state": 2615
+    },
+    {
+      "decoded": "minecraft:barrier",
+      "from_chunk": "minecraft:barrier",
+      "object_equal": true,
+      "state": 2656
+    },
+    {
+      "decoded": "minecraft:hardened_clay",
+      "from_chunk": "minecraft:hardened_clay",
+      "object_equal": true,
+      "state": 2752
+    }
+  ],
+  "unique": 136
+}

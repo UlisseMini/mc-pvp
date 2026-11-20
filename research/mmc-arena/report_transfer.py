@@ -48,6 +48,17 @@ def report(stage):
         else:
             lines.extend(['','The live comparison has eight independently played seat and RTT blocks per matchup. '
                 'Each published block has passed movement, physical click-spacing, map-state and countdown spawn checks.'])
+            check=folder/'native/release-check'
+            if (check/'verified.json').is_file() and (check/'spawn-checks.json').is_file():
+                scores=read(check/'verified.json')['matches'];plan=read(check/'protocol.json')['plan']
+                lines.extend(['','Four release checks already played on the main server. These same games count in the first full block. '
+                    'Both players had 31 ms RTT. The challenger occupied seat A in each game.',
+                    '','| Platform | 16k specialist vs frozen best-sumo | Plain W-tap vs frozen best-sumo |',
+                    '| --- | --- | --- |'])
+                for name in ('mmc-129','mmc-221'):
+                    outcomes={plan[q]['arm']=='research-wtap20':{1:'win',.5:'draw',0:'loss'}[v['score']]
+                              for q,v in scores.items() if plan[q]['map']==name}
+                    lines.append(f'| {name} | {outcomes[False]} | {outcomes[True]} |')
     lines.extend(['','[Match protocol](protocol.json) · [Per-seat and per-RTT simulator results](model)'])
     if (folder/'native/design.json').exists():lines[-1]+=' · [Native schedule and audits](native)'
     raw=('\n'.join(lines)+'\n').encode();destination=folder/'results.md'

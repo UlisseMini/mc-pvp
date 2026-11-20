@@ -22,9 +22,9 @@ def export_command(name,command,suffix):
     return file
 
 def run():
-    release=BUILD/'registered-stable-server.json'
+    release=BUILD/'registered-chunk-server.json'
     if not release.exists():
-        base=server_hash();new=server(base)
+        base=sha(ROOT/'build/lab-agent.jar');new=server(base)
         record(release,json.dumps(dict(base=base,server=new),sort_keys=True).encode())
     ids=json.loads(release.read_text())
     with window(LBUILD/'bridge.jar',server=ids['server']) as bridge:

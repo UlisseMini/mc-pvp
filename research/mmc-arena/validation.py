@@ -166,6 +166,8 @@ def smoke(bridge):
     dest=folder/'native'/'release-check'
     scores=cohort(dest,first,bridge)
     write_json(dest/'spawn-checks.json',{q:verify_spawn(s['mid'],labels[q][0]) for q,s in scores.items()},fixed=True)
+    from report_transfer import report
+    report(stage)
 
 def native(stage):
     import random
