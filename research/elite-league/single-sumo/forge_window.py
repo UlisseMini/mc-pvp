@@ -97,7 +97,7 @@ def resume_paused(paused):
     for pid,cmd in paused.items():
         if process_cmd(int(pid))==cmd:os.kill(int(pid),signal.SIGCONT)
 @contextlib.contextmanager
-def window(bridge_path=None,server=None):
+def window(bridge_path=None,server=None,admit=None):
     b=BUILD/'forge-window';b.mkdir(exist_ok=True)
     bridge=bridge_path or BUILD/'bridge.jar';newhash=sha(bridge)
     target=b/('league' if bridge==BUILD/'bridge.jar' else 'league-'+newhash[:20])
@@ -111,6 +111,9 @@ def window(bridge_path=None,server=None):
             resume_paused(prior['schedulers']);journal.unlink()
         wait(active_bridge,25,'Cannot identify the current live client cohort')
         oldhash=active_bridge();oldserver=server_hash();settings=read(ROOT/'runtime/manager.json')
+        if admit is not None and not admit():
+            yield None
+            return
         if server is None:server=oldserver
         if bridge_path is None:
             # A newer mod release may already contain the complete controller implementation.

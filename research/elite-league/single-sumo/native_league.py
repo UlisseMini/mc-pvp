@@ -24,11 +24,16 @@ def publish(name,ref,caption):
         base=props('research-hold20');base.update(duel_network=raw.decode().strip(),duel_network_landmark='0')
     else:base=props(alias(ref['reference']))
     base.update(click_cps='7',description=caption,league_mode='sumo',league_source_sha256=ref['sha256'])
+    roster={'league_stage':name,'league_track':'winner'} if name.startswith('sumo-league-') else {}
+    base.update(roster)
     dest=ROOT/'policies'/(name+'.properties')
     if dest.exists():
         old=props(name)
-        if any(old.get(k)!=v for k,v in base.items() if k!='description'):
+        if any(old.get(k)!=v for k,v in base.items() if k!='description' and k not in roster):
             raise ValueError('Published controls differ for '+name)
+        if any(old.get(k)!=v for k,v in roster.items()):
+            old.update(roster)
+            atomic(dest,(''.join(f'{k}={v}\n' for k,v in old.items())).encode())
     else:freeze(dest,(''.join(f'{k}={v}\n' for k,v in base.items())).encode())
     return name
 def fixtures(tag,arms,foes,blocks,cap):

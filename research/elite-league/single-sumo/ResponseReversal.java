@@ -5,10 +5,11 @@ import lab.*;
 /** Prime candidate responses on one realized history, then swap only the buttons controlling the continuation. */
 final class ResponseReversal {
     static class Primed extends DuelEnv.Player {
-        final ArrayList<DuelEnv.Player> options=new ArrayList<>();int choice,cues; int[] observed; boolean measure;
+        static final int HEAD_LIMIT=Integer.getInteger("league.commitHeads",0);
+        final ArrayList<DuelEnv.Player> options=new ArrayList<>();int choice,cues,heads; int[] observed; boolean measure;
         double tOwn=Double.NEGATIVE_INFINITY,tFoe=Double.NEGATIVE_INFINITY,cut=Double.NaN;
         Primed(int own){super("response-probe",0,own,0);}
-        @Override Primed copy(){var c=new Primed(rtt);c.choice=choice;c.cues=cues;c.tOwn=tOwn;c.tFoe=tFoe;c.cut=cut;
+        @Override Primed copy(){var c=new Primed(rtt);c.choice=choice;c.cues=cues;c.heads=heads;c.tOwn=tOwn;c.tFoe=tFoe;c.cut=cut;
             for(var p:options)c.options.add(p.copy());return c;}
         public void received(PeriodicComboClock.PacketObservation o){for(var p:options)p.received(o);}
         public boolean injected(PeriodicComboClock.Observation o,double t){
@@ -17,7 +18,8 @@ final class ResponseReversal {
         public PeriodicComboClock.Control input(PeriodicComboClock.Observation o){
             if(o.lastOwnHurtTime()>tOwn){tOwn=o.lastOwnHurtTime();cues++;}
             if(o.lastTargetHurtTime()>tFoe){tFoe=o.lastTargetHurtTime();cues++;}
-            if(cues>=3&&Double.isNaN(cut))cut=o.time();
+            heads++;
+            if((HEAD_LIMIT>0?heads>=HEAD_LIMIT:cues>=3)&&Double.isNaN(cut))cut=o.time();
             PeriodicComboClock.Control chosen=null;
             int[] current=measure&&observed==null?new int[options.size()]:null;
             for(int i=0;i<options.size();i++){var c=options.get(i).input(o);if(i==choice)chosen=c;

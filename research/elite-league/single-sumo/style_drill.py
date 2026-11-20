@@ -12,14 +12,15 @@ STYLES={'early':INCUMBENT,'late':'mmc13-actor-2-fit'}
 RESPONSES=[BASE_COUNTER,'v3-memory-27']
 SEED=1377
 
-def pair(folder,opening,delay):
+def pair(folder,opening,delay,styles=STYLES):
     paths={r[0]:ROOT/r[1] for line in FIELD_PATH.read_text().splitlines() if len(r:=line.split('\t'))>1}
     _,template=decode(paths['shift-train-07']);start=8+37;block=(len(template)-start)//2
     result={}
-    for label,second in STYLES.items():
+    for label,second in styles.items():
         w=np.zeros_like(template);w[:8]=[1,0,0,1,delay,0,1,0]
         for i,name in enumerate([opening,second]):
-            kind,weights=decode(paths[name]);assert kind=='MLP' and len(weights)<=block
+            kind,weights=decode(paths[name]);assert len(weights)<=block
+            w[1+i]=['MLP','RECURRENT','HYBRID','TACTIC','LINEAR'].index(kind)
             w[start+i*block:start+i*block+len(weights)]=weights
         data=b'PAIR.'+base64.b64encode(w.astype('>f4').tobytes())+b'\n'
         p=folder/(label+'.net');freeze(p,data)
@@ -47,15 +48,15 @@ def pilot():
     freeze(folder/'main/final.net',p.read_bytes())
     return development(SEED,folder,spec)
 
-def student(kind,until=None):
-    folder=DRILL/('main' if kind=='gru' else 'mlp');spec=plan()
-    reversal=json.loads((DRILL/'pilot/adaptation-development.json').read_text())['verified_reversals'][0]
+def student(kind,until=None,root=DRILL):
+    folder=root/('main' if kind=='gru' else 'mlp');spec=json.loads((root/'assay.json').read_text())
+    reversal=json.loads((root/'pilot/adaptation-development.json').read_text())['verified_reversals'][0]
     assignment={v['reference']:reversal[k] for k,v in spec['train'].items()}
     if until is not None:
         fit(folder/'demos',kind,'verified style-specific response',128,assignment,until);return
     while not (folder/'demos/trainer.pt').is_file():
         f=folder/'demos/progress.json';u=json.loads(f.read_text())['step'] if f.is_file() else 0
-        governed('student',kind,u+12)
+        governed('student',kind,u+12,root)
     a,b=[v['reference'] for v in spec['train'].values()]
     configure(folder,kind,kind,2139511+(kind=='mlp'),5479823,a,b,{'two styles':[a,b]},warm=folder/'demos/trainer.pt')
     train(folder,256);pin_model(folder)
@@ -77,7 +78,7 @@ def main():
 if __name__=='__main__':
     op=sys.argv[1] if len(sys.argv)>1 else 'run'
     if op=='pilot':pilot()
-    elif op=='student':student(sys.argv[2],int(sys.argv[3]))
+    elif op=='student':student(sys.argv[2],int(sys.argv[3]),Path(sys.argv[4]) if len(sys.argv)>4 else DRILL)
     elif op=='confirm':development(SEED,DRILL,plan())
     elif op=='memory':evaluate(SEED,DRILL)
     elif op=='run':main()

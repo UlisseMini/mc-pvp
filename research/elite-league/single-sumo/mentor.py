@@ -4,6 +4,7 @@ from league_tournament import *
 from train import configure
 from run_training import train
 import sys
+import fcntl
 
 def teachers(g):
     folder=EVIDENCE/f'g{g:03d}';path=folder/'mentor-selection.json'
@@ -30,13 +31,20 @@ def run(g,kind,until):
     cfg=json.loads((folder/('main' if kind=='gru' else 'mlp')/'config.json').read_text())
     configure(d/'ppo',kind,kind,cfg['seed']+31415,cfg['draw_seed']+31415,cfg['incumbent'],cfg['counter'],
               cfg['families'],cfg['scores'],d/'init/trainer.pt')
-if __name__=='__main__':
-    g=int(sys.argv[1]);kind=sys.argv[2]
-    if len(sys.argv)>3 and sys.argv[3]=='init':run(g,kind,int(sys.argv[4]))
-    else:
-        d=EVIDENCE/f'g{g:03d}'/('mentor-'+kind)/'init'
+def complete(g,kind):
+    folder=EVIDENCE/f'g{g:03d}'/('mentor-'+kind)
+    folder.mkdir(parents=True,exist_ok=True)
+    with (folder/'job.lock').open('a') as guard:
+        fcntl.flock(guard,fcntl.LOCK_EX)
+        d=folder/'init'
         while not (d/'trainer.pt').exists():
             step=json.loads((d/'progress.json').read_text())['step'] if (d/'progress.json').exists() else 0
             subprocess.run([sys.executable,HERE.parent/'cpu_limit.py','nice','-n','8',sys.executable,__file__,str(g),kind,'init',str(step+8)],check=True)
-        p=EVIDENCE/f'g{g:03d}'/('mentor-'+kind)/'ppo'
+        if not (folder/'ppo/config.json').exists():run(g,kind,128)
+        p=folder/'ppo'
         train(p,256);pin_model(p)
+
+if __name__=='__main__':
+    g=int(sys.argv[1]);kind=sys.argv[2]
+    if len(sys.argv)>3 and sys.argv[3]=='init':run(g,kind,int(sys.argv[4]))
+    else:complete(g,kind)

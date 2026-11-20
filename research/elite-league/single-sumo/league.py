@@ -6,7 +6,7 @@ import sys
 import time
 from generation import initialize
 from native_league import read,publish,ROOT,HERE,EVIDENCE,BUILD,write_json
-from promotion import nomination,freeze_promotion_styles,publish_winner,native_panel,transfer20,promote_title
+from promotion import nomination,freeze_promotion_styles,publish_winner,winner_controls,native_panel,transfer20,promote_title
 from train_generation import run as train_generation
 
 def governed(*cmd):
@@ -38,6 +38,7 @@ def stage(g):
     # All learners still receive their matched development signature when the title gate is closed.
     if not (folder/'promotion-native.json').exists():native_panel(g,nom,model)
     native=read(folder/'promotion-native.json')['passed']
+    winner_controls(g,nom)
     if model and native:
         governed(HERE/'stage_task.py','transfer',str(g));transfer20(g,nom);promote_title(g,nom)
     # Independently gate spending the style holdout on existence of opposite responses in development.

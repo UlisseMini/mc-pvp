@@ -24,6 +24,31 @@ def native_name(path):
     ref={'reference':str(path.relative_to(ROOT)),'sha256':sha}
     return publish('idlab-'+sha[:12],ref,'Frozen 7 CPS research comparator '+sha[:12])
 
+def early_native():
+    from dedicated import budgets
+    out=DIR/'native-u064';plan={};roles={}
+    for j,foe in enumerate([INCUMBENT,BASE_COUNTER]):
+        exposure=budgets(foe)[0]
+        arms=[native_name(DIR/'informed/u064'/(foe+'.net')),
+              native_name(DIR/('dedicated-'+foe)/f'n{exposure:05d}.net'),WT]
+        block=fixtures(f'sg-id64-f{j}',arms,[alias(foe)],8,7)
+        plan.update(block)
+        for q,t in block.items():roles[q]=[foe,['informed','dedicated','wtap'][arms.index(t['arm'])]]
+    keys=sorted(plan);random.Random(398713).shuffle(keys);plan={q:plan[q] for q in keys}
+    write_json(out/'design.json',dict(sources=roles,blocks=8,duels=len(plan),scope='interim exposure-matched native diagnostic'),fixed=True)
+    with window() as bridge:game=cohort(out,plan,bridge)
+    cells={}
+    for foe in [INCUMBENT,BASE_COUNTER]:
+        cells[foe]={}
+        for arm in ('informed','dedicated','wtap'):
+            matches=[q for q,v in roles.items() if v==[foe,arm]]
+            def score(keys):
+                vals=[game[q]['score'] for q in keys]
+                return [vals.count(x) for x in (1,.5,0)]
+            cells[foe][arm]=dict(wins_draws_losses=score(matches),seat={s:score([q for q in matches if plan[q]['side']==s]) for s in 'ab'},
+                rtt={f'{a}/{b}':score([q for q in matches if (plan[q]['rtt'],plan[q]['opponent_rtt'])==(a,b)]) for a,b in RTTS})
+    write_json(out/'summary.json',cells,fixed=True)
+
 def play_native(target,secondary=False):
     spec=protocol()
     out=(DIR/'capacity-secondary' if secondary else DIR)/'native-final'
@@ -75,5 +100,6 @@ def play_native(target,secondary=False):
 
 if __name__=='__main__':
     protocol()
-    if len(sys.argv)>1 and sys.argv[1]!='plan':
+    if sys.argv[1:2]==['early']:early_native()
+    elif len(sys.argv)>1 and sys.argv[1]!='plan':
         play_native(sys.argv[1],secondary=sys.argv[1]!=INCUMBENT)

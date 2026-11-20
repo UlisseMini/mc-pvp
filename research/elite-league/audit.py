@@ -72,7 +72,7 @@ def bindings(mid,side,weights,start,end,parameters=None):
     experts=Counter();changes=[];previous=None
     fallback_counts=Counter()
     ping_changes = {e['tick']: e['opponent'] for e in events if e['type']=='duel_hud_ping'}
-    league_actor = weights.startswith(('GRU32.', 'LEAGUE_MLP180.'))
+    league_actor = weights.startswith(('GRU32.', 'LEAGUE_MLP180.', 'LEAGUE_MLP360.'))
     if league_actor:
         seeds = [e['seed'] for e in events if e['type']=='sumo_league_seed']
         if len(seeds)!=1:

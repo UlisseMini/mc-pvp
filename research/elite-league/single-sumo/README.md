@@ -34,3 +34,28 @@ Each generation writes the development reversal results, coverage, held-out bran
 The referee can give an experimental MLP the identity of its opponent before the duel. The shared network learns a separate input bias for each of 20 opponents. A second model routes directly to one of 20 independent MLPs. A third trains on the same fights with the identity hidden. All three start from the same 180-unit controller and use the same physical observations, match schedule and seven-CPS limit. Evaluating the shared model twice on the same fights, once with the correct ID and once with a deliberately wrong ID, tests whether it uses that information. [Opponent-ID protocol](evidence/id-oracle/protocol.json)
 
 A dedicated 180-unit MLP trains exclusively against the frozen `v4-ppo-g0496` checkpoint that held the `best-sumo` title when the experiment started. Its first 204 and first 820 fights reproduce the training fixtures for that exact opponent at the two shared-model milestones. Its final checkpoint has received all 16,384 fights against that opponent. A shared 360-unit model starts with the same input-output function as the 180-unit model. The width comparison helps distinguish representational limits from the advantage of playing one opponent more often. Dedicated and mixed PPO updates contain different batches, so a specialist advantage alone also admits an optimization explanation. [Frozen specialist comparison](evidence/id-oracle/capacity-protocol.json) · [Native transfer protocol](evidence/id-oracle/native-protocol.json)
+
+At the interim checkpoint the shared model had trained on 4,096 matches. Each specialist had seen exactly the same training fixtures against its single opponent. Entries below are wins / draws / losses across 256 separate simulator bouts. Each row uses a different dedicated model.
+
+| Opponent | Target training fights | Shared 180, correct ID | Dedicated 180 | Common initializer | Plain W-tap |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Frozen best-sumo | 204 | 250 / 0 / 6 | 241 / 0 / 15 | 235 / 2 / 19 | 64 / 0 / 192 |
+| Sumo-seven-first | 205 | 69 / 37 / 150 | 13 / 116 / 127 | 20 / 60 / 176 | 12 / 0 / 244 |
+
+The shared-minus-dedicated score gaps were +3.5 and +6.4 percentage points, with paired development-clock intervals of −1.0 to +8.0 and −2.9 to +15.8 points. Against sumo-seven-first the shared policy converted far more fights into wins, while the dedicated policy kept more fights from becoming losses. The eight donors measure timing variability for these particular trained checkpoints. [Frozen champion comparison](evidence/id-oracle/capacity-development/v4-ppo-g0496/u064.json) · [Harder opponent comparison](evidence/id-oracle/capacity-development/sumo-seven-first/u064.json)
+
+Across the 20 opponents, the 180-unit shared network scored 87.6% with the correct ID and 87.3% with an incorrect ID. Its counterpart trained with the ID hidden scored 87.1%, the shared 360-unit model scored 87.5%, and plain W-tap scored 18.6%. Routing to independent heads made ID assignment more consequential. The correct expert scored 81.7%, compared with 74.7% when assigned a different opponent's expert. These figures use the interim simulator checkpoint and one training seed. [All matchup scores, seats, RTTs and paired contrasts](evidence/id-oracle/eval-u064-development/summary.json)
+
+## First league tournament
+
+Play the generation-one winner with `/duel sumo-league-001 sumo preset=mmc cps=7`. The 23 entrants played 70,656 simulated matches. The winning 180-unit MLP learned from 32,768 PPO duels, starting from scratch. It uses its own client observations. Its family-weighted field score was 87.7%.
+
+| Opponent | Tournament winner W / D / L | Plain W-tap W / D / L |
+| --- | ---: | ---: |
+| Plain W-tap | 249 / 0 / 7 | 128 / 0 / 128 |
+| Frozen best-sumo | 254 / 0 / 2 | 64 / 0 / 192 |
+| Sumo-seven-first | 121 / 4 / 131 | 12 / 0 / 244 |
+
+The weakest matchup is sensitive to ping. Against sumo-seven-first the winner scored 68.8% with 31 ms of its own RTT and 109 ms for its opponent. Reversing those pings reduced its score to 18.8%. Equal-ping scores were 51.6% at 31 ms and 53.1% at 109 ms. This 48.0% overall matchup kept the live title promotion gate closed. The tournament winner keeps its own permanent duel alias. [Tournament, including all seat and RTT cells](evidence/g001/tournament.json) · [Published controls](../../../policies/sumo-league-001.properties)
+
+A separate recognition test trained classifiers to distinguish frozen best-sumo from sumo-seven-first during a common opening. At spawn the two opponents gave identical inputs and balanced accuracy was 50%. After 24 local decisions the current observation gave 51–53% accuracy across three trained classifiers. GRUs reading the preceding observations scored 74–100%. Every pair survived to this decision. Whether the information changes ring-outs requires testing different responses from the same match state. [Recognition results](evidence/id-oracle/recognition/results.json)

@@ -18,7 +18,7 @@ def run(g,attach):
     with (p/'training.lock').open('a') as lock:
         fcntl.flock(lock.fileno(),fcntl.LOCK_EX)
         if (p/'tournament.json').exists():return
-        operate('prepare',g)
+        if not (p/'exploiter/config.json').is_file():operate('prepare',g)
         if attach:
             while True:
                 progress=p/'exploiter/progress.json'
@@ -26,7 +26,8 @@ def run(g,attach):
                 other=subprocess.run(['ps','-p',str(attach),'-o','command='],capture_output=True,text=True)
                 if 'run_training.py' not in other.stdout:break
                 time.sleep(2)
-        train(p/'exploiter',256);operate('counter',g)
+        train(p/'exploiter',256)
+        if not all((p/k).is_file() for k in ['counter.json','main/config.json','mlp/config.json']):operate('counter',g)
         train(p/'main',512);train(p/'mlp',512)
         operate('compete',g)
 

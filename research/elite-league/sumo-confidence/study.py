@@ -54,18 +54,25 @@ def archived_cohort():
 
 # The standalone campaign shares one drained runtime across adjacent blocks to avoid repeated server restarts.
 _campaign=None
+def human_online(status=None):
+    if status is None:
+        try:status=read(ROOT/'runtime/status.json')
+        except (OSError,ValueError):return True
+    return any(not n.startswith('LabSlot') for n in status['players'])
+
 @contextmanager
 def pinned_block(runtime,bridge,pins,planned):
     global _campaign
+    def window():return runtime.window(bridge,server=pins['server'],admit=lambda:not human_online())
     if _campaign is None:
-        with runtime.window(bridge,server=pins['server']) as live:yield live
+        with window() as live:yield live
         return
     if _campaign['live'] is None:
-        _campaign['live']=_campaign['stack'].enter_context(runtime.window(bridge,server=pins['server']))
+        _campaign['live']=_campaign['stack'].enter_context(window())
         _campaign['time']=time.monotonic();_campaign['matches']=0
     yield _campaign['live']
     _campaign['matches']+=planned
-    if _campaign['matches']>=48 or time.monotonic()-_campaign['time']>=900:
+    if _campaign['live'] is None or human_online() or _campaign['matches']>=48 or time.monotonic()-_campaign['time']>=900:
         _campaign['stack'].close();_campaign['live']=None
 
 def general(block):
@@ -105,21 +112,31 @@ def play(name,plan):
     cohort=archived_cohort()
     bridge=ROOT/'build/elite-league/sumo-inputs-runtime/bridge.jar'
     if sha(bridge)!=pins['bridge']:raise ValueError('Frozen client artifact differs')
-    with pinned_block(cohort,bridge,pins,len(plan)-len(found)) as live:
-        if live!=pins['bridge'] or cohort.server_hash()!=pins['server']:
-            raise RuntimeError('Live runtime differs from the frozen runtime')
+    while set(found)!=set(plan):
+        if _campaign is None or _campaign['live'] is None:
+            while human_online():time.sleep(3)
+        with pinned_block(cohort,bridge,pins,len(plan)-len(found)) as live:
+            if live is None:continue
+            remaining_block(live,cohort,pins,plan,path,found)
+        found=read(path)['matches']
+        if set(found)!=set(plan) and _campaign is not None and _campaign['live'] is not None:
+            _campaign['stack'].close();_campaign['live']=None
+
+def remaining_block(live,cohort,pins,plan,path,found):
+    if live!=pins['bridge'] or cohort.server_hash()!=pins['server']:
+        raise RuntimeError('Live runtime differs from the frozen runtime')
+    missing=None
+    def available():
+        nonlocal missing
+        try:ok=ready(live) and cohort.server_hash()==pins['server']
+        except (OSError,ValueError,KeyError):ok=False
+        if not ok:
+            if missing is None:missing=time.monotonic()
+            if time.monotonic()-missing>45:raise RuntimeError('Frozen runtime was replaced during a native cohort')
+            return 0
         missing=None
-        def available():
-            nonlocal missing
-            try:ok=ready(live) and cohort.server_hash()==pins['server']
-            except (OSError,ValueError,KeyError):ok=False
-            if not ok:
-                if missing is None:missing=time.monotonic()
-                if time.monotonic()-missing>45:raise RuntimeError('Frozen runtime was replaced during a native cohort')
-                return 0
-            missing=None
-            return capacity()
-        load_batch().run(plan,3,path,2,True,found,2,capacity_limit=available)
+        return capacity()
+    load_batch().run(plan,3,path,2,True,found,2,capacity_limit=available,yield_when=human_online)
 
 previous=None
 last_jobs=2

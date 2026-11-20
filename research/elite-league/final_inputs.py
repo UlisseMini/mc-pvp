@@ -1,6 +1,7 @@
 """Audit both clients before certifying the native sumo final, retaining every invalid attempt."""
 import argparse
 import fcntl
+import hashlib
 import json
 import subprocess
 import sys
@@ -41,6 +42,10 @@ def verify_match(mid, trial, scores):
         checks = {}
         for seat in 'ab':
             policy = record['policy_' + seat]
+            parameters=record['parameters_'+seat]
+            published_baseline=policy.startswith('sumo-league-') and any(
+                parameters.get('league_source_sha256')==hashlib.sha256(('script-v1/'+n).encode()).hexdigest()
+                for n in ('wtap','hold','legacy-wtap-clickphase'))
             if seat in score['bindings']:
                 verified = score['bindings'][seat]
                 count = verified['verified_move_heads']
@@ -53,13 +58,13 @@ def verify_match(mid, trial, scores):
                                     heads=count, disagreements=verified['mismatches'])
                 if coverage:
                     checks[seat]['coverage'] = coverage
-            elif policy in ('research-wtap20', 'research-hold20') or (
+            elif policy in ('research-wtap20', 'research-hold20') or published_baseline or (
                     policy=='wtap-clickphase' and record['parameters_'+seat].get('kind')=='momentum'
                     and record['parameters_'+seat].get('reset_on_issued_click')=='1') or (
                     trial.get('mode')=='boxing' and trial.get('gate_k') in (3,5,10)
                     and policy==trial['opponent'] and policy==f"breadth-{trial.get('defender_style')}-wake{trial['gate_k']}"
                     and record['parameters_'+seat]['kind'] in ('wtap','hold','tradetap')):
-                end_tick=((trial.get('gate_k') in (3,5,10) and policy==trial['opponent'] or policy=='wtap-clickphase')
+                end_tick=((trial.get('gate_k') in (3,5,10) and policy==trial['opponent'] or policy=='wtap-clickphase' or published_baseline)
                           and record['parameters_'+seat].get('science_trace','0')!='1')
                 checks[seat] = dict(policy=policy, **legacy(mid, seat, record, observed_keys=end_tick))
             else:

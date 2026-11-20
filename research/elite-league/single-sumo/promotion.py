@@ -102,6 +102,19 @@ def native_panel(g,nom,eligible):
 def publish_winner(g,nom):
     win=nom['winner'];field=nom['field']
     return publish(f'sumo-league-{g:03d}',field[win],f'7 CPS league generation {g} tournament winner, {win}')
+
+def winner_controls(g,nom):
+    folder=EVIDENCE/f'g{g:03d}'/'published-winner';done=folder/'result.json'
+    if done.exists():return read(done)
+    name=publish_winner(g,nom);plan=fixtures(f'sg{g:03d}-published',[name,WT],[WT],8,7)
+    with window() as bridge:records=cohort(folder,plan,bridge)
+    score={}
+    for n in (name,WT):
+        outcomes=[r['score'] for q,r in records.items() if plan[q]['arm']==n]
+        score[n]=dict(wins=outcomes.count(1),draws=outcomes.count(.5),losses=outcomes.count(0))
+    result=dict(winner=nom['winner'],duel_alias=name,sha256=nom['field'][nom['winner']]['sha256'],
+        against=WT,native_scores=score,input_heads=sum(sum(r['local_timing_heads'].values()) for r in records.values()))
+    write_json(done,result,fixed=True);return result
 def transfer20(g,nom):
     folder=EVIDENCE/f'g{g:03d}';field=nom['field'];a=nom['challenger'];i=nom['incumbent']
     with window() as bridge:
