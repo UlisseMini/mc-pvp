@@ -65,7 +65,7 @@ def register():
     save(OUT/'split.json',protocol)
     return entries,{r['clip']:r for r in records}
 
-def capture(d):
+def capture(d,levels=LEVELS):
     r=props(REMOTE/'sumo-replays'/(d['clip']+'.properties'))
     pair,top,(sample,last)=positions(REMOTE,r)
     if list(pair)!=d['spawns'] or sample!=d['snapshot_ms'] or top-1!=d['floor_y']:raise ValueError('Countdown changed')
@@ -75,7 +75,7 @@ def capture(d):
     if int(first['protocol'])!=47 or not any(domain==s or domain.endswith('.'+s) for s in ('minemen.club','mineman.club')):raise ValueError('Incorrect server or protocol')
     cx,cz=map(math.floor,d['map_center']);lo,lz,hi,hz=d['box'];lo-=1;lz-=1;hi+=1;hz+=1
     chunks={(x//16,z//16) for x in range(lo,hi+1) for z in range(lz,hz+1)}
-    layers={v:{} for v in LEVELS}
+    layers={v:{} for v in levels}
     for i in range(d['first_segment'],last+1):
         with gzip.open(parts(REMOTE,r,i),'rb') as f:
             for line in f:
@@ -86,13 +86,13 @@ def capture(d):
                 for dy,layer in layers.items():packet(raw,layer,top-1+dy,chunks)
     def state(y,x,z):
         return layers[y][x//16,z//16][16*(z%16)+x%16]
-    grid=[[[state(dy,x,z) for x in range(lo,hi+1)] for z in range(lz,hz+1)] for dy in LEVELS]
-    surface=grid[-LEVELS.start]
+    grid=[[[state(dy,x,z) for x in range(lo,hi+1)] for z in range(lz,hz+1)] for dy in levels]
+    surface=grid[-levels.start]
     mask=[''.join('.' if s>>4 in AIRLIKE else '#' for s in row[1:-1]) for row in surface[1:-1]]
     if mask!=d['mask']:raise ValueError('Recovered floor differs from earlier survey')
     spawns=sorted([[int(math.floor(x)-cx),int(math.floor(z)-cz)] for x,z in (pair[:2],pair[2:])])
     if any(state(0,cx+x,cz+z)!=41<<4 for x,z in spawns):raise ValueError('Countdown spawn is not gold')
-    return dict(offset=[lo-cx,lz-cz],width=hi-lo+1,depth=hz-lz+1,levels=list(LEVELS),spawns=spawns,states=grid)
+    return dict(offset=[lo-cx,lz-cz],width=hi-lo+1,depth=hz-lz+1,levels=list(levels),spawns=spawns,states=grid)
 
 def run():
     entries,records=register();catalog=[]

@@ -66,8 +66,7 @@ def verify():
     finally:w.close()
 
 def native():
-    from native_league import fixtures,cohort,publish,alias,WT
-    from forge_window import cohort_window
+    from native_league import fixtures,fair_cohort,publish,alias,WT
     parity=read(OUT/'parity.json');pin=runtime()
     names={}
     for role,data in parity['checks'].items():
@@ -80,7 +79,7 @@ def native():
     roles=['history','branch-A','branch-B','reset-history','inverted-history','cap-ramp-from-spawn','wtap']
     plan=fixtures('sg-router24',[names[k] for k in roles],[alias(f) for f in FOES],16,7)
     folder=OUT/'native';bridge=BUILD/pin['forge']['jar'];assert sha(bridge)==pin['forge']['sha256']
-    with cohort_window(folder,bridge) as digest:records=cohort(folder,plan,digest)
+    records=fair_cohort(folder,plan,bridge)
     summary={}
     for f in FOES:
         summary[f]={}

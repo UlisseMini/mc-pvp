@@ -405,10 +405,12 @@ public final class Referee {
                 Match m=find(R.name(sender));if(m!=null)finish(m,"stopped");else{vanilla("gamemode 0 "+safeName(sender));teleport(sender,0,4,0);}
             }else if(cmd.equals("lab")&&args.length>=2&&args[1].equals("combat")){
                 CombatTuning.command(sender,args);
-            }else if(cmd.equals("lab")&&args.length==3&&args[1].equals("mapgeometry")){
+            }else if(cmd.equals("lab")&&args.length==3&&(args[1].equals("mapgeometry")||args[1].equals("mapprepare"))){
                 if(sender!=server)throw new IllegalArgumentException("Use the server console for recorded geometry export");
                 Object world=R.call(server,"worldServerForDimension",0);
-                RecordedSumoArena.export(world,RecordedSumoMap.load(args[2]));
+                var map=RecordedSumoMap.load(args[2]);
+                if(args[1].equals("mapprepare"))RecordedSumoArena.prepareExport(world,map);
+                else RecordedSumoArena.export(world,map);
                 message(sender,"Verified native sumo geometry "+args[2]);
             }else if(cmd.equals("lab")&&args.length==3&&args[1].equals("prepare")&&args[2].equals("long")){
                 if(!matches.isEmpty())throw new IllegalArgumentException("Arena preparation requires no active matches.");

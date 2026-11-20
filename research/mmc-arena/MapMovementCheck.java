@@ -13,8 +13,7 @@ final class MapMovementCheck {
     static void compare(String name)throws Exception{
         var map=RecordedSumoMap.load(name);
         var world=new BlockGeometry(map);
-        var constructor=RecordedMapClock.class.getDeclaredConstructor(String.class);constructor.setAccessible(true);
-        var terrain=constructor.newInstance(name);
+        var terrain=new lab.RecordedCollisions(name,4096,11);
         var environment=new ExactTravel.Environment(12,.6f,true,true,false,false,false,new ExactTravel.Disk(4096,13,terrain));
         var rng=new Random(751239L);
         Body entity=new Body(world);int tested=0,horizontal=0,landings=0;

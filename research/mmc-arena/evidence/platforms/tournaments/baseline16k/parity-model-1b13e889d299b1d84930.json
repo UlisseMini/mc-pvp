@@ -1,0 +1,13 @@
+{
+  "compared": {
+    "default": 1280,
+    "mmc-129": 1280,
+    "mmc-137": 1280,
+    "mmc-155": 1280,
+    "mmc-177": 1280,
+    "mmc-221": 1280
+  },
+  "original": "model-2442850b4deb5d977650",
+  "outcome_and_terminal_time_identical": true,
+  "updated": "model-1b13e889d299b1d84930"
+}

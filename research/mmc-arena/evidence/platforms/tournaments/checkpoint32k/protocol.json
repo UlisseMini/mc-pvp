@@ -1,0 +1,40 @@
+{
+  "clock_split": "eight previously exposed development donors, matched across maps",
+  "contestants": {
+    "g1": {
+      "actor": "research/elite-league/single-sumo/evidence/long-specialists/g1/n32768.net",
+      "sha256": "4d8fab78d74bb7768a8c5db26685a08aef296c312d860aaa95fc625b255d5f87",
+      "target": "research/elite-league/single-sumo/evidence/g001/mlp/final.net",
+      "target_sha": "6d9878ad633b01bf4b1d332845382e9617977382ff0689e489efefdc3871a95e"
+    },
+    "incumbent": {
+      "actor": "research/elite-league/single-sumo/evidence/long-specialists/incumbent/n32768.net",
+      "sha256": "88c32dd7d4a28366764fab1ba32f856c40871e3092d2b95b606356d4cea4474e",
+      "target": "v4-ppo-g0496",
+      "target_sha": "bd2265e8498df5fe91f39f03e1dd0654ab16c5165bb9989df517890e6f2a75fe"
+    },
+    "seven": {
+      "actor": "research/elite-league/single-sumo/evidence/long-specialists/seven/n32768.net",
+      "sha256": "3943fcc674e231cee5f8984e0b3c203ede05bbb4c1a7a6a7bb52b946f1de5d8d",
+      "target": "sumo-seven-first",
+      "target_sha": "12d477e6733f779bc0c94cc018b7dac7fb8d4e33e168dc7ea5901b87641f8e75"
+    }
+  },
+  "contrasts": "matched by donor, action seeds, seat and both RTTs; descriptive paired 95% Student intervals on eight donor means",
+  "maps": [
+    "default",
+    "mmc-137",
+    "mmc-129",
+    "mmc-155",
+    "mmc-177",
+    "mmc-221"
+  ],
+  "model_repetitions": 2,
+  "native_blocks": 8,
+  "origin": "same 137 outline in original Z orientation controls for changing the original lab X opening; other maps preserve their recorded gold spawns",
+  "primary": "ring-out win fraction against the frozen training opponent; report W/D/L and time, plus plain W-tap against exactly the same opponent and W-tap itself",
+  "regulation": "120 s MMC-range, 7/7 CPS, reach 3, mouse aim, zero added reaction delay; no map identity or opponent ID sent to any policy",
+  "selection": "weights frozen before any outcome is read; later selection on original training geometry only",
+  "stage": "checkpoint32k",
+  "surface_split": "four reusable validation geometries; another four used once when all final training branches are locked"
+}

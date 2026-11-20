@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
-from build_maps import ROOT,BUILD,HERE,OUT,compile_java,model,sha
+from build_maps import register_model,ROOT,BUILD,HERE,OUT,compile_java,model,sha
 from platforms import record
 
 def generate():
@@ -26,6 +26,6 @@ def generate():
             record(OUT/'collision'/(name+'.boxes.gz'),gzip.compress(file.read_bytes(),mtime=0))
         record(OUT/'collision/proof.json',json.dumps(dict(stock_server_sha256=pin,collision_sha256=hashes),sort_keys=True,indent=2).encode())
     runtime=model()
-    record(BUILD/'model-runtime.json',json.dumps(dict(directory=str(runtime)),sort_keys=True).encode())
+    register_model(runtime)
     print('Model ready',runtime,flush=True)
 if __name__=='__main__':generate()

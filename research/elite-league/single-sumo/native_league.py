@@ -57,7 +57,10 @@ def reconcile(plan):
         except (OSError,ValueError):continue
         if g.get('request') in plan:games[g['request']]=g['id']
     return games
-def play(plan,out,bridge,block_barrier=False):
+class MoreFixturesPending(Exception):
+    """The current slice drained. Resume from the same immutable native ledger."""
+
+def play(plan,out,bridge,block_barrier=False,max_admissions=None):
     from shutil import disk_usage
     from forge_window import server_hash
     if out.exists():
@@ -87,7 +90,12 @@ def play(plan,out,bridge,block_barrier=False):
         return allowed
     batch=native_trials.load_batch()
     found=reconcile(plan)
-    if block_barrier:
+    if max_admissions is not None:
+        requests=[q for q in plan if q not in found][:max_admissions]
+        if requests:batch.run(plan,3,out,2,True,found,2,only_requests=requests,capacity_limit=slots)
+        else:batch.save(out,plan,found)
+        if len(read(out)['matches'])<len(plan):raise MoreFixturesPending()
+    elif block_barrier:
         for block in sorted({t['block'] for t in plan.values()}):
             requests={q for q,t in plan.items() if t['block']==block}
             if not requests.issubset(found):
@@ -125,7 +133,7 @@ def certify(mid,trial,bridge):
     return dict(valid=True,mid=mid,score=.5 if not raw['winner'] else int(raw['winner']==raw[trial['side']]),
                 controls=score['sides'],minimum_physical_ns=intervals,local_timing_heads=all_heads,
                 reason=raw['reason'],duration=(raw['finish']-raw['start'])/1000)
-def cohort(folder,plan,bridge,block_barrier=False):
+def cohort(folder,plan,bridge,block_barrier=False,max_admissions=None):
     folder.mkdir(parents=True,exist_ok=True);records={};rejected=[]
     from forge_window import server_hash
     stamp=folder/'native-build.json'
@@ -139,7 +147,7 @@ def cohort(folder,plan,bridge,block_barrier=False):
     write_json(folder/'protocol.json',dict(plan=plan,bridge=bridge,**scheduling),fixed=True)
     todo=plan.copy();links={q:q for q in todo}
     for attempt in range(8):
-        found=play(todo,folder/f'attempt-{attempt}.json',bridge,block_barrier);next_todo={};next_links={}
+        found=play(todo,folder/f'attempt-{attempt}.json',bridge,block_barrier,max_admissions);next_todo={};next_links={}
         for q,mid in found.items():
             src=links[q];evidence=folder/'audits'/(mid+'.json')
             if evidence.exists():r=read(evidence)
@@ -158,6 +166,17 @@ def cohort(folder,plan,bridge,block_barrier=False):
         todo=next_todo;links=next_links
     if len(records)!=len(plan):raise RuntimeError('Repeated invalid native fixtures, preserved in attempt ledgers')
     write_json(folder/'verified.json',dict(matches=records,invalid=rejected),fixed=True);return records
+
+def fair_cohort(folder,plan,bridge_path=None,server=None):
+    """Let other campaigns use the main server between batches, keeping IDs, order and binaries."""
+    from forge_window import window,cohort_window
+    while True:
+        if (folder/'verified.json').is_file():return read(folder/'verified.json')['matches']
+        lease=window(bridge_path,server=server) if server else cohort_window(folder,bridge_path)
+        with lease as bridge:
+            try:return cohort(folder,plan,bridge,max_admissions=24)
+            except MoreFixturesPending:pass
+        time.sleep(1)
 if __name__=='__main__':
     if sys.argv[1]=='baseline':
         bridge=read(HERE.parent/'sumo-confidence/pins.json')['bridge']

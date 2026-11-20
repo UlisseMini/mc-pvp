@@ -42,7 +42,7 @@ def server(base):
 
 def model():
     base=LBUILD/json.loads((LBUILD/'training-runtime.json').read_text())['directory']
-    java=[*sources('RecordedSumoMap ExactTravel'),ROOT/'tests/PeriodicComboFightModel.java',ROOT/'research/sumo-rl/DuelEnv.java',
+    java=[*sources('RecordedSumoMap RecordedCollisions ExactTravel'),ROOT/'tests/PeriodicComboFightModel.java',ROOT/'research/sumo-rl/DuelEnv.java',
           HERE/'RecordedMapClock.java',LEAGUE/'LeagueWorker.java']
     with tempfile.TemporaryDirectory(dir=BUILD) as temp:
         t=Path(temp);p=t/'classes';shutil.copytree(base,p);compile_java(base,p,java)
@@ -58,3 +58,12 @@ def model():
         if not out.exists():p.rename(out)
         record(out/'map-runtime.json',json.dumps(dict(parent=base.name,files=manifest),sort_keys=True).encode())
         return out
+
+
+def register_model(runtime):
+    # Preserve the first runtime used for this campaign even when rebuilding for another replay adapter.
+    receipt=json.dumps(dict(directory=str(runtime)),sort_keys=True).encode()
+    baseline=BUILD/'model-runtime.json'
+    if not baseline.exists():record(baseline,receipt)
+    with tempfile.NamedTemporaryFile(dir=BUILD,delete=False) as f:f.write(receipt)
+    os.replace(f.name,BUILD/'model-latest.json')

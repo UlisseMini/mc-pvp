@@ -78,8 +78,8 @@ def play_native(target,secondary=False):
     write_json(out/'assignments.json',dict(target=target,weakest=weakest,labels=labels,sources=allocation),fixed=True)
     bridge=BUILD/spec['forge']['jar']
     if hashlib.sha256(bridge.read_bytes()).hexdigest()!=spec['forge']['sha256']:raise ValueError('Native binary changed')
-    with cohort_window(out/'games',bridge) as running:
-        scores=cohort(out/'games',plan,running)
+    from native_league import fair_cohort
+    scores=fair_cohort(out/'games',plan,bridge)
     def counts(g):
         return dict(wins=g.count(1),draws=g.count(.5),losses=g.count(0),score=float(np.mean(g)))
     summary={};paired={}

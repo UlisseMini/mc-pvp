@@ -9,7 +9,7 @@ from network_pipeline_audit import archive,wire as pipeline_wire,pair_payloads,s
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 JAVA=Path(shutil.which('java') or 'java')
-SOURCES=['src/lab/ExactTravel.java','src/lab/SumoFootprint.java','src/lab/Json.java','src/lab/CombatProfile.java','src/lab/RecordedSumoMap.java','src/lab/DuelSettings.java','src/lab/Compat.java','src/lab/PracticePresets.java','tests/PeriodicComboFightModel.java','tests/PeriodicComboReplay.java','tests/PeriodicComboTransport.java']
+SOURCES=['src/lab/ExactTravel.java','src/lab/SumoFootprint.java','src/lab/Json.java','src/lab/CombatProfile.java','src/lab/RecordedSumoMap.java','src/lab/RecordedCollisions.java','src/lab/DuelSettings.java','src/lab/Compat.java','src/lab/PracticePresets.java','tests/PeriodicComboFightModel.java','tests/PeriodicComboReplay.java','tests/PeriodicComboTransport.java']
 
 def wire(events,direction,player=None):
     rows=pipeline_wire(events,direction,player)
@@ -260,13 +260,29 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
     # The recorded 13-block MMC floor starts both players at z = 0.5.
     arena.extend([game['sumo_arena'].get('diameter',10) if sumo else 10,
                   *[moves[side][0]['before']['posZ'] for side in ('a','b')]])
+    named=game.get('sumo_arena',{}).get('map')
+    if named:arena.append(named)
     lines=['\t'.join(map(str,['INIT',ax,bx,game['ping_a'],game['ping_b'],game['attack_reach_b'],tracker,*report_seeds,*initial_damage,*teleport_ages,*combat,*arena]))]
     lines=['\t'.join(map(lambda x:'NaN'if isinstance(x,float)and x!=x else str(x),['NETWORK',*r]))for r in network]+lines
     for t,k,args,e in rows:
         lines.append('\t'.join(map(str,[t,k,*args])))
         if not k.startswith('FRAME'):expected.append((t,k,e))
-    cmd=[str(JAVA),'-Xmx256m',f'-Dperiodic.frame_drain={str(frame_drain).lower()}','-cp',classes,'PeriodicComboReplay']
-    p=subprocess.run(cmd,input='\n'.join(lines)+'\n',capture_output=True,text=True)
+    with tempfile.TemporaryDirectory(prefix='replay-map-') as temp:
+        cp=str(classes)
+        if named:
+            import os
+            maps=ROOT/'research/mmc-arena/evidence/platforms'
+            if named not in {m['name'] for m in json.loads((maps/'catalog.json').read_text())}:raise ValueError('Missing recorded map '+named)
+            resources=Path(temp)/'lab/mmc-maps';resources.mkdir(parents=True)
+            packed=maps/'packed'/(named+'.bin.gz')
+            boxes=gzip.decompress((maps/'collision'/(named+'.boxes.gz')).read_bytes())
+            recorded=gzip.decompress(packed.read_bytes())[68:100].hex()
+            if recorded!=game['sumo_arena']['observed_volume_sha256']:raise ValueError('Replay volume differs from recording')
+            if hashlib.sha256(boxes).hexdigest()!=json.loads((maps/'collision/proof.json').read_text())['collision_sha256'][named]:raise ValueError('Replay collider digest mismatch')
+            shutil.copy2(packed,resources/packed.name);(resources/(named+'.boxes')).write_bytes(boxes)
+            cp+=os.pathsep+temp
+        cmd=[str(JAVA),'-Xmx256m',f'-Dperiodic.frame_drain={str(frame_drain).lower()}','-cp',cp,'PeriodicComboReplay']
+        p=subprocess.run(cmd,input='\n'.join(lines)+'\n',capture_output=True,text=True)
     predictions=list(csv.DictReader(io.StringIO(p.stdout),delimiter='\t'));assert len(predictions)<=len(expected)
     replay_failure=p.stderr.strip()if p.returncode else None
     scored=[]

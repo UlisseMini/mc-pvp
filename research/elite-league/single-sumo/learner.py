@@ -103,12 +103,14 @@ def log_prob(y, ground, action):
 class Worker:
     def __init__(self,cps=7,current_runtime=False,runtime_directory=None,map_name=None):
         if cps not in (7,20):raise ValueError(cps)
+        self.map_name=map_name
         self.tmp=tempfile.TemporaryDirectory(dir=BUILD); self.folder=Path(self.tmp.name)
         from build import sim_paths
         cp=str(runtime_directory) if runtime_directory else os.pathsep.join(map(str,sim_paths(training=not current_runtime)))
         self.proc=subprocess.Popen(["java","-ea",*([f"-Dleague.map={map_name}"] if map_name else []),f"-Dleague.cps={cps}","-XX:ActiveProcessorCount=2","-XX:+UseSerialGC","-Xms128m","-Xmx1400m","-cp",cp,"LeagueWorker","2"],
                                    cwd=ROOT,text=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE)
     def run(self, schedule, collect):
+        if collect and self.map_name is not None:raise ValueError("Named validation platforms are evaluation-only")
         plan=self.folder/"plan.tsv"; out=self.folder/"results.bin"
         plan.write_text("".join("\t".join(map(str,r))+"\n" for r in schedule))
         self.proc.stdin.write(f"{'collect' if collect else 'eval'}\t{plan}\t{out}\n"); self.proc.stdin.flush()

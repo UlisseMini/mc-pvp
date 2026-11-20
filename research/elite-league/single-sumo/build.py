@@ -30,7 +30,7 @@ def run():
     old=[ROOT/'build/elite-league/sumo-confidence/classes',ROOT/'build/elite-league/sumo-inputs/classes']
     if not all(p.is_dir() for p in old):raise RuntimeError('Build the frozen sumo-confidence and sumo-inputs simulator dependencies first')
     BUILD.mkdir(exist_ok=True,parents=True);lab=ROOT/'src/lab';shared=[lab/'DuelNetwork.java',lab/'SumoLeaguePolicy.java']
-    sources=[*shared,lab/'RecordedSumoMap.java',lab/'ExactTravel.java',ROOT/'tests/PeriodicComboFightModel.java',ROOT/'research/sumo-rl/DuelEnv.java',ROOT/'research/mmc-arena/RecordedMapClock.java',HERE.parent/'Arena.java',HERE.parent/'NetworkChecks.java',*(p for p in sorted(HERE.glob('*.java')) if p.name!='LeagueTrace.java')]
+    sources=[*shared,lab/'RecordedSumoMap.java',lab/'RecordedCollisions.java',lab/'ExactTravel.java',ROOT/'tests/PeriodicComboFightModel.java',ROOT/'research/sumo-rl/DuelEnv.java',ROOT/'research/mmc-arena/RecordedMapClock.java',HERE.parent/'Arena.java',HERE.parent/'NetworkChecks.java',*(p for p in sorted(HERE.glob('*.java')) if p.name!='LeagueTrace.java')]
     for name in re.findall(r'^import lab\.(\w+);$',(HERE.parent/'Arena.java').read_text(),re.MULTILINE):
         dependency=lab/(name+'.java')
         if dependency not in sources:sources.append(dependency)

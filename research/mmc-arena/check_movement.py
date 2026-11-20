@@ -11,7 +11,7 @@ def run():
     runtime=Path(json.loads((BUILD/'model-runtime.json').read_text())['directory'])
     with tempfile.TemporaryDirectory(dir=BUILD) as tmp:
         d=Path(tmp);cp=os.pathsep.join(map(str,[runtime,jar]));dest=d/'classes';dest.mkdir()
-        compile_java(cp,dest,[HERE/'MapMovementCheck.java',HERE/'BlockGeometry.java',HERE/'RecordedMapClock.java'])
+        compile_java(cp,dest,[HERE/'MapMovementCheck.java',HERE/'BlockGeometry.java',ROOT/'src/lab/RecordedCollisions.java'])
         names=[r['name'] for r in json.loads((OUT/'catalog.json').read_text())]
         raw=subprocess.check_output(['java','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-Xmx400m','-cp',str(dest)+os.pathsep+cp,'MapMovementCheck',*names],cwd=d,text=True)
         result={}

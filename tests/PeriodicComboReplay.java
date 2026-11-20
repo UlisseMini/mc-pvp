@@ -11,7 +11,17 @@ public final class PeriodicComboReplay {
             if(p.length>31)c.trackerAFirst=p[31].equals("1");
             if(c.sumo){
                 if(p.length>32)c.sumoDiameter=Integer.parseInt(p[32]);
-                c.sumoArena(Double.parseDouble(p[29]),top);c.solidEdge();
+                int center=(int)Double.parseDouble(p[29]);
+                c.sumoArena(center,top);c.solidEdge();
+                if(p.length>35){
+                    try{
+                        var terrain=new lab.RecordedCollisions(p[35],center,(int)top-1);
+                        c.platform=new lab.ExactTravel.Environment(top,.6f,true,true,false,false,false,new lab.ExactTravel.Disk(center,c.sumoDiameter,terrain));
+                        s.a.yaw=s.a.headYaw=terrain.map.yaw(true);s.b.yaw=s.b.headYaw=terrain.map.yaw(false);
+                        s.serverYawA=s.a.yaw;s.serverYawB=s.b.yaw;
+                        s.trackedYawA=(int)Math.floor(s.serverYawA*256/360);s.trackedYawB=(int)Math.floor(s.serverYawB*256/360);
+                    }catch(IOException ex){throw new IllegalArgumentException("Recorded replay terrain unavailable",ex);}
+                }
             }
         }
         c.ownRtt=Double.parseDouble(p[3]);c.otherRtt=Double.parseDouble(p[4]);c.defenderReach=Double.parseDouble(p[5]);PeriodicComboFightModel.defenderReach=c.defenderReach;

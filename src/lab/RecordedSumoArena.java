@@ -8,6 +8,8 @@ import java.util.*;
 final class RecordedSumoArena {
     private static final Map<Integer,RecordedSumoMap> placed=new HashMap<>();
     private static final Map<Integer,Object> states=new HashMap<>();
+    private static final int EXPORT_ARENA=30;
+    private static long exportTick;
     private static Object nativeState(int id){
         return states.computeIfAbsent(id,k->R.call(R.call(R.cls("net.minecraft.block.Block"),"getBlockById",k>>4),"getStateFromMeta",k&15));
     }
@@ -27,6 +29,14 @@ final class RecordedSumoArena {
         return R.construct("net.minecraft.util.BlockPos",4096*(arena+1)+x,SumoArena.FLOOR_Y+y,z);
     }
     private static String change(Object world,int arena,RecordedSumoMap map,boolean build){
+        // Every bottom-layer sand block in this build sits on recorded sandstone at Y-3.
+        // Place it before the sand can receive its scheduled falling-block update.
+        if(map.name.equals("mmc-177-03")){
+            for(int z=map.z0;z<map.z0+map.depth;z++)for(int x=map.x0;x<map.x0+map.width;x++){
+                if((map.state(x,map.y0,z)>>4)==12)
+                    R.call(world,"setBlockState",pos(arena,x,map.y0-1,z),nativeState(build?24<<4:0),2);
+            }
+        }
         var hash=RecordedSumoMap.digest();
         for(int y=map.y0;y<map.y0+map.height;y++)for(int z=map.z0;z<map.z0+map.depth;z++)for(int x=map.x0;x<map.x0+map.width;x++){
             int id=build?map.state(x,y,z):0;
@@ -44,18 +54,26 @@ final class RecordedSumoArena {
         if(build&&!result.equals(map.hash))throw new IllegalStateException("Native block-state digest differs for "+map.name);
         return result;
     }
+    static void prepareExport(Object world,RecordedSumoMap map)throws IOException{
+        build(world,EXPORT_ARENA,map);
+        exportTick=(long)R.call(world,"getTotalWorldTime");
+        Path dir=R.ROOT.resolve("runtime/map-geometry");Files.createDirectories(dir);
+        Files.writeString(dir.resolve(map.name+".ready"),Long.toString(exportTick));
+    }
     static void export(Object world,RecordedSumoMap map) throws IOException {
-        // Dedicated geometry-only slot, outside both the match and replay ranges.
-        int arena=30,center=4096*(arena+1);
+        int arena=EXPORT_ARENA,center=4096*(arena+1);
+        if(placed.get(arena)!=map||((long)R.call(world,"getTotalWorldTime"))-exportTick<20)
+            throw new IllegalStateException("Stable geometry export requires at least twenty native ticks after placement");
         Path dir=R.ROOT.resolve("runtime/map-geometry");
         Files.createDirectories(dir);Path tmp=Files.createTempFile(dir,map.name,".tmp");
         try{
-            build(world,arena,map);
             Object mask=R.construct("net.minecraft.util.AxisAlignedBB",(double)center-16,5.,-16.,(double)center+16,20.,16.);
             try(var file=new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(tmp)))){
                 file.writeUTF(map.hash);
                 for(int y=map.y0;y<map.y0+map.height;y++)for(int z=map.z0;z<map.z0+map.depth;z++)for(int x=map.x0;x<map.x0+map.width;x++){
                     Object p=pos(arena,x,y,z);Object state=R.call(world,"getBlockState",p);Object block=R.call(state,"getBlock");
+                    if(!nativeState(map.state(x,y,z)).equals(state))
+                        throw new IllegalStateException("Terrain changed after placement: "+map.name+" at "+x+","+y+","+z);
                     List<Object> boxes=new ArrayList<>();R.call(block,"addCollisionBoxesToList",world,p,state,mask,boxes,null);
                     file.writeFloat((float)R.num(block,"slipperiness"));file.writeInt(boxes.size());
                     for(Object box:boxes)for(String key:List.of("minX","minY","minZ","maxX","maxY","maxZ")){
