@@ -1,0 +1,184 @@
+{
+  "run": "native-ht7v0ts7",
+  "scores": [
+    {
+      "actor": "evidence/ladder26/fighters/1ef8cdac288b79e0.net",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 0,
+      "opening": 0,
+      "seat": 1,
+      "hp": 7.1899996,
+      "enemy_hp": 0.0,
+      "score": 1,
+      "qualified": true
+    },
+    {
+      "actor": "wtap",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 0,
+      "opening": 0,
+      "seat": 1,
+      "hp": 0.0,
+      "enemy_hp": 5.4133625,
+      "score": 0,
+      "qualified": true
+    },
+    {
+      "actor": "evidence/ladder26/fighters/1ef8cdac288b79e0.net",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 0,
+      "opening": 0,
+      "seat": 0,
+      "hp": 7.1899996,
+      "enemy_hp": 0.0,
+      "score": 1,
+      "qualified": true
+    },
+    {
+      "actor": "wtap",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 0,
+      "opening": 0,
+      "seat": 0,
+      "hp": 0.0,
+      "enemy_hp": 5.1650596,
+      "score": 0,
+      "qualified": true
+    },
+    {
+      "actor": "evidence/ladder26/fighters/1ef8cdac288b79e0.net",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 0,
+      "opening": 1,
+      "seat": 0,
+      "hp": 10.3925,
+      "enemy_hp": 0.0,
+      "score": 1,
+      "qualified": true
+    },
+    {
+      "actor": "evidence/ladder26/fighters/1ef8cdac288b79e0.net",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 0,
+      "opening": 1,
+      "seat": 1,
+      "hp": 10.3925,
+      "enemy_hp": 0.0,
+      "score": 1,
+      "qualified": true
+    },
+    {
+      "actor": "wtap",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 0,
+      "opening": 1,
+      "seat": 1,
+      "hp": 0.0,
+      "enemy_hp": 4.880005,
+      "score": 0,
+      "qualified": true
+    },
+    {
+      "actor": "wtap",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 0,
+      "opening": 1,
+      "seat": 0,
+      "hp": 0.0,
+      "enemy_hp": 4.880005,
+      "score": 0,
+      "qualified": true
+    },
+    {
+      "actor": "wtap",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 100,
+      "opening": 0,
+      "seat": 0,
+      "hp": 0.0,
+      "enemy_hp": 3.27506,
+      "score": 0,
+      "qualified": true
+    },
+    {
+      "actor": "evidence/ladder26/fighters/1ef8cdac288b79e0.net",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 100,
+      "opening": 0,
+      "seat": 0,
+      "hp": 10.3925,
+      "enemy_hp": 0.0,
+      "score": 1,
+      "qualified": true
+    },
+    {
+      "actor": "evidence/ladder26/fighters/1ef8cdac288b79e0.net",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 100,
+      "opening": 0,
+      "seat": 1,
+      "hp": 10.3925,
+      "enemy_hp": 0.0,
+      "score": 1,
+      "qualified": true
+    },
+    {
+      "actor": "wtap",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 100,
+      "opening": 0,
+      "seat": 1,
+      "hp": 0.0,
+      "enemy_hp": 4.880005,
+      "score": 0,
+      "qualified": true
+    },
+    {
+      "actor": "wtap",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 100,
+      "opening": 1,
+      "seat": 1,
+      "hp": 0.0,
+      "enemy_hp": 3.5601156,
+      "score": 0,
+      "qualified": true
+    },
+    {
+      "actor": "wtap",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 100,
+      "opening": 1,
+      "seat": 0,
+      "hp": 0.0,
+      "enemy_hp": 6.7700043,
+      "score": 0,
+      "qualified": true
+    },
+    {
+      "actor": "evidence/ladder26/fighters/1ef8cdac288b79e0.net",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 100,
+      "opening": 1,
+      "seat": 1,
+      "hp": 10.3925,
+      "enemy_hp": 0.0,
+      "score": 1,
+      "qualified": true
+    },
+    {
+      "actor": "evidence/ladder26/fighters/1ef8cdac288b79e0.net",
+      "rival": "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+      "rtt": 100,
+      "opening": 1,
+      "seat": 0,
+      "hp": 4.499851,
+      "enemy_hp": 0.0,
+      "score": 1,
+      "qualified": true
+    }
+  ],
+  "unqualified_cells": 0,
+  "score_rule": "first_lethal_contact",
+  "active_frames": true
+}

@@ -1,0 +1,23 @@
+{
+  "actors": [
+    "evidence/ladder26/fighters/1ef8cdac288b79e0.net"
+  ],
+  "opponents": [
+    "evidence/ladder26/fighters/1ed6988fc1d29b7d.net"
+  ],
+  "actor_hashes": [
+    "1ef8cdac288b79e0c0ef63e0a3d1c272c6ed9e0d18be36c6b16b0511b6b08db5"
+  ],
+  "opponent_hashes": [
+    "1ed6988fc1d29b7dd2f5b3128d2aa46d21fb06a8540b02339f52e7f4fd2cd075"
+  ],
+  "seed": 212702364,
+  "pairs": 2,
+  "clock": "ordinary TCP",
+  "rtts": [
+    0,
+    100
+  ],
+  "client_frame_policy": "minimized",
+  "matched_openings_from": "native-by2qtxlh/results.json"
+}

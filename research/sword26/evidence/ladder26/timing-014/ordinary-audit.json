@@ -1,0 +1,1785 @@
+[
+  {
+    "id": "round-000",
+    "wall_seconds": 7.4180082329999095,
+    "rtt": 0,
+    "pair": 0,
+    "seat": 1,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 7.1899996,
+    "opponent_hp": 0.0,
+    "ticks": 112.0,
+    "angle": 2.049970611290666,
+    "gap": 4.347742288511397,
+    "video": "videos/round-000.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 113,
+        "intervals": 112,
+        "under_5_ms": 12,
+        "over_85_ms": 12,
+        "median_interval_ms": 48.5,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 18
+      },
+      "opponent": {
+        "polls": 112,
+        "intervals": 111,
+        "under_5_ms": 12,
+        "over_85_ms": 10,
+        "median_interval_ms": 49,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 19.0
+      }
+    },
+    "observation_ticks": 113,
+    "forward_ticks": 79,
+    "back_ticks": 34,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 71,
+    "full_charge_ticks": 29,
+    "full_charge_forward_ticks": 29,
+    "low_charge_ticks": 42,
+    "low_charge_back_ticks": 18,
+    "hits": 8,
+    "events": {
+      "critical": 5,
+      "boosted": 0,
+      "strong": 8,
+      "sweep": 0,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "B": 0.0,
+      "A": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 8,
+    "opponent_movement": {
+      "observation_ticks": 112,
+      "forward_ticks": 104,
+      "back_ticks": 7,
+      "lateral_ticks": 6,
+      "jump_key_ticks": 7,
+      "full_charge_ticks": 38,
+      "full_charge_forward_ticks": 32,
+      "low_charge_ticks": 38,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 4,
+      "boosted": 0,
+      "strong": 4,
+      "sweep": 0,
+      "fresh": 4,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 7
+      },
+      "own_fresh_hits": 8,
+      "window_missing_views": 1,
+      "window_sampled": 6,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "incoming_fresh_sampled": 3,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 3
+      },
+      "incoming_fresh_sampled": 8,
+      "own_fresh_hits": 4,
+      "window_sampled": 3,
+      "window_in_own_reach": 2,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 3,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.415929203539823,
+    "mean_charge_on_press": 0.9799999594688416
+  },
+  {
+    "id": "round-001",
+    "wall_seconds": 6.651120207000076,
+    "rtt": 0,
+    "pair": 0,
+    "seat": 1,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 0.0,
+    "opponent_hp": 5.4133625,
+    "ticks": 97.0,
+    "angle": 2.049970611290666,
+    "gap": 4.347742288511397,
+    "video": "videos/round-001.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 98,
+        "intervals": 97,
+        "under_5_ms": 9,
+        "over_85_ms": 3,
+        "median_interval_ms": 50,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 24.0
+      },
+      "opponent": {
+        "polls": 98,
+        "intervals": 97,
+        "under_5_ms": 8,
+        "over_85_ms": 5,
+        "median_interval_ms": 51,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 24.0
+      }
+    },
+    "observation_ticks": 98,
+    "forward_ticks": 90,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 5,
+    "full_charge_forward_ticks": 5,
+    "low_charge_ticks": 48,
+    "low_charge_back_ticks": 0,
+    "hits": 8,
+    "events": {
+      "critical": 0,
+      "boosted": 7,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "B": 0.0,
+      "A": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 8,
+    "opponent_movement": {
+      "observation_ticks": 98,
+      "forward_ticks": 89,
+      "back_ticks": 8,
+      "lateral_ticks": 1,
+      "jump_key_ticks": 9,
+      "full_charge_ticks": 16,
+      "full_charge_forward_ticks": 15,
+      "low_charge_ticks": 42,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 6,
+      "boosted": 0,
+      "strong": 6,
+      "sweep": 0,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 7
+      },
+      "own_fresh_hits": 8,
+      "window_sampled": 6,
+      "window_in_own_reach": 6,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 5,
+      "incoming_fresh_sampled": 8,
+      "window_missing_views": 1,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 7
+      },
+      "incoming_fresh_sampled": 8,
+      "own_fresh_hits": 8,
+      "window_sampled": 7,
+      "window_in_own_reach": 7,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 5,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.6326530612244898,
+    "mean_charge_on_press": 0.9649999290704727
+  },
+  {
+    "id": "round-002",
+    "wall_seconds": 7.304156437000074,
+    "rtt": 0,
+    "pair": 0,
+    "seat": 0,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 7.1899996,
+    "opponent_hp": 0.0,
+    "ticks": 110.0,
+    "angle": 2.049970611290666,
+    "gap": 4.347742288511397,
+    "video": "videos/round-002.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 111,
+        "intervals": 110,
+        "under_5_ms": 0,
+        "over_85_ms": 2,
+        "median_interval_ms": 50.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 32
+      },
+      "opponent": {
+        "polls": 111,
+        "intervals": 110,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 51.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 33
+      }
+    },
+    "observation_ticks": 111,
+    "forward_ticks": 76,
+    "back_ticks": 35,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 65,
+    "full_charge_ticks": 27,
+    "full_charge_forward_ticks": 27,
+    "low_charge_ticks": 42,
+    "low_charge_back_ticks": 18,
+    "hits": 8,
+    "events": {
+      "critical": 4,
+      "boosted": 0,
+      "strong": 8,
+      "sweep": 0,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "A": 0.0,
+      "B": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 8,
+    "opponent_movement": {
+      "observation_ticks": 111,
+      "forward_ticks": 104,
+      "back_ticks": 7,
+      "lateral_ticks": 2,
+      "jump_key_ticks": 8,
+      "full_charge_ticks": 37,
+      "full_charge_forward_ticks": 34,
+      "low_charge_ticks": 39,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 4,
+      "boosted": 0,
+      "strong": 4,
+      "sweep": 0,
+      "fresh": 4,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 7
+      },
+      "own_fresh_hits": 8,
+      "window_sampled": 7,
+      "window_in_own_reach": 5,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 7,
+      "incoming_fresh_sampled": 4,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 3
+      },
+      "incoming_fresh_sampled": 8,
+      "own_fresh_hits": 4,
+      "window_sampled": 3,
+      "window_in_own_reach": 2,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 3,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.4414414414414414,
+    "mean_charge_on_press": 0.9799999594688416
+  },
+  {
+    "id": "round-003",
+    "wall_seconds": 6.688220972999716,
+    "rtt": 0,
+    "pair": 0,
+    "seat": 0,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 0.0,
+    "opponent_hp": 5.1650596,
+    "ticks": 99.0,
+    "angle": 2.049970611290666,
+    "gap": 4.347742288511397,
+    "video": "videos/round-003.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 100,
+        "intervals": 99,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 50,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 38.0
+      },
+      "opponent": {
+        "polls": 100,
+        "intervals": 99,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 51,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 38.0
+      }
+    },
+    "observation_ticks": 100,
+    "forward_ticks": 92,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 6,
+    "full_charge_forward_ticks": 6,
+    "low_charge_ticks": 48,
+    "low_charge_back_ticks": 0,
+    "hits": 8,
+    "events": {
+      "critical": 0,
+      "boosted": 8,
+      "strong": 8,
+      "sweep": 0,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "A": 0.0,
+      "B": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 8,
+    "opponent_movement": {
+      "observation_ticks": 100,
+      "forward_ticks": 92,
+      "back_ticks": 8,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 11,
+      "full_charge_ticks": 17,
+      "full_charge_forward_ticks": 16,
+      "low_charge_ticks": 42,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 7,
+      "boosted": 0,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 7
+      },
+      "own_fresh_hits": 8,
+      "window_sampled": 7,
+      "window_in_own_reach": 7,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 7,
+      "incoming_fresh_sampled": 7,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 6
+      },
+      "incoming_fresh_sampled": 8,
+      "own_fresh_hits": 7,
+      "window_sampled": 6,
+      "window_in_own_reach": 5,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.6,
+    "mean_charge_on_press": 0.9649999290704727
+  },
+  {
+    "id": "round-004",
+    "wall_seconds": 6.849447536000298,
+    "rtt": 0,
+    "pair": 1,
+    "seat": 0,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 10.3925,
+    "opponent_hp": 0.0,
+    "ticks": 102.0,
+    "angle": 0.9221295820900268,
+    "gap": 5.448913319150957,
+    "video": "videos/round-004.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 102,
+        "intervals": 101,
+        "under_5_ms": 3,
+        "over_85_ms": 3,
+        "median_interval_ms": 48,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 40.0
+      },
+      "opponent": {
+        "polls": 103,
+        "intervals": 102,
+        "under_5_ms": 4,
+        "over_85_ms": 2,
+        "median_interval_ms": 48.5,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 39
+      }
+    },
+    "observation_ticks": 102,
+    "forward_ticks": 71,
+    "back_ticks": 31,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 64,
+    "full_charge_ticks": 29,
+    "full_charge_forward_ticks": 29,
+    "low_charge_ticks": 37,
+    "low_charge_back_ticks": 18,
+    "hits": 7,
+    "events": {
+      "critical": 6,
+      "boosted": 0,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "A": 0.0,
+      "B": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 7,
+    "opponent_movement": {
+      "observation_ticks": 103,
+      "forward_ticks": 97,
+      "back_ticks": 6,
+      "lateral_ticks": 2,
+      "jump_key_ticks": 7,
+      "full_charge_ticks": 32,
+      "full_charge_forward_ticks": 29,
+      "low_charge_ticks": 36,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 3,
+      "boosted": 0,
+      "strong": 3,
+      "sweep": 0,
+      "fresh": 3,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 6
+      },
+      "own_fresh_hits": 7,
+      "window_sampled": 6,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "incoming_fresh_sampled": 3,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 3
+      },
+      "incoming_fresh_sampled": 7,
+      "own_fresh_hits": 3,
+      "window_sampled": 3,
+      "window_in_own_reach": 1,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 3
+    },
+    "sampled_cps": 1.3725490196078431,
+    "mean_charge_on_press": 0.9828571081161499
+  },
+  {
+    "id": "round-005",
+    "wall_seconds": 6.678630763000001,
+    "rtt": 0,
+    "pair": 1,
+    "seat": 1,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 10.3925,
+    "opponent_hp": 0.0,
+    "ticks": 98.0,
+    "angle": 0.9221295820900268,
+    "gap": 5.448913319150957,
+    "video": "videos/round-005.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 99,
+        "intervals": 98,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 48.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 45
+      },
+      "opponent": {
+        "polls": 99,
+        "intervals": 98,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 47.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 44
+      }
+    },
+    "observation_ticks": 99,
+    "forward_ticks": 68,
+    "back_ticks": 31,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 61,
+    "full_charge_ticks": 27,
+    "full_charge_forward_ticks": 27,
+    "low_charge_ticks": 36,
+    "low_charge_back_ticks": 18,
+    "hits": 7,
+    "events": {
+      "critical": 6,
+      "boosted": 0,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "B": 0.0,
+      "A": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 7,
+    "opponent_movement": {
+      "observation_ticks": 99,
+      "forward_ticks": 93,
+      "back_ticks": 6,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 6,
+      "full_charge_ticks": 31,
+      "full_charge_forward_ticks": 28,
+      "low_charge_ticks": 36,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 3,
+      "boosted": 0,
+      "strong": 3,
+      "sweep": 0,
+      "fresh": 3,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 6
+      },
+      "own_fresh_hits": 7,
+      "window_sampled": 6,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "incoming_fresh_sampled": 3,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 3
+      },
+      "incoming_fresh_sampled": 7,
+      "own_fresh_hits": 3,
+      "window_sampled": 3,
+      "window_in_own_reach": 0,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 3
+    },
+    "sampled_cps": 1.4141414141414141,
+    "mean_charge_on_press": 0.9828571081161499
+  },
+  {
+    "id": "round-006",
+    "wall_seconds": 6.6898541229998045,
+    "rtt": 0,
+    "pair": 1,
+    "seat": 1,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 0.0,
+    "opponent_hp": 4.880005,
+    "ticks": 100.0,
+    "angle": 0.9221295820900268,
+    "gap": 5.448913319150957,
+    "video": "videos/round-006.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 101,
+        "intervals": 100,
+        "under_5_ms": 3,
+        "over_85_ms": 2,
+        "median_interval_ms": 47.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 43
+      },
+      "opponent": {
+        "polls": 101,
+        "intervals": 100,
+        "under_5_ms": 5,
+        "over_85_ms": 2,
+        "median_interval_ms": 47.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 43
+      }
+    },
+    "observation_ticks": 101,
+    "forward_ticks": 93,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 8,
+    "full_charge_forward_ticks": 8,
+    "low_charge_ticks": 48,
+    "low_charge_back_ticks": 0,
+    "hits": 8,
+    "events": {
+      "critical": 0,
+      "boosted": 8,
+      "strong": 8,
+      "sweep": 0,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "B": 0.0,
+      "A": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 8,
+    "opponent_movement": {
+      "observation_ticks": 101,
+      "forward_ticks": 93,
+      "back_ticks": 8,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 8,
+      "full_charge_ticks": 17,
+      "full_charge_forward_ticks": 16,
+      "low_charge_ticks": 42,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 7,
+      "boosted": 0,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 7
+      },
+      "own_fresh_hits": 8,
+      "window_sampled": 7,
+      "window_in_own_reach": 7,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 7,
+      "incoming_fresh_sampled": 7,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 6
+      },
+      "incoming_fresh_sampled": 8,
+      "own_fresh_hits": 7,
+      "window_sampled": 6,
+      "window_in_own_reach": 5,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.5841584158415842,
+    "mean_charge_on_press": 0.9649999290704727
+  },
+  {
+    "id": "round-007",
+    "wall_seconds": 6.8302916959996764,
+    "rtt": 0,
+    "pair": 1,
+    "seat": 0,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 0.0,
+    "opponent_hp": 4.880005,
+    "ticks": 100.0,
+    "angle": 0.9221295820900268,
+    "gap": 5.448913319150957,
+    "video": "videos/round-007.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 101,
+        "intervals": 100,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 48.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 42
+      },
+      "opponent": {
+        "polls": 101,
+        "intervals": 100,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 48.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 41
+      }
+    },
+    "observation_ticks": 101,
+    "forward_ticks": 93,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 8,
+    "full_charge_forward_ticks": 8,
+    "low_charge_ticks": 48,
+    "low_charge_back_ticks": 0,
+    "hits": 8,
+    "events": {
+      "critical": 0,
+      "boosted": 8,
+      "strong": 8,
+      "sweep": 0,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "A": 0.0,
+      "B": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 8,
+    "opponent_movement": {
+      "observation_ticks": 101,
+      "forward_ticks": 93,
+      "back_ticks": 8,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 8,
+      "full_charge_ticks": 17,
+      "full_charge_forward_ticks": 16,
+      "low_charge_ticks": 42,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 7,
+      "boosted": 0,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 7
+      },
+      "own_fresh_hits": 8,
+      "window_sampled": 7,
+      "window_in_own_reach": 7,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 7,
+      "incoming_fresh_sampled": 7,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 6
+      },
+      "incoming_fresh_sampled": 8,
+      "own_fresh_hits": 7,
+      "window_sampled": 6,
+      "window_in_own_reach": 5,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.5841584158415842,
+    "mean_charge_on_press": 0.9649999290704727
+  },
+  {
+    "id": "round-008",
+    "wall_seconds": 7.904642757999682,
+    "rtt": 100,
+    "pair": 0,
+    "seat": 0,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 0.0,
+    "opponent_hp": 3.27506,
+    "ticks": 123.0,
+    "angle": -2.494073488761223,
+    "gap": 7.224686174254205,
+    "video": "videos/round-008.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 124,
+        "intervals": 123,
+        "under_5_ms": 4,
+        "over_85_ms": 2,
+        "median_interval_ms": 48,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 41.0
+      },
+      "opponent": {
+        "polls": 124,
+        "intervals": 123,
+        "under_5_ms": 3,
+        "over_85_ms": 3,
+        "median_interval_ms": 47,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 43.0
+      }
+    },
+    "observation_ticks": 124,
+    "forward_ticks": 115,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 16,
+    "full_charge_forward_ticks": 16,
+    "low_charge_ticks": 54,
+    "low_charge_back_ticks": 0,
+    "hits": 9,
+    "events": {
+      "critical": 0,
+      "boosted": 9,
+      "strong": 9,
+      "sweep": 0,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "landmarks": {
+      "3": {
+        "entry_tick": 112,
+        "returns": {
+          "cycles": 0,
+          "exposure_ticks": 11,
+          "end": "return"
+        },
+        "active": {
+          "cycles": 0,
+          "exposure_ticks": 11,
+          "end": "return"
+        }
+      }
+    },
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "A": 0.0,
+      "B": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 124,
+      "forward_ticks": 115,
+      "back_ticks": 9,
+      "lateral_ticks": 2,
+      "jump_key_ticks": 22,
+      "full_charge_ticks": 28,
+      "full_charge_forward_ticks": 26,
+      "low_charge_ticks": 49,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 6,
+      "boosted": 0,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "own_fresh_hits": 9,
+      "window_sampled": 9,
+      "window_in_own_reach": 9,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 9,
+      "incoming_fresh_sampled": 7
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 6
+      },
+      "incoming_fresh_sampled": 9,
+      "own_fresh_hits": 7,
+      "window_sampled": 6,
+      "window_in_own_reach": 5,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.6129032258064515,
+    "mean_charge_on_press": 0.9719999432563782
+  },
+  {
+    "id": "round-009",
+    "wall_seconds": 7.5776591019998705,
+    "rtt": 100,
+    "pair": 0,
+    "seat": 0,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 10.3925,
+    "opponent_hp": 0.0,
+    "ticks": 116.0,
+    "angle": -2.494073488761223,
+    "gap": 7.224686174254205,
+    "video": "videos/round-009.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 117,
+        "intervals": 116,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 47.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 45
+      },
+      "opponent": {
+        "polls": 117,
+        "intervals": 116,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 48.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 44
+      }
+    },
+    "observation_ticks": 117,
+    "forward_ticks": 85,
+    "back_ticks": 32,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 56,
+    "full_charge_ticks": 44,
+    "full_charge_forward_ticks": 35,
+    "low_charge_ticks": 37,
+    "low_charge_back_ticks": 15,
+    "hits": 7,
+    "events": {
+      "critical": 7,
+      "boosted": 0,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "A": 0.0,
+      "B": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 7,
+    "opponent_movement": {
+      "observation_ticks": 117,
+      "forward_ticks": 111,
+      "back_ticks": 6,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 6,
+      "full_charge_ticks": 47,
+      "full_charge_forward_ticks": 44,
+      "low_charge_ticks": 36,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 3,
+      "boosted": 0,
+      "strong": 3,
+      "sweep": 0,
+      "fresh": 3,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 6
+      },
+      "own_fresh_hits": 7,
+      "window_sampled": 6,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "incoming_fresh_sampled": 3,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 3
+      },
+      "incoming_fresh_sampled": 7,
+      "own_fresh_hits": 3,
+      "window_sampled": 3,
+      "window_in_own_reach": 2,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 3
+    },
+    "sampled_cps": 1.1965811965811965,
+    "mean_charge_on_press": 0.9828571081161499
+  },
+  {
+    "id": "round-010",
+    "wall_seconds": 7.585379105999891,
+    "rtt": 100,
+    "pair": 0,
+    "seat": 1,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 10.3925,
+    "opponent_hp": 0.0,
+    "ticks": 116.0,
+    "angle": -2.494073488761223,
+    "gap": 7.224686174254205,
+    "video": "videos/round-010.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 117,
+        "intervals": 116,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 46.5,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 45
+      },
+      "opponent": {
+        "polls": 117,
+        "intervals": 116,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 48.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 45
+      }
+    },
+    "observation_ticks": 117,
+    "forward_ticks": 85,
+    "back_ticks": 32,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 56,
+    "full_charge_ticks": 44,
+    "full_charge_forward_ticks": 35,
+    "low_charge_ticks": 37,
+    "low_charge_back_ticks": 15,
+    "hits": 7,
+    "events": {
+      "critical": 7,
+      "boosted": 0,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "B": 0.0,
+      "A": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 7,
+    "opponent_movement": {
+      "observation_ticks": 117,
+      "forward_ticks": 111,
+      "back_ticks": 6,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 6,
+      "full_charge_ticks": 47,
+      "full_charge_forward_ticks": 44,
+      "low_charge_ticks": 36,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 3,
+      "boosted": 0,
+      "strong": 3,
+      "sweep": 0,
+      "fresh": 3,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 6
+      },
+      "own_fresh_hits": 7,
+      "window_sampled": 6,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "incoming_fresh_sampled": 3,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 3
+      },
+      "incoming_fresh_sampled": 7,
+      "own_fresh_hits": 3,
+      "window_sampled": 3,
+      "window_in_own_reach": 2,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 3
+    },
+    "sampled_cps": 1.1965811965811965,
+    "mean_charge_on_press": 0.9828571081161499
+  },
+  {
+    "id": "round-011",
+    "wall_seconds": 7.280731715000002,
+    "rtt": 100,
+    "pair": 0,
+    "seat": 1,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 0.0,
+    "opponent_hp": 4.880005,
+    "ticks": 109.0,
+    "angle": -2.494073488761223,
+    "gap": 7.224686174254205,
+    "video": "videos/round-011.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 110,
+        "intervals": 109,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 49,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 41.0
+      },
+      "opponent": {
+        "polls": 110,
+        "intervals": 109,
+        "under_5_ms": 0,
+        "over_85_ms": 0,
+        "median_interval_ms": 48,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 44.0
+      }
+    },
+    "observation_ticks": 110,
+    "forward_ticks": 102,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 14,
+    "full_charge_forward_ticks": 14,
+    "low_charge_ticks": 48,
+    "low_charge_back_ticks": 0,
+    "hits": 8,
+    "events": {
+      "critical": 0,
+      "boosted": 8,
+      "strong": 8,
+      "sweep": 0,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "B": 0.0,
+      "A": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 9,
+    "opponent_movement": {
+      "observation_ticks": 110,
+      "forward_ticks": 102,
+      "back_ticks": 8,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 8,
+      "full_charge_ticks": 25,
+      "full_charge_forward_ticks": 24,
+      "low_charge_ticks": 43,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 7,
+      "boosted": 0,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 8
+      },
+      "own_fresh_hits": 8,
+      "window_sampled": 8,
+      "window_in_own_reach": 8,
+      "window_own_reach_only": 1,
+      "window_without_fresh_hit": 8,
+      "incoming_fresh_sampled": 7
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 6
+      },
+      "incoming_fresh_sampled": 8,
+      "own_fresh_hits": 7,
+      "window_sampled": 6,
+      "window_in_own_reach": 5,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.6363636363636365,
+    "mean_charge_on_press": 0.9733332792917887
+  },
+  {
+    "id": "round-012",
+    "wall_seconds": 7.693689263000124,
+    "rtt": 100,
+    "pair": 1,
+    "seat": 1,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 0.0,
+    "opponent_hp": 3.5601156,
+    "ticks": 118.0,
+    "angle": -0.8219849280130425,
+    "gap": 4.813144285916811,
+    "video": "videos/round-012.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 118,
+        "intervals": 117,
+        "under_5_ms": 6,
+        "over_85_ms": 5,
+        "median_interval_ms": 47,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 36.0
+      },
+      "opponent": {
+        "polls": 119,
+        "intervals": 118,
+        "under_5_ms": 8,
+        "over_85_ms": 4,
+        "median_interval_ms": 47.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 37
+      }
+    },
+    "observation_ticks": 118,
+    "forward_ticks": 109,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 10,
+    "full_charge_forward_ticks": 10,
+    "low_charge_ticks": 54,
+    "low_charge_back_ticks": 0,
+    "hits": 9,
+    "events": {
+      "critical": 0,
+      "boosted": 9,
+      "strong": 9,
+      "sweep": 0,
+      "fresh": 9,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "B": 0.0,
+      "A": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 10,
+    "opponent_movement": {
+      "observation_ticks": 119,
+      "forward_ticks": 110,
+      "back_ticks": 9,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 15,
+      "full_charge_ticks": 23,
+      "full_charge_forward_ticks": 20,
+      "low_charge_ticks": 49,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 7,
+      "boosted": 0,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 9
+      },
+      "own_fresh_hits": 9,
+      "window_sampled": 9,
+      "window_in_own_reach": 9,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 9,
+      "incoming_fresh_sampled": 7
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 6
+      },
+      "incoming_fresh_sampled": 9,
+      "own_fresh_hits": 7,
+      "window_sampled": 6,
+      "window_in_own_reach": 4,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.694915254237288,
+    "mean_charge_on_press": 0.9679999351501465
+  },
+  {
+    "id": "round-013",
+    "wall_seconds": 6.5616273519999595,
+    "rtt": 100,
+    "pair": 1,
+    "seat": 0,
+    "policy": "wtap",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 0.0,
+    "opponent_hp": 6.7700043,
+    "ticks": 97.0,
+    "angle": -0.8219849280130425,
+    "gap": 4.813144285916811,
+    "video": "videos/round-013.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 98,
+        "intervals": 97,
+        "under_5_ms": 6,
+        "over_85_ms": 4,
+        "median_interval_ms": 47,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 35.0
+      },
+      "opponent": {
+        "polls": 98,
+        "intervals": 97,
+        "under_5_ms": 7,
+        "over_85_ms": 5,
+        "median_interval_ms": 48,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 35.0
+      }
+    },
+    "observation_ticks": 98,
+    "forward_ticks": 90,
+    "back_ticks": 0,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 0,
+    "full_charge_ticks": 13,
+    "full_charge_forward_ticks": 13,
+    "low_charge_ticks": 43,
+    "low_charge_back_ticks": 0,
+    "hits": 7,
+    "events": {
+      "critical": 0,
+      "boosted": 7,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "A": 0.0,
+      "B": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 8,
+    "opponent_movement": {
+      "observation_ticks": 98,
+      "forward_ticks": 89,
+      "back_ticks": 7,
+      "lateral_ticks": 2,
+      "jump_key_ticks": 8,
+      "full_charge_ticks": 26,
+      "full_charge_forward_ticks": 23,
+      "low_charge_ticks": 37,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 7,
+      "boosted": 0,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 7
+      },
+      "own_fresh_hits": 7,
+      "window_sampled": 7,
+      "window_in_own_reach": 7,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 7,
+      "incoming_fresh_sampled": 7
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 6
+      },
+      "incoming_fresh_sampled": 7,
+      "own_fresh_hits": 7,
+      "window_sampled": 6,
+      "window_in_own_reach": 6,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.6326530612244898,
+    "mean_charge_on_press": 0.9699999392032623
+  },
+  {
+    "id": "round-014",
+    "wall_seconds": 6.6858844710000085,
+    "rtt": 100,
+    "pair": 1,
+    "seat": 1,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 10.3925,
+    "opponent_hp": 0.0,
+    "ticks": 99.0,
+    "angle": -0.8219849280130425,
+    "gap": 4.813144285916811,
+    "video": "videos/round-014.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 100,
+        "intervals": 99,
+        "under_5_ms": 1,
+        "over_85_ms": 1,
+        "median_interval_ms": 49,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 41.0
+      },
+      "opponent": {
+        "polls": 100,
+        "intervals": 99,
+        "under_5_ms": 1,
+        "over_85_ms": 1,
+        "median_interval_ms": 50,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 39.0
+      }
+    },
+    "observation_ticks": 100,
+    "forward_ticks": 81,
+    "back_ticks": 19,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 55,
+    "full_charge_ticks": 26,
+    "full_charge_forward_ticks": 26,
+    "low_charge_ticks": 38,
+    "low_charge_back_ticks": 15,
+    "hits": 7,
+    "events": {
+      "critical": 6,
+      "boosted": 0,
+      "strong": 7,
+      "sweep": 0,
+      "fresh": 7,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "B": 0.0,
+      "A": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 7,
+    "opponent_movement": {
+      "observation_ticks": 100,
+      "forward_ticks": 94,
+      "back_ticks": 6,
+      "lateral_ticks": 0,
+      "jump_key_ticks": 6,
+      "full_charge_ticks": 35,
+      "full_charge_forward_ticks": 32,
+      "low_charge_ticks": 35,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 3,
+      "boosted": 0,
+      "strong": 3,
+      "sweep": 0,
+      "fresh": 3,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 6
+      },
+      "own_fresh_hits": 7,
+      "window_sampled": 6,
+      "window_in_own_reach": 4,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 6,
+      "incoming_fresh_sampled": 3,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 3
+      },
+      "incoming_fresh_sampled": 7,
+      "own_fresh_hits": 3,
+      "window_sampled": 3,
+      "window_in_own_reach": 3,
+      "window_own_reach_only": 2,
+      "window_without_fresh_hit": 3
+    },
+    "sampled_cps": 1.4,
+    "mean_charge_on_press": 0.9828571081161499
+  },
+  {
+    "id": "round-015",
+    "wall_seconds": 9.192136679999749,
+    "rtt": 100,
+    "pair": 1,
+    "seat": 0,
+    "policy": "learned",
+    "rival": "/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
+    "hp": 4.499851,
+    "opponent_hp": 0.0,
+    "ticks": 148.0,
+    "angle": -0.8219849280130425,
+    "gap": 4.813144285916811,
+    "video": "videos/round-015.mp4",
+    "client_pacing": {
+      "bot": {
+        "polls": 149,
+        "intervals": 148,
+        "under_5_ms": 8,
+        "over_85_ms": 5,
+        "median_interval_ms": 49.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 37
+      },
+      "opponent": {
+        "polls": 149,
+        "intervals": 148,
+        "under_5_ms": 4,
+        "over_85_ms": 4,
+        "median_interval_ms": 50.0,
+        "afk_limited": 0,
+        "min_frame_cap": 50,
+        "median_render_fps": 38
+      }
+    },
+    "observation_ticks": 149,
+    "forward_ticks": 102,
+    "back_ticks": 47,
+    "lateral_ticks": 0,
+    "jump_key_ticks": 65,
+    "full_charge_ticks": 64,
+    "full_charge_forward_ticks": 41,
+    "low_charge_ticks": 43,
+    "low_charge_back_ticks": 14,
+    "hits": 8,
+    "events": {
+      "critical": 6,
+      "boosted": 0,
+      "strong": 8,
+      "sweep": 0,
+      "fresh": 8,
+      "upgrade": 0
+    },
+    "landmarks": {},
+    "branch": null,
+    "first_input_spawn_error_blocks": {
+      "A": 0.0,
+      "B": 0.0
+    },
+    "fresh_classification": "native damage cooldown",
+    "defender_input_recorded": true,
+    "physical_presses": 8,
+    "opponent_movement": {
+      "observation_ticks": 149,
+      "forward_ticks": 142,
+      "back_ticks": 7,
+      "lateral_ticks": 8,
+      "jump_key_ticks": 7,
+      "full_charge_ticks": 75,
+      "full_charge_forward_ticks": 71,
+      "low_charge_ticks": 38,
+      "low_charge_back_ticks": 0
+    },
+    "opponent_events": {
+      "critical": 5,
+      "boosted": 0,
+      "strong": 5,
+      "sweep": 0,
+      "fresh": 5,
+      "upgrade": 0
+    },
+    "spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 7
+      },
+      "own_fresh_hits": 8,
+      "window_sampled": 7,
+      "window_in_own_reach": 5,
+      "window_own_reach_only": 0,
+      "window_without_fresh_hit": 7,
+      "incoming_fresh_sampled": 4,
+      "window_censored": 1
+    },
+    "opponent_spacing": {
+      "window_source": "server damage cooldown and fresh hits",
+      "window_offset_ticks": {
+        "10": 4
+      },
+      "incoming_fresh_sampled": 8,
+      "own_fresh_hits": 5,
+      "window_sampled": 4,
+      "window_in_own_reach": 4,
+      "window_own_reach_only": 3,
+      "window_without_fresh_hit": 4,
+      "window_censored": 1
+    },
+    "sampled_cps": 1.0738255033557047,
+    "mean_charge_on_press": 0.9799999594688416
+  }
+]
