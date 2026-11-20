@@ -37,6 +37,8 @@ The final simulator and real Java matched the winner, both final HP values, ever
 | Complete hit sequence, terminal tick and both health values | 24/24 | 24/24 | 24/24 | 24/24 |
 | Every measured motion observation identical | 22/24 | 23/24 | 20/24 | 22/24 |
 
+The policy subsequently trained from random weights on this final kernel was checked on its own 48 scheduled Java evaluation bouts, including the matched W-tap arms. All 48 matched on every measured motion field, displayed position, health, key choice, contact and death tick. That is 14,228 paired client observations. These additional fights used the policy evaluation openings. [From-scratch policy check at 0 ms](evidence/kernel/playing-policy-0.csv) · [100 ms](evidence/kernel/playing-policy-100.csv)
+
 ## Speed
 
 The third-version benchmark used five batches of 8,000 complete duels per arm on one warmed CPU thread on this Mac’s Apple M2 Max. Both policies made a decision each tick, including aim. The benchmark includes opening creation and the fight through death or the time limit. At the median speed, a single thread advances learned-policy fights about 80,400 times faster than the game’s 20 ticks per second. [All five timings and checksums](evidence/kernel/throughput-v3.csv) · [Benchmark](KernelBench.java)
@@ -49,6 +51,8 @@ The third-version benchmark used five batches of 8,000 complete duels per arm on
 The learned-policy batches ranged from 7,716 to 10,721 fights per second. The W-tap batches ranged from 7,895 to 14,277. Speed depends on the policy, how long a fight lasts and other load on the machine.
 
 With the current sprint implementation and the new league policy against the retreating rival, the single-thread medians were **9,348 complete fights and 1,457,576 duel ticks per second**. The matched W-tap arm ran at 13,388 fights and 2,092,831 duel ticks per second. The learned batches ranged from 8,401 to 10,204 fights per second. The W-tap batches ranged from 8,151 to 13,769. [Current benchmark](evidence/kernel/throughput-v4.csv)
+
+With the actual from-scratch playing policy against the retreating rival, the medians were **10,724 complete fights and 1,662,224 duel ticks per second**. The matched W-tap arm ran at 14,778 fights and 2,309,245 duel ticks per second. The learned arm ranged from 10,116 to 10,826 fights per second across the five batches. [Playing-policy benchmark](evidence/kernel/throughput-playing-policy.csv)
 
 ## What ran inside actual Minecraft
 
