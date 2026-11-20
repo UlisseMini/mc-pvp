@@ -79,8 +79,6 @@ enabling RCON or opening another network port.
 | `/drill jumpreset preset=mmc` | Jump-reset practice on the same sumo platform, using Minemen-like knockback |
 | `/duel jump-reset` | Fight the test bot that uses ordinary W-tap and taps Jump on incoming knockback while grounded |
 | `/duel jump-reset-walk` | Fight a bot that sprints toward you and jump-resets grounded hits without swinging |
-| `/duel kb-displace-edge sumo` | Fight a W-tapper that flicks to steer the sprint part of knockback toward the nearest platform edge |
-| `/duel kb-displace-pull sumo kb=vanilla` | Fight a bot that tries to jump-reset the opening trade, pass through, and flick back before returning to W-tap |
 | `/duel wtap diamond_box` | 1×1 enclosure, unbreakable wooden swords, full unenchanted diamond armor; successful blocks play your block sound |
 | `/duel wtap diamond 20 100` | Same health mode with bot RTT 20 ms and your added RTT 100 ms |
 | `/duel wtap rod_diamond reach=3.5 cps=15 ping=100` | Custom practice bot: 3.5-block reach, 15 CPS ceiling, 100 ms added bot RTT; keeps your saved ping |
@@ -88,11 +86,7 @@ enabling RCON or opening another network port.
 | `/blocksound test` | Preview the quiet metallic block clang |
 | `/blocksound on` / `/blocksound off` | Enable or mute the block sound; enabled by default |
 | `/blocktiming on` / `/blocktiming off` | Enable or hide brief colored timing feedback above the hotbar; enabled by default |
-| `/duel predictive` | Fight the hand-written spacing controller |
 | `/duel standstill` | Fight a clicking opponent that presses no movement keys; knockback still moves it |
-| `/duel zest-w 20 100` | Fight W-only Zest: bot RTT 20 ms, your added RTT 100 ms |
-| `/duel zest-strafe` | Fight the version allowed to use normal A/D keys |
-| `/duel burst 120 20` | Add 120 ms RTT to the bot and 20 ms to yourself |
 | `/ping` | Show current duel RTTs, or your saved ping in the lobby |
 | `/ping me 20` | Set and save your added RTT; works in the lobby or during a duel, and persists across matches/reconnects/restarts |
 | `/ping bot 100` | Set the bot's added RTT to 100 ms during the duel |
@@ -507,40 +501,15 @@ blocking, sound-delivery, death and rematch evidence.
 
 ## Controllers and rules
 
-| Bot | Control idea |
+| Bot | Use |
 |---|---|
-| `hold-w` | Hold W and sprint, click continuously |
-| `hold-w-probe` | Same pursuit and perfect aim, no clicks; logs native reach opportunities |
-| `standstill` | Perfect aim and fixed clicks, no movement keys, ordinary knockback |
-| `wtap` | One short W release after a landed-hit cue |
-| `wtap-tick` | Experimental post-hit W release lasting exactly one movement update |
-| `wtap-tick-burst` | Same one-tick W-tap movement; 150 ms defensive click bursts after delayed hurt cues, plus predicted next-hit attempts |
-| `wtap-tick-motion` | Immediate current-motion recoil clicks plus predicted attack windows; planned one-tick W-tap |
-| `wtap-tick-critical` | Motion burst plus one optional locally eligible critical attempt per visible fresh-hit cue |
-| `wtap-tick-window` | Same movement and attack windows, with optional recoil clicks disabled for comparison |
-| `wtap-tick-fast` / `wtap-fast` | Continuous-click controls with zero observation delay; one-update / 50 ms W releases |
-| `hold-w-fast` | Continuous W/Ctrl/clicking control with zero observation delay |
-| `wtap-cps10` / `wtap-cps15` / `wtap-cps20` / `wtap-cps25` / `wtap-cps30` | Explicit click-rate experiment: same one-tick W-tap movement, with the named physical CPS ceiling |
-| `trade-wtap` | Post-hit reset that prefers to release just after receiving a hit |
-| `hit-reset` | Older confirmed-hit W-tap timing |
-| `periodic-tap` | Fixed-rhythm control experiment; not normal W-tapping |
-| `spacing` | Delayed closing-speed forecast with coasting and hysteresis |
-| `predictive` | Spacing forecast with an explicit ping-dependent lead |
-| `phase-spacing` | Adjust movement around a forecast hit window |
-| `burst` | Spacing with explicit 300 ms click bursts per 500 ms cycle |
-| `zest-w` / `zest-strafe` | Three-contact Zest cycle; selected W-up hit, hit-select entry/recovery |
-| `zest-two-w` / `zest-two-strafe` | Two-contact variation of that cycle |
-| `zest-tune-…` | Exploratory Zest timing candidates; results, not names, determine quality |
-| `evolved-g…` | Saved parameter-search candidates, challengeable immediately |
-| `evolved-champion` | Selected candidate, once a search finishes |
-| `mpc-probe` | Approximate physics/packet beam search, specialized to the non-clicking probe |
-| `mpc-visible` / `mpc-ensemble` | Experimental visible-trajectory reconstruction, with one or several tick-phase hypotheses |
-| `mpc-duel` | Experimental two-way model of clicking hold-W, choosing ordinary W/Ctrl inputs |
-| `mpc-diverse` | Longer planning horizon with distinct physical states and first-action alternatives |
-| `mpc-macro` | Also compares complete opening/reset sequences and the shifted previous plan |
-| `pvp-candidate` | Latest saved selection from the actual-score search, once it finishes |
-| `pvp-knows-wtap` | Same candidate parameters, predicting the actual delayed post-hit W-tap policy |
-| `pvp-knows-standstill` | Same candidate parameters, predicting a stationary clicking opponent |
+| `wtap`, `hold-w` | Standard sprint-reset and continuous-forward baselines |
+| `wtap-clickphase` | Times a one-tick release relative to an issued click |
+| `best-sumo`, `sumo-seven-first` | Current sumo title holder and the learned 7-CPS counter to its frozen checkpoint |
+| `jump-reset`, `standstill` | Controlled jump timing and knockback practice |
+| `best-boxing`, `blockhit_timing` | Boxing reference and diamond blocking practice |
+
+For matched sumo duels use `preset=mmc cps=7`. The [current simulator field](research/elite-league/sumo-inputs/archive-field.tsv) contains two baselines, one timing variant and distinct learned checkpoints. The [257-opponent roster](research/elite-league/sumo-inputs/historical-field-257.tsv) belongs to the earlier benchmark. To reproduce a retired native experiment, check out commit `cf38fd9e` in a separate directory with `git worktree add --detach ../pvp-lab-historical cf38fd9e`.
 
 - Boxing research: normal speed, no potions or enchantments, flat full-block ground, diamond swords. Health practice modes use the kits described above.
   Arena centers use bedrock with the same slipperiness as grass to prevent holes.
@@ -549,20 +518,10 @@ blocking, sound-delivery, death and rematch evidence.
   Diamond mode instead uses real health and ends on death.
 - Perfect aim uses the current **local client view**. It does not read server
   positions or aim at removed entity copies left over from teleports.
-- W or release and the normal sprint key. Only the explicitly named Zest
-  strafing variants use A/D. No S, jumping or blocking.
-- Legacy policies use **150 ms** tactical observation delay. The `motion`,
-  `critical`, `window`, `fast` and `wtap-cps…` comparison policies use **zero artificial delay**, as
-  requested; each recording declares both sides' settings. Planned timing is allowed.
-- Default fixed policies schedule nominal **10 CPS**, with at least 100 ms between
-  input clicks. The explicitly requested `wtap-cps15/20/25/30` experiments raise
-  only their own ceiling. Each match records per-side rates; frame scheduling
-  makes measured CPS lower than the configured ceiling. Burst is labelled.
+- Plain W-tap and Hold-W use the normal movement and sprint keys. Learned sumo policies can also strafe, move backward, jump and withhold a click.
+- The current sumo league uses seven CPS per fighter. Native duels set the cap with `preset=mmc cps=7`. Recordings include the actual per-side settings and physical presses.
 - Every scheduled click enters normal Minecraft input and attack handling,
   including immune-frame attacks, air misses and their native slowdown/cooldown.
-- Zest entry/recovery can explicitly hit-select, waiting for an incoming-hit
-  observation before starting clicks. It does not suppress immune-frame clicks
-  during its ordinary contact cycle.
 - No direct bot movement/attack packets, custom reach, velocity overrides during
   combat, or immunity-based engine optimizations. Teleports/equipment are round setup.
 
@@ -574,7 +533,7 @@ attack. The W release/re-press creates that stop/start transition.
 why known ping alone is insufficient to specify an exact optimal best response.
 These are initial controllers and a small evolutionary search, with no claim of
 global optimality or equivalence between every 1.7 and 1.8 combat detail.
-The Zest controllers implement an interpretation of the creators' demonstrated
+The archived Zest controllers implement an interpretation of the creators' demonstrated
 cycles. [Source notes](experiments/ZEST-NOTES.md) explain what the videos teach,
 why their caption tracks were insufficient, and which timings we must measure.
 
@@ -586,11 +545,12 @@ From Terminal in this folder:
 python3 experiments.py pilot
 python3 experiments.py latency-pilot
 python3 experiments.py integrity-load
-python3 experiments.py evolve --population 4 --generations 1
-python3 experiments.py evolve-locks --population 4 --generations 1
-python3 experiments.py evolve-pvp --population 4 --generations 1
-python3 experiments.py league --bots hold-w wtap hit-reset predictive --rtts 20,20 20,120
-python3 experiments.py league --bots hold-w zest-w zest-strafe --rtts 0,0 20,100 20,140
+python3 experiments.py league --bots hold-w wtap wtap-clickphase boxing-02-student --rtts 20,20 20,120
+```
+
+The following historical experiments use the policy snapshot at `cf38fd9e`. Run them in the historical worktree described above.
+
+```sh
 python3 compare_wtap.py league
 python3 compare_wtap.py ablation
 python3 compare_wtap.py standstill
@@ -603,7 +563,7 @@ python3 cps_science.py my-cps-comparison
 python3 cps_summary.py research/my-cps-comparison.json research/my-cps-summary.json
 ```
 
-The pilot compares the hand-written controllers. The latency pilot includes
+The current pilot compares the baselines, the click-phase controller and a boxing policy. The latency pilot includes
 zero-ping controls and 20/100 ms asymmetric matches, with starting sides and ping
 assignments swapped. The balanced league command extends that to every chosen
 bot pairing. Evolution mutates three spacing

@@ -80,10 +80,10 @@ def main():
     assert len(clocks)==4
     (F/'clocks.txt').write_text('\n'.join(clocks)+'\n')
     if not (F/'transfer.csv').exists():subprocess.run(java('InputProbe',F),cwd=ROOT,check=True)
-    for line in (D/'archive-field.tsv').read_text().splitlines():
+    for line in (D/'historical-field-257.tsv').read_text().splitlines():
         cols=line.split('\t')
         if len(cols)>1 and sha(ROOT/cols[1])!=cols[2]:raise ValueError('Changed archive entry '+cols[0])
-    if not (F/'archive.csv.gz').exists():subprocess.run(java('InputArchive',F),cwd=ROOT,check=True)
+    if not (F/'archive.csv.gz').exists():subprocess.run(java('InputArchive',F,D/'historical-field-257.tsv'),cwd=ROOT,check=True)
     wait(lambda:(D/'axes-audit.json').exists())
     players=['sumo-vote-'+m for m in METHODS]+[ping.OLD,WT]
     run_rows('ensemble',fixtures('p',players,OPPONENTS))

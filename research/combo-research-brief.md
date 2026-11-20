@@ -9,6 +9,8 @@ measurements and their original definitions; do not silently relabel them.
 
 Use a matched **7 CPS ceiling for both players** in new sumo league development and primary evaluation. Keep the recorded MMC floor and independent per-player RTTs. Report the measured press intervals. Historical and already scheduled cap comparisons retain their original settings. Nomophobia is a development opponent. Independent elite human duels remain the final external test.
 
+Use the [active sumo roster](elite-league/sumo-inputs/archive-field.tsv) for new league work. W-tap and Hold-W are the baselines. A click-timed W-tap is the only additional hand-coded training opponent. The rest are learned checkpoints. Reproduce the original 257-opponent benchmark using its [frozen roster](elite-league/sumo-inputs/historical-field-257.tsv) and the pre-cleanup native policy snapshot at `cf38fd9e`.
+
 ## November 19 boxing goal and grading
 
 The primary grade is the bot's final accepted-hit score minus plain W-tap's

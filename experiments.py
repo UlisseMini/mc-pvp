@@ -288,25 +288,25 @@ def record(name,results,metadata=None):
 
 async def pilot():
     fixtures=[('hold-w','wtap',20,20),('wtap','hold-w',20,20),
-              ('hold-w','hit-reset',20,20),('hold-w','predictive',20,20),
-              ('hold-w','phase-spacing',20,20),('spacing','burst',20,120)]
+              ('hold-w','wtap-clickphase',20,20),('wtap-clickphase','hold-w',20,20),
+              ('wtap','boxing-02-student',20,20),('boxing-02-student','wtap',20,20)]
     results=await batch(fixtures)
-    record('pilot',results,{'seed':1849,'goal':100,'reaction_ms':150,'engine':'official Minecraft 1.8.9','headless':'basic only'})
+    record('current-roster-pilot',results,{'goal':100,'engine':'official Minecraft 1.8.9'})
     return results
 
 
 async def latency_pilot():
     fixtures=[('wtap','hold-w',0,0),('hold-w','wtap',0,0)]
-    for a,b in [('wtap','hit-reset'),('wtap','trade-wtap')]:
+    for a,b in [('wtap','wtap-clickphase'),('wtap','boxing-02-student')]:
         fixtures.extend([(a,b,100,20),(b,a,20,100),(a,b,20,100),(b,a,100,20)])
     results=await batch(fixtures)
-    record('latency-pilot',results,{'scope':'Corrected post-hit W-tap and trade-aware variant; unequal ping with role and latency assignments swapped',
+    record('current-roster-latency',results,{'scope':'Active boxing comparisons with role and latency assignments swapped',
                                   'rtts_ms':[[0,0],[100,20],[20,100]],'seed':1849})
     return results
 
 async def integrity_load():
-    results=await batch([('mpc-ensemble','hold-w-probe',20,100),('mpc-visible','hold-w-probe',100,20),('wtap','hold-w',20,100)])
-    record('integrity-and-load',results,{'scope':'Three concurrent native matches; live target watchdog, staged vanilla tracker refresh and per-attack ray evidence'})
+    results=await batch([('wtap-clickphase','hold-w',20,100),('boxing-02-student','wtap',100,20),('wtap','hold-w',20,100)])
+    record('current-roster-integrity',results,{'scope':'Three concurrent native matches; live target watchdog, staged vanilla tracker refresh and per-attack ray evidence'})
     return results
 
 
@@ -463,7 +463,7 @@ async def evolve_pvp(population=4,generations=1):
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('command',choices=['pilot','latency-pilot','integrity-load','evolve','evolve-locks','evolve-pvp','league']);parser.add_argument('--population',type=int,default=4);parser.add_argument('--generations',type=int,default=1)
-    parser.add_argument('--bots',nargs='+',default=['hold-w','wtap','hit-reset','predictive'])
+    parser.add_argument('--bots',nargs='+',default=['hold-w','wtap','wtap-clickphase','boxing-02-student'])
     parser.add_argument('--rtts',nargs='+',default=['20,20']);parser.add_argument('--repeats',type=int,default=1)
     args=parser.parse_args()
     if args.population<2 or args.generations<1:parser.error('population >= 2 and generations >= 1 required')

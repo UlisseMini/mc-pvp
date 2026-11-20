@@ -309,7 +309,7 @@ def verify_ux():
     data=json.loads((RUNTIME/'status.json').read_text())
     if not data['matches']:raise RuntimeError('Start a bot match before verifying spectator controls')
     identifier=max(data['matches'],key=lambda m:m['start'])['id']
-    script=f'1500:/bots|2500:/matches|3500:/watch {identifier} a|6500:/watch {identifier} b|9000:/duel trade-wtap 100 20|12000:/ping me 120|14000:/ping bot 40|16000:/ping|18000:/stop|20000:/rematch|23000:/ping|26000:/stop'
+    script=f'1500:/bots|2500:/matches|3500:/watch {identifier} a|6500:/watch {identifier} b|9000:/duel wtap 100 20|12000:/ping me 120|14000:/ping bot 40|16000:/ping|18000:/stop|20000:/rematch|23000:/ping|26000:/stop'
     bot=RUNTIME/'bots/observer';bot.mkdir(exist_ok=True);(bot/'control.properties').write_text('enabled=false\n')
     (bot/'options.txt').write_text('renderDistance:6\nfancyGraphics:false\nparticles:2\nsoundCategory_master:0.0\n')
     cp=os.pathsep.join([str(CACHE/'client.jar'),*json.loads((CACHE/'classpath.json').read_text())])
@@ -333,7 +333,7 @@ def verify_ux():
         native_attacks.extend(e for e in events if e['type']=='engine_attack')
     legal_attacks=bool(native_attacks) and all(e.get('target_ready') and e.get('ray_selected_target') and e.get('target_loaded_identity')
         and e.get('native_raycast_distance',999)<=3.00001 for e in native_attacks)
-    checks={'roster':'Choose a bot' in text,'spectate':'Spectating '+identifier in text,'duel':'human vs trade-wtap' in text,'stop':'Finished ' in text,
+    checks={'roster':'Choose a bot' in text,'spectate':'Spectating '+identifier in text,'duel':'human vs wtap' in text,'stop':'Finished ' in text,
             'live_ping_changes':any(r.get('ping_changes')==2 and r['ping_a']==120 and r['ping_b']==40 for r in ours),
             'rematch_retains_pings':any(r.get('initial_ping_a')==120 and r.get('initial_ping_b')==40 for r in ours),
             'native_target_updates_in_every_duel':bool(ours) and native_views,

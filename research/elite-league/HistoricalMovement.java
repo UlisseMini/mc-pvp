@@ -20,8 +20,8 @@ final class HistoricalMovement extends DuelEnv.Player {
     static Properties settings(String n){
         if(!n.matches("[a-z0-9_-]+"))throw new IllegalArgumentException("Invalid historical alias");
         return CACHE.computeIfAbsent(n,name->{
-            var p=new Properties();
-            try(var in=Files.newInputStream(Path.of("policies",name+".properties"))){p.load(in);}
+            Properties p;
+            try{p=SumoModel.readResearchPolicy(name);}
             catch(IOException ex){throw new UncheckedIOException(ex);}
             p.setProperty("reaction_ms","0");p.setProperty("click_cps","20");
             if(!supports(p))throw new IllegalArgumentException("Unsupported historical controller "+name);
