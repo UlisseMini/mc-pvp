@@ -44,7 +44,7 @@ class Capture:
         try:
             self.proc = subprocess.Popen(["nice","-n","12","ffmpeg","-hide_banner","-loglevel","warning","-y",
                 "-f","x11grab","-framerate",str(fps),"-draw_mouse","0","-window_id",window,"-i",env["DISPLAY"],
-                "-an","-c:v","libx264","-threads","1","-preset","veryfast","-crf","20","-pix_fmt","yuv420p",
+                "-an","-r",str(fps),"-fps_mode","cfr","-c:v","libx264","-threads","1","-preset","veryfast","-crf","20","-pix_fmt","yuv420p",
                 "-g",str(fps),"-movflags","+faststart",str(self.partial)],env=env,stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=self.log)
         except BaseException:
             self.log.close()

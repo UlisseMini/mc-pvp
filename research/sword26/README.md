@@ -2,7 +2,7 @@
 
 ## Watch the league
 
-Double-click **Watch Sword League.command** in the project folder to open the local match room. New ordinary Java bot matches have first-person MP4s you can play, seek, download or watch full screen. The tournament clients render in a 360 × 240 headless window capped at 50 fps. A separate daylight exhibition profile records 854 × 480 at a 60 fps cap. Older league bouts offer timestamped arena replays. The graphs, match library and Java results refresh every five seconds. Finished MP4s are saved in the **Sword League Recordings** folder beside the launcher, organized by tournament panel. On this Mac each video shares its disk data with the original run file. The dashboard listens on the Mac's loopback address. [Open the match room](http://127.0.0.1:25708/)
+Double-click **Watch Sword League.command** in the project folder to open the local match room. New ordinary Java bot matches have first-person MP4s you can play, seek, download or watch full screen. The tournament clients render in a 360 × 240 headless window capped at 50 fps. Choose **60 fps exhibitions** for the higher-resolution daylight matches, recorded at 854 × 480. [Watch the specialist duel option 4](http://127.0.0.1:25708/?match=showcase-001%2Fround-001#matches). Older league bouts offer timestamped arena replays. The graphs, match library and Java results refresh every five seconds. Finished MP4s are saved in the **Sword League Recordings** folder beside the launcher, organized by tournament panel. On this Mac each video shares its disk data with the original run file. The dashboard listens on the Mac's loopback address. [Open the match room](http://127.0.0.1:25708/)
 
 ## Fight the bot
 

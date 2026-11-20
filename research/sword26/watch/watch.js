@@ -7,7 +7,7 @@ let graphMode='model';
 let state=null,selected=null,mode=null,page=0,current='',animation=0,trace=null,position=0,start=null,playing=false,loading=0,following=true;
 const requested=new URLSearchParams(location.search).get('match');
 const limit=12,film=$('film'),arena=$('arena');
-const matches=()=>state.matches.filter(x=>(!$('panel').value||x.tag===$('panel').value)&&(!$('type').value||($('type').value==='video')===x.video));
+const matches=()=>state.matches.filter(x=>(!$('panel').value||x.tag===$('panel').value)&&(!$('type').value||($('type').value==='showcase'?x.video&&x.fps===60:($('type').value==='video')===x.video)));
 function showLibrary(){
  const items=matches();page=Math.max(0,Math.min(page,Math.max(0,Math.ceil(items.length/limit)-1)));
  $('count').textContent=nf.format(items.length);$('page').textContent=(items.length?page+1:0)+' / '+Math.ceil(items.length/limit);
@@ -42,7 +42,7 @@ function setMode(next){
  }
 }
 function select(m,reset=false){
- const was=selected;selected=m;$('matchTitle').textContent=m.actor+' vs '+m.rival;
+ const was=selected;selected=m;if(!was||was.id!==m.id){$('shadows').checked=m.fps<60;$('shadows').onchange()}$('matchTitle').textContent=m.actor+' vs '+m.rival;
  const outcome=m.otherHP===0?m.actor+' won':m.hp===0?m.rival+' won':'Draw';
  $('matchMeta').textContent=panelName(m.tag)+' · Match '+m.number+' · '+m.rtt+' ms added RTT · '+outcome;
  $('switches').hidden=!m.video;$('map').hidden=m.trace===false;$('saveFilm').href='/video/'+m.id;$('saveFilm').download=m.id.replace('/','-')+'.mp4';

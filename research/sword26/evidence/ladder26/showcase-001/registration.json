@@ -1,0 +1,21 @@
+{
+  "actors": [
+    "evidence/ladder26/fighters/1ed6988fc1d29b7d.net"
+  ],
+  "opponents": [
+    "evidence/league26/fighter.net"
+  ],
+  "actor_hashes": [
+    "1ed6988fc1d29b7dd2f5b3128d2aa46d21fb06a8540b02339f52e7f4fd2cd075"
+  ],
+  "opponent_hashes": [
+    "2708fdc8d7e6883ee61a1ed05fe1d05b0bc0fdbf1069dde492e08bbc10317520"
+  ],
+  "seed": 37184256,
+  "pairs": 1,
+  "clock": "ordinary TCP exhibition",
+  "rtts": [
+    0,
+    100
+  ]
+}
