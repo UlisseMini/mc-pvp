@@ -11,5 +11,7 @@
     "attack"
   ],
   "selection": "Existing fight-outcome training objectives and promotion thresholds. The old champion and archive are starting policies. All comparisons are measured again with the same perfect mouse for both seats and W-tap.",
-  "native_validation": "Independent vanilla pick at full game-tick time. Report visible opponents within the three-block eye-to-box radius and how many the actual native picker selected, separately for all polls and click polls."
+  "native_validation": "Independent vanilla pick at full game-tick time. Report visible opponents within the three-block eye-to-box radius and how many the actual native picker selected, separately for all polls and click polls.",
+  "simulator_source_digest": "f419b67d19a3fc42644b3fc274d2dcb547b1259e32162a28123a089ef396ca87",
+  "implementation_commit": "ae6bd965c510365e5193d47fc406f887fd02a8fd"
 }
