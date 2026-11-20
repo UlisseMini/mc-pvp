@@ -97,6 +97,8 @@ async def proxy(reader, writer, latency):
 
 
 async def run(args):
+    if args.showcase and (args.human or args.clock or args.speed!=1):
+        raise ValueError("Showcase recording uses ordinary bot fights at normal speed")
     if args.clock and (args.human or args.speed!=1 or len(args.rtts)!=1 or args.rtts[0]%100):
         raise ValueError("Use two bots and one RTT in whole 100 ms increments for a fixed tick clock")
     if args.landmark and (args.human or args.landmark<1):
@@ -109,6 +111,7 @@ async def run(args):
         from headless import run_in_guest
         params=["--weights",str(args.weights.resolve()),"--pairs",str(args.pairs),"--seed",str(args.seed),"--speed",str(args.speed),
                 "--rtts",*map(str,args.rtts),"--opponents",*args.opponents,"--extra-weights",*[str(w.resolve()) for w in args.extra_weights]]
+        if args.showcase:params+=["--showcase"]
         if args.blind:params+=["--blind"]
         if args.landmark:params+=["--landmark",str(args.landmark)]
         if args.clock:params+=["--clock",args.clock]
@@ -135,9 +138,12 @@ async def run(args):
     if not args.weights.is_file():
         raise ValueError(f"Missing trained weights at {args.weights}")
     # Require this project's previously accepted server EULA or an explicit local acceptance.
-    server = WORKER/"native-server"
+    worker = WORKER/"showcase" if args.showcase else WORKER
+    width,height,fps = (854,480,60) if args.showcase else (360,240,50)
+    server = worker/"native-server"
     server.mkdir(parents=True,exist_ok=True)
     accepted = SRC.parents[1]/"runtime/server/eula.txt"
+    if args.showcase and not accepted.is_file():accepted=WORKER/"native-server/eula.txt"
     if not (server/"eula.txt").exists() and accepted.is_file():
         shutil.copyfile(accepted,server/"eula.txt")
     if not (server/"eula.txt").exists() or "eula=true" not in (server/"eula.txt").read_text():
@@ -170,6 +176,8 @@ async def run(args):
     agent="-javaagent:"+str(agent_jar)
     java=jdk()/"java"
     clock_flags=["-Dsword.clock="+args.clock] if args.clock else []
+    from video import Capture, windows
+    capture=None
     latency=[0]
     servers=[]
     try:
@@ -183,16 +191,16 @@ async def run(args):
                         dest.parent.mkdir(parents=True,exist_ok=True)
                         dest.write_bytes(bundle.read(entry))
         server_cp=os.pathsep.join(str(p) for p in [agent_jar,*sorted((server/"versions").rglob("*.jar")),*sorted((server/"libraries").rglob("*.jar"))])
-        launch("server",[java,"-Xmx1G",agent,*clock_flags,f"-Dsword.speed={args.speed}","-Dsword.run="+str(run_dir),"-Dsword.spool="+str(spool),"-cp",server_cp,"net.minecraft.server.Main","nogui"],server)
+        launch("server",[java,"-Xmx1G",agent,*clock_flags,"-Dsword.showcase="+str(args.showcase).lower(),f"-Dsword.speed={args.speed}","-Dsword.run="+str(run_dir),"-Dsword.spool="+str(spool),"-cp",server_cp,"net.minecraft.server.Main","nogui"],server)
         await wait_for(lambda:(run_dir/"ready").exists(),procs,100,"Server startup timed out")
         for seat in range(1 if args.human else 2):
-            name=BOT_NAMES[seat];folder=WORKER/name
+            name=BOT_NAMES[seat];folder=worker/name
             folder.mkdir(exist_ok=True)
-            (folder/"options.txt").write_text("onboardAccessibility:false\npauseOnLostFocus:false\ntutorialStep:none\nrenderDistance:3\nsimulationDistance:5\nenableVsync:false\nmaxFps:50\nmusic:0.0\nsoundCategory_master:0.0\n")
-            launch(name,["xvfb-run","-a","-s","-screen 0 480x320x24 -nolisten tcp","env","LIBGL_ALWAYS_SOFTWARE=1","GALLIUM_DRIVER=llvmpipe","LP_NUM_THREADS=1","ALSOFT_DRIVERS=null","SDL_VIDEO_DRIVER=x11","SDL_VIDEODRIVER=x11",java,"-Xmx1000M",f"-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/sword26-lwjgl-{PORT}-{seat}","-Djava.awt.headless=true","--enable-native-access=ALL-UNNAMED","--add-exports","java.base/jdk.internal.misc=ALL-UNNAMED",
+            (folder/"options.txt").write_text(f"onboardAccessibility:false\npauseOnLostFocus:false\ntutorialStep:none\nrenderDistance:3\nsimulationDistance:5\nenableVsync:false\nmaxFps:{fps}\nmusic:0.0\nsoundCategory_master:0.0\n"+("graphicsMode:0\nrenderClouds:false\nparticles:2\nentityShadows:false\ngamma:1.0\n" if args.showcase else ""))
+            launch(name,["xvfb-run","-a","-s",f"-screen 0 {width+120}x{height+80}x24 -nolisten tcp","env","LIBGL_ALWAYS_SOFTWARE=1","GALLIUM_DRIVER=llvmpipe","LP_NUM_THREADS=1","ALSOFT_DRIVERS=null","SDL_VIDEO_DRIVER=x11","SDL_VIDEODRIVER=x11",java,"-Xmx1000M",f"-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/sword26-lwjgl-{PORT}-{seat}","-Djava.awt.headless=true","--enable-native-access=ALL-UNNAMED","--add-exports","java.base/jdk.internal.misc=ALL-UNNAMED",
                 agent,*clock_flags,"-Dsword.spool="+str(spool),f"-Dsword.speed={args.speed}","-Dsword.control="+str(spool/("AB"[seat])),"-Dsword.logs="+str(run_dir),"-cp",(BUILD/"linux-classpath").read_text(),"net.minecraft.client.main.Main",
                 "--username",name,"--version","26.3","--gameDir",folder,"--assetsDir",BUILD/"assets","--assetIndex","34",
-                "--accessToken","0","--width","360","--height","240","--quickPlayMultiplayer",f"127.0.0.1:{PORT if args.clock else PORT+seat+1}"],folder)
+                "--accessToken","0","--width",str(width),"--height",str(height),"--quickPlayMultiplayer",f"127.0.0.1:{PORT if args.clock else PORT+seat+1}"],folder)
         names=[BOT_NAMES[0],args.human or BOT_NAMES[1]]
         if args.human:
             print(f"Join Java 26.3 Multiplayer at 127.0.0.1:{PORT} as {args.human}.",flush=True)
@@ -230,7 +238,20 @@ async def run(args):
             for row in results:
                 for file in args.resume.glob(row["id"]+"*"):
                     shutil.copyfile(file,run_dir/file.name)
+            video_dir=run_dir/"videos"
+            for row in results:
+                if row.get("video")==f"videos/{row['id']}.mp4":
+                    original=args.resume/row["video"]
+                    if original.is_file():
+                        video_dir.mkdir(exist_ok=True)
+                        try:os.link(original,run_dir/row["video"])
+                        except OSError:shutil.copyfile(original,run_dir/row["video"])
+                    else:row.pop("video")
             save_json(run_dir/"results.json",results)
+        video_sources=windows(run_dir) if not args.human and not args.clock and args.speed==1 else {}
+        if video_sources:
+            metadata["video"]={"format":"H.264","fps":fps,"width":width,"height":height,"view":"evaluated bot","speed":1}
+            save_json(run_dir/"metadata.json",metadata)
         skip=len(results);scheduled=0
         if args.clock:
             pending=spool/"clock-start.tmp"
@@ -259,17 +280,24 @@ async def run(args):
                     lineup=[rival,rival];lineup[seat]=path
                     fields=[idx,*names,str(angle),str(gap),*lineup]
                     if args.landmark:fields.extend([str(seat),str(args.landmark)])
+                    if names[seat] in video_sources:
+                        try:capture=Capture(run_dir/"videos",idx,video_sources[names[seat]],fps)
+                        except OSError as error:print(f"Video unavailable for {idx}: {error}",flush=True)
                     requested_at=time.monotonic()
                     tmp=run_dir/"request.tmp";tmp.write_text("\t".join(fields));tmp.replace(run_dir/"request")
                     result=run_dir/(idx+".result")
                     await wait_for(result.exists,procs,70,"Native round failed to finish")
                     a,b,t=map(float,result.read_text().split())
                     row=dict(id=idx,wall_seconds=time.monotonic()-requested_at,rtt=rtt,pair=pair,seat=seat,policy=policy,rival=rival,hp=a if seat==0 else b,opponent_hp=b if seat==0 else a,ticks=t,angle=angle,gap=gap)
+                    if capture:
+                        if capture.finish():row["video"]=f"videos/{idx}.mp4"
+                        capture=None
                     results.append(row)
                     save_json(run_dir/"results.json",results)
                     print(f"Round {len(results)} complete." if args.blind else row,flush=True)
                     if args.clock!="fast":await asyncio.sleep(1)
     finally:
+        if capture:capture.finish()
         for listener in servers:listener.close()
         for proc,_ in reversed(procs):
             if proc.poll() is None:os.killpg(proc.pid,signal.SIGTERM)
@@ -283,6 +311,7 @@ async def run(args):
 
 if __name__=="__main__":
     parser=argparse.ArgumentParser()
+    parser.add_argument("--showcase",action="store_true",help="Record 854×480, 60 fps ordinary fights in a separate daylight world")
     parser.add_argument("--weights",type=Path,default=SRC/"champion.net")
     parser.add_argument("--human")
     parser.add_argument("--pairs",type=int,default=4)

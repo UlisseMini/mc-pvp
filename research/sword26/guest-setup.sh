@@ -7,3 +7,8 @@ if ! command -v Xvfb >/dev/null || ! test -e /usr/share/glvnd/egl_vendor.d/50_me
       libpulse0 libxrandr2 libxinerama1 libxcursor1 libxi6 libxkbcommon0 libxkbcommon-x11-0 \
       libxss1 libxtst6 libvulkan1 mesa-vulkan-drivers fonts-dejavu-core curl ca-certificates
 fi
+
+if ! command -v ffmpeg >/dev/null || ! command -v xwininfo >/dev/null; then
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get -qq update
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get -qq install -y --no-install-recommends ffmpeg x11-utils
+fi

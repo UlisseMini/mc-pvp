@@ -108,6 +108,9 @@ public final class Referee {
                 cmd(s,"gamerule minecraft:keep_inventory true");
                 cmd(s,"setworldspawn 0 101 0");cmd(s,"gamerule minecraft:natural_health_regeneration false");
                 cmd(s,"gamerule minecraft:immediate_respawn true");cmd(s,"gamerule minecraft:spawn_mobs false");
+                if(Boolean.getBoolean("sword.showcase")){
+                    cmd(s,"time set noon");cmd(s,"weather clear");
+                }
                 int speed=Integer.getInteger("sword.speed",1);
                 cmd(s,"tick rate "+20*speed);initialized=true;write("ready","ready");return;
             }
