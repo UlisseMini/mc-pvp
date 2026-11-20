@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from audit import rows
+from first_ko import correction
 from technique_audit import aimed_and_ready
 
 
@@ -13,6 +14,13 @@ def opening(run, game):
     who = "SwordLab" + side
     inputs = rows(run / (game["id"] + "-" + side + ".tsv"))
     contacts = rows(run / (game["id"] + "-contacts.tsv"))
+    revised = correction(run, game["id"], game["seat"], game["hp"], game["opponent_hp"], game["ticks"])
+    if revised:
+        game = game | revised
+        end = revised["first_ko_epoch_ms"]
+        inputs = [row for row in inputs if int(row["epochMs"]) <= end]
+        knockout = next(i for i, e in enumerate(contacts) if float(e["defenderHP"]) <= 0)
+        contacts = contacts[:knockout + 1]
     press = next((int(k["epochMs"]) for k in inputs if k["press"] == "true"), None)
     first = contacts[0] if contacts else None
     own = next((e for e in contacts if e["attacker"] == who), None)
