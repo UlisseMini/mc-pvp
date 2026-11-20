@@ -1,0 +1,17 @@
+id,fixed_win_score,phase_win_score,fixed_count,phase_count,rtt,seat,opening,policy,opponent,java_score
+round-000,0.25000000,0.42968750,32,128,0,1,0,wtap,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0
+round-001,0.50000000,0.46875000,32,128,0,1,0,learned,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0
+round-002,0.50000000,0.55468750,32,128,0,0,0,learned,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0
+round-003,0.00000000,0.43750000,32,128,0,0,0,wtap,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0
+round-004,0.50000000,0.46875000,32,128,0,0,1,wtap,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0
+round-005,0.87500000,0.51562500,32,128,0,0,1,learned,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,1.0
+round-006,0.87500000,0.52343750,32,128,0,1,1,learned,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0
+round-007,0.50000000,0.44531250,32,128,0,1,1,wtap,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0
+round-008,0.56250000,0.30468750,32,128,100,1,0,wtap,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0
+round-009,0.50000000,0.21093750,32,128,100,0,0,wtap,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,1.0
+round-010,0.25000000,0.24218750,32,128,100,0,0,learned,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0
+round-011,0.25000000,0.24218750,32,128,100,1,0,learned,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0
+round-012,0.59375000,0.29687500,32,128,100,1,1,wtap,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0
+round-013,0.25000000,0.06250000,32,128,100,1,1,learned,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,1.0
+round-014,0.25000000,0.08593750,32,128,100,0,1,learned,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0
+round-015,0.59375000,0.30468750,32,128,100,0,1,wtap,/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,0.0

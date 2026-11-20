@@ -54,7 +54,9 @@ final class FastDuel {
             tx=px=gx=ex;ty=py=gy=ey;tz=pz=gz=ez;
         }
         void receive(int tick) {
-            var d=down[slot(tick)];
+            receive(down[slot(tick)]);
+        }
+        void receive(Down d) {
             if(d.motion){local.vx=d.vx;local.vy=d.vy;local.vz=d.vz;}
             if(d.position){
                 if(path.isEmpty()){startX=tx;startY=ty;startZ=tz;elapsed=1;}
@@ -135,7 +137,9 @@ final class FastDuel {
         }
         void handle(int t,Seat other) {
             if(t<lag)return;
-            var u=up[slot(t)];
+            handle(t,other,up[slot(t)]);
+        }
+        void handle(int t,Seat other,Up u) {
             if(u.attack&&hp>0&&other.hp>0)attack(t,other);
             if(u.punch)serverAge=0;
             if(u.sprint!=0)setServerSprint(u.sprint>0);
@@ -244,6 +248,11 @@ final class FastDuel {
         var b=new Seat(scene.delayB(),random.nextInt(2),random.nextLong());
         a.start(-x,FLOOR,-z,yaw,x,FLOOR,z);b.start(x,FLOOR,z,yaw+180,-x,FLOOR,-z);
         boolean aFirst=random.nextBoolean();a.localFirst=random.nextBoolean();b.localFirst=random.nextBoolean();
+        if(PhaseClock.enabled(scene.seed()))
+            return PhaseClock.duel(a,b,ca,cb,start,observer,random.nextLong(),aFirst);
+        return scheduled(a,b,ca,cb,start,observer,aFirst);
+    }
+    static Model.Score scheduled(Seat a,Seat b,Model.Controller ca,Model.Controller cb,Model.Start start,Model.Observer observer,boolean aFirst){
         int t=0;
         for(;t<Model.LIMIT&&a.hp>0&&b.hp>0;t++){
             a.receive(t);b.receive(t);var va=a.view();var vb=b.view();

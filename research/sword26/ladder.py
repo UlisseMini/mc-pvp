@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 from report import export
-from season import ANCHORS, EVIDENCE, WORK, PLAN, SRC, compile_sim, field_score, hash_policy, matrix, run_season, save, train_stage, unique, write_fighter
+from season import ANCHORS, EVIDENCE, WORK, PLAN, SRC, both_clocks, compile_sim, field_score, hash_policy, run_season, save, train_stage, unique, write_fighter
 
 
 def local(path):
@@ -115,7 +115,7 @@ def native_wave(index,main,inc,pool,history,final):
     if not candidates:
         candidates=[p for p in pool if not same(p,inc)]
     jar=compile_sim();base=PLAN["seed"]+index*6011+10000000
-    merits=matrix(jar,wa,"nomination",[*candidates,inc,"wtap"],unique([inc,*ANCHORS,*pool]),base,64)
+    merits=both_clocks(jar,wa,"nomination",[*candidates,inc,"wtap"],unique([inc,*ANCHORS,*pool]),base,64,index>=4)
     opponents=unique([inc,ANCHORS[2]])
     if len(opponents)<2:opponents.append(ANCHORS[1])
     # A broad entrant and a champion-specific entrant can each qualify.
@@ -138,7 +138,7 @@ def native_wave(index,main,inc,pool,history,final):
     data=panels[0]["scores"];eligible,threats=compare_native(data,choices,inc)
     uncertain=any(rate(native_rates(data,local(p),local(inc)))<.75 or min(rate(native_rates(data,local(p),local(inc),rtt=r)) for r in (0,100))<.5 for p in eligible)
     # Confirm a potential specialist failure even when it misses the broader promotion gate.
-    if (eligible and uncertain) or (threats and not eligible) or panels[0]["unqualified_cells"] or (final and eligible):
+    if (eligible and uncertain) or (threats and not eligible) or panels[0]["unqualified_cells"] or final:
         panels.append(native_panel(tag+"-b",actors,opponents,base+2,2))
         data=data+panels[1]["scores"]
         eligible,threats=compare_native(data,choices,inc)

@@ -5,7 +5,7 @@ import subprocess
 import time
 from setup import BUILD, SRC, jdk
 
-SOURCES = ["Fighter","Model","FastDuel","FlatPhysics","TreePolicy","Train","PolicyGradient","League","Refine","Starts","Cup"]
+SOURCES = ["Fighter","Model","FastDuel","PhaseClock","FlatPhysics","TreePolicy","Train","PolicyGradient","League","Refine","Starts","Cup"]
 
 
 def train(dest,scale,engine="flat26"):

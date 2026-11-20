@@ -42,9 +42,9 @@ def lines(path, values):
     return path
 
 
-def java(jar, work, name, args, output=None):
+def java(jar, work, name, args, output=None, clock="off"):
     cmd = ["/usr/bin/nice","-n","12",jdk()/"java","-Xmx768m","-XX:+UseSerialGC","-XX:ActiveProcessorCount=4",
-           "-XX:CICompilerCount=2","-Dsword.transport=lockstep","-cp",jar,*args]
+           "-XX:CICompilerCount=2","-Dsword.transport=lockstep","-Dsword.phaseClock="+clock,"-cp",jar,*args]
     target = output or work/(name+".log")
     temp = target.with_suffix(".running")
     started = time.monotonic()
@@ -70,12 +70,12 @@ def java(jar, work, name, args, output=None):
                                 mean_core_percent=statistics.mean(measurements) if measurements else None))+"\n")
 
 
-def matrix(jar, work, label, actors, rivals, seed, pairs):
+def matrix(jar, work, label, actors, rivals, seed, pairs, clock="off"):
     destination = work/(label+".tsv")
     if not destination.exists():
         a=lines(work/(label+"-actors.txt"),actors)
         b=lines(work/(label+"-rivals.txt"),rivals)
-        java(jar,work,label,["sword.CrossPlay",a,b,str(seed),str(pairs),"4"],destination)
+        java(jar,work,label,["sword.CrossPlay",a,b,str(seed),str(pairs),"4"],destination,clock)
     data=defaultdict(list)
     with destination.open() as f:
         for r in csv.DictReader(f,delimiter="\t"):
@@ -84,6 +84,13 @@ def matrix(jar, work, label, actors, rivals, seed, pairs):
     if set(data)!={(str(a),str(b)) for a in actors for b in rivals} or any(len(v)!=2 for v in data.values()):
         raise ValueError(f"Unexpected or incomplete matchup matrix {destination}")
     return data
+
+
+def both_clocks(jar,work,label,actors,rivals,seed,pairs,enabled):
+    fixed=matrix(jar,work,label,actors,rivals,seed,pairs)
+    if not enabled:return fixed
+    phase=matrix(jar,work,label+"-phase",actors,rivals,seed,pairs,"on")
+    return {k:fixed[k]+phase[k] for k in fixed}
 
 
 def uniform_positive(regrets):
@@ -130,7 +137,7 @@ def checkpoints(directory,limit):
     return list(dict.fromkeys(files[round(i*(len(files)-1)/(limit-1))] for i in range(limit)))
 
 
-def train_stage(jar,work,role,entry,gens,seed,rivals,parents=None):
+def train_stage(jar,work,role,entry,gens,seed,rivals,parents=None,clock="off"):
     out=work/role
     if out.exists() and (out/("gen-%04d.net"%(gens-1))).exists():return out
     if out.exists():out.rename(work/(role+"-partial-"+str(time.time_ns())))
@@ -140,7 +147,7 @@ def train_stage(jar,work,role,entry,gens,seed,rivals,parents=None):
     args += ["sword."+entry,out,str(gens),str(seed)]
     if entry=="League":args.append("4")
     args+=rivals
-    java(jar,work,role,args)
+    java(jar,work,role,args,clock=clock)
     return out
 
 
@@ -152,7 +159,8 @@ def run_season(index,native,main,pool,final=False):
     seed=PLAN["seed"]+index*7919
     rng=random.Random(seed);pool=unique([*pool,main,native]);main=next(p for p in pool if hash_policy(p)==hash_policy(main))
     native=next(p for p in pool if hash_policy(p)==hash_policy(native))
-    previous=matrix(jar,work,"payoffs",pool,pool,seed+10,24)
+    timing=index>=4
+    previous=both_clocks(jar,work,"payoffs",pool,pool,seed+10,24,timing)
     weights=opponent_mix(previous,pool,main)
     # Stratified sampling preserves minority opponents in small training fields.
     quantiles=[(i+rng.random())/36 for i in range(36)]
@@ -175,6 +183,9 @@ def run_season(index,native,main,pool,final=False):
                                   str(seed+4),str(2048 if final else 768),"4"])
         branches_done.touch()
     proposals=checkpoints(main_out,15)+checkpoints(counter,15)+checkpoints(entrant,15)+sorted(branch.glob("head-*.net"))
+    if timing:
+        mixed=train_stage(jar,work,"variable-timing","Refine",gens,seed+301,rivals,parents,clock="mix")
+        proposals+=checkpoints(mixed,18)
     if index==1:
         starters=[p for p in ANCHORS if p.read_bytes()[:4]==b"SWT1"]
         opening=train_stage(jar,WORK,"opening-counter","Refine",264,PLAN["seed"],
@@ -187,11 +198,11 @@ def run_season(index,native,main,pool,final=False):
     known={hash_policy(p):p for p in pool}
     actors=unique([main,native,*[known.get(hash_policy(p),p) for p in proposals]])
     rivals=unique(pool)
-    sel=matrix(jar,work,"selection",actors,rivals,seed+11,24)
+    sel=both_clocks(jar,work,"selection",actors,rivals,seed+11,24,timing)
     choice=unique([*sorted(actors,key=lambda p:breadth(sel,p,rivals),reverse=True)[:4],
                    *sorted(actors,key=lambda p:field_score(sel,p,main),reverse=True)[:3],
                    *sorted(actors,key=lambda p:field_score(sel,p,native),reverse=True)[:3]])
-    check=matrix(jar,work,"confirmation",[*unique([*choice,*rivals]),"wtap"],rivals,seed+12,96)
+    check=both_clocks(jar,work,"confirmation",[*unique([*choice,*rivals]),"wtap"],rivals,seed+12,96,timing)
     ordered=sorted(choice,key=lambda p:breadth(check,p,rivals),reverse=True)
     best=ordered[0]
     advancing=[p for p in ordered if breadth(check,p,rivals)>breadth(check,main,rivals)+.012
@@ -214,7 +225,9 @@ def run_season(index,native,main,pool,final=False):
                 main_breadth=breadth(check,main,rivals),wtap_breadth=breadth(check,"wtap",rivals),
                 wtap_vs_main=field_score(check,"wtap",main),wtap_vs_native=field_score(check,"wtap",native),
                 finalists=candidates,opponent_mix={str(p.relative_to(SRC)):w for p,w in zip(pool,weights)})
-    for f in ["payoffs.tsv","confirmation.tsv","resources.jsonl"]:shutil.copyfile(work/f,dest/f)
+    files=["payoffs.tsv","confirmation.tsv","resources.jsonl"]
+    if timing:files+=["payoffs-phase.tsv","confirmation-phase.tsv"]
+    for f in files:shutil.copyfile(work/f,dest/f)
     save(dest/"result.json",result)
     return result
 
