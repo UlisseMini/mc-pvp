@@ -1,6 +1,7 @@
 """Serve the live league and its recordings on this machine."""
 import argparse
 import csv
+from collections import Counter
 from functools import lru_cache
 import json
 import mimetypes
@@ -88,6 +89,8 @@ def snapshot():
                 labels.setdefault(stem,f"Season {s['index']} {role}")
             main=next(x for x in s["finalists"] if x["file"]==s["main"])
             seasons.append(dict(n=s["index"],main=main["breadth"],wt=s["wtap_breadth"],advanced=s["advanced"]))
+        repeats=Counter(labels.values())
+        labels={stem:name if repeats[name]==1 else f"{name} · {stem[:5]}" for stem,name in labels.items()}
         bouts=[];panels=[]
         for reg in EVIDENCE.glob("*/registration.json"):
             tag=reg.parent.name
@@ -113,7 +116,8 @@ def snapshot():
                 clip=run/"videos"/(rid+".mp4")
                 has_video=clip.is_file() or (ARCHIVE/tag/(rid+".mp4")).is_file()
                 bouts.append(dict(id=tag+"/"+rid,tag=tag,number=int(rid[6:])+1,actor=short(actor,labels),rival=short(row["rival"],labels),
-                                  rtt=row["rtt"],seat="AB"[row["seat"]],hp=row["hp"],otherHP=row["opponent_hp"],
+                                  rivalId=meta.get("opponent_hashes",{}).get(row["rival"],row["rival"]),
+                                  rtt=row["rtt"],opening=row["pair"],seat="AB"[row["seat"]],hp=row["hp"],otherHP=row["opponent_hp"],
                                   ticks=row["ticks"],video=has_video,trace=(run/(rid+"-server.tsv")).is_file(),fps=meta.get("video",{}).get("fps",50),
                                   framePolicy=meta.get("client_frame_policy","afk"),
                                   rendered=rendered_rate(run/(rid+"-"+"AB"[row["seat"]]+".tsv")) if meta.get("client_frame_policy")=="minimized" else None,

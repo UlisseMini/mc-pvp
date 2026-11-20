@@ -82,6 +82,16 @@ $('prev').onclick=()=>{page--;following=false;showLibrary()};$('next').onclick=(
 for(const id of ['panel','type'])$(id).onchange=()=>{following=false;page=0;const rows=matches();if(rows.length&&!rows.some(r=>r.id===selected?.id))select(rows[0]);else showLibrary()};
 function table(rows,heads){const t=elem('table','');const thead=t.createTHead().insertRow();for(const x of heads)thead.append(elem('th',x));
  const body=t.createTBody();for(const r of rows){let tr=body.insertRow();for(const x of r)tr.append(elem('td',x))}return t}
+function pairedWtap(matches){
+ const cell=m=>JSON.stringify([m.tag,m.rivalId,m.rtt,m.opening,m.seat]);
+ const control=new Map(matches.filter(m=>m.actor==='W-tap').map(m=>[cell(m),m.otherHP===0?1:m.hp===0?0:.5]));
+ const byName=new Map();
+ for(const m of matches){
+  if(!control.has(cell(m)))continue;
+  const a=byName.get(m.actor)||[0,0];a[0]+=control.get(cell(m));a[1]++;byName.set(m.actor,a);
+ }
+ return name=>byName.get(name)?.join('/')||'Pending';
+}
 function chart(){
  if(!state)return;
  const colors=['#b9eca7','#82c7ea','#d4a7f4','#f4998e','#c2d594','#9eacff'];
@@ -96,8 +106,9 @@ function chart(){
   const tag=selected?.tag||state.panel?.tag||state.matches[0]?.tag;if(!tag)return;
   const matches=state.matches.filter(m=>m.tag===tag).sort((a,b)=>a.number-b.number);
   const actors=new Map();for(const m of matches){const a=actors.get(m.actor)||{points:0,values:[]};a.points+=m.otherHP===0?1:m.hp===0?0:.5;a.values.push(a.points/(a.values.length+1));actors.set(m.actor,a)}
-  let n=0;for(const [name,a] of actors){series.push([name,a.values,name==='W-tap'?'#f3bd77':colors[n++%colors.length]]);rows.push([name,a.points+'/'+a.values.length,pct(a.values.at(-1))])}
-  ticks=['Bout 1','Bout '+Math.max(1,...series.map(v=>v[1].length))];heads=['Fighter','Score / played','Score rate'];
+  const baseline=pairedWtap(matches);
+  let n=0;for(const [name,a] of actors){series.push([name,a.values,name==='W-tap'?'#f3bd77':colors[n++%colors.length]]);rows.push([name,a.points+'/'+a.values.length,pct(a.values.at(-1)),baseline(name)])}
+  ticks=['Bout 1','Bout '+Math.max(1,...series.map(v=>v[1].length))];heads=['Fighter','Score / played','Score rate','Matched W-tap'];
   $('chartTitle').textContent='Java performance';$('chartNote').textContent=panelName(tag)+' · Cumulative score per fighter across its played bouts. Draws count half.';
  }
  const c=$('history'),d=window.devicePixelRatio||1,rect=c.getBoundingClientRect(),w=rect.width,H=rect.height;if(w<1)return;
@@ -126,10 +137,10 @@ function render(data){
  else showLibrary();
  chart();
  const live=$('liveScores');live.replaceChildren();
- if(panel){const arms=new Map();for(const m of data.matches){if(m.tag!==panel.tag)continue;const v=arms.get(m.actor)||[0,0];v[0]+=m.otherHP===0?1:m.hp===0?0:.5;v[1]++;arms.set(m.actor,v)}
-  const section=elem('section','');section.append(elem('h3',panelName(panel.tag)+' · In progress'),table([...arms].sort((a,b)=>b[1][0]/b[1][1]-a[1][0]/a[1][1]).map(([name,[points,n]])=>[name,points+'/'+n]),['Fighter','Score / played']));live.append(section)}
+ if(panel){const arms=new Map(),games=data.matches.filter(m=>m.tag===panel.tag),baseline=pairedWtap(games);for(const m of games){const v=arms.get(m.actor)||[0,0];v[0]+=m.otherHP===0?1:m.hp===0?0:.5;v[1]++;arms.set(m.actor,v)}
+  const section=elem('section','');section.append(elem('h3',panelName(panel.tag)+' · In progress'),table([...arms].sort((a,b)=>b[1][0]/b[1][1]-a[1][0]/a[1][1]).map(([name,[points,n]])=>[name,points+'/'+n,baseline(name)]),['Fighter','Score / played','Matched W-tap']));live.append(section)}
  const res=$('decisions');res.replaceChildren();
- for(const d of [...data.decisions].reverse()){const block=elem('section','');block.append(elem('h3','Season '+d.season+' · '+(d.promoted?'Promoted ':'Retained ')+d.champion),table(d.fighters.map(v=>[v.name,v.overall.join('/'),v.direct.join('/')]),['Fighter','Field','vs incumbent']));res.append(block)}
+ for(const d of [...data.decisions].reverse()){const block=elem('section',''),wt=d.fighters.find(v=>v.name==='W-tap');block.append(elem('h3','Season '+d.season+' · '+(d.promoted?'Promoted ':'Retained ')+d.champion),table(d.fighters.map(v=>[v.name,v.overall.join('/'),v.direct.join('/'),wt.overall.join('/')]),['Fighter','Field','vs incumbent','W-tap field']));res.append(block)}
 }
 async function refresh(){try{const r=await fetch('/api/league',{cache:'no-store'});if(!r.ok)throw Error(r.status);render(await r.json())}catch{$('status').textContent='Reconnecting';$('now').textContent='Waiting for the local league server.'}}
 new ResizeObserver(chart).observe($('history'));refresh();setInterval(refresh,5000);
