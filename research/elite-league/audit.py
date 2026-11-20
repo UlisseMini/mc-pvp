@@ -60,7 +60,7 @@ def bindings(mid,side,weights,start,end,parameters=None):
     parameters = parameters or {}
     context = f'{mid}/{side}'
     path,=list((ROOT/'runtime/pov'/mid).glob(side+'-client-*-events.jsonl.gz'))
-    events=[e for e in captures.events(path,{'duel_network','duel_network_jump','science_move','wtap','duel_hud_ping','duel_local_timing'}) if e.get('match')==mid]
+    events=[e for e in captures.events(path,{'duel_network','duel_network_jump','science_move','wtap','duel_hud_ping','duel_local_timing','sumo_league_seed'}) if e.get('match')==mid]
     decisions=[e for e in events if e['type']=='duel_network']
     if not decisions:raise ValueError(f'{mid}/{side}: missing network decisions')
     ticks=[e['tick'] for e in decisions]
@@ -72,9 +72,15 @@ def bindings(mid,side,weights,start,end,parameters=None):
     experts=Counter();changes=[];previous=None
     fallback_counts=Counter()
     ping_changes = {e['tick']: e['opponent'] for e in events if e['type']=='duel_hud_ping'}
-    ping_actor = weights.startswith('PING_MLP.')
+    league_actor = weights.startswith(('GRU32.', 'LEAGUE_MLP180.'))
+    if league_actor:
+        seeds = [e['seed'] for e in events if e['type']=='sumo_league_seed']
+        if len(seeds)!=1:
+            raise ValueError(f'{context}: expected one per-duel action seed')
+        query.append('#'+str(seeds[0]))
+    ping_actor = league_actor or weights.startswith('PING_MLP.')
     timing = {e['tick']: e for e in events if e['type']=='duel_local_timing'}
-    study_actor = weights.startswith(('INPUT8.', 'INPUT32.'))
+    study_actor = league_actor or weights.startswith(('INPUT8.', 'INPUT32.'))
     if study_actor and set(timing)!=set(ticks):
         raise ValueError(f'{context}: incomplete local timing inputs')
     ping = None

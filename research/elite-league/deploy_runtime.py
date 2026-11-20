@@ -43,10 +43,22 @@ def serve(settings):
         forge_runtime.BRIDGE=snapshot/'bridge.jar'
         forge_runtime.MODULE=snapshot/'module.jar'
     def stagger(slot,*args):
+        selected=snapshot;launch_epoch=start
+        selector=settings.get('cohort_selector')
+        if selector:
+            choice=json.loads(Path(selector).read_text())
+            selected=Path(choice['snapshot']).resolve()
+            if str(selected) not in settings['cohort_options']:
+                raise ValueError('Unknown Forge cohort snapshot')
+            if sha(selected/'bridge.jar')!=settings['cohort_options'][str(selected)]:
+                raise ValueError('Forge cohort bridge changed')
+            forge_runtime.BRIDGE=selected/'bridge.jar'
+            forge_runtime.MODULE=selected/'module.jar'
+            launch_epoch=choice['epoch']
         command=orig(slot,*args)
-        if snapshot:
-            shutil.copyfile(snapshot/f'settings-{slot}.properties',ROOT/f'runtime/bots/{slot}/config/pvp-practice/settings.properties')
-        return [sys.executable,__file__,'gate',str(slot),str(start),*map(str,command)]
+        if selected:
+            shutil.copyfile(selected/f'settings-{slot}.properties',ROOT/f'runtime/bots/{slot}/config/pvp-practice/settings.properties')
+        return [sys.executable,__file__,'gate',str(slot),str(launch_epoch),*map(str,command)]
     forge_runtime.bot_command=stagger
     asyncio.run(lab_runtime.serve(frame_sleep_ms=settings['frame_sleep_ms'],slot_backends=','.join(settings['bot_backends']),
                                   bot_slots=settings['bot_slots'],port_offset=settings['port_offset'],client_start_timeout=285))

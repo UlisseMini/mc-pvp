@@ -30,7 +30,7 @@ final class Arena {
             return new DuelEnv.Player(name,0,rtt,wake);
         }
     }
-    static final class Neural extends DuelEnv.Player{
+    static class Neural extends DuelEnv.Player{
         DuelNetwork net;
         boolean shadow;
         final double opponentRtt;
@@ -38,7 +38,7 @@ final class Arena {
         public boolean injected(PeriodicComboClock.Observation o,double t){lastPress=t;return super.injected(o,t);}
         Neural(Model model,int rtt){this(model,rtt,Double.NaN);}
         Neural(Model model,int rtt,double opponentRtt){super("network",0,rtt,0);this.opponentRtt=opponentRtt;net=new DuelNetwork(model.family,model.weights);}
-        private Neural(Neural p){
+        protected Neural(Neural p){
             super(p.style,0,p.rtt,p.wake);net=p.net.copy();lastPress=p.lastPress;opponentRtt=p.opponentRtt;shadow=p.shadow;firstClick=p.firstClick;
             handled=p.handled;releaseUntil=p.releaseUntil;jumps=p.jumps;
         }

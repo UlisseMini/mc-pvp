@@ -5,7 +5,7 @@ import java.util.Base64;
 
 /** Java 8 inference shared by the Forge player and tournament. One instance per fighter per bout. */
 public final class DuelNetwork {
-    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION, ROUTER, TACTIC, RESPONSE, PAIR, PING_MLP, INPUT8, INPUT32 }
+    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION, ROUTER, TACTIC, RESPONSE, PAIR, PING_MLP, INPUT8, INPUT32, GRU32, LEAGUE_MLP180 }
     public static final int INPUTS=22, HIDDEN=8, OUTPUTS=5;
     public static final int STRIDE=12;
     private final Family family;
@@ -21,12 +21,16 @@ public final class DuelNetwork {
     private double centerX,centerZ,previousTargetX,previousTargetZ,previousTargetY;
     private int previousAction;
 
+    private SumoLeaguePolicy league;
+    public SumoLeaguePolicy league(){return league;}
+    public static boolean leagueFamily(Family f){return f==Family.GRU32||f==Family.LEAGUE_MLP180;}
     private SumoInputs extra;
     private double decisionTime,pressAge=Double.POSITIVE_INFINITY;
     public void localTiming(double time,double sincePress){decisionTime=time;pressAge=sincePress;}
     public static boolean study(Family f){return f==Family.INPUT8||f==Family.INPUT32;}
     public static int width(Family f){return f==Family.INPUT32?32:HIDDEN;}
     public static int size(Family f) {
+        if(leagueFamily(f))return SumoLeaguePolicy.size(f==Family.GRU32);
         if(study(f))return width(f)*(SumoInputs.COUNT+1)+OUTPUTS*(width(f)+1)+1;
         if(f==Family.PAIR)return PairedExperts.SIZE;
         if(f==Family.RESPONSE)return TradeResponse.SIZE;
@@ -41,13 +45,14 @@ public final class DuelNetwork {
     /** Treat weights as immutable; model search builds a new array for every child. */
     public DuelNetwork(Family family,float[] weights) {
         if(weights.length!=size(family))throw new IllegalArgumentException("Wrong network dimensions");
-        this.family=family;this.weights=weights;features=new double[study(family)?SumoInputs.COUNT:family==Family.PING_MLP?INPUTS+2:INPUTS];
+        this.family=family;this.weights=weights;features=new double[leagueFamily(family)?SumoLeaguePolicy.INPUTS:study(family)?SumoInputs.COUNT:family==Family.PING_MLP?INPUTS+2:INPUTS];
         hidden=new double[width(family)];next=new double[hidden.length];
         if(study(family)){
             float mask=weights[weights.length-1];
             if(mask!=(int)mask || mask<0 || mask>127)throw new IllegalArgumentException("Unknown study feature mask");
             extra=new SumoInputs((int)mask);
         }
+        if(leagueFamily(family))league=new SumoLeaguePolicy(family==Family.GRU32,weights);
         if(family==Family.PAIR)pair=new PairedExperts(weights);
         if(family==Family.RESPONSE)response=new TradeResponse(weights);
         if(family==Family.TACTIC)tactics=new CombatTactics(weights);
@@ -56,6 +61,7 @@ public final class DuelNetwork {
     }
     public DuelNetwork copy(){
         DuelNetwork c=new DuelNetwork(family,weights);
+        if(league!=null)c.league=league.copy();
         if(pair!=null)c.pair=pair.copy();
         if(response!=null)c.response=response.copy();
         if(tactics!=null)c.tactics=tactics.copy();
@@ -121,7 +127,7 @@ public final class DuelNetwork {
     public int step(double x,double y,double z,double tx,double ty,double tz,
                     double vx,double vy,double vz,boolean grounded,boolean sprint,
                     double ownHurtAge,double targetHurtAge,double rtt,double opponentRtt){
-        if(family==Family.PING_MLP){
+        if(family==Family.PING_MLP || league!=null){
             boolean known=Double.isFinite(opponentRtt)&&opponentRtt>=0;
             features[22]=known?clip(opponentRtt/80-1):0;
             features[23]=known?1:-1;
@@ -153,6 +159,10 @@ public final class DuelNetwork {
         if(Double.isNaN(features[21]))features[21]=0; // neither player has shown a hurt cue
         if(extra!=null)extra.fill(features,x,y,z,tx,ty,tz,vx,vy,vz,targetDx,ty-previousTargetY,targetDz,fx,fz,centerX,centerZ,decisionTime,pressAge);
         previousTargetX=tx;previousTargetY=ty;previousTargetZ=tz;
+        if(league!=null){
+            features[24]=clip(pressAge/50-1);
+            return league.decide(features,outputs,grounded);
+        }
         if(pair!=null)return pair.step(features,x,y,z,tx,ty,tz,vx,vy,vz,grounded,sprint,ownHurtAge,targetHurtAge,rtt);
         if(tactics!=null)return tactics.step(features,dist,y,ty,vy,grounded?1:0,sprint,ownHurtAge,targetHurtAge);
         if(imitation!=null)return imitation.step(features,grounded);

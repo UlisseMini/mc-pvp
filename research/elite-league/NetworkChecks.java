@@ -10,11 +10,15 @@ final class NetworkChecks {
             String line;DuelNetwork n=null;int count=0;
             while((line=reader.readLine())!=null){
                 if(line.startsWith("@")){n=DuelNetwork.decode(line.substring(1));continue;}
-                String[] s=line.split(" ");int inputs=DuelNetwork.study(n.family())?16:n.family()==DuelNetwork.Family.PING_MLP?15:14;double[] v=new double[inputs];
+                if(line.startsWith("#")){n.league().seed(Long.parseLong(line.substring(1)));continue;}
+                String[] s=line.split(" ");
+                boolean hud=n.family()==DuelNetwork.Family.PING_MLP||n.league()!=null;
+                boolean time=DuelNetwork.study(n.family())||n.league()!=null;
+                int timer=hud?15:14,inputs=timer+(time?2:0);double[] v=new double[inputs];
                 for(int i=0;i<v.length;i++)v[i]=Double.parseDouble(s[i]);
-                if(inputs==16)n.localTiming(v[14],v[15]<0?Double.POSITIVE_INFINITY:v[15]);
+                if(time)n.localTiming(v[timer],v[timer+1]<0?Double.POSITIVE_INFINITY:v[timer+1]);
                 int got=n.step(v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9]!=0,v[10]!=0,
-                    v[11]<0?Double.POSITIVE_INFINITY:v[11],v[12]<0?Double.POSITIVE_INFINITY:v[12],v[13],inputs==15?v[14]:Double.NaN);
+                    v[11]<0?Double.POSITIVE_INFINITY:v[11],v[12]<0?Double.POSITIVE_INFINITY:v[12],v[13],hud?v[14]:Double.NaN);
                 if(got!=Integer.parseInt(s[inputs]))throw new AssertionError("Replayed decision differs at row "+count);
                 if(s.length>inputs+2 && (n.pair()==null || n.pair().selected()!=Integer.parseInt(s[16])
                         || n.pair().switches()!=Integer.parseInt(s[17]) || Math.abs(n.pair().score()-Double.parseDouble(s[18]))>1e-7))

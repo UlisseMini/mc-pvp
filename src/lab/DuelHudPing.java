@@ -20,6 +20,7 @@ public final class DuelHudPing {
     }
     private static final Reading current=new Reading();
     private static String lastMatch;
+    private static DuelNetwork seededLeague;
     private static double previous=Double.NaN;
     static double read(String bar,boolean first,double own){
         Matcher m=PAIR.matcher(bar);
@@ -30,15 +31,22 @@ public final class DuelHudPing {
     public static int step(DuelNetwork network,double x,double y,double z,double tx,double ty,double tz,
                            double vx,double vy,double vz,boolean ground,boolean sprint,
                            double ownAge,double targetAge,double own){
+        if(network.league()!=null && network!=seededLeague){
+            String seat=Client.controls.getProperty("archive_side","");
+            long seed=(Client.match+"#"+seat).hashCode();
+            network.league().seed(seed);
+            Client.log(Compat.map("type","sumo_league_seed","match",Client.match,"seed",seed));
+            seededLeague=network;
+        }
         double opponent=Double.NaN;
-        if(DuelNetwork.study(network.family())){
+        if(DuelNetwork.study(network.family())||network.league()!=null){
             long now=System.nanoTime();double age=Client.lastClick==0?Double.POSITIVE_INFINITY:(now-Client.lastClick)/1e6;
             network.localTiming(now/1e6,age);
             Map<String,Object> row=new LinkedHashMap<>();
             row.put("type","duel_local_timing");row.put("tick",Client.ticks);row.put("match",Client.match);
             row.put("head_ns",now);row.put("last_press_ns",Client.lastClick);Client.log(row);
         }
-        if(network.family()==DuelNetwork.Family.PING_MLP){
+        if(network.family()==DuelNetwork.Family.PING_MLP||network.league()!=null){
             String bar=String.valueOf(R.get(R.get(Client.mc,"ingameGUI"),"recordPlaying"));
             opponent=current.observe(Client.match,"a".equals(Client.controls.getProperty("archive_side")),own,bar);
             if(!Client.match.equals(lastMatch)||Double.compare(previous,opponent)!=0){

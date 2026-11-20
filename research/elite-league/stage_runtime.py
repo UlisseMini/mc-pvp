@@ -9,7 +9,7 @@ import zipfile
 
 ROOT=Path(__file__).resolve().parents[2]
 SERVER=['EntryDrills','SumoFootprint','SumoArena','Referee','MmcKnockback','ServerReplay','DuelSettings','BotMatchSettings','LabHelp','BoxingLandmark']
-CLIENT=['PairedExperts','MouseLook','Client','DuelNetwork','DuelHudPing','SumoInputs','SumoFootprint','HumanTiming','ExpertRouter','CombatTactics','TradeResponse','DuelSettings','BoxingLandmark','ComboContinuationGate','BoxingReleaseHold','BoxingRecoilSprint','BoxingSecondHurtJump','BoxingApproachPoll']
+CLIENT=['PairedExperts','MouseLook','Client','DuelNetwork','SumoLeaguePolicy','DuelHudPing','SumoInputs','SumoFootprint','HumanTiming','ExpertRouter','CombatTactics','TradeResponse','DuelSettings','BoxingLandmark','ComboContinuationGate','BoxingReleaseHold','BoxingRecoilSprint','BoxingSecondHurtJump','BoxingApproachPoll']
 
 def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()

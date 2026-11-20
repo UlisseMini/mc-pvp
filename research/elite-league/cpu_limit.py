@@ -9,6 +9,9 @@ import sys
 import time
 ROOT=Path(__file__).resolve().parents[2]
 
+def lab_cpu_budget():
+    return .40*(os.cpu_count() or 2)
+
 def cpu_seconds(value):
     days,sep,clock=value.partition('-')
     if not sep:clock=days;days='0'
@@ -24,7 +27,7 @@ def family_usage(roots,all_research=False):
         if len(parts)<3:continue
         pid,ppid,elapsed=int(parts[0]),int(parts[1]),parts[2];command=parts[3] if len(parts)>3 else ''
         used[pid]=cpu_seconds(elapsed);parents[pid]=ppid
-        if all_research and ('research/elite-league/' in command or 'build/elite-league/' in command) and (
+        if all_research and any(p in command for p in ('research/elite-league/','build/elite-league/','research/sword26/','research/sumo-rl/')) and (
                 'python' in command.lower() or 'java' in command.lower()) and '/bin/zsh -c' not in command:
             members.add(pid)
     while True:
@@ -39,9 +42,9 @@ def supervised():
 def main(cmd,audit=False):
     if supervised():
         return subprocess.call(cmd)
-    budget=min(6,(os.cpu_count() or 2)/2)
+    budget=lab_cpu_budget()
     # Leave margin for startup, GC, incoming players, and short-lived analysis processes.
-    target=max(.5,budget-1.25)
+    target=max(.25,budget-.35)
     state=ROOT/'build/elite-league';state.mkdir(exist_ok=True,parents=True)
     # One replay reader can use spare capacity while a long single-threaded
     # simulation owns the rollout slot. Both governors measure total lab usage.
