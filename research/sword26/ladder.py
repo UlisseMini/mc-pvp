@@ -169,7 +169,7 @@ def run():
         due=(i==3 or (i-state["last_java"]>=6) or (final and not changed))
         if due:
             hist=[json.loads((EVIDENCE/("season-%03d"%n)/"result.json").read_text()) for n in state["history"] if n>state["last_java"]]
-            outcome=native_wave(i,SRC[state["main"]],inc,pool,hist,final and not changed)
+            outcome=native_wave(i,SRC/state["main"],inc,pool,hist,final and not changed)
             state["last_java"]=i
             print("Native result",json.dumps(outcome),flush=True)
             if outcome["promoted"]:
