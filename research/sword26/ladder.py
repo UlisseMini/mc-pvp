@@ -141,6 +141,8 @@ def native_wave(index,main,inc,pool,history,final):
     if decision.exists():return json.loads(decision.read_text())
     wa=WORK/tag;wa.mkdir(exist_ok=True)
     candidates=unique([main,*[SRC/s[k] for s in history for k in ("main","best","counter","native_counter")]])
+    if final:
+        candidates=unique([*candidates,*pool])
     candidates=[p for p in candidates if not same(p,inc)]
     if not candidates:
         candidates=[p for p in pool if not same(p,inc)]
@@ -159,6 +161,13 @@ def native_wave(index,main,inc,pool,history,final):
         pilot_winner=native_scout(index,jar,wa,dst,candidates,inc,base,general,direct)
         choices=unique([*choices,pilot_winner])
     if final:
+        verified=[]
+        for record in sorted(EVIDENCE.glob("java-*/decision.json")):
+            old=json.loads(record.read_text())
+            if same(SRC/old["old_champion"],inc):
+                verified.extend(SRC/p for p in old["credible_counters"])
+        choices=unique([*choices,*verified])
+        opponents=unique([*opponents,*verified])
         fresh_dir=train_stage(jar,wa,"outside","League",360,base+4811,[])
         outsider=write_fighter(sorted(fresh_dir.glob("gen-*.net"))[-1])
         opponents.append(outsider)
