@@ -1,0 +1,5 @@
+id,policy,seat,frames,seconds,native_match_ticks,exported_game_ticks,median_luma_change_at_tick,median_luma_change_first_subframe,median_luma_change_second_subframe
+round-000,learned,0,387,6.45,127.0,129,11.6141,11.5684,11.616
+round-001,wtap,1,294,4.9,96.0,98,5.81448,5.10002,5.34751
+round-002,learned,1,387,6.45,127.0,129,11.4034,11.0321,10.6454
+round-003,wtap,0,303,5.05,99.0,101,5.19237,4.74725,5.12375
