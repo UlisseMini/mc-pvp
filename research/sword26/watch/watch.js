@@ -117,7 +117,11 @@ function render(data){
  const tags=[...new Set(data.matches.map(m=>m.tag))],old=$('panel').value;
  if(tags.join('|')!==$('panel').dataset.tags){$('panel').replaceChildren(new Option('All panels',''),...tags.map(t=>new Option(panelName(t),t)));$('panel').value=old;$('panel').dataset.tags=tags.join('|')}
  const rows=matches();
- if(!selected&&rows.length)select(rows.find(m=>m.id===requested)||rows.find(m=>m.video&&m.actor!==m.rival&&m.actor!=='W-tap'&&(m.actor===data.champion||m.rival===data.champion))||rows.find(m=>m.video)||rows[0]);
+ if(!selected&&rows.length){
+  const championDuel=m=>m.video&&m.actor!==m.rival&&m.actor!=='W-tap'&&(m.actor===data.champion||m.rival===data.champion);
+  select(rows.find(m=>m.id===requested)||rows.find(m=>championDuel(m)&&m.fps===60&&m.rendered>=55)||
+         rows.find(m=>championDuel(m)&&m.fps===60)||rows.find(championDuel)||rows.find(m=>m.video)||rows[0]);
+ }
  else if(following&&selected&&!selected.video&&rows.some(m=>m.video)&&!playing)select(rows.find(m=>m.video));
  else showLibrary();
  chart();

@@ -20,6 +20,11 @@ public final class Checks {
     }
     public static void main(String[] args)throws Exception{
         airborneSprint(false);airborneSprint(true);
+        var stamps=new ArrayList<Long>();
+        for(int i=0;i<=20;i++)stamps.add(121L+100*(i/2));
+        var burst=PollClock.Cadence.from(100,stamps);
+        check(burst.time(0)==21 && burst.time(1)==21 && burst.time(2)==121 && burst.time(21)==1021,
+            "A measured double input poll or its phase was lost across the repeated window");
         var resultLatch=new RoundOutcome();
         resultLatch.contact(false,7.1899996f,0);
         resultLatch.contact(true,6.612501f,0);

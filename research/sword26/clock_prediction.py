@@ -12,7 +12,7 @@ from season import hash_policy
 from setup import SRC, compile_sim, jdk
 
 
-def compare(run,dest):
+def compare(run,dest,poll_cadence=False):
     meta=json.loads((run/'metadata.json').read_text())
     if meta['clock'] is not None:raise ValueError('Expected an ordinary Java session')
     paths={hash_policy(p):p for p in SRC.rglob('*.net')}
@@ -27,7 +27,7 @@ def compare(run,dest):
             lineup=[rival,rival];lineup[m['seat']]=arms[m['policy']]
             rows.append('\t'.join(map(str,[run,m['id'],m['rtt'],m['seat'],m['angle'],*lineup])))
         spec.write_text('\n'.join(rows)+'\n')
-        output=subprocess.check_output(['nice','-n','15',jdk()/'java','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-Xmx384m',
+        output=subprocess.check_output(['nice','-n','15',jdk()/'java','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-Xmx384m','-Dsword.pollForecast='+str(poll_cadence).lower(),
                                        '-cp',compile_sim(),'sword.ClockPrediction',spec],text=True)
     results=list(csv.DictReader(io.StringIO(output)))
     for row,m in zip(results,rounds,strict=True):
@@ -41,4 +41,5 @@ def compare(run,dest):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('run',type=Path);p.add_argument('csv',type=Path)
-    a=p.parse_args();compare(a.run,a.csv)
+    p.add_argument('--poll-cadence',action='store_true',help='Also repeat the first 20 native input and server intervals.')
+    a=p.parse_args();compare(a.run,a.csv,a.poll_cadence)
