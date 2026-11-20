@@ -62,3 +62,21 @@ class Capture:
             self.partial.replace(self.target)
             return True
         return False
+
+
+def encode_frames(folder,target,fps):
+    """Encode one screenshot for every requested render pass and verify the container frame count."""
+    count,first,last=map(int,(folder/"finished").read_text().split())
+    if count<=0 or count!=last-first+1 or first%3 or count%3 or len(list(folder.glob("*.png")))!=count:
+        raise ValueError("Missing rendered Minecraft frames")
+    target.parent.mkdir(exist_ok=True)
+    partial=target.with_suffix(".partial.mp4")
+    subprocess.run(["nice","-n","12","ffmpeg","-v","error","-y","-framerate",str(fps),"-i",str(folder/"%06d.png"),
+                    "-frames:v",str(count),"-c:v","libx264","-threads","1","-preset","veryfast","-crf","18",
+                    "-pix_fmt","yuv420p","-g",str(fps),"-movflags","+faststart",partial],check=True)
+    encoded=subprocess.check_output(["ffprobe","-v","error","-select_streams","v:0","-show_entries","stream=nb_frames",
+                                     "-of","default=noprint_wrappers=1:nokey=1",partial],text=True)
+    if int(encoded.strip())!=count:raise ValueError("The encoded film frame count changed")
+    partial.replace(target)
+    shutil.rmtree(folder)
+    return dict(count=count,first=first,last=last,frames_per_tick=3)

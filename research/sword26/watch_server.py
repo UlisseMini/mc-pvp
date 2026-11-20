@@ -104,7 +104,7 @@ def snapshot():
                 wave=read(EVIDENCE/tag.rsplit("-",1)[0]/"nomination.json",{})
                 if wave.get("final_challenge"):
                     labels.setdefault(Path(roster["opponents"][-1]).stem,"Independent rival")
-            ended=(reg.parent/"panel.json").exists(); total=4*roster["pairs"]*len(roster["opponents"])*(len(actors)+1)
+            ended=(reg.parent/"panel.json").exists(); total=2*len(roster["rtts"])*roster["pairs"]*len(roster["opponents"])*(len(actors)+1)
             panels.append(dict(tag=tag,done=len(results),total=total,finished=ended,when=reg.stat().st_mtime))
             archived_scores=read(ARCHIVE/tag/"first-ko-corrections.json",{})
             for row in results:
@@ -119,7 +119,7 @@ def snapshot():
                                   rivalId=meta.get("opponent_hashes",{}).get(row["rival"],row["rival"]),
                                   rtt=row["rtt"],opening=row["pair"],seat="AB"[row["seat"]],hp=row["hp"],otherHP=row["opponent_hp"],
                                   ticks=row["ticks"],video=has_video,trace=(run/(rid+"-server.tsv")).is_file(),fps=meta.get("video",{}).get("fps",50),
-                                  framePolicy=meta.get("client_frame_policy","afk"),
+                                  framePolicy=meta.get("client_frame_policy","afk"),frameExport=row.get("frame_export"),
                                   rendered=rendered_rate(run/(rid+"-"+"AB"[row["seat"]]+".tsv")) if meta.get("client_frame_policy")=="minimized" else None,
                                   when=reg.stat().st_mtime))
         bouts.sort(key=lambda x:(x["when"],x["number"]),reverse=True)

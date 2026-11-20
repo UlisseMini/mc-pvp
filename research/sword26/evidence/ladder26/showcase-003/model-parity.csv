@@ -1,0 +1,5 @@
+id,lag,steps,median_position,p95_position,p95_display,first_quarter_block,first_hp_difference,equal_hp_observations,equal_keys,predicted_hp_a,predicted_hp_b,java_hp_a,java_hp_b,exact_motion_observations,observations,predicted_contacts,java_contacts,predicted_end_tick,ordered_contacts_exact,java_end_tick,final_health_exact,max_position,max_display
+round-000,0,140,0.00000000,0.00000000,0.00000000,-1,-1,280,280,6.7700038,0.0000000,6.7700038,0.0000000,280,280,14,14,139,true,139,1,0.00000000,0.00000000
+round-001,0,139,0.00000000,0.00000000,0.00000000,-1,-1,278,278,0.0000000,4.8800039,0.0000000,4.8800039,278,278,15,15,138,true,138,1,0.00000000,0.00000000
+round-002,0,125,0.00000000,0.00000000,0.00000000,-1,-1,250,250,7.1899996,0.0000000,7.1899996,0.0000000,250,250,12,12,124,true,124,1,0.00000000,0.00000000
+round-003,0,125,0.00000000,0.00000000,0.00000000,-1,-1,250,250,0.0000000,7.1899996,0.0000000,7.1899996,250,250,12,12,124,true,124,1,0.00000000,0.00000000

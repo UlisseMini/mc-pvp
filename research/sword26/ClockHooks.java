@@ -2,6 +2,7 @@ package sword;
 
 import java.lang.classfile.*;
 import java.lang.classfile.instruction.ReturnInstruction;
+import java.lang.classfile.instruction.InvokeInstruction;
 import java.lang.constant.*;
 
 final class ClockHooks {
@@ -23,11 +24,34 @@ final class ClockHooks {
                 }));
         }
         if(name.equals("net/minecraft/client/Minecraft")){
-            return api.transformClass(api.parse(bytes),ClassTransform.transformingMethodBodies(m->m.methodName().equalsString("runTick"),
+            byte[] timed=api.transformClass(api.parse(bytes),ClassTransform.transformingMethodBodies(m->m.methodName().equalsString("runTick"),
                 new CodeTransform(){
                     public void atStart(CodeBuilder b){var normal=b.newLabel();b.aload(0).invokestatic(CLIENT,"fastFrame",
                         MethodTypeDesc.ofDescriptor("(Lnet/minecraft/client/Minecraft;)Z")).ifeq(normal).return_().labelBinding(normal);}
-                    public void accept(CodeBuilder b,CodeElement e){b.with(e);}
+                    public void accept(CodeBuilder b,CodeElement e){
+                        if(Boolean.getBoolean("sword.exportFrames") && e instanceof InvokeInstruction call){
+                            var film=ClassDesc.of("sword.FilmFrames");
+                            if(call.owner().name().equalsString("net/minecraft/client/DeltaTracker$Timer")
+                                    &&call.name().equalsString("advanceGameTime")){
+                                b.invokestatic(film,"advance",MethodTypeDesc.ofDescriptor("(Lnet/minecraft/client/DeltaTracker$Timer;J)I"));
+                                return;
+                            }
+                        }
+                        b.with(e);
+                    }
+                }));
+            if(!Boolean.getBoolean("sword.exportFrames"))return timed;
+            return api.transformClass(api.parse(timed),ClassTransform.transformingMethodBodies(m->m.methodName().equalsString("renderFrame"),
+                (b,e)->{
+                    if(e instanceof InvokeInstruction call && call.owner().name().equalsString("net/minecraft/client/DeltaTracker$Timer")
+                            && call.name().equalsString("advanceRealTime")){
+                        b.invokestatic(ClassDesc.of("sword.FilmFrames"),"advanceUi",MethodTypeDesc.ofDescriptor("(Lnet/minecraft/client/DeltaTracker$Timer;J)V"));
+                        return;
+                    }
+                    b.with(e);
+                    if(e instanceof InvokeInstruction call && call.owner().name().equalsString("net/minecraft/client/renderer/GameRenderer")
+                            && call.name().equalsString("render"))
+                        b.aload(0).invokestatic(ClassDesc.of("sword.FilmFrames"),"capture",MC);
                 }));
         }
         var before=api.transformClass(api.parse(bytes),ClassTransform.transformingMethodBodies(m->m.methodName().equalsString("processPacketsAndTick"),

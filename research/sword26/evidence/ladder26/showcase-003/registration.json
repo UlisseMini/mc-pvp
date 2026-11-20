@@ -1,0 +1,20 @@
+{
+  "actors": [
+    "evidence/ladder26/fighters/1ed6988fc1d29b7d.net"
+  ],
+  "opponents": [
+    "evidence/ladder26/fighters/1ef8cdac288b79e0.net"
+  ],
+  "actor_hashes": [
+    "1ed6988fc1d29b7dd2f5b3128d2aa46d21fb06a8540b02339f52e7f4fd2cd075"
+  ],
+  "opponent_hashes": [
+    "1ef8cdac288b79e0c0ef63e0a3d1c272c6ed9e0d18be36c6b16b0511b6b08db5"
+  ],
+  "seed": 37184258,
+  "pairs": 1,
+  "clock": "scheduled Java frame export",
+  "rtts": [
+    0
+  ]
+}

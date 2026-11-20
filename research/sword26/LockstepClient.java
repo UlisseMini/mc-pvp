@@ -8,6 +8,7 @@ import net.minecraft.util.thread.BlockableEventLoop;
  * button processing, player travel and the complete ClientLevel tick. */
 public final class LockstepClient {
     private static final MethodHandle tasks;
+    private static final boolean EXPORT_FRAMES=Boolean.getBoolean("sword.exportFrames");
     static{
         try{tasks=MethodHandles.privateLookupIn(BlockableEventLoop.class,MethodHandles.lookup())
             .findVirtual(BlockableEventLoop.class,"runAllTasks",MethodType.methodType(void.class));}
@@ -41,7 +42,7 @@ public final class LockstepClient {
         if(Lockstep.active)Lockstep.endClient(mc.getConnection().getConnection());
     }
     public static boolean fastFrame(Minecraft mc){
-        if(!Lockstep.unpaced()||mc.getConnection()==null||!mc.getConnection().hasClientLoaded()
+        if(EXPORT_FRAMES||!Lockstep.unpaced()||mc.getConnection()==null||!mc.getConnection().hasClientLoaded()
                 ||mc.gui.screen()!=null||mc.gui.overlay()!=null)return false;
         mc.packetProcessor().processQueuedPackets();
         try{tasks.invoke(mc);}catch(Throwable e){throw new IllegalStateException(e);}

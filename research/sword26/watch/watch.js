@@ -7,7 +7,16 @@ let graphMode='model';
 let state=null,selected=null,mode=null,page=0,current='',animation=0,trace=null,position=0,start=null,playing=false,loading=0,following=true;
 const requested=new URLSearchParams(location.search).get('match');
 const limit=12,film=$('film'),arena=$('arena');
-const matches=()=>state.matches.filter(x=>(!$('panel').value||x.tag===$('panel').value)&&(!$('type').value||($('type').value==='showcase'?x.video&&x.fps===60:($('type').value==='video')===x.video)));
+const matches=()=>state.matches.filter(m=>{
+ if($('panel').value&&m.tag!==$('panel').value)return false;
+ switch($('type').value){
+  case 'showcase':return m.video&&m.tag.startsWith('showcase-');
+  case 'frames':return m.video&&Boolean(m.frameExport);
+  case 'video':return m.video;
+  case 'trace':return !m.video;
+  default:return true;
+ }
+});
 function showLibrary(){
  const items=matches();page=Math.max(0,Math.min(page,Math.max(0,Math.ceil(items.length/limit)-1)));
  $('count').textContent=nf.format(items.length);$('page').textContent=(items.length?page+1:0)+' / '+Math.ceil(items.length/limit);
@@ -30,8 +39,10 @@ function setMode(next){
  $('pov').className=next==='film'?'active':'';$('map').className=next==='map'?'active':'';
  $('shadowLabel').hidden=next!=='film';
  if(next==='film'){
-  $('format').textContent='JAVA CLIENT VIDEO';$('sourceNote').textContent=selected.fps+' fps capture · Normal speed'+(selected.rendered!=null?' · Client rendered '+selected.rendered+' fps median':selected.framePolicy==='afk'?' · Recorded with the original AFK limiter':'');
-  film.onloadedmetadata=()=>{if(generation===loading && film.duration>2)film.currentTime=Math.min(1.3,film.duration/4)};
+  $('format').textContent='JAVA CLIENT VIDEO';$('sourceNote').textContent=selected.frameExport?
+   '60 fps · Normal game speed · '+nf.format(selected.frameExport.count)+' frames rendered by Java on the scheduled clock':
+   selected.fps+' fps capture · Normal speed'+(selected.rendered!=null?' · Client rendered '+selected.rendered+' fps median':selected.framePolicy==='afk'?' · Recorded with the original AFK limiter':'');
+  film.onloadedmetadata=()=>{if(generation===loading && !selected.frameExport && film.duration>2)film.currentTime=Math.min(1.3,film.duration/4)};
   film.src='/video/'+selected.id;film.playbackRate=1;film.hidden=false;$('empty').hidden=true;
   film.onerror=()=>{if(generation===loading){$('empty').hidden=false;$('empty').textContent='Video unavailable. Choose Arena replay below.'}};
  }else{
@@ -123,6 +134,7 @@ function chart(){
 for(const [id,value] of [['modelChart','model'],['javaChart','java']])$(id).onclick=()=>{graphMode=value;$('modelChart').classList.toggle('active',value==='model');$('javaChart').classList.toggle('active',value==='java');chart()};
 function render(data){
  state=data;const panel=data.panel;$('status').textContent=data.status==='running'?(panel?'Java tournament':'Training'):'League finished';
+ $('fullframes').hidden=!data.matches.some(m=>m.frameExport);
  $('now').textContent=panel?panelName(panel.tag)+' · '+panel.done+' of '+panel.total+' bouts complete':data.status==='running'?'League training is running.':'The league has completed its final challenge.';
  $('champ').textContent=data.champion;$('seasons').textContent=data.season;$('training').textContent=nf.format(data.trainingGames);$('bouts').textContent=nf.format(data.matches.length);$('clips').textContent=nf.format(data.matches.filter(m=>m.video).length);
  const tags=[...new Set(data.matches.map(m=>m.tag))],old=$('panel').value;
@@ -130,7 +142,7 @@ function render(data){
  const rows=matches();
  if(!selected&&rows.length){
   const championDuel=m=>m.video&&m.actor!==m.rival&&m.actor!=='W-tap'&&(m.actor===data.champion||m.rival===data.champion);
-  select(rows.find(m=>m.id===requested)||rows.find(m=>championDuel(m)&&m.fps===60&&m.rendered>=55)||
+  select(rows.find(m=>m.id===requested)||rows.find(m=>championDuel(m)&&m.frameExport)||rows.find(m=>championDuel(m)&&m.fps===60&&m.rendered>=55)||
          rows.find(m=>championDuel(m)&&m.fps===60)||rows.find(championDuel)||rows.find(m=>m.video)||rows[0]);
  }
  else if(following&&selected&&!selected.video&&rows.some(m=>m.video)&&!playing)select(rows.find(m=>m.video));

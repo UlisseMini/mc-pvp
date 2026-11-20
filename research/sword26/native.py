@@ -97,7 +97,9 @@ async def proxy(reader, writer, latency):
 
 
 async def run(args):
-    if args.showcase and (args.human or args.clock or args.speed!=1):
+    if args.export_frames and (not args.showcase or args.clock!="fast"):
+        raise ValueError("Frame export requires a daylight exhibition on the scheduled native clock")
+    if args.showcase and (args.human or (args.clock and not args.export_frames) or args.speed!=1):
         raise ValueError("Showcase recording uses ordinary bot fights at normal speed")
     if args.clock and (args.human or args.speed!=1 or len(args.rtts)!=1 or args.rtts[0]%100):
         raise ValueError("Use two bots and one RTT in whole 100 ms increments for a fixed tick clock")
@@ -112,6 +114,7 @@ async def run(args):
         params=["--weights",str(args.weights.resolve()),"--pairs",str(args.pairs),"--seed",str(args.seed),"--speed",str(args.speed),
                 "--rtts",*map(str,args.rtts),"--opponents",*args.opponents,"--extra-weights",*[str(w.resolve()) for w in args.extra_weights]]
         if args.showcase:params+=["--showcase"]
+        if args.export_frames:params+=["--export-frames"]
         if args.blind:params+=["--blind"]
         if args.landmark:params+=["--landmark",str(args.landmark)]
         if args.clock:params+=["--clock",args.clock]
@@ -176,7 +179,7 @@ async def run(args):
     agent="-javaagent:"+str(agent_jar)
     java=jdk()/"java"
     clock_flags=["-Dsword.clock="+args.clock] if args.clock else []
-    from video import Capture, windows
+    from video import Capture, windows, encode_frames
     capture=None
     latency=[0]
     servers=[]
@@ -198,7 +201,7 @@ async def run(args):
             folder.mkdir(exist_ok=True)
             (folder/"options.txt").write_text(f"onboardAccessibility:false\npauseOnLostFocus:false\ntutorialStep:none\nrenderDistance:3\nsimulationDistance:5\nenableVsync:false\ninactivityFpsLimit:\"minimized\"\nmaxFps:{fps}\nmusic:0.0\nsoundCategory_master:0.0\n"+('ao:false\nbiomeBlendRadius:0\ncloudRange:32\nrenderClouds:"false"\nparticles:2\nentityShadows:false\nmipmapLevels:0\ngamma:1.0\nguiScale:2\nchatVisibility:2\n' if args.showcase else ""))
             launch(name,["xvfb-run","-a","-s",f"-screen 0 {width+120}x{height+80}x24 -nolisten tcp","env","LIBGL_ALWAYS_SOFTWARE=1","GALLIUM_DRIVER=llvmpipe","LP_NUM_THREADS=1","ALSOFT_DRIVERS=null","SDL_VIDEO_DRIVER=x11","SDL_VIDEODRIVER=x11",java,"-Xmx1000M",f"-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/sword26-lwjgl-{PORT}-{seat}","-Djava.awt.headless=true","--enable-native-access=ALL-UNNAMED","--add-exports","java.base/jdk.internal.misc=ALL-UNNAMED",
-                agent,*clock_flags,"-Dsword.spool="+str(spool),f"-Dsword.speed={args.speed}","-Dsword.control="+str(spool/("AB"[seat])),"-Dsword.logs="+str(run_dir),"-cp",(BUILD/"linux-classpath").read_text(),"net.minecraft.client.main.Main",
+                agent,*clock_flags,"-Dsword.exportFrames="+str(args.export_frames).lower(),"-Dsword.spool="+str(spool),f"-Dsword.speed={args.speed}","-Dsword.control="+str(spool/("AB"[seat])),"-Dsword.logs="+str(run_dir),"-cp",(BUILD/"linux-classpath").read_text(),"net.minecraft.client.main.Main",
                 "--username",name,"--version","26.3","--gameDir",folder,"--assetsDir",BUILD/"assets","--assetIndex","34",
                 "--accessToken","0","--width",str(width),"--height",str(height),"--quickPlayMultiplayer",f"127.0.0.1:{PORT if args.clock else PORT+seat+1}"],folder)
         names=[BOT_NAMES[0],args.human or BOT_NAMES[1]]
@@ -209,7 +212,7 @@ async def run(args):
             log=(run_dir/"server.log").read_text(errors="replace")
             return all(n+" joined the game" in log for n in names)
         await wait_for(joined,procs,3600 if args.human else 120,"Client join timed out")
-        await asyncio.sleep(45 if args.showcase else 2)
+        await asyncio.sleep(45 if args.showcase and not args.export_frames else 2)
         metadata={"agent":agent_jar.name,"backend":"Linux virtual X11 framebuffer with Mesa software rendering","weights_sha256":hashlib.sha256(args.weights.read_bytes()).hexdigest(),"seed":seed,"names":names,"version":"26.3","pairs":args.pairs,"rtts":args.rtts,"speed":args.speed,"blind":args.blind,"opponents":args.opponents,"extra_weights":[{"file":str(w),"sha256":hashlib.sha256(w.read_bytes()).hexdigest()} for w in args.extra_weights]}
         metadata["primary_file"]=args.weights.name
         metadata["referee_score_rule"]="first_lethal_contact"
@@ -226,6 +229,8 @@ async def run(args):
         results=[]
         if args.resume:
             previous=json.loads((args.resume/"metadata.json").read_text())
+            if (previous.get("video",{}).get("source")=="native_frame_export")!=args.export_frames:
+                raise ValueError("Resume requires the same rendering method")
             if previous.get("client_frame_policy","afk")!=metadata["client_frame_policy"]:raise ValueError("Resume requires the same client frame policy")
             if previous.get("clock")!=args.clock:raise ValueError("Resume requires the same game clock")
             if previous.get("opening_geometry")!=metadata.get("opening_geometry"):raise ValueError("Resume requires the same opening geometry")
@@ -252,8 +257,11 @@ async def run(args):
                     else:row.pop("video")
             save_json(run_dir/"results.json",results)
         video_sources=windows(run_dir) if not args.human and not args.clock and args.speed==1 else {}
-        if video_sources:
+        if video_sources or args.export_frames:
             metadata["video"]={"format":"H.264","fps":fps,"width":width,"height":height,"view":"evaluated bot","speed":1}
+            if args.export_frames:
+                metadata["video"]["source"]="native_frame_export"
+                (spool/"frames").mkdir(exist_ok=True)
             save_json(run_dir/"metadata.json",metadata)
         skip=len(results);scheduled=0
         if args.clock:
@@ -283,18 +291,24 @@ async def run(args):
                     lineup=[rival,rival];lineup[seat]=path
                     fields=[idx,*names,str(angle),str(gap),*lineup]
                     if args.landmark:fields.extend([str(seat),str(args.landmark)])
+                    if args.export_frames:(spool/"frames"/(idx+"-"+"AB"[seat])).touch()
                     if names[seat] in video_sources:
                         try:capture=Capture(run_dir/"videos",idx,video_sources[names[seat]],fps)
                         except OSError as error:print(f"Video unavailable for {idx}: {error}",flush=True)
                     requested_at=time.monotonic()
                     tmp=run_dir/"request.tmp";tmp.write_text("\t".join(fields));tmp.replace(run_dir/"request")
                     result=run_dir/(idx+".result")
-                    await wait_for(result.exists,procs,70,"Native round failed to finish")
+                    await wait_for(result.exists,procs,240 if args.export_frames else 70,"Native round failed to finish")
                     a,b,t=map(float,result.read_text().split())
                     row=dict(id=idx,wall_seconds=time.monotonic()-requested_at,rtt=rtt,pair=pair,seat=seat,policy=policy,rival=rival,hp=a if seat==0 else b,opponent_hp=b if seat==0 else a,ticks=t,angle=angle,gap=gap)
                     if capture:
                         if capture.finish():row["video"]=f"videos/{idx}.mp4"
                         capture=None
+                    if args.export_frames:
+                        frames=spool/"frames"/idx
+                        await wait_for((frames/"finished").exists,procs,40,"Native render stream failed to finalize")
+                        row["video"]=f"videos/{idx}.mp4"
+                        row["frame_export"]=encode_frames(frames,run_dir/row["video"],fps)
                     results.append(row)
                     save_json(run_dir/"results.json",results)
                     print(f"Round {len(results)} complete." if args.blind else row,flush=True)
@@ -328,6 +342,7 @@ if __name__=="__main__":
     parser.add_argument("--blind",action="store_true",help="Mix the trained bot and the control against the same human")
     parser.add_argument("--landmark",type=int,default=0,help="Use the common W-tap opening until this many unanswered fresh hits after the defender begins pressing")
     parser.add_argument("--clock",choices=["realtime","fast"],help="Run the native clients and server on an ordered network tick schedule")
+    parser.add_argument("--export-frames",action="store_true",help="Render three native frames per tick for a 60 fps exhibition")
     args=parser.parse_args()
     args.opponents=[p if p in ("wtap","hold") else str(Path(p).resolve()) for p in args.opponents]
     if args.human:args.rtts=[0]
