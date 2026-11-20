@@ -26,7 +26,7 @@ final class PhaseClock {
             var v=seat.view();
             if(forced==null) keys=controller.act(v);
             else {keys=forced;controller.prime(v,forced);}
-            seat.input(t,keys,(float)steer(v,keys),FastDuel.pitch(v));
+            seat.drive(t,v,keys);
             // A packet remains in its sender's fixed-size slot beyond this bounded propagation time.
             int due=now+transit+(seat.lag*50);
             if(!incoming.isEmpty())due=Math.max(due,incoming.getLast().due);

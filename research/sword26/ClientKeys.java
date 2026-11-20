@@ -10,6 +10,7 @@ import static sword.Fighter.*;
 public final class ClientKeys {
     static final Path control=Path.of(System.getProperty("sword.control"));
     static String command="";
+    static SmoothAim aim;
     static Model.Controller controller;
     static Model.Controller opening;
     static Path branchSignal,firstPress;
@@ -27,6 +28,12 @@ public final class ClientKeys {
         o.keySprint.setDown(k.sprint());o.keyJump.setDown(k.jump());
         if(k.click())KeyMapping.click(o.keyAttack.getDefaultKey());
     }
+    public static float cameraYaw(net.minecraft.world.entity.Entity entity,float fraction){
+        return entity==Minecraft.getInstance().player&&aim!=null&&aim.ready?aim.yawAt(fraction):entity.getViewYRot(fraction);
+    }
+    public static float cameraPitch(net.minecraft.world.entity.Entity entity,float fraction){
+        return entity==Minecraft.getInstance().player&&aim!=null&&aim.ready?aim.pitchAt(fraction):entity.getViewXRot(fraction);
+    }
     public static void tick(Minecraft mc){
         if(mc.player==null||mc.level==null)return;
         try{
@@ -35,6 +42,7 @@ public final class ClientKeys {
             try{line=Files.readString(control).trim();}
             catch(NoSuchFileException pending){apply(mc,Keys.STILL);return;}
             if(!line.equals(command)){
+                aim=SmoothAim.ENABLED&&!line.isEmpty()?new SmoothAim():null;
                 command=line;controller=null;opening=null;branchSignal=null;firstPress=null;primed=false;ticks=0;
                 if(trace!=null){trace.close();trace=null;}
                 if(!line.isEmpty()){
@@ -55,6 +63,7 @@ public final class ClientKeys {
             for(var p:mc.level.players())if(p.getGameProfile().name().equals(target))other=p;
             if(other==null||!mc.player.isAlive()||!other.isAlive()){apply(mc,Keys.STILL);return;}
             var p=mc.player;var vel=p.getDeltaMovement();
+            if(aim!=null&&aim.ready){p.setYRot(aim.yawAt(1));p.setXRot(aim.pitchAt(1));}
             if(ticks==0&&Lockstep.ENABLED){
                 Path initial=Path.of(System.getProperty("sword.logs")).resolve(command.split("\t")[0]+"-"+control.getFileName()+".initial");
                 Files.writeString(initial,p.getYRot()+"\t"+LockstepClient.localTicksFirst(mc,other)+"\n");
@@ -73,9 +82,10 @@ public final class ClientKeys {
                 Files.writeString(temp,Long.toString(stamp));Files.move(temp,firstPress,StandardCopyOption.ATOMIC_MOVE);
                 firstPress=null;
             }
-            p.setYRot((float)steer(v,k));
             double dy=clip(p.getEyeY(),other.getY()+.1,other.getY()+1.7)-p.getEyeY();
-            p.setXRot((float)-Math.toDegrees(Math.atan2(dy,Math.hypot(lx-p.getX(),lz-p.getZ()))));
+            float targetPitch=(float)-Math.toDegrees(Math.atan2(dy,Math.hypot(lx-p.getX(),lz-p.getZ())));
+            if(aim!=null)aim.plan(v,k,p.getXRot(),targetPitch);
+            else {p.setYRot((float)steer(v,k));p.setXRot(targetPitch);}
             apply(mc,k);
             var tracker=mc.getFramerateLimitTracker();
             var throttle=tracker.getThrottleReason();

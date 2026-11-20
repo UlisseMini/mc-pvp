@@ -15,6 +15,18 @@ public final class Agent {
             private byte[] edit(String name,byte[] bytes){
                 boolean client="net/minecraft/client/Minecraft".equals(name);
                 boolean clock=System.getProperty("sword.clock")!=null;
+                if("net/minecraft/client/Camera".equals(name)&&SmoothAim.ENABLED){
+                    var api=ClassFile.of();
+                    return api.transformClass(api.parse(bytes),ClassTransform.transformingMethodBodies(
+                        m->m.methodName().equalsString("alignWithEntity"),(b,e)->{
+                            if(e instanceof java.lang.classfile.instruction.InvokeInstruction call
+                                    &&call.owner().name().equalsString("net/minecraft/world/entity/Entity")
+                                    &&(call.name().equalsString("getViewYRot")||call.name().equalsString("getViewXRot"))){
+                                b.invokestatic(ClassDesc.of("sword.ClientKeys"),call.name().equalsString("getViewYRot")?"cameraYaw":"cameraPitch",
+                                    MethodTypeDesc.ofDescriptor("(Lnet/minecraft/world/entity/Entity;F)F"));
+                            } else b.with(e);
+                        }));
+                }
                 if(clock&&"net/minecraft/network/Connection".equals(name))return ClockHooks.transform(name,bytes);
                 if("net/minecraft/network/protocol/game/ClientboundSetEntityMotionPacket".equals(name)&&System.getProperty("sword.run")!=null){
                     var api=ClassFile.of();

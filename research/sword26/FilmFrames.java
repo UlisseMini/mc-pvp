@@ -2,6 +2,7 @@ package sword;
 
 import java.lang.invoke.*;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.*;
 import java.util.Locale;
 import net.minecraft.client.DeltaTracker;
@@ -48,16 +49,25 @@ public final class FilmFrames {
     }
     private static final class Session {
         final Path folder;
+        final PrintWriter pose;
         long first=-1, last=-1;
         int requested, written;
         boolean closed;
-        Session(Path folder)throws IOException{this.folder=Files.createDirectories(folder);}
+        Session(Path folder)throws IOException{
+            this.folder=Files.createDirectories(folder);
+            pose=SmoothAim.ENABLED?new PrintWriter(Files.newBufferedWriter(Path.of(System.getProperty("sword.logs")).resolve(round+"-camera.tsv"))):null;
+            if(pose!=null)pose.println("frame\ttick\tphase\tcameraYaw\tcameraPitch\tinputYaw\tinputPitch");
+        }
         void capture(Minecraft mc,long frame){
             if(frame==last)return;
             if(first<0)first=frame;
             if(frame!=first+requested)throw new IllegalStateException("Missing native render pass at "+frame+" after "+last);
             last=frame;
             int index=requested++;
+            if(pose!=null){
+                var camera=mc.gameRenderer.mainCamera();
+                pose.println(index+"\t"+(ClientKeys.ticks-1)+"\t"+phase+"\t"+camera.yRot()+"\t"+camera.xRot()+"\t"+mc.player.getYRot()+"\t"+mc.player.getXRot());
+            }
             Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget(),img->{
                 try(img){
                     img.writeToFile(folder.resolve(String.format(Locale.ROOT,"%06d.png",index)));
@@ -65,7 +75,7 @@ public final class FilmFrames {
                 }catch(IOException e){throw new IllegalStateException("Could not save native render pass",e);}
             });
         }
-        synchronized void close()throws IOException{closed=true;finish();}
+        synchronized void close()throws IOException{closed=true;if(pose!=null)pose.close();finish();}
         void finish()throws IOException{
             if(closed&&written==requested){
                 if(requested==0)throw new IllegalStateException("Empty native film");

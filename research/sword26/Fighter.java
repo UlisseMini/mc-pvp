@@ -82,3 +82,31 @@ public final class Fighter implements Model.Controller {
         }
     }
 }
+
+/** A causal mouse motor. One tick of motion is planned from the current player's view.
+ * Simulation, native clicks and the sub-tick camera all sample the same two curves. */
+final class SmoothAim {
+    static final boolean ENABLED=Boolean.getBoolean("sword.smoothAim");
+    private final Axis yaw=new Axis(24,8), pitch=new Axis(15,5);
+    boolean ready;
+
+    private static final class Axis {
+        final double speed, acceleration;
+        double start, velocity, change;
+        Axis(double speed,double acceleration){this.speed=speed;this.acceleration=acceleration;}
+        void plan(double position,double error){
+            start=position;
+            velocity+=change;
+            double desired=Fighter.clip(.55*error,-speed,speed);
+            change=Fighter.clip(.8*(desired-velocity),-acceleration,acceleration);
+        }
+        float sample(float t){return (float)(start+t*(velocity+.5*t*change));}
+    }
+    void plan(Fighter.View view,Fighter.Keys keys,float currentPitch,float wantedPitch){
+        yaw.plan(view.yaw(),Fighter.angle(Fighter.targetYaw(view)+keys.offset()-view.yaw()));
+        pitch.plan(currentPitch,wantedPitch-currentPitch);
+        ready=true;
+    }
+    float yawAt(float fraction){return yaw.sample(fraction);}
+    float pitchAt(float fraction){return (float)Fighter.clip(pitch.sample(fraction),-90,90);}
+}

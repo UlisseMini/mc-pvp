@@ -11,20 +11,24 @@ from report import export as export_traces
 from season import ANCHORS,EVIDENCE,WORK,SRC,hash_policy,save
 
 
-def record(index, actor, opponent, export_frames=False, hd=False):
+def record(index, actor, opponent, export_frames=False, hd=False, seed=None):
     if hd and not export_frames:raise ValueError("HD recording uses the native frame exporter")
     tag=f"showcase-{index:03d}"
     dest=EVIDENCE/tag;folder=WORK/tag
     dest.mkdir(exist_ok=True);folder.mkdir(exist_ok=True)
-    seed=37184255+index
+    seed=37184255+index if seed is None else seed
     rtts=[0] if export_frames else [0,100]
     reg=dict(actors=[str(actor.relative_to(SRC))],opponents=[str(opponent.relative_to(SRC))],
              actor_hashes=[hash_policy(actor)],opponent_hashes=[hash_policy(opponent)],seed=seed,pairs=1,
              clock="scheduled Java frame export" if export_frames else "ordinary TCP exhibition",rtts=rtts)
     if hd:reg["size"]=[1280,720]
+    if (dest/"panel.json").is_file():
+        existing=json.loads((dest/"registration.json").read_text())
+        if any(existing.get(k)!=v for k,v in reg.items()):raise ValueError("Recorded exhibition differs from requested lineup")
+        return
+    reg["aim_profile"]="smooth_mouse_v1"
     if (dest/"registration.json").exists() and json.loads((dest/"registration.json").read_text())!=reg:
         raise ValueError("This exhibition already has a different registered lineup or clock")
-    if (dest/"panel.json").exists():return
     save(dest/"registration.json",reg)
     cmd=[sys.executable,SRC/"native.py","--weights",actor,"--opponents",opponent,"--rtts",*map(str,rtts),
          "--pairs","1","--seed",str(seed),"--showcase"]
@@ -53,6 +57,7 @@ if __name__=="__main__":
     p=argparse.ArgumentParser()
     p.add_argument("--index",type=int,default=1);p.add_argument("--actor",type=Path);p.add_argument("--opponent",type=Path)
     p.add_argument("--export-frames",action="store_true")
+    p.add_argument("--seed",type=int,help="Reuse an exhibition opening and matchup order")
     p.add_argument("--hd",action="store_true")
     args=p.parse_args();state=json.loads((EVIDENCE/"state.json").read_text())
-    record(args.index,(args.actor or SRC/state["incumbent"]).resolve(),(args.opponent or ANCHORS[0]).resolve(),args.export_frames,args.hd)
+    record(args.index,(args.actor or SRC/state["incumbent"]).resolve(),(args.opponent or ANCHORS[0]).resolve(),args.export_frames,args.hd,args.seed)

@@ -18,7 +18,28 @@ public final class Checks {
         seat.input(2,forward,0,0);
         check(seat.sprint!=reverse,"A backward press must clear the airborne double-tap window");
     }
+    static void smoothTurns(){
+        var aim=new SmoothAim();
+        float yaw=179,pitch=0;
+        // A target just across the signed-angle seam should turn two degrees to the right.
+        double bearing=Math.toRadians(-179);
+        var still=Keys.STILL;
+        for(int tick=0;tick<75;tick++){
+            var view=new View(0,0,0,0,0,0,-Math.sin(bearing),0,Math.cos(bearing),0,0,0,true,false,1,20,0,0,yaw);
+            aim.plan(view,still,pitch,0);
+            check(aim.yawAt(0)==yaw && aim.pitchAt(0)==pitch,"A click must use the starting pose of the render curve");
+            if(tick==0)check(aim.yawAt(1)>179 && aim.yawAt(1)<181,"Mouse took the long way across the signed seam");
+            if(tick==35)bearing=0;
+            for(int frame=1;frame<=3;frame++){
+                float from=(frame-1)/3f,to=frame/3f;
+                check(Math.abs(aim.yawAt(to)-aim.yawAt(from))<=8.001,"Mouse exceeded its per-frame speed limit");
+            }
+            yaw=aim.yawAt(1);pitch=aim.pitchAt(1);
+        }
+        check(Math.abs(angle(yaw))<.005,"Mouse failed to settle on a stationary target");
+    }
     public static void main(String[] args)throws Exception{
+        smoothTurns();
         airborneSprint(false);airborneSprint(true);
         var stamps=new ArrayList<Long>();
         for(int i=0;i<=20;i++)stamps.add(121L+100*(i/2));

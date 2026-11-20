@@ -1,4 +1,5 @@
 """Record one physical bot window at the native client's frame cap inside the headless guest."""
+import csv
 import os
 from pathlib import Path
 import re
@@ -80,3 +81,37 @@ def encode_frames(folder,target,fps):
     partial.replace(target)
     shutil.rmtree(folder)
     return dict(count=count,first=first,last=last,frames_per_tick=3)
+
+def check_camera(run, match):
+    """Measure the actual Java camera, including independent samples of the fighter's look at click time."""
+    stem=match["id"]
+    with (run/(stem+"-camera.tsv")).open() as f:
+        frames=list(csv.DictReader(f,delimiter="\t"))
+    with (run/(stem+"-"+"AB"[match["seat"]]+".tsv")).open() as f:
+        inputs=list(csv.DictReader(f,delimiter="\t"))
+    if len(frames)!=match["frame_export"]["count"] or len(frames)<3:
+        raise ValueError("The camera trace does not cover every exported frame")
+    if any(int(r["frame"])!=i or int(r["phase"])!=i%3 for i,r in enumerate(frames)):
+        raise ValueError("Camera frame ordering changed")
+    def delta(a,b):
+        return (float(a)-float(b)+180)%360-180
+    decision_frames={}
+    for frame in frames[::3]:
+        decision_frames.setdefault(int(frame["tick"]),frame)
+    if set(decision_frames)!=set(range(len(inputs))):
+        raise ValueError("Input and film ticks differ")
+    errors=[];clicks=0
+    for i,inp in enumerate(inputs):
+        frame=decision_frames[i]
+        for coordinate in ("Yaw","Pitch"):
+            err=abs(delta(frame["camera"+coordinate],inp[coordinate.lower()]))
+            if err>.001:raise ValueError(f"Recorded {coordinate} missed the player's heading on tick {i} by {err} degrees")
+            if inp["press"]=="true":errors.append(err)
+        clicks+=int(inp["press"]=="true")
+    measures={}
+    for name,limit in (("Yaw",8),("Pitch",5)):
+        turns=[delta(b["camera"+name],a["camera"+name]) for a,b in zip(frames,frames[1:])]
+        fastest=max(map(abs,turns),default=0)
+        if fastest>limit+.002:raise ValueError(f"Camera {name} moved {fastest} degrees in one frame")
+        measures["max_"+name.lower()+"_per_frame_deg"]=round(fastest,4)
+    return dict(frames=len(frames),ticks=len(inputs),clicks=clicks,max_click_error_deg=max(errors,default=0),**measures)

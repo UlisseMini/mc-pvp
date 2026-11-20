@@ -182,7 +182,7 @@ async def run(args):
     agent="-javaagent:"+str(agent_jar)
     java=jdk()/"java"
     clock_flags=["-Dsword.clock="+args.clock] if args.clock else []
-    from video import Capture, windows, encode_frames
+    from video import Capture, windows, encode_frames, check_camera
     capture=None
     latency=[0]
     servers=[]
@@ -204,7 +204,7 @@ async def run(args):
             folder.mkdir(exist_ok=True)
             (folder/"options.txt").write_text(f"onboardAccessibility:false\npauseOnLostFocus:false\ntutorialStep:none\nrenderDistance:3\nsimulationDistance:5\nenableVsync:false\ninactivityFpsLimit:\"minimized\"\nmaxFps:{fps}\nmusic:0.0\nsoundCategory_master:0.0\n"+('ao:false\nbiomeBlendRadius:0\ncloudRange:32\nrenderClouds:"false"\nparticles:2\nentityShadows:false\nmipmapLevels:0\ngamma:1.0\nguiScale:2\nchatVisibility:2\n' if args.showcase else ""))
             launch(name,["xvfb-run","-a","-s",f"-screen 0 {width+120}x{height+80}x24 -nolisten tcp","env","LIBGL_ALWAYS_SOFTWARE=1","GALLIUM_DRIVER=llvmpipe","LP_NUM_THREADS=1","ALSOFT_DRIVERS=null","SDL_VIDEO_DRIVER=x11","SDL_VIDEODRIVER=x11",java,"-Xmx1000M",f"-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/sword26-lwjgl-{PORT}-{seat}","-Djava.awt.headless=true","--enable-native-access=ALL-UNNAMED","--add-exports","java.base/jdk.internal.misc=ALL-UNNAMED",
-                agent,*clock_flags,"-Dsword.exportFrames="+str(args.export_frames).lower(),"-Dsword.spool="+str(spool),f"-Dsword.speed={args.speed}","-Dsword.control="+str(spool/("AB"[seat])),"-Dsword.logs="+str(run_dir),"-cp",(BUILD/"linux-classpath").read_text(),"net.minecraft.client.main.Main",
+                agent,*clock_flags,"-Dsword.smoothAim="+str(args.showcase).lower(),"-Dsword.exportFrames="+str(args.export_frames).lower(),"-Dsword.spool="+str(spool),f"-Dsword.speed={args.speed}","-Dsword.control="+str(spool/("AB"[seat])),"-Dsword.logs="+str(run_dir),"-cp",(BUILD/"linux-classpath").read_text(),"net.minecraft.client.main.Main",
                 "--username",name,"--version","26.3","--gameDir",folder,"--assetsDir",BUILD/"assets","--assetIndex","34",
                 "--accessToken","0","--width",str(width),"--height",str(height),"--quickPlayMultiplayer",f"127.0.0.1:{PORT if args.clock else PORT+seat+1}"],folder)
         names=[BOT_NAMES[0],args.human or BOT_NAMES[1]]
@@ -222,6 +222,7 @@ async def run(args):
         metadata["client_frame_policy"]="minimized"
         metadata["landmark"]=args.landmark
         metadata["clock"]=args.clock
+        metadata["aim_profile"]="smooth_mouse_v1" if args.showcase else "tournament"
         if args.openings_from:
             metadata["opening_geometry"] = [
                 dict(rtt=rtt, pair=pair, angle=openings[rtt,pair][0], gap=openings[rtt,pair][1])
@@ -236,6 +237,7 @@ async def run(args):
                 raise ValueError("Resume requires the same rendering method")
             if args.export_frames and (previous["video"]["width"],previous["video"]["height"])!=(width,height):
                 raise ValueError("Resume requires the original frame dimensions")
+            if previous.get("aim_profile","tournament")!=metadata["aim_profile"]:raise ValueError("Resume requires the same aim profile")
             if previous.get("client_frame_policy","afk")!=metadata["client_frame_policy"]:raise ValueError("Resume requires the same client frame policy")
             if previous.get("clock")!=args.clock:raise ValueError("Resume requires the same game clock")
             if previous.get("opening_geometry")!=metadata.get("opening_geometry"):raise ValueError("Resume requires the same opening geometry")
@@ -314,6 +316,7 @@ async def run(args):
                         await wait_for((frames/"finished").exists,procs,40,"Native render stream failed to finalize")
                         row["video"]=f"videos/{idx}.mp4"
                         row["frame_export"]=encode_frames(frames,run_dir/row["video"],fps)
+                        row["camera"]=check_camera(run_dir,row)
                     results.append(row)
                     save_json(run_dir/"results.json",results)
                     print(f"Round {len(results)} complete." if args.blind else row,flush=True)

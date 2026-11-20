@@ -13,7 +13,7 @@ final class FastDuel {
     static final class Up {
         boolean attack, punch, ground;
         int sprint;
-        float yaw;
+        float yaw, pitch;
         double x,y,z;
     }
     static final class Down {
@@ -25,6 +25,7 @@ final class FastDuel {
     }
     record Waypoint(double x,double y,double z,int ticks){}
     static final class Seat {
+        final SmoothAim aim=SmoothAim.ENABLED?new SmoothAim():null;
         final Motion local = new Motion(), server = new Motion();
         final Up[] up = new Up[BUFFER];
         final Down[] down = new Down[BUFFER];
@@ -39,6 +40,8 @@ final class FastDuel {
         double sentX,sentY,sentZ,decodedX,decodedY,decodedZ;
         float elapsed, remaining, pace=1f;
         int trackerTicks;
+        byte lastYaw, lastPitch;
+        float serverPitch;
         int age=20,serverAge=20,immune,hurt,otherHurt,jumpDelay,miss,tap;
         boolean localFirst=true;
         boolean sprint,serverSprint,lastSent,previousForward,dirty,fall,needsSync,prevTrackGround=true;
@@ -50,6 +53,7 @@ final class FastDuel {
         }
         void start(double x,double y,double z,float yaw,double ex,double ey,double ez) {
             local.set(x,y,z);server.set(x,y,z);local.yaw=server.yaw=(float)Fighter.angle(yaw);
+            lastYaw=packDegrees(local.yaw);
             sentX=decodedX=x;sentY=decodedY=y;sentZ=decodedZ=z;
             tx=px=gx=ex;ty=py=gy=ey;tz=pz=gz=ez;
         }
@@ -60,8 +64,9 @@ final class FastDuel {
             if(d.motion){local.vx=d.vx;local.vy=d.vy;local.vz=d.vz;}
             if(d.position){
                 if(path.isEmpty()){startX=tx;startY=ty;startZ=tz;elapsed=1;}
-                gx=d.x;gy=d.y;gz=d.z;path.addLast(new Waypoint(gx,gy,gz,d.duration));
-                remaining+=d.duration;
+                int duration=(gx==d.x&&gy==d.y&&gz==d.z)?2:d.duration;
+                gx=d.x;gy=d.y;gz=d.z;path.addLast(new Waypoint(gx,gy,gz,duration));
+                remaining+=duration;
             }
             if(d.damage){seenHP=d.hp;if(d.freshDamage)hurt=10;}
             if(d.enemyDamage)otherHurt=10;
@@ -70,7 +75,13 @@ final class FastDuel {
         }
         View view() {
             return new View(local.x,local.y,local.z,local.vx,local.vy,local.vz,tx,ty,tz,
-                tx-px,ty-py,tz-pz,local.ground,sprint,Math.min(1f,age/ATTACK_DELAY),seenHP,hurt,otherHurt,local.yaw);
+                tx-px,ty-py,tz-pz,local.ground,sprint,Math.min(1f,age/ATTACK_DELAY),seenHP,hurt,otherHurt,aim!=null&&aim.ready?aim.yawAt(1):local.yaw);
+        }
+        void drive(int t,View view,Keys keys) {
+            if(aim==null){input(t,keys,(float)steer(view,keys),pitch(view));return;}
+            float currentPitch=aim.ready?aim.pitchAt(1):0;
+            aim.plan(view,keys,currentPitch,pitch(view));
+            input(t,keys,aim.yawAt(0),currentPitch);
         }
         void input(int t,Keys k,float yaw,float pitch) {
             var u=up[slot(t+lag)];
@@ -108,7 +119,7 @@ final class FastDuel {
             if(!k.jump())jumpDelay=0;
             if(k.jump()&&local.ground&&jumpDelay==0){local.jump(sprint);jumpDelay=10;stats.jumps++;}
             local.travel(k.forward(),k.side(),sprint);
-            u.x=local.x;u.y=local.y;u.z=local.z;u.yaw=yaw;u.ground=local.ground;
+            u.x=local.x;u.y=local.y;u.z=local.z;u.yaw=yaw;u.pitch=pitch;u.ground=local.ground;
             u.sprint=sprint==lastSent?0:sprint?1:-1;lastSent=sprint;
             // EntitySelector.pushableBy selects only the local player on a client.
             // The remote player's entity tick is the one that can push us.
@@ -146,7 +157,7 @@ final class FastDuel {
             if(server.ground&&!u.ground&&u.y>server.y){server.jump(serverSprint);needsSync=true;}
             if(u.ground||u.y>server.y)fall=false;
             else if(u.y<server.y)fall=true;
-            server.set(u.x,u.y,u.z);server.yaw=wrapYaw(u.yaw);server.ground=u.ground;
+            server.set(u.x,u.y,u.z);server.yaw=wrapYaw(u.yaw);serverPitch=u.pitch;server.ground=u.ground;
         }
         void attack(int t,Seat other) {
             double dx=other.server.x-server.x,dz=other.server.z-server.z;
@@ -181,20 +192,27 @@ final class FastDuel {
             }
             if(boost){server.vx*=.6;server.vz*=.6;setServerSprint(false);}
         }
+        static byte packDegrees(float value){return (byte)Math.floor(value*256f/360f);}
         void broadcast(int t,Seat observer) {
             trackerTicks++;
             boolean full=server.ground!=prevTrackGround;
             if(((t+phase)&1)==0||dirty||needsSync){
                 double dx=server.x-sentX,dy=server.y-sentY,dz=server.z-sentZ;
-                // Only a position-bearing packet adds a step on the viewing client.
+                byte yaw=packDegrees(server.yaw),pitch=packDegrees(serverPitch);
+                boolean rotated=yaw!=lastYaw||pitch!=lastPitch;
+                var d=observer.down[slot(t+observer.lag+1)];
                 if(full||dx*dx+dy*dy+dz*dz>=7.62939453125e-6||(t+phase+8)%60==0){
-                    var d=observer.down[slot(t+observer.lag+1)];
                     d.position=true;d.duration=trackerTicks;
                     d.x=decodedX=full?server.x:decodeStep(server.x,sentX,decodedX);
                     d.y=decodedY=full?server.y:decodeStep(server.y,sentY,decodedY);
                     d.z=decodedZ=full?server.z:decodeStep(server.z,sentZ,decodedZ);
                     sentX=server.x;sentY=server.y;sentZ=server.z;
+                }else if(rotated){
+                    // A rotation-only packet asks the remote player to interpolate at its existing destination.
+                    d.position=true;d.duration=2;
+                    d.x=decodedX;d.y=decodedY;d.z=decodedZ;
                 }
+                lastYaw=yaw;lastPitch=pitch;
                 trackerTicks=0;
                 prevTrackGround=server.ground;
                 if(dirty)down[slot(t+lag+1)].sprint=serverSprint?1:-1;
@@ -261,7 +279,7 @@ final class FastDuel {
                 var frame=start.prefix().get(t);ka=frame.a();kb=frame.b();ca.prime(va,ka);cb.prime(vb,kb);
             }else{ka=ca.act(va);kb=cb.act(vb);}
             double before=a.hp-b.hp;
-            a.input(t,ka,(float)steer(va,ka),pitch(va));b.input(t,kb,(float)steer(vb,kb),pitch(vb));
+            a.drive(t,va,ka);b.drive(t,vb,kb);
             if(aFirst){a.handle(t,b);b.handle(t,a);}else{b.handle(t,a);a.handle(t,b);}
             a.broadcast(t,b);b.broadcast(t,a);a.serverTick(b);b.serverTick(a);
             if(observer!=null)observer.step(t,a.stats,b.stats,ka,kb,aFirst);

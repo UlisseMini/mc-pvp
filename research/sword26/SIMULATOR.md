@@ -95,3 +95,7 @@ python3 research/sword26/kernel_report.py summary build/sword26/replayed.csv
 ```
 
 The measured scope is a level stone floor, fixed equipment and the lab’s duel settings. The whole-game comparisons cover zero and 100 ms symmetric added RTT under a tick-indexed packet schedule. Vanilla servers on the internet have independent timing, jitter and sometimes modified combat rules. Human rankings, other kits and irregular terrain require their own evidence.
+
+## Turning in place
+
+A smooth-aim rematch exposed a discrepancy when a player reached an arena corner, turned, and moved away. At tick 126 the simulated spectator position advanced 0.028 blocks early. A Java rotation-only movement packet adds an interpolation step at the remote player's existing destination. Reproducing that step and the packed yaw/pitch change threshold restored the entire trajectory. Replaying 708 archived scheduled fights from the two original player observations per opening then matched the ordered contacts, final health and end tick in 354/354 learned and 354/354 W-tap bouts. Previously those counts were 354/354 and 353/354. This is a regression check on recorded openings, including the discovery game. [Results by run](evidence/ladder26/showcase-004/rotation-regression.csv)

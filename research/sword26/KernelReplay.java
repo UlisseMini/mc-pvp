@@ -73,7 +73,7 @@ public final class KernelReplay {
             a.receive(t);b.receive(t);
             for(int seat=0;seat<2;seat++){
                 var s=seat==0?a:b;var c=seat==0?ca:cb;
-                if(t>=steps){var v=s.view();var k=c.act(v);s.input(t,k,(float)steer(v,k),FastDuel.pitch(v));continue;}
+                if(t>=steps){var v=s.view();var k=c.act(v);s.drive(t,v,k);continue;}
                 var r=(seat==0?left:right).get(t);observed++;
                 var p=s.local;double err=distance(p.x-r.x,p.y-r.y,p.z-r.z);
                 double targetError=distance(s.tx-r.tx,s.ty-r.ty,s.tz-r.tz);
@@ -86,7 +86,7 @@ public final class KernelReplay {
                     &&k.jump()==r.keys.jump()&&k.click()==r.keys.click())keysEqual++;
                 if(verbose)System.err.printf(Locale.ROOT,"%s %d %d err %.9f remote %.6f x %.6f %.6f vy %.7f %.7f vx %.7f %.7f hp %.4f %.4f sprint %b %b svel %.8f %.8f srvG %b falling %b age %d charge %.8f target %.17g %.17g %.17g native %.17g %.17g %.17g yaw %.6f %.6f%n",
                     id,t,seat,err,targetError,p.x,r.x,p.vy,r.vy,p.vx,r.vx,s.seenHP,r.hp,s.sprint,r.sprint,s.server.vx,s.server.vy,s.server.ground,s.fall,s.age,r.charge,s.tx,s.ty,s.tz,r.tx,r.ty,r.tz,(float)steer(v,k),r.yaw);
-                s.input(t,k,c==null?r.yaw:(float)steer(v,k),c==null?r.pitch:FastDuel.pitch(v));
+                if(c==null)s.input(t,k,r.yaw,r.pitch);else s.drive(t,v,k);
             }
             execute(t,a,b,events);if(a.hp==0||b.hp==0)modelEnd=t;
         }

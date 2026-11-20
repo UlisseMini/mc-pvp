@@ -1,0 +1,3 @@
+seat,learned_frames,learned_ticks,learned_clicks,learned_max_click_error_deg,learned_max_yaw_per_frame_deg,learned_max_pitch_per_frame_deg,learned_old_max_tick_yaw,learned_old_max_tick_pitch,learned_smooth_max_tick_yaw,learned_smooth_max_tick_pitch,wtap_frames,wtap_ticks,wtap_clicks,wtap_max_click_error_deg,wtap_max_yaw_per_frame_deg,wtap_max_pitch_per_frame_deg,wtap_old_max_tick_yaw,wtap_old_max_tick_pitch,wtap_smooth_max_tick_yaw,wtap_smooth_max_tick_pitch
+0,909,303,11,0.0,7.9999,4.8097,33.2921,33.3949,23.9991,13.9724,426,142,9,0.0,7.6168,3.4029,3.3995,6.6731,21.931,8.8504
+1,618,206,9,0.0,8.0,4.8109,40.7546,33.418,23.9997,13.9786,546,182,11,0.0,7.9951,3.956,3.396,7.5025,23.9733,11.5239
