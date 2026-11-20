@@ -14,15 +14,15 @@ sys.path.insert(0,str(LEAGUE))
 from learner import CLOCKS,EVIDENCE,Worker,write_json
 from id_evaluate import make_panel
 from id_native import native_name
-from native_league import alias,fixtures,cohort,fair_cohort,WT
-from league_tournament import stats
+from native_league import alias,fixtures,cohort,fair_cohort,WT,props
+from league_tournament import historical,stats
 from long_specialist import sources,RUN,BASE
 from scipy.stats import t as student
 import numpy as np
 
 def read(p):return json.loads(p.read_text())
 def keys():return ('incumbent','seven','g1')
-STAGES={'baseline16k':'16k','checkpoint32k':'32k','sealed-final':'final'}
+STAGES={'baseline16k':'16k','checkpoint32k':'32k','checkpoint64k':'64k','sealed-final':'final'}
 def final_design():
     path=OUT/'final-transfer-design.json'
     write_json(path,dict(maps=['default','mmc-137',*['mmc-'+str(n) for n in read(OUT/'split.json')['sealed']]],
@@ -45,7 +45,9 @@ def register(stage):
     for key in keys():
         directory,_,net,target=sources(key)
         if stage=='baseline16k':p=directory/net
-        elif stage=='checkpoint32k':p=RUN/key/'n32768.net'
+        elif stage in ('checkpoint32k','checkpoint64k'):
+            p=RUN/key/('n32768.net' if stage=='checkpoint32k' else 'n65536.net')
+            while not p.is_file():time.sleep(5)
         else:p=RUN/key/f"n{read(RUN/key/'selection.json')['selected']}.net"
         contestants[key]=dict(actor=str(p.relative_to(ROOT)),sha256=sha(p),target=target,
                          target_sha=read(RUN/key/'protocol.json')['target_sha'])
@@ -63,6 +65,9 @@ def register(stage):
             if anchors[k]['target_sha']!=contestants[k]['target_sha']:raise ValueError('Frozen opponent changed')
         doc['original_16k']=anchors
         assert names==final_design()['maps']
+    if stage=='checkpoint64k':
+        doc['native_maps']=['default','mmc-129','mmc-221']
+        doc['native_scope']='Repeat the original 137-block floor and the two named release-check arenas at eight matched seat and RTT blocks. All four routine holdouts still receive the complete simulator comparison.'
     write_json(spec,doc,fixed=True)
     return folder,doc
 
@@ -70,7 +75,9 @@ def pairs(doc):
     rows={}
     for name in sorted(doc['contestants']):
         r=doc['contestants'][name]
-        if sha(ROOT/r['actor'])!=r['sha256']:raise ValueError('Actor changed')
+        actor=r['actor']
+        fingerprint=sha(ROOT/actor) if actor.endswith('.net') else historical()[actor]['sha256']
+        if fingerprint!=r['sha256']:raise ValueError('Actor changed')
         for opponent in (r['target'],'wtap'):
             rows[name,opponent]=r['actor']
             rows['wtap',opponent]='wtap'
@@ -175,10 +182,17 @@ def verify_spawn(mid,expected_name):
 
 def verify_networks(folder,doc,records):
     expected={WT:None}
+    scripts={WT:props(WT)['kind']}
     for ref in [*doc['contestants'].values(),*doc.get('original_16k',{}).values()]:
-        expected['idlab-'+ref['sha256'][:12]]=ref['sha256']
+        actor=ref['actor']
+        if actor.endswith('.net'):expected['idlab-'+ref['sha256'][:12]]=ref['sha256']
+        else:
+            name=alias(actor);expected[name]=None;scripts[name]=props(name)['kind']
         target=ref['target']
-        expected['idlab-'+ref['target_sha'][:12] if target.endswith('.net') else alias(target)]=ref['target_sha']
+        name='idlab-'+ref['target_sha'][:12] if target.endswith('.net') else alias(target)
+        if not target.endswith('.net') and historical()[target]['sha256']==hashlib.sha256(('script-v1/'+target).encode()).hexdigest():
+            expected[name]=None;scripts[name]=props(name)['kind']
+        else:expected[name]=ref['target_sha']
     checks={}
     for row in records.values():
         game=read(ROOT/'runtime/results'/(row['mid']+'.json'))
@@ -187,7 +201,7 @@ def verify_networks(folder,doc,records):
             name=game['policy_'+seat];params=game['parameters_'+seat]
             digest=expected[name];raw=params.get('duel_network','').encode()
             if digest is None:
-                if raw or params['kind']!='wtap':raise ValueError('Expected plain W-tap in '+row['mid'])
+                if raw or params['kind']!=scripts[name]:raise ValueError('Scripted controls differ in '+row['mid'])
             elif digest not in (hashlib.sha256(raw).hexdigest(),hashlib.sha256(raw+b'\n').hexdigest()):
                 raise ValueError('Match used different weights from its frozen simulator actor in '+row['mid'])
             sides[seat]=dict(controller=name,network_sha256=digest)
@@ -197,10 +211,11 @@ def verify_networks(folder,doc,records):
 def native_plan(stage,folder,doc):
     all_trials={};sources_by_key={}
     for idx,name in enumerate(doc['maps']):
+        if name not in doc.get('native_maps',doc['maps']):continue
         for arm,foe,model,key in trials(folder,doc,name):
-            actor=native_name(ROOT/model) if model.endswith('.net') else WT
+            actor=native_name(ROOT/model) if model.endswith('.net') else alias(model)
             target=native_name(ROOT/foe) if foe.endswith('.net') else alias(foe)
-            tag=f"map-{STAGES[stage]}-m{idx:02}-{key}"
+            tag=f"map-{STAGES.get(stage,stage)}-m{idx:02}-{key}"
             sub=fixtures(tag,[actor],[target],doc['native_blocks'],7)
             if name!='default':
                 capture=json.load(gzip.open(OUT/(name+'.json.gz')))
@@ -262,7 +277,7 @@ def native(stage):
         checks=batch/'spawn-checks.json'
         if not checks.exists():write_json(checks,{o['mid']:verify_spawn(o['mid'],sources_by_key[q][0]) for q,o in new.items()},fixed=True)
         records.update(new)
-        for name in doc['maps']:
+        for name in doc.get('native_maps',doc['maps']):
             rows={}
             for arm,foe,_,key in trials(folder,doc,name):
                 qs=[q for q in records if sources_by_key[q][:2]==(name,key)]

@@ -35,4 +35,4 @@ Four release checks already played on the main server. These same games count in
 | mmc-129 | win | loss |
 | mmc-221 | win | loss |
 
-[Match protocol](protocol.json) · [Per-seat and per-RTT simulator results](model)
+[Match protocol](protocol.json) · [Per-seat and per-RTT simulator results](model) · [Native schedule and audits](native)

@@ -28,4 +28,4 @@ Each cell contains 128 bouts from eight timing recordings, mirrored seats and fo
 
 The live comparison has eight independently played seat and RTT blocks per matchup. Each published block has passed movement, physical click-spacing, map-state and countdown spawn checks.
 
-[Match protocol](protocol.json) · [Per-seat and per-RTT simulator results](model)
+[Match protocol](protocol.json) · [Per-seat and per-RTT simulator results](model) · [Native schedule and audits](native)

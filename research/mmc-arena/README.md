@@ -66,3 +66,5 @@ All specialists train on the original 137-block arena. The comparison includes i
 Each tournament report shows simulator and native scores separately with matched W-tap controls. [16,384 training fights](evidence/platforms/tournaments/baseline16k/results.md) · [32,768 training fights](evidence/platforms/tournaments/checkpoint32k/results.md)
 
 On the two recorded floors with 137 and 221 blocks, we also tested both start distances in the simulator while holding the midpoint fixed. The larger floor cost the 32k specialist about ten percentage points in outright wins against Sumo Seven. The estimated change from moving the start positions alone was zero, with an approximate 95% interval of −7.8 to +7.8 points. [Opening-distance experiment](evidence/platforms/opening-contrast/README.md)
+
+Every published league winner also plays both plain W-tap and its weakest distinct tournament opponent on these four validation floors. Each generation gets 128 simulator bouts and eight native repetitions per floor and matchup, alongside matched plain W-tap controls. [First league winner](evidence/platforms/tournaments/league-001/results.md)

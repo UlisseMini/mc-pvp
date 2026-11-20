@@ -18,16 +18,27 @@ def tally(r):
 def report(stage):
     folder=OUT/'tournaments'/stage
     protocol=read(folder/'protocol.json')
-    lines=['# '+{'checkpoint32k':'32,768-fight specialists','baseline16k':'16,384-fight specialists','sealed-final':'Frozen specialists on sealed maps'}[stage],
+    if 'published_winner' in protocol:
+        title=protocol['published_winner']+' on the MMC validation floors'
+        intro=f"The published league winner faces {protocol['opponent_name']}, its weakest distinct development opponent, and plain W-tap. Every matchup uses seven CPS on both sides."
+        columns=['Platform','Winner vs '+protocol['opponent_name'],'Plain W-tap vs '+protocol['opponent_name'],'Winner vs W-tap','Plain W-tap mirror']
+        arm='winner';weak=protocol['contestants'][arm]['target']
+        matchups=[(arm,weak),('wtap',weak),(arm,'wtap'),('wtap','wtap')]
+    else:
+        title={'checkpoint32k':'32,768-fight specialists','checkpoint64k':'65,536-fight specialists','baseline16k':'16,384-fight specialists','sealed-final':'Frozen specialists on sealed maps'}[stage]
+        intro=None
+        columns=['Platform','Frozen best-sumo','W-tap vs best-sumo','League winner 001','W-tap vs winner 001','Sumo Seven','W-tap vs Seven']
+        matchups=[(a,protocol['contestants'][arm]['target']) for arm in DISPLAY for a in (arm,'wtap')]
+    lines=['# '+title,
            '', 'Entries are wins/draws/losses. Every duel uses the MMC preset and a seven-CPS cap for both players. '
            'Each specialist faces its own frozen training opponent. Plain W-tap faces that same opponent with the same seat, reach and two RTTs.']
+    if intro:lines[-1]='Entries are wins/draws/losses. '+intro
     for mode in ('model','native'):
         title='Simulator' if mode=='model' else 'Main Minecraft server'
         lines.extend(['','## '+title,''])
-        columns=['Platform','Frozen best-sumo','W-tap vs best-sumo','League winner 001','W-tap vs winner 001','Sumo Seven','W-tap vs Seven']
         lines.extend(['| '+' | '.join(columns)+' |','| '+' | '.join(['---']*len(columns))+' |'])
         references=[]
-        for name in protocol['maps']:
+        for name in (protocol.get('native_maps',protocol['maps']) if mode=='native' else protocol['maps']):
             base=folder/mode/name
             completed=base/'summary.json'
             if not completed.exists():
@@ -37,13 +48,13 @@ def report(stage):
             if completed.exists():
                 r=read(completed)
                 by_arm={(v.get('actor',v.get('arm')),v['foe']):v for v in r.values()}
-                for arm in DISPLAY:
-                    opponent=protocol['contestants'][arm]['target']
-                    cells.extend(tally(by_arm[a,opponent]) for a in (arm,'wtap'))
-                    if 'original_16k' in protocol:
+                cells=[tally(by_arm[pair]) for pair in matchups]
+                if 'original_16k' in protocol:
+                    for arm in DISPLAY:
+                        opponent=protocol['contestants'][arm]['target']
                         old=by_arm.get((arm+'-16k',opponent),by_arm[arm,opponent])
                         references.append([name,DISPLAY[arm],tally(by_arm[arm,opponent]),tally(old),tally(by_arm['wtap',opponent])])
-            else:cells=['pending']*6
+            else:cells=['pending']*len(matchups)
             lines.append('| '+' | '.join([name,*cells])+' |')
         if references:
             lines.extend(['','### Matched final and original checkpoints','','| Platform | Frozen opponent | Selected specialist | Original 16k specialist | Plain W-tap |',
