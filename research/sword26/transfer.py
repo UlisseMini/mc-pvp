@@ -16,11 +16,11 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def propose(dest, parents, field, seeds, generations, selection_seed, engine="historical"):
+def propose(dest, parents, field, seeds, generations, selection_seed, engine="historical", classes=None):
     dest.mkdir(parents=True, exist_ok=False)
     parents = [p.resolve() for p in parents]
     field = [p.resolve() for p in field]
-    classes = compile_sim()
+    classes = classes or compile_sim()
     rivals = dest / "field.txt"
     rivals.write_text("".join(str(p) + "\n" for p in field))
     shortlist = []

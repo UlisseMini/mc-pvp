@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 import subprocess
 
-from setup import SRC, compile_sim, jdk
+from setup import SRC, registered_sim, jdk
 from transfer import propose
 
 
@@ -16,10 +16,7 @@ def digest(path):
 
 def train(protocol_path, work, output):
     p = json.loads(protocol_path.read_text())
-    if digest(SRC / "FastDuel.java") != p["training_source_hash"]:
-        raise ValueError("Training engine differs from the registered version")
-    if "flat_physics_hash" in p and digest(SRC / "FlatPhysics.java") != p["flat_physics_hash"]:
-        raise ValueError("Movement kernel differs from the registered version")
+    classes = registered_sim(p)
     for name, expected in p["weight_hashes"].items():
         if digest(SRC / name) != expected:
             raise ValueError(f"Training weight changed: {name}")
@@ -27,13 +24,13 @@ def train(protocol_path, work, output):
     output.mkdir(parents=True, exist_ok=True)
     parents = [SRC / name for name in p["parent_files"]]
     field = [SRC / name for name in p["field_files"]]
-    propose(work, parents, field, p["seeds"], p["generations"], p["shortlist_seed"], "flat26")
+    propose(work, parents, field, p["seeds"], p["generations"], p["shortlist_seed"], "flat26", classes)
     names = sorted(work.glob("proposal-*.net"))
     if p.get("rank_all_checkpoints"):
         names = sorted(work.glob("island-*/gen-*.net")) + parents
     catalog = work / "shortlist.txt"
     catalog.write_text("".join(f"{path}\n" for path in names))
-    java = [jdk() / "java", "-Dsword.transport=lockstep", "-cp", compile_sim()]
+    java = [jdk() / "java", "-Dsword.transport=lockstep", "-cp", classes]
     if p.get("rank_all_checkpoints"):
         java.insert(1, "-Dsword.equalLatency=true")
     scoring = subprocess.check_output([*java, "sword.Cup", catalog, work / "field.txt",

@@ -70,5 +70,6 @@
     "seed": 1859232,
     "generations": 400,
     "source": "League from random trees using its own population and archive, without supplied policies. Keep its last checkpoint outside all selection and training fields."
-  }
+  },
+  "training_revision": "217feec23794348611924f6ffbe3d06b247c062f"
 }

@@ -88,9 +88,14 @@ final class FastDuel {
             }
             boolean forward=k.forward()>0;
             if(tap>0)tap--;
+            if(k.forward()<0)tap=0;
             if(!sprint&&forward){
-                if(k.sprint()||(tap>0&&!previousForward)){sprint=true;tap=0;}
-                else if(!previousForward&&local.ground)tap=7;
+                // LocalPlayer arms the second forward press on the ground and in midair.
+                if(!previousForward){
+                    if(tap>0)sprint=true;
+                    else tap=7;
+                }
+                if(k.sprint())sprint=true;
             }
             if(!forward||local.blocksSprint)sprint=false;
             previousForward=forward;

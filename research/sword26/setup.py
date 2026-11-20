@@ -119,15 +119,28 @@ def compile_agent():
     return target
 
 
-def compile_sim():
+def compile_sim(revision=None, expected=None):
     names = ("Fighter", "Model", "FastDuel", "FlatPhysics", "TreePolicy", "Train",
              "PolicyGradient", "League", "Refine", "Starts", "Cup", "Controls",
              "Grade", "Maintenance", "ForkAudit", "KernelReplay", "KernelBench", "Checks")
-    sources = [SRC / (name+".java") for name in names]
+    if revision:
+        root = SRC.parents[1]
+        revision=subprocess.check_output(["git","rev-parse","--verify","--end-of-options",revision+"^{commit}"],
+                                         cwd=root,text=True).strip()
+        available = subprocess.check_output(
+            ["git", "ls-tree", "--name-only", revision+":research/sword26"], cwd=root, text=True).splitlines()
+        sources = {name+".java":subprocess.check_output(
+            ["git","show",revision+":research/sword26/"+name+".java"],cwd=root)
+            for name in names if name+".java" in available}
+    else:
+        sources = {name+".java":(SRC / (name+".java")).read_bytes() for name in names}
+    for name, registered in (expected or {}).items():
+        if hashlib.sha256(sources[name]).hexdigest()!=registered:
+            raise ValueError(f"The registered {name} hash differs")
     digest = hashlib.sha256()
-    for source in sources:
-        digest.update(source.name.encode())
-        digest.update(source.read_bytes())
+    for name, contents in sources.items():
+        digest.update(name.encode())
+        digest.update(contents)
     target = BUILD / "simulator" / (digest.hexdigest()+".jar")
     target.parent.mkdir(parents=True, exist_ok=True)
     if target.exists():
@@ -136,11 +149,20 @@ def compile_sim():
         folder = Path(tmp)
         classes = folder / "classes"
         classes.mkdir()
-        subprocess.run([jdk()/"javac", "-d", classes, *sources], check=True)
+        for name,contents in sources.items():
+            (folder/name).write_bytes(contents)
+        subprocess.run([jdk()/"javac", "-d", classes, *[folder/name for name in sources]], check=True)
         jar = folder / "simulator.jar"
         subprocess.run([jdk()/"jar", "cf", jar, "-C", classes, "."], check=True)
         jar.replace(target)
     return target
+
+
+def registered_sim(plan):
+    expected={"FastDuel.java":plan["training_source_hash"]}
+    if "flat_physics_hash" in plan:
+        expected["FlatPhysics.java"]=plan["flat_physics_hash"]
+    return compile_sim(plan.get("training_revision"),expected)
 
 
 if __name__ == "__main__":

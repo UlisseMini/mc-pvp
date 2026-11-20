@@ -4,13 +4,13 @@ import json
 from pathlib import Path
 import subprocess
 
-from setup import SRC, compile_sim, jdk
+from setup import SRC, registered_sim, jdk
 
 
 def grade(protocol, weights, output):
     plan = json.loads(protocol.read_text())
     output.mkdir(parents=True, exist_ok=True)
-    java = [jdk() / "java", "-Dsword.transport=lockstep", "-cp", compile_sim()]
+    java = [jdk() / "java", "-Dsword.transport=lockstep", "-cp", registered_sim(plan)]
     for opponent in plan["opponents"]:
         rival = "wtap" if opponent == "wtap" else SRC / opponent
         for name, entry in [("grade", "Grade"), ("maintenance", "Maintenance")]:

@@ -1,0 +1,28 @@
+{
+  "version": "26.3",
+  "seeds": {
+    "0": 6921673,
+    "100": 1520840
+  },
+  "openings_per_latency": 3,
+  "candidate": "evidence/league26/fighter.net",
+  "opponents": [
+    "wtap",
+    "evidence/frozen/opponents/population.net",
+    "evidence/league26/fresh.net",
+    "evidence/neural26/fighter.net"
+  ],
+  "discovery": "The previous league validation was used for diagnosis of airborne double-tap sprint. It is development for this revision. This panel deliberately includes the previously troublesome opponent, with three independent new opening calendars at each latency as well as three other opponents. The neural opponent has not previously been a parity test opponent.",
+  "source_sha256": {
+    "FastDuel.java": "44f28bb35d6052d050f9925ad781a7ebd08f8b913e172c9a3deb45f7d8710e8f",
+    "FlatPhysics.java": "c9e2261700ca2a86e3a62d4b7261f31d73e5e89e9a435364d891d5977c2dfa81",
+    "KernelReplay.java": "5528e10ad88507d7685ef612aba5330177002b8383bc3dcf4fba01e2fef9baae",
+    "Fighter.java": "91d4ea30a67b6a616f8a74ec4cae735e5ddbfa306223d7e05959f5b015fe75fc",
+    "TreePolicy.java": "f0feaa93ddf3bd8815c8e714f5b9686832071af28d86d1c89ef2428d3cd4961a"
+  },
+  "modes": [
+    "recorded keys and look",
+    "independent closed-loop policy"
+  ],
+  "comparisons": "Both seats and W-tap controls. Same definition of exact contacts, terminal time, health, winner, keys and measured motion as v3."
+}

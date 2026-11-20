@@ -2,7 +2,7 @@
 
 The original playable checkpoint learned when to swing and when to jump. In Minecraft Java 26.3 it beat plain W-tap in 13 of 16 duels. At 100 ms added round-trip latency the result depended on which spawn seat it played. An independent bot trained with the same outcome-based approach beat it seven times in eight by playing a very different game. Both are playable in the launcher. Established combos, deliberate hit selection and performance against strong human players remain unproven.
 
-The [new league-trained fighter](TRAINED-FIGHTER.md) is playable in option 4. Its [fast simulator was checked against Java 26.3](SIMULATOR.md) on 120 independent fights. The results below describe the original checkpoint.
+The [new league-trained fighter](TRAINED-FIGHTER.md) is playable in option 4. Its [fast simulator was checked against Java 26.3](SIMULATOR.md) on successive independent panels, including 96 fresh fights on the final version. The results below describe the original checkpoint.
 
 ## What the learner saw and earned
 

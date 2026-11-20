@@ -59,5 +59,7 @@
   "native_maintenance_seed": 7061259,
   "maintenance_openings_per_latency": 3,
   "promotion": "A majority against each established opponent on the scheduled native panel, at least half against the never-training opponent, and a majority in ordinary TCP against each of its two opponents. Independent maintenance uses a W-tap acquisition prefix. Only terminal health and duel result determine training fitness.",
-  "native_seed_schedule": "Scheduled panels run one latency per launch at base seed plus latency in ms. Ordinary TCP runs both latencies in one launch at its base seed."
+  "native_seed_schedule": "Scheduled panels run one latency per launch at base seed plus latency in ms. Ordinary TCP runs both latencies in one launch at its base seed.",
+  "training_revision": "d284955aabc302c9871424f1af3e90c845e72573",
+  "flat_physics_hash": "d3dfd230c60f8e2f0e01be8334d649084ffd1cdce59daef30c14f9ddcd10f7c0"
 }

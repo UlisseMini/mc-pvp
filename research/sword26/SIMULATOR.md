@@ -16,7 +16,7 @@ The first prospective test used four new openings per latency and three opponent
 
 After those corrections, a second prospective test used four different openings per latency. All 96 closed-loop fights matched both terminal health values and the entire ordered contact sequence through termination. All observed positions, velocities, sprint flags, charge and displayed target positions matched in 95 of the 96 bouts. One zero-latency bout had a maximum displayed error of 0.0384 blocks and own-position error of 0.00000365 blocks. Replaying the recorded keys separately also reproduced every outcome and contact. These are independent openings for the corrected simulator. [Second protocol](evidence/kernel/validation-v2.json) · [Zero-latency results](evidence/kernel/v2-sealed-0.csv) · [100 ms results](evidence/kernel/v2-sealed-100.csv)
 
-The current version also models Java’s eight-degree glancing-wall rule for retaining sprint. I identified that rule from an older development bout where W-tap grazed a barrier. A third prospective comparison used a newly trained policy, five opponents, three openings per latency and both seats. Each cell below counts whole fights under closed-loop control. [Third protocol and frozen hashes](evidence/kernel/validation-v3.json) · [Zero-latency results](evidence/kernel/v3-sealed-0.csv) · [100 ms results](evidence/kernel/v3-sealed-100.csv)
+The third version also modeled Java’s eight-degree glancing-wall rule for retaining sprint. I identified that rule from an older development bout where W-tap grazed a barrier. A third prospective comparison used a newly trained policy, five opponents, three openings per latency and both seats. Each cell below counts whole fights under closed-loop control. [Third protocol and frozen hashes](evidence/kernel/validation-v3.json) · [Zero-latency results](evidence/kernel/v3-sealed-0.csv) · [100 ms results](evidence/kernel/v3-sealed-100.csv)
 
 | Independent Java comparison | Trained policy, 0 ms | W-tap, 0 ms | Trained policy, 100 ms | W-tap, 100 ms |
 |---|---:|---:|---:|---:|
@@ -26,9 +26,20 @@ The current version also models Java’s eight-degree glancing-wall rule for ret
 
 All 38,796 compared physical key decisions and health observations matched. Of those samples, 38,628 also matched exactly on the measured motion fields. In the single divergent bout the largest difference in displayed enemy position was 0.1652 blocks and the largest difference in own position was 0.00180 blocks. With the original physical keys and aim angles replayed, own position stayed exact throughout all 120 fights. One displayed-position sample differed. The 120 recorded-key comparisons and 120 closed-loop comparisons use the same 120 Java recordings.
 
+An additional challenge introduced the league-trained fighter and a new opponent that rapidly alternates forward and backward inputs while airborne. The third version predicted all 120 winners on that challenge, but reproduced both final health values in 110 and all hits and terminal ticks in 107. Every large trajectory error came against the new opponent. Mojang’s local client lets a first forward tap arm sprint in midair and a backward press clears the timer. Implementing these rules restored the full hit and final-HP match in all 120 replays of the diagnostic panel. This is a rescore on exposed openings. Its former results are retained. [Third-version challenge, 0 ms](evidence/kernel/league-0.csv) · [100 ms](evidence/kernel/league-100.csv) · [Corrected development rescore, 0 ms](evidence/kernel/v4-development-league-0.csv) · [100 ms](evidence/kernel/v4-development-league-100.csv)
+
+The fourth prospective test deliberately includes that troublesome opponent. The other opponents are W-tap, the retreating fighter and a recurrent fighter whose policy had never been used in a parity test. It uses three fresh openings at each latency, both seats and matched controls. [Frozen fourth protocol](evidence/kernel/validation-v4.json)
+
+The final simulator and real Java matched the winner, both final HP values, every accepted hit and the death tick in **96/96 new bouts**. They matched all **31,502** physical-key decisions. With recorded keys and aim angles, own position stayed exactly equal throughout. Only 29 of the 31,502 compared motion observations differed, with up to 0.4201 blocks of displayed-opponent error. With independently calculated aim, the maximum own-position difference was 0.00235 blocks, and 30,553/31,502 measured motion observations were bit-exact. The larger count of bit differences in the closed loop reflects aim feedback after a displayed-position difference. [Final 0 ms scores](evidence/kernel/v4-sealed-0.csv) · [Final 100 ms scores](evidence/kernel/v4-sealed-100.csv) · [Raw Java recordings at zero latency](evidence/kernel/java-v4-0.tar.gz) · [Raw Java recordings at 100 ms](evidence/kernel/java-v4-100.tar.gz)
+
+| Final prospective test under independent policy control | Learned, 0 ms | W-tap, 0 ms | Learned, 100 ms | W-tap, 100 ms |
+|---|---:|---:|---:|---:|
+| Complete hit sequence, terminal tick and both health values | 24/24 | 24/24 | 24/24 | 24/24 |
+| Every measured motion observation identical | 22/24 | 23/24 | 20/24 | 22/24 |
+
 ## Speed
 
-Five batches of 8,000 complete duels per arm ran on one warmed CPU thread on this Mac’s Apple M2 Max. Both policies made a decision each tick, including aim. The benchmark includes opening creation and the fight through death or the time limit. At the median speed, a single thread advances learned-policy fights about 80,400 times faster than the game’s 20 ticks per second. [All five timings and checksums](evidence/kernel/throughput-v3.csv) · [Benchmark](KernelBench.java)
+The third-version benchmark used five batches of 8,000 complete duels per arm on one warmed CPU thread on this Mac’s Apple M2 Max. Both policies made a decision each tick, including aim. The benchmark includes opening creation and the fight through death or the time limit. At the median speed, a single thread advances learned-policy fights about 80,400 times faster than the game’s 20 ticks per second. [All five timings and checksums](evidence/kernel/throughput-v3.csv) · [Benchmark](KernelBench.java)
 
 | Median per second | Learned policy against learned rival | W-tap against the same rival |
 |---|---:|---:|
@@ -36,6 +47,8 @@ Five batches of 8,000 complete duels per arm ran on one warmed CPU thread on thi
 | Complete fights | 10,016 | 11,921 |
 
 The learned-policy batches ranged from 7,716 to 10,721 fights per second. The W-tap batches ranged from 7,895 to 14,277. Speed depends on the policy, how long a fight lasts and other load on the machine.
+
+With the current sprint implementation and the new league policy against the retreating rival, the single-thread medians were **9,348 complete fights and 1,457,576 duel ticks per second**. The matched W-tap arm ran at 13,388 fights and 2,092,831 duel ticks per second. The learned batches ranged from 8,401 to 10,204 fights per second. The W-tap batches ranged from 8,151 to 13,769. [Current benchmark](evidence/kernel/throughput-v4.csv)
 
 ## What ran inside actual Minecraft
 
@@ -45,12 +58,12 @@ A separate component check calls Mojang’s methods directly. All 65,536 pairs o
 
 ## Replaying the evidence
 
-From the project folder, the following example regenerates one score file with the currently checked out simulator and the two original policy files resolved by hash. Use the matching revision for a historical score. The v2 simulator and its trained fighter are archived in Git commit `d284955a`.
+From the project folder, this example regenerates the v2 score with the archived simulator and the original policy files resolved by hash. The replay program builds that revision without changing the checkout or opening Minecraft. Omit `--revision` to score the same recordings with the current simulator.
 
 ```sh
 mkdir -p build/sword26/replay-kernel
 tar -xzf research/sword26/evidence/kernel/java-v2-100.tar.gz -C build/sword26/replay-kernel
-python3 research/sword26/parity_lab.py build/sword26/replay-kernel build/sword26/replayed.csv
+python3 research/sword26/parity_lab.py build/sword26/replay-kernel build/sword26/replayed.csv --revision d284955a
 python3 research/sword26/kernel_report.py summary build/sword26/replayed.csv
 ```
 
