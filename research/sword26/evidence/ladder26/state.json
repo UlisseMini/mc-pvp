@@ -1,5 +1,5 @@
 {
-  "season": 24,
+  "season": 27,
   "series_start": 21,
   "aim_profile": "perfect",
   "incumbent": "evidence/ladder26/fighters/aa9e5afc8d9d79d6.net",
@@ -61,15 +61,21 @@
     "evidence/ladder26/fighters/bb9b4339475d77d7.net",
     "evidence/ladder26/fighters/8af14056949a200a.net",
     "evidence/ladder26/fighters/7e986b336394a8b6.net",
-    "evidence/ladder26/fighters/77433fa2c822b7a0.net"
+    "evidence/ladder26/fighters/77433fa2c822b7a0.net",
+    "evidence/ladder26/fighters/45b036297b60d75d.net",
+    "evidence/ladder26/fighters/7058c4342c90fa33.net",
+    "evidence/ladder26/fighters/0754fe2d0e4deb87.net"
   ],
-  "stale": 0,
+  "stale": 3,
   "last_java": 23,
   "history": [
     21,
     22,
     23,
-    24
+    24,
+    25,
+    26,
+    27
   ],
   "promotions": [
     23
