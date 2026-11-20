@@ -1,0 +1,31 @@
+{
+  "anchors": "Reproduce every original recorded-map outcome and terminal timestamp for both checkpoints and W-tap. Synthetic openings are simulator interventions.",
+  "checkpoints": {
+    "16k": {
+      "actor": "research/elite-league/single-sumo/evidence/id-oracle/ringout-only-sumo-seven-first/n16384.net",
+      "sha256": "bae8d89efe826c97fecab41cd25ed0a74f2622017b009b6d62e8792f219088f0",
+      "target": "sumo-seven-first",
+      "target_sha": "12d477e6733f779bc0c94cc018b7dac7fb8d4e33e168dc7ea5901b87641f8e75"
+    },
+    "32k": {
+      "actor": "research/elite-league/single-sumo/evidence/long-specialists/seven/n32768.net",
+      "sha256": "3943fcc674e231cee5f8984e0b3c203ede05bbb4c1a7a6a7bb52b946f1de5d8d",
+      "target": "sumo-seven-first",
+      "target_sha": "12d477e6733f779bc0c94cc018b7dac7fb8d4e33e168dc7ea5901b87641f8e75"
+    }
+  },
+  "fixtures": "128 previously exposed paired fixtures per cell, from eight donors with mirrored seats and four RTT pairs. Diagnostic only. No sealed geometries.",
+  "maps": {
+    "mmc-137": 8,
+    "mmc-221": 10
+  },
+  "metrics": "Outright wins, draws and losses, seat, RTT, draw timeouts, accepted fresh hits and last fresh-hit time in timeouts.",
+  "opening_distances": [
+    8,
+    10
+  ],
+  "physical_cap_both": 7,
+  "target": "sumo-seven-first",
+  "test": "Cross the two recorded floor volumes with an eight- or ten-block distance on the recorded approach axis. Move both players symmetrically about the midpoint. Preserve terrain, yaw, seeds and clocks.",
+  "training_floor": "Only the default 137-block floor is used for training"
+}

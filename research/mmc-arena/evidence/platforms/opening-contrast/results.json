@@ -1,0 +1,806 @@
+{
+  "mmc-137/10/16k": {
+    "draws": 1,
+    "losses": 49,
+    "median_fresh_hits_in_timeout": 304,
+    "median_last_fresh_ms_in_timeout": 119464.283875,
+    "rtt": {
+      "109/109": {
+        "draws": 0,
+        "losses": 12,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 20
+      },
+      "109/31": {
+        "draws": 0,
+        "losses": 22,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 10
+      },
+      "31/109": {
+        "draws": 0,
+        "losses": 7,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 25
+      },
+      "31/31": {
+        "draws": 1,
+        "losses": 8,
+        "median_fresh_hits_in_timeout": 304,
+        "median_last_fresh_ms_in_timeout": 119464.283875,
+        "timeouts": 1,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 23
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 1,
+        "losses": 21,
+        "median_fresh_hits_in_timeout": 304,
+        "median_last_fresh_ms_in_timeout": 119464.283875,
+        "timeouts": 1,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 42
+      },
+      "b": {
+        "draws": 0,
+        "losses": 28,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 36
+      }
+    },
+    "timeouts": 1,
+    "timeouts_with_no_fresh_hit": 0,
+    "wins": 78
+  },
+  "mmc-137/10/32k": {
+    "draws": 4,
+    "losses": 21,
+    "median_fresh_hits_in_timeout": 243,
+    "median_last_fresh_ms_in_timeout": 119414.730292,
+    "rtt": {
+      "109/109": {
+        "draws": 2,
+        "losses": 7,
+        "median_fresh_hits_in_timeout": 238,
+        "median_last_fresh_ms_in_timeout": 118836.873427,
+        "timeouts": 1,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 23
+      },
+      "109/31": {
+        "draws": 2,
+        "losses": 8,
+        "median_fresh_hits_in_timeout": 249.5,
+        "median_last_fresh_ms_in_timeout": 119579.2308335,
+        "timeouts": 2,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 22
+      },
+      "31/109": {
+        "draws": 0,
+        "losses": 4,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 28
+      },
+      "31/31": {
+        "draws": 0,
+        "losses": 2,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 30
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 3,
+        "losses": 5,
+        "median_fresh_hits_in_timeout": 247.0,
+        "median_last_fresh_ms_in_timeout": 119290.302401,
+        "timeouts": 2,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 56
+      },
+      "b": {
+        "draws": 1,
+        "losses": 16,
+        "median_fresh_hits_in_timeout": 243,
+        "median_last_fresh_ms_in_timeout": 119414.730292,
+        "timeouts": 1,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 47
+      }
+    },
+    "timeouts": 3,
+    "timeouts_with_no_fresh_hit": 0,
+    "wins": 103
+  },
+  "mmc-137/10/wtap": {
+    "draws": 0,
+    "losses": 124,
+    "median_fresh_hits_in_timeout": null,
+    "median_last_fresh_ms_in_timeout": null,
+    "rtt": {
+      "109/109": {
+        "draws": 0,
+        "losses": 30,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 2
+      },
+      "109/31": {
+        "draws": 0,
+        "losses": 32,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 0
+      },
+      "31/109": {
+        "draws": 0,
+        "losses": 30,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 2
+      },
+      "31/31": {
+        "draws": 0,
+        "losses": 32,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 0
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 0,
+        "losses": 62,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 2
+      },
+      "b": {
+        "draws": 0,
+        "losses": 62,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 2
+      }
+    },
+    "timeouts": 0,
+    "timeouts_with_no_fresh_hit": 0,
+    "wins": 4
+  },
+  "mmc-137/8/16k": {
+    "draws": 3,
+    "losses": 45,
+    "median_fresh_hits_in_timeout": 264,
+    "median_last_fresh_ms_in_timeout": 119730.083514,
+    "rtt": {
+      "109/109": {
+        "draws": 0,
+        "losses": 12,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 20
+      },
+      "109/31": {
+        "draws": 2,
+        "losses": 16,
+        "median_fresh_hits_in_timeout": 271.0,
+        "median_last_fresh_ms_in_timeout": 119322.3186135,
+        "timeouts": 2,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 14
+      },
+      "31/109": {
+        "draws": 0,
+        "losses": 9,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 23
+      },
+      "31/31": {
+        "draws": 1,
+        "losses": 8,
+        "median_fresh_hits_in_timeout": 243,
+        "median_last_fresh_ms_in_timeout": 119977.109116,
+        "timeouts": 1,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 23
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 0,
+        "losses": 19,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 45
+      },
+      "b": {
+        "draws": 3,
+        "losses": 26,
+        "median_fresh_hits_in_timeout": 264,
+        "median_last_fresh_ms_in_timeout": 119730.083514,
+        "timeouts": 3,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 35
+      }
+    },
+    "timeouts": 3,
+    "timeouts_with_no_fresh_hit": 0,
+    "wins": 80
+  },
+  "mmc-137/8/32k": {
+    "draws": 0,
+    "losses": 23,
+    "median_fresh_hits_in_timeout": null,
+    "median_last_fresh_ms_in_timeout": null,
+    "rtt": {
+      "109/109": {
+        "draws": 0,
+        "losses": 11,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 21
+      },
+      "109/31": {
+        "draws": 0,
+        "losses": 9,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 23
+      },
+      "31/109": {
+        "draws": 0,
+        "losses": 1,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 31
+      },
+      "31/31": {
+        "draws": 0,
+        "losses": 2,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 30
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 0,
+        "losses": 16,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 48
+      },
+      "b": {
+        "draws": 0,
+        "losses": 7,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 57
+      }
+    },
+    "timeouts": 0,
+    "timeouts_with_no_fresh_hit": 0,
+    "wins": 105
+  },
+  "mmc-137/8/wtap": {
+    "draws": 0,
+    "losses": 120,
+    "median_fresh_hits_in_timeout": null,
+    "median_last_fresh_ms_in_timeout": null,
+    "rtt": {
+      "109/109": {
+        "draws": 0,
+        "losses": 28,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 4
+      },
+      "109/31": {
+        "draws": 0,
+        "losses": 32,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 0
+      },
+      "31/109": {
+        "draws": 0,
+        "losses": 30,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 2
+      },
+      "31/31": {
+        "draws": 0,
+        "losses": 30,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 2
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 0,
+        "losses": 62,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 2
+      },
+      "b": {
+        "draws": 0,
+        "losses": 58,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 6
+      }
+    },
+    "timeouts": 0,
+    "timeouts_with_no_fresh_hit": 0,
+    "wins": 8
+  },
+  "mmc-221/10/16k": {
+    "draws": 16,
+    "losses": 43,
+    "median_fresh_hits_in_timeout": 288.5,
+    "median_last_fresh_ms_in_timeout": 119742.17113249999,
+    "rtt": {
+      "109/109": {
+        "draws": 2,
+        "losses": 10,
+        "median_fresh_hits_in_timeout": 278.5,
+        "median_last_fresh_ms_in_timeout": 118273.1571675,
+        "timeouts": 2,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 20
+      },
+      "109/31": {
+        "draws": 5,
+        "losses": 20,
+        "median_fresh_hits_in_timeout": 286,
+        "median_last_fresh_ms_in_timeout": 119637.292718,
+        "timeouts": 5,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 7
+      },
+      "31/109": {
+        "draws": 5,
+        "losses": 7,
+        "median_fresh_hits_in_timeout": 296,
+        "median_last_fresh_ms_in_timeout": 119895.102043,
+        "timeouts": 5,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 20
+      },
+      "31/31": {
+        "draws": 4,
+        "losses": 6,
+        "median_fresh_hits_in_timeout": 290.0,
+        "median_last_fresh_ms_in_timeout": 119820.8739445,
+        "timeouts": 4,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 22
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 7,
+        "losses": 20,
+        "median_fresh_hits_in_timeout": 295,
+        "median_last_fresh_ms_in_timeout": 119464.283875,
+        "timeouts": 7,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 37
+      },
+      "b": {
+        "draws": 9,
+        "losses": 23,
+        "median_fresh_hits_in_timeout": 286,
+        "median_last_fresh_ms_in_timeout": 119777.319931,
+        "timeouts": 9,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 32
+      }
+    },
+    "timeouts": 16,
+    "timeouts_with_no_fresh_hit": 0,
+    "wins": 69
+  },
+  "mmc-221/10/32k": {
+    "draws": 19,
+    "losses": 17,
+    "median_fresh_hits_in_timeout": 269,
+    "median_last_fresh_ms_in_timeout": 119662.647213,
+    "rtt": {
+      "109/109": {
+        "draws": 3,
+        "losses": 6,
+        "median_fresh_hits_in_timeout": 251,
+        "median_last_fresh_ms_in_timeout": 119293.450116,
+        "timeouts": 3,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 23
+      },
+      "109/31": {
+        "draws": 10,
+        "losses": 7,
+        "median_fresh_hits_in_timeout": 263.0,
+        "median_last_fresh_ms_in_timeout": 119778.44619,
+        "timeouts": 10,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 15
+      },
+      "31/109": {
+        "draws": 4,
+        "losses": 2,
+        "median_fresh_hits_in_timeout": 287.0,
+        "median_last_fresh_ms_in_timeout": 119679.692959,
+        "timeouts": 4,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 26
+      },
+      "31/31": {
+        "draws": 2,
+        "losses": 2,
+        "median_fresh_hits_in_timeout": 303.0,
+        "median_last_fresh_ms_in_timeout": 119685.3944655,
+        "timeouts": 2,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 28
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 13,
+        "losses": 7,
+        "median_fresh_hits_in_timeout": 269,
+        "median_last_fresh_ms_in_timeout": 119813.161005,
+        "timeouts": 13,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 44
+      },
+      "b": {
+        "draws": 6,
+        "losses": 10,
+        "median_fresh_hits_in_timeout": 270.5,
+        "median_last_fresh_ms_in_timeout": 119439.5070835,
+        "timeouts": 6,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 48
+      }
+    },
+    "timeouts": 19,
+    "timeouts_with_no_fresh_hit": 0,
+    "wins": 92
+  },
+  "mmc-221/10/wtap": {
+    "draws": 0,
+    "losses": 128,
+    "median_fresh_hits_in_timeout": null,
+    "median_last_fresh_ms_in_timeout": null,
+    "rtt": {
+      "109/109": {
+        "draws": 0,
+        "losses": 32,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 0
+      },
+      "109/31": {
+        "draws": 0,
+        "losses": 32,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 0
+      },
+      "31/109": {
+        "draws": 0,
+        "losses": 32,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 0
+      },
+      "31/31": {
+        "draws": 0,
+        "losses": 32,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 0
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 0,
+        "losses": 64,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 0
+      },
+      "b": {
+        "draws": 0,
+        "losses": 64,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 0
+      }
+    },
+    "timeouts": 0,
+    "timeouts_with_no_fresh_hit": 0,
+    "wins": 0
+  },
+  "mmc-221/8/16k": {
+    "draws": 18,
+    "losses": 37,
+    "median_fresh_hits_in_timeout": 280.0,
+    "median_last_fresh_ms_in_timeout": 119712.4469865,
+    "rtt": {
+      "109/109": {
+        "draws": 2,
+        "losses": 9,
+        "median_fresh_hits_in_timeout": 283.0,
+        "median_last_fresh_ms_in_timeout": 119343.19275049999,
+        "timeouts": 2,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 21
+      },
+      "109/31": {
+        "draws": 11,
+        "losses": 15,
+        "median_fresh_hits_in_timeout": 272,
+        "median_last_fresh_ms_in_timeout": 119730.083514,
+        "timeouts": 11,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 6
+      },
+      "31/109": {
+        "draws": 4,
+        "losses": 4,
+        "median_fresh_hits_in_timeout": 296.0,
+        "median_last_fresh_ms_in_timeout": 119596.2432455,
+        "timeouts": 4,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 24
+      },
+      "31/31": {
+        "draws": 1,
+        "losses": 9,
+        "median_fresh_hits_in_timeout": 243,
+        "median_last_fresh_ms_in_timeout": 119977.109116,
+        "timeouts": 1,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 22
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 9,
+        "losses": 17,
+        "median_fresh_hits_in_timeout": 279,
+        "median_last_fresh_ms_in_timeout": 119813.161005,
+        "timeouts": 9,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 38
+      },
+      "b": {
+        "draws": 9,
+        "losses": 20,
+        "median_fresh_hits_in_timeout": 283,
+        "median_last_fresh_ms_in_timeout": 119653.372751,
+        "timeouts": 9,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 35
+      }
+    },
+    "timeouts": 18,
+    "timeouts_with_no_fresh_hit": 0,
+    "wins": 73
+  },
+  "mmc-221/8/32k": {
+    "draws": 18,
+    "losses": 20,
+    "median_fresh_hits_in_timeout": 271.5,
+    "median_last_fresh_ms_in_timeout": 119685.5972295,
+    "rtt": {
+      "109/109": {
+        "draws": 0,
+        "losses": 8,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 24
+      },
+      "109/31": {
+        "draws": 13,
+        "losses": 8,
+        "median_fresh_hits_in_timeout": 265,
+        "median_last_fresh_ms_in_timeout": 119645.559075,
+        "timeouts": 13,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 11
+      },
+      "31/109": {
+        "draws": 4,
+        "losses": 1,
+        "median_fresh_hits_in_timeout": 296.5,
+        "median_last_fresh_ms_in_timeout": 119713.312336,
+        "timeouts": 4,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 27
+      },
+      "31/31": {
+        "draws": 1,
+        "losses": 3,
+        "median_fresh_hits_in_timeout": 284,
+        "median_last_fresh_ms_in_timeout": 119963.027672,
+        "timeouts": 1,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 28
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 8,
+        "losses": 11,
+        "median_fresh_hits_in_timeout": 268.5,
+        "median_last_fresh_ms_in_timeout": 119748.9952875,
+        "timeouts": 8,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 45
+      },
+      "b": {
+        "draws": 10,
+        "losses": 9,
+        "median_fresh_hits_in_timeout": 274.0,
+        "median_last_fresh_ms_in_timeout": 119595.6903505,
+        "timeouts": 10,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 45
+      }
+    },
+    "timeouts": 18,
+    "timeouts_with_no_fresh_hit": 0,
+    "wins": 90
+  },
+  "mmc-221/8/wtap": {
+    "draws": 0,
+    "losses": 118,
+    "median_fresh_hits_in_timeout": null,
+    "median_last_fresh_ms_in_timeout": null,
+    "rtt": {
+      "109/109": {
+        "draws": 0,
+        "losses": 24,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 8
+      },
+      "109/31": {
+        "draws": 0,
+        "losses": 32,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 0
+      },
+      "31/109": {
+        "draws": 0,
+        "losses": 32,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 0
+      },
+      "31/31": {
+        "draws": 0,
+        "losses": 30,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 2
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 0,
+        "losses": 60,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 4
+      },
+      "b": {
+        "draws": 0,
+        "losses": 58,
+        "median_fresh_hits_in_timeout": null,
+        "median_last_fresh_ms_in_timeout": null,
+        "timeouts": 0,
+        "timeouts_with_no_fresh_hit": 0,
+        "wins": 6
+      }
+    },
+    "timeouts": 0,
+    "timeouts_with_no_fresh_hit": 0,
+    "wins": 10
+  }
+}
