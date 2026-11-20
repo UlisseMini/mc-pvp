@@ -29,20 +29,23 @@ def guest_cpu():
                if "com.apple.Virtualization.VirtualMachine" in r or "/lima/hostagent" in r)
 
 
-def native_panel(tag, actors, opponents, seed, pairs):
+def native_panel(tag, actors, opponents, seed, pairs, active=False, openings=None):
     dest=EVIDENCE/tag;work=WORK/tag
     dest.mkdir(exist_ok=True);work.mkdir(exist_ok=True)
     if (dest/"panel.json").exists():
         cached=json.loads((dest/"panel.json").read_text())
-        if cached.get("score_rule")=="first_lethal_contact":return cached
+        if cached.get("score_rule")=="first_lethal_contact" and (not active or cached.get("active_frames")):return cached
     registration=dict(actors=[local(p) for p in actors],opponents=[local(p) for p in opponents],
                       actor_hashes=[hash_policy(p) for p in actors],opponent_hashes=[hash_policy(p) for p in opponents],
                       seed=seed,pairs=pairs,clock="ordinary TCP",rtts=[0,100])
+    if active:registration["client_frame_policy"]="minimized"
+    if openings:registration["matched_openings_from"]=str(Path(openings).relative_to(WORK.parent))
     reg=dest/"registration.json"
     if reg.exists() and json.loads(reg.read_text())!=registration:raise ValueError(f"Registration mismatch for {tag}")
     save(reg,registration)
     cmd=[sys.executable,SRC/"native.py","--weights",actors[0],"--rtts","0","100","--pairs",str(pairs),
          "--opponents",*opponents,"--seed",str(seed),"--extra-weights",*actors[1:]]
+    if openings:cmd.extend(["--openings-from",openings])
     run=None
     for log in sorted(work.glob("native-*.log")):
         names=[s.partition(": ")[2] for s in log.read_text().splitlines() if s.startswith("Round recordings:")]
@@ -68,6 +71,13 @@ def native_panel(tag, actors, opponents, seed, pairs):
     if [a["sha256"] for a in meta["extra_weights"]]!=registration["actor_hashes"][1:] or meta["opponent_hashes"]!={str(p):hash_policy(p) for p in opponents}:
         raise ValueError("Native roster changed")
     data=export(run,dest,"ordinary")
+    if active:
+        if meta.get("client_frame_policy")!="minimized" or meta.get("referee_score_rule")!="first_lethal_contact":
+            raise ValueError("The active-client trial requires its registered native build")
+        for row in data:
+            for side in row["client_pacing"].values():
+                if side.get("afk_limited")!=0 or side.get("min_frame_cap")!=50:
+                    raise ValueError(f"Unexpected headless frame cap in {tag}, {row['id']}")
     archive_panel(tag,run)
     trim_after_knockout(tag,run)
     if len(data)!=count:raise ValueError(f"Incomplete Java panel for {tag}")
@@ -81,7 +91,7 @@ def native_panel(tag, actors, opponents, seed, pairs):
                hp=r["hp"],enemy_hp=r["opponent_hp"],score=1 if r["opponent_hp"]==0 else 0 if r["hp"]==0 else .5,
                qualified=(r["rtt"],r["pair"],r["seat"],r["rival"]) not in bad)
         scores.append(s)
-    result=dict(run=run.name,scores=scores,unqualified_cells=len(bad),score_rule="first_lethal_contact")
+    result=dict(run=run.name,scores=scores,unqualified_cells=len(bad),score_rule="first_lethal_contact",active_frames=active)
     save(dest/"panel.json",result)
     return result
 
@@ -129,7 +139,7 @@ def native_scout(index, jar, work, dest, candidates, inc, base, general, direct)
     by_score=sorted(available,key=robust_direct,reverse=True)
     shortlist=unique([*shortlist,*by_score])[:4]
     shortlist=[write_fighter(p) for p in shortlist]
-    pilot=native_panel(f"scout-{index:03d}",[*shortlist,inc],[inc],base+312,1)
+    pilot=native_panel(f"scout-{index:03d}",[*shortlist,inc],[inc],base+312,1,active=index>14)
     rows=pilot["scores"]
     def score(p):
         subset=[r for r in rows if r["actor"]==local(p) and r["qualified"]]
@@ -188,12 +198,23 @@ def native_wave(index,main,inc,pool,history,final):
     save(dst/"nomination.json",dict(general=local(choices[0]),challengers=[local(p) for p in choices],incumbent=local(inc),
                                      model_direct={local(p):field_score(merits,p,inc) for p in [general,direct,inc]},
                                      model_wtap_direct=field_score(merits,"wtap",inc),final_challenge=final))
-    panels=[native_panel(tag+"-a",actors,opponents,base+1,2)]
+    active=index>=14
+    suffixes=("a","b");seed_offset=0
+    if index==14 and (EVIDENCE/(tag+"-a")/"registration.json").exists():
+        # Both old ordinary-clock panels remain development evidence. Publish their original terminal polls separately.
+        old_a=native_panel(tag+"-a",actors,opponents,base+1,2)
+        old_b=native_panel(tag+"-b",actors,opponents,base+2,2)
+        crossover=native_panel("timing-014",[write_fighter(direct)],[inc],base+7001,2,active=True,
+                               openings=WORK.parent/old_a["run"]/"results.json")
+        save(dst/"client-timing-comparison.json",dict(legacy=[old_a["run"],old_b["run"]],same_openings=crossover["run"],
+             challenger=local(write_fighter(direct)),purpose="Development crossover; active promotion uses fresh opening seeds"))
+        suffixes=("c","d");seed_offset=11000
+    panels=[native_panel(tag+"-"+suffixes[0],actors,opponents,base+seed_offset+1,2,active=active)]
     data=panels[0]["scores"];eligible,threats=compare_native(data,choices,inc)
     uncertain=any(rate(native_rates(data,local(p),local(inc)))<.75 or min(rate(native_rates(data,local(p),local(inc),rtt=r)) for r in (0,100))<.5 for p in eligible)
     # Confirm a potential specialist failure even when it misses the broader promotion gate.
     if (eligible and uncertain) or (threats and not eligible) or panels[0]["unqualified_cells"] or final:
-        panels.append(native_panel(tag+"-b",actors,opponents,base+2,2))
+        panels.append(native_panel(tag+"-"+suffixes[1],actors,opponents,base+seed_offset+2,2,active=active))
         data=data+panels[1]["scores"]
         eligible,threats=compare_native(data,choices,inc)
     winner=eligible[0] if eligible else inc

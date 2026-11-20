@@ -72,6 +72,17 @@ def survival(events, index, name, end_tick):
     return {"entry_tick":entry,**results}
 
 
+def pacing(samples):
+    if not samples or "epochMs" not in samples[0]:return {}
+    dt=[int(b["epochMs"])-int(a["epochMs"]) for a,b in zip(samples,samples[1:])]
+    stats=dict(polls=len(samples),intervals=len(dt),under_5_ms=sum(d<5 for d in dt),over_85_ms=sum(d>85 for d in dt),
+               median_interval_ms=statistics.median(dt) if dt else None)
+    if "afkLimited" in samples[0]:
+        stats.update(afk_limited=sum(r["afkLimited"]=="true" for r in samples),min_frame_cap=min(int(r["frameLimit"]) for r in samples),
+                     median_render_fps=statistics.median(int(r["renderFps"]) for r in samples))
+    return stats
+
+
 def audit(run):
     matches=json.loads((run/"results.json").read_text())
     names=json.loads((run/"metadata.json").read_text())["names"]
@@ -121,7 +132,7 @@ def audit(run):
             switch=next((k for k in keys if k.get("assignedPolicyActive")=="true"),None)
             branch={**signal,**survival(events,ix,name,m["ticks"]),
                     "switch_delay_ms":None if switch is None else int(switch["epochMs"])-int(signal["epochMs"])}
-        output.append({**m,**movement(keys),"hits":len(own),"events":count_events(own),"landmarks":cycles,
+        output.append({**m,"client_pacing":{"bot":pacing(keys),"opponent":pacing(opponent_keys)},**movement(keys),"hits":len(own),"events":count_events(own),"landmarks":cycles,
                        "branch":branch,"first_input_spawn_error_blocks":spawn_errors,
                        "fresh_classification":"native damage cooldown" if events and "preDamageCooldown" in events[0] else "native post-contact hurt animation",
                        "defender_input_recorded":bool(opponent_keys),"physical_presses":len(pressed),

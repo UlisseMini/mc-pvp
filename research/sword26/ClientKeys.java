@@ -47,7 +47,7 @@ public final class ClientKeys {
                         }else firstPress=control.resolveSibling(fields[0]+"-defender-press");
                     }
                     trace=new PrintWriter(Files.newBufferedWriter(Path.of(System.getProperty("sword.logs")).resolve(fields[0]+"-"+control.getFileName()+".tsv")));
-                    trace.println("tick\tx\ty\tz\ttargetX\ttargetY\ttargetZ\tvx\tvy\tvz\tground\tsprint\tcharge\thp\thurt\totherHurt\tforward\tside\trunKey\tjump\tpress\tyaw\tpitch\tepochMs\tassignedPolicyActive");
+                    trace.println("tick\tx\ty\tz\ttargetX\ttargetY\ttargetZ\tvx\tvy\tvz\tground\tsprint\tcharge\thp\thurt\totherHurt\tforward\tside\trunKey\tjump\tpress\tyaw\tpitch\tepochMs\tassignedPolicyActive\tframeLimit\trenderFps\tafkLimited");
                 }
             }
             if(controller==null||now()<start){apply(mc,Keys.STILL);return;}
@@ -77,8 +77,12 @@ public final class ClientKeys {
             double dy=clip(p.getEyeY(),other.getY()+.1,other.getY()+1.7)-p.getEyeY();
             p.setXRot((float)-Math.toDegrees(Math.atan2(dy,Math.hypot(lx-p.getX(),lz-p.getZ()))));
             apply(mc,k);
-            trace.printf(java.util.Locale.ROOT,"%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%b\t%b\t%s\t%s\t%d\t%d\t%d\t%d\t%b\t%b\t%b\t%s\t%s\t%d\t%b%n",
-                ticks++,p.getX(),p.getY(),p.getZ(),lx,ly,lz,vel.x,vel.y,vel.z,v.grounded(),v.sprint(),v.charge(),v.health(),v.hurt(),v.otherHurt(),k.forward(),k.side(),k.sprint(),k.jump(),k.click(),p.getYRot(),p.getXRot(),stamp,opening==null);
+            var tracker=mc.getFramerateLimitTracker();
+            var throttle=tracker.getThrottleReason();
+            boolean afk=throttle==com.mojang.blaze3d.platform.FramerateLimitTracker.FramerateThrottleReason.SHORT_AFK ||
+                throttle==com.mojang.blaze3d.platform.FramerateLimitTracker.FramerateThrottleReason.LONG_AFK;
+            trace.printf(java.util.Locale.ROOT,"%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%b\t%b\t%s\t%s\t%d\t%d\t%d\t%d\t%b\t%b\t%b\t%s\t%s\t%d\t%b\t%d\t%d\t%b%n",
+                ticks++,p.getX(),p.getY(),p.getZ(),lx,ly,lz,vel.x,vel.y,vel.z,v.grounded(),v.sprint(),v.charge(),v.health(),v.hurt(),v.otherHurt(),k.forward(),k.side(),k.sprint(),k.jump(),k.click(),p.getYRot(),p.getXRot(),stamp,opening==null,tracker.getFramerateLimit(),mc.getFps(),afk);
             if(ticks%20==0)trace.flush();
         }catch(Exception e){throw new IllegalStateException("Sword input callback",e);}
     }

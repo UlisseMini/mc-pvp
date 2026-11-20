@@ -11,7 +11,7 @@ ARCHIVE=Path(__file__).resolve().parents[2]/"Sword League Recordings"
 
 
 def archive_panel(tag,run,rows=None):
-    if not re.fullmatch(r"(java-\d+-[ab]|scout-\d+|showcase-\d+)",tag):
+    if not re.fullmatch(r"(java-\d+-[abcd]|timing-\d+|scout-\d+|showcase-\d+)",tag):
         raise ValueError("Unknown league panel")
     if not (run/"videos").is_dir():return
     rows=rows if rows is not None else json.loads((run/"results.json").read_text())

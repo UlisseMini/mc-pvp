@@ -1,0 +1,9 @@
+{
+  "reason": "Stock game options on the headless clients selected inactivityFpsLimit=afk. In 26.3 the built-in limiter changes after 60 seconds and 600 seconds with no OS-level input. These policy runners apply game keys directly. Previous full-length native sessions therefore included AFK timing; preserve their results as collected.",
+  "rule": "Every new native promotion must use inactivityFpsLimit=minimized, a non-minimized virtual window and 50 FPS configured cap. Log the effective frame cap, reported frame rate and AFK state on both clients every input tick. The promotion scorer checks both clients. These diagnostic fields never feed a policy.",
+  "existing": "Keep seasons 3 and 9 historical ordinary-Java results. Keep season 14 old A and B as free-running, AFK-enabled development evidence. Recompute historical terminal polls at first recorded knockout and retain raw traces.",
+  "development": "Replay the old season 14 A geometries, both seats and 0/100 ms, with the frozen strongest direct response and W-tap against the incumbent. This is an exposed geometry crossover and excluded from promotion.",
+  "prospective": "Keep both season 14 nominees and all four opponents frozen. Fresh active panels C and D use base+11001 and base+11002 and two openings per RTT in each seat. Both are required in the final challenge. Use original majority/overall gates, and continue after any improvement or newly verified counter.",
+  "timing": "The low-frame-rate observation is associated with recorded polls in bursts. The old traces did not record the runtime throttle reason. Active-client telemetry and the direct crossover test the diagnosis.",
+  "video": "The regular camera samples at 50 Hz. The 854\u00d7480 exhibition samples at 60 Hz. Captured FPS and distinct rendered frames can differ, especially in old AFK-enabled recordings."
+}
