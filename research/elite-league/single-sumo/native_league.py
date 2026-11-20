@@ -171,7 +171,13 @@ def fair_cohort(folder,plan,bridge_path=None,server=None):
     """Let other campaigns use the main server between batches, keeping IDs, order and binaries."""
     from forge_window import window,cohort_window
     while True:
-        if (folder/'verified.json').is_file():return read(folder/'verified.json')['matches']
+        if (folder/'verified.json').is_file():
+            registered=read(folder/'protocol.json')
+            if registered['plan']!=plan:raise ValueError('Cached native fixture differs')
+            if server and read(folder/'native-build.json')['server']!=server:raise ValueError('Cached native server differs')
+            if bridge_path and registered['bridge']!=hashlib.sha256(bridge_path.read_bytes()).hexdigest():
+                raise ValueError('Cached native client differs')
+            return read(folder/'verified.json')['matches']
         lease=window(bridge_path,server=server) if server else cohort_window(folder,bridge_path)
         with lease as bridge:
             try:return cohort(folder,plan,bridge,max_admissions=24)
