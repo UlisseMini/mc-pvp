@@ -1,5 +1,6 @@
 """Test whether practicing the new generalist's three weakest opponents beats equal extra training."""
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 import fcntl
 import subprocess
 import sys
@@ -75,10 +76,24 @@ def evaluate():
     write_json(DEST/'model.json',dict(summary=summary,cells=cells),fixed=True)
 
 
+def remote_score():
+    from remote_fit import SSH,RSYNC,REMOTE,invoke
+    from remote_import import wait_for
+    import shlex
+    paths=[Path(__file__).resolve().relative_to(ROOT),*(DEST.relative_to(ROOT)/n for n in ('protocol.json','entrants.json'))]
+    invoke([*RSYNC,'-R',*map(str,paths),SSH[-1]+':'+REMOTE+'/'])
+    invoke([*SSH,'cd '+shlex.quote(REMOTE)+' && python3 research/elite-league/single-sumo/remote_jobs.py'])
+    prefix='weak-matchups/'
+    cells=[prefix+'model-cells/'+n+'.json' for n in read(DEST/'protocol.json')['field']]
+    wait_for([*cells,prefix+'model.json'])
+
+
 def run():
     actors=enroll()
     if not (DEST/'model.json').exists():
-        subprocess.run([sys.executable,HERE.parent/'cpu_limit.py','nice','-n','8',sys.executable,__file__,'evaluate'],check=True)
+        from remote_fit import enabled
+        if enabled():remote_score()
+        else:subprocess.run([sys.executable,HERE.parent/'cpu_limit.py','nice','-n','8',sys.executable,__file__,'evaluate'],check=True)
     from matched_native import assess
     protocol=read(DEST/'protocol.json')
     field=protocol['field']
@@ -86,7 +101,27 @@ def run():
     foes=list(dict.fromkeys(['wtap',*protocol['weakest']]))
     assess(DEST/'native','weak-matchups-001',arms,{n:field[n] for n in foes})
 
+def publish_frontier():
+    from adaptive_router import runtime,trace_parity
+    from native_league import publish
+    from matched_native import assess
+    field=read(DEST/'protocol.json')['field']
+    scores=read(DEST/'model.json')['summary']
+    winner=max(ROLES,key=lambda role:(scores[role]['worst']['wins'],scores[role]['mean_wins']))
+    ref=read(DEST/'entrants.json')[winner]
+    name=publish('sumo-generalist-001-128k',ref,'7 CPS broad PPO MLP, top of the two 131072-fight generalists on the 35-opponent simulator field')
+    pin=runtime()
+    parity=trace_parity(ROOT/ref['reference'],pin)
+    write_json(DEST/'publication.json',dict(name=name,winner=winner,policy=ref,bridge=pin['forge']['sha256'],
+              action_trace=parity,selection='Maximize weakest outright wins, then mean, among the two equal-budget training arms.'),fixed=True)
+    arms={name:dict(**ref,native_alias=name),'previous-generalist':read(OUT/'mlp/result.json'),
+          'previous-strong-specialist':field['sg003-long-g1'],'wtap':field['wtap']}
+    names=dict.fromkeys(('wtap',scores[winner]['weakest'],'sg003-long-g1'))
+    assess(DEST/'frontier-native','weak-matchups-frontier-001',arms,{n:field[n] for n in names})
+
 
 if __name__=='__main__':
     if sys.argv[1:]==['evaluate']:evaluate()
+    elif sys.argv[1:]==['remote-score']:remote_score()
+    elif sys.argv[1:]==['publish']:publish_frontier()
     else:run()

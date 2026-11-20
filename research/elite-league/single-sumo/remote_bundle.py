@@ -33,7 +33,7 @@ def build_head24_overlay():
 def bundle():
     build_head24_overlay()
     files={LAB/name for name in ('remote_league.py','learner.py','train.py','build.py','league_tournament.py',
-                                 'assay.py','remote_analysis.py','remote_round.py','remote_jobs.py','remote_fit.py','remote_reversal.py','payoff_pair.py','payoff_oracle.py','recognition.py','opponent_id.py','router_export.py') if (ROOT/LAB/name).is_file()}
+                                 'assay.py','remote_analysis.py','remote_round.py','remote_jobs.py','remote_fit.py','remote_reversal.py','payoff_pair.py','payoff_oracle.py','recognition.py','opponent_id.py','router_export.py','stationary_field.py','stationary_ppo.py','stationary_frontier.py','stationary_headroom.py','weak_field.py','check_stationary.py') if (ROOT/LAB/name).is_file()}
     files.add(LAB.parent/'stage_runtime.py')
     files.add(Path('policies/wtap-clickphase.properties'))
     for pin in ('training-runtime.json','sim-current.json','head24-diagnostic.json'):
@@ -56,6 +56,27 @@ def bundle():
         files.add(Path(read(p)['warm']))
     for group in ('initial','entrants'):
         files.update(Path(v['reference']) for v in protocol[group].values())
+    stationary=OUT/'stationary-field/protocol.json'
+    if (ROOT/stationary).is_file():
+        files.add(stationary)
+        files.update(Path(v['reference']) for v in read(stationary)['field'].values() if v['reference'].endswith('.net'))
+    frontier=stationary.parent/'frontier-protocol.json'
+    if (ROOT/frontier).is_file():
+        files.add(frontier)
+        files.update(Path(v['reference']) for v in read(frontier)['controls'].values())
+    timing=stationary.parent/'opening-timing/protocol.json'
+    if (ROOT/timing).is_file():files.add(timing)
+    strong=stationary.parent/'strong-opening/protocol.json'
+    if (ROOT/strong).is_file():files.add(strong)
+    series=stationary.parent/'series-ten/protocol.json'
+    if (ROOT/series).is_file():
+        files.add(series)
+        training=series.with_name('training.json')
+        if (ROOT/training).is_file():files.add(training)
+        belief=series.parent/'belief/protocol.json'
+        if (ROOT/belief).is_file():files.add(belief)
+        for script in ('series_bank.py','series_learn.py','series_eval.py','series_pair.py','series_bayes.py','check_series.py'):
+            if (ROOT/LAB/script).exists():files.add(LAB/script)
     # Each path is relative to the project, and each checksum is verified again on the receiving host.
     assert all(not p.is_absolute() and '..' not in p.parts and (ROOT/p).is_file() for p in files)
     return {str(p):hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in sorted(files)}

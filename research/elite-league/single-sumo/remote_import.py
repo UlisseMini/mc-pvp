@@ -153,7 +153,7 @@ def send_future_clocks(folder,metadata):
     from calendars_holdout import collect
     collect(folder)
     clocks=read(folder/'calendars/manifest.json')['selected']
-    paths=[*clocks,str((folder/'calendars/manifest.json').relative_to(ROOT))]
+    paths=[*clocks,str((folder/'calendars/manifest.json').relative_to(ROOT)),str(protocol.relative_to(ROOT))]
     if len(set(clocks))!=24 or any(not c.startswith(str(folder.relative_to(ROOT))+'/calendars/') for c in clocks):raise ValueError('Unexpected reserved calendar set')
     with tempfile.TemporaryDirectory(dir=BUILD/'hetzner') as scratch:
         from pathlib import Path
@@ -170,6 +170,7 @@ if __name__=='__main__':
     elif sys.argv[1:]==['mlp-native']:mlp_native()
     elif sys.argv[1:]==['head24']:prospective(True)
     elif sys.argv[1:]==['payoff']:payoff_transfer()
+    elif sys.argv[1:]==['opening-timing']:wait_for(['stationary-field/opening-timing/result.json'])
     elif sys.argv[1:]==['field']:
         from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=3) as pool:

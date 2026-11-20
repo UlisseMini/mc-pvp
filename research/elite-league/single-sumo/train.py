@@ -10,7 +10,7 @@ def configure(path, kind, role, seed, draw_seed, incumbent, counter, families, s
     if threats:config["threats"]=list(dict.fromkeys(threats))
     write_json(path/"config.json",config,fixed=True)
 
-def fit(path, total, schedule=training_schedule):
+def fit(path, total, schedule=training_schedule, warm_override=None):
     cfg=json.loads((path/"config.json").read_text());torch.manual_seed(cfg["seed"])
     net=Actor(cfg["kind"])
     labels=cfg.get("auxiliary_opponents",[])
@@ -25,7 +25,7 @@ def fit(path, total, schedule=training_schedule):
         if step!=logs[-1]["update"]:raise ValueError("Checkpoint and progress disagree")
         net.export(path/"current.net");write_json(path/"progress.json",logs[-1])
     elif cfg["warm"]:
-        previous=torch.load(ROOT/cfg["warm"],map_location="cpu",weights_only=False)
+        previous=torch.load(ROOT/(warm_override or cfg["warm"]),map_location="cpu",weights_only=False)
         net.load_state_dict(previous["net"])
         if cfg["role"] in ("main","mlp") and "opt" in previous and "logs" in previous and "auxiliary" not in previous:
             opt.load_state_dict(previous["opt"])
