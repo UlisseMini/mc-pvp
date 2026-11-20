@@ -97,6 +97,10 @@ async def proxy(reader, writer, latency):
 
 
 async def run(args):
+    if args.aim_profile is None:
+        if args.resume:
+            args.aim_profile=json.loads((args.resume/"metadata.json").read_text()).get("aim_profile","tournament")
+        else:args.aim_profile="perfect"
     if args.export_frames and (not args.showcase or args.clock!="fast"):
         raise ValueError("Frame export requires a daylight exhibition on the scheduled native clock")
     if args.hd and not args.export_frames:raise ValueError("HD recording uses the native frame exporter")
@@ -114,6 +118,7 @@ async def run(args):
         from headless import run_in_guest
         params=["--weights",str(args.weights.resolve()),"--pairs",str(args.pairs),"--seed",str(args.seed),"--speed",str(args.speed),
                 "--rtts",*map(str,args.rtts),"--opponents",*args.opponents,"--extra-weights",*[str(w.resolve()) for w in args.extra_weights]]
+        params+=["--aim-profile",args.aim_profile]
         if args.showcase:params+=["--showcase"]
         if args.export_frames:params+=["--export-frames"]
         if args.hd:params+=["--hd"]
@@ -204,7 +209,7 @@ async def run(args):
             folder.mkdir(exist_ok=True)
             (folder/"options.txt").write_text(f"onboardAccessibility:false\npauseOnLostFocus:false\ntutorialStep:none\nrenderDistance:3\nsimulationDistance:5\nenableVsync:false\ninactivityFpsLimit:\"minimized\"\nmaxFps:{fps}\nmusic:0.0\nsoundCategory_master:0.0\n"+('ao:false\nbiomeBlendRadius:0\ncloudRange:32\nrenderClouds:"false"\nparticles:2\nentityShadows:false\nmipmapLevels:0\ngamma:1.0\nguiScale:2\nchatVisibility:2\n' if args.showcase else ""))
             launch(name,["xvfb-run","-a","-s",f"-screen 0 {width+120}x{height+80}x24 -nolisten tcp","env","LIBGL_ALWAYS_SOFTWARE=1","GALLIUM_DRIVER=llvmpipe","LP_NUM_THREADS=1","ALSOFT_DRIVERS=null","SDL_VIDEO_DRIVER=x11","SDL_VIDEODRIVER=x11",java,"-Xmx1000M",f"-Dorg.lwjgl.system.SharedLibraryExtractPath=/tmp/sword26-lwjgl-{PORT}-{seat}","-Djava.awt.headless=true","--enable-native-access=ALL-UNNAMED","--add-exports","java.base/jdk.internal.misc=ALL-UNNAMED",
-                agent,*clock_flags,"-Dsword.smoothAim="+str(args.showcase).lower(),"-Dsword.exportFrames="+str(args.export_frames).lower(),"-Dsword.spool="+str(spool),f"-Dsword.speed={args.speed}","-Dsword.control="+str(spool/("AB"[seat])),"-Dsword.logs="+str(run_dir),"-cp",(BUILD/"linux-classpath").read_text(),"net.minecraft.client.main.Main",
+                agent,*clock_flags,"-Dsword.aimProfile="+args.aim_profile,"-Dsword.exportFrames="+str(args.export_frames).lower(),"-Dsword.spool="+str(spool),f"-Dsword.speed={args.speed}","-Dsword.control="+str(spool/("AB"[seat])),"-Dsword.logs="+str(run_dir),"-cp",(BUILD/"linux-classpath").read_text(),"net.minecraft.client.main.Main",
                 "--username",name,"--version","26.3","--gameDir",folder,"--assetsDir",BUILD/"assets","--assetIndex","34",
                 "--accessToken","0","--width",str(width),"--height",str(height),"--quickPlayMultiplayer",f"127.0.0.1:{PORT if args.clock else PORT+seat+1}"],folder)
         names=[BOT_NAMES[0],args.human or BOT_NAMES[1]]
@@ -222,7 +227,7 @@ async def run(args):
         metadata["client_frame_policy"]="minimized"
         metadata["landmark"]=args.landmark
         metadata["clock"]=args.clock
-        metadata["aim_profile"]="smooth_mouse_v1" if args.showcase else "tournament"
+        metadata["aim_profile"]=args.aim_profile
         if args.openings_from:
             metadata["opening_geometry"] = [
                 dict(rtt=rtt, pair=pair, angle=openings[rtt,pair][0], gap=openings[rtt,pair][1])
@@ -316,7 +321,7 @@ async def run(args):
                         await wait_for((frames/"finished").exists,procs,40,"Native render stream failed to finalize")
                         row["video"]=f"videos/{idx}.mp4"
                         row["frame_export"]=encode_frames(frames,run_dir/row["video"],fps)
-                        row["camera"]=check_camera(run_dir,row)
+                        if args.aim_profile!="tournament":row["camera"]=check_camera(run_dir,row,perfect=args.aim_profile=="perfect")
                     results.append(row)
                     save_json(run_dir/"results.json",results)
                     print(f"Round {len(results)} complete." if args.blind else row,flush=True)
@@ -338,6 +343,7 @@ if __name__=="__main__":
     parser=argparse.ArgumentParser()
     parser.add_argument("--showcase",action="store_true",help="Record 854×480, 60 fps ordinary fights in a separate daylight world")
     parser.add_argument("--weights",type=Path,default=SRC/"champion.net")
+    parser.add_argument("--aim-profile",choices=["tournament","smooth_mouse_v1","perfect"],help="Mouse settings for both bots; resuming inherits the recorded profile")
     parser.add_argument("--human")
     parser.add_argument("--pairs",type=int,default=4)
     parser.add_argument("--seed",type=int,default=91621)

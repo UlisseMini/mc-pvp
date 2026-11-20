@@ -38,7 +38,25 @@ public final class Checks {
         }
         check(Math.abs(angle(yaw))<.005,"Mouse failed to settle on a stationary target");
     }
+    static void checkPerfectAim(){
+        Random random=new Random(28841);
+        int tested=0;
+        for(int i=0;i<32000;i++){
+            double x=random.nextDouble(-3.4,3.4),z=random.nextDouble(-3.4,3.4),bottom=random.nextDouble(-3.1,2.5);
+            double dx=Math.max(0,Math.abs(x)-.3f),dz=Math.max(0,Math.abs(z)-.3f);
+            double dy=Math.max(0,Math.max(bottom,-bottom-1.8f));
+            if(dx*dx+dy*dy+dz*dz>=9)continue;
+            var lock=PerfectAim.lock(x,bottom,z,77);
+            double yaw=FlatPhysics.angle(lock.yaw()),pitch=FlatPhysics.angle(lock.pitch());
+            check(Model.rayBox(x,bottom,z,FlatPhysics.sin(-yaw)*FlatPhysics.cos(pitch),-FlatPhysics.sin(pitch),
+                FlatPhysics.cos(-yaw)*FlatPhysics.cos(pitch)),"Reachable target missed at "+x+", "+bottom+", "+z);
+            tested++;
+        }
+        check(tested>15000,"Missing boundary samples");
+        check(PerfectAim.lock(0,-1.62f,0,77).yaw()==77,"Coincident horizontal positions must preserve a stable yaw");
+    }
     public static void main(String[] args)throws Exception{
+        checkPerfectAim();
         smoothTurns();
         airborneSprint(false);airborneSprint(true);
         var stamps=new ArrayList<Long>();

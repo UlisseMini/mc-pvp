@@ -55,7 +55,7 @@ public final class FilmFrames {
         boolean closed;
         Session(Path folder)throws IOException{
             this.folder=Files.createDirectories(folder);
-            pose=SmoothAim.ENABLED?new PrintWriter(Files.newBufferedWriter(Path.of(System.getProperty("sword.logs")).resolve(round+"-camera.tsv"))):null;
+            pose=(SmoothAim.ENABLED||PerfectAim.ENABLED)?new PrintWriter(Files.newBufferedWriter(Path.of(System.getProperty("sword.logs")).resolve(round+"-camera.tsv"))):null;
             if(pose!=null)pose.println("frame\ttick\tphase\tcameraYaw\tcameraPitch\tinputYaw\tinputPitch");
         }
         void capture(Minecraft mc,long frame){

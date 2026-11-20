@@ -42,7 +42,7 @@ public final class Fighter implements Model.Controller {
             double dyBox=Math.max(0,Math.max(height,-height-1.8));
             input[23]=Math.sqrt(dxBox*dxBox+dyBox*dyBox+dzBox*dzBox)/3;
             double yaw=Math.toRadians(v.yaw),pitch=Math.atan2(clip(0,height+.1,height+1.7),dist);
-            input[24]=Model.rayBox(dx,height,dz,-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch))?1:0;
+            input[24]=PerfectAim.ENABLED?(dxBox*dxBox+dyBox*dyBox+dzBox*dzBox<=9?1:0):Model.rayBox(dx,height,dz,-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch))?1:0;
         }
     }
     public void prime(View v,Keys applied){act(v);previous=applied;}
@@ -60,7 +60,7 @@ public final class Fighter implements Model.Controller {
             output[j]=sum;
         }
         previous=new Keys(choice(output[0],output[1]),choice(output[2],output[3]),output[4]>0,
-            output[5]>0,output[6]>0,weights.length==COUNT?heading(output[7]):180*clip(output[7],-1,1));
+            output[5]>0,output[6]>0,PerfectAim.ENABLED?0:weights.length==COUNT?heading(output[7]):180*clip(output[7],-1,1));
         return previous;
     }
     // A centered aim controller and a signed stick with a neutral region for deliberate turns.
@@ -86,7 +86,7 @@ public final class Fighter implements Model.Controller {
 /** A causal mouse motor. One tick of motion is planned from the current player's view.
  * Simulation, native clicks and the sub-tick camera all sample the same two curves. */
 final class SmoothAim {
-    static final boolean ENABLED=Boolean.getBoolean("sword.smoothAim");
+    static final boolean ENABLED=PerfectAim.PROFILE.equals("smooth_mouse_v1");
     private final Axis yaw=new Axis(24,8), pitch=new Axis(15,5);
     boolean ready;
 

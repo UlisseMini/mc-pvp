@@ -88,7 +88,7 @@ def snapshot():
                 role="main" if file==s["main"] else "generalist" if file==s["best"] else "counter" if file==s["native_counter"] else "response"
                 labels.setdefault(stem,f"Season {s['index']} {role}")
             main=next(x for x in s["finalists"] if x["file"]==s["main"])
-            seasons.append(dict(n=s["index"],main=main["breadth"],wt=s["wtap_breadth"],advanced=s["advanced"]))
+            seasons.append(dict(aim=s.get("aim_profile","tournament"),n=s["index"],main=main["breadth"],wt=s["wtap_breadth"],advanced=s["advanced"]))
         repeats=Counter(labels.values())
         labels={stem:name if repeats[name]==1 else f"{name} · {stem[:5]}" for stem,name in labels.items()}
         bouts=[];panels=[]
@@ -135,14 +135,14 @@ def snapshot():
         for file in sorted(EVIDENCE.glob("java-*/decision.json")):
             d=read(file)
             if not d:continue
-            decisions.append(dict(season=int(file.parent.name.split("-")[1]),champion=short(d["champion"],labels),
+            decisions.append(dict(aim=d.get("aim_profile","tournament"),season=int(file.parent.name.split("-")[1]),champion=short(d["champion"],labels),
                 promoted=d["promoted"],rival=short(d["old_champion"],labels),fighters=[
                     dict(name=short(k,labels),overall=v,direct=d["native_direct"][k]) for k,v in d["native_overall"].items()
                 ]+[dict(name="W-tap",overall=d["wtap_overall"],direct=d["wtap_direct"])]))
         current=next((p for p in panels if not p["finished"] and p["done"]<p["total"]),None)
         latest=seasons[-1]["n"] if seasons else 0
         result=dict(status=state.get("status","running"),champion=short(state.get("incumbent","evidence/league26/fighter.net"),labels),
-                    season=latest,trainingGames=games,history=seasons,decisions=decisions,matches=bouts,panel=current)
+                    season=latest,aimProfile=state.get("aim_profile","tournament"),referencePending=state.get("reference_pending",False),trainingGames=games,history=seasons,decisions=decisions,matches=bouts,panel=current)
         cached=(time.monotonic(),result)
         return result
 

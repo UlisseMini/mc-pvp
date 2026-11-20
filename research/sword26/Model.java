@@ -38,15 +38,15 @@ final class Model {
         var own=a.history[Math.floorMod(tick-down,12)];
         var observedTarget=b.history[Math.floorMod(tick-down,12)];
         return new View(a.x,a.y,a.z,a.vx,a.vy,a.vz,p[0],p[1],p[2],p[0]-q[0],p[1]-q[1],p[2]-q[2],a.ground,a.sprint,
-            Math.min(1,a.age/12.5),own[4],(int)own[3],(int)observedTarget[3],a.yaw);
+            Math.min(1,a.age/12.5),own[4],(int)own[3],(int)observedTarget[3],PerfectAim.ENABLED?PerfectAim.lock(p[0]-a.x,p[1]-(a.y+1.62f),p[2]-a.z,(float)a.yaw).yaw():a.yaw);
     }
     static void input(Body a,View v,Keys k,int tick,int up){
-        a.keys=k;a.yaw=steer(v,k);
+        a.keys=k;a.yaw=PerfectAim.ENABLED?v.yaw():steer(v,k);
         double d=Math.hypot(v.tx()-a.x,v.tz()-a.z);
         double dx=v.tx()-a.x,dz=v.tz()-a.z;
         // Ray from the eye to the nearest height inside the displayed box.
         double dy=clip(a.y+1.62,v.ty()+.1,v.ty()+1.7)-(a.y+1.62);
-        double yaw=Math.toRadians(a.yaw), pitch=Math.atan2(dy,d);
+        double yaw=Math.toRadians(a.yaw), pitch=PerfectAim.ENABLED?-Math.toRadians(PerfectAim.lock(dx,v.ty()-(a.y+1.62f),dz,(float)a.yaw).pitch()):Math.atan2(dy,d);
         boolean ray=rayBox(dx,v.ty()-a.y-1.62,dz,-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch));
         if(k.click() && a.miss==0){
             a.clicks++;

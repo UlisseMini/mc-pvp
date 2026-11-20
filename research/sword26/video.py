@@ -82,7 +82,7 @@ def encode_frames(folder,target,fps):
     shutil.rmtree(folder)
     return dict(count=count,first=first,last=last,frames_per_tick=3)
 
-def check_camera(run, match):
+def check_camera(run, match, perfect=False):
     """Measure the actual Java camera, including independent samples of the fighter's look at click time."""
     stem=match["id"]
     with (run/(stem+"-camera.tsv")).open() as f:
@@ -112,6 +112,6 @@ def check_camera(run, match):
     for name,limit in (("Yaw",8),("Pitch",5)):
         turns=[delta(b["camera"+name],a["camera"+name]) for a,b in zip(frames,frames[1:])]
         fastest=max(map(abs,turns),default=0)
-        if fastest>limit+.002:raise ValueError(f"Camera {name} moved {fastest} degrees in one frame")
+        if not perfect and fastest>limit+.002:raise ValueError(f"Camera {name} moved {fastest} degrees in one frame")
         measures["max_"+name.lower()+"_per_frame_deg"]=round(fastest,4)
     return dict(frames=len(frames),ticks=len(inputs),clicks=clicks,max_click_error_deg=max(errors,default=0),**measures)

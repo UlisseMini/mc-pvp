@@ -25,6 +25,7 @@ final class FastDuel {
     }
     record Waypoint(double x,double y,double z,int ticks){}
     static final class Seat {
+        PerfectAim.Look lock;
         final SmoothAim aim=SmoothAim.ENABLED?new SmoothAim():null;
         final Motion local = new Motion(), server = new Motion();
         final Up[] up = new Up[BUFFER];
@@ -74,10 +75,12 @@ final class FastDuel {
             d.clear();
         }
         View view() {
+            if(PerfectAim.ENABLED)lock=PerfectAim.lock(tx-local.x,ty-(local.y+1.62f),tz-local.z,local.yaw);
             return new View(local.x,local.y,local.z,local.vx,local.vy,local.vz,tx,ty,tz,
-                tx-px,ty-py,tz-pz,local.ground,sprint,Math.min(1f,age/ATTACK_DELAY),seenHP,hurt,otherHurt,aim!=null&&aim.ready?aim.yawAt(1):local.yaw);
+                tx-px,ty-py,tz-pz,local.ground,sprint,Math.min(1f,age/ATTACK_DELAY),seenHP,hurt,otherHurt,PerfectAim.ENABLED?lock.yaw():aim!=null&&aim.ready?aim.yawAt(1):local.yaw);
         }
         void drive(int t,View view,Keys keys) {
+            if(PerfectAim.ENABLED){input(t,keys,lock.yaw(),lock.pitch());return;}
             if(aim==null){input(t,keys,(float)steer(view,keys),pitch(view));return;}
             float currentPitch=aim.ready?aim.pitchAt(1):0;
             aim.plan(view,keys,currentPitch,pitch(view));

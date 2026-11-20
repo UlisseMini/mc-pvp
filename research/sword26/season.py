@@ -16,6 +16,7 @@ from setup import SRC, BUILD, compile_sim, jdk
 
 EVIDENCE = SRC / "evidence/ladder26"
 WORK = BUILD / "ladder26"
+AIM_PROFILE = "perfect"
 PLAN = json.loads((EVIDENCE / "protocol.json").read_text())
 ANCHORS = [SRC / p for p in PLAN["anchors"]]
 
@@ -44,7 +45,7 @@ def lines(path, values):
 
 def java(jar, work, name, args, output=None, clock="off"):
     cmd = ["/usr/bin/nice","-n","12",jdk()/"java","-Xmx768m","-XX:+UseSerialGC","-XX:ActiveProcessorCount=4",
-           "-XX:CICompilerCount=2","-Dsword.transport=lockstep","-Dsword.phaseClock="+clock,"-cp",jar,*args]
+           "-XX:CICompilerCount=2","-Dsword.transport=lockstep","-Dsword.aimProfile="+AIM_PROFILE,"-Dsword.phaseClock="+clock,"-cp",jar,*args]
     target = output or work/(name+".log")
     temp = target.with_suffix(".running")
     started = time.monotonic()
@@ -235,7 +236,7 @@ def run_season(index,native,main,pool,final=False,native_threats=()):
                                sha256=hash_policy(p),breadth=breadth(check,p,rivals),against_main=field_score(check,p,main),
                                against_native=field_score(check,p,native)))
     stored=lambda p:str(write_fighter(p).relative_to(SRC))
-    result=dict(index=index,final_search=final,seed=seed,entry_main=stored(main),entry_native=stored(native),main=stored(successor),
+    result=dict(index=index,aim_profile=AIM_PROFILE,final_search=final,seed=seed,entry_main=stored(main),entry_native=stored(native),main=stored(successor),
                 best=stored(best),counter=stored(counter),native_counter=stored(native_counter),
                 advanced=hash_policy(successor)!=hash_policy(main),new_counter=new_counter,previous_best_counter=past,
                 main_breadth=breadth(check,main,rivals),wtap_breadth=breadth(check,"wtap",rivals),

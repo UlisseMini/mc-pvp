@@ -11,6 +11,11 @@ public final class ClientKeys {
     static final Path control=Path.of(System.getProperty("sword.control"));
     static String command="";
     static SmoothAim aim;
+    static AbstractClientPlayer aimTarget;
+    static int pickTick=-1;
+    static boolean inputPress;
+    static PrintWriter picks;
+    static PerfectAim.Look cameraLook;
     static Model.Controller controller;
     static Model.Controller opening;
     static Path branchSignal,firstPress;
@@ -28,10 +33,26 @@ public final class ClientKeys {
         o.keySprint.setDown(k.sprint());o.keyJump.setDown(k.jump());
         if(k.click())KeyMapping.click(o.keyAttack.getDefaultKey());
     }
+    private static PerfectAim.Look visualLock(net.minecraft.world.entity.Entity entity,float fraction){
+        var eye=entity.getEyePosition(fraction);
+        var targetPosition=aimTarget.getPosition(fraction);
+        return PerfectAim.lock(targetPosition.x-eye.x,targetPosition.y-eye.y,targetPosition.z-eye.z,entity.getYRot());
+    }
+    public static void picked(Minecraft mc,float fraction){
+        if(picks==null||aimTarget==null||ticks==0||pickTick==ticks||fraction!=1f)return;
+        pickTick=ticks;
+        boolean targeted=mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit&&hit.getEntity()==aimTarget;
+        double distance=aimTarget.getBoundingBox().distanceToSqr(mc.player.getEyePosition());
+        picks.println((ticks-1)+"\t"+distance+"\t"+inputPress+"\t"+targeted);
+    }
     public static float cameraYaw(net.minecraft.world.entity.Entity entity,float fraction){
+        if(PerfectAim.ENABLED && aimTarget!=null && entity==Minecraft.getInstance().player){
+            cameraLook=visualLock(entity,fraction);return cameraLook.yaw();
+        }
         return entity==Minecraft.getInstance().player&&aim!=null&&aim.ready?aim.yawAt(fraction):entity.getViewYRot(fraction);
     }
     public static float cameraPitch(net.minecraft.world.entity.Entity entity,float fraction){
+        if(PerfectAim.ENABLED && aimTarget!=null && entity==Minecraft.getInstance().player)return cameraLook.pitch();
         return entity==Minecraft.getInstance().player&&aim!=null&&aim.ready?aim.pitchAt(fraction):entity.getViewXRot(fraction);
     }
     public static void tick(Minecraft mc){
@@ -43,6 +64,8 @@ public final class ClientKeys {
             catch(NoSuchFileException pending){apply(mc,Keys.STILL);return;}
             if(!line.equals(command)){
                 aim=SmoothAim.ENABLED&&!line.isEmpty()?new SmoothAim():null;
+                aimTarget=null;pickTick=-1;
+                if(picks!=null){picks.close();picks=null;}
                 command=line;controller=null;opening=null;branchSignal=null;firstPress=null;primed=false;ticks=0;
                 if(trace!=null){trace.close();trace=null;}
                 if(!line.isEmpty()){
@@ -55,6 +78,10 @@ public final class ClientKeys {
                         }else firstPress=control.resolveSibling(fields[0]+"-defender-press");
                     }
                     trace=new PrintWriter(Files.newBufferedWriter(Path.of(System.getProperty("sword.logs")).resolve(fields[0]+"-"+control.getFileName()+".tsv")));
+                    if(PerfectAim.ENABLED){
+                        picks=new PrintWriter(Files.newBufferedWriter(Path.of(System.getProperty("sword.logs")).resolve(fields[0]+"-"+control.getFileName()+"-aim.tsv")));
+                        picks.println("tick\tdistanceSq\tpress\ttargetUnderCrosshair");
+                    }
                     trace.println("tick\tx\ty\tz\ttargetX\ttargetY\ttargetZ\tvx\tvy\tvz\tground\tsprint\tcharge\thp\thurt\totherHurt\tforward\tside\trunKey\tjump\tpress\tyaw\tpitch\tepochMs\tassignedPolicyActive\tframeLimit\trenderFps\tafkLimited");
                 }
             }
@@ -67,6 +94,11 @@ public final class ClientKeys {
             if(ticks==0&&Lockstep.ENABLED){
                 Path initial=Path.of(System.getProperty("sword.logs")).resolve(command.split("\t")[0]+"-"+control.getFileName()+".initial");
                 Files.writeString(initial,p.getYRot()+"\t"+LockstepClient.localTicksFirst(mc,other)+"\n");
+            }
+            if(PerfectAim.ENABLED){
+                aimTarget=other;
+                var look=PerfectAim.lock(other.getX()-p.getX(),other.getY()-p.getEyeY(),other.getZ()-p.getZ(),p.getYRot());
+                p.setYRot(look.yaw());p.setXRot(look.pitch());
             }
             var v=new View(p.getX(),p.getY(),p.getZ(),vel.x,vel.y,vel.z,
                 other.getX(),other.getY(),other.getZ(),primed?other.getX()-lx:0,primed?other.getY()-ly:0,primed?other.getZ()-lz:0,
@@ -84,8 +116,9 @@ public final class ClientKeys {
             }
             double dy=clip(p.getEyeY(),other.getY()+.1,other.getY()+1.7)-p.getEyeY();
             float targetPitch=(float)-Math.toDegrees(Math.atan2(dy,Math.hypot(lx-p.getX(),lz-p.getZ())));
+            inputPress=k.click();
             if(aim!=null)aim.plan(v,k,p.getXRot(),targetPitch);
-            else {p.setYRot((float)steer(v,k));p.setXRot(targetPitch);}
+            else if(!PerfectAim.ENABLED){p.setYRot((float)steer(v,k));p.setXRot(targetPitch);}
             apply(mc,k);
             var tracker=mc.getFramerateLimitTracker();
             var throttle=tracker.getThrottleReason();

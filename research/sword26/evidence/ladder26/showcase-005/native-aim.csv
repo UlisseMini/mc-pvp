@@ -1,0 +1,5 @@
+rtt,opening,seat,rival,role,learned_reachable,learned_reachable_clicks,learned_targeted,learned_targeted_clicks,learned_ticks,wtap_reachable,wtap_reachable_clicks,wtap_targeted,wtap_targeted_clicks,wtap_ticks
+0,0,0,1ef8cdac288b79e0.net,actor,95,5,95,5,154,46,8,46,8,165
+0,0,0,1ef8cdac288b79e0.net,opponent,81,10,81,10,154,32,9,32,9,165
+0,0,1,1ef8cdac288b79e0.net,actor,95,5,95,5,154,45,7,45,7,152
+0,0,1,1ef8cdac288b79e0.net,opponent,81,10,81,10,154,31,8,31,8,152

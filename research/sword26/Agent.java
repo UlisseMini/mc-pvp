@@ -15,7 +15,7 @@ public final class Agent {
             private byte[] edit(String name,byte[] bytes){
                 boolean client="net/minecraft/client/Minecraft".equals(name);
                 boolean clock=System.getProperty("sword.clock")!=null;
-                if("net/minecraft/client/Camera".equals(name)&&SmoothAim.ENABLED){
+                if("net/minecraft/client/Camera".equals(name)&&(SmoothAim.ENABLED||PerfectAim.ENABLED)){
                     var api=ClassFile.of();
                     return api.transformClass(api.parse(bytes),ClassTransform.transformingMethodBodies(
                         m->m.methodName().equalsString("alignWithEntity"),(b,e)->{
@@ -62,6 +62,15 @@ public final class Agent {
                 var hook=ClassDesc.of(client?"sword.ClientKeys":"sword.Referee");
                 var api=ClassFile.of();
                 ClassModel model=api.parse(clock?ClockHooks.transform(name,bytes):bytes);
+                if(client&&PerfectAim.ENABLED){
+                    byte[] picks=api.transformClass(model,ClassTransform.transformingMethodBodies(m->m.methodName().equalsString("pick")
+                        &&m.methodType().equalsString("(F)V"),(b,e)->{
+                            if(e instanceof java.lang.classfile.instruction.ReturnInstruction)b.aload(0).fload(1).invokestatic(hook,"picked",
+                                MethodTypeDesc.ofDescriptor("(Lnet/minecraft/client/Minecraft;F)V"));
+                            b.with(e);
+                        }));
+                    model=api.parse(picks);
+                }
                 if(client&&Integer.getInteger("sword.speed",1)>1){
                     int speed=Integer.getInteger("sword.speed");
                     byte[] fast=api.transformClass(model,ClassTransform.transformingMethodBodies(

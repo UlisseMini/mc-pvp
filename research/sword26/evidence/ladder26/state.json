@@ -1,7 +1,9 @@
 {
-  "season": 19,
+  "season": 20,
+  "series_start": 21,
+  "aim_profile": "perfect",
   "incumbent": "evidence/ladder26/fighters/62476e8c5c6ffaff.net",
-  "main": "evidence/ladder26/fighters/3d564063354546bd.net",
+  "main": "evidence/ladder26/fighters/62476e8c5c6ffaff.net",
   "pool": [
     "evidence/league26/fighter.net",
     "evidence/random26/fighter.net",
@@ -47,35 +49,16 @@
     "evidence/ladder26/fighters/058f75aa354ee06e.net",
     "evidence/ladder26/fighters/c291041880f36572.net",
     "evidence/ladder26/fighters/3d564063354546bd.net",
-    "evidence/ladder26/fighters/ca0a8116355ca725.net"
+    "evidence/ladder26/fighters/ca0a8116355ca725.net",
+    "evidence/ladder26/fighters/c852d2aa2d6c8127.net",
+    "evidence/ladder26/fighters/18c14a9e406d8c24.net",
+    "evidence/ladder26/fighters/7923e42ea836c87d.net"
   ],
   "stale": 0,
-  "last_java": 14,
-  "history": [
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    11,
-    12,
-    13,
-    14,
-    15,
-    16,
-    17,
-    18,
-    19
-  ],
-  "promotions": [
-    9,
-    14
-  ],
+  "last_java": 20,
+  "history": [],
+  "promotions": [],
   "counter_signatures": [],
-  "status": "running"
+  "status": "running",
+  "reference_pending": true
 }

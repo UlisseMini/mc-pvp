@@ -26,7 +26,7 @@ public final class PolicyGradient {
             forward(net.weights,net.input,before,net.hidden,net.output);
             var o=net.output;
             int f=category(o[0],o[1],rng),s=category(o[2],o[3],rng);
-            double turn=o[7]+SIGMA*rng.nextGaussian();
+            double turn=PerfectAim.ENABLED?0:o[7]+SIGMA*rng.nextGaussian();
             Keys k=new Keys(f,s,rng.nextDouble()<sig(o[4]),rng.nextDouble()<sig(o[5]),rng.nextDouble()<sig(o[6]),heading(turn));
             double log=prob(o,k,turn,new double[OUTPUTS]);
             trajectory.add(new Step(new Experience(net.input.clone(),before,k,turn,log,value(critic,net.input))));
@@ -62,6 +62,7 @@ public final class PolicyGradient {
             double p=sig(o[i]);log+=Math.log(Math.max(1e-15,yes?p:1-p));
             d[i]=((yes?1:0)-p)/TEMP;
         }
+        if(PerfectAim.ENABLED){d[7]=0;return log;}
         double diff=turn-o[7];d[7]=diff/(SIGMA*SIGMA);
         return log-.5*diff*d[7];
     }

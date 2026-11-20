@@ -9,8 +9,9 @@ import static sword.Fighter.*;
 /** Post-training diagnostic. Fork the first ready, aimed opening swing that a fighter passes up. */
 public final class OpeningPressAudit {
     static boolean reachable(View v, Keys keys) {
-        double yaw=FlatPhysics.angle((float)steer(v,keys));
-        double pitch=FlatPhysics.angle(FastDuel.pitch(v));
+        var lock=PerfectAim.ENABLED?PerfectAim.lock(v.tx()-v.x(),v.ty()-(v.y()+1.62f),v.tz()-v.z(),(float)v.yaw()):null;
+        double yaw=FlatPhysics.angle(lock==null?(float)steer(v,keys):lock.yaw());
+        double pitch=FlatPhysics.angle(lock==null?FastDuel.pitch(v):lock.pitch());
         return Model.rayBox(v.tx()-v.x(), v.ty()-v.y()-1.62f, v.tz()-v.z(),
             FlatPhysics.sin(-yaw)*FlatPhysics.cos(pitch), -FlatPhysics.sin(pitch),
             FlatPhysics.cos(-yaw)*FlatPhysics.cos(pitch));

@@ -89,7 +89,7 @@ public final class BranchImprove {
         var field=new ArrayList<double[]>();for(String p:Files.readAllLines(Path.of(args[2])))field.add(read(Path.of(p)));
         var rng=new Random(Long.parseLong(args[3]));int samples=Integer.parseInt(args[4]);
         try(var pool=Executors.newFixedThreadPool(Integer.parseInt(args[5]))){
-            for(int h=0;h<TreePolicy.HEADS;h++){
+            for(int h=0;h<TreePolicy.ACTIVE_HEADS;h++){
                 int head=h;var jobs=new ArrayList<Callable<Example>>();
                 for(int i=0;i<samples;i++){long seed=rng.nextLong();jobs.add(()->sample(parent,field,head,seed));}
                 var data=new ArrayList<Example>();for(var result:pool.invokeAll(jobs))data.add(result.get());

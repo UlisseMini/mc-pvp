@@ -43,7 +43,7 @@ def compare(run, destination, jar=None):
         controls[seat] = primary if arm == "learned" else "wtap"
         key = (Path(match["rival"]).name, match["rtt"], match["pair"], seat)
         for mode in ("keys_and_look", "policy"):
-            cmd = [jdk()/"java", "-Dsword.smoothAim="+str(meta.get("aim_profile")=="smooth_mouse_v1").lower(), "-cp", jar, "sword.KernelReplay", run, stem, str(match["rtt"]//100)]
+            cmd = [jdk()/"java", "-Dsword.aimProfile="+meta.get("aim_profile","tournament"), "-cp", jar, "sword.KernelReplay", run, stem, str(match["rtt"]//100)]
             if mode == "policy":
                 cmd.extend(controls)
             output = subprocess.check_output(cmd, text=True).strip().split(",")

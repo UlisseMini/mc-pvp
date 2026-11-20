@@ -43,6 +43,7 @@ function setMode(next){
    (selected.height?selected.height+'p · ':'')+'60 fps · Normal game speed · '+nf.format(selected.frameExport.count)+' frames rendered by Java on the scheduled clock':
    selected.fps+' fps capture · Normal speed'+(selected.rendered!=null?' · Client rendered '+selected.rendered+' fps median':selected.framePolicy==='afk'?' · Recorded with the original AFK limiter':'');
   if(selected.aimProfile==='smooth_mouse_v1')$('sourceNote').textContent+=' · Smooth mouse aim';
+  if(selected.aimProfile==='perfect')$('sourceNote').textContent+=' · Perfect aim';
   film.onloadedmetadata=()=>{if(generation===loading && !selected.frameExport && film.duration>2)film.currentTime=Math.min(1.3,film.duration/4)};
   film.src='/video/'+selected.id;film.playbackRate=1;film.hidden=false;$('empty').hidden=true;
   film.onerror=()=>{if(generation===loading){$('empty').hidden=false;$('empty').textContent='Video unavailable. Choose Arena replay below.'}};
@@ -111,9 +112,9 @@ function chart(){
  const colors=['#b9eca7','#82c7ea','#d4a7f4','#f4998e','#c2d594','#9eacff'];
  let series=[],ticks=[],rows=[],heads=[];
  if(graphMode==='model'){
-  const h=state.history;
+  const h=state.history.filter(v=>v.aim===state.aimProfile);
   series=[['Main fighter',h.map(v=>v.main),colors[0]],['W-tap',h.map(v=>v.wt),'#f3bd77']];
-  ticks=['Season 1','Season '+(h.at(-1)?.n??0)];
+  ticks=['Season '+(h[0]?.n??'—'),'Season '+(h.at(-1)?.n??'—')];
   rows=h.map(v=>[v.n,pct(v.main),pct(v.wt)]);heads=['Season','Main fighter','W-tap'];
   $('chartTitle').textContent='Training performance';$('chartNote').textContent='Score across each season’s opponent field. The field grows as rivals join.';
  }else{
@@ -139,13 +140,14 @@ function render(data){
  state=data;const panel=data.panel;$('status').textContent=data.status==='running'?(panel?'Java tournament':'Training'):'League finished';
  $('fullframes').hidden=!data.matches.some(m=>m.frameExport);
  $('now').textContent=panel?panelName(panel.tag)+' · '+panel.done+' of '+panel.total+' bouts complete':data.status==='running'?'League training is running.':'The league has completed its final challenge.';
- $('champ').textContent=data.champion;$('seasons').textContent=data.season;$('training').textContent=nf.format(data.trainingGames);$('bouts').textContent=nf.format(data.matches.length);$('clips').textContent=nf.format(data.matches.filter(m=>m.video).length);
+ if(data.aimProfile==='perfect')$('now').textContent+=' · Perfect aim';
+ $('champ').textContent=data.champion+(data.referencePending?' (reference)':'');$('seasons').textContent=data.season;$('training').textContent=nf.format(data.trainingGames);$('bouts').textContent=nf.format(data.matches.length);$('clips').textContent=nf.format(data.matches.filter(m=>m.video).length);
  const tags=[...new Set(data.matches.map(m=>m.tag))],old=$('panel').value;
  if(tags.join('|')!==$('panel').dataset.tags){$('panel').replaceChildren(new Option('All panels',''),...tags.map(t=>new Option(panelName(t),t)));$('panel').value=old;$('panel').dataset.tags=tags.join('|')}
  const rows=matches();
  if(!selected&&rows.length){
   const championDuel=m=>m.video&&m.actor!==m.rival&&m.actor!=='W-tap'&&(m.actor===data.champion||m.rival===data.champion);
-  select(rows.find(m=>m.id===requested)||rows.find(m=>championDuel(m)&&m.frameExport)||rows.find(m=>m.frameExport&&m.actor!=='W-tap')||rows.find(m=>championDuel(m)&&m.fps===60&&m.rendered>=55)||
+  select(rows.find(m=>m.id===requested)||rows.find(m=>m.aimProfile===data.aimProfile&&championDuel(m)&&m.frameExport)||rows.find(m=>m.aimProfile===data.aimProfile&&m.frameExport&&m.actor!=='W-tap')||rows.find(m=>championDuel(m)&&m.frameExport)||rows.find(m=>m.frameExport&&m.actor!=='W-tap')||rows.find(m=>championDuel(m)&&m.fps===60&&m.rendered>=55)||
          rows.find(m=>championDuel(m)&&m.fps===60)||rows.find(championDuel)||rows.find(m=>m.video)||rows[0]);
  }
  else if(following&&selected&&!selected.video&&rows.some(m=>m.video)&&!playing)select(rows.find(m=>m.video));
@@ -155,7 +157,7 @@ function render(data){
  if(panel){const arms=new Map(),games=data.matches.filter(m=>m.tag===panel.tag),paired=pairedScores(games);for(const m of games){const v=arms.get(m.actor)||[0,0];v[0]+=m.otherHP===0?1:m.hp===0?0:.5;v[1]++;arms.set(m.actor,v)}
   const section=elem('section','');section.append(elem('h3',panelName(panel.tag)+' · In progress'),table([...arms].sort((a,b)=>b[1][0]/b[1][1]-a[1][0]/a[1][1]).map(([name,[points,n]])=>[name,points+'/'+n,...paired(name)]),['Fighter','All bouts','Paired','Paired W-tap']));live.append(section)}
  const res=$('decisions');res.replaceChildren();
- for(const d of [...data.decisions].reverse()){const block=elem('section',''),wt=d.fighters.find(v=>v.name==='W-tap');block.append(elem('h3','Season '+d.season+' · '+(d.promoted?'Promoted ':'Retained ')+d.champion),table(d.fighters.map(v=>[v.name,v.overall.join('/'),v.direct.join('/'),wt.overall.join('/')]),['Fighter','Field','vs incumbent','W-tap field']));res.append(block)}
+ for(const d of [...data.decisions].reverse()){const block=elem('section',''),wt=d.fighters.find(v=>v.name==='W-tap');block.append(elem('h3','Season '+d.season+(d.aim==='perfect'?' · Perfect aim':' · Original aim')+' · '+(d.promoted?'Promoted ':'Retained ')+d.champion),table(d.fighters.map(v=>[v.name,v.overall.join('/'),v.direct.join('/'),wt.overall.join('/')]),['Fighter','Field','vs incumbent','W-tap field']));res.append(block)}
 }
 async function refresh(){try{const r=await fetch('/api/league',{cache:'no-store'});if(!r.ok)throw Error(r.status);render(await r.json())}catch{$('status').textContent='Reconnecting';$('now').textContent='Waiting for the local league server.'}}
 new ResizeObserver(chart).observe($('history'));refresh();setInterval(refresh,5000);

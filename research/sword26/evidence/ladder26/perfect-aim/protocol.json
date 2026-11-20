@@ -1,0 +1,15 @@
+{
+  "first_season": 21,
+  "profile": "perfect",
+  "reference": "62476e8c5c6ffaff",
+  "source": "Only the controlled client\u2019s currently displayed opponent. Interpolated player positions on each video frame.",
+  "controls": [
+    "forward or back",
+    "left or right",
+    "sprint",
+    "jump",
+    "attack"
+  ],
+  "selection": "Existing fight-outcome training objectives and promotion thresholds. The old champion and archive are starting policies. All comparisons are measured again with the same perfect mouse for both seats and W-tap.",
+  "native_validation": "Independent vanilla pick at full game-tick time. Report visible opponents within the three-block eye-to-box radius and how many the actual native picker selected, separately for all polls and click polls."
+}

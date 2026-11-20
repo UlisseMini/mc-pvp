@@ -10,10 +10,11 @@ import sys
 import time
 from pathlib import Path
 
+from aim_audit import audit as audit_aim
 from recordings import archive_panel,trim_after_knockout
 from report import export
 from showcase import record as record_exhibition
-from season import ANCHORS, EVIDENCE, WORK, PLAN, SRC, both_clocks, compile_sim, field_score, hash_policy, run_season, save, train_stage, unique, write_fighter
+from season import AIM_PROFILE, ANCHORS, EVIDENCE, WORK, PLAN, SRC, both_clocks, compile_sim, field_score, hash_policy, run_season, save, train_stage, unique, write_fighter
 
 
 def local(path):
@@ -39,12 +40,14 @@ def native_panel(tag, actors, opponents, seed, pairs, active=False, openings=Non
     if active:registration["client_frame_policy"]="minimized"
     if openings:registration["matched_openings_from"]=str(Path(openings).relative_to(WORK.parent))
     reg=dest/"registration.json"
+    profile=json.loads(reg.read_text()).get("aim_profile","tournament") if reg.exists() else AIM_PROFILE
+    if profile!="tournament":registration["aim_profile"]=profile
     if reg.exists() and json.loads(reg.read_text())!=registration:raise ValueError(f"Registration mismatch for {tag}")
     if reg.exists() and (dest/"panel.json").exists():
         cached=json.loads((dest/"panel.json").read_text())
         if cached.get("score_rule")=="first_lethal_contact" and (not active or cached.get("active_frames")):return cached
     save(reg,registration)
-    cmd=[sys.executable,SRC/"native.py","--weights",actors[0],"--rtts",*map(str,rtts),"--pairs",str(pairs),
+    cmd=[sys.executable,SRC/"native.py","--weights",actors[0],"--rtts",*map(str,rtts),"--pairs",str(pairs),"--aim-profile",profile,
          "--opponents",*opponents,"--seed",str(seed),"--extra-weights",*actors[1:]]
     if openings:cmd.extend(["--openings-from",openings])
     run=None
@@ -67,11 +70,12 @@ def native_panel(tag, actors, opponents, seed, pairs, active=False, openings=Non
         if process.returncode:raise RuntimeError(f"Native worker failed; see {log}")
         run=Path(next(s.partition(": ")[2] for s in log.read_text().splitlines() if s.startswith("Round recordings:")))
     meta=json.loads((run/"metadata.json").read_text())
-    if meta["clock"] is not None or meta["speed"]!=1 or meta["weights_sha256"]!=registration["actor_hashes"][0] or meta["seed"]!=seed or meta["rtts"]!=list(rtts):
+    if meta.get("aim_profile","tournament")!=profile or meta["clock"] is not None or meta["speed"]!=1 or meta["weights_sha256"]!=registration["actor_hashes"][0] or meta["seed"]!=seed or meta["rtts"]!=list(rtts):
         raise ValueError("Unexpected native conditions")
     if [a["sha256"] for a in meta["extra_weights"]]!=registration["actor_hashes"][1:] or meta["opponent_hashes"]!={str(p):hash_policy(p) for p in opponents}:
         raise ValueError("Native roster changed")
     data=export(run,dest,"ordinary")
+    if profile=="perfect":audit_aim(run,dest/"native-aim.csv")
     if active:
         if meta.get("client_frame_policy")!="minimized" or meta.get("referee_score_rule")!="first_lethal_contact":
             raise ValueError("The active-client trial requires its registered native build")
@@ -181,7 +185,7 @@ def native_wave(index,main,inc,pool,history,final):
     verified=[]
     for record in sorted(EVIDENCE.glob("java-*/decision.json")):
         old=json.loads(record.read_text())
-        if same(SRC/old["old_champion"],inc):
+        if old.get("aim_profile","tournament")==AIM_PROFILE and same(SRC/old["old_champion"],inc):
             verified.extend(SRC/p for p in old["credible_counters"])
     if verified:
         field=unique([inc,*verified])
@@ -220,7 +224,7 @@ def native_wave(index,main,inc,pool,history,final):
         data=data+panels[1]["scores"]
         eligible,threats=compare_native(data,choices,inc)
     winner=eligible[0] if eligible else inc
-    outcome=dict(champion=local(winner),old_champion=local(inc),promoted=not same(winner,inc),
+    outcome=dict(aim_profile=AIM_PROFILE,champion=local(winner),old_champion=local(inc),promoted=not same(winner,inc),
                  credible_counters=[local(p) for p in threats if rate(native_rates(data,local(p),local(inc)))>=.60],
                  native_direct={local(p):native_rates(data,local(p),local(inc)) for p in actors},
                  native_overall={local(p):native_rates(data,local(p)) for p in actors},
@@ -230,10 +234,29 @@ def native_wave(index,main,inc,pool,history,final):
     return outcome
 
 
+def start_perfect_series(state):
+    # Keep the prior series and all native decisions intact. Policies can seed a
+    # new search, but scores earned with another mouse do not qualify a promotion.
+    archive=EVIDENCE/"tournament-series.json"
+    pool=[SRC/p for p in state["pool"]]
+    last=state["season"]
+    for path in sorted(EVIDENCE.glob("season-*/result.json")):
+        s=json.loads(path.read_text())
+        if s.get("aim_profile","tournament")=="tournament":
+            last=max(last,s["index"])
+            pool.extend(SRC/s[k] for k in ("main","best","counter","native_counter","defender") if k in s)
+    if not archive.exists():save(archive,state|{"retired_after_season":last})
+    return dict(season=last,series_start=last+1,aim_profile=AIM_PROFILE,incumbent=state["incumbent"],
+                main=state["incumbent"],pool=[local(p) for p in unique(pool)],stale=0,last_java=last,
+                history=[],promotions=[],counter_signatures=[],status="running",reference_pending=True)
+
+
 def run():
     state_file=EVIDENCE/"state.json"
     state=json.loads(state_file.read_text()) if state_file.exists() else dict(season=0,incumbent=local(ANCHORS[0]),main=local(ANCHORS[0]),
         pool=list(map(local,ANCHORS)),stale=0,last_java=0,history=[],promotions=[],counter_signatures=[],status="running")
+    if state.get("aim_profile")!=AIM_PROFILE:
+        state=start_perfect_series(state);save(state_file,state)
     while state["status"]=="running":
         i=state["season"]+1;final=state["stale"]>=3
         inc=SRC/state["incumbent"];main=SRC/state["main"];pool=unique([SRC/p for p in state["pool"]])
@@ -243,11 +266,11 @@ def run():
         state["season"]=i;state["main"]=s["main"];state["history"].append(i)
         pool=unique([*pool,*[SRC/s[k] for k in ("main","best","counter","native_counter","defender") if k in s]])
         print(f"Season {i}: advanced={s['advanced']} new counter={s['new_counter']} consecutive flat={state['stale']}",flush=True)
-        due=(i==3 or (i-state["last_java"]>=6) or (final and not changed))
+        due=(len(state["history"])==3 or (i-state["last_java"]>=6) or (final and not changed))
         if due:
             hist=[json.loads((EVIDENCE/("season-%03d"%n)/"result.json").read_text()) for n in state["history"] if n>state["last_java"]]
             outcome=native_wave(i,SRC/state["main"],inc,pool,hist,final and not changed)
-            state["last_java"]=i
+            state["last_java"]=i;state["reference_pending"]=False
             print("Native result",json.dumps(outcome),flush=True)
             if outcome["promoted"]:
                 state["incumbent"]=outcome["champion"];state["main"]=outcome["champion"];state["stale"]=0

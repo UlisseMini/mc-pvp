@@ -1,0 +1,5 @@
+opponent,added_rtt_ms,opening,seat,policy,learned_hp,opponent_hp,wtap_hp,wtap_opponent_hp,learned_presses_per_second,wtap_presses_per_second,learned_critical,wtap_critical,learned_fresh,wtap_fresh,learned_upgrades,wtap_upgrades,learned_round,wtap_round
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ef8cdac288b79e0.net,100,0,0,learned,20.0,20.0,0.0,4.880005,0.0,1.053,0,0,0,8,0,0,round-001,round-000
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ef8cdac288b79e0.net,100,0,1,learned,20.0,20.0,0.0,4.880005,0.0,1.053,0,0,0,8,0,0,round-002,round-003
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ef8cdac288b79e0.net,100,1,0,learned,16.7975,18.11,0.0,4.880005,0.033,1.039,0,0,1,8,0,0,round-005,round-007
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/ladder26/fighters/1ef8cdac288b79e0.net,100,1,1,learned,16.7975,18.11,0.0,6.7700043,0.033,1.067,0,0,1,7,0,0,round-006,round-004

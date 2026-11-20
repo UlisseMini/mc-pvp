@@ -120,7 +120,7 @@ def compile_agent():
 
 
 def compile_sim(revision=None, expected=None):
-    names = ("Fighter", "Model", "FastDuel", "PhaseClock", "FlatPhysics", "TreePolicy", "Train",
+    names = ("Fighter", "PerfectAim", "Model", "FastDuel", "PhaseClock", "FlatPhysics", "TreePolicy", "Train",
              "PolicyGradient", "League", "Refine", "Starts", "Cup", "Controls",
              "Grade", "Maintenance", "ForkAudit", "KernelReplay", "KernelBench", "JumpFork", "ContactParity", "ClockPrediction", "PollClock", "OpeningPressAudit", "CrossPlay", "BranchImprove", "RoundOutcome", "Checks")
     if revision:
