@@ -70,7 +70,12 @@ def main(attach_stage=0):
             if not decision.is_file():
                 # Pick up the declared entrants and runtime for this generation at its boundary.
                 # Interrupted workers resume from the immutable generation and match ledgers.
-                subprocess.run([sys.executable,'-u',__file__,'stage',str(g)],check=True)
+                for attempt in range(3):
+                    run=subprocess.run([sys.executable,'-u',__file__,'stage',str(g)])
+                    if run.returncode==0:break
+                    if attempt==2:run.check_returncode()
+                    print(f'Stage {g} exited {run.returncode}; resuming its frozen ledgers after a short backoff.',flush=True)
+                    time.sleep(15*(attempt+1))
             result=read(decision);print(result,flush=True)
             idle=0 if result['promoted'] or result['novel'] else idle+1
             if idle>=3:

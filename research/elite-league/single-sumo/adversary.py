@@ -165,8 +165,16 @@ if __name__=='__main__':
     elif sys.argv[1]=='respond':
         from long_specialist import RUN
         key=sys.argv[2] if len(sys.argv)>2 else 'incumbent'
-        if key not in ('incumbent','seven'):raise ValueError(key)
+        if key not in ('incumbent','seven','g1'):raise ValueError(key)
         target=ref(RUN/key/f'n{BUDGET}.net')
-        # This is the strongest measured counter to the current titleholder.
-        native_check(obtain(target,EVIDENCE/'g001/mlp/trainer.pt',1840291 if key=='incumbent' else 1870327))
+        if key=='g1':
+            parent=EVIDENCE/'g001/frontier-generalists/response'
+            panel=read(EVIDENCE/'robustness-001/starting-field/native-design.json')
+            field=read(EVIDENCE/'g002/generation.json')['field']
+            if ref(parent/'final.net')!=field[panel['weakest']] or panel['actor']!='sg003-long-g1':
+                raise ValueError('The observed hardest opponent changed')
+            initial=parent/'trainer.pt';seed=1996409
+        else:
+            initial=EVIDENCE/'g001/mlp/trainer.pt';seed=1840291 if key=='incumbent' else 1870327
+        native_check(obtain(target,initial,seed))
     else:raise ValueError(sys.argv[1])

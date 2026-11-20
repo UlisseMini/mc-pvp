@@ -7,11 +7,11 @@ from league_tournament import stats,interval
 
 from build import sim_paths
 CP=os.pathsep.join(map(str,sim_paths()))
-def java_rows(program,rows,args=(),mode=None,java_opts=()):
+def java_rows(program,rows,args=(),mode=None,java_opts=(),classpath=None):
     with tempfile.TemporaryDirectory(dir=BUILD) as tmp:
         plan=Path(tmp)/'in';out=Path(tmp)/'out'
         plan.write_text(''.join('\t'.join(map(str,r))+'\n' for r in rows))
-        subprocess.run(['java','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-Xms64m','-Xmx700m',*java_opts,'-cp',CP,program,
+        subprocess.run(['java','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-Xms64m','-Xmx700m',*java_opts,'-cp',classpath or CP,program,
                         *([mode] if mode else []),plan,out,*args],check=True,cwd=ROOT)
         result=[json.loads(s) for s in out.read_text().splitlines()]
         assert len(result)==len(rows)

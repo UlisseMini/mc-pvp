@@ -15,24 +15,10 @@ OUT=FOLDER/'client'
 MODES={'history':0,'branch-A':1,'branch-B':2,'reset-history':3,'inverted-history':4}
 
 def export():
+    from router_export import export_router
     sources=[DIR/'shared-mlp/initial.net',*(DIR/'routed/u064'/(n+'.net') for n in FOES)]
-    parts=[]
-    for path in sources:
-        family,encoded=path.read_bytes().strip().split(b'.')
-        assert family==b'LEAGUE_MLP180'
-        parts.append(base64.b64decode(encoded,validate=True))
     state=torch.load(DIR/'recognition'/f'history-{SEED}.pt',map_location='cpu',weights_only=True)
-    weights=lambda k:state[k].detach().numpy()
-    readout=np.zeros((6,32),np.float32);readout[:2]=weights('readout.weight')
-    bias=np.zeros(6,np.float32);bias[:2]=weights('readout.bias')
-    classifier=[weights('encoder.weight_ih_l0'),weights('encoder.weight_hh_l0'),weights('encoder.bias_ih_l0'),
-                readout,bias,weights('encoder.bias_hh_l0')]
-    parts.extend(a.astype('>f4').tobytes() for a in classifier)
-    models={}
-    for role,mode in MODES.items():
-        data=b''.join(parts)+np.asarray([mode],dtype='>f4').tobytes()
-        path=OUT/(role+'.net');freeze(path,b'LEAGUE_ADAPT24.'+base64.b64encode(data)+b'\n');models[role]=path
-    return models
+    return export_router(sources,state,MODES,OUT)
 
 def runtime():
     file=OUT/'runtime.json'
@@ -41,6 +27,15 @@ def runtime():
         bridge=read(BUILD/'forge-current.json')
         write_json(file,dict(sim=sim.name,forge=bridge,sim_sources=sha(sim/'source-pins.json')),fixed=True)
     return read(file)
+
+def trace_parity(path,pin):
+    fixture=BUILD/'native-trace.tsv'
+    digests=[]
+    for java,cp in [(JAVA8,BUILD/pin['forge']['jar']),('java',BUILD/pin['sim'])]:
+        digests.append(subprocess.check_output([java,'-XX:+UseSerialGC','-cp',
+            os.pathsep.join(map(str,[BUILD/'trace-classes',cp])),'LeagueTrace',path,fixture],text=True).strip())
+    if digests[0]!=digests[1]:raise ValueError('Forge Java 8 and the model produced different buttons')
+    return digests[0]
 
 def verify():
     nets=export();pin=runtime();raw=outcomes('dev',responders());x,length,_=dataset('dev')
@@ -56,12 +51,7 @@ def verify():
             for j in range(0,len(rows),32):actual.extend(k[0] for k in w.run(rows[j:j+32],False))
             if not np.array_equal(actual,expected):
                 raise ValueError(f'{role}: {np.where(np.array(actual)!=expected)[0].tolist()} differs from matched fork')
-            fixture=BUILD/'native-trace.tsv';digests=[]
-            for j,cp in [(JAVA8,BUILD/pin['forge']['jar']),('java',BUILD/pin['sim'])]:
-                digests.append(subprocess.check_output([j,'-XX:+UseSerialGC','-cp',
-                    os.pathsep.join(map(str,[BUILD/'trace-classes',cp])),'LeagueTrace',path,fixture],text=True).strip())
-            if digests[0]!=digests[1]:raise ValueError('Forge Java 8 and training runtime produced different buttons')
-            details[role]=dict(matching_full_matches=len(worlds),native_trace=digests[0],sha256=sha(path))
+            details[role]=dict(matching_full_matches=len(worlds),native_trace=trace_parity(path,pin),sha256=sha(path))
         write_json(OUT/'parity.json',dict(checks=details,model_runtime=pin,trace=sha(BUILD/'native-trace.tsv')),fixed=True)
     finally:w.close()
 

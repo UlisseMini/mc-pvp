@@ -16,14 +16,14 @@ def live(reference):
     return native_name(ROOT/name) if name.endswith('.net') else alias(name)
 
 
-def assess(folder,tag,actors,opponents,blocks=8):
+def assess(folder,tag,actors,opponents,blocks=8,bridge_override=None):
     sys.path.insert(0,str(ROOT/'research/mmc-arena'))
     from validation import assessment_bridge
     arms={label:live(ref) for label,ref in actors.items()}
     foes={label:live(ref) for label,ref in opponents.items()}
     plan=fixtures(tag,list(dict.fromkeys(arms.values())),list(dict.fromkeys(foes.values())),blocks,7)
     bridge,stamp=assessment_bridge()
-    results=fair_cohort(folder,plan,bridge,server=stamp['server'])
+    results=fair_cohort(folder,plan,bridge_override or bridge,server=stamp['server'])
     def count(qs):
         vals=[results[q]['score'] for q in qs]
         return dict(wins=vals.count(1),draws=vals.count(.5),losses=vals.count(0))

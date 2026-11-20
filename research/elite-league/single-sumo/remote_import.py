@@ -75,6 +75,24 @@ def run():
     foes=list(dict.fromkeys(['wtap','sg003-long-incumbent','sg003-long-seven','sg003-long-g1',
                             *[r['weakest'] for r in summary['records'].values()]]))
     assess(OUT/'native','remote-league-001',arms,{f:rr['field'][f] for f in foes})
+
+
+def mlp_native():
+    from matched_native import assess
+    from remote_round import entrants
+    wait_for(['mlp/final.net','mlp/result.json','mlp/common-field.json'])
+    field,_,_=entrants()
+    result=read(OUT/'mlp/common-field.json')
+    actor=read(OUT/'mlp/result.json')
+    name=publish('sumo-generalist-001-64k',actor,'7 CPS mixed-opponent MLP, 65536 training fights')
+    arms={'generalist':dict(**actor,native_alias=name),'parent':field[result['parent']],'wtap':field['wtap']}
+    foes=list(dict.fromkeys(['wtap',result['weakest'],'sumo-seven-first']))
+    folder=OUT/'mlp/native'
+    write_json(folder/'design.json',dict(actor=actor,published=name,parent=result['parent'],opponents=foes,
+               seat_rtt_blocks=8,control='wtap',qualifier='Independent native games on the default recorded 137-block floor.'),fixed=True)
+    assess(folder,'remote-mlp-001',arms,{k:field[k] for k in foes})
+
+
 def history():
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=3) as pool:
@@ -82,19 +100,56 @@ def history():
         for job in jobs:job.result()
 
 
-def prospective():
-    base='response-reversal/'
+def challenge_winner():
+    enroll()
+    # The final scoreboard is collected by run(), independently of its native panel.
+    while not (OUT/'published.json').exists():time.sleep(15)
+    tournament=read(OUT/'tournament.json')
+    winner=tournament['winner'];target=tournament['field'][winner]
+    from generation import ranked_parents
+    from adversary import obtain,native_check
+    parents=ranked_parents(2,tournament)
+    response=obtain(target,parents['mlp'][1],1987301)
+    write_json(OUT/'winner-response.json',dict(target=winner,policy=response['policy'],
+               confirmed=response['confirmed'],target_sha256=target['sha256'],wins=response['challenger_result']['wins'],
+               draws=response['challenger_result']['draws'],plain_wtap=response['wtap'],games=response['games']),fixed=True)
+    if response['source']=='single-target MLP PPO':native_check(response)
+
+
+def payoff_transfer():
+    dest=OUT/'payoff-pair'
+    wait_for(['payoff-pair/protocol.json','payoff-pair/development.json'])
+    if not read(dest/'development.json')['qualified_in_development']:return
+    wait_for(['payoff-pair/parity.json'])
+    send_future_clocks(dest/'prospective',dict(models='frozen 24-head reward-trained GRU and its controls',
+                                      opponents=['sg002-mentor-gru','sumo-seven-first']))
+    wait_for(['payoff-pair/prospective-result.json'])
+
+
+def prospective(head24=False):
+    base='response-reversal-head24/' if head24 else 'response-reversal/'
     wait_for([base+'protocol.json',base+'result.json'])
     choice=read(OUT/base/'result.json')
+    blueprint=read(OUT/base/'protocol.json')
+    files=[base+'train/'+k+'.json' for k in blueprint['challenged']]
+    if 'response_names' in choice:files.append(base+'selection.json')
+    files.extend(base+'dev/'+k+'.json' for k in choice.get('confirmation',{}))
+    retrieve(files)
     if not choice['confirmed']:return
-    retrieve([base+'selection.json'])
     enrolled=enroll()
-    folder=OUT/'prospective'
+    folder=OUT/('prospective-head24' if head24 else 'prospective')
+    send_future_clocks(folder,dict(models=enrolled,opponents=choice['opponents']))
+    for role in ('gru','gru-aux'):
+        which='history-prospective-head24' if head24 else 'history-prospective'
+        wait_for([f'{which}/{role}/protocol.json',f'{which}/{role}/result.json'])
+
+
+def send_future_clocks(folder,metadata):
     protocol=folder/'assay.json'
     if not protocol.exists():
         latest=max(int(p.stem[1:]) for p in (ROOT/'runtime/results').glob('m*.json') if p.stem[1:].isdigit())
         write_json(protocol,dict(first_future_id=latest+6,calendar_count=24,minimum_gap_ms=60000,
-                   models=enrolled,opponents=choice['opponents'],selection='first eligible bot-only sumo timing recordings at least 60s apart, from after the last model froze; read no outcomes for selection'),fixed=True)
+                   **metadata,selection='first eligible bot-only sumo timing recordings at least 60s apart, from after the last model froze; read no outcomes for selection'),fixed=True)
     from calendars_holdout import collect
     collect(folder)
     clocks=read(folder/'calendars/manifest.json')['selected']
@@ -106,11 +161,18 @@ def prospective():
         files.write_text(''.join(x+'\n' for x in paths))
         subprocess.run(['rsync','-az','--files-from='+str(files),str(ROOT)+'/',HOST+':'+REMOTE+'/'],check=True)
     subprocess.run(['ssh',*OPTIONS,HOST,'cd '+REMOTE+' && python3 research/elite-league/single-sumo/remote_jobs.py'],check=True)
-    for role in ('gru','gru-aux'):
-        wait_for([f'history-prospective/{role}/protocol.json',f'history-prospective/{role}/result.json'])
 
 
 if __name__=='__main__':
     if sys.argv[1:]==['history']:history()
     elif sys.argv[1:]==['prospective']:prospective()
+    elif sys.argv[1:]==['challenge']:challenge_winner()
+    elif sys.argv[1:]==['mlp-native']:mlp_native()
+    elif sys.argv[1:]==['head24']:prospective(True)
+    elif sys.argv[1:]==['payoff']:payoff_transfer()
+    elif sys.argv[1:]==['field']:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            jobs=[pool.submit(wait_for,[r+'/common-field.json']) for r in ROLES]
+            for job in jobs:job.result()
     else:run()

@@ -1,6 +1,8 @@
 """Build an explicit file list for simulator workers, including only registered clocks and frozen policies."""
 import hashlib
 import json
+import subprocess
+import tempfile
 from pathlib import Path
 
 HERE=Path(__file__).resolve().parent
@@ -13,12 +15,28 @@ OUT=LAB/'evidence/robustness-001'
 def read(p):return json.loads((ROOT/p).read_text())
 
 
+def build_head24_overlay():
+    source=ROOT/LAB/'MemoryAssay.java'
+    base=read(BUILD/'sim-current.json')['directory']
+    tag=hashlib.sha256(source.read_bytes()+(ROOT/BUILD/'sim-current.json').read_bytes()).hexdigest()
+    dest=ROOT/BUILD/('head24-diagnostic-'+tag[:16])
+    if not (dest/'MemoryAssay$Witness.class').exists():
+        with tempfile.TemporaryDirectory(dir=ROOT/BUILD) as temp:
+            classes=Path(temp)/'classes';classes.mkdir()
+            subprocess.run(['javac','--release','17','-J-XX:ActiveProcessorCount=1','-proc:none',
+                            '-cp',str(ROOT/BUILD/base),'-d',str(classes),str(source)],check=True)
+            classes.rename(dest)
+    spec=dict(directory=dest.name,source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),base=base)
+    (ROOT/BUILD/'head24-diagnostic.json').write_text(json.dumps(spec,sort_keys=True)+'\n')
+
+
 def bundle():
+    build_head24_overlay()
     files={LAB/name for name in ('remote_league.py','learner.py','train.py','build.py','league_tournament.py',
-                                 'assay.py','remote_analysis.py','remote_round.py','remote_jobs.py','remote_fit.py','remote_reversal.py') if (ROOT/LAB/name).is_file()}
+                                 'assay.py','remote_analysis.py','remote_round.py','remote_jobs.py','remote_fit.py','remote_reversal.py','payoff_pair.py','payoff_oracle.py','recognition.py','opponent_id.py','router_export.py') if (ROOT/LAB/name).is_file()}
     files.add(LAB.parent/'stage_runtime.py')
     files.add(Path('policies/wtap-clickphase.properties'))
-    for pin in ('training-runtime.json','sim-current.json'):
+    for pin in ('training-runtime.json','sim-current.json','head24-diagnostic.json'):
         files.add(BUILD/pin)
         folder=ROOT/BUILD/read(BUILD/pin)['directory']
         files.update(p.relative_to(ROOT) for p in folder.rglob('*') if p.is_file())

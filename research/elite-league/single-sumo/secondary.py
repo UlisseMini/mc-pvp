@@ -54,9 +54,10 @@ def enrollment(gen):
             field[name]=pool.model_ref(pool.RUN/key/'n65536.net')
             families.setdefault('65k single-opponent PPO',[]).append(name)
         from adversary import obtain
-        for key,seed in [('incumbent',1840291),('seven',1870327)]:
+        for key,seed in [('incumbent',1840291),('seven',1870327),('g1',1996409)]:
             target=field['sg003-long-'+key]
-            response=obtain(target,EVIDENCE/'g001/mlp/trainer.pt',seed)
+            origin='g001/frontier-generalists/response/trainer.pt' if key=='g1' else 'g001/mlp/trainer.pt'
+            response=obtain(target,EVIDENCE/origin,seed)
             name='sg003-counter-response-'+key;field[name]=response['policy']
             if response['confirmed']:families.setdefault('65k single-opponent PPO',[]).append(name)
         subprocess.run([sys.executable,HERE/'successor_pool.py'],check=True)
@@ -68,6 +69,21 @@ def enrollment(gen):
         remote=enroll()
         field.update(remote)
         families['remote mixed PPO']=list(remote)
+    if gen==4:
+        from remote_league import OUT
+        from weak_field import enroll as enroll_weak_matchups
+        for role,ref in enroll_weak_matchups().items():
+            name='sg004-'+role
+            field[name]=ref
+            families.setdefault('weak matchup curriculum',[]).append(name)
+        import time
+        while not (OUT/'winner-response.json').is_file():time.sleep(15)
+        response=json.loads((OUT/'winner-response.json').read_text())
+        prior=json.loads((p/'tournament.json').read_text())['field']
+        if all(ref['sha256']!=response['policy']['sha256'] for ref in prior.values()):
+            name='sg004-remote-winner-response'
+            field[name]=response['policy']
+            if response['confirmed']:families.setdefault('65k single-opponent PPO',[]).append(name)
     return field,families
 
 def declare(g):

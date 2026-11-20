@@ -1,8 +1,9 @@
 """Play the common archive fixtures while the three remote policies train, then rank the entire field."""
+import sys
 import time
 from itertools import combinations_with_replacement
 
-from league_tournament import EVIDENCE, Worker, games, tournament, write_json
+from league_tournament import EVIDENCE, Worker, games, stats, tournament, write_json
 from remote_league import OUT, ROLES, read
 
 PREFIX='remote-001-'
@@ -48,4 +49,51 @@ def run():
     finally:w.close()
 
 
-if __name__=='__main__':run()
+def precompute(role):
+    field,_,_=entrants()
+    done=OUT/role/'result.json'
+    while not done.exists():time.sleep(10)
+    actor=PREFIX+role
+    parent_hash=read(OUT/'protocol.json')['initial']['mlp' if role=='mlp' else 'gru']['sha256']
+    parent=next(n for n,r in field.items() if r['sha256']==parent_hash)
+    original=list(field)
+    field[actor]=read(done)
+    worker=Worker()
+    try:
+        cells={n:{k:stats(games(worker,field,p,n)) for k,p in [('candidate',actor),('parent',parent),('wtap','wtap')]} for n in original}
+    finally:worker.close()
+    weak=min((n for n in original if field[n]['sha256']!=field[actor]['sha256']),
+             key=lambda n:(cells[n]['candidate']['wins'],cells[n]['candidate']['score'],n))
+    grade={label:dict(mean_outright=sum(cells[n][label]['wins'] for n in original)/(256*len(original)),
+                      majority=sum(cells[n][label]['wins']>128 for n in original)) for label in ('candidate','parent','wtap')}
+    write_json(OUT/role/'common-field.json',dict(parent=parent,weakest=weak,summary=grade,cells=cells,
+               status='Completed final weights against the shared starting field. Remaining entrants join the frozen full tournament once all are ready.'),fixed=True)
+
+
+def calendar_spread(role):
+    from assay import lower_contrast
+    from learner import CLOCKS
+    field,_,_=entrants()
+    foes=list(field)
+    result=read(OUT/role/'common-field.json')
+    name=PREFIX+role
+    field[name]=read(OUT/role/'result.json')
+    references={'candidate':name,'parent':result['parent'],'previous-counter':'sg003-long-g1','wtap':'wtap'}
+    rates={}
+    for label,actor in references.items():
+        rows=[r for foe in foes for r in games(None,field,actor,foe)]
+        size=32*len(foes)
+        rates[label]=[sum(r[5]==1 for r in rows if r[0]==i)/size for i in range(len(CLOCKS['dev']))]
+        if len(rows)!=len(rates[label])*size:raise ValueError('Unbalanced calendar cells')
+    effects={}
+    for label in ('parent','previous-counter','wtap'):
+        donor=[x-y for x,y in zip(rates['candidate'],rates[label],strict=True)]
+        effects[label]=dict(mean=sum(donor)/len(donor),interval=lower_contrast(donor,.025))
+    write_json(OUT/role/'calendar-spread.json',dict(outright_rate=rates,candidate_advantage=effects,
+        scope='Paired differences over eight exposed timing recordings on a fixed 35-opponent panel. Nominal two-sided 95% t intervals describe timing variation and do not cover opponent selection.'),fixed=True)
+
+
+if __name__=='__main__':
+    if sys.argv[1:2]==['spread']:calendar_spread(sys.argv[2])
+    elif sys.argv[1:]:precompute(sys.argv[1])
+    else:run()

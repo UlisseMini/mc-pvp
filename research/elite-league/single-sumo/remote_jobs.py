@@ -23,7 +23,12 @@ def start(name,script,args,receipt):
 if __name__=='__main__':
     for role in ('mlp','gru','gru-aux'):
         start(role,'remote_league.py',[role],role+'/result.json')
+        start('field-'+role,'remote_round.py',[role],role+'/common-field.json')
     start('reversal','remote_reversal.py',[],'response-reversal/result.json')
+    start('payoff-pair','payoff_pair.py',[],'payoff-pair/parity.json')
+    if (OUT/'payoff-pair/development.json').is_file():
+        start('payoff-oracle','payoff_oracle.py',[],'payoff-pair/oracle-development.json')
+    start('reversal-head24','remote_reversal.py',['head24'],'response-reversal-head24/result.json')
     start('tournament','remote_round.py',[],'tournament-result.json')
     for role in ('parent','gru','gru-aux'):
         start('history-'+role,'remote_analysis.py',[role],'history/'+role+'/result.json')
@@ -31,3 +36,8 @@ if __name__=='__main__':
     if ready.is_file():
         for role in ('gru','gru-aux'):
             start('prospective-'+role,'remote_analysis.py',[role,'prospective'],'history-prospective/'+role+'/result.json')
+    if (OUT/'prospective-head24/calendars/manifest.json').is_file():
+        for role in ('gru','gru-aux'):
+            start('head24-'+role,'remote_analysis.py',[role,'prospective-head24'],'history-prospective-head24/'+role+'/result.json')
+    if (OUT/'payoff-pair/prospective/calendars/manifest.json').is_file():
+        start('payoff-fresh','payoff_pair.py',['prospective'],'payoff-pair/prospective-result.json')

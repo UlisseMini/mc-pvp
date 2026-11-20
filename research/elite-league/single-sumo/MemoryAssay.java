@@ -10,6 +10,7 @@ final class MemoryAssay {
         record Head(double[] before,double[] features){}
         ArrayDeque<Head> tail=new ArrayDeque<>();
         double ownHurt=Double.NEGATIVE_INFINITY,foeHurt=Double.NEGATIVE_INFINITY,cut=Double.NaN;
+        static final int COMMIT_HEADS=Integer.getInteger("league.commitHeads",0);
         int cues,heads;
         Witness(Arena.Model model,int own,int other,long seed){super(model,own,other);net.league().seed(seed);}
         @Override public PeriodicComboClock.Control input(PeriodicComboClock.Observation o){
@@ -19,7 +20,7 @@ final class MemoryAssay {
             tail.addLast(new Head(prior,net.features()));
             if(o.lastOwnHurtTime()>ownHurt){ownHurt=o.lastOwnHurtTime();cues++;}
             if(o.lastTargetHurtTime()>foeHurt){foeHurt=o.lastTargetHurtTime();cues++;}
-            if(cues>=3 && Double.isNaN(cut))cut=o.time();
+            if((COMMIT_HEADS>0?heads>=COMMIT_HEADS:cues>=3) && Double.isNaN(cut))cut=o.time();
             return action;
         }
     }
