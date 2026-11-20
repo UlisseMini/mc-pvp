@@ -54,10 +54,12 @@ def verify_match(mid, trial, scores):
                 if coverage:
                     checks[seat]['coverage'] = coverage
             elif policy in ('research-wtap20', 'research-hold20') or (
+                    policy=='wtap-clickphase' and record['parameters_'+seat].get('kind')=='momentum'
+                    and record['parameters_'+seat].get('reset_on_issued_click')=='1') or (
                     trial.get('mode')=='boxing' and trial.get('gate_k') in (3,5,10)
                     and policy==trial['opponent'] and policy==f"breadth-{trial.get('defender_style')}-wake{trial['gate_k']}"
                     and record['parameters_'+seat]['kind'] in ('wtap','hold','tradetap')):
-                end_tick=(trial.get('gate_k') in (3,5,10) and policy==trial['opponent']
+                end_tick=((trial.get('gate_k') in (3,5,10) and policy==trial['opponent'] or policy=='wtap-clickphase')
                           and record['parameters_'+seat].get('science_trace','0')!='1')
                 checks[seat] = dict(policy=policy, **legacy(mid, seat, record, observed_keys=end_tick))
             else:

@@ -11,16 +11,17 @@ public final class SumoLeaguePolicy {
     private long randomState;
     private double value;
 
-    public static int size(boolean gru){
-        int width=gru?32:180;
+    public static int size(boolean gru){return size(gru,gru?32:180);}
+    public static int size(boolean gru,int width){
         return (gru?3*width*(INPUTS+width+1):width*(INPUTS+1))+HEADS*(width+1);
     }
-    SumoLeaguePolicy(boolean gru,float[] weights){
-        recurrent=gru;w=weights;width=gru?32:180;
+    SumoLeaguePolicy(boolean gru,float[] weights){this(gru,gru?32:180,weights);}
+    SumoLeaguePolicy(boolean gru,int width,float[] weights){
+        recurrent=gru;w=weights;this.width=width;
         h=new double[width];gates=new double[3*width];history=new double[3*width];
     }
     SumoLeaguePolicy copy(){
-        SumoLeaguePolicy c=new SumoLeaguePolicy(recurrent,w);
+        SumoLeaguePolicy c=new SumoLeaguePolicy(recurrent,width,w);
         System.arraycopy(h,0,c.h,0,width);c.randomState=randomState;c.value=value;return c;
     }
     public void seed(long seed){randomState=seed;}

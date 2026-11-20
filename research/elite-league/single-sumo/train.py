@@ -18,7 +18,10 @@ def fit(path, total):
         if step!=logs[-1]["update"]:raise ValueError("Checkpoint and progress disagree")
         net.export(path/"current.net");write_json(path/"progress.json",logs[-1])
     elif cfg["warm"]:
-        net.load_state_dict(torch.load(cfg["warm"],map_location="cpu",weights_only=False)["net"])
+        previous=torch.load(cfg["warm"],map_location="cpu",weights_only=False)
+        net.load_state_dict(previous["net"])
+        if cfg["role"] in ("main","mlp") and "opt" in previous and "logs" in previous:
+            opt.load_state_dict(previous["opt"])
     roller=Worker()
     try:
         while step<total:

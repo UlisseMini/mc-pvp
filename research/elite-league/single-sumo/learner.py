@@ -101,11 +101,11 @@ def log_prob(y, ground, action):
     return ordinal_logit(y[:,0],-.65,0,walk)+torch.where(walk==1,sprint,0.)+ordinal_logit(y[:,4],-.45,.45,side)+click+torch.where(ground,jump,0.)
 
 class Worker:
-    def __init__(self,cps=7):
+    def __init__(self,cps=7,current_runtime=False,runtime_directory=None):
         if cps not in (7,20):raise ValueError(cps)
         self.tmp=tempfile.TemporaryDirectory(dir=BUILD); self.folder=Path(self.tmp.name)
         from build import sim_paths
-        cp=os.pathsep.join(map(str,sim_paths(training=True)))
+        cp=str(runtime_directory) if runtime_directory else os.pathsep.join(map(str,sim_paths(training=not current_runtime)))
         self.proc=subprocess.Popen(["java","-ea",f"-Dleague.cps={cps}","-XX:ActiveProcessorCount=2","-XX:+UseSerialGC","-Xms128m","-Xmx1400m","-cp",cp,"LeagueWorker","2"],
                                    cwd=ROOT,text=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE)
     def run(self, schedule, collect):
@@ -159,14 +159,14 @@ def prepare(rollouts):
     for e in episodes:e[:,27]=(e[:,27]-mean)/sd
     return episodes
 
-def train_update(net,opt,episodes,seed):
+def train_update(net,opt,episodes,seed,conditioned=False):
     rng=random.Random(seed);inds=list(range(len(episodes)));metrics=[];max_error=0.
     for epoch in range(3):
         rng.shuffle(inds)
         for start in range(0,len(inds),8):
             seq=pack_sequence([episodes[i] for i in inds[start:start+8]],enforce_sorted=False)
             d=seq.data; x=PackedSequence(d[:,:25],seq.batch_sizes,seq.sorted_indices,seq.unsorted_indices)
-            y=net.sequences(x)
+            y=net.sequences(x,d[:,35].long()) if conditioned else net.sequences(x)
             if epoch==0 and start==0:
                 max_error=float((y.detach()-d[:,29:35]).abs().max())
                 if max_error>.001:raise ValueError(f"Java/PyTorch on-policy disagreement {max_error}")

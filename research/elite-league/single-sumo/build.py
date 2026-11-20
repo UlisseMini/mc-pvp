@@ -55,8 +55,16 @@ def run():
         classes=Path(temp)/'forge';classes.mkdir()
         subprocess.run(['javac','-J-XX:ActiveProcessorCount=1','--release','8','-proc:none','-sourcepath','','-cp',base,'-d',classes,*shared,lab/'DuelHudPing.java'],check=True)
         if not bridge.exists():patched(base,classes,bridge)
-        with zipfile.ZipFile(bridge) as jar:
-            for p in classes.rglob('*.class'):
-                if p.read_bytes()!=jar.read(str(p.relative_to(classes))):raise RuntimeError('Forge source differs from the frozen bridge; stage a new versioned cohort')
+        def matches(path):
+            with zipfile.ZipFile(path) as jar:
+                return all(str(p.relative_to(classes)) in jar.namelist() and p.read_bytes()==jar.read(str(p.relative_to(classes))) for p in classes.rglob('*.class'))
+        if not matches(bridge):
+            digest=manifest({str(p.relative_to(classes)):sha(p) for p in classes.rglob('*.class')})
+            bridge=BUILD/('forge-'+digest[:20]+'.jar')
+            if not bridge.exists():patched(base,classes,bridge)
+            if not matches(bridge):raise RuntimeError('Frozen Forge artifact does not match its class digest')
+        with tempfile.NamedTemporaryFile(dir=BUILD,mode='w',delete=False) as f:
+            json.dump(dict(jar=bridge.name,sha256=sha(bridge)),f)
+        os.replace(f.name,BUILD/'forge-current.json')
     print('Simulator',version.name,'Forge base',sha(base),'overlay',sha(bridge),flush=True)
 if __name__=='__main__':run()

@@ -47,6 +47,13 @@ def snapshot(dest,bridge):
         if target.exists():
             if sha(target)!=sha(path):raise RuntimeError('Frozen client snapshot changed '+n)
         else:shutil.copyfile(path,target)
+
+def manager_accepts(command,selector,target,digest):
+    try:settings=json.loads(command.split(' serve ',1)[1])
+    except (ValueError,IndexError):return False
+    return (settings.get('cohort_selector')==str(selector) and
+            settings.get('cohort_options',{}).get(str(target.resolve()))==digest)
+
 def switch(target,settings):
     mgr=ROOT/'runtime/manager.json';hashcode=sha(target/'bridge.jar')
     with (BUILD.parent/'rollout.lock').open('a') as slot:
@@ -55,10 +62,10 @@ def switch(target,settings):
         # Require a completely drained lab including user and boxing duels.
         wait(lambda:not read(ROOT/'runtime/status.json')['matches'],190,'Waiting for an active duel to finish')
         selector=target.parent/'client-cohort.json'
-        options={str((target.parent/k).resolve()):sha(target.parent/k/'bridge.jar') for k in ('old','league')}
+        options={str(p.parent.resolve()):sha(p) for p in target.parent.glob('*/bridge.jar')}
         record={'snapshot':str(target.resolve()),'epoch':time.time()*1000}
         temp=selector.with_suffix('.tmp');temp.write_text(json.dumps(record));temp.replace(selector)
-        if mgr.exists() and str(selector) in process_cmd(read(mgr)['pid']):
+        if mgr.exists() and manager_accepts(process_cmd(read(mgr)['pid']),selector,target,hashcode):
             lab_runtime.send('reload-bots')
             wait(lambda:ready(hashcode) and active_bridge()==hashcode,300,'Forge clients did not enter the chosen cohort')
             return
@@ -71,9 +78,10 @@ def resume_paused(paused):
     for pid,cmd in paused.items():
         if process_cmd(int(pid))==cmd:os.kill(int(pid),signal.SIGCONT)
 @contextlib.contextmanager
-def window():
+def window(bridge_path=None):
     b=BUILD/'forge-window';b.mkdir(exist_ok=True)
-    bridge=BUILD/'bridge.jar';newhash=sha(bridge)
+    bridge=bridge_path or BUILD/'bridge.jar';newhash=sha(bridge)
+    target=b/('league' if bridge==BUILD/'bridge.jar' else 'league-'+newhash[:20])
     with (BUILD.parent/'main-cohort.lock').open('a') as access:
         fcntl.flock(access,fcntl.LOCK_EX)
         journal=b/'lease.json';settings=read(ROOT/'runtime/manager.json')
@@ -81,12 +89,13 @@ def window():
         if sha(ROOT/'build/lab-agent.jar')!=pinned['server']:raise RuntimeError('Main server build differs before cohort switch')
         if journal.exists():
             prior=read(journal);switch(b/'old',prior['settings']);resume_paused(prior['schedulers']);journal.unlink()
+        wait(active_bridge,25,'Cannot identify the current live client cohort')
         oldhash=active_bridge()
         if oldhash==newhash:
             yield newhash;return
         if oldhash!=pinned['bridge']:raise RuntimeError('Another experiment owns a different live Forge cohort')
         snapshot(b/'old',ROOT/'runtime/bots/0/mods/practice-bridge.jar')
-        snapshot(b/'league',bridge)
+        snapshot(target,bridge)
         paused=schedulers()
         journal.write_text(json.dumps(dict(settings=settings,schedulers=paused,at=time.time(),old=oldhash,new=newhash)))
         try:
@@ -94,7 +103,7 @@ def window():
                 if process_cmd(pid)==cmd:os.kill(pid,signal.SIGSTOP)
             wait(lambda:not read(ROOT/'runtime/status.json')['matches'] and
                  not any((ROOT/'runtime/manager/inbox').glob('*.json')),195,'Waiting for earlier admissions to drain')
-            switch(b/'league',settings)
+            switch(target,settings)
             yield newhash
         finally:
             switch(b/'old',settings)
