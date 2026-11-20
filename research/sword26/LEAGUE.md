@@ -76,3 +76,7 @@ The matched-opening crossover then replayed the first panel’s angles and gaps 
 |---|---:|---:|---:|---:|
 | 0 ms | 4/4 | 4/4 | 0/4 | 0/4 |
 | 100 ms | 2/4 | 4/4 | 0/4 | 0/4 |
+
+## What the full-frame exhibition shows
+
+The season 9 champion played its season 11 counter from both seats on one scheduled Java opening. It began a grounded jump on the input tick delivering 14 of the 16 fresh knockbacks it received. W-tap did this on 0 of 14. For each of those 14 jumps, the simulator reproduced the pre-jump state and the next native position. Releasing only the jump key increased outward movement by approximately 0.20 blocks on the next tick in all 14 forks. The champion still lost both fights. This measures the physical effect of a learned jump reset on one opening. The score used to train the policy rewarded wins and health. [Watch one duel](http://127.0.0.1:25708/?match=showcase-003%2Fround-002#matches) · [Paired native inputs](evidence/ladder26/showcase-003/input-signatures.csv) · [One-key intervention](evidence/ladder26/showcase-003/jump-forks.csv)
