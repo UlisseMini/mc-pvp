@@ -104,6 +104,36 @@ def compare_native(scores,challengers,inc):
     return eligible,threats
 
 
+def native_scout(index, jar, work, dest, candidates, inc, base, general, direct):
+    """Select a response from fresh ordinary-Java development fights before promotion."""
+    field=unique([inc,*ANCHORS])
+    parents=[inc] if inc.read_bytes()[:4]==b"SWT1" else [p for p in field if p.read_bytes()[:4]==b"SWT1"]
+    refinement=train_stage(jar,work,"incumbent-descendants","Refine",80,base+310,
+                           [inc]*8+field,parents,clock="mix")
+    descendants=[p for p in sorted(refinement.glob("gen-*.net")) if not same(p,inc)]
+    versions=unique([*candidates,*descendants])
+    calibrated=both_clocks(jar,work,"scout-selection",[*versions,"wtap"],field,base+311,48,True)
+    def robust_direct(p):
+        return min(calibrated[str(p),str(inc)])
+    available=[p for p in versions if not same(p,inc)]
+    robust=max(available,key=robust_direct)
+    near=max(descendants,key=robust_direct) if descendants else robust
+    shortlist=unique([general,direct,robust,near])
+    by_score=sorted(available,key=robust_direct,reverse=True)
+    shortlist=unique([*shortlist,*by_score])[:4]
+    shortlist=[write_fighter(p) for p in shortlist]
+    pilot=native_panel(f"scout-{index:03d}",[*shortlist,inc],[inc],base+312,1)
+    rows=pilot["scores"]
+    def score(p):
+        subset=[r for r in rows if r["actor"]==local(p) and r["qualified"]]
+        if not subset:return (0.,-20.)
+        return statistics.mean(r["score"] for r in subset),statistics.mean(r["hp"]-r["enemy_hp"] for r in subset)
+    winner=max(shortlist,key=score)
+    save(dest/"scout.json",dict(entrants={local(p):score(p) for p in [*shortlist,inc]},selected=local(winner),
+                               wtap=native_rates(rows,"wtap"),run=pilot["run"]))
+    return winner
+
+
 def native_wave(index,main,inc,pool,history,final):
     tag=f"java-{index:03d}"
     dst=EVIDENCE/tag;dst.mkdir(exist_ok=True)
@@ -125,6 +155,9 @@ def native_wave(index,main,inc,pool,history,final):
     general=max(candidates,key=overall)
     direct=max(candidates,key=lambda p:field_score(merits,p,inc))
     choices=unique([general,direct])
+    if index>=10 and (final or index>=15):
+        pilot_winner=native_scout(index,jar,wa,dst,candidates,inc,base,general,direct)
+        choices=unique([*choices,pilot_winner])
     if final:
         fresh_dir=train_stage(jar,wa,"outside","League",360,base+4811,[])
         outsider=write_fighter(sorted(fresh_dir.glob("gen-*.net"))[-1])
