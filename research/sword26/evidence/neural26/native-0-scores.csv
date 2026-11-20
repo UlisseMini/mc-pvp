@@ -1,0 +1,13 @@
+opponent,added_rtt_ms,opening,seat,policy,learned_hp,opponent_hp,wtap_hp,wtap_opponent_hp,learned_presses_per_second,wtap_presses_per_second,learned_critical,wtap_critical,learned_fresh,wtap_fresh,learned_upgrades,wtap_upgrades,learned_round,wtap_round
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,0,0,0,learned,0.0,0.4274106,0.0,6.770004,1.359,1.0,4,0,8,7,0,0,round-000,round-001
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,0,0,1,learned,7.9250007,0.0,0.0,6.770004,1.446,1.0,3,0,9,7,0,0,round-007,round-004
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,0,1,0,learned,0.0,6.035003,0.0,4.880004,1.198,1.06,2,0,6,8,0,0,round-022,round-016
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,0,1,1,learned,0.0,0.36500382,0.0,4.880004,1.268,1.06,2,0,9,8,0,0,round-019,round-017
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/transfer/unseen.net,0,0,0,learned,0.0,4.9680634,0.0,2.9900045,1.655,1.146,4,0,6,9,0,0,round-002,round-008
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/transfer/unseen.net,0,0,1,learned,0.69998765,0.0,0.0,2.990004,1.695,1.036,6,0,9,9,0,0,round-005,round-003
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/transfer/unseen.net,0,1,0,learned,0.0,9.239406,0.0,1.1000042,1.636,0.995,4,0,4,10,0,0,round-012,round-023
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/transfer/unseen.net,0,1,1,learned,0.0,7.3494062,0.0,4.880004,1.639,1.192,4,0,5,8,0,0,round-018,round-021
+wtap,0,0,0,learned,1.1000042,0.0,1.1000042,0.0,1.215,1.048,0,0,11,11,0,0,round-009,round-006
+wtap,0,0,1,learned,0.0,1.1000042,0.0,1.1000042,1.215,1.048,0,0,10,10,0,0,round-010,round-011
+wtap,0,1,0,learned,0.0,0.4320562,1.1000042,0.0,1.504,1.053,6,0,7,11,0,0,round-020,round-014
+wtap,0,1,1,learned,1.1000056,0.0,0.0,1.1000042,1.679,1.053,6,0,7,10,0,0,round-015,round-013

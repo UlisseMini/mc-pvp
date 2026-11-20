@@ -26,6 +26,22 @@ def export(run,dest,label):
     if pairs.keys()!=openings or any(arms.keys()!=arms_expected for arms in pairs.values()):
         raise ValueError("A complete paired panel with a W-tap control is required")
     (dest/(label+"-audit.json")).write_text(json.dumps(data,indent=2)+"\n")
+    if meta.get("landmark"):
+        with (dest/(label+"-branches.csv")).open("w") as out:
+            writer=csv.writer(out,lineterminator="\n")
+            fields=["entry_tick","distance","ownHP","opponentHP","ownGround","opponentGround","switch_delay_ms",
+                    "returns_cycles","returns_end","returns_exposure_ticks","active_cycles","active_end","active_exposure_ticks"]
+            writer.writerow(["opponent","added_rtt_ms","opening","seat",*[a+"_"+f for a in ("learned","wtap") for f in fields]])
+            for key,arms in sorted(pairs.items()):
+                values=[]
+                for arm in ("learned","wtap"):
+                    branch=arms[arm]["branch"]
+                    if branch is None:
+                        values.extend(["no_entry"]+[""]*(len(fields)-1))
+                    else:
+                        values.extend(branch[f] for f in fields[:7])
+                        values.extend(branch[rule][f] for rule in ("returns","active") for f in ("cycles","end","exposure_ticks"))
+                writer.writerow([*key,*values])
     with (dest/(label+"-scores.csv")).open("w") as out:
         writer=csv.writer(out,lineterminator="\n")
         writer.writerow(["opponent","added_rtt_ms","opening","seat","policy","learned_hp","opponent_hp","wtap_hp","wtap_opponent_hp","learned_presses_per_second","wtap_presses_per_second","learned_critical","wtap_critical","learned_fresh","wtap_fresh","learned_upgrades","wtap_upgrades","learned_round","wtap_round"])

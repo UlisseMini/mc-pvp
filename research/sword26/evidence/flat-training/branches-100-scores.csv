@@ -1,0 +1,7 @@
+opponent,added_rtt_ms,opening,seat,policy,learned_hp,opponent_hp,wtap_hp,wtap_opponent_hp,learned_presses_per_second,wtap_presses_per_second,learned_critical,wtap_critical,learned_fresh,wtap_fresh,learned_upgrades,wtap_upgrades,learned_round,wtap_round
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,100,0,0,learned,0.0,6.770004,0.0,6.770004,0.94,0.94,0,0,7,7,0,0,round-001,round-003
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,100,0,1,learned,0.0,6.770004,0.0,6.770004,0.94,0.94,0,0,7,7,0,0,round-002,round-000
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,100,1,0,learned,0.0,2.990005,0.0,2.990005,0.994,1.006,0,0,9,9,0,0,round-007,round-006
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,100,1,1,learned,0.0,2.990005,0.0,2.990005,0.994,1.006,0,0,9,9,0,0,round-005,round-004
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,100,2,0,learned,0.0,6.770004,0.0,6.770004,0.909,0.909,0,0,7,7,0,0,round-011,round-008
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,100,2,1,learned,0.0,6.770004,0.0,6.770004,0.909,0.915,0,0,7,7,0,0,round-009,round-010

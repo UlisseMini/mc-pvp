@@ -1,0 +1,14 @@
+{
+  "sha256": "2708fdc8d7e6883ee61a1ed05fe1d05b0bc0fdbf1069dde492e08bbc10317520",
+  "reproduction_seconds": 116.36351333302446,
+  "refinement_duels_excluding_prefix_and_tournament": 2365440,
+  "final_tournament_duels": 202752,
+  "exact_artifacts": [
+    "fighter.net",
+    "selection.json",
+    "all five paired grade files",
+    "all five paired maintenance files"
+  ],
+  "threads": 4,
+  "conditions": "Second clean work directory on the same Mac, warmed game dependencies. Ran at lower process priority while headless JVM evaluations were in progress. Includes grading and checkpoint selection."
+}

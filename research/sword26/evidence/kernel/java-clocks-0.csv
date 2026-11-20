@@ -1,7 +1,7 @@
-rtt,opponent,opening,seat,learned_winner,learned_health,learned_terminal_tick,learned_all_client_samples,learned_all_contacts,learned_client_samples_through_termination,wtap_winner,wtap_health,wtap_terminal_tick,wtap_all_client_samples,wtap_all_contacts,wtap_client_samples_through_termination
-0,alternative.net,0,0,True,True,True,True,True,True,True,True,True,True,True,True
-0,alternative.net,0,1,True,True,True,True,True,True,True,True,True,True,True,True
-0,population.net,0,0,True,True,True,True,True,True,True,True,True,True,True,True
-0,population.net,0,1,True,True,True,True,True,True,True,True,True,True,True,True
-0,wtap,0,0,True,True,True,True,True,True,True,True,True,True,True,True
-0,wtap,0,1,True,True,True,True,True,True,True,True,True,True,True,True
+rtt,opponent,opening,seat,learned_winner,learned_health,learned_terminal_tick,learned_all_client_samples,learned_all_contacts,learned_client_samples_through_termination,learned_common_client_samples,learned_max_client_sample_count_gap,wtap_winner,wtap_health,wtap_terminal_tick,wtap_all_client_samples,wtap_all_contacts,wtap_client_samples_through_termination,wtap_common_client_samples,wtap_max_client_sample_count_gap
+0,alternative.net,0,0,True,True,True,True,True,True,True,0,True,True,True,True,True,True,True,0
+0,alternative.net,0,1,True,True,True,True,True,True,True,0,True,True,True,True,True,True,True,0
+0,population.net,0,0,True,True,True,True,True,True,True,0,True,True,True,True,True,True,True,0
+0,population.net,0,1,True,True,True,True,True,True,True,0,True,True,True,True,True,True,True,0
+0,wtap,0,0,True,True,True,True,True,True,True,0,True,True,True,True,True,True,True,0
+0,wtap,0,1,True,True,True,True,True,True,True,0,True,True,True,True,True,True,True,0

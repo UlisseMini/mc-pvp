@@ -17,7 +17,7 @@ final class FlatPhysics {
     static class Motion {
         double x, y = FLOOR, z, vx, vy = -.08 * .98f, vz;
         float yaw;
-        boolean ground = true, wall;
+        boolean ground = true, blocksSprint;
         void set(double x, double y, double z) { this.x = x; this.y = y; this.z = z; }
         void jump(boolean sprint) {
             vy = Math.max(vy, .42f);
@@ -44,7 +44,8 @@ final class FlatPhysics {
             double mx = Math.clamp(vx, -LIMIT-x, LIMIT-x);
             double mz = Math.clamp(vz, -LIMIT-z, LIMIT-z);
             double my = Math.max(vy, FLOOR-y);
-            wall = Math.abs(vx-mx) >= 1e-5 || Math.abs(vz-mz) >= 1e-5;
+            boolean wall = Math.abs(vx-mx) >= 1e-5 || Math.abs(vz-mz) >= 1e-5;
+            blocksSprint = wall && !minorCollision(side, forward, sin, cos, mx, mz);
             ground = vy < 0 && vy != my;
             if (mx*mx+my*my+mz*mz > 1e-7 || vx*vx+vy*vy+vz*vz - (mx*mx+my*my+mz*mz) < 1e-7) {
                 x += mx; y += my; z += mz;
@@ -53,6 +54,14 @@ final class FlatPhysics {
             if (mz != vz) vz = 0;
             if (my != vy) vy = 0;
             vx *= drag; vz *= drag; vy = (vy - .08) * .98f;
+        }
+        // LocalPlayer preserves sprint when the clipped displacement is within
+        // eight degrees of the requested keyboard direction along a wall.
+        static boolean minorCollision(int side,int forward,double sin,double cos,double mx,double mz){
+            double ix=side*cos-forward*sin,iz=forward*cos+side*sin;
+            double inputSq=ix*ix+iz*iz,moveSq=mx*mx+mz*mz;
+            if(inputSq<1e-5f||moveSq<1e-5f)return false;
+            return Math.acos((ix*mx+iz*mz)/Math.sqrt(inputSq*moveSq))<.13962633907794952;
         }
     }
     // Derive the exact binary diagonal that LocalPlayer produces for a digital keyboard.

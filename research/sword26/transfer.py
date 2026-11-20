@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import sys
 
-from setup import SRC, compile_agent, jdk
+from setup import SRC, compile_sim, jdk
 
 
 def digest(path):
@@ -20,7 +20,7 @@ def propose(dest, parents, field, seeds, generations, selection_seed, engine="hi
     dest.mkdir(parents=True, exist_ok=False)
     parents = [p.resolve() for p in parents]
     field = [p.resolve() for p in field]
-    classes = compile_agent()
+    classes = compile_sim()
     rivals = dest / "field.txt"
     rivals.write_text("".join(str(p) + "\n" for p in field))
     shortlist = []

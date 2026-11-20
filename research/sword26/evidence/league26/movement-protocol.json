@@ -1,0 +1,22 @@
+{
+  "candidate_sha256": "2708fdc8d7e6883ee61a1ed05fe1d05b0bc0fdbf1069dde492e08bbc10317520",
+  "purpose": "After freezing the fighter, measure which movement controls contribute to winning. Keep every other learned control and the same aim helper. This panel does not participate in checkpoint selection or the registered promotion rule. The older never-example is a supplementary known challenge previously used in other evaluations.",
+  "opponents": [
+    "wtap",
+    "evidence/transfer/unseen.net"
+  ],
+  "arms": [
+    "original",
+    "jump-released",
+    "jump-held",
+    "side-neutral",
+    "plain W-tap"
+  ],
+  "pairs_per_latency": 3,
+  "model_grade_seed": 8147230,
+  "native_base_seed": 1071538,
+  "rtts": [
+    0,
+    100
+  ]
+}

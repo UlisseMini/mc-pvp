@@ -45,21 +45,30 @@ def match_labels(folder):
         return {}
     meta=json.loads((folder/"metadata.json").read_text())
     titles={"wtap":"W-tap","champion":"Trained bot","population":"Retreating rival","gradient":"Recurrent rival"}
-    def title(file):
+    saved={}
+    for group,label in [("flat-training","Earlier fast-trained fighter"),("league26","League fighter"),
+                        ("neural26","Neural challenger")]:
+        record=Path(__file__).resolve().parent/"evidence"/group/"selection.json"
+        if record.exists():
+            saved[json.loads(record.read_text())["sha256"]]=label
+    def title(file,digest=None):
         stem=Path(file).stem
-        return titles.get(stem,stem.replace("-"," ").capitalize())
+        return saved.get(digest,titles.get(stem,stem.replace("-"," ").capitalize()))
     labels={}
     for row in json.loads((folder/"results.json").read_text()):
         seat=row["seat"]
         who=row["policy"]
+        digest=None
         if who=="learned":
             who=meta.get("primary_file","champion")
+            digest=meta.get("weights_sha256")
         elif who.startswith("learned-"):
-            who=meta["extra_weights"][int(who.split("-")[1])-1]["file"]
+            item=meta["extra_weights"][int(who.split("-")[1])-1]
+            who,digest=item["file"],item.get("sha256")
         rival_file=row.get("rival","wtap")
-        rival=meta["names"][1-seat] if rival_file=="human" else title(rival_file)
+        rival=meta["names"][1-seat] if rival_file=="human" else title(rival_file,meta.get("opponent_hashes",{}).get(rival_file))
         names=[rival,rival]
-        names[seat]=title(who)
+        names[seat]=title(who,digest)
         events=[]
         contacts=folder/(row["id"]+"-contacts.tsv")
         if contacts.exists():

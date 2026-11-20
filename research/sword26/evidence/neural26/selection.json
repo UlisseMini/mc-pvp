@@ -1,0 +1,9 @@
+{
+  "selected": "1500883/gen-0344.net",
+  "sha256": "b1b00273c04c9a457e7bf4b8631a872903818ff8e0fbfda434122f811e8f32b4",
+  "mean": 0.025089,
+  "worst": -0.893896,
+  "duels_per_candidate": 896,
+  "number_of_candidates": 216,
+  "training_fights": 68000
+}

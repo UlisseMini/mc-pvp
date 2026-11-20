@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import subprocess
 
-from setup import SRC, compile_agent, jdk
+from setup import SRC, compile_sim, jdk
 
 FIELDS = ("id lag steps median_position p95_position p95_display first_quarter_block first_hp_difference "
           "equal_hp_observations equal_keys predicted_hp_a predicted_hp_b java_hp_a java_hp_b "
@@ -31,7 +31,7 @@ def compare(run, destination, jar=None):
     if meta.get("clock") not in ("fast", "realtime"):
         raise ValueError("Trajectory replay requires a recorded tick-indexed packet schedule")
     primary, rivals = frozen_weights(run, meta)
-    jar = jar or compile_agent()
+    jar = jar or compile_sim()
     matches = json.loads((run/"results.json").read_text())
     if len(matches) != 4 * meta["pairs"] * len(meta["opponents"]):
         raise ValueError("Incomplete native panel")

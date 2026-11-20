@@ -2,7 +2,7 @@
 
 ## Fight the bot
 
-Double-click **Start Modern Sword Lab.command** in the project folder. Enter your Java player name, then pick the trained bot, its retreating and strafing rival, or a blind comparison with plain W-tap. When Terminal prints the address, open **Minecraft Java 26.3**, choose **Multiplayer → Direct Connection**, and enter **127.0.0.1:25663**. The lab equips both players and starts a duel. The launcher runs ten rounds and saves the results and replay. Use Control-C in Terminal to end your session early.
+Double-click **Start Modern Sword Lab.command** in the project folder. Enter your Java player name and choose **4** for the new league-trained fighter. Option 1 plays the original checkpoint, option 2 plays the retreating and strafing rival, and option 3 gives a blind comparison of the original and plain W-tap. When Terminal prints the address, open **Minecraft Java 26.3**, choose **Multiplayer → Direct Connection**, and enter **127.0.0.1:25663**. The lab equips both players and starts a duel. The launcher runs ten rounds and saves the results and replay. Use Control-C in Terminal to end your session early.
 
 On this Mac, the bot and referee run in a dedicated Lima Linux VM. Each stock bot client has its own Xvfb virtual display and Mesa software renderer. The host launcher never opens a bot window. The first run downloads verified game assets and installs guest dependencies. The VM mounts the modern lab source read-only and its build folder read-write. The old practice server has its own port and runtime. The guest can be stopped with `limactl stop sword26` when you finish. The next launch starts it automatically.
 
@@ -26,7 +26,7 @@ The trainer creates a new folder under `build/sword26`. It prints the path to th
 
 The population score uses the win or loss plus half the final health difference normalized by starting health. PPO gets the change in normalized health difference and the terminal win or loss. In later training stages some rounds start partway through an ordinary training game. Replaying its inputs reconstructs the model's clock, pending contacts and knockback, observation history, and previous controls. Training reads local player features and a delayed opponent view. The code for grading against named baselines is outside the training program.
 
-`Model.java` implements a fast approximate flat-court simulator. It uses tick-sized latency queues, local motion, a displayed hitbox, ray checks, attack charge, immunity, damage upgrades, armor and momentum. The two real clients run Mojang's movement, picking and attack code in a vanilla dedicated-server match. `Parity.java` compares model movement and recorded real movement. Predictions of a whole exchange accumulate error. Independent native matches decide whether an apparent improvement carries over.
+The learning and replay programs compile a standalone JVM simulator and run without a game window or loaded game world. The default trainer uses the Java 26.3 flat-court simulator in `FastDuel.java` and `FlatPhysics.java`. Each bot sees its own locally predicted motion and an interpolated view of the other player. The simulator separately advances both server players, input packets, damage timers, sprint state, knockback and velocity packets. Historical results from the first model can be reproduced with `--engine historical`. The [simulator measurements](SIMULATOR.md) compare full fights to two stock game clients running Mojang’s code with the lab’s scheduling and recording hooks.
 
 ## Run a real comparison
 
@@ -37,6 +37,8 @@ python3 research/sword26/native.py --weights research/sword26/champion.net --pai
 Each paired opening runs the candidate and plain W-tap in both seats. Both face the same opponent, using the same kit, aim, start and added RTT. The order is shuffled. Real runs have independent packet and client timing. The runner also accepts other saved policies through `--opponents`. A development run can use `--speed 3` to accelerate both clients and the server. The confirmation results use normal speed.
 
 The output folder contains server health and positions, accepted attack events, each client's observed positions and keys, a result for each completed round, and **Replay.html**. Open the replay in a browser, choose a matchup and view, and scrub through it. The two client views reconstruct the visible hitbox and controls. Recent hits are marked below the picture. To resume an interrupted comparison, rerun its original command with `--resume /absolute/path/to/its/output`. It verifies the schedule and policy hashes, copies the completed rounds into a new run folder, and starts at the interrupted round.
+
+For a faster real-game comparison, add `--clock fast` and supply one RTT such as `--rtts 100`. This runs both real clients and the dedicated server through their normal game ticks under a shared packet schedule. Rendering is skipped during loaded gameplay. `--clock realtime` paces the same schedule at normal speed. Omit `--clock` for the independent TCP and render timing used in ordinary match confirmation. All three modes keep the bot windows inside Linux.
 
 The recorded comparisons also travel with the project. For example, these commands rebuild the independent-opponent replay from its saved traces. Round 7, view B shows the retreating rival fighting the default bot.
 

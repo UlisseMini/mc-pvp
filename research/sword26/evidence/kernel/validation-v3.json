@@ -1,0 +1,29 @@
+{
+  "version": "26.3",
+  "candidate": "evidence/flat-training/fighter.net",
+  "weights_sha256": "0356a03637ff083120476c4f1c4912e3c18e30f757f85450e4d97daadb062dfd",
+  "model_sha256": {
+    "FastDuel.java": "22ac5690c0238763dc7f6753a03548dcf8f2a9af4182557570aa28b852a01624",
+    "FlatPhysics.java": "c9e2261700ca2a86e3a62d4b7261f31d73e5e89e9a435364d891d5977c2dfa81",
+    "KernelReplay.java": "5528e10ad88507d7685ef612aba5330177002b8383bc3dcf4fba01e2fef9baae",
+    "Fighter.java": "91d4ea30a67b6a616f8a74ec4cae735e5ddbfa306223d7e05959f5b015fe75fc",
+    "TreePolicy.java": "f0feaa93ddf3bd8815c8e714f5b9686832071af28d86d1c89ef2428d3cd4961a",
+    "Controls.java": "35874f5500b7baf4fa6513d9d18cb638749942063a215948c9edde9af033ac9d"
+  },
+  "fix": "Add the glancing wall collision test from LocalPlayer. The last mismatch on the old development openings involved W-tap along a barrier.",
+  "development": "The original v1 prospective set was used for diagnosis. The v2 prospective panel remains a frozen comparison of its registered simulator. New independent tests of this revision use the newly trained policy and the separate validation openings below.",
+  "protocol": "../flat-training/protocol.json",
+  "seeds": {
+    "0": 1965267,
+    "100": 1965367
+  },
+  "openings_per_latency": 3,
+  "opponents": [
+    "wtap",
+    "champion.net",
+    "evidence/frozen/opponents/population.net",
+    "evidence/transfer/challenger.net",
+    "evidence/transfer/unseen.net"
+  ],
+  "controls": "Use both seats with the same opponents and plain W-tap. Score keys and look replay and closed-loop policy independently with the same whole-duel metrics as v1."
+}

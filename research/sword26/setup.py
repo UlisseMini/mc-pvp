@@ -44,13 +44,19 @@ def fetch(spec, dest, installed=None):
 
 
 def jdk():
-    if platform.system()=="Linux":return Path("/usr/lib/jvm/java-25-openjdk-arm64/bin")
+    if platform.system()=="Linux":
+        configured=os.environ.get("JAVA_HOME")
+        if configured:return Path(configured)/"bin"
+        installed=sorted(Path("/usr/lib/jvm").glob("java-25*/bin/javac"))
+        if installed:return installed[0].parent
+        raise SystemExit("Set JAVA_HOME to a JDK 25 installation.")
     installed = sorted(BUILD.glob("jdk-25*/Contents/Home/bin/javac"))
     if not installed and os.environ.get("JAVA_HOME"):
         installed = [Path(os.environ["JAVA_HOME"]) / "bin/javac"]
     if not installed:
         if platform.system()!="Darwin" or platform.machine()!="arm64":
             raise SystemExit("This launcher targets Apple Silicon macOS. Set JAVA_HOME to a JDK 25 installation.")
+        BUILD.mkdir(parents=True,exist_ok=True)
         url="https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1%2B2/OpenJDK25U-jdk_aarch64_mac_hotspot_25.0.5.1_2.tar.gz"
         package=BUILD/"jdk.tar.gz"
         digest="248353ea41be39d5d2c1c67c7ce0ae4d1668966aacd0c5308464bc1be42f677b"
@@ -109,6 +115,30 @@ def compile_agent():
         manifest.write_text("Manifest-Version: 1.0\nPremain-Class: sword.Agent\n\n")
         jar=folder/"agent.jar"
         subprocess.run([jdk()/"jar","cfm",jar,manifest,"-C",classes,"."],check=True)
+        jar.replace(target)
+    return target
+
+
+def compile_sim():
+    names = ("Fighter", "Model", "FastDuel", "FlatPhysics", "TreePolicy", "Train",
+             "PolicyGradient", "League", "Refine", "Starts", "Cup", "Controls",
+             "Grade", "Maintenance", "ForkAudit", "KernelReplay", "KernelBench", "Checks")
+    sources = [SRC / (name+".java") for name in names]
+    digest = hashlib.sha256()
+    for source in sources:
+        digest.update(source.name.encode())
+        digest.update(source.read_bytes())
+    target = BUILD / "simulator" / (digest.hexdigest()+".jar")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        return target
+    with tempfile.TemporaryDirectory(dir=target.parent) as tmp:
+        folder = Path(tmp)
+        classes = folder / "classes"
+        classes.mkdir()
+        subprocess.run([jdk()/"javac", "-d", classes, *sources], check=True)
+        jar = folder / "simulator.jar"
+        subprocess.run([jdk()/"jar", "cf", jar, "-C", classes, "."], check=True)
         jar.replace(target)
     return target
 

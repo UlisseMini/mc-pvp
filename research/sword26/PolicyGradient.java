@@ -127,8 +127,13 @@ public final class PolicyGradient {
         Path dir=Path.of(args[0]);Files.createDirectory(dir);
         int iters=Integer.parseInt(args[1]);var rng=new Random(Long.parseLong(args[2]));
         var archive=new ArrayList<double[]>();
-        for(int i=3;i<args.length;i++)archive.add(Arrays.copyOf(read(Path.of(args[i])),COUNT));
-        double[] w=archive.isEmpty()?Train.noise(rng,new double[COUNT],.18):archive.getLast().clone();
+        double[] neuralParent=null;
+        for(int i=3;i<args.length;i++){
+            double[] opponent=read(Path.of(args[i]));
+            archive.add(opponent);
+            if(opponent.length!=TreePolicy.COUNT)neuralParent=opponent;
+        }
+        double[] w=neuralParent==null?Train.noise(rng,new double[COUNT],.18):Arrays.copyOf(neuralParent,COUNT);
         archive.add(w.clone());double[] critic=new double[INPUTS+1];var opt=new Adam();
         try(var log=Files.newBufferedWriter(dir.resolve("training.tsv"))){
             log.write("iteration\tdecisions\tmean_return\n");

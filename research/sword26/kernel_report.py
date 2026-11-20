@@ -55,12 +55,16 @@ def compare_clocks(fast, paced, output):
         if (game["angle"],game["gap"])!=(other["angle"],other["gap"]):
             raise ValueError("Paced and accelerated openings differ")
         x=signature(fast,other);y=signature(paced,game)
-        checks=[outcome(*x[0])==outcome(*y[0]),x[0]==y[0],x[1]==y[1],x[2]==y[2],x[3]==y[3],x[4]==y[4]]
+        common_ticks=all(all(u==v for u,v in zip(one,two)) for one,two in zip(x[2],y[2]))
+        length_gap=max(abs(len(one)-len(two)) for one,two in zip(x[2],y[2]))
+        checks=[outcome(*x[0])==outcome(*y[0]),x[0]==y[0],x[1]==y[1],x[2]==y[2],x[3]==y[3],x[4]==y[4],
+                common_ticks,length_gap]
         records.setdefault((game["rtt"],Path(rival).name,pair,seat),{})[arm]=checks
     with output.open("w") as f:
         w=csv.writer(f,lineterminator="\n")
         w.writerow(["rtt","opponent","opening","seat",*[a+"_"+v for a in ("learned","wtap") for v in
-                    ("winner","health","terminal_tick","all_client_samples","all_contacts","client_samples_through_termination")]])
+                    ("winner","health","terminal_tick","all_client_samples","all_contacts","client_samples_through_termination",
+                     "common_client_samples","max_client_sample_count_gap")]])
         for key,arms in sorted(records.items()):
             w.writerow([*key,*arms["learned"],*arms["wtap"]])
 

@@ -51,6 +51,25 @@ def count_events(events):
     return counts
 
 
+def survival(events, index, name, end_tick):
+    entry=int(events[index]["tick"])
+    results={}
+    for active in (False,True):
+        cycles=0;last=entry;end=end_tick;reason="round_end"
+        for hit in events[index+1:]:
+            tick=int(hit["tick"])
+            if active and tick-last>22:
+                end=last+23;reason="inactivity";break
+            if hit["attacker"]!=name:
+                end=tick;reason="return";break
+            if hit["fresh"]:
+                cycles+=1;last=tick
+        if active and reason=="round_end" and end-last>22:
+            end=last+23;reason="inactivity"
+        results["active" if active else "returns"]={"cycles":cycles,"exposure_ticks":end-entry,"end":reason}
+    return {"entry_tick":entry,**results}
+
+
 def audit(run):
     matches=json.loads((run/"results.json").read_text())
     output=[]
@@ -74,18 +93,17 @@ def audit(run):
                 if not e["fresh"]:continue
                 streak+=1
                 if streak!=need:continue
-                entry=int(e["tick"]);pair={}
-                for active in (False,True):
-                    n=0;last=entry;end=m["ticks"];reason="round_end"
-                    for h in events[idx+1:]:
-                        t=int(h["tick"])
-                        if active and t-last>22:end=last+23;reason="inactivity";break
-                        if h["attacker"]!=name:end=t;reason="return";break
-                        if h["fresh"]:n+=1;last=t
-                    if active and reason=="round_end" and end-last>22:end=last+23;reason="inactivity"
-                    pair["active" if active else "returns"]={"cycles":n,"exposure_ticks":end-entry,"end":reason}
-                cycles[str(need)]={"entry_tick":entry,**pair};break
+                cycles[str(need)]=survival(events,idx,name,m["ticks"]);break
+        branch_file=run/(stem+"-landmark.tsv")
+        branch=None
+        if branch_file.exists():
+            signal=rows(branch_file)[0]
+            ix=next(i for i,e in enumerate(events) if e["tick"]==signal["tick"] and e["attacker"]==name and e["fresh"])
+            switch=next((k for k in keys if k.get("assignedPolicyActive")=="true"),None)
+            branch={**signal,**survival(events,ix,name,m["ticks"]),
+                    "switch_delay_ms":None if switch is None else int(switch["epochMs"])-int(signal["epochMs"])}
         output.append({**m,**movement(keys),"hits":len(own),"events":count_events(own),"landmarks":cycles,
+                       "branch":branch,
                        "fresh_classification":"native damage cooldown" if events and "preDamageCooldown" in events[0] else "native post-contact hurt animation",
                        "defender_input_recorded":bool(opponent_keys),"physical_presses":len(pressed),
                        "opponent_movement":movement(opponent_keys),"opponent_events":count_events(e for e in events if e["attacker"]!=name),

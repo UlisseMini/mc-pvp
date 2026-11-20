@@ -1,0 +1,40 @@
+{
+  "field": [
+    "champion.net",
+    "evidence/frozen/opponents/population.net",
+    "evidence/response/alternative.net",
+    "evidence/transfer/challenger.net",
+    "evidence/flat-training/fighter.net",
+    "evidence/league26/fighter.net",
+    "evidence/frozen/opponents/gradient.net"
+  ],
+  "seeds": [
+    1500883,
+    4392648
+  ],
+  "iterations": 850,
+  "selection_seed": 4536782,
+  "selection_openings": 64,
+  "model_grade_seed": 2187359,
+  "model_openings_per_latency": 16,
+  "native_seed": 7223901,
+  "native_openings_per_latency": 2,
+  "evaluation_opponents": [
+    "wtap",
+    "evidence/frozen/opponents/population.net",
+    "evidence/transfer/unseen.net"
+  ],
+  "selection": "All neural checkpoints against the training field in both seats. Rank by half mean plus half worst opponent and latency terminal payoff. Compare on new independent openings. The previously tested never-example is a known transfer challenge. Registers an independent algorithm comparison after the league weights were frozen. No curriculum, input or reward is derived from the video.",
+  "parent": "Last recurrent member of the field. Tree partners retain their original policies. The actor uses existing recurrent PPO.",
+  "loss": "Discounted change in own minus opponent HP, plus terminal win/loss.",
+  "field_sha256": {
+    "champion.net": "f6f2887237cc188680dc96c9dcc753880e6717fcef255fb5796bedbf557d033c",
+    "evidence/frozen/opponents/population.net": "bb8c34cb1c2f55084b758e80c51446d3be13f86e9f17e936ad2a2c7083d7bfdb",
+    "evidence/response/alternative.net": "313c2d95c140bb917c7642a2230b4515b19f46b667005780fcd911d8582cd529",
+    "evidence/transfer/challenger.net": "3761f029e425faf2ec2274c3ac17f2158dd7d1cfc0e14080fac2978ba826c862",
+    "evidence/flat-training/fighter.net": "0356a03637ff083120476c4f1c4912e3c18e30f757f85450e4d97daadb062dfd",
+    "evidence/league26/fighter.net": "2708fdc8d7e6883ee61a1ed05fe1d05b0bc0fdbf1069dde492e08bbc10317520",
+    "evidence/frozen/opponents/gradient.net": "75976d174c38b6847acb952a1a23a35843b08f8354f17b0281df009d00bade18"
+  },
+  "status": "Experimental challenger. Promotion would need a broader independently registered native panel."
+}

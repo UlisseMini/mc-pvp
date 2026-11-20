@@ -1,0 +1,799 @@
+{
+  "sha256": "2708fdc8d7e6883ee61a1ed05fe1d05b0bc0fdbf1069dde492e08bbc10317520",
+  "selected": "island-2/gen-0152.net",
+  "selection": [
+    {
+      "file": "island-0/gen-0000.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0008.net",
+      "mean": 0.369208,
+      "worst": -0.746162,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0016.net",
+      "mean": 0.266504,
+      "worst": -0.869032,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0024.net",
+      "mean": 0.423655,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0032.net",
+      "mean": 0.39429,
+      "worst": -0.617481,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0040.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0048.net",
+      "mean": 0.421996,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0056.net",
+      "mean": 0.397084,
+      "worst": -0.750575,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0064.net",
+      "mean": 0.192676,
+      "worst": -1.123764,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0072.net",
+      "mean": 0.355573,
+      "worst": -0.550571,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0080.net",
+      "mean": 0.329997,
+      "worst": -0.791825,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0088.net",
+      "mean": 0.413607,
+      "worst": -0.365362,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0096.net",
+      "mean": 0.397688,
+      "worst": -0.633554,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0104.net",
+      "mean": 0.374487,
+      "worst": -0.462342,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0112.net",
+      "mean": 0.436647,
+      "worst": -0.568911,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0120.net",
+      "mean": 0.371215,
+      "worst": -0.742166,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0128.net",
+      "mean": 0.383573,
+      "worst": -0.598624,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0136.net",
+      "mean": 0.409135,
+      "worst": -0.71559,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0144.net",
+      "mean": 0.315471,
+      "worst": -0.392132,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0152.net",
+      "mean": 0.268887,
+      "worst": -0.667976,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0160.net",
+      "mean": 0.378182,
+      "worst": -0.595624,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0168.net",
+      "mean": 0.419535,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0176.net",
+      "mean": 0.415269,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0184.net",
+      "mean": 0.190695,
+      "worst": -1.118158,
+      "duels": 1536
+    },
+    {
+      "file": "island-0/gen-0191.net",
+      "mean": 0.317243,
+      "worst": -0.790995,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0000.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0008.net",
+      "mean": 0.382183,
+      "worst": -0.617481,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0016.net",
+      "mean": 0.383398,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0024.net",
+      "mean": 0.36909,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0032.net",
+      "mean": 0.396717,
+      "worst": -0.748885,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0040.net",
+      "mean": 0.403332,
+      "worst": -0.598737,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0048.net",
+      "mean": 0.41757,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0056.net",
+      "mean": 0.385881,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0064.net",
+      "mean": 0.172844,
+      "worst": -1.051712,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0072.net",
+      "mean": 0.395433,
+      "worst": -0.689316,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0080.net",
+      "mean": 0.470634,
+      "worst": -0.794514,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0088.net",
+      "mean": 0.479027,
+      "worst": -0.29166,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0096.net",
+      "mean": 0.482732,
+      "worst": -0.29166,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0104.net",
+      "mean": 0.446712,
+      "worst": -0.264929,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0112.net",
+      "mean": 0.370628,
+      "worst": -0.593142,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0120.net",
+      "mean": 0.422119,
+      "worst": -0.478356,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0128.net",
+      "mean": 0.429275,
+      "worst": -0.500836,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0136.net",
+      "mean": 0.421698,
+      "worst": -0.500494,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0144.net",
+      "mean": 0.349001,
+      "worst": -0.917381,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0152.net",
+      "mean": 0.405231,
+      "worst": -0.369782,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0160.net",
+      "mean": 0.431565,
+      "worst": -0.860543,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0168.net",
+      "mean": 0.390894,
+      "worst": -1.049516,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0176.net",
+      "mean": 0.424968,
+      "worst": -0.860543,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0184.net",
+      "mean": 0.419662,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-1/gen-0191.net",
+      "mean": 0.324513,
+      "worst": -0.735687,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0000.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0008.net",
+      "mean": 0.274502,
+      "worst": -1.078039,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0016.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0024.net",
+      "mean": 0.3746,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0032.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0040.net",
+      "mean": 0.458184,
+      "worst": -0.751544,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0048.net",
+      "mean": 0.374629,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0056.net",
+      "mean": 0.181756,
+      "worst": -0.887487,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0064.net",
+      "mean": 0.365787,
+      "worst": -0.72467,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0072.net",
+      "mean": 0.374799,
+      "worst": -0.415534,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0080.net",
+      "mean": 0.403937,
+      "worst": -0.850029,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0088.net",
+      "mean": 0.356616,
+      "worst": -0.280175,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0096.net",
+      "mean": 0.356598,
+      "worst": -0.280175,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0104.net",
+      "mean": 0.353652,
+      "worst": -0.364557,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0112.net",
+      "mean": 0.417794,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0120.net",
+      "mean": 0.429882,
+      "worst": -0.686354,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0128.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0136.net",
+      "mean": 0.446274,
+      "worst": -0.59584,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0144.net",
+      "mean": 0.108682,
+      "worst": -0.867469,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0152.net",
+      "mean": 0.443398,
+      "worst": -0.242975,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0160.net",
+      "mean": 0.397219,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0168.net",
+      "mean": 0.269754,
+      "worst": -0.578849,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0176.net",
+      "mean": 0.400137,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0184.net",
+      "mean": 0.191026,
+      "worst": -1.123764,
+      "duels": 1536
+    },
+    {
+      "file": "island-2/gen-0191.net",
+      "mean": 0.389803,
+      "worst": -0.828458,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0000.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0008.net",
+      "mean": 0.35444,
+      "worst": -0.612234,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0016.net",
+      "mean": 0.344726,
+      "worst": -0.728312,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0024.net",
+      "mean": 0.356086,
+      "worst": -0.924344,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0032.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0040.net",
+      "mean": 0.264633,
+      "worst": -0.406543,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0048.net",
+      "mean": 0.323306,
+      "worst": -1.012473,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0056.net",
+      "mean": 0.400074,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0064.net",
+      "mean": 0.30572,
+      "worst": -0.846407,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0072.net",
+      "mean": 0.419418,
+      "worst": -0.514008,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0080.net",
+      "mean": 0.414609,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0088.net",
+      "mean": 0.417179,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0096.net",
+      "mean": 0.393634,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0104.net",
+      "mean": 0.425026,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0112.net",
+      "mean": 0.339884,
+      "worst": -0.703827,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0120.net",
+      "mean": 0.427912,
+      "worst": -0.866045,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0128.net",
+      "mean": 0.429055,
+      "worst": -0.625091,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0136.net",
+      "mean": 0.367365,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0144.net",
+      "mean": 0.433359,
+      "worst": -0.727396,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0152.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0160.net",
+      "mean": 0.377504,
+      "worst": -0.761945,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0168.net",
+      "mean": 0.421996,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0176.net",
+      "mean": 0.170576,
+      "worst": -1.123576,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0184.net",
+      "mean": 0.384471,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-3/gen-0191.net",
+      "mean": 0.419662,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0000.net",
+      "mean": 0.259004,
+      "worst": -0.406543,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0008.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0016.net",
+      "mean": 0.366578,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0024.net",
+      "mean": 0.426534,
+      "worst": -0.545418,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0032.net",
+      "mean": 0.412919,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0040.net",
+      "mean": 0.375498,
+      "worst": -0.542436,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0048.net",
+      "mean": 0.42065,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0056.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0064.net",
+      "mean": 0.276795,
+      "worst": -0.842392,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0072.net",
+      "mean": 0.395345,
+      "worst": -0.726937,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0080.net",
+      "mean": 0.415457,
+      "worst": -0.705983,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0088.net",
+      "mean": 0.393711,
+      "worst": -0.723685,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0096.net",
+      "mean": 0.220546,
+      "worst": -1.078039,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0104.net",
+      "mean": 0.400122,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0112.net",
+      "mean": 0.397034,
+      "worst": -0.733672,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0120.net",
+      "mean": 0.43424,
+      "worst": -0.685768,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0128.net",
+      "mean": 0.344592,
+      "worst": -0.506016,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0136.net",
+      "mean": 0.400118,
+      "worst": -0.505336,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0144.net",
+      "mean": 0.391696,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0152.net",
+      "mean": 0.367187,
+      "worst": -0.724177,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0160.net",
+      "mean": 0.422436,
+      "worst": -0.452687,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0168.net",
+      "mean": 0.420665,
+      "worst": -0.707912,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0176.net",
+      "mean": 0.462843,
+      "worst": -0.366338,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0184.net",
+      "mean": 0.468271,
+      "worst": -0.281195,
+      "duels": 1536
+    },
+    {
+      "file": "island-4/gen-0191.net",
+      "mean": 0.462639,
+      "worst": -0.366338,
+      "duels": 1536
+    },
+    {
+      "file": "champion.net",
+      "mean": -0.102928,
+      "worst": -0.992538,
+      "duels": 1536
+    },
+    {
+      "file": "evidence/frozen/opponents/population.net",
+      "mean": 0.187972,
+      "worst": -1.009501,
+      "duels": 1536
+    },
+    {
+      "file": "evidence/response/alternative.net",
+      "mean": 0.289763,
+      "worst": -0.888554,
+      "duels": 1536
+    },
+    {
+      "file": "evidence/response/specialist-a.net",
+      "mean": -0.2937,
+      "worst": -1.065078,
+      "duels": 1536
+    },
+    {
+      "file": "evidence/response/specialist-b.net",
+      "mean": 0.03577,
+      "worst": -1.035781,
+      "duels": 1536
+    },
+    {
+      "file": "evidence/transfer/challenger.net",
+      "mean": 0.259004,
+      "worst": -0.406543,
+      "duels": 1536
+    },
+    {
+      "file": "evidence/flat-training/fighter.net",
+      "mean": 0.375963,
+      "worst": -0.724177,
+      "duels": 1536
+    }
+  ],
+  "training_duels": 2365440
+}

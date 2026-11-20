@@ -92,7 +92,7 @@ final class FastDuel {
                 if(k.sprint()||(tap>0&&!previousForward)){sprint=true;tap=0;}
                 else if(!previousForward&&local.ground)tap=7;
             }
-            if(!forward||local.wall)sprint=false;
+            if(!forward||local.blocksSprint)sprint=false;
             previousForward=forward;
             px=tx;py=ty;pz=tz;
             if(!localFirst){advanceDisplay();collide(local,tx,ty,tz);}
