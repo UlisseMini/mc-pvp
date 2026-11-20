@@ -54,6 +54,11 @@ def groups():
         for step in (0, 64, 256, 410, 1024):
             prefix=f'expert-population/joint/{mode}/u{step:03}'
             yield [prefix+f'-expert-{j}.net' for j in range(3)]+[prefix+'-router.pt',prefix+'.json']
+    for count in (7,9,27):
+        for seed in (22819,22820):
+            for step in (512,2048):
+                path=f'expanded-library/learned-selection/covered-{count:02}/seed-{seed}/u{step}'
+                yield [path+'.pt',path+'.json']
     for count in (7,27):yield [f'expanded-library/crossplay/covered-{count:02}.json',f'expanded-library/crossplay/routed-{count:02}.json']
 
 

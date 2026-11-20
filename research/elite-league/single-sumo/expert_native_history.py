@@ -52,6 +52,61 @@ def run():
     write_json(DEST/'results.json',dict(scores=scores,ledger=records),fixed=True)
 
 
+def recognize():
+    import hashlib
+    import numpy as np
+    import torch
+    from series_public import observed
+    from specialist_native import motion_features
+    from specialist_router import Decoder, visible_feedback
+    from series_targeted import DEST as LIB
+    from specialist_diagnosis import DEST as ORIGINAL
+
+    spec=read(LIB/'protocol.json')
+    foes=list(spec['field'])
+    experts=list(spec['experts'])
+    dedicated=read(ORIGINAL/'protocol.json')['dedicated']
+    records=read(DEST/'results.json')['ledger']
+    models={}
+    for mode in ('motion','feedback'):
+        folder=ORIGINAL/'models'/f'{mode}-5213-n8'
+        pt=folder/'actor.pt'
+        if hashlib.sha256(pt.read_bytes()).hexdigest()!=read(folder/'fit.json')['sha256']:
+            raise ValueError('Opponent observer differs from locked weights')
+        net=Decoder(len(experts),len(foes),mode=='motion')
+        net.load_state_dict(torch.load(pt,weights_only=True))
+        models[mode]=net.eval()
+    scored=[];unavailable=[]
+    for v in records:
+        if not v['valid'] or v['arm']==WT:continue
+        rival='sumo-seven-first' if v['group']=='seven' else 'v4-ppo-g0496'
+        true='wtap' if v['foe']==WT else rival
+        act=experts.index(dedicated[rival])
+        try:
+            info=observed(v['mid'],v['side'])
+        except ValueError as e:
+            unavailable.append(dict(mid=v['mid'],reason=str(e)))
+            continue
+        if (info['own_ping'],info['opponent_ping'],info['score'])!=(v['own'],v['other'],v['score']):
+            raise ValueError('The observer input disagrees with the official native fixture')
+        signals=motion_features(v['mid'],v['side'])
+        public=visible_feedback(np.asarray(info['score']),np.asarray(info['displayed_duration_ms']),np.array([v['own'],v['other']]))
+        token=torch.from_numpy(np.concatenate((signals,public,np.eye(len(experts),dtype=np.float32)[act]))[None])
+        outcome=dict(mid=v['mid'],expert=experts[act],true=true,available_pair=[rival,'wtap'])
+        with torch.inference_mode():
+            for mode,model in models.items():
+                logit=model(token)[0]
+                if not torch.isfinite(logit).all():
+                    raise ValueError('Non-finite native opponent probabilities')
+                outcome[mode]=dict(prediction=foes[int(logit.argmax())],
+                    among_two=max((rival,'wtap'),key=lambda f:float(logit[foes.index(f)])))
+        scored.append(outcome)
+    write_json(DEST/'perception.json',dict(ledger=scored,unavailable=unavailable,recognized={
+        mode:{choice:sum(v[mode][choice]==v['true'] for v in scored) for choice in ('prediction','among_two')} for mode in models},
+        scope='Retrospective cross-domain diagnostic from a single completed native bout. Every official seven-CPS matched block plays each evaluated expert against its own target and against W-tap. Open 27-way recognition uses only its selected expert, own observed motion, displayed pings, duration and result. Restricted two-way answers are diagnostic only. These counts measure identification and supply no native adaptive win rate.'),fixed=True)
+
+
 if __name__=='__main__':
     if sys.argv[1:] == ['register']:register()
+    elif sys.argv[1:] == ['perception']:recognize()
     else:run()
