@@ -73,11 +73,13 @@ def register(stage):
 
 def pairs(doc):
     rows={}
+    field=historical()
     for name in sorted(doc['contestants']):
         r=doc['contestants'][name]
-        actor=r['actor']
-        fingerprint=sha(ROOT/actor) if actor.endswith('.net') else historical()[actor]['sha256']
-        if fingerprint!=r['sha256']:raise ValueError('Actor changed')
+        for key,digest in [('actor','sha256'),('target','target_sha')]:
+            ref=r[key]
+            fingerprint=sha(ROOT/ref) if ref.endswith('.net') else field[ref]['sha256']
+            if fingerprint!=r[digest]:raise ValueError('Frozen '+key+' changed')
         for opponent in (r['target'],'wtap'):
             rows[name,opponent]=r['actor']
             rows['wtap',opponent]='wtap'
