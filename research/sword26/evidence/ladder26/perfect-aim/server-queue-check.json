@@ -1,0 +1,10 @@
+{
+  "discovery_panels": ["scout-023", "java-023-a", "scout-028"],
+  "reserve": ["java-028-a","java-028-b"],
+  "reserve_status": "The first season 28 promotion panel was running when this method was frozen. Its bout count was visible and its outcomes were not inspected. Both registrations and opponents are independent of this method.",
+  "mechanism": "The stock 26.3 MinecraftServer.processPacketsAndTick processes the PacketProcessor queue before tickServer. The older variable-phase scheduler handled an incoming packet at the estimated time it reached the server.",
+  "change": "In ordinary timing simulations retain ordered client messages until the next server tick. Empty them in estimated arrival order immediately before the server updates movement and combat timers. Keep the fixed scheduled kernel and all policies unchanged for this test.",
+  "comparison": "Use the existing fixed, independent-phase and ordinary clock diagnostics and the same deterministic 32 or 128 variants. For each variable scheduler, compare immediate delivery and server-tick queueing in paired native openings, by fighter and added RTT. W-tap has identical timing and geometry.",
+  "primary_score": "Mean squared error against native 1 / 0.5 / 0 points on the two fresh full panels, separately. Show model-expected points and W-tap on the same matches.",
+  "training": "The season 28 tournament was nominated by the original timing model. Do not change its entrants, training or native scoring in light of these outcomes."
+}
