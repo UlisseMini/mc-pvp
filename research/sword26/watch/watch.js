@@ -3,6 +3,7 @@ const $=id=>document.getElementById(id);
 const nf=new Intl.NumberFormat(), pct=n=>Math.round(n*100)+'%';
 const panelName=tag=>{const s=tag.split('-');return s[0]==='showcase'?'Exhibition '+Number(s[1]):'Season '+Number(s[1])+' · '+(s[0]==='scout'?'Scouting':s[2]==='a'?'Panel A':'Panel B')};
 const elem=(tag,text)=>{const el=document.createElement(tag);el.textContent=text;return el};
+let graphMode='model';
 let state=null,selected=null,mode=null,page=0,current='',animation=0,trace=null,position=0,start=null,playing=false,loading=0,following=true;
 const requested=new URLSearchParams(location.search).get('match');
 const limit=12,film=$('film'),arena=$('arena');
@@ -47,7 +48,7 @@ function select(m,reset=false){
  $('switches').hidden=!m.video;$('map').hidden=m.trace===false;$('saveFilm').href='/video/'+m.id;$('saveFilm').download=m.id.replace('/','-')+'.mp4';
  if(reset)history.replaceState(null,'','?match='+encodeURIComponent(m.id)+'#matches');
  if(reset||!was||was.id!==m.id||!mode)setMode(m.video?'film':'map');
- showLibrary();
+ showLibrary();if(graphMode==='java')chart();
 }
 function draw(now){
  if(!trace)return;const frames=trace.frames;const end=frames[frames.length-1][0];
@@ -82,12 +83,33 @@ for(const id of ['panel','type'])$(id).onchange=()=>{following=false;page=0;cons
 function table(rows,heads){const t=elem('table','');const thead=t.createTHead().insertRow();for(const x of heads)thead.append(elem('th',x));
  const body=t.createTBody();for(const r of rows){let tr=body.insertRow();for(const x of r)tr.append(elem('td',x))}return t}
 function chart(){
- if(!state)return;const h=state.history,c=$('history'),d=window.devicePixelRatio||1,rect=c.getBoundingClientRect(),w=rect.width,H=rect.height;if(w<1)return;
- c.width=w*d;c.height=H*d;const g=c.getContext('2d');g.scale(d,d);const X=i=>42+i*(w-60)/Math.max(h.length-1,1),Y=v=>10+(1-v)*(H-39);
+ if(!state)return;
+ const colors=['#b9eca7','#82c7ea','#d4a7f4','#f4998e','#c2d594','#9eacff'];
+ let series=[],ticks=[],rows=[],heads=[];
+ if(graphMode==='model'){
+  const h=state.history;
+  series=[['Main fighter',h.map(v=>v.main),colors[0]],['W-tap',h.map(v=>v.wt),'#f3bd77']];
+  ticks=['Season 1','Season '+(h.at(-1)?.n??0)];
+  rows=h.map(v=>[v.n,pct(v.main),pct(v.wt)]);heads=['Season','Main fighter','W-tap'];
+  $('chartTitle').textContent='Training performance';$('chartNote').textContent='Score across each season’s opponent field. The field grows as rivals join.';
+ }else{
+  const tag=selected?.tag||state.panel?.tag||state.matches[0]?.tag;if(!tag)return;
+  const matches=state.matches.filter(m=>m.tag===tag).sort((a,b)=>a.number-b.number);
+  const actors=new Map();for(const m of matches){const a=actors.get(m.actor)||{points:0,values:[]};a.points+=m.otherHP===0?1:m.hp===0?0:.5;a.values.push(a.points/(a.values.length+1));actors.set(m.actor,a)}
+  let n=0;for(const [name,a] of actors){series.push([name,a.values,name==='W-tap'?'#f3bd77':colors[n++%colors.length]]);rows.push([name,a.points+'/'+a.values.length,pct(a.values.at(-1))])}
+  ticks=['Bout 1','Bout '+Math.max(1,...series.map(v=>v[1].length))];heads=['Fighter','Score / played','Score rate'];
+  $('chartTitle').textContent='Java performance';$('chartNote').textContent=panelName(tag)+' · Cumulative score per fighter across its played bouts. Draws count half.';
+ }
+ const c=$('history'),d=window.devicePixelRatio||1,rect=c.getBoundingClientRect(),w=rect.width,H=rect.height;if(w<1)return;
+ c.setAttribute('aria-label',$('chartTitle').textContent);c.width=w*d;c.height=H*d;const g=c.getContext('2d');g.scale(d,d);
+ const count=Math.max(1,...series.map(v=>v[1].length));const X=i=>42+i*(w-60)/Math.max(count-1,1),Y=v=>10+(1-v)*(H-39);
  g.font='12px system-ui';g.fillStyle='#a9b2ac';g.lineWidth=1;for(const n of [0,.25,.5,.75,1]){g.strokeStyle='#39443c';g.beginPath();g.moveTo(40,Y(n));g.lineTo(w-9,Y(n));g.stroke();g.fillText(pct(n),1,Y(n)+4)}
- for(const [key,color] of [['main','#b9eca7'],['wt','#f3bd77']]){g.strokeStyle=color;g.lineWidth=2.5;g.beginPath();h.forEach((r,i)=>i?g.lineTo(X(i),Y(r[key])):g.moveTo(X(i),Y(r[key])));g.stroke()}
- g.textAlign='left';g.fillText('Season 1',40,H-4);if(h.length>1){g.textAlign='right';g.fillText('Season '+h.at(-1).n,w-7,H-4)}
+ const legend=$('legend');legend.replaceChildren();
+ for(const [name,values,color] of series){g.strokeStyle=color;g.lineWidth=2.5;g.beginPath();values.forEach((v,i)=>i?g.lineTo(X(i),Y(v)):g.moveTo(X(i),Y(v)));g.stroke();const item=elem('span',name);item.style.setProperty('--swatch',color);legend.append(item)}
+ g.textAlign='left';g.fillText(ticks[0],40,H-4);if(count>1){g.textAlign='right';g.fillText(ticks[1],w-7,H-4)}
+ $('chartTable').replaceChildren(table(rows,heads));
 }
+for(const [id,value] of [['modelChart','model'],['javaChart','java']])$(id).onclick=()=>{graphMode=value;$('modelChart').classList.toggle('active',value==='model');$('javaChart').classList.toggle('active',value==='java');chart()};
 function render(data){
  state=data;const panel=data.panel;$('status').textContent=data.status==='running'?(panel?'Java tournament':'Training'):'League finished';
  $('now').textContent=panel?panelName(panel.tag)+' · '+panel.done+' of '+panel.total+' bouts complete':data.status==='running'?'League training is running.':'The league has completed its final challenge.';
@@ -98,7 +120,7 @@ function render(data){
  if(!selected&&rows.length)select(rows.find(m=>m.id===requested)||rows.find(m=>m.video&&m.actor!==m.rival&&m.actor!=='W-tap'&&(m.actor===data.champion||m.rival===data.champion))||rows.find(m=>m.video)||rows[0]);
  else if(following&&selected&&!selected.video&&rows.some(m=>m.video)&&!playing)select(rows.find(m=>m.video));
  else showLibrary();
- chart();$('chartTable').replaceChildren(table(data.history.map(v=>[v.n,pct(v.main),pct(v.wt)]),['Season','Main fighter','W-tap']));
+ chart();
  const live=$('liveScores');live.replaceChildren();
  if(panel){const arms=new Map();for(const m of data.matches){if(m.tag!==panel.tag)continue;const v=arms.get(m.actor)||[0,0];v[0]+=m.otherHP===0?1:m.hp===0?0:.5;v[1]++;arms.set(m.actor,v)}
   const section=elem('section','');section.append(elem('h3',panelName(panel.tag)+' · In progress'),table([...arms].sort((a,b)=>b[1][0]/b[1][1]-a[1][0]/a[1][1]).map(([name,[points,n]])=>[name,points+'/'+n]),['Fighter','Score / played']));live.append(section)}
