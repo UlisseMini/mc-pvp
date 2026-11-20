@@ -30,7 +30,7 @@ function setMode(next){
  $('pov').className=next==='film'?'active':'';$('map').className=next==='map'?'active':'';
  $('shadowLabel').hidden=next!=='film';
  if(next==='film'){
-  $('format').textContent='JAVA CLIENT VIDEO';$('sourceNote').textContent=selected.fps+' fps capture · Original player view · Normal speed';
+  $('format').textContent='JAVA CLIENT VIDEO';$('sourceNote').textContent=selected.fps+' fps capture · Normal speed'+(selected.rendered!=null?' · Client rendered '+selected.rendered+' fps median':selected.framePolicy==='afk'?' · Recorded with the original AFK limiter':'');
   film.onloadedmetadata=()=>{if(generation===loading && film.duration>2)film.currentTime=Math.min(1.3,film.duration/4)};
   film.src='/video/'+selected.id;film.playbackRate=1;film.hidden=false;$('empty').hidden=true;
   film.onerror=()=>{if(generation===loading){$('empty').hidden=false;$('empty').textContent='Video unavailable. Choose Arena replay below.'}};

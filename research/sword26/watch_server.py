@@ -6,6 +6,7 @@ import json
 import mimetypes
 from pathlib import Path
 import re
+import statistics
 import threading
 import time
 import webbrowser
@@ -62,6 +63,16 @@ def counted(path, size, modified):
         return sum(int(row["duels"]) for row in csv.DictReader(f,delimiter="\t") if row.get("duels","").isdigit())
 
 
+@lru_cache(maxsize=4096)
+def rendered_rate(path):
+    if not path.is_file():return None
+    with path.open() as f:
+        source=csv.DictReader(f,delimiter="\t")
+        if "renderFps" not in (source.fieldnames or []):return None
+        values=[int(r["renderFps"]) for r in source]
+    return statistics.median(values) if values else None
+
+
 def snapshot():
     global cached
     with lock:
@@ -104,6 +115,8 @@ def snapshot():
                 bouts.append(dict(id=tag+"/"+rid,tag=tag,number=int(rid[6:])+1,actor=short(actor,labels),rival=short(row["rival"],labels),
                                   rtt=row["rtt"],seat="AB"[row["seat"]],hp=row["hp"],otherHP=row["opponent_hp"],
                                   ticks=row["ticks"],video=has_video,trace=(run/(rid+"-server.tsv")).is_file(),fps=meta.get("video",{}).get("fps",50),
+                                  framePolicy=meta.get("client_frame_policy","afk"),
+                                  rendered=rendered_rate(run/(rid+"-"+"AB"[row["seat"]]+".tsv")) if meta.get("client_frame_policy")=="minimized" else None,
                                   when=reg.stat().st_mtime))
         bouts.sort(key=lambda x:(x["when"],x["number"]),reverse=True)
         panels.sort(key=lambda x:x["when"],reverse=True)
