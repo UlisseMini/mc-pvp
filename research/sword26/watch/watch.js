@@ -1,7 +1,17 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const nf=new Intl.NumberFormat(), pct=n=>Math.round(n*100)+'%';
-const panelName=tag=>{const s=tag.split('-');return s[0]==='showcase'?'Exhibition '+Number(s[1]):'Season '+Number(s[1])+' · '+(s[0]==='scout'?'Scouting':s[0]==='timing'?'Timing crossover':({a:s[1]==='014'?'Earlier timing A':'Panel A',b:s[1]==='014'?'Earlier timing B':'Panel B',c:'Active A',d:'Active B'}[s[2]]))};
+const panelName=tag=>{
+  const [type,index,part]=tag.split('-');
+  if(type==='showcase')return 'Exhibition '+Number(index);
+  const prefix='Season '+Number(index)+' · ';
+  if(type==='scout')return prefix+'Scouting';
+  if(type==='timing')return prefix+'Timing crossover';
+  if(index==='014')return prefix+({a:'Earlier timing A',b:'Earlier timing B',c:'Active A',d:'Active B'}[part]);
+  if(index==='028'&&part==='c')return prefix+'Direct challenge';
+  if(index==='028'&&part==='d')return prefix+'Field challenge';
+  return prefix+'Panel '+part.toUpperCase();
+};
 const elem=(tag,text)=>{const el=document.createElement(tag);el.textContent=text;return el};
 let graphMode='model';
 let state=null,selected=null,mode=null,page=0,current='',animation=0,trace=null,position=0,start=null,playing=false,loading=0,following=true;
