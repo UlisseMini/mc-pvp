@@ -97,6 +97,8 @@ if __name__=='__main__':
                     start('series-diverse','series_expand.py',[],series/'diverse-experts/dev/library-08.json')
                 if (OUT/series/'targeted-response/protocol.json').is_file():
                     start('series-targeted','series_targeted.py',[],series/'targeted-response/dev/comparison-08.json')
+                    if (OUT/series/'targeted-response/opening-observations/protocol.json').is_file():
+                        start('series-opening-observations','series_trace.py',[],series/'targeted-response/opening-observations/dev/result.json')
                 if (OUT/series/'score-aware/protocol.json').is_file():
                     start('series-score-aware','series_value.py',[],series/'score-aware/dev/evaluation-08.json')
                 if (OUT/series/'reward-ablation.json').is_file():

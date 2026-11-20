@@ -60,6 +60,17 @@ def enrollment(gen):
             response=obtain(target,EVIDENCE/origin,seed)
             name='sg003-counter-response-'+key;field[name]=response['policy']
             if response['confirmed']:families.setdefault('65k single-opponent PPO',[]).append(name)
+        # The series pilot identified the reply to the G1 specialist as an uncovered opponent.
+        # Use the same frozen response search already running for it when training the next ordinary generation.
+        study=EVIDENCE/'robustness-001/stationary-field/series-ten/weakest-response/protocol.json'
+        if study.is_file():
+            target=json.loads(study.read_text())['policy']
+            if target!=field['sg003-counter-response-g1']:raise ValueError('Series weakness no longer matches the registered G1 response')
+            reply=obtain(target,EVIDENCE/'robustness-001/weak-matchups/original-mixture/trainer.pt',371016)
+            if reply['confirmed'] and all(v['sha256']!=reply['policy']['sha256'] for v in field.values()):
+                name='sg003-counter-to-g1-response'
+                field[name]=reply['policy']
+                families.setdefault('65k single-opponent PPO',[]).append(name)
         subprocess.run([sys.executable,HERE/'successor_pool.py'],check=True)
         for role,actor in json.loads((pool.OUT/'weights.json').read_text()).items():
             name='sg003-counter-trained-'+role

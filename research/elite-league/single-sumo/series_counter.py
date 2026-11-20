@@ -1,6 +1,6 @@
 """Train a legal 65k response when the eight-expert library cannot win the series learner's weakest matchup."""
 from adversary import obtain,native_check
-from learner import write_json
+from learner import ROOT,write_json
 from remote_league import OUT,read
 from series_bank import FOLDER
 
@@ -21,4 +21,22 @@ def run():
     native_check(result)
 
 
-if __name__=='__main__':run()
+def publish_response():
+    import time
+    from adaptive_router import runtime,trace_parity
+    from native_league import publish
+    dest=FOLDER/'weakest-response'
+    while not (dest/'result.json').exists():time.sleep(10)
+    verdict=read(dest/'result.json')
+    if not verdict['confirmed']:return
+    model=verdict['policy']
+    name=publish('sumo-counter-g1-reply-64k',model,'7 CPS MLP trained for 65536 fights against the G1 reply, the weakest matchup of the eight-expert series bot')
+    pin=runtime()
+    write_json(dest/'publication.json',dict(name=name,policy=model,target=verdict['target'],bridge=pin['forge']['sha256'],
+        action_trace=trace_parity(ROOT/model['reference'],pin)),fixed=True)
+
+
+if __name__=='__main__':
+    import sys
+    if sys.argv[1:]==['publish']:publish_response()
+    else:run()

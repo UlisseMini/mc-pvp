@@ -92,9 +92,11 @@ def bundle():
         if (ROOT/hidden).is_file():files.add(hidden)
         targeted=series.parent/'targeted-response/design.json'
         if (ROOT/targeted).is_file():files.add(targeted)
+        probe=targeted.parent/'opening-observations/protocol.json'
+        if (ROOT/probe).is_file():files.add(probe)
         values=series.parent/'score-aware/protocol.json'
         if (ROOT/values).is_file():files.add(values)
-        for script in ('series_bank.py','series_learn.py','series_eval.py','series_pair.py','series_bayes.py','series_crossing.py','series_memory.py','series_archive.py','series_expand.py','series_objective.py','series_public.py','series_hidden.py','series_cues.py','series_targeted.py','series_value.py','check_series.py'):
+        for script in ('series_bank.py','series_learn.py','series_eval.py','series_pair.py','series_bayes.py','series_crossing.py','series_memory.py','series_archive.py','series_expand.py','series_objective.py','series_public.py','series_hidden.py','series_cues.py','series_targeted.py','series_trace.py','series_value.py','check_series.py'):
             if (ROOT/LAB/script).exists():files.add(LAB/script)
     # Each path is relative to the project, and each checksum is verified again on the receiving host.
     assert all(not p.is_absolute() and '..' not in p.parts and (ROOT/p).is_file() for p in files)
