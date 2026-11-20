@@ -1,0 +1,33 @@
+{
+  "run": true,
+  "primary": "gate",
+  "methods": {
+    "cue": {
+      "id": "opening-1-7429",
+      "merit": "0.562065972",
+      "mean": "0.571180556",
+      "seat_a": "0.534722222",
+      "seat_b": "0.607638889",
+      "wtap": "0.060763889"
+    },
+    "gate": {
+      "id": "opening-2-6047",
+      "merit": "0.631510417",
+      "mean": "0.633680556",
+      "seat_a": "0.642361111",
+      "seat_b": "0.625000000",
+      "wtap": "0.060763889"
+    }
+  },
+  "weights": {
+    "opening-1-1327": "b3cca22b3930677fdc241086fc6fda85ac21cbb89ac0f4ac60f6207d9860af6f",
+    "opening-2-2011": "ca8e33f362d3a29874e22cebb2ddc21c2e3fdd476331bed32bdfea9c5e140a4a",
+    "opening-1-4271": "bab0ef60cabad6c8e22d33832e7e2cd93e92e1e014403b9093a53b30500d6d8b",
+    "opening-2-6047": "93e5b1df6e171a329de9c61c5cbbf52fbcceb2f4b5c4ead863d95df4047c2b81",
+    "opening-1-7429": "5d2c43eb1565d483be0a15d78beb0e05cdd5c674a0a1d97b256fc244298f9355",
+    "opening-2-8147": "a4e97a4b3ade4a260c427dc8ef18b611660213136823d6acc85e5e4873da1b67",
+    "opening-1-9161": "d19e0ab309ab53282c66d8d993a7b8ce0de01e4d6c3818934ac6424017f106da",
+    "opening-2-10513": "4939594d7b69b8cf41f20b732691acc1a58d09d56373891689a62f6fa5c1a578"
+  },
+  "target": "bd2265e8498df5fe91f39f03e1dd0654ab16c5165bb9989df517890e6f2a75fe"
+}

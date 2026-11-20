@@ -71,7 +71,7 @@ public final class PracticeModule implements PracticeExtension {
         List<Frame.Line> lines=new ArrayList<>();
         if(!s.playing||!s.practiceAllowed)jumpReset.clear();
         if(!s.playing){close();previousHurt=0;blockedTicks=playingTicks=0;overlays.views=Collections.emptyMap();replay.state=Collections.emptyMap();remoteBase=Frame.empty();return base=Frame.empty();}
-        if(enabled && sprint)lines.add(new Frame.Line(label,inset,top,color,true));
+        if(enabled && sprint)lines.add(new Frame.Line(label,inset,top,color,true,1,false,"sprint"));
         if(potions){int y=potionY;for(String effect:s.effects){lines.add(new Frame.Line(effect,inset,y,0xFFFFFF,true));y+=11;}}
         remoteBase=new Frame(enabled&&sprint&&!s.screenOpen,lines,0,0);
         if(s.self!=null){

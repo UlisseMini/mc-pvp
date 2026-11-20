@@ -1,0 +1,21 @@
+{
+  "run": true,
+  "primary": "branches",
+  "methods": {
+    "branches": {
+      "id": "counterfactual-6101",
+      "merit": "0.754774306",
+      "mean": "0.755208333",
+      "seat_a": "0.753472222",
+      "seat_b": "0.756944444",
+      "wtap": "0.060763889"
+    }
+  },
+  "parent": "ppo-wide-6421",
+  "weights": {
+    "counterfactual-1907": "26731f89d227422cf69dd39e3b5f03bf9c5db8f40706f800c5b42e923b166f21",
+    "counterfactual-3491": "6aa45d2ee50cbcb4e1acf952a4ae8855b741b4b7e13788ffb21805e01540f423",
+    "counterfactual-6101": "753930fc0071d106f2ffe541279b0acb549a8d7dda01fc3480ae14a7e6c65a4f",
+    "counterfactual-9833": "753930fc0071d106f2ffe541279b0acb549a8d7dda01fc3480ae14a7e6c65a4f"
+  }
+}

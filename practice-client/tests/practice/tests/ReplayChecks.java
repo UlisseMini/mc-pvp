@@ -33,6 +33,17 @@ final class ReplayChecks {
             Map<String,Object> pair=map("a",pose(0,0,0),"b",pose(3,3,180));
             host.event(new PracticeEvent("replay_frame",1,1000,0,map("active",true,"source","server","views",map("a",pair,"b",pair),"ghosts",Arrays.asList("a:a","a:b","b:a","b:b"),"reach",Arrays.asList(3.,3.))));
             WorldFrame world=host.world(0);check(world.spheres.size()==2&&world.lines.isEmpty()&&world.boxes.size()==24,"replay uses same filled fields and independent four ghosts");
+            Map<String,Object> offline=map("active",true,"offline",true,"offline_reach",true,"source","a","views",map("a",pair));
+            host.event(new PracticeEvent("replay_frame",2,1000,0,offline));
+            check(host.world(0).spheres.size()==1,"offline replay shows configured reach fields");
+            offline.put("offline_reach",false);
+            host.event(new PracticeEvent("replay_frame",3,1000,0,offline));
+            check(host.world(0).spheres.isEmpty(),"camera switch can hide reach fields while globally enabled");
+            Files.write(dir.resolve("settings.properties"),"reach.enabled=false\n".getBytes("UTF-8"));
+            check(host.reload(true),"reach off settings reload");
+            offline.put("offline_reach",true);
+            host.event(new PracticeEvent("replay_frame",4,1000,0,offline));
+            check(host.world(0).spheres.isEmpty(),"global reach off hides fields even with the camera switch enabled");
             host.event(new PracticeEvent("replay_frame",2,1000,0,map("active",false)));check(host.world(0).spheres.isEmpty(),"leaving replay removes replay-only geometry");
         }
         System.out.println("Replay checks passed: time interpolation, side orientation, gaps, shared overlay rendering");

@@ -1,0 +1,16 @@
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8255.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8259.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8263.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8275.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8283.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8286.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8294.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8298.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8309.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8313.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8324.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8328.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8333.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8344.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8348.txt.gz
+research/elite-league/sumo-confidence/curriculum/model/clocks/m8360.txt.gz

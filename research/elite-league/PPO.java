@@ -51,17 +51,26 @@ final class PPO {
         Step(double[] x,int a,double log,double v){this.x=x;action=a;oldLog=log;value=v;}
     }
     static double value(double[] v,double[] x){
-        double y=v[0];for(int i=0;i<IN;i++)y+=v[i+1]*x[i];return Math.tanh(y);
+        double y=v[0];for(int i=0;i<x.length;i++)y+=v[i+1]*x[i];return Math.tanh(y);
+    }
+    static DuelNetwork.Family family(float[] w){
+        if(w.length==DuelNetwork.size(DuelNetwork.Family.INPUT8))return DuelNetwork.Family.INPUT8;
+        if(w.length==DuelNetwork.size(DuelNetwork.Family.INPUT32))return DuelNetwork.Family.INPUT32;
+        return w.length==DuelNetwork.size(DuelNetwork.Family.PING_MLP)?DuelNetwork.Family.PING_MLP:DuelNetwork.Family.MLP;
     }
     static final class Collector extends DuelEnv.Player{
         final DuelNetwork actor;final Dist dist;final double[] critic,gradient=new double[OUT];final Random rng;
         final List<Step> steps=new ArrayList<>();
-        Collector(float[] w,double[] v,double t,long seed,int ping){
-            super("ppo",0,ping,0);actor=new DuelNetwork(DuelNetwork.Family.MLP,w);critic=v;dist=new Dist(t);rng=new Random(seed);
+        final double opponentRtt;
+        Collector(float[] w,double[] v,double t,long seed,int ping,double opponentRtt){
+            super("ppo",0,ping,0);this.opponentRtt=opponentRtt;actor=new DuelNetwork(family(w),w);critic=v;dist=new Dist(t);rng=new Random(seed);
         }
+        double lastPress=Double.NEGATIVE_INFINITY;
+        public boolean injected(PeriodicComboClock.Observation o,double t){lastPress=t;return super.injected(o,t);}
         public PeriodicComboClock.Control input(PeriodicComboClock.Observation o){
+            actor.localTiming(o.time(),o.time()-lastPress);
             var q=o.own();actor.step(q.x(),q.y(),q.z(),o.targetX(),o.targetY(),o.targetZ(),q.vx(),q.vy(),q.vz(),q.onGround(),
-                o.sprint(),o.time()-o.lastOwnHurtTime(),o.time()-o.lastTargetHurtTime(),rtt);
+                o.sprint(),o.time()-o.lastOwnHurtTime(),o.time()-o.lastTargetHurtTime(),rtt,opponentRtt);
             double[] x=actor.features(),s=actor.scores();int action=dist.sample(s,q.onGround(),rng);
             steps.add(new Step(x,action,dist.probability(s,q.onGround(),action,gradient),value(critic,x)));
             actor.applied(action);
@@ -70,8 +79,11 @@ final class PPO {
     }
     record Batch(List<Step> steps,double reward){}
     static Batch trajectory(Arena.Scenario sc,float[] weights,double[] critic,double temp,long seed){
+        return trajectory(sc,weights,critic,temp,seed,sc.first()?sc.env().otherRtt:sc.env().rtt);
+    }
+    static Batch trajectory(Arena.Scenario sc,float[] weights,double[] critic,double temp,long seed,double observedOpponent){
         DuelEnv e=sc.env();boolean first=sc.first();
-        var p=new Collector(weights,critic,temp,seed,first?e.rtt:e.otherRtt);
+        var p=new Collector(weights,critic,temp,seed,first?e.rtt:e.otherRtt,observedOpponent);
         var config=e.initial.config;
         var rival=sc.opponent().create(first?e.otherRtt:e.rtt,first?e.rtt:e.otherRtt,0,config.mmc,config.sumoDiameter,config.hitTicks);
         var g=e.new Game(first,p,rival);g.finish();
@@ -87,17 +99,17 @@ final class PPO {
     }
     static void forward(float[] w,double[] x,double[] hidden,double[] output){
         int idx=0;
-        for(int i=0;i<H;i++){double v=w[idx++];for(double input:x)v+=w[idx++]*input;hidden[i]=v/(1+Math.abs(v));}
+        for(int i=0;i<hidden.length;i++){double v=w[idx++];for(double input:x)v+=w[idx++]*input;hidden[i]=v/(1+Math.abs(v));}
         for(int k=0;k<OUT;k++){double v=w[idx++];for(double h:hidden)v+=w[idx++]*h;output[k]=v;}
     }
     static void backward(float[] w,double[] x,double[] h,double[] dOut,double[] grad,double factor){
-        int pos=H*(IN+1);double[] dh=new double[H];
+        int pos=h.length*(x.length+1);double[] dh=new double[h.length];
         for(int k=0;k<OUT;k++){
             double d=factor*dOut[k];grad[pos++]+=d;
-            for(int i=0;i<H;i++){dh[i]+=d*w[pos];grad[pos++]+=d*h[i];}
+            for(int i=0;i<h.length;i++){dh[i]+=d*w[pos];grad[pos++]+=d*h[i];}
         }
         pos=0;
-        for(int i=0;i<H;i++){
+        for(int i=0;i<h.length;i++){
             double a=1-Math.abs(h[i]),d=dh[i]*a*a;grad[pos++]+=d;
             for(double input:x)grad[pos++]+=d*input;
         }
@@ -120,7 +132,7 @@ final class PPO {
         for(var s:data){mean+=s.advantage;sq+=s.advantage*s.advantage;}
         mean/=count;double sd=Math.sqrt(Math.max(1e-8,sq/count-mean*mean));
         for(var s:data)s.advantage=(s.advantage-mean)/sd;
-        double[] h=new double[H],out=new double[OUT],d=new double[OUT];
+        double[] h=new double[DuelNetwork.width(family(w))],out=new double[OUT],d=new double[OUT];
         for(int epoch=0;epoch<3;epoch++){
             Collections.shuffle(data,rng);
             for(int start=0;start<count;start+=256){
@@ -131,7 +143,7 @@ final class PPO {
                     double ratio=Math.exp(Math.min(10,dist.probability(out,s.x[8]>0,s.action,d)-s.oldLog));
                     if(s.advantage>=0?ratio<1.18:ratio>.82)backward(w,s.x,h,d,g,s.advantage*ratio);
                     double v=value(critic,s.x),diff=(s.target-v)*(1-v*v);vg[0]+=diff;
-                    for(int j=0;j<IN;j++)vg[1+j]+=s.x[j]*diff;
+                    for(int j=0;j<s.x.length;j++)vg[1+j]+=s.x[j]*diff;
                 }
                 opt.update(w,g,n,lr);
                 for(int j=0;j<critic.length;j++)critic[j]+=.02*vg[j]/n;

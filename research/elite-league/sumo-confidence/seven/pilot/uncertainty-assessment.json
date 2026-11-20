@@ -1,0 +1,1344 @@
+{
+  "invalid": [],
+  "eligible": 48,
+  "native": {
+    "sumo-seven-first": {
+      "overall": {
+        "n": 32,
+        "W": 32,
+        "L": 0,
+        "D": 0,
+        "score": 1.0,
+        "blocks": {
+          "n": 8,
+          "mean": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "bootstrap95": [
+            1.0,
+            1.0
+          ]
+        },
+        "raw_win_blocks": {
+          "n": 8,
+          "mean": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "bootstrap95": [
+            1.0,
+            1.0
+          ]
+        },
+        "exact_raw_win_ci_iid_games": [
+          0.8911188393206471,
+          1.0
+        ],
+        "conservative_points_bounds_independent_blocks": [
+          0.6305833524471807,
+          1.0
+        ]
+      },
+      "conditions": {
+        "a-31/109": {
+          "n": 8,
+          "W": 8,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.6305833524471807,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.6305833524471807,
+            1.0
+          ]
+        },
+        "a-109/31": {
+          "n": 8,
+          "W": 8,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.6305833524471807,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.6305833524471807,
+            1.0
+          ]
+        },
+        "b-31/109": {
+          "n": 8,
+          "W": 8,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.6305833524471807,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.6305833524471807,
+            1.0
+          ]
+        },
+        "b-109/31": {
+          "n": 8,
+          "W": 8,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.6305833524471807,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.6305833524471807,
+            1.0
+          ]
+        }
+      },
+      "actions": {
+        "n": 32,
+        "seconds": 625.6189999999999,
+        "physical_presses": [
+          1743,
+          1831
+        ],
+        "presses_per_regulation_second": [
+          2.7860407052854854,
+          2.9267013949384535
+        ],
+        "minimum_interval_ms": [
+          142.882667,
+          142.867666
+        ],
+        "verified_heads_both": 25018,
+        "actor_confirmed_takeoffs": 90
+      },
+      "mechanics": {
+        "actor": {
+          "server_horizontal": {
+            "games": 32,
+            "mean": 0.60273676597619
+          },
+          "outward_travel": {
+            "games": 32,
+            "mean": 0.27605617180642394
+          },
+          "physical_presses_after_velocity": {
+            "games": 32,
+            "mean": 1.919565735571081
+          },
+          "entity_contacts_after_velocity": {
+            "games": 32,
+            "mean": 1.6846768798826335
+          },
+          "brakes_after_velocity": {
+            "games": 32,
+            "mean": 1.2670002462081371
+          },
+          "incoming_fresh": 415,
+          "unique_server_velocity": 386,
+          "matched_client_velocity": 386,
+          "complete_recoil_windows": 385,
+          "uninterrupted_client_windows": 386
+        },
+        "frozen": {
+          "server_horizontal": {
+            "games": 32,
+            "mean": 0.8055676160779791
+          },
+          "outward_travel": {
+            "games": 32,
+            "mean": 0.8370520375108821
+          },
+          "physical_presses_after_velocity": {
+            "games": 32,
+            "mean": 1.8844996769948816
+          },
+          "entity_contacts_after_velocity": {
+            "games": 32,
+            "mean": 1.2432507292130055
+          },
+          "brakes_after_velocity": {
+            "games": 32,
+            "mean": 1.177086856609515
+          },
+          "incoming_fresh": 468,
+          "unique_server_velocity": 432,
+          "matched_client_velocity": 431,
+          "complete_recoil_windows": 423,
+          "uninterrupted_client_windows": 423
+        }
+      }
+    },
+    "sumo-frozen-ppo": {
+      "overall": {
+        "n": 8,
+        "W": 5,
+        "L": 2,
+        "D": 1,
+        "score": 0.6875,
+        "blocks": {
+          "n": 8,
+          "mean": 0.6875,
+          "ci95": [
+            0.3045500072875408,
+            1.0704499927124593
+          ],
+          "bootstrap95": [
+            0.375,
+            0.9375
+          ]
+        },
+        "raw_win_blocks": {
+          "n": 8,
+          "mean": 0.625,
+          "ci95": [
+            0.19231806642684596,
+            1.057681933573154
+          ],
+          "bootstrap95": [
+            0.25,
+            0.875
+          ]
+        }
+      },
+      "conditions": {
+        "a-31/109": {
+          "n": 2,
+          "W": 2,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 2,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 2,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.15811388300841897,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.15811388300841897,
+            1.0
+          ]
+        },
+        "a-109/31": {
+          "n": 2,
+          "W": 0,
+          "L": 2,
+          "D": 0,
+          "score": 0.0,
+          "blocks": {
+            "n": 2,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 2,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.0,
+            0.841886116991581
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.0,
+            0.841886116991581
+          ]
+        },
+        "b-31/109": {
+          "n": 2,
+          "W": 2,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 2,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 2,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.15811388300841897,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.15811388300841897,
+            1.0
+          ]
+        },
+        "b-109/31": {
+          "n": 2,
+          "W": 1,
+          "L": 0,
+          "D": 1,
+          "score": 0.75,
+          "blocks": {
+            "n": 2,
+            "mean": 0.75,
+            "ci95": [
+              -2.4265511841080234,
+              3.9265511841080234
+            ],
+            "bootstrap95": [
+              0.5,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 2,
+            "mean": 0.5,
+            "ci95": [
+              -5.853102368216047,
+              6.853102368216047
+            ],
+            "bootstrap95": [
+              0.0,
+              1.0
+            ]
+          }
+        }
+      },
+      "actions": {
+        "n": 8,
+        "seconds": 334.196,
+        "physical_presses": [
+          1965,
+          1943
+        ],
+        "presses_per_regulation_second": [
+          5.879783121282121,
+          5.813953488372093
+        ],
+        "minimum_interval_ms": [
+          142.88225,
+          142.901375
+        ],
+        "verified_heads_both": 13363,
+        "actor_confirmed_takeoffs": 29
+      },
+      "mechanics": {
+        "actor": {
+          "server_horizontal": {
+            "games": 8,
+            "mean": 0.7307181804974926
+          },
+          "outward_travel": {
+            "games": 8,
+            "mean": 0.5969514203088758
+          },
+          "physical_presses_after_velocity": {
+            "games": 8,
+            "mean": 1.7684959431306104
+          },
+          "entity_contacts_after_velocity": {
+            "games": 8,
+            "mean": 1.5373453528635632
+          },
+          "brakes_after_velocity": {
+            "games": 8,
+            "mean": 1.37134577552743
+          },
+          "incoming_fresh": 440,
+          "unique_server_velocity": 412,
+          "matched_client_velocity": 406,
+          "complete_recoil_windows": 410,
+          "uninterrupted_client_windows": 406
+        },
+        "frozen": {
+          "server_horizontal": {
+            "games": 8,
+            "mean": 0.7483450137434358
+          },
+          "outward_travel": {
+            "games": 8,
+            "mean": 0.5808838865815285
+          },
+          "physical_presses_after_velocity": {
+            "games": 8,
+            "mean": 1.8192467112415742
+          },
+          "entity_contacts_after_velocity": {
+            "games": 8,
+            "mean": 1.5236219830397912
+          },
+          "brakes_after_velocity": {
+            "games": 8,
+            "mean": 1.361648592085236
+          },
+          "incoming_fresh": 453,
+          "unique_server_velocity": 424,
+          "matched_client_velocity": 419,
+          "complete_recoil_windows": 422,
+          "uninterrupted_client_windows": 418
+        }
+      }
+    },
+    "research-wtap20": {
+      "overall": {
+        "n": 8,
+        "W": 0,
+        "L": 8,
+        "D": 0,
+        "score": 0.0,
+        "blocks": {
+          "n": 8,
+          "mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "bootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "raw_win_blocks": {
+          "n": 8,
+          "mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "bootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "exact_raw_win_ci_iid_games": [
+          0.0,
+          0.3694166475528192
+        ],
+        "conservative_points_bounds_independent_blocks": [
+          0.0,
+          0.3694166475528192
+        ]
+      },
+      "conditions": {
+        "a-31/109": {
+          "n": 2,
+          "W": 0,
+          "L": 2,
+          "D": 0,
+          "score": 0.0,
+          "blocks": {
+            "n": 2,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 2,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.0,
+            0.841886116991581
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.0,
+            0.841886116991581
+          ]
+        },
+        "a-109/31": {
+          "n": 2,
+          "W": 0,
+          "L": 2,
+          "D": 0,
+          "score": 0.0,
+          "blocks": {
+            "n": 2,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 2,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.0,
+            0.841886116991581
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.0,
+            0.841886116991581
+          ]
+        },
+        "b-31/109": {
+          "n": 2,
+          "W": 0,
+          "L": 2,
+          "D": 0,
+          "score": 0.0,
+          "blocks": {
+            "n": 2,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 2,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.0,
+            0.841886116991581
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.0,
+            0.841886116991581
+          ]
+        },
+        "b-109/31": {
+          "n": 2,
+          "W": 0,
+          "L": 2,
+          "D": 0,
+          "score": 0.0,
+          "blocks": {
+            "n": 2,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 2,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.0,
+            0.841886116991581
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.0,
+            0.841886116991581
+          ]
+        }
+      },
+      "actions": {
+        "n": 8,
+        "seconds": 104.37800000000001,
+        "physical_presses": [
+          697,
+          624
+        ],
+        "presses_per_regulation_second": [
+          6.6776523788537805,
+          5.978271283220601
+        ],
+        "minimum_interval_ms": [
+          142.866834,
+          142.888959
+        ],
+        "verified_heads_both": 4174,
+        "actor_confirmed_takeoffs": 0
+      },
+      "mechanics": {
+        "actor": {
+          "server_horizontal": {
+            "games": 8,
+            "mean": 0.7638678827961745
+          },
+          "outward_travel": {
+            "games": 8,
+            "mean": 0.9230275674704861
+          },
+          "physical_presses_after_velocity": {
+            "games": 8,
+            "mean": 1.6504377169528097
+          },
+          "entity_contacts_after_velocity": {
+            "games": 8,
+            "mean": 1.3343122386514414
+          },
+          "brakes_after_velocity": {
+            "games": 8,
+            "mean": 0.9052101552343426
+          },
+          "incoming_fresh": 131,
+          "unique_server_velocity": 122,
+          "matched_client_velocity": 122,
+          "complete_recoil_windows": 120,
+          "uninterrupted_client_windows": 120
+        },
+        "frozen": {
+          "server_horizontal": {
+            "games": 8,
+            "mean": 0.8133135045470664
+          },
+          "outward_travel": {
+            "games": 8,
+            "mean": 0.5730265400554762
+          },
+          "physical_presses_after_velocity": {
+            "games": 8,
+            "mean": 1.7447616740494647
+          },
+          "entity_contacts_after_velocity": {
+            "games": 8,
+            "mean": 1.6826734957548912
+          },
+          "brakes_after_velocity": {
+            "games": 8,
+            "mean": 1.5393139765596162
+          },
+          "incoming_fresh": 125,
+          "unique_server_velocity": 120,
+          "matched_client_velocity": 120,
+          "complete_recoil_windows": 119,
+          "uninterrupted_client_windows": 120
+        }
+      }
+    }
+  },
+  "model": {
+    "sumo-seven-first": {
+      "overall": {
+        "n": 32,
+        "W": 32,
+        "L": 0,
+        "D": 0,
+        "score": 1.0,
+        "blocks": {
+          "n": 8,
+          "mean": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "bootstrap95": [
+            1.0,
+            1.0
+          ]
+        },
+        "raw_win_blocks": {
+          "n": 8,
+          "mean": 1.0,
+          "ci95": [
+            1.0,
+            1.0
+          ],
+          "bootstrap95": [
+            1.0,
+            1.0
+          ]
+        },
+        "exact_raw_win_ci_iid_games": [
+          0.8911188393206471,
+          1.0
+        ],
+        "conservative_points_bounds_independent_blocks": [
+          0.6305833524471807,
+          1.0
+        ]
+      },
+      "conditions": {
+        "a-31/109": {
+          "n": 8,
+          "W": 8,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.6305833524471807,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.6305833524471807,
+            1.0
+          ]
+        },
+        "a-109/31": {
+          "n": 8,
+          "W": 8,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.6305833524471807,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.6305833524471807,
+            1.0
+          ]
+        },
+        "b-31/109": {
+          "n": 8,
+          "W": 8,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.6305833524471807,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.6305833524471807,
+            1.0
+          ]
+        },
+        "b-109/31": {
+          "n": 8,
+          "W": 8,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.6305833524471807,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.6305833524471807,
+            1.0
+          ]
+        }
+      }
+    },
+    "sumo-frozen-ppo": {
+      "overall": {
+        "n": 32,
+        "W": 17,
+        "L": 11,
+        "D": 4,
+        "score": 0.59375,
+        "blocks": {
+          "n": 8,
+          "mean": 0.59375,
+          "ci95": [
+            0.4285168572967639,
+            0.7589831427032361
+          ],
+          "bootstrap95": [
+            0.453125,
+            0.71875
+          ]
+        },
+        "raw_win_blocks": {
+          "n": 8,
+          "mean": 0.53125,
+          "ci95": [
+            0.2959118607329478,
+            0.7665881392670522
+          ],
+          "bootstrap95": [
+            0.34375,
+            0.6875
+          ]
+        }
+      },
+      "conditions": {
+        "a-31/109": {
+          "n": 8,
+          "W": 4,
+          "L": 3,
+          "D": 1,
+          "score": 0.5625,
+          "blocks": {
+            "n": 8,
+            "mean": 0.5625,
+            "ci95": [
+              0.14823858776063514,
+              0.9767614122393649
+            ],
+            "bootstrap95": [
+              0.25,
+              0.875
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.5,
+            "ci95": [
+              0.05312802055102683,
+              0.9468719794489732
+            ],
+            "bootstrap95": [
+              0.125,
+              0.875
+            ]
+          }
+        },
+        "a-109/31": {
+          "n": 8,
+          "W": 3,
+          "L": 3,
+          "D": 2,
+          "score": 0.5,
+          "blocks": {
+            "n": 8,
+            "mean": 0.5,
+            "ci95": [
+              0.11299751355775167,
+              0.8870024864422483
+            ],
+            "bootstrap95": [
+              0.1875,
+              0.8125
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.375,
+            "ci95": [
+              -0.05768193357315404,
+              0.807681933573154
+            ],
+            "bootstrap95": [
+              0.125,
+              0.75
+            ]
+          }
+        },
+        "b-31/109": {
+          "n": 8,
+          "W": 4,
+          "L": 3,
+          "D": 1,
+          "score": 0.5625,
+          "blocks": {
+            "n": 8,
+            "mean": 0.5625,
+            "ci95": [
+              0.14823858776063514,
+              0.9767614122393649
+            ],
+            "bootstrap95": [
+              0.25,
+              0.875
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.5,
+            "ci95": [
+              0.05312802055102683,
+              0.9468719794489732
+            ],
+            "bootstrap95": [
+              0.125,
+              0.875
+            ]
+          }
+        },
+        "b-109/31": {
+          "n": 8,
+          "W": 6,
+          "L": 2,
+          "D": 0,
+          "score": 0.75,
+          "blocks": {
+            "n": 8,
+            "mean": 0.75,
+            "ci95": [
+              0.36299751355775167,
+              1.1370024864422483
+            ],
+            "bootstrap95": [
+              0.375,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.75,
+            "ci95": [
+              0.36299751355775167,
+              1.1370024864422483
+            ],
+            "bootstrap95": [
+              0.375,
+              1.0
+            ]
+          }
+        }
+      }
+    },
+    "research-wtap20": {
+      "overall": {
+        "n": 32,
+        "W": 2,
+        "L": 30,
+        "D": 0,
+        "score": 0.0625,
+        "blocks": {
+          "n": 8,
+          "mean": 0.0625,
+          "ci95": [
+            -0.03425062161056208,
+            0.15925062161056208
+          ],
+          "bootstrap95": [
+            0.0,
+            0.15625
+          ]
+        },
+        "raw_win_blocks": {
+          "n": 8,
+          "mean": 0.0625,
+          "ci95": [
+            -0.03425062161056208,
+            0.15925062161056208
+          ],
+          "bootstrap95": [
+            0.0,
+            0.15625
+          ]
+        }
+      },
+      "conditions": {
+        "a-31/109": {
+          "n": 8,
+          "W": 1,
+          "L": 7,
+          "D": 0,
+          "score": 0.125,
+          "blocks": {
+            "n": 8,
+            "mean": 0.125,
+            "ci95": [
+              -0.1705780313762874,
+              0.4205780313762874
+            ],
+            "bootstrap95": [
+              0.0,
+              0.375
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.125,
+            "ci95": [
+              -0.1705780313762874,
+              0.4205780313762874
+            ],
+            "bootstrap95": [
+              0.0,
+              0.375
+            ]
+          }
+        },
+        "a-109/31": {
+          "n": 8,
+          "W": 0,
+          "L": 8,
+          "D": 0,
+          "score": 0.0,
+          "blocks": {
+            "n": 8,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.0,
+            0.3694166475528192
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.0,
+            0.3694166475528192
+          ]
+        },
+        "b-31/109": {
+          "n": 8,
+          "W": 0,
+          "L": 8,
+          "D": 0,
+          "score": 0.0,
+          "blocks": {
+            "n": 8,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.0,
+            0.3694166475528192
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.0,
+            0.3694166475528192
+          ]
+        },
+        "b-109/31": {
+          "n": 8,
+          "W": 1,
+          "L": 7,
+          "D": 0,
+          "score": 0.125,
+          "blocks": {
+            "n": 8,
+            "mean": 0.125,
+            "ci95": [
+              -0.1705780313762874,
+              0.4205780313762874
+            ],
+            "bootstrap95": [
+              0.0,
+              0.375
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.125,
+            "ci95": [
+              -0.1705780313762874,
+              0.4205780313762874
+            ],
+            "bootstrap95": [
+              0.0,
+              0.375
+            ]
+          }
+        }
+      }
+    }
+  }
+}

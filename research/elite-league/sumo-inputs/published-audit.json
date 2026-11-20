@@ -1,0 +1,103 @@
+{
+  "by_arm": {
+    "sumo-input-screen": {
+      "research-wtap20": [
+        1,
+        0,
+        0
+      ]
+    },
+    "sumo-input-final": {
+      "research-wtap20": [
+        1,
+        0,
+        0
+      ]
+    },
+    "sumo-input-refinement": {
+      "research-wtap20": [
+        0,
+        1,
+        0
+      ]
+    },
+    "sumo-vote-final": {
+      "research-wtap20": [
+        0,
+        1,
+        0
+      ]
+    }
+  },
+  "rows": {
+    "sinput-published-sumo-input-screen": {
+      "valid": true,
+      "mid": "m7841",
+      "arm": "sumo-input-screen",
+      "foe": "research-wtap20",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 351,
+      "local_timing": {
+        "a": 176
+      },
+      "click_min_ms": 50.075375,
+      "max_server_gap_ms": 99
+    },
+    "sinput-published-sumo-input-final": {
+      "valid": true,
+      "mid": "m7842",
+      "arm": "sumo-input-final",
+      "foe": "research-wtap20",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 450,
+      "local_timing": {},
+      "click_min_ms": 50.013542,
+      "max_server_gap_ms": 99
+    },
+    "sinput-published-sumo-input-refinement": {
+      "valid": true,
+      "mid": "m7843",
+      "arm": "sumo-input-refinement",
+      "foe": "research-wtap20",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 125,
+      "local_timing": {
+        "a": 64
+      },
+      "click_min_ms": 51.38575,
+      "max_server_gap_ms": 84
+    },
+    "sinput-published-sumo-vote-final": {
+      "valid": true,
+      "mid": "m7844",
+      "arm": "sumo-vote-final",
+      "foe": "research-wtap20",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 139,
+      "local_timing": {
+        "b": 71
+      },
+      "click_min_ms": 50.337792,
+      "max_server_gap_ms": 57
+    }
+  },
+  "original": {
+    "sinput-published-sumo-input-screen": "m7841",
+    "sinput-published-sumo-input-final": "m7842",
+    "sinput-published-sumo-input-refinement": "m7843",
+    "sinput-published-sumo-vote-final": "m7844"
+  },
+  "invalid": []
+}

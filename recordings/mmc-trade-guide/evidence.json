@@ -1,0 +1,739 @@
+{
+  "clips": [
+    {
+      "index": 4,
+      "key": "late-click",
+      "clip": "657fda8d5f8e32bfa5c38d29cbbd324f",
+      "start_ms": 6829,
+      "end_ms": 8299,
+      "wall_start": 1795075017031,
+      "wall_end": 1795075018501,
+      "prior": 7114,
+      "hit": 7622,
+      "opponent": "svmeday",
+      "fps": 60,
+      "prior_slide": 0.5320771875086975,
+      "slide": 4.222807181848129,
+      "before": [
+        {
+          "forward": 1.0,
+          "ground": true,
+          "sprint": true,
+          "cumulative": 0.24746505005276484,
+          "ms": 36
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.3574118042706788,
+          "ms": 88
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.4322806332276254,
+          "ms": 135
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.4750846346635725,
+          "ms": 185
+        },
+        {
+          "forward": 0.0,
+          "ground": false,
+          "sprint": false,
+          "cumulative": 0.5132706679551912,
+          "ms": 243
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.5320771875086975,
+          "ms": 287
+        }
+      ],
+      "after": [
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.9286647337786826,
+          "ms": 36
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 1.7558294406970392,
+          "ms": 76
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 2.489791846984379,
+          "ms": 128
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 3.13810223729452,
+          "ms": 185
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 3.7078473152007145,
+          "ms": 231
+        },
+        {
+          "forward": 0.0,
+          "ground": false,
+          "sprint": false,
+          "cumulative": 4.222807181848129,
+          "ms": 282
+        }
+      ],
+      "cues": [
+        {
+          "at": 7114,
+          "kind": "hit",
+          "label": "Previous hit",
+          "text": "You start this exchange grounded. The incoming horizontal speed is 0.942 blocks/tick."
+        },
+        {
+          "at": 7149,
+          "kind": "event",
+          "label": "Return click brakes",
+          "text": "The local contact multiplies your horizontal motion by 0.6 before the first move."
+        },
+        {
+          "at": 7622,
+          "kind": "hit",
+          "label": "Next hit arrives",
+          "text": "You’re already airborne. The incoming speed is 0.948 blocks/tick, almost the same as the previous hit."
+        },
+        {
+          "at": 7657,
+          "kind": "event",
+          "label": "Target selected · no click",
+          "text": "The native ray selects svmeday. You are locally sprinting, the miss counter is clear, and you consume no attack click."
+        },
+        {
+          "at": 7698,
+          "kind": "event",
+          "label": "Second unclicked chance",
+          "text": "The target is still selected at this input tick. No attack click is consumed."
+        },
+        {
+          "at": 7749,
+          "kind": "event",
+          "label": "First click misses",
+          "text": "Your nearby hitbox distance is 3.38 blocks on the click snapshot. The window has passed."
+        }
+      ],
+      "stills": [
+        [
+          7657,
+          "First on-target tick went unclicked"
+        ],
+        [
+          7904,
+          "Six moves later"
+        ]
+      ],
+      "width": 1280,
+      "height": 720,
+      "frames": 89
+    },
+    {
+      "index": 5,
+      "key": "miss-cooldown",
+      "clip": "f77d06d963c53309b22de84f670ef765",
+      "start_ms": 5583,
+      "end_ms": 7209,
+      "wall_start": 1795076635490,
+      "wall_end": 1795076637116,
+      "prior": 5868,
+      "hit": 6359,
+      "opponent": "cheathud",
+      "fps": 60,
+      "prior_slide": 0.6337628451971107,
+      "slide": 4.208435402768101,
+      "before": [
+        {
+          "forward": 1.0,
+          "ground": true,
+          "sprint": true,
+          "cumulative": 0.25523420811678393,
+          "ms": 36
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.3687549761270516,
+          "ms": 86
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.4467327492739545,
+          "ms": 125
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.5041911916441152,
+          "ms": 175
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.5810439015575098,
+          "ms": 226
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.6337628451971107,
+          "ms": 276
+        }
+      ],
+      "after": [
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.9253743900882736,
+          "ms": 34
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 1.7497813514506149,
+          "ms": 85
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 2.482712009545825,
+          "ms": 136
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 3.1329478838149325,
+          "ms": 187
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 3.7057472617081064,
+          "ms": 239
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 4.208435402768101,
+          "ms": 285
+        }
+      ],
+      "cues": [
+        {
+          "at": 5903,
+          "kind": "event",
+          "label": "Previous brake",
+          "text": "The prior grounded hit had a measurable sprint-contact brake."
+        },
+        {
+          "at": 6354,
+          "kind": "event",
+          "label": "A swing misses before the hit",
+          "text": "The attack selects no entity and starts the miss counter. The click log puts it 5 ms before impact, so both events share a video frame."
+        },
+        {
+          "at": 6359,
+          "kind": "hit",
+          "label": "New knockback arrives",
+          "text": "Your feet are off the floor. The packet sets horizontal speed to 0.949 blocks/tick."
+        },
+        {
+          "at": 6443,
+          "kind": "event",
+          "label": "Target selected · cooldown 8",
+          "text": "The ray is on cheathud, but the click is blocked by the existing miss counter and produces no brake."
+        },
+        {
+          "at": 6545,
+          "kind": "event",
+          "label": "Later miss out of reach",
+          "text": "At the next miss, the nearby hitbox is already 3.48 blocks away."
+        }
+      ],
+      "stills": [
+        [
+          6443,
+          "On target while the miss counter is active"
+        ],
+        [
+          6644,
+          "W held, with no brake after the hit"
+        ]
+      ],
+      "width": 1280,
+      "height": 720,
+      "frames": 98
+    },
+    {
+      "index": 50,
+      "key": "w-release",
+      "clip": "689c61e30b8a307e8ae1e465c340efc5",
+      "start_ms": 10014,
+      "end_ms": 11835,
+      "wall_start": 1795074459116,
+      "wall_end": 1795074460937,
+      "prior": 10299,
+      "hit": 10985,
+      "opponent": "9tit",
+      "fps": 60,
+      "prior_slide": 1.2018886584888926,
+      "slide": 2.8967902848822646,
+      "before": [
+        {
+          "forward": 1.0,
+          "ground": true,
+          "sprint": true,
+          "cumulative": 0.5077451201474121,
+          "ms": 2
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.7599925280197896,
+          "ms": 54
+        },
+        {
+          "forward": 0.0,
+          "ground": false,
+          "sprint": false,
+          "cumulative": 0.897656860012166,
+          "ms": 106
+        },
+        {
+          "forward": 0.0,
+          "ground": false,
+          "sprint": false,
+          "cumulative": 1.026565355408368,
+          "ms": 154
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 1.1316512396985658,
+          "ms": 205
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 1.2018886584888926,
+          "ms": 262
+        }
+      ],
+      "after": [
+        {
+          "forward": 0.0,
+          "ground": true,
+          "sprint": false,
+          "cumulative": 0.9475507407224475,
+          "ms": 15
+        },
+        {
+          "forward": 0.0,
+          "ground": false,
+          "sprint": false,
+          "cumulative": 1.4649135052557933,
+          "ms": 70
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 1.9161587576609553,
+          "ms": 118
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 2.301378833591835,
+          "ms": 168
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 2.626451930525013,
+          "ms": 218
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 2.8967902848822646,
+          "ms": 273
+        }
+      ],
+      "cues": [
+        {
+          "at": 10300,
+          "kind": "event",
+          "label": "Previous sprint brake",
+          "text": "The prior trade starts with a local sprint contact just after receipt."
+        },
+        {
+          "at": 10985,
+          "kind": "hit",
+          "label": "New knockback arrives",
+          "text": "You start this hit grounded with almost the same launch speed as the previous trade."
+        },
+        {
+          "at": 10999,
+          "kind": "event",
+          "label": "First move with W up",
+          "text": "You slide 0.95 blocks. The target was selected without a click on this tick, and local sprint had turned off by the move."
+        },
+        {
+          "at": 11053,
+          "kind": "event",
+          "label": "Return contact · sprint off",
+          "text": "The target is selected and the miss counter is clear. This attack uses the pre-movement sprint state, so there is no 40% brake."
+        },
+        {
+          "at": 11101,
+          "kind": "event",
+          "label": "Second contact · sprint still off",
+          "text": "The click happens before this tick’s movement restores forward input and sprint."
+        }
+      ],
+      "stills": [
+        [
+          10999,
+          "W up on the first grounded move"
+        ],
+        [
+          11053,
+          "Contact with sprint off"
+        ]
+      ],
+      "width": 1280,
+      "height": 720,
+      "frames": 110
+    },
+    {
+      "index": 27,
+      "key": "early-jump",
+      "clip": "96b63dc59c2936ea8c25ef1abbe2fb00",
+      "start_ms": 7761,
+      "end_ms": 9271,
+      "wall_start": 1795074861937,
+      "wall_end": 1795074863447,
+      "prior": 8046,
+      "hit": 8618,
+      "opponent": "9tit",
+      "fps": 60,
+      "prior_slide": 1.9152072408630496,
+      "slide": 4.089440034160567,
+      "before": [
+        {
+          "forward": 1.0,
+          "ground": true,
+          "sprint": true,
+          "cumulative": 0.8594839814723686,
+          "ms": 32
+        },
+        {
+          "forward": 0.0,
+          "ground": false,
+          "sprint": false,
+          "cumulative": 1.1399128778545928,
+          "ms": 87
+        },
+        {
+          "forward": 0.0,
+          "ground": false,
+          "sprint": false,
+          "cumulative": 1.3951031809102967,
+          "ms": 129
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 1.6081262540274461,
+          "ms": 179
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 1.779411680573209,
+          "ms": 230
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 1.9152072408630496,
+          "ms": 282
+        }
+      ],
+      "after": [
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.9217496237718205,
+          "ms": 19
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 1.7351706171688617,
+          "ms": 59
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 2.4503467276446433,
+          "ms": 110
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 3.075898591825342,
+          "ms": 168
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 3.619865889363041,
+          "ms": 218
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 4.089440034160567,
+          "ms": 258
+        }
+      ],
+      "cues": [
+        {
+          "at": 8132,
+          "kind": "event",
+          "label": "Brake in the prior trade",
+          "text": "The previous trade contains an actual sprint-contact brake."
+        },
+        {
+          "at": 8586,
+          "kind": "event",
+          "label": "Actual takeoff",
+          "text": "Space results in a jump before the packet arrives."
+        },
+        {
+          "at": 8618,
+          "kind": "hit",
+          "label": "Hit replaces the jump velocity",
+          "text": "The packet sets new velocity while you are already off the floor. Your first move uses air acceleration and drag."
+        },
+        {
+          "at": 8636,
+          "kind": "event",
+          "label": "A quick click misses",
+          "text": "You are sprinting and the counter is clear. The nearby hitbox is 2.15 blocks away, but the actual ray misses."
+        }
+      ],
+      "stills": [
+        [
+          8586,
+          "Takeoff before the hit"
+        ],
+        [
+          8876,
+          "Airborne launch after the close miss"
+        ]
+      ],
+      "width": 1280,
+      "height": 720,
+      "frames": 91
+    },
+    {
+      "index": 10,
+      "key": "heavier-hit",
+      "clip": "8f2443c5590f36b393702780b11e7a5d",
+      "start_ms": 5829,
+      "end_ms": 7561,
+      "wall_start": 1795077797135,
+      "wall_end": 1795077798867,
+      "prior": 6114,
+      "hit": 6711,
+      "opponent": "Dancette",
+      "fps": 60,
+      "prior_slide": 1.0189772126435368,
+      "slide": 4.22583198475877,
+      "before": [
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.2717267167327949,
+          "ms": 37
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.49375255916580996,
+          "ms": 82
+        },
+        {
+          "forward": 0.0,
+          "ground": false,
+          "sprint": false,
+          "cumulative": 0.6743533249482456,
+          "ms": 133
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.8187770943239778,
+          "ms": 184
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.9264131645867497,
+          "ms": 237
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 1.0189772126435368,
+          "ms": 280
+        }
+      ],
+      "after": [
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 0.9240699443028968,
+          "ms": 36
+        },
+        {
+          "forward": 0.0,
+          "ground": false,
+          "sprint": false,
+          "cumulative": 1.7649736178429283,
+          "ms": 86
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 2.510672326956424,
+          "ms": 137
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 3.163990009464938,
+          "ms": 194
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 3.7332371983589723,
+          "ms": 245
+        },
+        {
+          "forward": 1.0,
+          "ground": false,
+          "sprint": true,
+          "cumulative": 4.22583198475877,
+          "ms": 283
+        }
+      ],
+      "cues": [
+        {
+          "at": 6114,
+          "kind": "hit",
+          "label": "First launch · 0.296",
+          "text": "The first packet gives you 0.296 blocks/tick horizontally. Both launches in this clip begin airborne."
+        },
+        {
+          "at": 6695,
+          "kind": "event",
+          "label": "Click slows old motion",
+          "text": "You make a sprint contact before the second hit. Its 40% cut applies to the old motion."
+        },
+        {
+          "at": 6711,
+          "kind": "hit",
+          "label": "Second launch · 0.943",
+          "text": "The second packet sets new motion. Its horizontal speed is over three times the first packet’s."
+        },
+        {
+          "at": 6796,
+          "kind": "event",
+          "label": "One move with W up",
+          "text": "Restoring W here helps a little. The change in launch speed is much larger."
+        }
+      ],
+      "stills": [
+        [
+          6394,
+          "After six moves from the weaker hit"
+        ],
+        [
+          6994,
+          "After six moves from the stronger hit"
+        ]
+      ],
+      "width": 1280,
+      "height": 720,
+      "frames": 104
+    }
+  ],
+  "scope": "These silent clips were rendered from your local replay archive in an isolated Minecraft 1.8.9 Forge/OptiFine client with your saved camera settings and Dewier 100k DarkBlue resource pack."
+}

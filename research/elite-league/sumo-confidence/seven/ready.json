@@ -1,0 +1,33 @@
+{
+  "primary": "ppo",
+  "methods": {
+    "ppo": {
+      "id": "seven-ppo-generalist-1801",
+      "merit": "0.993055556",
+      "mean": "0.993055556",
+      "seat_a": "0.993055556",
+      "seat_b": "0.993055556",
+      "wtap": "0.142361111"
+    },
+    "evolve": {
+      "id": "seven-evolve-1801",
+      "merit": "0.993055556",
+      "mean": "0.993055556",
+      "seat_a": "0.993055556",
+      "seat_b": "0.993055556",
+      "wtap": "0.142361111"
+    }
+  },
+  "weights": {
+    "seven-ppo-specialist-1801": "12d477e6733f779bc0c94cc018b7dac7fb8d4e33e168dc7ea5901b87641f8e75",
+    "seven-ppo-generalist-1801": "3b3591fc41bc00aedd5805f80c635693057360ce66809d98d5c5f1ef9cda427d",
+    "seven-evolve-1801": "3b3591fc41bc00aedd5805f80c635693057360ce66809d98d5c5f1ef9cda427d",
+    "seven-ppo-specialist-3529": "16c9954163c4608b7c3a26327da2ee5bb201439bd355618e2a55b075c1dd242d",
+    "seven-ppo-generalist-3529": "9bafc642c1c82e1fe28f02fbb3eb3d32abfa69883e96a734b3941e53459c4496",
+    "seven-evolve-3529": "16c9954163c4608b7c3a26327da2ee5bb201439bd355618e2a55b075c1dd242d",
+    "seven-ppo-specialist-7919": "04c8d2c12e4cfa9cbe526b4ab00714b495f3afa3002cd0313e41f71446fb9b6c",
+    "seven-ppo-generalist-7919": "f7b79a348ec27155a8d9b7e56791c8e1d41da608d7b43f6afd66f249018c5ef2",
+    "seven-evolve-7919": "04c8d2c12e4cfa9cbe526b4ab00714b495f3afa3002cd0313e41f71446fb9b6c"
+  },
+  "old_ppo": "ppo-wide-6421"
+}

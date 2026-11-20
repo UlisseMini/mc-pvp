@@ -1,0 +1,13 @@
+{
+  "policies": {
+    "best-sumo": "17371c2805de7968d00396c195ce77998cb2d605de376871f3f9a57da346958b",
+    "research-wtap20": "ef2e0bb33eec4edf85842e97572e5e3fb66a1b2027127c8484b4f92024578e73",
+    "shift-check-v4-4": "308d25260ebd93ede172fb0c8cad3a16d55e16d9b40c02565b6c0004a1ecc96d",
+    "sumo-own-ping": "0faa5c63c2660f0c4d8e795c472a58fec9272aaf0b10684471bc53e3836fc3f8",
+    "sumo-two-ping": "af152357d420b7bccbf62a7c7342c59b490b127f51e9ffd7689b43d4887c5074",
+    "sumo-vote-final": "1e15add47225e6331a35fc99b22799b69f77f5c49d8231e1b4cf36c31cc6d7de",
+    "v4-ppo-g0496": "759e30ed9dd05e4ec9e96304bfe0094412c79dc265de3c936ccebbaba4bf8ad2"
+  },
+  "bridge": "2be76aa746101378f9a8e9c1a5219a4f37b216bbab3bd9e1dc5a3d6aa9a8f76f",
+  "server": "388a168c9edd9215f13d2fcb1e023f12b4ae77493fc71a6a3cead9421ff0cf32"
+}

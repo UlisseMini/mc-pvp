@@ -81,7 +81,12 @@ public final class PeriodicComboFightModel {
         }
     }
     /** Immutable diagnostic, never an input to physics or a legal policy. */
-    public record FreshImpulse(double time,ExactTravel.State victimBefore,double x,double y,double z) {}
+    public record FreshImpulse(double time,ExactTravel.State victimBefore,double x,double y,double z,
+                               double serverSeparation,boolean attackerSprint) {
+        public FreshImpulse(double time,ExactTravel.State victimBefore,double x,double y,double z) {
+            this(time,victimBefore,x,y,z,Double.NaN,false);
+        }
+    }
     // The MMC-like height cap and landing forecast follow accepted movement reports.
     record MmcMovement(double floor,double y,double dy,boolean moved,boolean hasDy,
                        boolean grounded,boolean capped) {
@@ -152,6 +157,7 @@ public final class PeriodicComboFightModel {
         int plannedReadinessRoutes;
         double[] queueReadyWatermarks={Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY,Double.NEGATIVE_INFINITY};
         PeriodicComboTransport transport;long tick,seq,combatOrder,lastFreshOrderA,lastFreshOrderB,lastAcceptedOrderA,lastAcceptedOrderB;int serverTicks;Body a,b;View ab,ba;ExactTravel.State serverA,serverB;
+        long lastFreshPacketA=-1,lastFreshPacketB=-1,lastAcceptedPacketA=-1,lastAcceptedPacketB=-1;
         double serverAx,serverAy=4,serverAz,serverBx,serverBy=4,serverBz,trackedAx,trackedAy=4,trackedAz,trackedBx,trackedBy=4,trackedBz;
         boolean trackedGroundA=true,trackedGroundB=true;double sentAx,sentAy=4,sentAz,sentBx,sentBy=4,sentBz;
         int teleportAgeA,teleportAgeB;int trackedYawA=-64,trackedYawB=64,trackedPitchA,trackedPitchB;double serverPitchA,serverPitchB;
@@ -345,6 +351,9 @@ public final class PeriodicComboFightModel {
         else{s.lastDamageB=damage;s.dirtyB=true;if(h<=s.freshThreshold){s.resistant=2*s.freshThreshold;s.velocityChangedB=true;}}
     }
     static void hit(State s,Config c,boolean fromA,double t){
+        hit(s,c,fromA,t,-1);
+    }
+    private static void hit(State s,Config c,boolean fromA,double t,long attackPacket){
         ExactTravel.State attacker=fromA?s.serverA:s.serverB,victim=fromA?s.serverB:s.serverA;
         double sx=fromA?s.serverAx:s.serverBx,sy=fromA?s.serverAy:s.serverBy,sz=fromA?s.serverAz:s.serverBz;
         double tx=fromA?s.serverBx:s.serverAx,ty=fromA?s.serverBy:s.serverAy,tz=fromA?s.serverBz:s.serverAz;
@@ -403,9 +412,22 @@ public final class PeriodicComboFightModel {
             }else if(fresh&&sprint&&c.sprintVertical!=.1)vy+=c.sprintVertical-.1;
             s.lastVx=vel(vx*(fresh?c.kbScale:1));s.lastVy=vel(vy*(fresh?c.verticalScale:1));
             s.add3(fromA?4:8,t+(fromA?c.otherRtt:c.ownRtt)/2,0,0,0,s.lastVx,s.lastVy,vel(vz*(fresh?c.kbScale:1)),false);
-            if(fresh){FreshImpulse impulse=new FreshImpulse(t,victim,s.lastVx,s.lastVy,vel(vz*c.kbScale));if(fromA)s.lastFreshB=impulse;else s.lastFreshA=impulse;}
+            if(fresh){
+                FreshImpulse impulse=new FreshImpulse(t,victim,s.lastVx,s.lastVy,vel(vz*c.kbScale),
+                        Math.hypot(tx-sx,tz-sz),sprint);
+                if(fromA)s.lastFreshB=impulse;else s.lastFreshA=impulse;
+            }
         }else victim=motion(victim,vx,vy,vz);
-        long acceptedOrder=++s.combatOrder;if(fromA){s.lastAcceptedOrderA=acceptedOrder;if(fresh)s.lastFreshOrderA=acceptedOrder;}else{s.lastAcceptedOrderB=acceptedOrder;if(fresh)s.lastFreshOrderB=acceptedOrder;}
+        long acceptedOrder=++s.combatOrder;
+        if(fromA){
+            s.lastAcceptedOrderA=acceptedOrder;
+            s.lastAcceptedPacketA=attackPacket;
+            if(fresh){s.lastFreshOrderA=acceptedOrder;s.lastFreshPacketA=attackPacket;}
+        }else{
+            s.lastAcceptedOrderB=acceptedOrder;
+            s.lastAcceptedPacketB=attackPacket;
+            if(fresh){s.lastFreshOrderB=acceptedOrder;s.lastFreshPacketB=attackPacket;}
+        }
         if(fromA){s.acceptedA++;s.lastDamageB=damage;s.dirtyB=true;s.serverA=attacker;s.serverB=victim;s.velocityChangedB=false;if(fresh){s.hits++;s.resistant=2*c.hitTicks;}if(fresh||sprint)s.airborneB=true;if(sprint){s.sprintHits++;s.dirtyA=true;s.sprintDirtyA=true;s.serverSprint=false;}}
         else{s.acceptedB++;s.lastDamageA=damage;s.dirtyA=true;s.serverB=attacker;s.serverA=victim;s.velocityChangedA=false;if(fresh){s.incomingHits++;s.ownResistant=2*c.hitTicks;}if(fresh||sprint)s.airborneA=true;if(sprint){s.dirtyB=true;s.sprintDirtyB=true;s.serverSprintB=false;}}
     }
@@ -415,8 +437,8 @@ public final class PeriodicComboFightModel {
             case 0:serverMove(s,p,true,c,t);break;
             case 1:serverMove(s,p,false,c,t);s.serverYawB=p.vx;break;
             case 2:s.sprintDirtyA|=s.serverSprint!=p.flag;s.dirtyA|=s.serverSprint!=p.flag;s.serverSprint=p.flag;break;
-            case 3:hit(s,c,true,t);break;
-            case 7:hit(s,c,false,t);break;
+            case 3:hit(s,c,true,t,p.sequence);break;
+            case 7:hit(s,c,false,t,p.sequence);break;
             case 9:s.sprintDirtyB|=s.serverSprintB!=p.flag;s.dirtyB|=s.serverSprintB!=p.flag;s.serverSprintB=p.flag;break;
             default:throw new AssertionError();
         }

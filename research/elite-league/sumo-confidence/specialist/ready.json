@@ -1,0 +1,41 @@
+{
+  "primary": "ppo",
+  "alternate": "evolve",
+  "methods": {
+    "ppo": {
+      "id": "ppo-wide-6421",
+      "merit": "0.754774306",
+      "mean": "0.755208333",
+      "seat_a": "0.753472222",
+      "seat_b": "0.756944444",
+      "wtap": "0.060763889"
+    },
+    "evolve": {
+      "id": "evolve-6421",
+      "merit": "0.754774306",
+      "mean": "0.755208333",
+      "seat_a": "0.753472222",
+      "seat_b": "0.756944444",
+      "wtap": "0.060763889"
+    }
+  },
+  "target_sha256": "bd2265e8498df5fe91f39f03e1dd0654ab16c5165bb9989df517890e6f2a75fe",
+  "weights": {
+    "ppo-old-4111": "963472d78f44566daf1fdd2ef518e026c0740f4499e651a5b5d5bf65626b0961",
+    "ppo-edge-4111": "12c7c6d068378f6115e00318ee7eb079500a195329db33a8c73370770fb444b4",
+    "ppo-wide-4111": "bbf72f16df87510603656dda5110918974f6cdb5086aa1aef79fc6e67e6c0677",
+    "evolve-4111": "bbf72f16df87510603656dda5110918974f6cdb5086aa1aef79fc6e67e6c0677",
+    "ppo-old-6421": "302233269ad1c4590d17c6c3c220c35844a68545ddc2d44f1d13afc2498212ae",
+    "ppo-edge-6421": "b767d69b50971ba79dbe3040e620f4f06d2eb05fa0d17334c6ecadffa0f50815",
+    "ppo-wide-6421": "753930fc0071d106f2ffe541279b0acb549a8d7dda01fc3480ae14a7e6c65a4f",
+    "evolve-6421": "753930fc0071d106f2ffe541279b0acb549a8d7dda01fc3480ae14a7e6c65a4f",
+    "ppo-old-8317": "73d634d206be886217b11986543ff81296f49310090796e0af8c2de8a436c7d0",
+    "ppo-edge-8317": "1c46418a6f3c880e8689d748d93ba280e8475175314bd9345de2d60215195e72",
+    "ppo-wide-8317": "a46c28002cda64d623b2f4fe8b13c4c1fb4e3c94b2cb46b446ab98e7b9b56a87",
+    "evolve-8317": "a46c28002cda64d623b2f4fe8b13c4c1fb4e3c94b2cb46b446ab98e7b9b56a87",
+    "ppo-old-9929": "2252d2f56ee21ea49f7c1c42c67bcea84c03beae2da09696a1c4e3a68c68f07c",
+    "ppo-edge-9929": "9ba17cb8571863814450e61cba3d36b2cb12c8a19d199967d4c786a06f868230",
+    "ppo-wide-9929": "246e1ce725c51c4ea6a5e653525dc7a54b213d63ebdc098f1648c5a5562c50de",
+    "evolve-9929": "246e1ce725c51c4ea6a5e653525dc7a54b213d63ebdc098f1648c5a5562c50de"
+  }
+}

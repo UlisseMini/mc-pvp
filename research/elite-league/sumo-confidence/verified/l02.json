@@ -1,0 +1,175 @@
+{
+  "original": {
+    "cf7-l02-fit-7-b31": "m8192",
+    "cf7-l02-fit-20-b31": "m8191",
+    "cf7-l02-newfield-a31": "m8195",
+    "cf7-l02-fit-7-a31": "m8196",
+    "cf7-l02-wtfield-a31": "m8194",
+    "cf7-l02-fit-20-a31": "m8193",
+    "cf7-l02-fit-7-b109": "m8199",
+    "cf7-l02-fit-20-a109": "m8198",
+    "cf7-l02-fit-20-b109": "m8200",
+    "cf7-l02-fit-7-a109": "m8197"
+  },
+  "rows": {
+    "cf7-l02-fit-7-b31": {
+      "valid": true,
+      "mid": "m8192",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 204,
+      "local_timing": {
+        "b": 102
+      },
+      "click_min_ms": 143.043917,
+      "max_server_gap_ms": 127
+    },
+    "cf7-l02-fit-20-b31": {
+      "valid": true,
+      "mid": "m8191",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 480,
+      "local_timing": {
+        "b": 241
+      },
+      "click_min_ms": 50.051459,
+      "max_server_gap_ms": 127
+    },
+    "cf7-l02-newfield-a31": {
+      "valid": true,
+      "mid": "m8195",
+      "arm": "sumo-seven-ppo",
+      "foe": "sumo-own-ping",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 159,
+      "local_timing": {
+        "a": 80
+      },
+      "click_min_ms": 142.989333,
+      "max_server_gap_ms": 67
+    },
+    "cf7-l02-fit-7-a31": {
+      "valid": true,
+      "mid": "m8196",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 160,
+      "local_timing": {
+        "a": 81
+      },
+      "click_min_ms": 143.064042,
+      "max_server_gap_ms": 60
+    },
+    "cf7-l02-wtfield-a31": {
+      "valid": true,
+      "mid": "m8194",
+      "arm": "research-wtap20",
+      "foe": "sumo-own-ping",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 957,
+      "local_timing": {},
+      "click_min_ms": 142.885792,
+      "max_server_gap_ms": 128
+    },
+    "cf7-l02-fit-20-a31": {
+      "valid": true,
+      "mid": "m8193",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 1252,
+      "local_timing": {
+        "a": 626
+      },
+      "click_min_ms": 50.027208,
+      "max_server_gap_ms": 128
+    },
+    "cf7-l02-fit-7-b109": {
+      "valid": true,
+      "mid": "m8199",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 253,
+      "local_timing": {
+        "b": 127
+      },
+      "click_min_ms": 142.919375,
+      "max_server_gap_ms": 70
+    },
+    "cf7-l02-fit-20-a109": {
+      "valid": true,
+      "mid": "m8198",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 483,
+      "local_timing": {
+        "a": 242
+      },
+      "click_min_ms": 50.110125,
+      "max_server_gap_ms": 99
+    },
+    "cf7-l02-fit-20-b109": {
+      "valid": true,
+      "mid": "m8200",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 258,
+      "local_timing": {
+        "b": 129
+      },
+      "click_min_ms": 50.051,
+      "max_server_gap_ms": 76
+    },
+    "cf7-l02-fit-7-a109": {
+      "valid": true,
+      "mid": "m8197",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 1002,
+      "local_timing": {
+        "a": 501
+      },
+      "click_min_ms": 143.089417,
+      "max_server_gap_ms": 128
+    }
+  },
+  "invalid": []
+}

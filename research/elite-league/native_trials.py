@@ -1,5 +1,6 @@
 """Play frozen architecture finalists on the main Forge lab under matched gameplay settings."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import importlib.util
 import itertools
@@ -104,6 +105,10 @@ def tranche(out,completed):
         return 0,16-completed
     return cohort_priority(out.stem),64
 
+class NativeServerBuildChanged(RuntimeError):
+    """The shared lab was switched before this cohort could enter."""
+
+
 def complete_manifest(trials,out):
     if not out.exists():return False
     record=json.loads(out.read_text())
@@ -114,7 +119,7 @@ def complete_manifest(trials,out):
             raise ValueError('Recorded result differs from its request')
     return True
 
-def run_batch(trials,out):
+def run_batch(trials,out,required_server_sha=None,runtime_window=None):
     # A completed native manifest can be audited while another executable occupies the lab.
     if complete_manifest(trials,out):return
     work=ROOT/'build/elite-league';waiting=work/'native-waiting';waiting.mkdir(exist_ok=True)
@@ -145,7 +150,12 @@ def run_batch(trials,out):
                             except BlockingIOError:pass
                         time.sleep(.5)
                     ticket.unlink(missing_ok=True)
-                    found=_run_locked(trials,out,found)
+                    with runtime_window() if runtime_window is not None else nullcontext():
+                        if required_server_sha is not None:
+                            actual=hashlib.sha256((ROOT/'build/lab-agent.jar').read_bytes()).hexdigest()
+                            if actual!=required_server_sha:
+                                raise NativeServerBuildChanged(f'Expected server build {required_server_sha}, got {actual}')
+                        found=_run_locked(trials,out,found)
             finally:ticket.unlink(missing_ok=True)
 
 def _run_locked(trials,out,found=None):

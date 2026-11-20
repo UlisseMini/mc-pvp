@@ -1,0 +1,25 @@
+{
+  "winner": "sumo-input-uniform",
+  "model": {
+    "wtap": 0.25625,
+    "v4-ppo-g0496": 0.696875,
+    "sumo-two-ping": 0.7046875,
+    "full32-66047": 0.7453125,
+    "uniform-4711": 0.7453125,
+    "uniform-5821": 0.7046875,
+    "uniform-6911": 0.734375,
+    "focused-4711": 0.696875,
+    "focused-5821": 0.7625,
+    "focused-6911": 0.753125
+  },
+  "focused_minus_uniform": [
+    -0.04843750000000002,
+    0.05781249999999993,
+    0.018750000000000044
+  ],
+  "weak": [
+    "v4-sprint-link-jitter-15",
+    "v4-ppo-g0496",
+    "v4-reply-g0312"
+  ]
+}

@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Match ledger</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#111820;color:#e7edf2;font:15px/1.5 system-ui,sans-serif}
+  main{max-width:1180px;margin:auto;padding:26px 22px 52px}
+  h1,h2,h3,p{margin:0 0 10px}
+  h1{font-size:30px;line-height:1.2}
+  h2{font-size:20px}
+  h3{font-size:14px;margin-top:16px}
+  header p,.muted,label{color:#a6b6c6}
+  a{color:#88dfc9}
+  button,input{font:inherit}
+  button{padding:7px 11px;color:#e7edf2;background:#24303d;border:1px solid #43576a;border-radius:5px;cursor:pointer}
+  button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #a8e8d9;outline-offset:3px}
+  #layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;margin-top:20px;align-items:start}
+  .panel{border:1px solid #2d3c4b;border-radius:8px;background:#17212b;padding:16px}
+  #window-list{max-height:72vh;overflow:auto;margin:0;padding:0;list-style:none}
+  #window-list a{display:block;padding:9px 8px;border-bottom:1px solid #2b3b49;text-decoration:none;color:inherit}
+  #window-list a[aria-current=true]{background:#203e3b;border-radius:4px}
+  .when{color:#9edacc;font-family:ui-monospace,monospace;font-size:12px;margin-right:8px}
+  .flag{font-size:12px;color:#ffcd8d}
+  #scene{display:block;width:100%;height:240px;background:#101820;border:1px solid #2a3b4b;border-radius:6px}
+  #timeline{width:100%;accent-color:#89dbc5;margin:9px 0}
+  .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}
+  .bar output{font:13px ui-monospace,monospace}
+  .legend span{margin-right:14px}
+  #copy-result{min-height:1.5em;margin:3px 0;color:#a8dacd}
+  #replay-command{width:100%;color:#dce8f2;background:#111820;border:1px solid #395061;border-radius:4px;padding:6px 8px;font:12px ui-monospace,monospace}
+  ul{padding-left:20px}
+  summary{cursor:pointer;color:#c7e7df}
+  #event-list{list-style:none;padding:0;margin:10px 0;max-height:52vh;overflow:auto}
+  #event-list li{padding:6px 2px;border-bottom:1px solid #2a3948}
+  .reference{display:block;color:#aebdcc;font-size:11px;overflow-wrap:anywhere}
+  .reference a{color:inherit}
+  .event-detail{display:block;color:#abc0d1;font-size:12px;padding-left:8px}
+  #warnings{margin-top:18px}
+  @media(max-width:750px){main{padding:16px 12px}#layout{grid-template-columns:1fr}#window-list{max-height:210px}}
+</style>
+<main>
+  <header>
+    <h1 id="title">Match ledger</h1>
+    <p id="subtitle"></p>
+    <p id="scope"></p>
+  </header>
+  <div id="layout">
+    <aside class="panel" aria-labelledby="window-heading">
+      <h2 id="window-heading">Exchanges</h2>
+      <p class="muted">Select an exchange to seek.</p>
+      <ul id="window-list"></ul>
+    </aside>
+    <section class="panel">
+      <canvas id="scene" aria-label="Positions of both players viewed from above"></canvas>
+      <input id="timeline" type="range" min="0" value="0" aria-label="Seek report">
+      <div class="bar">
+        <output id="playhead"></output>
+        <span id="height" class="muted"></span>
+      </div>
+      <div class="bar">
+        <button id="copy" type="button">Copy Minecraft seek command</button>
+        <a id="json">Download event ledger</a>
+      </div>
+      <input id="replay-command" aria-label="Minecraft seek command" readonly>
+      <p id="copy-result" role="status"></p>
+      <h2 id="exchange"></h2>
+      <h3>Measured</h3><ul id="known"></ul>
+      <h3 id="interpretation-label">Interpretation</h3><p id="interpretation"></p>
+      <h3>Unknown</h3><ul id="unknown"></ul>
+      <details open>
+        <summary id="events-summary">Event evidence</summary>
+        <ul id="event-list"></ul>
+      </details>
+    </section>
+  </div>
+  <details class="panel" id="warnings">
+    <summary>Capture coverage</summary>
+    <ul id="coverage"></ul>
+  </details>
+</main>
+<script id="ledger" type="application/json">__LEDGER_DATA__</script>
+<script>
+"use strict";
+const data = JSON.parse(document.getElementById("ledger").textContent);
+const $ = id => document.getElementById(id);
+const events = new Map(data.events.map(row => [row.id, row]));
+const duration = data.finish_ms - data.start_ms;
+const format = ms => (ms / 1000).toFixed(3) + " s";
+const colors = {a: "#91e2ca", b: "#ffc090"};
+const sampleTimes = data.trajectory.map(row => row.ms);
+let selected = null;
+
+function element(tag, content, className) {
+  const item = document.createElement(tag);
+  if (content !== undefined) item.textContent = content;
+  if (className) item.className = className;
+  return item;
+}
+
+function list(target, values, empty) {
+  target.replaceChildren(...(values.length ? values : [empty]).map(value => element("li", value)));
+}
+
+function fileLink(ref) {
+  const file = ref.file;
+  const path = "/" + file.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  const link = element("a", file.split("/").pop() + " · line " + ref.line, "reference");
+  link.href = "file://" + path;
+  link.title = file + ":" + ref.line;
+  return link;
+}
+
+const origins = data.geometry?.center || data.trajectory.find(row => row.a?.pos)?.a.pos.filter((_, i) => i !== 1) || [0, 0];
+let radius = Math.max(3, (data.geometry?.diameter || 0) / 2);
+for (const row of data.trajectory) for (const side of ["a", "b"]) {
+  const p = row[side]?.pos;
+  if (p) radius = Math.max(radius, Math.abs(p[0] - origins[0]), Math.abs(p[2] - origins[1]));
+}
+radius = Math.min(128, radius + 1);
+
+function draw(ms) {
+  const canvas = $("scene"), ctx = canvas.getContext("2d"), rect = canvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.round(rect.width * ratio));
+  canvas.height = Math.max(1, Math.round(rect.height * ratio));
+  ctx.scale(ratio, ratio);
+  const w = rect.width, h = rect.height, unit = Math.min(w, h) / (2 * radius);
+  if (unit <= 0) return;
+  const x = value => w / 2 + (value - origins[0]) * unit;
+  const y = value => h / 2 + (value - origins[1]) * unit;
+  ctx.strokeStyle = "#273b4b";
+  let spacing = 1;
+  while (spacing * unit < 13) spacing *= 2;
+  for (let i = -radius; i <= radius; i += spacing) {
+    ctx.beginPath(); ctx.moveTo(w/2+i*unit,0); ctx.lineTo(w/2+i*unit,h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,h/2+i*unit); ctx.lineTo(w,h/2+i*unit); ctx.stroke();
+  }
+  if (data.geometry) {
+    const r = data.geometry.diameter / 2;
+    ctx.fillStyle = "#29404c";
+    const [cx, cz] = data.geometry.center;
+    for (let bx = -Math.ceil(r); bx < r; bx++) for (let bz = -Math.ceil(r); bz < r; bz++) {
+      if ((bx+.5)**2 + (bz+.5)**2 <= r*r) ctx.fillRect(x(cx+bx), y(cz+bz), unit, unit);
+    }
+  }
+  let lo = 0, hi = sampleTimes.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (sampleTimes[mid] <= ms) lo = mid + 1;
+    else hi = mid;
+  }
+  const index = Math.max(0, lo - 1), sample = data.trajectory[index], heights = [];
+  if (!lo || ms - sample.ms > 200) {
+    $("height").textContent = "Position sample unavailable";
+    return;
+  }
+  for (const side of ["a", "b"]) {
+    const p = sample[side]?.pos;
+    if (!p) continue;
+    ctx.strokeStyle = colors[side];
+    ctx.globalAlpha = .55;
+    ctx.beginPath();
+    let begun = false;
+    for (let i = Math.max(0,index-24); i <= index; i++) {
+      const prev = data.trajectory[i][side]?.pos;
+      if (!prev) { begun = false; continue; }
+      if (begun) ctx.lineTo(x(prev[0]),y(prev[2]));
+      else { ctx.moveTo(x(prev[0]),y(prev[2])); begun = true; }
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = colors[side];
+    ctx.beginPath(); ctx.arc(x(p[0]),y(p[2]),5,0,Math.PI*2);ctx.fill();
+    ctx.font = "13px system-ui"; ctx.fillText(data.names[side],x(p[0])+9,y(p[2])+3);
+    heights.push(data.names[side] + " Y " + p[1].toFixed(2));
+  }
+  $("height").textContent = heights.join(" · ");
+}
+
+function setTime(ms) {
+  ms = Math.min(duration, Math.max(0, Math.round(ms)));
+  $("timeline").value = ms;
+  $("playhead").value = format(ms);
+  $("replay-command").value = "/p replayat " + data.id + " " + (data.start_ms + ms);
+  $("copy-result").textContent = "";
+  draw(ms);
+}
+
+function show(window) {
+  selected = window;
+  for (const link of $("window-list").querySelectorAll("a"))
+    link.setAttribute("aria-current", String(window?.id) === link.dataset.id);
+  $("exchange").textContent = window ? window.title + " · " + format(window.start_ms) : "No exchange identified";
+  list($("known"), window?.known || [], "No anchor observation in this view.");
+  $("interpretation-label").textContent = window?.confidence === "measured" ? "Confirmed grouping" : "Interpretation";
+  $("interpretation").textContent = window?.interpretation || "Review the recorded events for this match.";
+  list($("unknown"), window?.unknown || [], "No conclusion recorded.");
+  const scoped = window?.event_ids.map(id => events.get(id)) || data.events.filter(row => row.kind !== "input");
+  $("events-summary").textContent = scoped.length + " recorded events";
+  $("event-list").replaceChildren(...scoped.map(row => {
+    const li = element("li");
+    const seek = element("a", row.label);
+    seek.href = "#t=" + row.ms;
+    li.append(seek);
+    const travel = row.details.first_travel;
+    if (travel) {
+      const ground = travel.state.ground === true ? "grounded" : travel.state.ground === false ? "airborne" : "ground state missing";
+      const motion = travel.state.motion?.map(n => n.toFixed(5)).join(", ");
+      li.append(element("span", "First recorded travel · " + format(travel.ms) + " · " + ground +
+        (motion ? " · motion before movement (" + motion + ")" : ""), "event-detail"));
+    }
+    for (const ref of row.refs.concat(travel?.refs || [])) li.append(fileLink(ref));
+    return li;
+  }));
+}
+
+$("title").textContent = data.names.a + " vs " + data.names.b;
+$("subtitle").textContent = (data.source === "mmc" ? "MMC Sumo" : "Practice " + (data.mode || "match"))
+  + " · " + data.outcome + (data.score ? " · " + data.score.join("–") : "") + " · " + format(duration);
+$("scope").textContent = data.trajectory_scope +
+  (data.source === "mmc" ? " · Times from the saved countdown bookmark." : " · Times from the recorded match start.");
+$("json").href = data.id + ".json";
+$("json").download = data.id + ".json";
+$("timeline").max = duration;
+$("timeline").addEventListener("input", e => setTime(Number(e.target.value)));
+for (const exchange of data.windows) {
+  const li = element("li"), link = element("a");
+  link.href = "#exchange-" + exchange.id;
+  link.dataset.id = exchange.id;
+  link.append(element("span",format(exchange.start_ms),"when"), element("span",exchange.title));
+  li.append(link);
+  $("window-list").append(li);
+}
+const gaps = data.warnings.map(warning => "Capture note · " + warning);
+for (const [side,count] of Object.entries(data.coverage.local_pose_samples))
+  gaps.unshift(data.names[side] + " · " + count + " client position samples");
+if (data.coverage.server_pose_samples) gaps.unshift(data.coverage.server_pose_samples + " server position samples");
+list($("coverage"), gaps, "Position coverage unavailable.");
+$("copy").addEventListener("click", async () => {
+  const field = $("replay-command");
+  try {
+    await navigator.clipboard.writeText(field.value);
+    $("copy-result").textContent = "Copied. Paste into Minecraft chat.";
+  } catch {
+    field.select();
+    $("copy-result").textContent = "Press ⌘C or Ctrl+C to copy the selected command.";
+  }
+});
+
+function follow() {
+  const hash = location.hash;
+  if (hash.startsWith("#t=") && Number.isFinite(Number(hash.slice(3)))) {
+    const ms = Number(hash.slice(3));
+    if (!selected) {
+      const nearby = data.windows.find(item => item.start_ms <= ms && item.end_ms >= ms);
+      show(nearby || data.windows.findLast(item => item.seek_ms <= ms) || data.windows[0]);
+    }
+    setTime(ms);
+    return;
+  }
+  const window = data.windows.find(item => hash === "#exchange-" + item.id) || data.windows.at(-1);
+  show(window);
+  setTime(window?.seek_ms || 0);
+}
+window.addEventListener("hashchange", follow);
+new ResizeObserver(() => draw(Number($("timeline").value))).observe($("scene"));
+follow();
+</script>
+</html>

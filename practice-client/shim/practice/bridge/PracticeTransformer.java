@@ -6,15 +6,15 @@ import org.objectweb.asm.tree.*;
 
 /** Read-only packet/input observers; preserves original instructions and return values.
  * Observation takes time; capture timestamps bracket work rather than promising zero overhead.
- * Applies client presentation options inside the renderers. */
+ * Also fixes the native outbound queue race and applies client presentation options. */
 public final class PracticeTransformer implements IClassTransformer {
     private static final String HOOK="practice/bridge/ObserverHooks";
     public byte[] transform(String name,String transformed,byte[] bytes){
         if(bytes==null)return null;
         bytes=BotTransformer.transform(transformed,bytes);
         if(transformed.equals("net.minecraft.client.gui.GuiIngame"))return replayHotbar(bytes);
-        if(transformed.equals("net.minecraft.client.renderer.ItemRenderer"))return firstPersonUse(bytes);
-        if(transformed.equals("net.minecraft.client.renderer.EntityRenderer"))return hurtCamera(sneakCamera(bytes));
+        if(transformed.equals("net.minecraft.client.renderer.ItemRenderer"))return replayHand(firstPersonUse(bytes));
+        if(transformed.equals("net.minecraft.client.renderer.EntityRenderer"))return replayWorldPartial(hurtCamera(sneakCamera(bytes)));
         boolean network=transformed.equals("net.minecraft.network.NetworkManager"),
             decoder=transformed.equals("net.minecraft.util.MessageDeserializer"),
             encoder=transformed.equals("net.minecraft.util.MessageSerializer"),
@@ -46,6 +46,8 @@ public final class PracticeTransformer implements IClassTransformer {
                 }
             }else if(network&&m.name.equals("channelActive")){
                 for(AbstractInsnNode i:m.instructions.toArray())if(i.getOpcode()==Opcodes.RETURN){m.instructions.insertBefore(i,call("connected",0,1));hooks++;}
+            }else if(network&&m.desc.equals("()V")&&named(m,"func_150733_h","flushOutboundQueue","m")){
+                lockOutboundDrain(m);
             }else if(decoder&&m.name.equals("decode")&&m.desc.contains("Lio/netty/buffer/ByteBuf;")){
                 m.instructions.insert(call("wireBefore",1,2));
                 for(AbstractInsnNode i:m.instructions.toArray())if(i.getOpcode()==Opcodes.RETURN)m.instructions.insertBefore(i,call("wireAfter",3));hooks++;
@@ -69,6 +71,17 @@ public final class PracticeTransformer implements IClassTransformer {
                 }
                 if(adds!=1)throw new IllegalStateException("Practice task enqueue hook changed: "+adds);
                 hooks++;
+            }else if(minecraft&&named(m,"func_71353_a","loadWorld","a")
+                    &&(m.desc.equals("(Lnet/minecraft/client/multiplayer/WorldClient;Ljava/lang/String;)V")
+                        ||m.desc.equals("(Lbdb;Ljava/lang/String;)V"))){
+                for(AbstractInsnNode instruction:m.instructions.toArray())if(instruction instanceof MethodInsnNode){
+                    MethodInsnNode call=(MethodInsnNode)instruction;
+                    if(call.getOpcode()==Opcodes.INVOKESTATIC&&call.owner.equals("java/lang/System")
+                            &&call.name.equals("gc")&&call.desc.equals("()V")){
+                        m.instructions.set(call,new MethodInsnNode(Opcodes.INVOKESTATIC,HOOK,"worldLoadGc","()V",false));
+                        hooks++;
+                    }
+                }
             }else if(minecraft&&m.desc.equals("()V")&&(m.name.equals("func_71411_J")||m.name.equals("runGameLoop")||m.name.equals("av"))){
                 int locks=0,unlocks=0;
                 for(AbstractInsnNode i:m.instructions.toArray()){
@@ -113,9 +126,41 @@ public final class PracticeTransformer implements IClassTransformer {
     private static boolean named(MethodNode m,String srg,String mcp,String obf){
         return m.name.equals(srg)||m.name.equals(mcp)||m.name.equals(obf);
     }
+    private static void lockOutboundDrain(MethodNode method) {
+        // sendPacket and processReceivedPackets can drain this queue concurrently.
+        // Use the same exclusive lock as enqueue so isEmpty, poll and dispatch stay ordered.
+        String lock = "java/util/concurrent/locks/ReentrantReadWriteLock";
+        String read = lock + "$ReadLock";
+        String write = lock + "$WriteLock";
+        for (AbstractInsnNode instruction : method.instructions.toArray()) {
+            if (!(instruction instanceof MethodInsnNode)) continue;
+            MethodInsnNode call = (MethodInsnNode) instruction;
+            if (call.owner.equals(lock) && call.name.equals("readLock") && call.desc.equals("()L" + read + ";")) {
+                call.name = "writeLock";
+                call.desc = "()L" + write + ";";
+            } else if (call.owner.equals(read) && call.desc.equals("()V")
+                    && (call.name.equals("lock") || call.name.equals("unlock"))) {
+                call.owner = write;
+            }
+        }
+    }
     private static AbstractInsnNode previousCode(AbstractInsnNode instruction){
         do{instruction=instruction.getPrevious();}while(instruction!=null&&instruction.getOpcode()<0);
         return instruction;
+    }
+    private static byte[] replayWorldPartial(byte[] bytes){
+        ClassNode node=new ClassNode();new ClassReader(bytes).accept(node,0);
+        for(MethodNode method:node.methods){
+            if(!"(FJ)V".equals(method.desc)||!named(method,"func_78471_a","renderWorld","b"))continue;
+            InsnList paused=new InsnList();
+            paused.add(new VarInsnNode(Opcodes.FLOAD,1));
+            paused.add(new MethodInsnNode(Opcodes.INVOKESTATIC,HOOK,"replayWorldPartial","(F)F",false));
+            paused.add(new VarInsnNode(Opcodes.FSTORE,1));
+            method.instructions.insert(paused);
+            ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS);node.accept(out);
+            return out.toByteArray();
+        }
+        return bytes;
     }
     private static byte[] hurtCamera(byte[] bytes) {
         ClassNode node = new ClassNode();
@@ -227,6 +272,22 @@ public final class PracticeTransformer implements IClassTransformer {
         ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS);node.accept(out);
         System.out.println("[PracticeBridge] 1.7 item-use swing hooked ("+sites+" poses)");
         return out.toByteArray();
+    }
+    private static byte[] replayHand(byte[] bytes){
+        ClassNode node=new ClassNode();new ClassReader(bytes).accept(node,0);
+        for(MethodNode method:node.methods){
+            if(!method.desc.equals("(F)V")||!named(method,"func_78440_a","renderItemInFirstPerson","a"))continue;
+            for(AbstractInsnNode instruction:method.instructions.toArray()){
+                if(!(instruction instanceof MethodInsnNode))continue;
+                MethodInsnNode call=(MethodInsnNode)instruction;
+                if(!call.desc.equals("()Z")||!(call.name.equals("func_82150_aj")||call.name.equals("isInvisible")||call.name.equals("ax")))continue;
+                method.instructions.insert(call,new MethodInsnNode(Opcodes.INVOKESTATIC,HOOK,"hideEmptyHand","(Z)Z",false));
+                ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS);node.accept(out);
+                System.out.println("[PracticeBridge] Offline replay hand hooked");
+                return out.toByteArray();
+            }
+        }
+        return bytes;
     }
     private static InsnList call(String name,int... locals){
         InsnList out=new InsnList();String desc="(";

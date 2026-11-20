@@ -1,0 +1,40 @@
+{
+  "qualified": true,
+  "primary": "ramp",
+  "methods": {
+    "ramp": {
+      "id": "cap-ramp-first-2707",
+      "merit": "0.825520833",
+      "mean": "0.826388889",
+      "seat_a": "0.829861111",
+      "seat_b": "0.822916667",
+      "wtap": "0.060763889"
+    },
+    "direct": {
+      "id": "cap-direct-selected-5081",
+      "merit": "0.793402778",
+      "mean": "0.798611111",
+      "seat_a": "0.819444444",
+      "seat_b": "0.777777778",
+      "wtap": "0.060763889"
+    }
+  },
+  "previous": {
+    "id": "ppo-wide-6421",
+    "merit": "0.754774306",
+    "mean": "0.755208333",
+    "seat_a": "0.753472222",
+    "seat_b": "0.756944444",
+    "wtap": "0.060763889"
+  },
+  "weights": {
+    "cap-direct-first-2707": "15f2308ea4c85f0575c55c8dc8e8d2521249d920244b7c534081573f22f774e7",
+    "cap-ramp-first-2707": "dcde5f290b53a1dc9a45eba6c9d0c3b1fea4ae4ea0ce66b75a30f5165216ad97",
+    "cap-direct-selected-2707": "b8a820c1985f53999e9a39354c93c82a7820962ef6e101ac2ee8712ada3fd3db",
+    "cap-ramp-selected-2707": "7073a694ab9c8474edc8682800ac713388c852cf8d3531f81c1eb97dccd6e046",
+    "cap-direct-first-5081": "27d5524f84b782ce49cadb8a850a313f7af801c4973010ad76c8c10dd0258503",
+    "cap-ramp-first-5081": "5d749d7d64f1cc3a38d9ae5f866107303da8235ec0a31ec7ba59b46a584e4aff",
+    "cap-direct-selected-5081": "8f98812cf102d9343d46c7b940a5d9be46be56d616d3775ef930218c7c5143ee",
+    "cap-ramp-selected-5081": "d63dfaf95b34d8def626924862be4153f72d1b4e8e8f7e07cc98a7134d79db20"
+  }
+}

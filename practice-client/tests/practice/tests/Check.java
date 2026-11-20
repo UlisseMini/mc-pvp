@@ -17,6 +17,7 @@ public final class Check {
     }
     private static void config(Path dir,String text)throws IOException{Files.write(dir.resolve("settings.properties"),text.getBytes("UTF-8"));}
     public static void main(String[] args)throws Exception {
+        System.out.println("ReplayRecording checks passed: "+ReplayRecordingChecks.run());
         RemoteChecks.run(Paths.get(args[0]));
         ReplayChecks.run(Paths.get(args[0]));
         RangeChecks.run(Paths.get(args[0]));

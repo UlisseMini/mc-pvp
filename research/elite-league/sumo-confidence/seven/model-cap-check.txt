@@ -1,0 +1,4 @@
+7 CPS m2065 seat=true presses=[329, 329] minimum_ns=[142934458, 143544583]
+7 CPS m2065 seat=false presses=[63, 63] minimum_ns=[142934458, 143544583]
+20 CPS m2065 seat=true presses=[216, 214] minimum_ns=[50012000, 50009917]
+20 CPS m2065 seat=false presses=[145, 144] minimum_ns=[50012000, 50009917]

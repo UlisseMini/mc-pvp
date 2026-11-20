@@ -13,9 +13,17 @@ final class ServerReplayControlChecks {
     private String initialInventory,first,second;
     private int initialSlot;
     private long equalTime,tickTime;
+    private Map<?,?> humanInputs, humanTickInputs;
     private static String inventory(EntityPlayer p){return p.field_71071_by.func_70442_a(new NBTTagList()).toString();}
     private static String label(Map<?,?> state){return String.valueOf(state.get("step_label"));}
     private static long time(Map<?,?> state){return ((Number)state.get("time_ms")).longValue();}
+    private static Map<?,?> checkInputs(ForgeProbe probe,String side,int mask,int leftCps)throws Exception{
+        Map<?,?> frame=probe.replayFrame(), keys=(Map<?,?>)frame.get("keystrokes");
+        probe.check(side.equals(frame.get("keystrokes_source"))&&keys!=null
+            &&Integer.valueOf(mask).equals(keys.get("mask"))&&Integer.valueOf(leftCps).equals(keys.get("left_cps")),
+            "selected POV "+side+" shows its recorded keys and clicks at "+time(frame)+" ms: "+keys);
+        return keys;
+    }
     private static void click(Minecraft mc,int slot,boolean right)throws Exception{
         mc.field_71439_g.field_71071_by.field_70461_c=slot-1;
         MouseEvent e=new MouseEvent();
@@ -46,7 +54,10 @@ final class ServerReplayControlChecks {
             case 138:click(mc,2,true);break;
             case 150:
                 first=label(state);equalTime=time(state);
-                probe.check(first.contains("fresh hit")&&equalTime==537,"first hit selected at 537 ms");click(mc,2,true);break;
+                probe.check(first.contains("fresh hit")&&equalTime==537,"first hit selected at 537 ms");
+                Map<?,?> frame=probe.replayFrame();
+                probe.check("live".equals(frame.get("keystrokes_source"))&&!frame.containsKey("keystrokes"),"server free camera uses the viewer's live keystrokes");
+                click(mc,2,true);break;
             case 162:
                 second=label(state);probe.check(time(state)==equalTime&&second.contains("knockback H 0.854")&&!first.equals(second),"next event selects same-ms knockback separately");
                 click(mc,2,false);break;
@@ -54,19 +65,29 @@ final class ServerReplayControlChecks {
                 probe.check(time(state)==equalTime&&first.equals(label(state)),"left click returns to the exact first event");
                 click(mc,6,true);break;
             case 194:
-                toolbar(probe,mc,true);probe.check("a".equals(state.get("source")),"compass selected human POV");click(mc,2,true);break;
+                toolbar(probe,mc,true);probe.check("a".equals(state.get("source")),"compass selected human POV");
+                humanInputs=checkInputs(probe,"a",33,1);click(mc,2,true);break;
             case 218:
                 probe.check(label(state).contains("applied velocity")&&time(state)==542,"human applied its velocity at 542 ms");
+                probe.check(humanInputs.equals(probe.replayFrame().get("keystrokes")),"human POV keeps the held input at 542 ms");
                 click(mc,3,true);break;
             case 232:
-                tickTime=time(state);probe.check(label(state).contains("client tick"),"steps to a recorded human tick");click(mc,3,true);break;
+                tickTime=time(state);humanTickInputs=(Map<?,?>)probe.replayFrame().get("keystrokes");
+                probe.check(label(state).contains("client tick"),"steps to a recorded human tick");click(mc,3,true);break;
             case 244:
                 probe.check(time(state)>tickTime,"next tick advances");click(mc,3,false);break;
             case 256:
                 probe.check(time(state)==tickTime,"previous tick restores exact recorded timestamp");
+                probe.check(humanTickInputs!=null&&humanTickInputs.equals(probe.replayFrame().get("keystrokes")),"backward step restores the selected POV's keystrokes");
+                mc.field_71439_g.func_71165_d("/replay seek 0.537");
                 click(mc,6,true);break;
             case 272:
-                toolbar(probe,mc,true);probe.check("b".equals(state.get("source")),"compass selected bot POV");click(mc,3,true);break;
+                toolbar(probe,mc,true);probe.check("b".equals(state.get("source")),"compass selected bot POV");
+                checkInputs(probe,"b",1,3);mc.field_71439_g.func_71165_d("/replay camera free");break;
+            case 284:
+                toolbar(probe,mc,false);
+                checkInputs(probe,"b",1,3);
+                mc.field_71439_g.func_71165_d("/replay camera b");click(mc,3,true);break;
             case 296:
                 probe.check(label(state).contains("client tick")&&Boolean.TRUE.equals(state.get("paused")),"bot tick inspected while paused");
                 click(mc,7,true);break;
@@ -74,9 +95,13 @@ final class ServerReplayControlChecks {
                 probe.check(mc.field_71462_r!=null&&mc.field_71462_r.getClass().getSimpleName().equals("ReplayMenu"),"settings opens inside player POV");
                 mc.func_147108_a(null);click(mc,6,true);break;
             case 322:
-                toolbar(probe,mc,false);probe.check("server".equals(state.get("source")),"compass returns to free server view");click(mc,9,false);break;
+                toolbar(probe,mc,false);probe.check("server".equals(state.get("source")),"compass returns to free server view");
+                probe.check("live".equals(probe.replayFrame().get("keystrokes_source")),"returning to free server view restores live keystrokes");
+                mc.field_71439_g.func_71165_d("/replay camera a");click(mc,9,false);break;
             case 330:
-                probe.check(Boolean.TRUE.equals(state.get("active")),"exit ignores left click");click(mc,9,true);break;
+                probe.check(Boolean.TRUE.equals(state.get("active")),"exit ignores left click");
+                probe.check("a".equals(state.get("camera"))&&!probe.replayFrame().containsKey("keystrokes_source"),"following an actor in Server POV leaves the keystrokes HUD hidden");
+                click(mc,9,true);break;
             case 348:
                 probe.check(!Boolean.TRUE.equals(state.get("active"))&&mc.func_175606_aa()==mc.field_71439_g,"exit restores normal view");
                 probe.check(inventory(mc.field_71439_g).equals(initialInventory)&&mc.field_71439_g.field_71071_by.field_70461_c==initialSlot,"exit restores inventory and selected slot");

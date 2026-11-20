@@ -1,0 +1,8 @@
+research/elite-league/sumo-confidence/seven/pilot/clocks/m7999.txt.gz
+research/elite-league/sumo-confidence/seven/pilot/clocks/m8004.txt.gz
+research/elite-league/sumo-confidence/seven/pilot/clocks/m8013.txt.gz
+research/elite-league/sumo-confidence/seven/pilot/clocks/m8018.txt.gz
+research/elite-league/sumo-confidence/seven/pilot/clocks/m8023.txt.gz
+research/elite-league/sumo-confidence/seven/pilot/clocks/m8028.txt.gz
+research/elite-league/sumo-confidence/seven/pilot/clocks/m8035.txt.gz
+research/elite-league/sumo-confidence/seven/pilot/clocks/m8041.txt.gz

@@ -22,7 +22,7 @@ public final class RemoteProbe {
     private Channel channel;private int offStart,offEnd,onStart,onEnd;
     private final AtomicInteger movements=new AtomicInteger(),stockBrand=new AtomicInteger();
     private String statusBeforeRecord;
-    private int checks,forward,back,left,right;private boolean pulsed,afkDone;private int finishAt;
+    private int checks;
     private final AtomicInteger custom=new AtomicInteger(),chat=new AtomicInteger(),unexpected=new AtomicInteger(),offMovement=new AtomicInteger(),onMovement=new AtomicInteger();
     private final Map<String,AtomicInteger> outbound=new ConcurrentHashMap<>();
     private Object field(Object o,String n)throws Exception{Field f=o.getClass().getDeclaredField(n);f.setAccessible(true);return f.get(o);}
@@ -60,18 +60,11 @@ public final class RemoteProbe {
                 WorldFrame world=(WorldFrame)host.getClass().getMethod("world",float.class).invoke(host,0f);check(world.lines.isEmpty()&&world.boxes.isEmpty()&&world.spheres.isEmpty(),"all remote world overlays suppressed");
                 offMovement.set(offEnd-offStart);onMovement.set(onEnd-onStart);check(offMovement.get()==onMovement.get()&&onMovement.get()>10,"recording on/off preserves idle Minecraft movement packet count: "+offMovement+"/"+onMovement);
                 check(custom.get()==0&&chat.get()==0&&unexpected.get()==0,"zero added remote MC packet types or command chat; only vanilla movement/keepalive/transaction");
-                command("/p antiafk on 10");
+                command("/p remote record off");
             }
-            if(ticks>75&&!afkDone){
-                boolean w=mc.field_71474_y.field_74351_w.func_151470_d(),s=mc.field_71474_y.field_74368_y.func_151470_d(),l=mc.field_71474_y.field_74370_x.func_151470_d(),r=mc.field_71474_y.field_74366_z.func_151470_d();
-                if(w)forward++;if(s)back++;if(l)left++;if(r)right++;
-                if(w||s||l||r){pulsed=true;check(!mc.field_71474_y.field_151444_V.func_151470_d(),"synthetic movement suppresses ToggleSprint");}
-                if(pulsed&&!w&&!s&&!l&&!r){int tap=Math.max(forward,left);check(forward==back&&left==right&&tap>=1&&tap<=4,"random pulse uses balanced1–4tick opposite inputs");command("/p antiafk off");check(!mc.field_71474_y.field_74351_w.func_151470_d()&&!mc.field_71474_y.field_74368_y.func_151470_d()&&!mc.field_71474_y.field_74370_x.func_151470_d()&&!mc.field_71474_y.field_74366_z.func_151470_d(),"off releases owned keys");command("/p remote record off");afkDone=true;finishAt=ticks+50;}
-            }
-            if(ticks>430&&!afkDone)throw new AssertionError("AFK pulse deadline");
-            if(finishAt>0&&ticks>=finishAt){
-                check(field(capture,"log")==null,"remote off closes capture");check(Class.forName("practice.bridge.ObserverHooks").getField("errors").getLong(null)==0,"observer hooks clean");check(custom.get()==0&&chat.get()==0&&unexpected.get()==0,"recording and AFK never send custom/chat/extra packet kinds");
-                Map<String,Object> result=JsonData.map("checks",checks,"custom_payloads_after_join_probe",custom.get(),"stock_vanilla_brand_packets",stockBrand.get(),"chat_packets",chat.get(),"unexpected_packets",unexpected.get(),"idle_movement_off",offMovement.get(),"idle_movement_on",onMovement.get(),"forward_ticks",forward,"back_ticks",back,"left_ticks",left,"right_ticks",right,"remote_session",field(capture,"remoteSession"),"outbound",outbound.toString());
+            if(ticks==125){
+                check(field(capture,"log")==null,"remote off closes capture");check(Class.forName("practice.bridge.ObserverHooks").getField("errors").getLong(null)==0,"observer hooks clean");check(custom.get()==0&&chat.get()==0&&unexpected.get()==0,"recording never sends custom, chat, or extra packet types");
+                Map<String,Object> result=JsonData.map("checks",checks,"custom_payloads_after_join_probe",custom.get(),"stock_vanilla_brand_packets",stockBrand.get(),"chat_packets",chat.get(),"unexpected_packets",unexpected.get(),"idle_movement_off",offMovement.get(),"idle_movement_on",onMovement.get(),"remote_session",field(capture,"remoteSession"),"outbound",outbound.toString());
                 Files.write(Paths.get(System.getProperty("practice.test.output")),JsonData.encode(result).getBytes("UTF-8"));System.out.println("[RemoteProbe] ALL CHECKS PASSED");mc.func_71400_g();
             }
         }catch(Throwable error){error.printStackTrace();System.err.println("[RemoteProbe] FAILED "+error+" counters="+offStart+","+offEnd+","+onStart+","+onEnd+" custom="+custom+" unexpected="+unexpected+" outbound="+outbound);net.minecraftforge.fml.common.FMLCommonHandler.instance().exitJava(2,false);}

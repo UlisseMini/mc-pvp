@@ -1,0 +1,6 @@
+{
+  "actor": "sumo-seven-first",
+  "checkpoint": "seven-ppo-specialist-1801",
+  "weights": "12d477e6733f779bc0c94cc018b7dac7fb8d4e33e168dc7ea5901b87641f8e75",
+  "target": "bd2265e8498df5fe91f39f03e1dd0654ab16c5165bb9989df517890e6f2a75fe"
+}

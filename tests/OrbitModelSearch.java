@@ -7,6 +7,7 @@ public final class OrbitModelSearch {
     static Map<String,Object> trial(String name,int enter,boolean enabled,boolean selective,boolean ctrl,int repair,double opening,double spacing,
             boolean wtap,int wake,int ownPing,int theirPing,int serverPhase,int targetPhase,int seconds){
         long start=1000,awaken=start+Math.max(150,wake);
+        int cycleMs=Integer.getInteger("orbit.model_cycle_ms",500);
         ComboModel.Config cfg=new ComboModel.Config();
         cfg.ownRttMs=ownPing;cfg.opponentRttMs=theirPing;
         cfg.serverPhaseMs=serverPhase;cfg.opponentPhaseMs=targetPhase;
@@ -38,6 +39,8 @@ public final class OrbitModelSearch {
             boolean contact=ComboModel.rayDistance(state.a.x,state.a.y,state.a.z,state.aSeesB.x,state.aSeesB.y,state.aSeesB.z)<=3;
             boolean click=!selective||!d.maintenance||MotionClickController.decide(new MotionClickController.Input(
                 state.nowMs,outgoing,ownPing,radial,state.a.sprint,true,contact),clicks).click();
+            if(cycleMs>500&&d.maintenance&&outgoing>0)
+                click&=state.nowMs<outgoing+450-ownPing||state.nowMs>=outgoing+cycleMs-ownPing;
             maintenanceTicks+=d.maintenance?1:0;
             ComboModel.State next=ComboModel.advanceRecorded(state,action,click,cfg);
             if(next.nowMs-start<=4000&&next.acceptedFreshHits>state.acceptedFreshHits){
@@ -61,6 +64,7 @@ public final class OrbitModelSearch {
         }
         Map<String,Object> result=new LinkedHashMap<>();result.put("candidate",name);result.put("opponent",wtap?"wtap":"hold-w");
         result.put("wake_ms",wake);result.put("rtt",Compat.list(ownPing,theirPing));result.put("phase",Compat.list(serverPhase,targetPhase));
+        result.put("planned_cycle_ms",cycleMs);
         result.put("seconds",seconds);result.put("accepted",Compat.list(state.acceptedHits,state.receivedHits));
         result.put("post_wake_fresh",Compat.list(state.acceptedFreshHits-beforeOur,state.receivedFreshHits-beforeTheir));
         result.put("longest_post_wake_run",longest);result.put("first_post_wake_return_ms",firstReturn<0?null:firstReturn);

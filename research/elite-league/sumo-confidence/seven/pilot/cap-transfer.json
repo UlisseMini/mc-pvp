@@ -1,0 +1,3322 @@
+{
+  "native": {
+    "7": {
+      "sumo-seven-first": {
+        "overall": {
+          "n": 32,
+          "W": 32,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.8911188393206471,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.6305833524471807,
+            1.0
+          ]
+        },
+        "cells": {
+          "a-31/109": {
+            "n": 8,
+            "W": 8,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.6305833524471807,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.6305833524471807,
+              1.0
+            ]
+          },
+          "a-109/31": {
+            "n": 8,
+            "W": 8,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.6305833524471807,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.6305833524471807,
+              1.0
+            ]
+          },
+          "b-31/109": {
+            "n": 8,
+            "W": 8,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.6305833524471807,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.6305833524471807,
+              1.0
+            ]
+          },
+          "b-109/31": {
+            "n": 8,
+            "W": 8,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.6305833524471807,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.6305833524471807,
+              1.0
+            ]
+          }
+        },
+        "controls": {
+          "n": 32,
+          "seconds": 625.6189999999999,
+          "physical_presses": [
+            1743,
+            1831
+          ],
+          "presses_per_regulation_second": [
+            2.7860407052854854,
+            2.9267013949384535
+          ],
+          "minimum_interval_ms": [
+            142.882667,
+            142.867666
+          ],
+          "verified_heads_both": 25018,
+          "actor_confirmed_takeoffs": 90
+        },
+        "mechanics": {
+          "actor": {
+            "server_horizontal": {
+              "games": 32,
+              "mean": 0.60273676597619
+            },
+            "outward_travel": {
+              "games": 32,
+              "mean": 0.27605617180642394
+            },
+            "physical_presses_after_velocity": {
+              "games": 32,
+              "mean": 1.919565735571081
+            },
+            "entity_contacts_after_velocity": {
+              "games": 32,
+              "mean": 1.6846768798826335
+            },
+            "brakes_after_velocity": {
+              "games": 32,
+              "mean": 1.2670002462081371
+            },
+            "incoming_fresh": 415,
+            "unique_server_velocity": 386,
+            "matched_client_velocity": 386,
+            "complete_recoil_windows": 385,
+            "uninterrupted_client_windows": 386
+          },
+          "frozen": {
+            "server_horizontal": {
+              "games": 32,
+              "mean": 0.8055676160779791
+            },
+            "outward_travel": {
+              "games": 32,
+              "mean": 0.8370520375108821
+            },
+            "physical_presses_after_velocity": {
+              "games": 32,
+              "mean": 1.8844996769948816
+            },
+            "entity_contacts_after_velocity": {
+              "games": 32,
+              "mean": 1.2432507292130055
+            },
+            "brakes_after_velocity": {
+              "games": 32,
+              "mean": 1.177086856609515
+            },
+            "incoming_fresh": 468,
+            "unique_server_velocity": 432,
+            "matched_client_velocity": 431,
+            "complete_recoil_windows": 423,
+            "uninterrupted_client_windows": 423
+          }
+        },
+        "opening": {
+          "scored_first": 5,
+          "any_hit": 32,
+          "median_first_hit_ms": 4145.0,
+          "median_self_radius": 0.6239838048443422,
+          "median_opponent_radius": 0.5801923810092093,
+          "median_clicks_before_feedback": 0.0
+        }
+      },
+      "sumo-frozen-ppo": {
+        "overall": {
+          "n": 8,
+          "W": 5,
+          "L": 2,
+          "D": 1,
+          "score": 0.6875,
+          "blocks": {
+            "n": 8,
+            "mean": 0.6875,
+            "ci95": [
+              0.3045500072875408,
+              1.0704499927124593
+            ],
+            "bootstrap95": [
+              0.375,
+              0.9375
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.625,
+            "ci95": [
+              0.19231806642684596,
+              1.057681933573154
+            ],
+            "bootstrap95": [
+              0.25,
+              0.875
+            ]
+          }
+        },
+        "cells": {
+          "a-31/109": {
+            "n": 2,
+            "W": 2,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 2,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.15811388300841897,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.15811388300841897,
+              1.0
+            ]
+          },
+          "a-109/31": {
+            "n": 2,
+            "W": 0,
+            "L": 2,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.841886116991581
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.841886116991581
+            ]
+          },
+          "b-31/109": {
+            "n": 2,
+            "W": 2,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 2,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.15811388300841897,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.15811388300841897,
+              1.0
+            ]
+          },
+          "b-109/31": {
+            "n": 2,
+            "W": 1,
+            "L": 0,
+            "D": 1,
+            "score": 0.75,
+            "blocks": {
+              "n": 2,
+              "mean": 0.75,
+              "ci95": [
+                -2.4265511841080234,
+                3.9265511841080234
+              ],
+              "bootstrap95": [
+                0.5,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 0.5,
+              "ci95": [
+                -5.853102368216047,
+                6.853102368216047
+              ],
+              "bootstrap95": [
+                0.0,
+                1.0
+              ]
+            }
+          }
+        },
+        "controls": {
+          "n": 8,
+          "seconds": 334.196,
+          "physical_presses": [
+            1965,
+            1943
+          ],
+          "presses_per_regulation_second": [
+            5.879783121282121,
+            5.813953488372093
+          ],
+          "minimum_interval_ms": [
+            142.88225,
+            142.901375
+          ],
+          "verified_heads_both": 13363,
+          "actor_confirmed_takeoffs": 29
+        },
+        "mechanics": {
+          "actor": {
+            "server_horizontal": {
+              "games": 8,
+              "mean": 0.7307181804974926
+            },
+            "outward_travel": {
+              "games": 8,
+              "mean": 0.5969514203088758
+            },
+            "physical_presses_after_velocity": {
+              "games": 8,
+              "mean": 1.7684959431306104
+            },
+            "entity_contacts_after_velocity": {
+              "games": 8,
+              "mean": 1.5373453528635632
+            },
+            "brakes_after_velocity": {
+              "games": 8,
+              "mean": 1.37134577552743
+            },
+            "incoming_fresh": 440,
+            "unique_server_velocity": 412,
+            "matched_client_velocity": 406,
+            "complete_recoil_windows": 410,
+            "uninterrupted_client_windows": 406
+          },
+          "frozen": {
+            "server_horizontal": {
+              "games": 8,
+              "mean": 0.7483450137434358
+            },
+            "outward_travel": {
+              "games": 8,
+              "mean": 0.5808838865815285
+            },
+            "physical_presses_after_velocity": {
+              "games": 8,
+              "mean": 1.8192467112415742
+            },
+            "entity_contacts_after_velocity": {
+              "games": 8,
+              "mean": 1.5236219830397912
+            },
+            "brakes_after_velocity": {
+              "games": 8,
+              "mean": 1.361648592085236
+            },
+            "incoming_fresh": 453,
+            "unique_server_velocity": 424,
+            "matched_client_velocity": 419,
+            "complete_recoil_windows": 422,
+            "uninterrupted_client_windows": 418
+          }
+        },
+        "opening": {
+          "scored_first": 8,
+          "any_hit": 8,
+          "median_first_hit_ms": 1026.0,
+          "median_self_radius": 0.2076535598554055,
+          "median_opponent_radius": 0.9941947896767935,
+          "median_clicks_before_feedback": 1.0
+        }
+      },
+      "research-wtap20": {
+        "overall": {
+          "n": 8,
+          "W": 0,
+          "L": 8,
+          "D": 0,
+          "score": 0.0,
+          "blocks": {
+            "n": 8,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "bootstrap95": [
+              0.0,
+              0.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.0,
+            0.3694166475528192
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.0,
+            0.3694166475528192
+          ]
+        },
+        "cells": {
+          "a-31/109": {
+            "n": 2,
+            "W": 0,
+            "L": 2,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.841886116991581
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.841886116991581
+            ]
+          },
+          "a-109/31": {
+            "n": 2,
+            "W": 0,
+            "L": 2,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.841886116991581
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.841886116991581
+            ]
+          },
+          "b-31/109": {
+            "n": 2,
+            "W": 0,
+            "L": 2,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.841886116991581
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.841886116991581
+            ]
+          },
+          "b-109/31": {
+            "n": 2,
+            "W": 0,
+            "L": 2,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.841886116991581
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.841886116991581
+            ]
+          }
+        },
+        "controls": {
+          "n": 8,
+          "seconds": 104.37800000000001,
+          "physical_presses": [
+            697,
+            624
+          ],
+          "presses_per_regulation_second": [
+            6.6776523788537805,
+            5.978271283220601
+          ],
+          "minimum_interval_ms": [
+            142.866834,
+            142.888959
+          ],
+          "verified_heads_both": 4174,
+          "actor_confirmed_takeoffs": 0
+        },
+        "mechanics": {
+          "actor": {
+            "server_horizontal": {
+              "games": 8,
+              "mean": 0.7638678827961745
+            },
+            "outward_travel": {
+              "games": 8,
+              "mean": 0.9230275674704861
+            },
+            "physical_presses_after_velocity": {
+              "games": 8,
+              "mean": 1.6504377169528097
+            },
+            "entity_contacts_after_velocity": {
+              "games": 8,
+              "mean": 1.3343122386514414
+            },
+            "brakes_after_velocity": {
+              "games": 8,
+              "mean": 0.9052101552343426
+            },
+            "incoming_fresh": 131,
+            "unique_server_velocity": 122,
+            "matched_client_velocity": 122,
+            "complete_recoil_windows": 120,
+            "uninterrupted_client_windows": 120
+          },
+          "frozen": {
+            "server_horizontal": {
+              "games": 8,
+              "mean": 0.8133135045470664
+            },
+            "outward_travel": {
+              "games": 8,
+              "mean": 0.5730265400554762
+            },
+            "physical_presses_after_velocity": {
+              "games": 8,
+              "mean": 1.7447616740494647
+            },
+            "entity_contacts_after_velocity": {
+              "games": 8,
+              "mean": 1.6826734957548912
+            },
+            "brakes_after_velocity": {
+              "games": 8,
+              "mean": 1.5393139765596162
+            },
+            "incoming_fresh": 125,
+            "unique_server_velocity": 120,
+            "matched_client_velocity": 120,
+            "complete_recoil_windows": 119,
+            "uninterrupted_client_windows": 120
+          }
+        },
+        "opening": {
+          "scored_first": 8,
+          "any_hit": 8,
+          "median_first_hit_ms": 702.0,
+          "median_self_radius": 0.969844140987334,
+          "median_opponent_radius": 0.8502305323819183,
+          "median_clicks_before_feedback": 5.0
+        }
+      }
+    },
+    "20": {
+      "sumo-seven-first": {
+        "overall": {
+          "n": 32,
+          "W": 10,
+          "L": 22,
+          "D": 0,
+          "score": 0.3125,
+          "blocks": {
+            "n": 8,
+            "mean": 0.3125,
+            "ci95": [
+              0.12723666435554334,
+              0.49776333564445663
+            ],
+            "bootstrap95": [
+              0.1875,
+              0.46875
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.3125,
+            "ci95": [
+              0.12723666435554334,
+              0.49776333564445663
+            ],
+            "bootstrap95": [
+              0.1875,
+              0.46875
+            ]
+          }
+        },
+        "cells": {
+          "a-31/109": {
+            "n": 8,
+            "W": 4,
+            "L": 4,
+            "D": 0,
+            "score": 0.5,
+            "blocks": {
+              "n": 8,
+              "mean": 0.5,
+              "ci95": [
+                0.05312802055102683,
+                0.9468719794489732
+              ],
+              "bootstrap95": [
+                0.125,
+                0.875
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.5,
+              "ci95": [
+                0.05312802055102683,
+                0.9468719794489732
+              ],
+              "bootstrap95": [
+                0.125,
+                0.875
+              ]
+            }
+          },
+          "a-109/31": {
+            "n": 8,
+            "W": 0,
+            "L": 8,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 8,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.3694166475528192
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.3694166475528192
+            ]
+          },
+          "b-31/109": {
+            "n": 8,
+            "W": 4,
+            "L": 4,
+            "D": 0,
+            "score": 0.5,
+            "blocks": {
+              "n": 8,
+              "mean": 0.5,
+              "ci95": [
+                0.05312802055102683,
+                0.9468719794489732
+              ],
+              "bootstrap95": [
+                0.125,
+                0.875
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.5,
+              "ci95": [
+                0.05312802055102683,
+                0.9468719794489732
+              ],
+              "bootstrap95": [
+                0.125,
+                0.875
+              ]
+            }
+          },
+          "b-109/31": {
+            "n": 8,
+            "W": 2,
+            "L": 6,
+            "D": 0,
+            "score": 0.25,
+            "blocks": {
+              "n": 8,
+              "mean": 0.25,
+              "ci95": [
+                -0.13700248644224833,
+                0.6370024864422483
+              ],
+              "bootstrap95": [
+                0.0,
+                0.625
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.25,
+              "ci95": [
+                -0.13700248644224833,
+                0.6370024864422483
+              ],
+              "bootstrap95": [
+                0.0,
+                0.625
+              ]
+            }
+          }
+        },
+        "controls": {
+          "n": 32,
+          "seconds": 850.4889999999999,
+          "physical_presses": [
+            8616,
+            9576
+          ],
+          "presses_per_regulation_second": [
+            10.130642489203272,
+            11.259404883543468
+          ],
+          "minimum_interval_ms": [
+            50.0215,
+            50.008833
+          ],
+          "verified_heads_both": 34017,
+          "actor_confirmed_takeoffs": 236
+        },
+        "mechanics": {
+          "actor": {
+            "server_horizontal": {
+              "games": 32,
+              "mean": 0.7553490755341166
+            },
+            "outward_travel": {
+              "games": 32,
+              "mean": 0.5283372979008714
+            },
+            "physical_presses_after_velocity": {
+              "games": 32,
+              "mean": 4.254557378118544
+            },
+            "entity_contacts_after_velocity": {
+              "games": 32,
+              "mean": 3.114513454350175
+            },
+            "brakes_after_velocity": {
+              "games": 32,
+              "mean": 2.1681186187935952
+            },
+            "incoming_fresh": 953,
+            "unique_server_velocity": 866,
+            "matched_client_velocity": 866,
+            "complete_recoil_windows": 864,
+            "uninterrupted_client_windows": 866
+          },
+          "frozen": {
+            "server_horizontal": {
+              "games": 32,
+              "mean": 0.8259509743540479
+            },
+            "outward_travel": {
+              "games": 32,
+              "mean": 0.5435811696103386
+            },
+            "physical_presses_after_velocity": {
+              "games": 32,
+              "mean": 4.138659124712019
+            },
+            "entity_contacts_after_velocity": {
+              "games": 32,
+              "mean": 3.5444727474492432
+            },
+            "brakes_after_velocity": {
+              "games": 32,
+              "mean": 2.8058998967716957
+            },
+            "incoming_fresh": 937,
+            "unique_server_velocity": 862,
+            "matched_client_velocity": 862,
+            "complete_recoil_windows": 859,
+            "uninterrupted_client_windows": 862
+          }
+        },
+        "opening": {
+          "scored_first": 4,
+          "any_hit": 32,
+          "median_first_hit_ms": 4420.5,
+          "median_self_radius": 0.6357935043762966,
+          "median_opponent_radius": 0.5701275360963651,
+          "median_clicks_before_feedback": 0.0
+        }
+      },
+      "sumo-frozen-ppo": {
+        "overall": {
+          "n": 8,
+          "W": 8,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.6305833524471807,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.6305833524471807,
+            1.0
+          ]
+        },
+        "cells": {
+          "a-31/109": {
+            "n": 2,
+            "W": 2,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 2,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.15811388300841897,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.15811388300841897,
+              1.0
+            ]
+          },
+          "a-109/31": {
+            "n": 2,
+            "W": 2,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 2,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.15811388300841897,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.15811388300841897,
+              1.0
+            ]
+          },
+          "b-31/109": {
+            "n": 2,
+            "W": 2,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 2,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.15811388300841897,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.15811388300841897,
+              1.0
+            ]
+          },
+          "b-109/31": {
+            "n": 2,
+            "W": 2,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 2,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.15811388300841897,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.15811388300841897,
+              1.0
+            ]
+          }
+        },
+        "controls": {
+          "n": 8,
+          "seconds": 170.62599999999998,
+          "physical_presses": [
+            2469,
+            2425
+          ],
+          "presses_per_regulation_second": [
+            14.470244863033772,
+            14.212370916507451
+          ],
+          "minimum_interval_ms": [
+            50.0215,
+            50.016209
+          ],
+          "verified_heads_both": 6826,
+          "actor_confirmed_takeoffs": 34
+        },
+        "mechanics": {
+          "actor": {
+            "server_horizontal": {
+              "games": 8,
+              "mean": 0.8005283518721957
+            },
+            "outward_travel": {
+              "games": 8,
+              "mean": 0.4069608494305623
+            },
+            "physical_presses_after_velocity": {
+              "games": 8,
+              "mean": 4.218620414673046
+            },
+            "entity_contacts_after_velocity": {
+              "games": 8,
+              "mean": 3.832418896892581
+            },
+            "brakes_after_velocity": {
+              "games": 8,
+              "mean": 3.020304914383862
+            },
+            "incoming_fresh": 242,
+            "unique_server_velocity": 219,
+            "matched_client_velocity": 219,
+            "complete_recoil_windows": 219,
+            "uninterrupted_client_windows": 219
+          },
+          "frozen": {
+            "server_horizontal": {
+              "games": 8,
+              "mean": 0.8274437263433736
+            },
+            "outward_travel": {
+              "games": 8,
+              "mean": 0.6368170659295489
+            },
+            "physical_presses_after_velocity": {
+              "games": 8,
+              "mean": 4.147032310182418
+            },
+            "entity_contacts_after_velocity": {
+              "games": 8,
+              "mean": 3.2298656618442307
+            },
+            "brakes_after_velocity": {
+              "games": 8,
+              "mean": 2.6028561163783546
+            },
+            "incoming_fresh": 260,
+            "unique_server_velocity": 241,
+            "matched_client_velocity": 241,
+            "complete_recoil_windows": 238,
+            "uninterrupted_client_windows": 241
+          }
+        },
+        "opening": {
+          "scored_first": 6,
+          "any_hit": 8,
+          "median_first_hit_ms": 1003.0,
+          "median_self_radius": 0.2950010118208205,
+          "median_opponent_radius": 1.0104346425422193,
+          "median_clicks_before_feedback": 2.0
+        }
+      },
+      "research-wtap20": {
+        "overall": {
+          "n": 8,
+          "W": 1,
+          "L": 7,
+          "D": 0,
+          "score": 0.125,
+          "blocks": {
+            "n": 8,
+            "mean": 0.125,
+            "ci95": [
+              -0.1705780313762874,
+              0.4205780313762874
+            ],
+            "bootstrap95": [
+              0.0,
+              0.375
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.125,
+            "ci95": [
+              -0.1705780313762874,
+              0.4205780313762874
+            ],
+            "bootstrap95": [
+              0.0,
+              0.375
+            ]
+          }
+        },
+        "cells": {
+          "a-31/109": {
+            "n": 2,
+            "W": 1,
+            "L": 1,
+            "D": 0,
+            "score": 0.5,
+            "blocks": {
+              "n": 2,
+              "mean": 0.5,
+              "ci95": [
+                -5.853102368216047,
+                6.853102368216047
+              ],
+              "bootstrap95": [
+                0.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 0.5,
+              "ci95": [
+                -5.853102368216047,
+                6.853102368216047
+              ],
+              "bootstrap95": [
+                0.0,
+                1.0
+              ]
+            }
+          },
+          "a-109/31": {
+            "n": 2,
+            "W": 0,
+            "L": 2,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.841886116991581
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.841886116991581
+            ]
+          },
+          "b-31/109": {
+            "n": 2,
+            "W": 0,
+            "L": 2,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.841886116991581
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.841886116991581
+            ]
+          },
+          "b-109/31": {
+            "n": 2,
+            "W": 0,
+            "L": 2,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 2,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.841886116991581
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.841886116991581
+            ]
+          }
+        },
+        "controls": {
+          "n": 8,
+          "seconds": 76.778,
+          "physical_presses": [
+            1287,
+            1152
+          ],
+          "presses_per_regulation_second": [
+            16.76261429055198,
+            15.004298106228346
+          ],
+          "minimum_interval_ms": [
+            50.009458,
+            50.03025
+          ],
+          "verified_heads_both": 3068,
+          "actor_confirmed_takeoffs": 0
+        },
+        "mechanics": {
+          "actor": {
+            "server_horizontal": {
+              "games": 8,
+              "mean": 0.7911716415207466
+            },
+            "outward_travel": {
+              "games": 8,
+              "mean": 0.7308543219040943
+            },
+            "physical_presses_after_velocity": {
+              "games": 8,
+              "mean": 4.105739302299868
+            },
+            "entity_contacts_after_velocity": {
+              "games": 8,
+              "mean": 3.166852898456033
+            },
+            "brakes_after_velocity": {
+              "games": 8,
+              "mean": 2.1382821609505047
+            },
+            "incoming_fresh": 108,
+            "unique_server_velocity": 99,
+            "matched_client_velocity": 99,
+            "complete_recoil_windows": 99,
+            "uninterrupted_client_windows": 99
+          },
+          "frozen": {
+            "server_horizontal": {
+              "games": 8,
+              "mean": 0.7952631896604081
+            },
+            "outward_travel": {
+              "games": 8,
+              "mean": 0.3910428331458928
+            },
+            "physical_presses_after_velocity": {
+              "games": 8,
+              "mean": 4.080078377504848
+            },
+            "entity_contacts_after_velocity": {
+              "games": 8,
+              "mean": 3.741751171622495
+            },
+            "brakes_after_velocity": {
+              "games": 8,
+              "mean": 2.9469790319974143
+            },
+            "incoming_fresh": 111,
+            "unique_server_velocity": 105,
+            "matched_client_velocity": 105,
+            "complete_recoil_windows": 105,
+            "uninterrupted_client_windows": 105
+          }
+        },
+        "opening": {
+          "scored_first": 8,
+          "any_hit": 8,
+          "median_first_hit_ms": 705.5,
+          "median_self_radius": 0.969844140987334,
+          "median_opponent_radius": 0.8295895482556261,
+          "median_clicks_before_feedback": 13.0
+        }
+      }
+    }
+  },
+  "simulator": {
+    "7": {
+      "sumo-seven-first": {
+        "overall": {
+          "n": 32,
+          "W": 32,
+          "L": 0,
+          "D": 0,
+          "score": 1.0,
+          "blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "bootstrap95": [
+              1.0,
+              1.0
+            ]
+          },
+          "exact_raw_win_ci_iid_games": [
+            0.8911188393206471,
+            1.0
+          ],
+          "conservative_points_bounds_independent_blocks": [
+            0.6305833524471807,
+            1.0
+          ]
+        },
+        "cells": {
+          "a-31/109": {
+            "n": 8,
+            "W": 8,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.6305833524471807,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.6305833524471807,
+              1.0
+            ]
+          },
+          "a-109/31": {
+            "n": 8,
+            "W": 8,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.6305833524471807,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.6305833524471807,
+              1.0
+            ]
+          },
+          "b-31/109": {
+            "n": 8,
+            "W": 8,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.6305833524471807,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.6305833524471807,
+              1.0
+            ]
+          },
+          "b-109/31": {
+            "n": 8,
+            "W": 8,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.6305833524471807,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.6305833524471807,
+              1.0
+            ]
+          }
+        }
+      },
+      "sumo-frozen-ppo": {
+        "overall": {
+          "n": 32,
+          "W": 17,
+          "L": 11,
+          "D": 4,
+          "score": 0.59375,
+          "blocks": {
+            "n": 8,
+            "mean": 0.59375,
+            "ci95": [
+              0.4285168572967639,
+              0.7589831427032361
+            ],
+            "bootstrap95": [
+              0.453125,
+              0.71875
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.53125,
+            "ci95": [
+              0.2959118607329478,
+              0.7665881392670522
+            ],
+            "bootstrap95": [
+              0.34375,
+              0.6875
+            ]
+          }
+        },
+        "cells": {
+          "a-31/109": {
+            "n": 8,
+            "W": 4,
+            "L": 3,
+            "D": 1,
+            "score": 0.5625,
+            "blocks": {
+              "n": 8,
+              "mean": 0.5625,
+              "ci95": [
+                0.14823858776063514,
+                0.9767614122393649
+              ],
+              "bootstrap95": [
+                0.25,
+                0.875
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.5,
+              "ci95": [
+                0.05312802055102683,
+                0.9468719794489732
+              ],
+              "bootstrap95": [
+                0.125,
+                0.875
+              ]
+            }
+          },
+          "a-109/31": {
+            "n": 8,
+            "W": 3,
+            "L": 3,
+            "D": 2,
+            "score": 0.5,
+            "blocks": {
+              "n": 8,
+              "mean": 0.5,
+              "ci95": [
+                0.11299751355775167,
+                0.8870024864422483
+              ],
+              "bootstrap95": [
+                0.1875,
+                0.8125
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.375,
+              "ci95": [
+                -0.05768193357315404,
+                0.807681933573154
+              ],
+              "bootstrap95": [
+                0.125,
+                0.75
+              ]
+            }
+          },
+          "b-31/109": {
+            "n": 8,
+            "W": 4,
+            "L": 3,
+            "D": 1,
+            "score": 0.5625,
+            "blocks": {
+              "n": 8,
+              "mean": 0.5625,
+              "ci95": [
+                0.14823858776063514,
+                0.9767614122393649
+              ],
+              "bootstrap95": [
+                0.25,
+                0.875
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.5,
+              "ci95": [
+                0.05312802055102683,
+                0.9468719794489732
+              ],
+              "bootstrap95": [
+                0.125,
+                0.875
+              ]
+            }
+          },
+          "b-109/31": {
+            "n": 8,
+            "W": 6,
+            "L": 2,
+            "D": 0,
+            "score": 0.75,
+            "blocks": {
+              "n": 8,
+              "mean": 0.75,
+              "ci95": [
+                0.36299751355775167,
+                1.1370024864422483
+              ],
+              "bootstrap95": [
+                0.375,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.75,
+              "ci95": [
+                0.36299751355775167,
+                1.1370024864422483
+              ],
+              "bootstrap95": [
+                0.375,
+                1.0
+              ]
+            }
+          }
+        }
+      },
+      "research-wtap20": {
+        "overall": {
+          "n": 32,
+          "W": 2,
+          "L": 30,
+          "D": 0,
+          "score": 0.0625,
+          "blocks": {
+            "n": 8,
+            "mean": 0.0625,
+            "ci95": [
+              -0.03425062161056208,
+              0.15925062161056208
+            ],
+            "bootstrap95": [
+              0.0,
+              0.15625
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.0625,
+            "ci95": [
+              -0.03425062161056208,
+              0.15925062161056208
+            ],
+            "bootstrap95": [
+              0.0,
+              0.15625
+            ]
+          }
+        },
+        "cells": {
+          "a-31/109": {
+            "n": 8,
+            "W": 1,
+            "L": 7,
+            "D": 0,
+            "score": 0.125,
+            "blocks": {
+              "n": 8,
+              "mean": 0.125,
+              "ci95": [
+                -0.1705780313762874,
+                0.4205780313762874
+              ],
+              "bootstrap95": [
+                0.0,
+                0.375
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.125,
+              "ci95": [
+                -0.1705780313762874,
+                0.4205780313762874
+              ],
+              "bootstrap95": [
+                0.0,
+                0.375
+              ]
+            }
+          },
+          "a-109/31": {
+            "n": 8,
+            "W": 0,
+            "L": 8,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 8,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.3694166475528192
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.3694166475528192
+            ]
+          },
+          "b-31/109": {
+            "n": 8,
+            "W": 0,
+            "L": 8,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 8,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.3694166475528192
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.3694166475528192
+            ]
+          },
+          "b-109/31": {
+            "n": 8,
+            "W": 1,
+            "L": 7,
+            "D": 0,
+            "score": 0.125,
+            "blocks": {
+              "n": 8,
+              "mean": 0.125,
+              "ci95": [
+                -0.1705780313762874,
+                0.4205780313762874
+              ],
+              "bootstrap95": [
+                0.0,
+                0.375
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.125,
+              "ci95": [
+                -0.1705780313762874,
+                0.4205780313762874
+              ],
+              "bootstrap95": [
+                0.0,
+                0.375
+              ]
+            }
+          }
+        }
+      }
+    },
+    "20": {
+      "sumo-seven-first": {
+        "overall": {
+          "n": 32,
+          "W": 8,
+          "L": 24,
+          "D": 0,
+          "score": 0.25,
+          "blocks": {
+            "n": 8,
+            "mean": 0.25,
+            "ci95": [
+              0.00019096917805178082,
+              0.4998090308219482
+            ],
+            "bootstrap95": [
+              0.0625,
+              0.4375
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.25,
+            "ci95": [
+              0.00019096917805178082,
+              0.4998090308219482
+            ],
+            "bootstrap95": [
+              0.0625,
+              0.4375
+            ]
+          }
+        },
+        "cells": {
+          "a-31/109": {
+            "n": 8,
+            "W": 2,
+            "L": 6,
+            "D": 0,
+            "score": 0.25,
+            "blocks": {
+              "n": 8,
+              "mean": 0.25,
+              "ci95": [
+                -0.13700248644224833,
+                0.6370024864422483
+              ],
+              "bootstrap95": [
+                0.0,
+                0.625
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.25,
+              "ci95": [
+                -0.13700248644224833,
+                0.6370024864422483
+              ],
+              "bootstrap95": [
+                0.0,
+                0.625
+              ]
+            }
+          },
+          "a-109/31": {
+            "n": 8,
+            "W": 2,
+            "L": 6,
+            "D": 0,
+            "score": 0.25,
+            "blocks": {
+              "n": 8,
+              "mean": 0.25,
+              "ci95": [
+                -0.13700248644224833,
+                0.6370024864422483
+              ],
+              "bootstrap95": [
+                0.0,
+                0.625
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.25,
+              "ci95": [
+                -0.13700248644224833,
+                0.6370024864422483
+              ],
+              "bootstrap95": [
+                0.0,
+                0.625
+              ]
+            }
+          },
+          "b-31/109": {
+            "n": 8,
+            "W": 3,
+            "L": 5,
+            "D": 0,
+            "score": 0.375,
+            "blocks": {
+              "n": 8,
+              "mean": 0.375,
+              "ci95": [
+                -0.05768193357315404,
+                0.807681933573154
+              ],
+              "bootstrap95": [
+                0.125,
+                0.75
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.375,
+              "ci95": [
+                -0.05768193357315404,
+                0.807681933573154
+              ],
+              "bootstrap95": [
+                0.125,
+                0.75
+              ]
+            }
+          },
+          "b-109/31": {
+            "n": 8,
+            "W": 1,
+            "L": 7,
+            "D": 0,
+            "score": 0.125,
+            "blocks": {
+              "n": 8,
+              "mean": 0.125,
+              "ci95": [
+                -0.1705780313762874,
+                0.4205780313762874
+              ],
+              "bootstrap95": [
+                0.0,
+                0.375
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.125,
+              "ci95": [
+                -0.1705780313762874,
+                0.4205780313762874
+              ],
+              "bootstrap95": [
+                0.0,
+                0.375
+              ]
+            }
+          }
+        }
+      },
+      "sumo-frozen-ppo": {
+        "overall": {
+          "n": 32,
+          "W": 26,
+          "L": 5,
+          "D": 1,
+          "score": 0.828125,
+          "blocks": {
+            "n": 8,
+            "mean": 0.828125,
+            "ci95": [
+              0.6809972360210529,
+              0.9752527639789471
+            ],
+            "bootstrap95": [
+              0.703125,
+              0.9375
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.8125,
+            "ci95": [
+              0.6647109843118563,
+              0.9602890156881437
+            ],
+            "bootstrap95": [
+              0.6875,
+              0.9375
+            ]
+          }
+        },
+        "cells": {
+          "a-31/109": {
+            "n": 8,
+            "W": 7,
+            "L": 1,
+            "D": 0,
+            "score": 0.875,
+            "blocks": {
+              "n": 8,
+              "mean": 0.875,
+              "ci95": [
+                0.5794219686237125,
+                1.1705780313762875
+              ],
+              "bootstrap95": [
+                0.625,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.875,
+              "ci95": [
+                0.5794219686237125,
+                1.1705780313762875
+              ],
+              "bootstrap95": [
+                0.625,
+                1.0
+              ]
+            }
+          },
+          "a-109/31": {
+            "n": 8,
+            "W": 8,
+            "L": 0,
+            "D": 0,
+            "score": 1.0,
+            "blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 1.0,
+              "ci95": [
+                1.0,
+                1.0
+              ],
+              "bootstrap95": [
+                1.0,
+                1.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.6305833524471807,
+              1.0
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.6305833524471807,
+              1.0
+            ]
+          },
+          "b-31/109": {
+            "n": 8,
+            "W": 6,
+            "L": 2,
+            "D": 0,
+            "score": 0.75,
+            "blocks": {
+              "n": 8,
+              "mean": 0.75,
+              "ci95": [
+                0.36299751355775167,
+                1.1370024864422483
+              ],
+              "bootstrap95": [
+                0.375,
+                1.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.75,
+              "ci95": [
+                0.36299751355775167,
+                1.1370024864422483
+              ],
+              "bootstrap95": [
+                0.375,
+                1.0
+              ]
+            }
+          },
+          "b-109/31": {
+            "n": 8,
+            "W": 5,
+            "L": 2,
+            "D": 1,
+            "score": 0.6875,
+            "blocks": {
+              "n": 8,
+              "mean": 0.6875,
+              "ci95": [
+                0.3045500072875408,
+                1.0704499927124593
+              ],
+              "bootstrap95": [
+                0.375,
+                0.9375
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.625,
+              "ci95": [
+                0.19231806642684596,
+                1.057681933573154
+              ],
+              "bootstrap95": [
+                0.25,
+                0.875
+              ]
+            }
+          }
+        }
+      },
+      "research-wtap20": {
+        "overall": {
+          "n": 32,
+          "W": 2,
+          "L": 30,
+          "D": 0,
+          "score": 0.0625,
+          "blocks": {
+            "n": 8,
+            "mean": 0.0625,
+            "ci95": [
+              -0.0852890156881437,
+              0.2102890156881437
+            ],
+            "bootstrap95": [
+              0.0,
+              0.1875
+            ]
+          },
+          "raw_win_blocks": {
+            "n": 8,
+            "mean": 0.0625,
+            "ci95": [
+              -0.0852890156881437,
+              0.2102890156881437
+            ],
+            "bootstrap95": [
+              0.0,
+              0.1875
+            ]
+          }
+        },
+        "cells": {
+          "a-31/109": {
+            "n": 8,
+            "W": 1,
+            "L": 7,
+            "D": 0,
+            "score": 0.125,
+            "blocks": {
+              "n": 8,
+              "mean": 0.125,
+              "ci95": [
+                -0.1705780313762874,
+                0.4205780313762874
+              ],
+              "bootstrap95": [
+                0.0,
+                0.375
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.125,
+              "ci95": [
+                -0.1705780313762874,
+                0.4205780313762874
+              ],
+              "bootstrap95": [
+                0.0,
+                0.375
+              ]
+            }
+          },
+          "a-109/31": {
+            "n": 8,
+            "W": 1,
+            "L": 7,
+            "D": 0,
+            "score": 0.125,
+            "blocks": {
+              "n": 8,
+              "mean": 0.125,
+              "ci95": [
+                -0.1705780313762874,
+                0.4205780313762874
+              ],
+              "bootstrap95": [
+                0.0,
+                0.375
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.125,
+              "ci95": [
+                -0.1705780313762874,
+                0.4205780313762874
+              ],
+              "bootstrap95": [
+                0.0,
+                0.375
+              ]
+            }
+          },
+          "b-31/109": {
+            "n": 8,
+            "W": 0,
+            "L": 8,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 8,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.3694166475528192
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.3694166475528192
+            ]
+          },
+          "b-109/31": {
+            "n": 8,
+            "W": 0,
+            "L": 8,
+            "D": 0,
+            "score": 0.0,
+            "blocks": {
+              "n": 8,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "raw_win_blocks": {
+              "n": 8,
+              "mean": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "bootstrap95": [
+                0.0,
+                0.0
+              ]
+            },
+            "exact_raw_win_ci_iid_games": [
+              0.0,
+              0.3694166475528192
+            ],
+            "conservative_points_bounds_independent_blocks": [
+              0.0,
+              0.3694166475528192
+            ]
+          }
+        }
+      }
+    }
+  },
+  "native_cap_differences": {
+    "sumo-seven-first": {
+      "n": 8,
+      "mean": 0.6875,
+      "ci95": [
+        0.5022366643555434,
+        0.8727633356444566
+      ],
+      "bootstrap95": [
+        0.53125,
+        0.8125
+      ]
+    },
+    "sumo-frozen-ppo": {
+      "n": 8,
+      "mean": -0.3125,
+      "ci95": [
+        -0.6954499927124592,
+        0.07044999271245922
+      ],
+      "bootstrap95": [
+        -0.625,
+        -0.0625
+      ]
+    },
+    "research-wtap20": {
+      "n": 8,
+      "mean": -0.125,
+      "ci95": [
+        -0.4205780313762874,
+        0.1705780313762874
+      ],
+      "bootstrap95": [
+        -0.375,
+        0.0
+      ]
+    }
+  },
+  "native_impact_differences": {
+    "sumo-seven-first": {
+      "actor": {
+        "server_horizontal": {
+          "included_cells": 32,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -0.15261230955792654,
+            "ci95": [
+              -0.21133428523832562,
+              -0.09389033387752746
+            ],
+            "bootstrap95": [
+              -0.19797485593683845,
+              -0.10835275862790936
+            ]
+          }
+        },
+        "outward_travel": {
+          "included_cells": 32,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -0.2522811260944474,
+            "ci95": [
+              -0.3943353527689339,
+              -0.11022689941996094
+            ],
+            "bootstrap95": [
+              -0.36309958701449135,
+              -0.1426645904614235
+            ]
+          }
+        },
+        "physical_presses_after_velocity": {
+          "included_cells": 32,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -2.334991642547463,
+            "ci95": [
+              -2.4559511458189,
+              -2.214032139276026
+            ],
+            "bootstrap95": [
+              -2.427475992802884,
+              -2.242417026680305
+            ]
+          }
+        },
+        "brakes_after_velocity": {
+          "included_cells": 32,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -0.9011183725854581,
+            "ci95": [
+              -1.1512625542076154,
+              -0.6509741909633008
+            ],
+            "bootstrap95": [
+              -1.098464964249935,
+              -0.7150093328566617
+            ]
+          }
+        }
+      },
+      "frozen": {
+        "server_horizontal": {
+          "included_cells": 32,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -0.02038335827606883,
+            "ci95": [
+              -0.06748212599616327,
+              0.026715409444025597
+            ],
+            "bootstrap95": [
+              -0.057349753484877766,
+              0.015065025497139627
+            ]
+          }
+        },
+        "outward_travel": {
+          "included_cells": 32,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": 0.29347086790054344,
+            "ci95": [
+              0.17512938473961287,
+              0.411812351061474
+            ],
+            "bootstrap95": [
+              0.1973169152379947,
+              0.3767284606142157
+            ]
+          }
+        },
+        "physical_presses_after_velocity": {
+          "included_cells": 32,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -2.2541594477171376,
+            "ci95": [
+              -2.3096682027854585,
+              -2.1986506926488167
+            ],
+            "bootstrap95": [
+              -2.295978935466272,
+              -2.2107175627556037
+            ]
+          }
+        },
+        "brakes_after_velocity": {
+          "included_cells": 32,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -1.6288130401621808,
+            "ci95": [
+              -1.9396092060443695,
+              -1.318016874279992
+            ],
+            "bootstrap95": [
+              -1.8683642703827177,
+              -1.3910364950297125
+            ]
+          }
+        }
+      }
+    },
+    "sumo-frozen-ppo": {
+      "actor": {
+        "server_horizontal": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -0.06981017137470319,
+            "ci95": [
+              -0.14614422627974272,
+              0.006523883530336352
+            ],
+            "bootstrap95": [
+              -0.13488005702958228,
+              -0.015105784504528097
+            ]
+          }
+        },
+        "outward_travel": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": 0.18999057087831348,
+            "ci95": [
+              0.10187906947481194,
+              0.278102072281815
+            ],
+            "bootstrap95": [
+              0.12386433765437446,
+              0.25801025679794887
+            ]
+          }
+        },
+        "physical_presses_after_velocity": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -2.4501244715424355,
+            "ci95": [
+              -2.577706441761602,
+              -2.322542501323269
+            ],
+            "bootstrap95": [
+              -2.5501380551403035,
+              -2.3572014334349856
+            ]
+          }
+        },
+        "brakes_after_velocity": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -1.6489591388564315,
+            "ci95": [
+              -1.8811615179305738,
+              -1.4167567597822892
+            ],
+            "bootstrap95": [
+              -1.8404608070848516,
+              -1.4790522298743767
+            ]
+          }
+        }
+      },
+      "frozen": {
+        "server_horizontal": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -0.07909871259993785,
+            "ci95": [
+              -0.13060325848518822,
+              -0.02759416671468748
+            ],
+            "bootstrap95": [
+              -0.11834010090111233,
+              -0.03912645604798455
+            ]
+          }
+        },
+        "outward_travel": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -0.05593317934802053,
+            "ci95": [
+              -0.1980836623261584,
+              0.08621730363011734
+            ],
+            "bootstrap95": [
+              -0.1790468234095738,
+              0.035047240105255534
+            ]
+          }
+        },
+        "physical_presses_after_velocity": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -2.3277855989408436,
+            "ci95": [
+              -2.4493886232382014,
+              -2.2061825746434858
+            ],
+            "bootstrap95": [
+              -2.424493635621684,
+              -2.238115189417493
+            ]
+          }
+        },
+        "brakes_after_velocity": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -1.2412075242931189,
+            "ci95": [
+              -1.6875379914719857,
+              -0.7948770571142522
+            ],
+            "bootstrap95": [
+              -1.5737231374291991,
+              -0.8900916460750368
+            ]
+          }
+        }
+      }
+    },
+    "research-wtap20": {
+      "actor": {
+        "server_horizontal": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -0.027303758724572233,
+            "ci95": [
+              -0.07666474794690234,
+              0.02205723049775788
+            ],
+            "bootstrap95": [
+              -0.06595067689424883,
+              0.010024512662579454
+            ]
+          }
+        },
+        "outward_travel": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": 0.19217324556639184,
+            "ci95": [
+              -0.03126603273162354,
+              0.4156125238644072
+            ],
+            "bootstrap95": [
+              0.03099254154665075,
+              0.3761599223290126
+            ]
+          }
+        },
+        "physical_presses_after_velocity": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -2.4553015853470574,
+            "ci95": [
+              -2.639898656158293,
+              -2.270704514535822
+            ],
+            "bootstrap95": [
+              -2.604769736842105,
+              -2.3199282343768846
+            ]
+          }
+        },
+        "brakes_after_velocity": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -1.2330720057161622,
+            "ci95": [
+              -1.6223119832348287,
+              -0.8438320281974956
+            ],
+            "bootstrap95": [
+              -1.5301491320212293,
+              -0.9363711333815823
+            ]
+          }
+        }
+      },
+      "frozen": {
+        "server_horizontal": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": 0.018050314886658342,
+            "ci95": [
+              -0.04816883877054311,
+              0.08426946854385979
+            ],
+            "bootstrap95": [
+              -0.03180556467532815,
+              0.06999562243387125
+            ]
+          }
+        },
+        "outward_travel": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": 0.18198370690958338,
+            "ci95": [
+              -0.03120692492597843,
+              0.3951743387451452
+            ],
+            "bootstrap95": [
+              0.03604238503491386,
+              0.3615787308207355
+            ]
+          }
+        },
+        "physical_presses_after_velocity": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -2.3353167034553834,
+            "ci95": [
+              -2.567733317022132,
+              -2.1029000898886347
+            ],
+            "bootstrap95": [
+              -2.5144394903906706,
+              -2.159611344537815
+            ]
+          }
+        },
+        "brakes_after_velocity": {
+          "included_cells": 8,
+          "delta_7_minus_20": {
+            "n": 8,
+            "mean": -1.4076650554377983,
+            "ci95": [
+              -1.731473146839682,
+              -1.0838569640359146
+            ],
+            "bootstrap95": [
+              -1.6456832693106311,
+              -1.1500831582633053
+            ]
+          }
+        }
+      }
+    }
+  },
+  "sim_interventions": {
+    "7": {
+      "sumo-frozen-ppo": {
+        "n": 32,
+        "score": 0.59375,
+        "original_minus_wtap_opening": {
+          "n": 8,
+          "mean": 0.03125,
+          "ci95": [
+            -0.1973627997284238,
+            0.2598627997284238
+          ],
+          "bootstrap95": [
+            -0.140625,
+            0.203125
+          ]
+        },
+        "original_minus_target_open_gate": {
+          "n": 8,
+          "mean": -0.1875,
+          "ci95": [
+            -0.39650523035594293,
+            0.021505230355942928
+          ],
+          "bootstrap95": [
+            -0.34375,
+            -0.015625
+          ]
+        },
+        "candidate_scored_first": 26,
+        "games_with_any_fresh": 32,
+        "selected_jumps": 28,
+        "complete_displacement": 28,
+        "same_hit_without_jump": 28,
+        "original_minus_suppressed_jump": -0.21428571428571427,
+        "mean_change_outward_blocks": -0.3720230635259943,
+        "same_hit_mean_change_outward_blocks": -0.3720230635259943,
+        "jump_improved_outcome": 5,
+        "jump_worsened_outcome": 11
+      },
+      "sumo-seven-first": {
+        "n": 32,
+        "score": 1.0,
+        "original_minus_wtap_opening": {
+          "n": 8,
+          "mean": 0.171875,
+          "ci95": [
+            0.09412256618989678,
+            0.24962743381010322
+          ],
+          "bootstrap95": [
+            0.109375,
+            0.234375
+          ]
+        },
+        "original_minus_target_open_gate": {
+          "n": 8,
+          "mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "bootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "candidate_scored_first": 2,
+        "games_with_any_fresh": 32,
+        "selected_jumps": 29,
+        "complete_displacement": 29,
+        "same_hit_without_jump": 29,
+        "original_minus_suppressed_jump": 0.0,
+        "mean_change_outward_blocks": -0.3396225705275224,
+        "same_hit_mean_change_outward_blocks": -0.3396225705275224,
+        "jump_improved_outcome": 0,
+        "jump_worsened_outcome": 0
+      },
+      "wtap": {
+        "n": 32,
+        "score": 0.0625,
+        "original_minus_wtap_opening": {
+          "n": 8,
+          "mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "bootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "original_minus_target_open_gate": {
+          "n": 8,
+          "mean": -0.125,
+          "ci95": [
+            -0.31850124322112416,
+            0.06850124322112416
+          ],
+          "bootstrap95": [
+            -0.28125,
+            0.03125
+          ]
+        },
+        "candidate_scored_first": 32,
+        "games_with_any_fresh": 32,
+        "selected_jumps": 0,
+        "complete_displacement": 0,
+        "same_hit_without_jump": 0,
+        "original_minus_suppressed_jump": null,
+        "mean_change_outward_blocks": null,
+        "same_hit_mean_change_outward_blocks": null,
+        "jump_improved_outcome": 0,
+        "jump_worsened_outcome": 0
+      }
+    },
+    "20": {
+      "sumo-frozen-ppo": {
+        "n": 32,
+        "score": 0.828125,
+        "original_minus_wtap_opening": {
+          "n": 8,
+          "mean": 0.203125,
+          "ci95": [
+            0.027036210704727393,
+            0.3792137892952726
+          ],
+          "bootstrap95": [
+            0.09375,
+            0.359375
+          ]
+        },
+        "original_minus_target_open_gate": {
+          "n": 8,
+          "mean": 0.078125,
+          "ci95": [
+            -0.10661126961017964,
+            0.26286126961017964
+          ],
+          "bootstrap95": [
+            -0.0625,
+            0.234375
+          ]
+        },
+        "candidate_scored_first": 26,
+        "games_with_any_fresh": 32,
+        "selected_jumps": 29,
+        "complete_displacement": 29,
+        "same_hit_without_jump": 29,
+        "original_minus_suppressed_jump": 0.1206896551724138,
+        "mean_change_outward_blocks": -0.3757889171043971,
+        "same_hit_mean_change_outward_blocks": -0.3757889171043971,
+        "jump_improved_outcome": 8,
+        "jump_worsened_outcome": 5
+      },
+      "sumo-seven-first": {
+        "n": 32,
+        "score": 0.25,
+        "original_minus_wtap_opening": {
+          "n": 8,
+          "mean": 0.03125,
+          "ci95": [
+            -0.273424860994141,
+            0.335924860994141
+          ],
+          "bootstrap95": [
+            -0.1875,
+            0.28125
+          ]
+        },
+        "original_minus_target_open_gate": {
+          "n": 8,
+          "mean": 0.0625,
+          "ci95": [
+            -0.0852890156881437,
+            0.2102890156881437
+          ],
+          "bootstrap95": [
+            -0.0625,
+            0.1875
+          ]
+        },
+        "candidate_scored_first": 2,
+        "games_with_any_fresh": 32,
+        "selected_jumps": 31,
+        "complete_displacement": 31,
+        "same_hit_without_jump": 31,
+        "original_minus_suppressed_jump": 0.06451612903225806,
+        "mean_change_outward_blocks": -0.3488130996339003,
+        "same_hit_mean_change_outward_blocks": -0.3488130996339003,
+        "jump_improved_outcome": 6,
+        "jump_worsened_outcome": 4
+      },
+      "wtap": {
+        "n": 32,
+        "score": 0.0625,
+        "original_minus_wtap_opening": {
+          "n": 8,
+          "mean": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "bootstrap95": [
+            0.0,
+            0.0
+          ]
+        },
+        "original_minus_target_open_gate": {
+          "n": 8,
+          "mean": 0.03125,
+          "ci95": [
+            -0.14316966357494798,
+            0.20566966357494798
+          ],
+          "bootstrap95": [
+            -0.09375,
+            0.1875
+          ]
+        },
+        "candidate_scored_first": 32,
+        "games_with_any_fresh": 32,
+        "selected_jumps": 0,
+        "complete_displacement": 0,
+        "same_hit_without_jump": 0,
+        "original_minus_suppressed_jump": null,
+        "mean_change_outward_blocks": null,
+        "same_hit_mean_change_outward_blocks": null,
+        "jump_improved_outcome": 0,
+        "jump_worsened_outcome": 0
+      }
+    }
+  }
+}

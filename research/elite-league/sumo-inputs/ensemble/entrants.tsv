@@ -1,0 +1,5 @@
+wtap
+v4-ppo-g0496	research/elite-league/recorded-mmc-frozen/range-model/v4-ppo-g0496.net
+sumo-vote-pooled	research/elite-league/sumo-inputs/ensemble/pooled.net
+sumo-vote-average	research/elite-league/sumo-inputs/ensemble/average.net
+sumo-vote-member	research/elite-league/sumo-inputs/ensemble/member.net

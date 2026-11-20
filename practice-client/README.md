@@ -24,8 +24,9 @@ underneath. Controls → Sprint changes the toggle key too. This holds the norma
 sprint input; vanilla decides whether the player can actually sprint. It does
 not press forward, attack, aim, alter reach, or bypass blocking slowdown.
 
-Client commands work without server permissions. `/p` is an alias for `/practice`
-with all the same subcommands, for example `/p advantage on`:
+Client commands work without server permissions. Type `/p` or `/practice` for
+the help menu. Click a category or type a command such as `/p help replay` or
+`/p help range`. Clicking a command in a category puts it in your chat box.
 
 | Command | Action |
 | --- | --- |
@@ -38,7 +39,6 @@ with all the same subcommands, for example `/p advantage on`:
 | `/practice metrics on` / `off` | Show observed speeds, target gap/height, and blocking time |
 | `/practice record on` / `off` | Start/stop local client-observation CSV recording |
 | `/p remote record on` / `off` | Opt in/out of remote-server recording (default off); local archive upload only |
-| `/p antiafk on [seconds or MIN-MAX]` / `off` | Session-only housing-idle pulses; default off, randomized 30–90 seconds |
 | `/practice capture on` / `off` | Enable/disable the detailed localhost capture |
 | `/practice link on` / `off` | Enable/disable localhost coordination |
 | `/practice mark <text>` | Timestamp a named marker on client and server |
@@ -140,6 +140,11 @@ actors as seen by each client (four ghosts), plus two optional server ghosts.
 `/replay ghost human-self on`, `human-opponent`, `bot-self`, `bot-opponent`,
 `/replay ghost human on` (both), and `/replay ghost off`.
 The selected POV chooses the recorded positions; camera follow/free is separate.
+The keystrokes HUD follows the selected human or bot POV, including in free
+camera. It shows that participant's WASD, Space, mouse buttons and one-second CPS
+at the playhead, or **Inputs unavailable** if their archive lacks inputs. The
+free camera in Server POV shows your normal live keystrokes.
+Use `/p keystrokes off` or `/p keystrokes on` to hide or show it.
 Reach fields and the numeric advantage use the same observation and drawing
 functions as live play. Clients with no recorded data are explicitly unavailable;
 older 5 Hz recordings are labeled. Playback interpolates visual poses between
@@ -223,13 +228,13 @@ Use the first file when analyzing a session; the analyzer follows linked parts.
 Turning capture back on mid-connection starts a segment marked as missing the
 initial connection state. Reconnect for a capture containing the initial world.
 
-This is the recording foundation for replay and analysis, **not a finished
-client replay player or a promise of pixel-perfect reconstruction**. Entity
+The offline viewer below rebuilds a recorded client world for replay and analysis;
+it does **not** promise pixel-perfect reconstruction. Entity
 snapshots are capped at 128 (with a truncation flag); packets remain captured.
 We do not save resource-pack binaries or every rendered frame. Native handler
 hooks observe work but still have CPU cost, measured in snapshot timing fields.
 
-## Remote recording and housing idling
+## Remote recording
 
 `/p remote record on` enables the detailed recorder on your current and future
 remote connections; `/p remote record off` stops it. It starts **off** on every Minecraft launch. It stays enabled across connections in that client
@@ -256,8 +261,7 @@ The guard checks the current real socket, including during a server switch,
 regardless of whether a prior capture is still active. All practice overlays
 (range indicators, reach fields, opening/advantage, ghosts, metrics, hurt flash,
 replay/debug) are suppressed remotely even if their local settings are on.
-ToggleSprint and potion timers remain available. The separate anti-AFK option
-below is the only explicitly enabled movement addition.
+ToggleSprint and potion timers remain available.
 
 Captures stay in local `config/pvp-practice/captures/` gzip files. Closed parts
 are offered approximately every two seconds to **literal `127.0.0.1:8766`** over
@@ -293,31 +297,192 @@ python3 pov_archive.py r0123456789abcdef0123456789abcdef --export a
 ```
 
 The local server's `/replay` match selector still requires a lab duel/server
-recording; this change does not turn a remote capture into an authoritative
-three-view match or a finished interactive remote replay player.
-
-For housing idling only, `/p antiafk on` opts into a randomly spaced pulse every
-30–90 seconds. `/p antiafk on 30-90` sets a range; `/p antiafk on 60` chooses a
-fixed interval (10–3600 seconds, with MIN ≤ MAX). Each pulse uses a randomly
-chosen WASD direction for 1–4 ticks, then the opposite direction for the same
-number of ticks, occasionally sneaking. Small smooth yaw/pitch drift returns
-toward the original view over 6–8 ticks. Inputs roughly cancel; collisions,
-server corrections and different forward/back acceleration can still cause drift.
-It never teleports, writes motion, clicks, or sends custom Minecraft packets.
-
-`/p antiafk off` releases only synthetic keys. Any GUI/chat, physical movement,
-jump/sneak/sprint, or mouse activity aborts a pulse and pauses the countdown;
-closing chat does not immediately cause movement. **Leave chat closed for idle
-pulses to run.** ToggleSprint is temporarily suppressed during a pulse without
-changing the user's preference; human-held keys are never cancelled. Activation
-is **never saved**. It stays on across same-connection proxy world changes and
-respawns (pausing while no world exists), and automatically turns off on a real
-socket disconnect/change. Chat confirms on/off, and `/p status` reports it.
-This is an input helper, not a guarantee against any server's idle policy.
+recording. The separate offline client viewer below can open remote captures,
+with their one-POV and missing-world limitations kept visible.
 
 Bridge/API changes require one Minecraft restart after installation. The new
 settings and capture commands then apply immediately; no server restart or bot
 reload is needed.
+
+## Offline viewer (replay-mod-lite v1)
+
+Open **`/practice replays`** or **`/p replays`**, the **Local replays** title-screen
+button, or **F8**. The client registers only `/practice` and its `/p` alias.
+It never registers or intercepts `/replay`; that command remains the server's.
+You can browse while connected. Playback starts after the live connection closes
+and runs locally.
+
+With remote recording enabled, completed Minemen Club Sumo matches get a local
+**Watch replay** link in chat. Clicking it performs the normal Minecraft
+disconnect from MMC, waits for the recording to finish writing, and opens the
+selected match offline. Saved matches also appear under **Show MMC Sumo only**
+in **Local replays** by opponent and result.
+
+While watching an offline replay, click **Return to MMC** in the **Esc** menu
+or **F8** controls to close the replay and reconnect to Minemen Club. The button
+uses your current MMC server entry or one from your saved multiplayer list,
+with `mineman.club` as the fallback.
+
+MMC Sumo clips show the arena at the five-second countdown and stop at the
+recorded result. Preparation packets stay outside the visible timeline. The
+viewer prepares arena terrain sent just after the countdown and can restore
+matching terrain from earlier packets in the same capture when MMC reuses a chunk.
+
+The browser lists local capture files and the existing lab/remote archive with
+recorded date, server and duration. A `≈` duration is a file-time estimate before
+loading; the loaded timeline uses recorded timestamps. Lab entries use their
+full-session capture, when still present, to reconstruct the initial world, then
+open at the selected match. Raw capture playback begins at the stream's start.
+
+Playback controls provide 0.1x through 4x speed, recorded tick stepping,
+±5 seconds and a clickable event timeline. **Space** pauses or resumes.
+Hold **Left/Right** to scrub backward or forward at the selected speed. **[**
+slows down and **]** speeds up through the same presets shown in F8.
+**,** steps back one recorded tick and **.** steps forward. **Shift + Left/Right**
+also steps by tick. **Up/Down** switches to the
+previous or next Sumo match. Adjacent short matches are preloaded. **O** toggles
+replay text. While rewinding, recorded movement plays backward smoothly and
+the world is restored to the new time on release. Historical sound, effect and
+particle packets are suppressed during that restore. F8 reopens
+controls after closing them. Choose **First person**, **Spectator**, or **Follow
+target** in F8. Spectator is a detached camera. Use W/A/S/D to fly, the mouse to
+look, and E/Q to move up or down. **Recenter** returns the spectator camera
+near the recorded player. F5 is a shortcut between first person and spectator.
+Following a target is a camera based on **your recorded view**, not the target's
+private client POV. Target selection can change during a recording.
+
+In **F8 → Display**, switch each overlay on or off for the selected camera. Your
+velocity, velocity and packet log, knockback counter and crosshair flash, reach
+fields, range indicators, keystrokes and diagnostics each have a switch. The
+choices are saved separately for each camera.
+Press **/** in a replay for local commands. **/p reach on** and **/p reach off**
+control reach fields, and **/p crosshair on** and **/p crosshair off** control the
+in-range brackets. The recoil flash has its own Display switch.
+
+The keystrokes HUD shows W/A/S/D, Space, and both mouse buttons, with separate
+one-second click counts. Use **/p keystrokes on** or **/p keystrokes off** for live
+play and server replays. Local replays use recorded key and click events at the playhead, so their
+CPS stays on the recording's time scale at every playback speed. The replay HUD
+shows keystrokes when the capture contains input events. First-person
+playback also uses the recorded swing for the native fist animation.
+Open **/p hud** in live play or choose **Edit HUD** in F8 to drag the keystrokes
+and sprint indicators. The positions are saved and adapt to the GUI size.
+
+The viewer feeds safe recorded inbound PLAY packets into native Minecraft
+handlers using a fake play connection with **no channel or socket**. Both outbound
+send methods discard every reply, movement packet, chat and mod payload. JOIN
+creates a local client world without Forge's online handshake. Resource-pack
+requests, custom channels, disconnect screens and compression negotiation are
+not executed. The viewer uses recorded skin IDs and Minecraft's local skin cache.
+An older capture with no usable local skin falls back to the default. Playback
+suspends recording and live lab coordination and blocks ordinary
+attack/use/drop/inventory/hotbar gameplay actions so they cannot edit the
+reconstructed world; offline overlays have
+their own permission and do not enable any live-remote practice features.
+
+Where available, packets use their recorded **main-thread handler entry time**;
+otherwise the viewer explicitly reports wire-time fallback. Recorded pose samples
+drive the own-player camera, observed actors and reach readouts. Render frames
+interpolate positions and angles between nearby recorded ticks. Teleports
+snap to the new position, and hit, packet, and velocity readouts keep their
+recorded timestamps. This is client
+reconstruction with pose correction, not a new combat simulation or a claim that
+vanilla interpolation, animation, particles or lighting are identical between
+recording and playback. Pausing holds world time, player poses and rendering
+interpolation steady. Particles and animated textures can still advance. The
+first-person hand uses the replay camera's view and the recorded swing. New
+captures also include the rendered arm lag and skin model when available.
+
+The timeline marks outbound attack **attempts**, inbound S12 velocity vectors
+(exact packet shorts divided by 8000), and entity hurt-status events. The HUD
+shows observed hurt ticks/elapsed time and time since attack. These are evidence,
+not proof of accepted damage or an exact remote-server immunity timer. A nearby
+attack→self-S12 interval is labelled **unconfirmed**; it does not establish that
+your attack caused the incoming velocity. Matched inventory transaction IDs can
+show a measured round trip including server processing. Keepalive response delay
+alone is not RTT, and one-way latency is unavailable from a single recording.
+
+Both perspectives show **KB reductions**. A green timeline mark and a brief
+first-person crosshair flash indicate paired click samples with measured
+horizontal motion scaled to 0.6 of its pre-click value. This cuts X and Z motion
+by 40% and leaves Y motion alone. It can happen during the target's server damage
+cooldown. The reduction counter tracks cuts while moving backward. **After last hit** groups cuts after the latest
+recorded own horizontal velocity application while the own hurt animation is
+active and motion still points along the received recoil. Use **Previous KB cut**
+and **Next KB cut** to jump between marks. The total counts observed local motion
+reductions, including contacts during target immunity.
+
+The **Velocity** HUD displays the latest recorded own X/Y/Z motion in
+blocks per tick. It lists S12 velocity,
+S27 explosion motion, S08 corrections, S19 hurt, and outgoing C02 attack and C0B
+sprint packets. S12 values include horizontal magnitude. The attack entry shows
+the recorded local sprint flag at click time and the measured motion change.
+Server-applied sprint bonuses require separate server evidence. New recordings
+also bracket local jumps and movement steps. Older captures show unexplained
+changes at the recorded sample or tick boundary. **Previous change** and
+**Next change** step through these observations.
+
+Existing reach fields use recorded positions, suppressing stale own samples
+after 250 ms and displaying sample age. Field radius is labelled as an assumed
+three blocks when the recording does not establish a custom reach. True reach advantage requires both
+client POVs in a linked archive; a remote-only capture explicitly says the
+opponent POV/advantage is unavailable. No opponent or authoritative server view
+is invented. Missing samples remain missing.
+
+A capture that began after joining, lacks JOIN, or has missing linked parts shows
+**MISSING INITIAL WORLD** or another explicit warning. The viewer can display its
+recorded poses in an empty reconstruction, but absent chunks/entities cannot be
+recovered. Record before joining for a complete world. Packets over the recorder's
+2 MiB limit are skipped with a warning; missing chunks are possible. Load bounds
+are 128 MiB of packet bytes, 1 GiB inflated input, 10,000 retained pose records,
+a 32 MiB encoded-byte estimate for retained poses, and 10,000 linked parts.
+These are the defaults for a 512 MiB heap. Packet/inflated-input/pose budgets
+scale in rounded 512 MiB heap units up to eight times these values for a normal
+2–4 GiB client; the individual 2 MiB packet and 10,000-part caps stay fixed.
+These are explicit load errors, never silently truncated scientific playback.
+Long housing sessions may still exceed v1 limits; no arbitrary-length playback
+is promised. A memory failure is reported without modifying the recording.
+Poses retain recorded tick-end samples (or up to 20 Hz view samples when no tick
+stream exists); unrelated actors retain only visual fields to bound memory.
+The optional independent linked-POV index is bounded to 20,000 samples/128 MiB.
+Exceeding a bound stops loading with an explicit message. Capture files are
+never modified by playback.
+
+Build/install with `python3 practice-client/build.py --install`, then restart
+Minecraft once. This stages the matching module for the next launch and does not
+restart the server or change the running human client's module. The offline
+verification harness is `practice-client/replay_smoke.py`; it uses one passive
+local lobby guest for a pre-PLAY pretend-remote recording, then disconnects itself
+and tests that recording plus an existing lab capture entirely offline. The
+`--reuse-remote <first gzip>` option repeats the offline checks without connecting.
+`--graphical` produces an actual OpenGL screenshot in an isolated offline client,
+using existing pinned libraries/natives and no live connection.
+
+## Match event ledger
+
+From the project folder, generate a report and local replay bookmarks with
+`python3 match_ledger.py m2636` or with a full MMC Sumo bookmark ID.
+`python3 match_ledger.py --list-mmc` lists recent MMC IDs and opponents.
+Open the HTML it prints to scrub the round and inspect measured events,
+interpretations, and unknowns for each exchange. The JSON export includes
+source files and line numbers. Use `--exchange 3` for just one exchange and
+its event rows.
+
+In Minecraft, type **/p ledger <match ID>** and click an exchange. The link
+opens or seeks the offline recording and pauses 250 ms before the first
+event when the clip allows it. The browser report also has a copyable
+Minecraft seek command for any selected time. Practice replays use the
+configured archive directory. If a live practice connection is open,
+the seek waits for you to disconnect. MMC playback uses the existing
+disconnect and offline playback flow.
+
+A practice trade is confirmed when reciprocal scoring hits share a server tick.
+Other hits or MMC cues within 120 ms can be grouped for review. Same-side
+sequences split when the gap exceeds 1.1 s. These grouping rules identify
+moments to inspect. MMC's opponent hurt cues and outgoing attack attempts carry
+no exact server acceptance, sprint state, or opponent POV. The report labels
+first movement order only when it has a matching main-thread S12 application
+and recorded travel hook on the same client clock.
 
 ## Three-view coordination
 
@@ -428,7 +593,7 @@ The build checks toggling, GUI behavior, placement, configuration reload,
 invalid-reload recovery, CSV shape, immutable events, compressed writer completion,
 cap/rotation boundaries, and replacement of **actual bytecode in the same JVM**.
 
-For the remote recorder and housing-idle input path, use:
+For the remote recorder, use:
 
 ```sh
 python3 practice-client/remote_checks.py
@@ -438,8 +603,8 @@ python3 practice-client/remote_smoke.py --wait-idle-seconds 180
 The first test covers local receiver rejection, gzip integrity, retry after
 receiver downtime/restart, checksum deduplication and proxy/redirect refusal.
 The second uses a separate 512 MiB, low-priority Forge guest in the localhost
-lobby, classifies that socket as remote, checks commands/HUD/packet counts and
-one explicit anti-AFK pulse, and never starts a match or changes another player.
+lobby, classifies that socket as remote, and checks commands, HUD and packet
+counts without starting a match or changing another player.
 Its probe is not installed in the human client. An actual external connection
 is not used by this test.
 

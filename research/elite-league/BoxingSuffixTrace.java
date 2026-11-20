@@ -14,8 +14,11 @@ final class BoxingSuffixTrace {
         final double start;
         int seen;
         Ledger(BoxingDrill.Checkpoint cp,Arena.Model model){
-            g=cp.suffix(model);start=cp.landmark;
-            for(var hit:cp.committed)accepted.add(List.of(hit.at(),hit.sideA(),hit.upgrade()));
+            this(cp.suffix(model),cp.landmark);
+        }
+        Ledger(DuelEnv.Game game,double landmark){
+            g=game;start=landmark;
+            for(var hit:g.hits.list)accepted.add(List.of(hit.at(),hit.sideA(),hit.upgrade()));
             seen=g.hits.list.size();save();
             g.clock.setClickAudit(e->{
                 if(!e.action().equals("CONSUME")||!e.contact())return;
@@ -65,6 +68,16 @@ final class BoxingSuffixTrace {
     }
     public static void main(String[] args)throws Exception{
         var model=Arena.Model.decode(Files.readString(Path.of(args[0])).trim());
+        if(args.length>1 && args[1].equals("--wire")){
+            int rtt=Integer.parseInt(args[2]);
+            for(int i=5;i<args.length;i++){
+                var env=BoxingEdgeHitSelect.environment(Path.of(args[i]),rtt,20_000,Path.of(args[3]),Path.of(args[4]));
+                for(boolean seat:new boolean[]{true,false}){
+                    for(var cp:BoxingDrill.acquire(env,seat,false))emit(cp,model,null);
+                }
+            }
+            return;
+        }
         boolean breadth=args.length>2 && args[1].equals("--mouse-defenders");
         var foes=breadth?Matches.roster(Path.of(args[2])):List.of(Evolve.WT);
         for(var file:Arrays.stream(args,breadth?3:1,args.length).map(Path::of).toList()){
@@ -73,14 +86,16 @@ final class BoxingSuffixTrace {
                 var env=new DuelEnv(tape,"mmc",ping,false);
                 env.initial.timing.mouseInput=breadth;
                 var starts=breadth?BoxingDrill.acquire(env,seat,false,new BoxingBreadth.Defender(foe,ping)):BoxingDrill.acquire(env,seat,false);
-                for(var cp:starts){
-                    var row=new LinkedHashMap<String,Object>();
-                    row.put("clock",env.clockId);row.put("side",seat?"a":"b");row.put("rtt",ping);row.put("k",cp.k);
-                    row.put("landmark",cp.landmark);row.put("wtap",new Ledger(cp,null).run());row.put("specialist",new Ledger(cp,model).run());
-                    if(breadth)row.put("opponent",foe.name());
-                    System.out.println(Json.encode(row));
-                }
+                for(var cp:starts)emit(cp,model,breadth?foe.name():null);
             }
         }
+    }
+
+    private static void emit(BoxingDrill.Checkpoint cp,Arena.Model model,String opponent){
+        var row=new LinkedHashMap<String,Object>();
+        row.put("clock",cp.env.clockId);row.put("side",cp.state.first?"a":"b");row.put("rtt",cp.env.rtt);row.put("k",cp.k);
+        row.put("landmark",cp.landmark);row.put("wtap",new Ledger(cp,null).run());row.put("specialist",new Ledger(cp,model).run());
+        if(opponent!=null)row.put("opponent",opponent);
+        System.out.println(Json.encode(row));
     }
 }

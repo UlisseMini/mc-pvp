@@ -26,9 +26,15 @@ public final class Frame {
         /** When right aligned, x is the inset from the right edge. */
         public final int x,y,color; public final boolean right;
         public final float scale;public final boolean centered;
+        public final String hudId;
         public Line(String text,int x,int y,int color,boolean right){
             this(text,x,y,color,right,1,false);
         }
-        public Line(String text,int x,int y,int color,boolean right,float scale,boolean centered){this.text=text;this.x=x;this.y=y;this.color=color;this.right=right;this.scale=scale;this.centered=centered;}
+        public Line(String text,int x,int y,int color,boolean right,float scale,boolean centered){
+            this(text,x,y,color,right,scale,centered,null);
+        }
+        public Line(String text,int x,int y,int color,boolean right,float scale,boolean centered,String hudId){
+            this.text=text;this.x=x;this.y=y;this.color=color;this.right=right;this.scale=scale;this.centered=centered;this.hudId=hudId;
+        }
     }
 }

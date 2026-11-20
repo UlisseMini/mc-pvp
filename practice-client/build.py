@@ -56,13 +56,15 @@ def main():
         bot_sources=[ROOT/'src/lab'/f'{name}.java' for name in json.loads((SRC/'bot-sources.json').read_text())]
         shim=BUILD/'shim';compile_to(shim,sorted((SRC/'shim').rglob('*.java'))+bot_sources,cp)
         label_checks=BUILD/'label-checks';label_cp=os.pathsep.join([str(shim),cp])
-        compile_to(label_checks,[SRC/'tools/PlayerLabelsCheck.java',SRC/'tools/ClockHooksCheck.java',SRC/'tools/RemoteSafetyCheck.java',SRC/'tools/CombatDirectionCheck.java',SRC/'tools/ItemUseAnimationCheck.java',SRC/'tools/SneakAnimationCheck.java'],label_cp)
+        compile_to(label_checks,[SRC/'tools/PlayerLabelsCheck.java',SRC/'tools/ClockHooksCheck.java',SRC/'tools/RemoteSafetyCheck.java',SRC/'tools/OfflineSafetyCheck.java',SRC/'tools/CombatDirectionCheck.java',SRC/'tools/ItemUseAnimationCheck.java',SRC/'tools/SneakAnimationCheck.java',SRC/'tools/NetworkQueueCheck.java'],label_cp)
         run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'PlayerLabelsCheck',ROOT/'.cache/client.jar',BUILD/'compile-api.jar'])
         run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'ClockHooksCheck',ROOT/'.cache/client.jar',BUILD/'compile-api.jar'])
+        run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'NetworkQueueCheck',ROOT/'.cache/client.jar',BUILD/'compile-api.jar'])
         run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'practice.bridge.RemoteSafetyCheck',shim])
         run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'practice.bridge.CombatDirectionCheck'])
         run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'ItemUseAnimationCheck',ROOT/'.cache/client.jar',BUILD/'compile-api.jar'])
         run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'practice.bridge.SneakAnimationCheck',ROOT/'.cache/client.jar',BUILD/'compile-api.jar'])
+        run([JAVA,'-ea','-cp',os.pathsep.join([str(label_checks),label_cp]),'practice.bridge.OfflineSafetyCheck',shim])
         for folder in (api,core):
             shutil.copytree(folder,shim,dirs_exist_ok=True)
         with zipfile.ZipFile(ROOT/'.cache/mcp-names.zip') as names:

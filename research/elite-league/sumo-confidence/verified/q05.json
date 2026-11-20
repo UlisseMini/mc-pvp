@@ -1,0 +1,107 @@
+{
+  "original": {
+    "cf7-q05-fit-b31": "m8022",
+    "cf7-q05-fit-a31": "m8021",
+    "cf7-q05-fit-b109": "m8020",
+    "cf7-q05-fit-a109": "m8024",
+    "cf7-q05-prior-a31": "m8025",
+    "cf7-q05-wt-a31": "m8023"
+  },
+  "rows": {
+    "cf7-q05-fit-b31": {
+      "valid": true,
+      "mid": "m8022",
+      "arm": "sumo-seven-first",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 270,
+      "local_timing": {
+        "b": 135
+      },
+      "click_min_ms": 145.256625,
+      "max_server_gap_ms": 96
+    },
+    "cf7-q05-fit-a31": {
+      "valid": true,
+      "mid": "m8021",
+      "arm": "sumo-seven-first",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 460,
+      "local_timing": {
+        "a": 231
+      },
+      "click_min_ms": 142.963875,
+      "max_server_gap_ms": 96
+    },
+    "cf7-q05-fit-b109": {
+      "valid": true,
+      "mid": "m8020",
+      "arm": "sumo-seven-first",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 980,
+      "local_timing": {
+        "b": 491
+      },
+      "click_min_ms": 142.903333,
+      "max_server_gap_ms": 124
+    },
+    "cf7-q05-fit-a109": {
+      "valid": true,
+      "mid": "m8024",
+      "arm": "sumo-seven-first",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 586,
+      "local_timing": {
+        "a": 295
+      },
+      "click_min_ms": 142.936667,
+      "max_server_gap_ms": 125
+    },
+    "cf7-q05-prior-a31": {
+      "valid": true,
+      "mid": "m8025",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 501,
+      "local_timing": {
+        "a": 250
+      },
+      "click_min_ms": 142.927,
+      "max_server_gap_ms": 97
+    },
+    "cf7-q05-wt-a31": {
+      "valid": true,
+      "mid": "m8023",
+      "arm": "research-wtap20",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 1408,
+      "local_timing": {},
+      "click_min_ms": 142.89675,
+      "max_server_gap_ms": 125
+    }
+  },
+  "invalid": []
+}

@@ -1,0 +1,107 @@
+{
+  "original": {
+    "cf7-h05-fit-b109": "m8144",
+    "cf7-h05-wt-a31": "m8143",
+    "cf7-h05-fit-a31": "m8145",
+    "cf7-h05-prior-a31": "m8146",
+    "cf7-h05-fit-a109": "m8148",
+    "cf7-h05-fit-b31": "m8147"
+  },
+  "rows": {
+    "cf7-h05-fit-b109": {
+      "valid": true,
+      "mid": "m8144",
+      "arm": "sumo-seven-first",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 410,
+      "local_timing": {
+        "b": 205
+      },
+      "click_min_ms": 50.042541,
+      "max_server_gap_ms": 115
+    },
+    "cf7-h05-wt-a31": {
+      "valid": true,
+      "mid": "m8143",
+      "arm": "research-wtap20",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 462,
+      "local_timing": {},
+      "click_min_ms": 50.038958,
+      "max_server_gap_ms": 115
+    },
+    "cf7-h05-fit-a31": {
+      "valid": true,
+      "mid": "m8145",
+      "arm": "sumo-seven-first",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 474,
+      "local_timing": {
+        "a": 237
+      },
+      "click_min_ms": 50.071209,
+      "max_server_gap_ms": 114
+    },
+    "cf7-h05-prior-a31": {
+      "valid": true,
+      "mid": "m8146",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 419,
+      "local_timing": {
+        "a": 210
+      },
+      "click_min_ms": 50.199708,
+      "max_server_gap_ms": 99
+    },
+    "cf7-h05-fit-a109": {
+      "valid": true,
+      "mid": "m8148",
+      "arm": "sumo-seven-first",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 353,
+      "local_timing": {
+        "a": 178
+      },
+      "click_min_ms": 50.099917,
+      "max_server_gap_ms": 69
+    },
+    "cf7-h05-fit-b31": {
+      "valid": true,
+      "mid": "m8147",
+      "arm": "sumo-seven-first",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 630,
+      "local_timing": {
+        "b": 315
+      },
+      "click_min_ms": 50.029167,
+      "max_server_gap_ms": 98
+    }
+  },
+  "invalid": []
+}

@@ -1,0 +1,453 @@
+{
+  "by_arm": {
+    "sumo-input-fixed-noedge": {
+      "research-wtap20": [
+        4,
+        0,
+        0
+      ],
+      "shift-check-v4-4": [
+        4,
+        0,
+        0
+      ]
+    },
+    "sumo-input-fixed-nomotion": {
+      "shift-check-v4-4": [
+        1,
+        3,
+        0
+      ],
+      "research-wtap20": [
+        4,
+        0,
+        0
+      ]
+    },
+    "sumo-input-fixed-notiming": {
+      "shift-check-v4-4": [
+        2,
+        2,
+        0
+      ],
+      "research-wtap20": [
+        4,
+        0,
+        0
+      ]
+    }
+  },
+  "rows": {
+    "sinput-m-sumo-input-fixed-noedge-0-0-a": {
+      "valid": true,
+      "mid": "m7670",
+      "arm": "sumo-input-fixed-noedge",
+      "foe": "research-wtap20",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 314,
+      "local_timing": {
+        "a": 157
+      },
+      "click_min_ms": 50.0675,
+      "max_server_gap_ms": 64
+    },
+    "sinput-m-sumo-input-fixed-noedge-1-0-b": {
+      "valid": true,
+      "mid": "m7671",
+      "arm": "sumo-input-fixed-noedge",
+      "foe": "shift-check-v4-4",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 850,
+      "local_timing": {
+        "b": 425
+      },
+      "click_min_ms": 50.044375,
+      "max_server_gap_ms": 89
+    },
+    "sinput-m-sumo-input-fixed-noedge-1-0-a": {
+      "valid": true,
+      "mid": "m7669",
+      "arm": "sumo-input-fixed-noedge",
+      "foe": "shift-check-v4-4",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 2879,
+      "local_timing": {
+        "a": 1440
+      },
+      "click_min_ms": 50.027959,
+      "max_server_gap_ms": 98
+    },
+    "sinput-m-sumo-input-fixed-noedge-0-0-b": {
+      "valid": true,
+      "mid": "m7673",
+      "arm": "sumo-input-fixed-noedge",
+      "foe": "research-wtap20",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 85,
+      "local_timing": {
+        "b": 42
+      },
+      "click_min_ms": 50.087542,
+      "max_server_gap_ms": 56
+    },
+    "sinput-m-sumo-input-fixed-nomotion-1-1-a": {
+      "valid": true,
+      "mid": "m7672",
+      "arm": "sumo-input-fixed-nomotion",
+      "foe": "shift-check-v4-4",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 2146,
+      "local_timing": {
+        "a": 1073
+      },
+      "click_min_ms": 50.035625,
+      "max_server_gap_ms": 105
+    },
+    "sinput-m-sumo-input-fixed-noedge-1-1-a": {
+      "valid": true,
+      "mid": "m7674",
+      "arm": "sumo-input-fixed-noedge",
+      "foe": "shift-check-v4-4",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 550,
+      "local_timing": {
+        "a": 275
+      },
+      "click_min_ms": 50.006333,
+      "max_server_gap_ms": 92
+    },
+    "sinput-m-sumo-input-fixed-notiming-1-1-a": {
+      "valid": true,
+      "mid": "m7675",
+      "arm": "sumo-input-fixed-notiming",
+      "foe": "shift-check-v4-4",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 531,
+      "local_timing": {
+        "a": 266
+      },
+      "click_min_ms": 50.093459,
+      "max_server_gap_ms": 86
+    },
+    "sinput-m-sumo-input-fixed-notiming-1-0-b": {
+      "valid": true,
+      "mid": "m7676",
+      "arm": "sumo-input-fixed-notiming",
+      "foe": "shift-check-v4-4",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 882,
+      "local_timing": {
+        "b": 441
+      },
+      "click_min_ms": 50.029833,
+      "max_server_gap_ms": 115
+    },
+    "sinput-m-sumo-input-fixed-nomotion-1-0-b": {
+      "valid": true,
+      "mid": "m7677",
+      "arm": "sumo-input-fixed-nomotion",
+      "foe": "shift-check-v4-4",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 1078,
+      "local_timing": {
+        "b": 539
+      },
+      "click_min_ms": 50.020417,
+      "max_server_gap_ms": 115
+    },
+    "sinput-m-sumo-input-fixed-nomotion-1-1-b": {
+      "valid": true,
+      "mid": "m7678",
+      "arm": "sumo-input-fixed-nomotion",
+      "foe": "shift-check-v4-4",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 878,
+      "local_timing": {
+        "b": 440
+      },
+      "click_min_ms": 50.111708,
+      "max_server_gap_ms": 94
+    },
+    "sinput-m-sumo-input-fixed-notiming-0-1-b": {
+      "valid": true,
+      "mid": "m7679",
+      "arm": "sumo-input-fixed-notiming",
+      "foe": "research-wtap20",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 334,
+      "local_timing": {
+        "b": 167
+      },
+      "click_min_ms": 50.279625,
+      "max_server_gap_ms": 107
+    },
+    "sinput-m-sumo-input-fixed-notiming-0-0-b": {
+      "valid": true,
+      "mid": "m7680",
+      "arm": "sumo-input-fixed-notiming",
+      "foe": "research-wtap20",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 146,
+      "local_timing": {
+        "b": 73
+      },
+      "click_min_ms": 50.081625,
+      "max_server_gap_ms": 107
+    },
+    "sinput-m-sumo-input-fixed-noedge-0-1-b": {
+      "valid": true,
+      "mid": "m7681",
+      "arm": "sumo-input-fixed-noedge",
+      "foe": "research-wtap20",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 310,
+      "local_timing": {
+        "b": 156
+      },
+      "click_min_ms": 50.059084,
+      "max_server_gap_ms": 88
+    },
+    "sinput-m-sumo-input-fixed-notiming-0-0-a": {
+      "valid": true,
+      "mid": "m7682",
+      "arm": "sumo-input-fixed-notiming",
+      "foe": "research-wtap20",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 200,
+      "local_timing": {
+        "a": 100
+      },
+      "click_min_ms": 50.415041,
+      "max_server_gap_ms": 77
+    },
+    "sinput-m-sumo-input-fixed-nomotion-0-0-a": {
+      "valid": true,
+      "mid": "m7683",
+      "arm": "sumo-input-fixed-nomotion",
+      "foe": "research-wtap20",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 372,
+      "local_timing": {
+        "a": 186
+      },
+      "click_min_ms": 50.170625,
+      "max_server_gap_ms": 126
+    },
+    "sinput-m-sumo-input-fixed-noedge-1-1-b": {
+      "valid": true,
+      "mid": "m7684",
+      "arm": "sumo-input-fixed-noedge",
+      "foe": "shift-check-v4-4",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 874,
+      "local_timing": {
+        "b": 438
+      },
+      "click_min_ms": 50.038,
+      "max_server_gap_ms": 126
+    },
+    "sinput-m-sumo-input-fixed-nomotion-0-0-b": {
+      "valid": true,
+      "mid": "m7686",
+      "arm": "sumo-input-fixed-nomotion",
+      "foe": "research-wtap20",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 208,
+      "local_timing": {
+        "b": 104
+      },
+      "click_min_ms": 50.224,
+      "max_server_gap_ms": 57
+    },
+    "sinput-m-sumo-input-fixed-nomotion-1-0-a": {
+      "valid": true,
+      "mid": "m7685",
+      "arm": "sumo-input-fixed-nomotion",
+      "foe": "shift-check-v4-4",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 2111,
+      "local_timing": {
+        "a": 1055
+      },
+      "click_min_ms": 50.018166,
+      "max_server_gap_ms": 102
+    },
+    "sinput-m-sumo-input-fixed-notiming-1-1-b": {
+      "valid": true,
+      "mid": "m7687",
+      "arm": "sumo-input-fixed-notiming",
+      "foe": "shift-check-v4-4",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 2484,
+      "local_timing": {
+        "b": 1242
+      },
+      "click_min_ms": 50.035792,
+      "max_server_gap_ms": 102
+    },
+    "sinput-m-sumo-input-fixed-nomotion-0-1-a": {
+      "valid": true,
+      "mid": "m7689",
+      "arm": "sumo-input-fixed-nomotion",
+      "foe": "research-wtap20",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 247,
+      "local_timing": {
+        "a": 124
+      },
+      "click_min_ms": 50.373333,
+      "max_server_gap_ms": 80
+    },
+    "sinput-m-sumo-input-fixed-nomotion-0-1-b": {
+      "valid": true,
+      "mid": "m7690",
+      "arm": "sumo-input-fixed-nomotion",
+      "foe": "research-wtap20",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 340,
+      "local_timing": {
+        "b": 170
+      },
+      "click_min_ms": 50.019166,
+      "max_server_gap_ms": 139
+    },
+    "sinput-m-sumo-input-fixed-notiming-0-1-a": {
+      "valid": true,
+      "mid": "m7691",
+      "arm": "sumo-input-fixed-notiming",
+      "foe": "research-wtap20",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 138,
+      "local_timing": {
+        "a": 69
+      },
+      "click_min_ms": 50.579958,
+      "max_server_gap_ms": 92
+    },
+    "sinput-m-sumo-input-fixed-notiming-1-0-a": {
+      "valid": true,
+      "mid": "m7688",
+      "arm": "sumo-input-fixed-notiming",
+      "foe": "shift-check-v4-4",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 2290,
+      "local_timing": {
+        "a": 1145
+      },
+      "click_min_ms": 50.026417,
+      "max_server_gap_ms": 139
+    },
+    "sinput-m-sumo-input-fixed-noedge-0-1-a": {
+      "valid": true,
+      "mid": "m7692",
+      "arm": "sumo-input-fixed-noedge",
+      "foe": "research-wtap20",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 217,
+      "local_timing": {
+        "a": 110
+      },
+      "click_min_ms": 50.010917,
+      "max_server_gap_ms": 101
+    }
+  },
+  "original": {
+    "sinput-m-sumo-input-fixed-noedge-0-0-a": "m7670",
+    "sinput-m-sumo-input-fixed-noedge-1-0-b": "m7671",
+    "sinput-m-sumo-input-fixed-noedge-1-0-a": "m7669",
+    "sinput-m-sumo-input-fixed-noedge-0-0-b": "m7673",
+    "sinput-m-sumo-input-fixed-nomotion-1-1-a": "m7672",
+    "sinput-m-sumo-input-fixed-noedge-1-1-a": "m7674",
+    "sinput-m-sumo-input-fixed-notiming-1-1-a": "m7675",
+    "sinput-m-sumo-input-fixed-notiming-1-0-b": "m7676",
+    "sinput-m-sumo-input-fixed-nomotion-1-0-b": "m7677",
+    "sinput-m-sumo-input-fixed-nomotion-1-1-b": "m7678",
+    "sinput-m-sumo-input-fixed-notiming-0-1-b": "m7679",
+    "sinput-m-sumo-input-fixed-notiming-0-0-b": "m7680",
+    "sinput-m-sumo-input-fixed-noedge-0-1-b": "m7681",
+    "sinput-m-sumo-input-fixed-notiming-0-0-a": "m7682",
+    "sinput-m-sumo-input-fixed-nomotion-0-0-a": "m7683",
+    "sinput-m-sumo-input-fixed-noedge-1-1-b": "m7684",
+    "sinput-m-sumo-input-fixed-nomotion-0-0-b": "m7686",
+    "sinput-m-sumo-input-fixed-nomotion-1-0-a": "m7685",
+    "sinput-m-sumo-input-fixed-notiming-1-1-b": "m7687",
+    "sinput-m-sumo-input-fixed-nomotion-0-1-a": "m7689",
+    "sinput-m-sumo-input-fixed-nomotion-0-1-b": "m7690",
+    "sinput-m-sumo-input-fixed-notiming-0-1-a": "m7691",
+    "sinput-m-sumo-input-fixed-notiming-1-0-a": "m7688",
+    "sinput-m-sumo-input-fixed-noedge-0-1-a": "m7692"
+  },
+  "invalid": []
+}

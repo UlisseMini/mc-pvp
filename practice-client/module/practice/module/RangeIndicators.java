@@ -25,7 +25,11 @@ final class RangeIndicators {
     }
     private final Signal yours=new Signal(),theirs=new Signal();
     private String context="";private double previousTime=Double.NaN;private long previousWall;
-    void configure(Properties p){configure(yours,p,"yours","crosshair","55AAFF");configure(theirs,p,"theirs","crosshair","FF5555");}
+    private boolean crosshairEnabled;
+    void configure(Properties p){
+        crosshairEnabled=bool(p.getProperty("range.crosshair.enabled","true"));
+        configure(yours,p,"yours","crosshair","55AAFF");configure(theirs,p,"theirs","crosshair","FF5555");
+    }
     private static void configure(Signal s,Properties p,String side,String fallback,String rgb){
         String key="range."+side+".";
         Style selected=style(p.getProperty(key+"style",fallback));
@@ -44,6 +48,7 @@ final class RangeIndicators {
 
     Frame render(Frame base,int width,int height,Map<String,Object> live,Map<String,Object> replay,long liveReceived){
         long wall=System.nanoTime();double time=wall/1e6,speed=1;Boolean own=null,opponent=null;String next="";
+        boolean showYours=true,showTheirs=true;
         if(Boolean.TRUE.equals(replay.get("active"))){
             next="replay:"+replay.get("match");time=number(replay,"time_ms",0);speed=number(replay,"speed",1);
             Map<String,Object> views=object(replay.get("views")),availability=object(replay.get("availability"));
@@ -51,6 +56,10 @@ final class RangeIndicators {
             Map<String,Object> a=object(views.get(mine)),b=object(views.get(other));
             own=inRange(ReachAdvantage.distance(object(a.get(mine)),object(a.get(other))),limit(replay,mine.equals("a")?0:1));
             opponent=inRange(ReachAdvantage.distance(object(b.get(other)),object(b.get(mine))),limit(replay,other.equals("a")?0:1));
+            if(Boolean.TRUE.equals(replay.get("offline"))){
+                showYours=!Boolean.FALSE.equals(replay.get("offline_range_yours"));
+                showTheirs=!Boolean.FALSE.equals(replay.get("offline_range_theirs"));
+            }
         }else if(!live.isEmpty()&&wall-liveReceived<250000000L){
             next="live:"+live.get("match");own=inRange(object(live.get("your_range")));
             if(Boolean.TRUE.equals(live.get("available")))opponent=inRange(object(live.get("bot_range")));
@@ -60,13 +69,15 @@ final class RangeIndicators {
             yours.clear();theirs.clear();
         }
         context=next;previousTime=time;previousWall=wall;
-        double ya=yours.alpha(own,time),ta=theirs.alpha(opponent,time);
-        List<Frame.Rectangle> shapes=new ArrayList<>();boolean split=yours.style==Style.EDGE&&theirs.style==Style.EDGE;
+        double ya=yours.alpha(showYours?own:null,time),ta=theirs.alpha(showTheirs?opponent:null,time);
+        List<Frame.Rectangle> shapes=new ArrayList<>();boolean split=showYours&&showTheirs&&yours.style==Style.EDGE&&theirs.style==Style.EDGE;
         // Tints first, crosshair marks last, then the bridge draws the existing HUD text.
         paint(shapes,yours,ya,true,width,height,split);paint(shapes,theirs,ta,false,width,height,split);
-        boolean bothScreen=yours.style==Style.SCREEN&&theirs.style==Style.SCREEN;
-        if(yours.style==Style.CROSSHAIR||bothScreen)brackets(shapes,yours.rgb,ya,true,width,height);
-        if(theirs.style==Style.CROSSHAIR||bothScreen)brackets(shapes,theirs.rgb,ta,false,width,height);
+        boolean bothScreen=showYours&&showTheirs&&yours.style==Style.SCREEN&&theirs.style==Style.SCREEN;
+        if(crosshairEnabled){
+            if(yours.style==Style.CROSSHAIR||bothScreen)brackets(shapes,yours.rgb,ya,true,width,height);
+            if(theirs.style==Style.CROSSHAIR||bothScreen)brackets(shapes,theirs.rgb,ta,false,width,height);
+        }
         shapes.addAll(base.rectangles);
         return new Frame(base.holdSprint,base.lines,base.edgeColor,base.edgeWidth,shapes);
     }

@@ -112,6 +112,10 @@ public final class PeriodicComboClock {
         default boolean injected(Observation own,double completedAt){return true;}
         /** Native clickMouse invocation, including a call suppressed by the native miss counter. */
         default void consumed(Observation own,long admissionId){}
+        /** Release only Ctrl before the next movement after a local sprint contact. */
+        default boolean releaseSprintForMove(Observation own){return false;}
+        /** Ordinary key changes after click admission and before the native living movement. */
+        default Control movement(Control issued){return issued;}
     }
     public interface Audit {void event(double time,String event,PeriodicComboFightModel.State state);}
     /** ADMIT time is completion; admittedNanos records the originating poll opportunity. */
@@ -436,7 +440,7 @@ public final class PeriodicComboClock {
         deferralAttempts[side]++;maxDeferral[side]=Math.max(maxDeferral[side],delay/1_000_000.0);
         events.add(new Event(completion/1_000_000.0,e.kind,e.order,e.originalTime));
     }
-    private Observation observation(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;return new Observation(now,ticks[a?0:1],b.q,v.x,v.y,v.z,b.sprint,b.headYaw,b.lastContactTime,b.localContacts,v.lastHurtTime,b.lastHurtTime,b.reportYaw);}
+    public Observation observation(boolean a){PeriodicComboFightModel.Body b=a?state.a:state.b;PeriodicComboFightModel.View v=a?state.ab:state.ba;return new Observation(now,ticks[a?0:1],b.q,v.x,v.y,v.z,b.sprint,b.headYaw,b.lastContactTime,b.localContacts,v.lastHurtTime,b.lastHurtTime,b.reportYaw);}
     private void receive(boolean a){
         int side=a?0:1;LinkedList<Publication> pending=publications.get(side);
         long drainNanos=Math.round(now*1_000_000.0);
@@ -613,11 +617,17 @@ public final class PeriodicComboClock {
         if(!q.presses.isEmpty()&&!selectionReady[side])throw new IllegalStateException("UNSUPPORTED_CACHED_SELECTION: drain/movement/interpolation between ray refresh and click consumption");
         while(!q.presses.isEmpty()){
             Press press=q.presses.removeFirst();boolean eligible=q.missCounter<=0;long contacts=body.localContacts;
+            boolean sprintBefore=body.sprint;
             if(eligible){
                 PeriodicComboFightModel.replayInput(state,config,a,control.key,body.yaw,body.pitch,true,now);
                 if(body.localContacts==contacts)q.missCounter=10; // air MISS; no block interactions in this adapter
             }
-            policies[side].consumed(observation(a),press.id);clickEvent(a,"CONSUME","native_tick",press,eligible,body.localContacts>contacts);
+            Observation own=observation(a);boolean contact=body.localContacts>contacts;
+            policies[side].consumed(own,press.id);
+            Control held=controls[side];
+            if(contact&&sprintBefore&&!own.sprint()&&held.key==PeriodicComboFightModel.S&&policies[side].releaseSprintForMove(own))
+                controls[side]=new Control(PeriodicComboFightModel.W,held.strafe,held.click,held.jump);
+            clickEvent(a,"CONSUME","native_tick",press,eligible,contact);
         }
         // Pinned ave.s(): entire pressTime loop precedes b(false), whose first action clears ag.
         // Synthetic onTick presses do not hold keyBindAttack down. A second same-tick MISS is suppressed.
@@ -655,6 +665,7 @@ public final class PeriodicComboClock {
                 Control control=Objects.requireNonNull(controls[side],"MOVE before TICK_HEAD");boolean first=a?timing.aRemoteBeforeMove:timing.bRemoteBeforeMove;
                 PeriodicComboFightModel.View v=a?state.ab:state.ba;
                 if(!recordedSchedule&&first){v.step();checkpoint("INTERP"+(a?"A":"B"));}
+                control=Objects.requireNonNull(policies[side].movement(control));
                 PeriodicComboFightModel.replayMove(state,config,a,control.key,control.strafe,(a?state.a:state.b).yaw,control.jump,now);checkpoint("MOVE"+(a?"A":"B"));
                 if(!recordedSchedule&&!first)v.step();ticks[side]++;selectionReady[side]=false;name=recordedSchedule||first?"AFTER_MOVE":"INTERP"+(a?"A":"B");
             }

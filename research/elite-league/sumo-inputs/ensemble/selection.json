@@ -1,0 +1,15 @@
+{
+  "members": [
+    "base8-29137",
+    "edge8-7181",
+    "full8-66047",
+    "v4-ppo-g0496"
+  ],
+  "best_member": "edge8-7181",
+  "weights": {
+    "v4-ppo-g0496": "bd2265e8498df5fe91f39f03e1dd0654ab16c5165bb9989df517890e6f2a75fe",
+    "sumo-vote-pooled": "5c5cc444b2cdde3b136f6139ec69ae72a6008f051e29dfd614cdb0e8af911544",
+    "sumo-vote-average": "e3bd9d9785b647289994d867aa0a947edbdec5cb439142586161ab8c4292b376",
+    "sumo-vote-member": "c68b075a92d408ba38c8ec4f13b5330f924934223e376b36f038f0850bba8197"
+  }
+}

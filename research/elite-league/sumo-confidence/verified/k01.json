@@ -1,0 +1,263 @@
+{
+  "original": {
+    "cf7-k01-wt-7-a109": "m7956",
+    "cf7-k01-wt-7-a31": "m7957",
+    "cf7-k01-wt-20-b109": "m7960",
+    "cf7-k01-prior-7-a109": "m7958",
+    "cf7-k01-wt-7-b109": "m7959",
+    "cf7-k01-prior-20-a109": "m7962",
+    "cf7-k01-prior-7-b109": "m7961",
+    "cf7-k01-prior-20-b31": "m7963",
+    "cf7-k01-wt-20-b31": "m7966",
+    "cf7-k01-prior-7-b31": "m7964",
+    "cf7-k01-wt-7-b31": "m7967",
+    "cf7-k01-wt-20-a31": "m7968",
+    "cf7-k01-prior-20-a31": "m7969",
+    "cf7-k01-wt-20-a109": "m7970",
+    "cf7-k01-prior-20-b109": "m7965",
+    "cf7-k01-prior-7-a31": "m7971"
+  },
+  "rows": {
+    "cf7-k01-wt-7-a109": {
+      "valid": true,
+      "mid": "m7956",
+      "arm": "research-wtap20",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 214,
+      "local_timing": {},
+      "click_min_ms": 143.443292,
+      "max_server_gap_ms": 105
+    },
+    "cf7-k01-wt-7-a31": {
+      "valid": true,
+      "mid": "m7957",
+      "arm": "research-wtap20",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 210,
+      "local_timing": {},
+      "click_min_ms": 143.1385,
+      "max_server_gap_ms": 71
+    },
+    "cf7-k01-wt-20-b109": {
+      "valid": true,
+      "mid": "m7960",
+      "arm": "research-wtap20",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 165,
+      "local_timing": {},
+      "click_min_ms": 50.268958,
+      "max_server_gap_ms": 63
+    },
+    "cf7-k01-prior-7-a109": {
+      "valid": true,
+      "mid": "m7958",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 938,
+      "local_timing": {
+        "a": 471
+      },
+      "click_min_ms": 142.893959,
+      "max_server_gap_ms": 102
+    },
+    "cf7-k01-wt-7-b109": {
+      "valid": true,
+      "mid": "m7959",
+      "arm": "research-wtap20",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 396,
+      "local_timing": {},
+      "click_min_ms": 143.116875,
+      "max_server_gap_ms": 89
+    },
+    "cf7-k01-prior-20-a109": {
+      "valid": true,
+      "mid": "m7962",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 392,
+      "local_timing": {
+        "a": 196
+      },
+      "click_min_ms": 50.072125,
+      "max_server_gap_ms": 67
+    },
+    "cf7-k01-prior-7-b109": {
+      "valid": true,
+      "mid": "m7961",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 1704,
+      "local_timing": {
+        "b": 853
+      },
+      "click_min_ms": 142.950958,
+      "max_server_gap_ms": 89
+    },
+    "cf7-k01-prior-20-b31": {
+      "valid": true,
+      "mid": "m7963",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 1169,
+      "local_timing": {
+        "b": 585
+      },
+      "click_min_ms": 50.035,
+      "max_server_gap_ms": 89
+    },
+    "cf7-k01-wt-20-b31": {
+      "valid": true,
+      "mid": "m7966",
+      "arm": "research-wtap20",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 525,
+      "local_timing": {},
+      "click_min_ms": 50.05175,
+      "max_server_gap_ms": 61
+    },
+    "cf7-k01-prior-7-b31": {
+      "valid": true,
+      "mid": "m7964",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 1038,
+      "local_timing": {
+        "b": 519
+      },
+      "click_min_ms": 143.026208,
+      "max_server_gap_ms": 109
+    },
+    "cf7-k01-wt-7-b31": {
+      "valid": true,
+      "mid": "m7967",
+      "arm": "research-wtap20",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 400,
+      "local_timing": {},
+      "click_min_ms": 143.121458,
+      "max_server_gap_ms": 64
+    },
+    "cf7-k01-wt-20-a31": {
+      "valid": true,
+      "mid": "m7968",
+      "arm": "research-wtap20",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 296,
+      "local_timing": {},
+      "click_min_ms": 50.030167,
+      "max_server_gap_ms": 57
+    },
+    "cf7-k01-prior-20-a31": {
+      "valid": true,
+      "mid": "m7969",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 582,
+      "local_timing": {
+        "a": 292
+      },
+      "click_min_ms": 50.036375,
+      "max_server_gap_ms": 90
+    },
+    "cf7-k01-wt-20-a109": {
+      "valid": true,
+      "mid": "m7970",
+      "arm": "research-wtap20",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 306,
+      "local_timing": {},
+      "click_min_ms": 50.02375,
+      "max_server_gap_ms": 87
+    },
+    "cf7-k01-prior-20-b109": {
+      "valid": true,
+      "mid": "m7965",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 2948,
+      "local_timing": {
+        "b": 1474
+      },
+      "click_min_ms": 50.021667,
+      "max_server_gap_ms": 94
+    },
+    "cf7-k01-prior-7-a31": {
+      "valid": true,
+      "mid": "m7971",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 860,
+      "local_timing": {
+        "a": 430
+      },
+      "click_min_ms": 142.959167,
+      "max_server_gap_ms": 103
+    }
+  },
+  "invalid": []
+}

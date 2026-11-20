@@ -39,12 +39,21 @@ public final class ItemUseAnimationCheck {
         new ClassReader(original).accept(before, 0);
         new ClassReader(new PracticeTransformer().transform(entry, RENDERER, original)).accept(after, 0);
         check(before.methods.size() == after.methods.size(), "renderer methods changed");
-        int hooks = 0;
+        int hooks = 0, handHooks = 0;
         for (int index = 0; index < before.methods.size(); ++index) {
             MethodNode method = after.methods.get(index);
             for (AbstractInsnNode instruction : method.instructions.toArray()) {
                 if (!(instruction instanceof MethodInsnNode)) continue;
                 MethodInsnNode call = (MethodInsnNode) instruction;
+                if ("practice/bridge/ObserverHooks".equals(call.owner) && "hideEmptyHand".equals(call.name)) {
+                    check(firstPerson.equals(method.name) && "(F)V".equals(method.desc), "hand hook outside first-person rendering");
+                    MethodInsnNode invisible = (MethodInsnNode) call.getPrevious();
+                    check("(Z)Z".equals(call.desc) && "()Z".equals(invisible.desc)
+                        && ("ax".equals(invisible.name) || "func_82150_aj".equals(invisible.name)), "hand hook does not check invisibility");
+                    method.instructions.remove(call);
+                    ++handHooks;
+                    continue;
+                }
                 if (!ANIMATION.equals(call.owner)) continue;
                 check(firstPerson.equals(method.name) && "(F)V".equals(method.desc), "hook outside first-person rendering");
                 check("swing".equals(call.name) && "(FF)F".equals(call.desc), "wrong hook signature");
@@ -64,6 +73,7 @@ public final class ItemUseAnimationCheck {
                 "unrelated renderer instructions changed in " + method.name);
         }
         check(hooks == 4, "expected four item-use poses, got " + hooks);
+        check(handHooks == 1, "expected one offline hand hook, got " + handHooks);
     }
 
     public static void main(String[] args) throws Exception {

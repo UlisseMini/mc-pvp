@@ -8,19 +8,27 @@ final class BoxingDrill {
     record Head(PeriodicComboClock.Observation view,PeriodicComboClock.Control applied){}
     static final class Recorder extends DuelEnv.Player{
         final List<Head> history=new ArrayList<>();
+        double lastPhysicalPress=Double.NEGATIVE_INFINITY;
         Recorder(int ping){super("wtap",0,ping,0);}
         @Override public PeriodicComboClock.Control input(PeriodicComboClock.Observation o){
             var action=super.input(o);history.add(new Head(o,action));return action;
+        }
+        @Override public boolean injected(PeriodicComboClock.Observation own,double time){
+            lastPhysicalPress=time;
+            return super.injected(own,time);
         }
     }
     record Result(int cycles,double ms,String terminal){}
     static final class Checkpoint {
         final DuelEnv env;final DuelEnv.Game state;final List<Head> history;
         final double landmark;final List<DuelEnv.Hit> committed;
+        final double lastPhysicalPress;
         final int k; final Result baseline;
         Checkpoint(DuelEnv env,DuelEnv.Game game,List<Head> history,double landmark,List<DuelEnv.Hit> committed,int k){
             this.env=env;this.state=env.new Game(game,game.a.copy(),game.b.copy());
             this.history=List.copyOf(history);this.landmark=landmark;this.committed=List.copyOf(committed);this.k=k;
+            lastPhysicalPress=game.our() instanceof Recorder recorder
+                    ? recorder.lastPhysicalPress : Double.NEGATIVE_INFINITY;
             baseline=run(null,null);
         }
         DuelEnv.Game suffix(Arena.Model model){
@@ -65,19 +73,63 @@ final class BoxingDrill {
         return acquire(e,first,sensitivities,new DuelEnv.Player("wtap",0,e.rtt,2000));
     }
     static List<Checkpoint> acquire(DuelEnv e,boolean first,boolean sensitivities,DuelEnv.Player opponent){
+        return acquire(e,first,opponent,chain -> chain==3 || sensitivities && (chain==5 || chain==10),true,!sensitivities);
+    }
+    static List<Checkpoint> secondHits(DuelEnv e,boolean first){
+        return acquire(e,first,new DuelEnv.Player("wtap",0,e.rtt,2000),chain -> chain==2,false,false);
+    }
+    static List<Checkpoint> regulationThirdHits(DuelEnv env, boolean first) {
+        // Leave room for a short continuation without hitting the regulation endpoint.
+        return acquire(env, first, new DuelEnv.Player("wtap", 0, env.rtt, 0),
+                chain -> chain == 3, false, false, 85);
+    }
+    static List<Checkpoint> regulationFirstHits(DuelEnv env, boolean first) {
+        return acquire(env, first, new DuelEnv.Player("wtap", 0, env.rtt, 0),
+                chain -> chain == 1, false, false, 85);
+    }
+    static Checkpoint exactSecondHit(DuelEnv env,boolean first,double at){
+        return exactHit(env,first,at,2);
+    }
+    static Checkpoint exactHit(DuelEnv env,boolean first,double at,int landmark){
+        var recorder=new Recorder(env.rtt);
+        var prefix=env.new Game(first,recorder,new DuelEnv.Player("wtap",0,env.rtt,2000));
+        prefix.trace();
+        prefix.clock.runUntil(at);
+        var hits=prefix.hits.list;
+        int hitIndex=-1,chain=0;
+        double awake=Math.max(prefix.a.firstClick,prefix.b.firstClick);
+        for(int i=0;i<hits.size();i++){
+            var hit=hits.get(i);
+            if(hit.at()<awake)continue;
+            if(hit.sideA()!=first)chain=0;
+            else if(!hit.upgrade()&&++chain==landmark&&hit.at()==at)hitIndex=i;
+        }
+        if(hitIndex<0)throw new IllegalArgumentException("No hit "+landmark+" at "+at);
+        while(prefix.step<env.serverEnds.length&&env.serverEnds[prefix.step]<at)prefix.step++;
+        return new Checkpoint(env,prefix,recorder.history,at,hits.subList(hitIndex+1,hits.size()),landmark);
+    }
+    private static List<Checkpoint> acquire(DuelEnv e,boolean first,DuelEnv.Player opponent,
+                                            java.util.function.IntPredicate landmark,boolean oncePerCount,boolean stop){
+        return acquire(e, first, opponent, landmark, oncePerCount, stop, Integer.MAX_VALUE);
+    }
+    private static List<Checkpoint> acquire(DuelEnv e, boolean first, DuelEnv.Player opponent,
+                                            java.util.function.IntPredicate landmark, boolean oncePerCount,
+                                            boolean stop, int scoreLimit) {
         var p=new Recorder(e.rtt);var g=e.new Game(first,p,opponent);
         g.trace();int seen=0,chain=0;Set<Integer> used=new HashSet<>();var entries=new ArrayList<Checkpoint>();
+        int[] score = new int[2];
         while(g.advance()){
             var hs=g.hits.list;double wake=Math.max(g.a.firstClick,g.b.firstClick);
             for(;seen<hs.size();seen++){
                 var h=hs.get(seen);
+                if (++score[h.sideA() ? 0 : 1] >= scoreLimit) return entries;
                 if(!Double.isFinite(wake)||h.at()<wake)continue;
                 if(h.sideA()!=first){chain=0;continue;}
                 if(h.upgrade())continue;
-                if(++chain!=3&&(!sensitivities||(chain!=5&&chain!=10)))continue;
-                if(used.add(chain)){
+                if(!landmark.test(++chain))continue;
+                if(!oncePerCount||used.add(chain)){
                     entries.add(new Checkpoint(e,g,p.history,h.at(),hs.subList(seen+1,hs.size()),chain));
-                    if(!sensitivities)return entries;
+                    if(stop)return entries;
                 }
             }
         }

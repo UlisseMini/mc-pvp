@@ -1,0 +1,56 @@
+{
+  "training_bouts": 411648,
+  "prospective_model_bouts": {
+    "transfer.csv": 22560,
+    "refine/transfer.csv": 3200,
+    "axes/transfer.csv": 5440,
+    "archive.csv.gz": 37008,
+    "ensemble/transfer.csv": 1600,
+    "ensemble/archive.csv.gz": 20560
+  },
+  "unique_native_bouts": 348,
+  "clock_only_native_bouts": 6,
+  "stages": {
+    "screen": {
+      "W": 85,
+      "L": 34,
+      "D": 9
+    },
+    "confirmation": {
+      "W": 23,
+      "L": 23,
+      "D": 2
+    },
+    "masks": {
+      "W": 19,
+      "L": 5
+    },
+    "refinement": {
+      "W": 25,
+      "L": 15
+    },
+    "axes": {
+      "L": 16,
+      "W": 26,
+      "D": 6
+    },
+    "ensemble": {
+      "W": 29,
+      "L": 26,
+      "D": 5
+    }
+  },
+  "invalid_attempts": [],
+  "verified_movements": 362484,
+  "local_feature_timing_records": 127431,
+  "physical_presses": 176667,
+  "min_press_interval_ms": 50.006333,
+  "bridge_sha256": "2be76aa746101378f9a8e9c1a5219a4f37b216bbab3bd9e1dc5a3d6aa9a8f76f",
+  "published": {
+    "sumo-input-screen": "sumo-input-edge8",
+    "sumo-input-final": "sumo-two-ping",
+    "sumo-input-refinement": "sumo-input-uniform",
+    "sumo-vote-final": "sumo-vote-member"
+  },
+  "best_sumo": "v4-ppo-g0496"
+}

@@ -1,0 +1,309 @@
+{
+  "original": {
+    "cf20-s02-p1-a109": "m8079",
+    "cf20-s02-field-a31": "m8080",
+    "cf20-s02-field-a109": "m8082",
+    "cf20-s02-field-b109": "m8081",
+    "cf20-s02-p1-a31": "m8084",
+    "cf20-s02-p0-b109": "m8086",
+    "cf20-s02-wt-a109": "m8088",
+    "cf20-s02-alt-a31": "m8090",
+    "cf20-s02-field-b31": "m8087",
+    "cf20-s02-p0-a109": "m8092",
+    "cf20-s02-p1-b31": "m8093",
+    "cf20-s02-p0-b31": "m8091",
+    "cf20-s02-p0-a31": "m8094",
+    "cf20-s02-p1-b109": "m8096",
+    "cf20-s02-alt-b109": "m8095",
+    "cf20-s02-alt-b31": "m8097",
+    "cf20-s02-mirror-a109": "m8089",
+    "cf20-s02-alt-a109": "m8098"
+  },
+  "rows": {
+    "cf20-s02-p1-a109": {
+      "valid": true,
+      "mid": "m8079",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 492,
+      "local_timing": {
+        "a": 246
+      },
+      "click_min_ms": 50.034084,
+      "max_server_gap_ms": 139
+    },
+    "cf20-s02-field-a31": {
+      "valid": true,
+      "mid": "m8080",
+      "arm": "sumo-frozen-ppo",
+      "foe": "shift-check-v4-4",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 174,
+      "local_timing": {
+        "a": 88
+      },
+      "click_min_ms": 50.046583,
+      "max_server_gap_ms": 64
+    },
+    "cf20-s02-field-a109": {
+      "valid": true,
+      "mid": "m8082",
+      "arm": "sumo-frozen-ppo",
+      "foe": "shift-check-v4-4",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 579,
+      "local_timing": {
+        "a": 291
+      },
+      "click_min_ms": 50.031958,
+      "max_server_gap_ms": 93
+    },
+    "cf20-s02-field-b109": {
+      "valid": true,
+      "mid": "m8081",
+      "arm": "sumo-frozen-ppo",
+      "foe": "shift-check-v4-4",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 1482,
+      "local_timing": {
+        "b": 741
+      },
+      "click_min_ms": 50.037875,
+      "max_server_gap_ms": 105
+    },
+    "cf20-s02-p1-a31": {
+      "valid": true,
+      "mid": "m8084",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 475,
+      "local_timing": {
+        "a": 237
+      },
+      "click_min_ms": 50.038084,
+      "max_server_gap_ms": 94
+    },
+    "cf20-s02-p0-b109": {
+      "valid": true,
+      "mid": "m8086",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 182,
+      "local_timing": {
+        "b": 91
+      },
+      "click_min_ms": 50.016,
+      "max_server_gap_ms": 81
+    },
+    "cf20-s02-wt-a109": {
+      "valid": true,
+      "mid": "m8088",
+      "arm": "research-wtap20",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 422,
+      "local_timing": {},
+      "click_min_ms": 50.018875,
+      "max_server_gap_ms": 144
+    },
+    "cf20-s02-alt-a31": {
+      "valid": true,
+      "mid": "m8090",
+      "arm": "sumo-frozen-evolve",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 744,
+      "local_timing": {
+        "a": 372
+      },
+      "click_min_ms": 50.028542,
+      "max_server_gap_ms": 108
+    },
+    "cf20-s02-field-b31": {
+      "valid": true,
+      "mid": "m8087",
+      "arm": "sumo-frozen-ppo",
+      "foe": "shift-check-v4-4",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 1611,
+      "local_timing": {
+        "b": 806
+      },
+      "click_min_ms": 50.013292,
+      "max_server_gap_ms": 144
+    },
+    "cf20-s02-p0-a109": {
+      "valid": true,
+      "mid": "m8092",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 227,
+      "local_timing": {
+        "a": 115
+      },
+      "click_min_ms": 50.05225,
+      "max_server_gap_ms": 85
+    },
+    "cf20-s02-p1-b31": {
+      "valid": true,
+      "mid": "m8093",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 343,
+      "local_timing": {
+        "b": 171
+      },
+      "click_min_ms": 50.180833,
+      "max_server_gap_ms": 68
+    },
+    "cf20-s02-p0-b31": {
+      "valid": true,
+      "mid": "m8091",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 960,
+      "local_timing": {
+        "b": 481
+      },
+      "click_min_ms": 50.138458,
+      "max_server_gap_ms": 93
+    },
+    "cf20-s02-p0-a31": {
+      "valid": true,
+      "mid": "m8094",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 232,
+      "local_timing": {
+        "a": 117
+      },
+      "click_min_ms": 50.058375,
+      "max_server_gap_ms": 87
+    },
+    "cf20-s02-p1-b109": {
+      "valid": true,
+      "mid": "m8096",
+      "arm": "sumo-frozen-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 319,
+      "local_timing": {
+        "b": 160
+      },
+      "click_min_ms": 50.2255,
+      "max_server_gap_ms": 83
+    },
+    "cf20-s02-alt-b109": {
+      "valid": true,
+      "mid": "m8095",
+      "arm": "sumo-frozen-evolve",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 1074,
+      "local_timing": {
+        "b": 538
+      },
+      "click_min_ms": 50.03875,
+      "max_server_gap_ms": 87
+    },
+    "cf20-s02-alt-b31": {
+      "valid": true,
+      "mid": "m8097",
+      "arm": "sumo-frozen-evolve",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 913,
+      "local_timing": {
+        "b": 457
+      },
+      "click_min_ms": 50.036916,
+      "max_server_gap_ms": 91
+    },
+    "cf20-s02-mirror-a109": {
+      "valid": true,
+      "mid": "m8089",
+      "arm": "v4-ppo-g0496",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "D",
+      "checked_heads": 4801,
+      "local_timing": {},
+      "click_min_ms": null,
+      "max_server_gap_ms": 113
+    },
+    "cf20-s02-alt-a109": {
+      "valid": true,
+      "mid": "m8098",
+      "arm": "sumo-frozen-evolve",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 2951,
+      "local_timing": {
+        "a": 1477
+      },
+      "click_min_ms": 50.040959,
+      "max_server_gap_ms": 114
+    }
+  },
+  "invalid": []
+}

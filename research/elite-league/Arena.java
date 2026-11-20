@@ -21,7 +21,7 @@ final class Arena {
             return create(rtt,rtt,wake,mmc,diameter,mmc?9:10);
         }
         DuelEnv.Player create(int rtt,int opponentRtt,int wake,boolean mmc,int diameter,int freshTicks){
-            if(model!=null)return new Neural(model,rtt);
+            if(model!=null)return new Neural(model,rtt,opponentRtt);
             if(name.startsWith("legacy-"))return new HistoricalMovement(name.substring(7),rtt,opponentRtt,freshTicks);
             if(NATIVE_STYLES.contains(name))
                 return new StrafeOpponent(name,rtt,mmc,diameter);
@@ -33,16 +33,21 @@ final class Arena {
     static final class Neural extends DuelEnv.Player{
         DuelNetwork net;
         boolean shadow;
-        Neural(Model model,int rtt){super("network",0,rtt,0);net=new DuelNetwork(model.family,model.weights);}
+        final double opponentRtt;
+        double lastPress=Double.NEGATIVE_INFINITY;
+        public boolean injected(PeriodicComboClock.Observation o,double t){lastPress=t;return super.injected(o,t);}
+        Neural(Model model,int rtt){this(model,rtt,Double.NaN);}
+        Neural(Model model,int rtt,double opponentRtt){super("network",0,rtt,0);this.opponentRtt=opponentRtt;net=new DuelNetwork(model.family,model.weights);}
         private Neural(Neural p){
-            super(p.style,0,p.rtt,p.wake);net=p.net.copy();shadow=p.shadow;firstClick=p.firstClick;
+            super(p.style,0,p.rtt,p.wake);net=p.net.copy();lastPress=p.lastPress;opponentRtt=p.opponentRtt;shadow=p.shadow;firstClick=p.firstClick;
             handled=p.handled;releaseUntil=p.releaseUntil;jumps=p.jumps;
         }
         @Override Neural copy(){return new Neural(this);}
         @Override public PeriodicComboClock.Control input(PeriodicComboClock.Observation o){
             var q=o.own();
+            net.localTiming(o.time(),o.time()-lastPress);
             int action=net.step(q.x(),q.y(),q.z(),o.targetX(),o.targetY(),o.targetZ(),q.vx(),q.vy(),q.vz(),q.onGround(),
-                o.sprint(),o.time()-o.lastOwnHurtTime(),o.time()-o.lastTargetHurtTime(),rtt);
+                o.sprint(),o.time()-o.lastOwnHurtTime(),o.time()-o.lastTargetHurtTime(),rtt,opponentRtt);
             if(shadow){
                 var w=super.input(o);
                 net.applied(DuelNetwork.pack(w.key(),(int)Math.signum(w.strafe()),w.click(),w.jump()));

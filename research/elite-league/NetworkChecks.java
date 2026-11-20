@@ -10,15 +10,16 @@ final class NetworkChecks {
             String line;DuelNetwork n=null;int count=0;
             while((line=reader.readLine())!=null){
                 if(line.startsWith("@")){n=DuelNetwork.decode(line.substring(1));continue;}
-                String[] s=line.split(" ");double[] v=new double[14];
+                String[] s=line.split(" ");int inputs=DuelNetwork.study(n.family())?16:n.family()==DuelNetwork.Family.PING_MLP?15:14;double[] v=new double[inputs];
                 for(int i=0;i<v.length;i++)v[i]=Double.parseDouble(s[i]);
+                if(inputs==16)n.localTiming(v[14],v[15]<0?Double.POSITIVE_INFINITY:v[15]);
                 int got=n.step(v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9]!=0,v[10]!=0,
-                    v[11]<0?Double.POSITIVE_INFINITY:v[11],v[12]<0?Double.POSITIVE_INFINITY:v[12],v[13]);
-                if(got!=Integer.parseInt(s[14]))throw new AssertionError("Replayed decision differs at row "+count);
-                if(s.length>16 && (n.pair()==null || n.pair().selected()!=Integer.parseInt(s[16])
+                    v[11]<0?Double.POSITIVE_INFINITY:v[11],v[12]<0?Double.POSITIVE_INFINITY:v[12],v[13],inputs==15?v[14]:Double.NaN);
+                if(got!=Integer.parseInt(s[inputs]))throw new AssertionError("Replayed decision differs at row "+count);
+                if(s.length>inputs+2 && (n.pair()==null || n.pair().selected()!=Integer.parseInt(s[16])
                         || n.pair().switches()!=Integer.parseInt(s[17]) || Math.abs(n.pair().score()-Double.parseDouble(s[18]))>1e-7))
                     throw new AssertionError("Selected expert differs at row "+count);
-                n.applied(Integer.parseInt(s[15]));count++;
+                n.applied(Integer.parseInt(s[inputs+1]));count++;
             }
             System.out.println(count);return;
         }
@@ -31,6 +32,7 @@ final class NetworkChecks {
         Random rng=new Random(301);
         for(var family:DuelNetwork.Family.values()){
             float[] w=new float[DuelNetwork.size(family)];for(int i=0;i<w.length;i++)w[i]=(float)rng.nextGaussian();
+            if(DuelNetwork.study(family))w[w.length-1]=lab.SumoInputs.MOTION|lab.SumoInputs.TIMING;
             var n=new DuelNetwork(family,w);var m=DuelNetwork.decode(DuelNetwork.encode(family,w));DuelNetwork fork=null;
             for(int i=0;i<100;i++){
                 if(i==35)fork=n.copy();

@@ -61,6 +61,10 @@ public final class Client {
     static BurstClickController.Decision burstDecision;
     static int sumoJumpMask;
     static DuelNetwork duelNetwork;
+    static ComboContinuationGate networkContinuation;
+    static BoxingReleaseHold boxingReleaseHold;
+    static BoxingRecoilSprint boxingRecoilSprint;
+    static BoxingApproachPoll boxingApproachPoll;
     static int networkLandmark,networkStreak;
     static long networkIncoming,networkOutgoing;
     static boolean networkReleased,drillWakeSent,drillLandmarkSubject,drillLandmarkParticipant,drillLandmarkSeen;
@@ -78,7 +82,10 @@ public final class Client {
     static boolean blockKey;
     static long freshHurtStatus;
     static long freshTargetHurtStatus;
+    static long openingHurtCue;
+    static int openingHurtDelayMs;
     static boolean jumpResetPending;
+    static BoxingSecondHurtJump boxingSecondHurtJump;
     static KnockbackDisplacement displacement;
     static KnockbackDisplacement.Decision displacementTurn;
     static final AimController aim=new AimController();
@@ -259,7 +266,8 @@ public final class Client {
             boolean displacementPermits=displacementTurn==null||!displacementTurn.headOnly()
                 ||nativeInputPoll&&selected==opponent;
             boolean coastAdmission=maintenanceCurrent()?maintenanceHandoff.coastAdmissionActive(hurtWindowActive,now):hurtWindowActive;
-            if(clickGate && wordPermits && referencePermits && displacementPermits && (!coastAdmission||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),DuelSettings.hurtWindowTicks(controls))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null) {
+            if(clickGate && wordPermits && referencePermits && displacementPermits && (!coastAdmission||hurtWindowCoast.allowInjection(now/1_000_000.0,nativeInputPoll,handledTargetHurtMs,number("ping",0),DuelSettings.hurtWindowTicks(controls))) && (!controls.getProperty("kind","").equals("cycle")||nativeInputPoll) && (!contactClicks||selected==opponent) && now-firstClickEligible>=firstDelay && ClickRate.ready(now,lastClick,controls) && R.get(mc,"currentScreen")==null
+                    && approachPollPermits(now,wall,selected==opponent)) {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 if(controls.getProperty("kind","").equals("cycle")){cycle.queued(ticks);clickGate=false;}
@@ -308,6 +316,16 @@ public final class Client {
             }
             ReplicationTrace.capPoll(now,pollPreviousCompleted,nativeInputPoll,pollGate,pollAdmitted,pollAdmitted?lastClick:-1);
         }catch(Throwable e){fail(e);}
+    }
+
+    private static boolean approachPollPermits(long nowNs, long nowMs, boolean selected) {
+        if(boxingApproachPoll==null)return true;
+        BoxingApproachPoll.Decision d=boxingApproachPoll.poll(nowNs,nativeInputPoll,selected);
+        if(d==BoxingApproachPoll.Decision.FIRST_DEFER||d==BoxingApproachPoll.Decision.SELECT)
+            log(Compat.map("type","boxing_approach_poll","time",nowMs,"monotonic_ns",nowNs,"match",match,
+                    "native_tick",ticks,"mode",boxingApproachPoll.mode().name(),"arm",boxingApproachPoll.arms(),
+                    "armed_ns",boxingApproachPoll.armedAt(),"decision",d.name(),"input_poll",nativeInputPoll?"native_tick":"frame"));
+        return d!=BoxingApproachPoll.Decision.FIRST_DEFER&&d!=BoxingApproachPoll.Decision.DEFER;
     }
 
     public static void tick(Object minecraft) {
@@ -388,6 +406,16 @@ public final class Client {
                 duelNetwork=null;networkIncoming=networkOutgoing=0;networkStreak=0;
                 networkLandmark=Integer.parseInt(controls.getProperty("duel_network_landmark","0"));
                 networkReleased=networkLandmark==0;
+                int wtapAfter=Integer.parseInt(controls.getProperty("duel_network_wtap_after","0"));
+                networkContinuation=wtapAfter==0?null:new ComboContinuationGate(wtapAfter);
+                boxingReleaseHold=controls.containsKey("boxing_release_hold_reach")
+                        ?new BoxingReleaseHold(number("boxing_release_hold_reach",1.6)):null;
+                boxingRecoilSprint=controls.containsKey("boxing_recoil_trial")
+                        ?new BoxingRecoilSprint(BoxingRecoilSprint.Arm.valueOf(controls.getProperty("boxing_recoil_trial"))):null;
+                boxingApproachPoll=controls.containsKey("boxing_approach_poll")
+                        ?new BoxingApproachPoll(BoxingApproachPoll.Mode.valueOf(controls.getProperty("boxing_approach_poll"))):null;
+                boxingSecondHurtJump=controls.containsKey("boxing_second_hurt_jump")
+                        ?new BoxingSecondHurtJump(BoxingSecondHurtJump.Mode.valueOf(controls.getProperty("boxing_second_hurt_jump"))):null;
                 drillWakeSent=false;drillLandmarkSeen=false;
                 drillLandmarkParticipant="1".equals(controls.getProperty("boxing_drill_participant"));
                 drillLandmarkSubject="1".equals(controls.getProperty("boxing_drill_subject"));
@@ -435,6 +463,8 @@ public final class Client {
                 burstClicks.reset();burstDecision=null;burstObservedAt=0;
                 criticalClicks.reset();
                 blockhit.reset();blockKey=false;freshHurtStatus=0;
+                openingHurtCue=0;
+                openingHurtDelayMs=Integer.parseInt(controls.getProperty("opening_hurt_delay_ms","-1"));
                 displacement=null;displacementTurn=null;
                 hitPredictor.reset();timedBlock.reset();blockTapCues.clear();blockTapQueued=0;
                 targetWatchdog.reset();targetReady=false;
@@ -851,10 +881,41 @@ public final class Client {
                 drillLandmarkSeen=true;
                 log(Compat.map("type","boxing_drill_handoff","match",match,"time",now,"tick",ticks));
             }
+            if(boxingReleaseHold!=null && kind.equals("wtap")){
+                double ownCue=obs.freshHurtCue==0?Double.NEGATIVE_INFINITY:obs.freshHurtCue;
+                double targetCue=obs.targetFreshHurtCue==0?Double.NEGATIVE_INFINITY:obs.targetFreshHurtCue;
+                double releaseCue=handledTapCue==0?Double.NEGATIVE_INFINITY:handledTapCue;
+                BoxingReleaseHold.Decision decision=boxingReleaseHold.decide(now,ownCue,targetCue,releaseCue,
+                        w,obs.ground,obs.localRange,!drillLandmarkSubject||drillLandmarkSeen);
+                if(decision==BoxingReleaseHold.Decision.HOLD){
+                    setKeys(true,0,true);
+                    log(Compat.map("type","boxing_release_hold","match",match,"time",now,"tick",ticks,
+                            "cue_time",handledTapCue,"nearest",obs.localRange));
+                }
+            }
+            if(boxingRecoilSprint!=null && kind.equals("wtap")){
+                double dx=obs.tx-obs.x,dz=obs.tz-obs.z;
+                double along=(dx*obs.vx+dz*obs.vz)/Math.max(.001,Math.hypot(dx,dz));
+                double nowMs=decisionHeadNanos/1_000_000.0;
+                BoxingRecoilSprint.Decision trial=boxingRecoilSprint.decide(now,lastObservedHurt,lastObservedTargetHurt,
+                        handledTapCue,w,obs.ground,obs.sprint,obs.localRange,along,!drillLandmarkSubject||drillLandmarkSeen,
+                        nowMs,maintenanceOwnHurtMs,handledTargetHurtMs);
+                if(trial!=BoxingRecoilSprint.Decision.STOCK){
+                    boolean enrolled=trial==BoxingRecoilSprint.Decision.ENROLLED;
+                    boolean choosesSprint=enrolled&&boxingRecoilSprint.arm.sprints();
+                    long actionTime=System.nanoTime();
+                    if(choosesSprint)setKeys(true,0,true);
+                    log(Compat.map("type",enrolled?"boxing_recoil_trial":"boxing_recoil_order_rejected","match",match,"tick",ticks,"time",now,
+                            "monotonic_ns",actionTime,"sprint",choosesSprint,"nearest",obs.localRange,"along",along,
+                            "head_ms",nowMs,"own_status_ms",Double.isFinite(maintenanceOwnHurtMs)?maintenanceOwnHurtMs:null,
+                            "target_status_ms",Double.isFinite(handledTargetHurtMs)?handledTargetHurtMs:null,
+                            "own_cue",lastObservedHurt,"target_cue",lastObservedTargetHurt,"release_cue",handledTapCue));
+                }
+            }
             if(duelNetwork!=null){
                 double ownAge=obs.freshHurtCue==0?Double.POSITIVE_INFINITY:obs.time-obs.freshHurtCue;
                 double targetAge=obs.targetFreshHurtCue==0?Double.POSITIVE_INFINITY:obs.time-obs.targetFreshHurtCue;
-                int proposed=duelNetwork.step(obs.x,obs.y,obs.z,obs.tx,obs.ty,obs.tz,obs.vx,obs.vy,obs.vz,
+                int proposed=DuelHudPing.step(duelNetwork,obs.x,obs.y,obs.z,obs.tx,obs.ty,obs.tz,obs.vx,obs.vy,obs.vz,
                         obs.ground,obs.sprint,ownAge,targetAge,ping);
                 if(!networkReleased && drillLandmarkSubject)networkReleased=drillLandmarkSeen;
                 if(!networkReleased && !drillLandmarkSubject && obs.time-epoch>=2000){
@@ -865,7 +926,11 @@ public final class Client {
                     }
                     if(networkStreak>=networkLandmark)networkReleased=true;
                 }
-                int action=networkReleased?proposed:DuelNetwork.pack(forward?(sprintKey?2:1):0,-strafe,clickGate,false);
+                boolean continueWithWtap=networkContinuation!=null&&networkContinuation.observe(obs.time,
+                        obs.freshHurtCue==0?Double.NEGATIVE_INFINITY:obs.freshHurtCue,
+                        obs.targetFreshHurtCue==0?Double.NEGATIVE_INFINITY:obs.targetFreshHurtCue);
+                int action=networkReleased&&!continueWithWtap?proposed:
+                        DuelNetwork.pack(forward?(sprintKey?2:1):0,-strafe,clickGate,false);
                 int key=DuelNetwork.key(action);
                 setKeys(key==1||key==2,-DuelNetwork.side(action),key==2);
                 if(key==3){
@@ -882,12 +947,18 @@ public final class Client {
                 decision.put("type","duel_network");decision.put("time",now);decision.put("match",match);
                 decision.put("tick",ticks);decision.put("action",action);decision.put("proposed",proposed);
                 decision.put("released",networkReleased);
+                if(networkContinuation!=null)decision.put("wtap_continuation",continueWithWtap);
                 decision.put("observation",Compat.list(obs.x,obs.y,obs.z,obs.tx,obs.ty,obs.tz,obs.vx,obs.vy,obs.vz,
                         obs.ground,obs.sprint,Double.isFinite(ownAge)?ownAge:-1,Double.isFinite(targetAge)?targetAge:-1,ping));
                 log(decision);
             }
             // A declared opening handicap tests combo acquisition separately from maintenance.
             if(controls.containsKey("click_start_ms") && now<Long.parseLong(controls.getProperty("start_at","0"))+(long)number("click_start_ms",0))clickGate=false;
+            if(openingHurtDelayMs>=0){
+                // Preserve the W-tap keys and CPS cap. Only delay initial click admission.
+                if(openingHurtCue==0)openingHurtCue=obs.freshHurtCue;
+                if(now-epoch<1100 && (openingHurtCue==0 || now-openingHurtCue<openingHurtDelayMs))clickGate=false;
+            }
             // Deliberate burst cadence is a policy choice. No immunity-based click filtering.
             if(controls.getProperty("click_mode","fixed").equals("burst"))
                 clickGate=(now-epoch)%(long)number("burst_period_ms",500)<number("burst_on_ms",300);
@@ -940,6 +1011,15 @@ public final class Client {
                 maintenanceTransition.put("selection_complete_monotonic_ns",System.nanoTime());log(maintenanceTransition);
             }
             boolean displacementJump=displacementInput(world,obs,sample,jumpOnImpact,ping);
+            boolean secondHurtJump=false;
+            if(boxingSecondHurtJump!=null){
+                BoxingSecondHurtJump.Decision decision=boxingSecondHurtJump.decide(decisionHeadNanos/1_000_000.0,
+                        jumpOnImpact,(Boolean)R.get(player,"onGround"),ping);
+                secondHurtJump=decision==BoxingSecondHurtJump.Decision.JUMP;
+                if(decision!=BoxingSecondHurtJump.Decision.NONE)
+                    log(Compat.map("type","boxing_second_hurt_jump","match",match,"time",now,"native_tick",ticks,
+                            "decision_ns",decisionHeadNanos,"mode",boxingSecondHurtJump.mode().name(),"decision",decision.name()));
+            }
             if(duelNetwork==null && DuelSettings.mouseInput(controls)){
                 Map<String,Object> h=new LinkedHashMap<>();h.put("type","legacy_head");h.put("match",match);h.put("time",now);
                 h.put("tick",ticks);h.put("epoch",epoch);h.put("observed",obs.time);h.put("kind",kind);
@@ -948,12 +1028,21 @@ public final class Client {
                 h.put("cues",Compat.list(lastObservedHurt,lastObservedTargetHurt));h.put("last_click",ModelController.lastInjection);
                 h.put("range",obs.localRange);h.put("keys",Compat.list(forward,sprintKey,strafe,clickGate));log(h);
             }
+            if(boxingApproachPoll!=null){
+                double dx=obs.tx-obs.x,dz=obs.tz-obs.z;
+                double toward=(obs.vx*dx+obs.vz*dz)/Math.max(.001,Math.hypot(dx,dz));
+                if(boxingApproachPoll.arm(decisionHeadNanos,now,lastObservedHurt,lastObservedTargetHurt,obs.ground,
+                        obs.localRange,obs.ty-obs.y,toward))
+                    log(Compat.map("type","boxing_approach_poll","time",now,"monotonic_ns",decisionHeadNanos,"match",match,
+                            "native_tick",ticks,"mode",boxingApproachPoll.mode().name(),"arm",boxingApproachPoll.arms(),
+                            "decision","ARM","nearest",obs.localRange,"toward",toward));
+            }
             if(reaction==0||displacementTurn!=null&&displacementTurn.headOnly()){nativeInputPoll=true;try{frame(mc);}finally{nativeInputPoll=false;}}
             // S12 changes velocity while the previous movement's ground flag
             // still holds. Read Jump in the next native living update.
             int jumpState=sumoJumpMask==0?-1:SumoJumpPolicy.state(obs.ground,forward,obs.tx-obs.x,obs.tz-obs.z,obs.ty-obs.y,obs.vx,obs.vz);
             boolean learnedJump=SumoJumpPolicy.jump(sumoJumpMask,jumpState);
-            if((networkJump||learnedJump||displacementJump||jumpOnImpact&&Boolean.parseBoolean(controls.getProperty("jump_reset","false")))
+            if((networkJump||learnedJump||displacementJump||secondHurtJump||jumpOnImpact&&Boolean.parseBoolean(controls.getProperty("jump_reset","false")))
                     &&(Boolean)R.get(player,"onGround")&&R.get(mc,"currentScreen")==null){
                 Object binding=R.get(R.get(mc,"gameSettings"),"keyBindJump");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"setKeyBindState",(int)R.call(binding,"getKeyCode"),true);
@@ -1122,6 +1211,17 @@ public final class Client {
         if(p.getProperty("kind","").equals("input-word")&&!p.containsKey("input_word"))throw new IllegalArgumentException("Input word path required");
         if(p.containsKey("input_word")&&(reaction!=0||!p.getProperty("click_mode","fixed").equals("fixed")))
             throw new IllegalArgumentException("Input words require zero reaction delay and fixed capped click admission");
+        if(p.containsKey("duel_network_wtap_after")){
+            int after=Integer.parseInt(p.getProperty("duel_network_wtap_after"));
+            if(after<0||(after>0&&(!p.containsKey("duel_network")||!p.getProperty("kind","hold").equals("wtap"))))
+                throw new IllegalArgumentException("Combo continuation requires a W-tap policy with a movement network");
+        }
+        if(p.containsKey("opening_hurt_delay_ms")){
+            int delay=Integer.parseInt(p.getProperty("opening_hurt_delay_ms"));
+            if(delay<0||delay>1100||!p.getProperty("kind","hold").equals("wtap")||
+                    !p.getProperty("click_mode","fixed").equals("fixed")||p.containsKey("click_start_ms"))
+                throw new IllegalArgumentException("Hurt-cue opening requires fixed W-tap clicks and a 0–1100 ms delay");
+        }
         Long.parseLong(p.getProperty("start_at","0"));
     }
     static boolean identityContains(Object collection,Object target){for(Object item:(Iterable<?>)collection)if(item==target)return true;return false;}
@@ -1149,11 +1249,13 @@ public final class Client {
             Object entity=R.call(packet,"getEntity",R.get(mc,"theWorld"));
             if(entity==opponent){freshTargetHurtStatus=System.currentTimeMillis();
                 long cueNs=System.nanoTime();handledTargetHurtMs=cueNs/1_000_000.0;
+                if(boxingSecondHurtJump!=null)boxingSecondHurtJump.targetHurt();
                 if(maintenanceCurrent())maintenanceHandoff.targetHurt(freshTargetHurtStatus,cueNs);
                 log(Compat.map("type","fresh_target_hurt_status","time",freshTargetHurtStatus,"match",match));
             }
             if(entity==player){freshHurtStatus=System.currentTimeMillis();
                 long cueNs=System.nanoTime();maintenanceOwnHurtMs=cueNs/1000000.0;
+                if(boxingSecondHurtJump!=null)boxingSecondHurtJump.ownHurt(cueNs/1_000_000.0);
                 if(maintenanceCurrent())maintenanceHandoff.ownReturnCue(false,freshHurtStatus,cueNs);
                 log(Compat.map("type","fresh_hurt_status","time",freshHurtStatus,"match",match));
                 if(Boolean.parseBoolean(controls.getProperty("block_adapt","false"))){
@@ -1174,6 +1276,7 @@ public final class Client {
             event.put("vx",R.num(packet,"motionX")/8000);event.put("vy",R.num(packet,"motionY")/8000);event.put("vz",R.num(packet,"motionZ")/8000);
             if(Boolean.TRUE.equals(event.get("own_entity"))&&
                     (Boolean.parseBoolean(controls.getProperty("jump_reset","false"))
+                     ||boxingSecondHurtJump!=null
                      ||"pull".equals(controls.getProperty("knockback_displacement")))&&active())
                 jumpResetPending=R.num(packet,"motionX")!=0||R.num(packet,"motionZ")!=0;
             if(ScienceTrace.client() && Boolean.TRUE.equals(event.get("own_entity")))event.put("applied_motion",Compat.list(R.num(player,"motionX"),R.num(player,"motionY"),R.num(player,"motionZ")));
@@ -1199,7 +1302,10 @@ public final class Client {
         if(controls.getProperty("kind","").equals("tick-cycle"))clickGate=tickCycle.contact(ticks);
         Map<String,Object> event=new LinkedHashMap<>();event.put("type","engine_attack");event.put("time",System.currentTimeMillis());event.put("match",match);
         event.put("attack_reach",attackReach());
-        event.put("monotonic_ns",System.nanoTime());event.put("click_attempt",ScienceTrace.clickId());
+        long contactNs=System.nanoTime();
+        event.put("monotonic_ns",contactNs);event.put("click_attempt",ScienceTrace.clickId());
+        if(boxingSecondHurtJump!=null&&self==player&&target==opponent&&active())
+            boxingSecondHurtJump.contact(contactNs/1_000_000.0);
         event.put("vx_before",beforeX);event.put("vz_before",beforeZ);event.put("vx_after",R.num(self,"motionX"));event.put("vz_after",R.num(self,"motionZ"));
         event.put("target_is_canonical",R.call(R.get(mc,"theWorld"),"getEntityByID",(int)R.call(target,"getEntityId"))==target);
         event.put("target_name",R.name(target));event.put("target_id",R.call(target,"getEntityId"));

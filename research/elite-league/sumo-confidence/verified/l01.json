@@ -1,0 +1,175 @@
+{
+  "original": {
+    "cf7-l01-fit-20-b31": "m8045",
+    "cf7-l01-fit-7-a31": "m8046",
+    "cf7-l01-fit-7-b109": "m8048",
+    "cf7-l01-fit-7-b31": "m8047",
+    "cf7-l01-newfield-a31": "m8049",
+    "cf7-l01-fit-20-b109": "m8051",
+    "cf7-l01-fit-20-a31": "m8050",
+    "cf7-l01-fit-20-a109": "m8052",
+    "cf7-l01-fit-7-a109": "m8044",
+    "cf7-l01-wtfield-a31": "m8053"
+  },
+  "rows": {
+    "cf7-l01-fit-20-b31": {
+      "valid": true,
+      "mid": "m8045",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 312,
+      "local_timing": {
+        "b": 156
+      },
+      "click_min_ms": 50.070167,
+      "max_server_gap_ms": 84
+    },
+    "cf7-l01-fit-7-a31": {
+      "valid": true,
+      "mid": "m8046",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 267,
+      "local_timing": {
+        "a": 134
+      },
+      "click_min_ms": 142.9675,
+      "max_server_gap_ms": 81
+    },
+    "cf7-l01-fit-7-b109": {
+      "valid": true,
+      "mid": "m8048",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 251,
+      "local_timing": {
+        "b": 127
+      },
+      "click_min_ms": 143.136334,
+      "max_server_gap_ms": 88
+    },
+    "cf7-l01-fit-7-b31": {
+      "valid": true,
+      "mid": "m8047",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 374,
+      "local_timing": {
+        "b": 188
+      },
+      "click_min_ms": 144.214625,
+      "max_server_gap_ms": 88
+    },
+    "cf7-l01-newfield-a31": {
+      "valid": true,
+      "mid": "m8049",
+      "arm": "sumo-seven-ppo",
+      "foe": "research-wtap20",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 163,
+      "local_timing": {
+        "a": 81
+      },
+      "click_min_ms": 143.240917,
+      "max_server_gap_ms": 56
+    },
+    "cf7-l01-fit-20-b109": {
+      "valid": true,
+      "mid": "m8051",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 139,
+      "local_timing": {
+        "b": 71
+      },
+      "click_min_ms": 50.179625,
+      "max_server_gap_ms": 59
+    },
+    "cf7-l01-fit-20-a31": {
+      "valid": true,
+      "mid": "m8050",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 506,
+      "local_timing": {
+        "a": 254
+      },
+      "click_min_ms": 50.042292,
+      "max_server_gap_ms": 86
+    },
+    "cf7-l01-fit-20-a109": {
+      "valid": true,
+      "mid": "m8052",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 287,
+      "local_timing": {
+        "a": 143
+      },
+      "click_min_ms": 50.054416,
+      "max_server_gap_ms": 97
+    },
+    "cf7-l01-fit-7-a109": {
+      "valid": true,
+      "mid": "m8044",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 2213,
+      "local_timing": {
+        "a": 1107
+      },
+      "click_min_ms": 142.908042,
+      "max_server_gap_ms": 97
+    },
+    "cf7-l01-wtfield-a31": {
+      "valid": true,
+      "mid": "m8053",
+      "arm": "research-wtap20",
+      "foe": "research-wtap20",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 846,
+      "local_timing": {},
+      "click_min_ms": 142.883166,
+      "max_server_gap_ms": 97
+    }
+  },
+  "invalid": []
+}

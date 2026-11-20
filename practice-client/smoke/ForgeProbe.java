@@ -34,7 +34,7 @@ public final class ForgeProbe {
     private Frame frame()throws Exception{Field f=bridge.getClass().getDeclaredField("frame");f.setAccessible(true);return (Frame)f.get(bridge);}
     private Map<?,?> linked()throws Exception{Field f=bridge.getClass().getDeclaredField("capture");f.setAccessible(true);Object capture=f.get(bridge);
         Method m=capture.getClass().getDeclaredMethod("linkedState");m.setAccessible(true);return (Map<?,?>)m.invoke(capture);}
-    private Map<?,?> replayFrame()throws Exception{Field f=bridge.getClass().getDeclaredField("capture");f.setAccessible(true);Object c=f.get(bridge);Method m=c.getClass().getDeclaredMethod("replayFrame");m.setAccessible(true);return (Map<?,?>)m.invoke(c);}
+    Map<?,?> replayFrame()throws Exception{Field f=bridge.getClass().getDeclaredField("capture");f.setAccessible(true);Object c=f.get(bridge);Method m=c.getClass().getDeclaredMethod("replayFrame");m.setAccessible(true);return (Map<?,?>)m.invoke(c);}
     private Map<?,?> views()throws Exception{Field f=bridge.getClass().getDeclaredField("capture");f.setAccessible(true);Object capture=f.get(bridge);Method m=capture.getClass().getDeclaredMethod("viewState");m.setAccessible(true);return (Map<?,?>)m.invoke(capture);}
     private WorldFrame world()throws Exception{Field f=bridge.getClass().getDeclaredField("host");f.setAccessible(true);Object host=f.get(bridge);return (WorldFrame)host.getClass().getMethod("world",float.class).invoke(host,0f);}
     private void command(String text){ClientCommandHandler.instance.func_71556_a(Minecraft.func_71410_x().field_71439_g,text);}

@@ -1,0 +1,60 @@
+{
+  "winner": "sumo-vote-member",
+  "results": {
+    "sumo-vote-member": {
+      "model": 0.68125,
+      "archive": 0.9681420233463035,
+      "native": [
+        "4\u20130\u20130",
+        "2\u20131\u20131",
+        "2\u20131\u20131"
+      ],
+      "weak": "v3-feed-39",
+      "weak_record": "10\u20136\u20130"
+    },
+    "sumo-vote-pooled": {
+      "model": 0.6859375,
+      "archive": 0.9727626459143969,
+      "native": [
+        "4\u20130\u20130",
+        "2\u20132\u20130",
+        "2\u20132\u20130"
+      ],
+      "weak": "v3-memory-27",
+      "weak_record": "11\u20135\u20130"
+    },
+    "v4-ppo-g0496": {
+      "model": 0.690625,
+      "archive": 0.9604815175097277,
+      "native": [
+        "3\u20131\u20130",
+        "2\u20131\u20131",
+        "1\u20131\u20132"
+      ],
+      "weak": "v3-ppo-01-g0368",
+      "weak_record": "7\u20137\u20132"
+    },
+    "sumo-vote-average": {
+      "model": 0.696875,
+      "archive": 0.9730058365758755,
+      "native": [
+        "3\u20131\u20130",
+        "1\u20133\u20130",
+        "3\u20131\u20130"
+      ],
+      "weak": "v3-exchange-1",
+      "weak_record": "11\u20135\u20130"
+    },
+    "research-wtap20": {
+      "model": 0.271875,
+      "archive": 0.5956955252918288,
+      "native": [
+        "0\u20134\u20130",
+        "0\u20134\u20130",
+        "0\u20134\u20130"
+      ],
+      "weak": "adapt-01-recurrent",
+      "weak_record": "0\u201316\u20130"
+    }
+  }
+}

@@ -40,8 +40,11 @@ def native(mid,setup,network=None):
     else:assert p['kind']==('hold' if setup['arm']=='research-hold20' else 'wtap')
     mouse_checks={}
     hashes={};streams={};starts={};press={};jumps=[];takes=set();moves={};sprint_bonus=collections.Counter()
+    cap=setup.get('cps_cap',20)
+    if not isinstance(cap,int) or not 1<=cap<=30:raise ValueError('Invalid physical click ceiling')
+    minimum_ns=(1_000_000_000+cap-1)//cap
     for s in 'ab':
-        par=g['parameters_'+s];assert g['click_cps_'+s]==20 and g['attack_reach_'+s]==3 and g['reaction_ms_'+s]==0
+        par=g['parameters_'+s];assert g['click_cps_'+s]==cap and g['attack_reach_'+s]==3 and g['reaction_ms_'+s]==0
         assert g['initial_ping_'+s]==(setup['rtt'] if s==side else setup.get('opponent_rtt',setup['rtt'])) and g['client_'+s]['backend']=='forge'
         assert all(float(par[k])==0 for k in ('aim_noise_deg','aim_delay_ms','aim_turn_rate_dps'))
         assert int(par.get('click_start_ms',0))==(2000 if g['mode']=='boxing' and not regulation and s==other else 0)
@@ -68,7 +71,9 @@ def native(mid,setup,network=None):
         assert footer and footer['writer_complete'] and not any(footer[k] for k in ('dropped','size_capped','continues'))
         clicks=[e for e in keep if e['type']=='click'];starts[s]=clicks[0]['time'] if clicks else None;streams[s]=keep
         intervals=[(b['monotonic_ns']-a['monotonic_ns'])/1e6 for a,b in zip(clicks,clicks[1:])]
-        assert not intervals or min(intervals)>=50
+        assert all(b['monotonic_ns']-a['monotonic_ns']>=minimum_ns for a,b in zip(clicks,clicks[1:]))
+        if 'cps_cap' in setup:
+            assert all(e['click_cps']==cap and e['minimum_click_interval_ns']>=minimum_ns for e in clicks)
         press[s]=[len(clicks),min(intervals,default=None)]
     assert hashes['a']==hashes['b']
     raw=[e for e in score.events(ROOT/f'runtime/replays/{mid}.jsonl') if e['type'] in

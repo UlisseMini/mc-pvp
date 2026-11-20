@@ -14,6 +14,11 @@ def publish(alias,source,reason,evidence):
     if evidence.parent.parent.name=='mmc13':
         stage={'opening':4,'final':5}.get(evidence.parent.name,stage)
     if evidence.parent.name=='v4-unified-title' and evidence.parent.parent.name=='recorded-mmc-frozen':stage=6
+    if evidence==HERE/'sumo-inputs/historical-title.json':
+        verdict=json.loads(evidence.read_text())
+        if not verdict['eligible'] or verdict.get('winner')!=source or not (evidence.parent/'title-audit.json').is_file():
+            raise ValueError('The historical sumo title requires its audited native winner')
+        stage=7
     if dest.exists():
         previous=dict(s.split('=',1) for s in dest.read_text().splitlines() if '=' in s)
         if int(previous.get('title_stage','0'))>stage:return

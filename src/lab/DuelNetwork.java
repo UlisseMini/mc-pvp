@@ -5,7 +5,7 @@ import java.util.Base64;
 
 /** Java 8 inference shared by the Forge player and tournament. One instance per fighter per bout. */
 public final class DuelNetwork {
-    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION, ROUTER, TACTIC, RESPONSE, PAIR }
+    public enum Family { LINEAR, MLP, RECURRENT, HYBRID, IMITATION, ROUTER, TACTIC, RESPONSE, PAIR, PING_MLP, INPUT8, INPUT32 }
     public static final int INPUTS=22, HIDDEN=8, OUTPUTS=5;
     public static final int STRIDE=12;
     private final Family family;
@@ -15,13 +15,19 @@ public final class DuelNetwork {
     private TradeResponse response;
     private PairedExperts pair;
     private final float[] weights;
-    private final double[] features=new double[INPUTS], hidden=new double[HIDDEN], next=new double[HIDDEN];
+    private final double[] features, hidden, next;
     private final double[] outputs=new double[OUTPUTS];
     private boolean started;
     private double centerX,centerZ,previousTargetX,previousTargetZ,previousTargetY;
     private int previousAction;
 
+    private SumoInputs extra;
+    private double decisionTime,pressAge=Double.POSITIVE_INFINITY;
+    public void localTiming(double time,double sincePress){decisionTime=time;pressAge=sincePress;}
+    public static boolean study(Family f){return f==Family.INPUT8||f==Family.INPUT32;}
+    public static int width(Family f){return f==Family.INPUT32?32:HIDDEN;}
     public static int size(Family f) {
+        if(study(f))return width(f)*(SumoInputs.COUNT+1)+OUTPUTS*(width(f)+1)+1;
         if(f==Family.PAIR)return PairedExperts.SIZE;
         if(f==Family.RESPONSE)return TradeResponse.SIZE;
         if(f==Family.TACTIC)return CombatTactics.SIZE;
@@ -29,13 +35,19 @@ public final class DuelNetwork {
         if(f==Family.IMITATION)return HumanTiming.SIZE;
         if(f==Family.LINEAR)return OUTPUTS*(INPUTS+1);
         int recurrent=(f==Family.RECURRENT || f==Family.HYBRID)?HIDDEN:0;
-        return HIDDEN*(INPUTS+1+recurrent)+OUTPUTS*(HIDDEN+1);
+        return HIDDEN*(INPUTS+1+(f==Family.PING_MLP?2:0)+recurrent)+OUTPUTS*(HIDDEN+1);
     }
 
     /** Treat weights as immutable; model search builds a new array for every child. */
     public DuelNetwork(Family family,float[] weights) {
         if(weights.length!=size(family))throw new IllegalArgumentException("Wrong network dimensions");
-        this.family=family;this.weights=weights;
+        this.family=family;this.weights=weights;features=new double[study(family)?SumoInputs.COUNT:family==Family.PING_MLP?INPUTS+2:INPUTS];
+        hidden=new double[width(family)];next=new double[hidden.length];
+        if(study(family)){
+            float mask=weights[weights.length-1];
+            if(mask!=(int)mask || mask<0 || mask>127)throw new IllegalArgumentException("Unknown study feature mask");
+            extra=new SumoInputs((int)mask);
+        }
         if(family==Family.PAIR)pair=new PairedExperts(weights);
         if(family==Family.RESPONSE)response=new TradeResponse(weights);
         if(family==Family.TACTIC)tactics=new CombatTactics(weights);
@@ -51,8 +63,9 @@ public final class DuelNetwork {
         if(imitation!=null)c.imitation=imitation.copy();
         c.started=started;c.centerX=centerX;c.centerZ=centerZ;c.previousTargetX=previousTargetX;
         c.previousTargetY=previousTargetY;c.previousTargetZ=previousTargetZ;c.previousAction=previousAction;
-        System.arraycopy(features,0,c.features,0,INPUTS);
-        System.arraycopy(hidden,0,c.hidden,0,HIDDEN);System.arraycopy(next,0,c.next,0,HIDDEN);
+        System.arraycopy(features,0,c.features,0,features.length);
+        System.arraycopy(hidden,0,c.hidden,0,hidden.length);System.arraycopy(next,0,c.next,0,next.length);
+        if(extra!=null)c.extra=extra.copy();c.decisionTime=decisionTime;c.pressAge=pressAge;
         System.arraycopy(outputs,0,c.outputs,0,OUTPUTS);
         return c;
     }
@@ -103,6 +116,16 @@ public final class DuelNetwork {
     public int step(double x,double y,double z,double tx,double ty,double tz,
                     double vx,double vy,double vz,boolean grounded,boolean sprint,
                     double ownHurtAge,double targetHurtAge,double rtt){
+        return step(x,y,z,tx,ty,tz,vx,vy,vz,grounded,sprint,ownHurtAge,targetHurtAge,rtt,Double.NaN);
+    }
+    public int step(double x,double y,double z,double tx,double ty,double tz,
+                    double vx,double vy,double vz,boolean grounded,boolean sprint,
+                    double ownHurtAge,double targetHurtAge,double rtt,double opponentRtt){
+        if(family==Family.PING_MLP){
+            boolean known=Double.isFinite(opponentRtt)&&opponentRtt>=0;
+            features[22]=known?clip(opponentRtt/80-1):0;
+            features[23]=known?1:-1;
+        }
         if(response!=null)return response.step(x,y,z,tx,ty,tz,vx,vy,vz,grounded,sprint,ownHurtAge,targetHurtAge,rtt);
         if(router!=null)return router.step(x,y,z,tx,ty,tz,vx,vy,vz,grounded,sprint,ownHurtAge,targetHurtAge,rtt);
         if(!started){
@@ -128,6 +151,7 @@ public final class DuelNetwork {
         features[18]=click(previousAction)?1:-1;features[19]=jump(previousAction)?1:-1;
         features[20]=clip((dist-3.3)*4);features[21]=clip((targetHurtAge-ownHurtAge)/300);
         if(Double.isNaN(features[21]))features[21]=0; // neither player has shown a hurt cue
+        if(extra!=null)extra.fill(features,x,y,z,tx,ty,tz,vx,vy,vz,targetDx,ty-previousTargetY,targetDz,fx,fz,centerX,centerZ,decisionTime,pressAge);
         previousTargetX=tx;previousTargetY=ty;previousTargetZ=tz;
         if(pair!=null)return pair.step(features,x,y,z,tx,ty,tz,vx,vy,vz,grounded,sprint,ownHurtAge,targetHurtAge,rtt);
         if(tactics!=null)return tactics.step(features,dist,y,ty,vy,grounded?1:0,sprint,ownHurtAge,targetHurtAge);
@@ -135,14 +159,14 @@ public final class DuelNetwork {
         boolean recurring=family==Family.RECURRENT||family==Family.HYBRID;
         int index=0;
         if(family!=Family.LINEAR){
-            for(int h=0;h<HIDDEN;h++){
+            for(int h=0;h<hidden.length;h++){
                 double v=weights[index++];
                 for(double input:features)v+=weights[index++]*input;
                 if(recurring)for(double memory:hidden)v+=weights[index++]*memory;
                 // A bounded softsign unit keeps the same arithmetic in Java 8 and 17.
                 next[h]=v/(1+Math.abs(v));
             }
-            System.arraycopy(next,0,hidden,0,HIDDEN);
+            System.arraycopy(next,0,hidden,0,hidden.length);
         }
         double[] inputs=family==Family.LINEAR?features:hidden;
         for(int i=0;i<OUTPUTS;i++){

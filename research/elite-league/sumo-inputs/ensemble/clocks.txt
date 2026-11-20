@@ -1,0 +1,4 @@
+research/elite-league/sumo-inputs/ensemble/m7679.txt.gz
+research/elite-league/sumo-inputs/ensemble/m7680.txt.gz
+research/elite-league/sumo-inputs/ensemble/m7682.txt.gz
+research/elite-league/sumo-inputs/ensemble/m7691.txt.gz

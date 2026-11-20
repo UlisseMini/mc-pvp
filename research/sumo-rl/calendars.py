@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import time
+from captures import events as capture_events
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
@@ -13,6 +14,7 @@ CLIENT = {'native_input_head':'TICK_HEAD', 'native_attack_loop':'CONSUME',
           'replication_frame':'FRAME_ENTRY'}
 SERVER = {'drain_start':'SERVER_DRAIN','entity_tick_start':'SERVER_ENTITY',
           'tracker_tick_start':'SERVER_TRACK','tick_end':'SERVER_END'}
+MOVEMENT_WIRE = {'C03PacketPlayer', 'C04PacketPlayerPosition', 'C05PacketPlayerLook', 'C06PacketPlayerPosLook'}
 
 def server_stage(e):
     if e['type']!='replication_server_clock':return None
@@ -29,34 +31,41 @@ def tracker_first(mid,game):
                 return 'a' if e['tracker']['player']==game['a'] else 'b'
     raise ValueError(f'No tracker order for {mid}')
 
-def timeline(mid, side, game):
-    path = (ROOT/'runtime/replays'/f'{mid}.jsonl' if side=='s' else
-            next((ROOT/'runtime/pov'/mid).glob(f'{side}-client-*-events.jsonl.gz')))
-    reader = gzip.open if path.suffix == '.gz' else open
-    result = [];footer=None
-    with reader(path,'rt') as stream:
-        for line in stream:
-            e = json.loads(line)
-            typ = e['type']
-            if typ=='capture_end':footer=e
-            if side=='s':
-                kind = server_stage(e)
-            else:
-                kind = CLIENT.get(typ)
-                if typ=='client_task_drain' and e['data']['phase']=='start':
-                    kind='CLIENT_DRAIN'
-            if kind and game['start'] <= e.get('time',e.get('time_ms',0)) < game['finish']:
-                result.append((e['monotonic_ns'],kind))
-    if side!='s' and (not footer or not footer['writer_complete'] or any(footer[k] for k in ('dropped','size_capped','continues'))):
-        raise ValueError(f'{mid}/{side}: incomplete recorded POV')
+def timeline(mid, side, game, explicit_polls=False, movement_flush=False):
+    result = []
+    if side == 's':
+        with (ROOT/'runtime/replays'/f'{mid}.jsonl').open() as stream:
+            for e in map(json.loads, stream):
+                if (kind := server_stage(e)) and game['start'] <= e.get('time',e.get('time_ms',0)) < game['finish']:
+                    result.append((e['monotonic_ns'], kind))
+        return sorted(result)
+
+    path = next((ROOT/'runtime/pov'/mid).glob(f'{side}-client-*-events.jsonl.gz'))
+    for e in capture_events(path, {*CLIENT, 'client_task_drain', 'native_cap_poll', 'packet_wire'}):
+        typ = e['type']
+        kind = CLIENT.get(typ)
+        if typ=='client_task_drain' and e['data']['phase']=='start':
+            kind='CLIENT_DRAIN'
+        if explicit_polls and typ=='native_cap_poll' and e.get('match')==mid:
+            kind = {'frame':'POLL_FRAME', 'native_tick':'POLL_NATIVE'}[e['source']]
+        if movement_flush and typ=='tick_end':
+            kind = None
+        if movement_flush and typ=='packet_wire':
+            packet = e['data'].get('packet', e['data'])
+            if packet['direction']=='out' and packet['kind'] in MOVEMENT_WIRE:
+                kind = 'FLUSH'
+        if kind and game['start'] <= e.get('time',e.get('time_ms',0)) < game['finish']:
+            at = e['poll_ns'] if kind in ('POLL_FRAME', 'POLL_NATIVE') else e['monotonic_ns']
+            result.append((at,kind))
     return sorted(result)
 
-def tape(mid):
+def tape(mid, *, maximum_ticks=160, explicit_polls=False, movement_flush=False):
     game = json.loads((ROOT/'runtime/results'/f'{mid}.json').read_text())
-    streams = {s:timeline(mid,s,game) for s in 'abs'}
+    streams = {s:timeline(mid,s,game,explicit_polls,movement_flush) for s in 'abs'}
     heads = {s:[t for t,k in stream if k==('SERVER_DRAIN' if s=='s' else 'TICK_HEAD')]
              for s,stream in streams.items()}
-    n = min(160,min(map(len,heads.values()))-1)
+    available = min(map(len,heads.values())) - 1
+    n = available if maximum_ticks is None else min(maximum_ticks,available)
     if n<5: raise ValueError(f'{mid}: incomplete native clocks')
     origin = min(h[0] for h in heads.values())
     lines = [f"# tracker_first {tracker_first(mid,game)}"]
@@ -65,6 +74,13 @@ def tape(mid):
         events = [(t-start,k) for t,k in stream if start<=t<end]
         for key in (('SERVER_DRAIN','SERVER_ENTITY','SERVER_TRACK','SERVER_END') if s=='s' else ('TICK_HEAD','MOVE','CONSUME','FLUSH')):
             if sum(k==key for _,k in events)!=n: raise ValueError((mid,s,key,n))
+        if s!='s' and explicit_polls and not {'POLL_FRAME','POLL_NATIVE'}.issubset(k for _,k in events):
+            raise ValueError((mid,s,'incomplete native poll capture'))
+        if s!='s' and movement_flush:
+            moves = [t for t,k in events if k=='MOVE']
+            flushes = [t for t,k in events if k=='FLUSH']
+            if not all(move <= flush < after for move,flush,after in zip(moves,flushes,moves[1:]+[end-start])):
+                raise ValueError((mid,s,'movement wires do not follow their native move steps'))
         lines.append(f'{s} {start-origin} {end-start}')
         lines.extend(f'{dt} {k}' for dt,k in events)
     return '\n'.join(lines)+'\n'

@@ -34,6 +34,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     private final Queue<CaptureLog> finishing=new ConcurrentLinkedQueue<>();
     private volatile Channel active;
     private volatile String session="",match="";
+    private volatile boolean offlinePlayback;
     private volatile boolean recording=true,frames=true,coordination=true,remoteRecording;
     private final RemoteCaptureUpload remoteUpload;
     private volatile String remoteSession="";
@@ -68,9 +69,14 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         remoteRecording=next;
     }
     private static boolean loopback(Channel c){return ConnectionScope.local(c);}
-    boolean practiceAllowed(){return ConnectionScope.practice();}
-    private boolean observing(){return active!=null&&active==ConnectionScope.current()&&active.isActive()&&(loopback(active)||remoteRecording);}
+    void offlinePlayback(boolean value){offlinePlayback=value;if(value){finishLog();archive.end();publisher.close();views.close();replay.clear();lastReplayFrame=Collections.emptyMap();}}
+    boolean practiceAllowed(){return !offlinePlayback&&ConnectionScope.practice();}
+    private boolean observing(){return !offlinePlayback&&active!=null&&active==ConnectionScope.current()&&active.isActive()&&(loopback(active)||remoteRecording);}
     private boolean remote(){return active!=null&&!loopback(active);}
+    CaptureLog remoteLog(){
+        CaptureLog writer=log;
+        return writer!=null&&writer.accepting()&&observing()&&remote()?writer:null;
+    }
     private String serverHost(Channel c){
         Object address=GameObservations.field(Minecraft.func_71410_x().func_147104_D(),"serverIP");
         String host=address instanceof String?(String)address:ConnectionScope.host(c);host=host.replaceAll("[\\r\\n\\p{Cntrl}]","");return host.substring(0,Math.min(255,host.length()));
@@ -85,7 +91,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     }
     private synchronized void disconnected(Channel c){if(active==c){emit("connection_end",map(),false);finishLog();active=null;match="";lastServer=0;lastState=Collections.emptyMap();archive.end();publisher.close();}}
     private void finishLog(){CaptureLog l=log;log=null;if(l!=null){l.close();finishing.add(l);}}
-    private boolean play(Channel c){boolean play=clients.contains(c)&&c.attr(NetworkManager.field_150739_c).get()==EnumConnectionState.PLAY;if(play&&!loopback(c)&&!remoteRecording)unrecordedPlay.add(c);return play&&(loopback(c)||remoteRecording);}
+    private boolean play(Channel c){if(offlinePlayback)return false;boolean play=clients.contains(c)&&c.attr(NetworkManager.field_150739_c).get()==EnumConnectionState.PLAY;if(play&&!loopback(c)&&!remoteRecording)unrecordedPlay.add(c);return play&&(loopback(c)||remoteRecording);}
     private synchronized void session(Channel c){
         if(active!=c){finishLog();active=c;session=System.currentTimeMillis()+"-"+UUID.randomUUID().toString();match="";lastServer=0;lastState=Collections.emptyMap();lastHello=0;lastTelemetry=0;started=unrecordedPlay.contains(c);remoteSession="r"+UUID.randomUUID().toString().replace("-","");archive.end();publisher.close();views.close();lastViews=Collections.emptyMap();replay.clear();}
         if(shouldRecord(c)&&log==null){
@@ -139,6 +145,16 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     public void input(String kind,boolean after){
         if(observing())emit(kind+(after?"_after":"_before"),GameObservations.state(Minecraft.func_71410_x(),false),true);
     }
+    public void motion(String kind,Object entity,boolean after){
+        if(log==null)return;
+        Minecraft mc=Minecraft.func_71410_x();
+        net.minecraft.client.entity.EntityPlayerSP player=mc.field_71439_g;
+        if(player==null||entity!=player||!observing())return;
+        emit("motion_"+kind+(after?"_after":"_before"),map("self",map(
+            "id",player.func_145782_y(),"motion",Arrays.asList(player.field_70159_w,player.field_70181_x,player.field_70179_y),
+            "sprinting",player.func_70051_ag(),"ground",player.field_70122_E,
+            "isCollidedHorizontally",player.field_70123_F,"isCollidedVertically",player.field_70124_G)),false);
+    }
     public void clock(String phase){
         if(observing()&&(!archive.match().isEmpty()||remote()))emit("client_task_drain",map("phase",phase),false);
     }
@@ -166,12 +182,14 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     }
     void replayRender(){if(!practiceAllowed()){replay.clear();lastReplayFrame=Collections.emptyMap();return;}Map<String,Object> data=replay.render(Minecraft.func_71410_x());lastReplayFrame=data;host.event(new PracticeEvent("replay_frame",sequence.incrementAndGet(),System.currentTimeMillis(),System.nanoTime(),data));}
     void render(float partial){
+        if(offlinePlayback)return;
         if(!observing()||!frames)return;long now=System.nanoTime();if(now-lastFrame<16666666)return;lastFrame=now;
         Map<String,Object> view=GameObservations.state(Minecraft.func_71410_x(),true);view.put("partial_ticks",partial);emit("render_view",view,true);
     }
     Map<String,Object> linkedState(){return lastState;}
     Map<String,Object> viewState(){return lastViews;}
     void viewFrame(float partial){
+        if(offlinePlayback)return;
         if(!practiceAllowed()){
             lastViews=Collections.emptyMap();views.close();publisher.close();
             if(observing()&&remote()&&System.nanoTime()-lastPose>=16666666){lastPose=System.nanoTime();emit("remote_pose",map("source","a-client","view",GameObservations.remoteReplayView(Minecraft.func_71410_x(),partial)),false);}
@@ -238,17 +256,18 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     private void enqueue(PracticeEvent e){if(!events.offer(e))eventDrops.incrementAndGet();}
     public void marker(String label){if(label==null)return;String s=label.substring(0,Math.min(120,label.length()));emit("marker",map("label",s),true);send("marker",s);}
     public boolean send(String type,String value){
+        if(offlinePlayback)return false;
         if(!type.equals("marker")&&!type.equals("ping")&&!type.equals("replay_control"))return false;
         if(value==null||value.length()>120)return false;
         return sendRaw(map("type",type,"version",1,"session",session,"value",value,"client_ms",System.currentTimeMillis()));
     }
     private boolean sendRaw(Map<String,Object> data){
-        Minecraft mc=Minecraft.func_71410_x();if(!ConnectionScope.canSend(active)||!coordination||mc.field_71439_g==null||!mc.func_152345_ab())return false;
+        Minecraft mc=Minecraft.func_71410_x();if(offlinePlayback||!ConnectionScope.canSend(active)||!coordination||mc.field_71439_g==null||!mc.func_152345_ab())return false;
         byte[] bytes=JsonData.encode(data).getBytes(StandardCharsets.UTF_8);if(bytes.length>30000)return false;
         mc.field_71439_g.field_71174_a.func_147297_a(new C17PacketCustomPayload(CHANNEL,new PacketBuffer(Unpooled.wrappedBuffer(bytes))));return true;
     }
     @SuppressWarnings("unchecked") private void receive(PacketBuffer buffer){
-        if(!ConnectionScope.canSend(active)||!coordination||buffer.readableBytes()>30000)return;byte[] bytes=new byte[buffer.readableBytes()];buffer.getBytes(buffer.readerIndex(),bytes);
+        if(offlinePlayback||!ConnectionScope.canSend(active)||!coordination||buffer.readableBytes()>30000)return;byte[] bytes=new byte[buffer.readableBytes()];buffer.getBytes(buffer.readerIndex(),bytes);
         String json=new String(bytes,StandardCharsets.UTF_8);if(!boundedJson(json))return;
         try{
             Map<String,Object> data=gson.fromJson(json,Map.class);

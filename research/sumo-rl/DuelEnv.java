@@ -152,6 +152,8 @@ final class DuelEnv {
         }
         var t=new PeriodicComboClock.Timing();
         t.inputMode=PeriodicComboClock.InputMode.NATIVE_QUEUED;
+        t.explicitPolls=tape.events.stream().anyMatch(e->e.kind()==PeriodicComboClock.Kind.POLL_FRAME
+                ||e.kind()==PeriodicComboClock.Kind.POLL_NATIVE);
         t.uplinkA=t.uplinkB=t.downlinkA=t.downlinkB=.35;
         double offset=sumo?lab.SumoFootprint.centerOffset(diameter):0.;
         var state=new PeriodicComboFightModel.State(4096+offset-gap/2,lateralOffset+offset,4096+offset+gap/2,lateralOffset+offset,sumo?12:4);
@@ -160,6 +162,15 @@ final class DuelEnv {
         Player idle=new Player("wtap",0,rtt,0);
         initial=new PeriodicComboClock(state,config,t,idle,idle,tape.events);
         initial.enableSharedCalendar();
+    }
+    /** Fresh regulation opening with another link pair, reusing the immutable event calendar. */
+    DuelEnv(DuelEnv opening,int aPing,int bPing){
+        if(opening.initial.time()!=0)throw new IllegalArgumentException("Expected an unused opening");
+        clockId=opening.clockId;profile=opening.profile;sumo=opening.sumo;limit=opening.limit;
+        serverEnds=opening.serverEnds;rtt=aPing;otherRtt=bPing;
+        initial=opening.initial.fork(new Player("wtap",0,aPing,0),new Player("wtap",0,bPing,0));
+        initial.config.ownRtt=aPing;initial.config.otherRtt=bPing;
+        initial.state.nominalHalfRtt=new double[]{aPing/2.,bPing/2.,aPing/2.,bPing/2.};
     }
     final class Game {
         final Player a,b; final boolean first; final PeriodicComboClock clock;

@@ -48,6 +48,13 @@ final class GameObservations {
         if(e instanceof EntityLivingBase){EntityLivingBase l=(EntityLivingBase)e;out.put("health",l.func_110143_aJ());out.put("eye_height",l.func_70047_e());}
         if(e instanceof EntityPlayer){
             EntityPlayer p=(EntityPlayer)e;out.put("uuid",p.func_110124_au().toString());out.put("name",p.func_70005_c_());
+            if(p instanceof net.minecraft.client.entity.AbstractClientPlayer&&Minecraft.func_71410_x().func_147114_u()!=null)
+                ReplaySkins.captureAppearance(out,(net.minecraft.client.entity.AbstractClientPlayer)p);
+            if(p instanceof net.minecraft.client.entity.EntityPlayerSP){
+                net.minecraft.client.entity.EntityPlayerSP local=(net.minecraft.client.entity.EntityPlayerSP)p;
+                out.put("hand_yaw_offset",MathHelper.func_76142_g(local.field_70177_z-local.field_71154_f));
+                out.put("hand_pitch_offset",local.field_70125_A-local.field_71155_g);
+            }
             out.put("blocking",p.func_70632_aY());out.put("using_item",p.func_71039_bw());out.put("use_ticks",p.func_71052_bv());
             out.put("held",item(p.func_70694_bm()));out.put("slot",p.field_71071_by.field_70461_c);
             out.put("held_item_id",p.func_70694_bm()==null?0:Item.func_150891_b(p.func_70694_bm().func_77973_b()));

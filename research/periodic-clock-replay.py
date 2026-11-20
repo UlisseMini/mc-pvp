@@ -188,14 +188,19 @@ def run(mid,classes,frame_drain=False,seconds=4,transport_trace=False):
                        if e['type'] in ('gap_strafe_plan','frozen_cycle_plan','tick_cycle_plan','hurt_window_coast_plan')}
         explicit_keys.update({e['tick']:e['action']%4 for e in es if e['type']=='duel_network'})
         jumps={e['native_tick'] for e in es if e['type'] in ('sumo_rl_jump','jump_reset_input','duel_network_jump')}
+        clicks_by_tick=collections.defaultdict(list)
+        interp_by_tick=collections.defaultdict(list)
+        for e in es:
+            if e['type']=='science_click':clicks_by_tick[e['tick']].append(e)
+            elif e['type']=='science_interpolation':interp_by_tick[e['tick']].append(e)
         for move in moves[side]:
             if not (0<=clock(move)<seconds*1000 or (move is first_move and straddles_start)):continue
             tick=move['tick'];q=move['before']
             key=explicit_keys.get(tick,3 if move['forward']<0 else 2 if move['forward'] else 0)
             if (key!=0)!=bool(move['forward']) or (key==3)!=(move['forward']<0):
                 raise ValueError(('Recorded control/movement disagreement',side,tick,key,move['forward']))
-            clicks=[e for e in es if e['type']=='science_click' and e['tick']==tick]
-            interp=[e for e in es if e['type']=='science_interpolation' and e['tick']==tick]
+            clicks=clicks_by_tick.get(tick,())
+            interp=interp_by_tick.get(tick,())
             input_t=min([clock(move)]+[clock(e)for e in interp])-0.001
             if tick in starts:input_t=clock(starts[tick])
             if clicks:

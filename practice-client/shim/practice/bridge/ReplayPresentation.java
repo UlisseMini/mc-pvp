@@ -6,37 +6,78 @@ import com.google.gson.Gson;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
 import net.minecraft.entity.Entity;
+import practice.core.replay.ReplayInputs;
+import practice.core.replay.ServerReplayInputs;
 import practice.replay.*;
 import static practice.core.JsonData.map;
 
 /** Replay-only presentation. Uses the exact same timestamped pose reader as the server. */
 final class ReplayPresentation {
+    private static final List<String> SIDES=Arrays.asList("a","b");
+    private static final class Archive {
+        final String match;
+        volatile Map<String,PoseTrack> tracks=Collections.emptyMap();
+        volatile Map<String,ServerReplayInputs> inputs=Collections.emptyMap();
+        volatile String status="loading pose archive";
+        volatile boolean loadingInputs=true;
+        Thread reader;
+        Archive(String match){this.match=match;}
+    }
     private Path root;
-    private Map<String,Object> state=Collections.emptyMap();
-    private volatile Map<String,PoseTrack> tracks=Collections.emptyMap();
-    private volatile String loadStatus="",loadedMatch="";
-    private volatile long generation;
+    private volatile Map<String,Object> state=Collections.emptyMap();
+    private volatile Archive archive;
     void root(Path root){this.root=root;}
     Map<String,Object> state(){return state;}
     boolean active(){return Boolean.TRUE.equals(state.get("active"));}
-    void clear(){generation++;state=Collections.emptyMap();tracks=Collections.emptyMap();loadedMatch="";}
+    void clear(){state=Collections.emptyMap();clearArchive();}
+    private void clearArchive(){
+        Archive current=archive;
+        archive=null;
+        if(current!=null)current.reader.interrupt();
+    }
     @SuppressWarnings("unchecked") void receive(Map<String,Object> value){
         state=value;if(!active()){clear();return;}
-        String id=String.valueOf(value.get("match"));if(!id.matches("m[0-9]{4,9}")||id.equals(loadedMatch))return;
-        loadedMatch=id;tracks=Collections.emptyMap();final long token=++generation;
-        final Path folder=root==null?null:root.resolve(id);final long start=(long)n(value,"start_ms",0);
-        loadStatus=folder==null?"network snapshots":"loading pose archive";
-        if(folder==null)return;
-        Thread reader=new Thread(()->{
-            try{Gson gson=new Gson();PoseFiles files=new PoseFiles(folder,start,s->gson.fromJson(s,Map.class));
-                if(token==generation){tracks=Collections.unmodifiableMap(files.tracks);loadStatus=files.tracks.isEmpty()?"network snapshots":files.warnings.isEmpty()?"local pose archive":"archive has gaps; see replay warnings";}
-            }catch(Exception e){if(token==generation)loadStatus="network snapshots (local archive unavailable)";}
-        },"practice-replay-poses");reader.setDaemon(true);reader.start();
+        String id=String.valueOf(value.get("match"));
+        Archive current=archive;
+        if(current!=null&&id.equals(current.match))return;
+        clearArchive();
+        if(root==null||!id.matches("m[0-9]{4,9}"))return;
+        Archive loaded=new Archive(id);
+        Path folder=root.resolve(id);
+        long start=(long)n(value,"start_ms",0);
+        Map<String,Object> availability=object(value.get("availability"));
+        loaded.reader=new Thread(()->{
+            Gson gson=new Gson();
+            try{
+                PoseFiles files=new PoseFiles(folder,start,s->gson.fromJson(s,Map.class));
+                loaded.tracks=Collections.unmodifiableMap(files.tracks);
+                loaded.status=files.tracks.isEmpty()?"network snapshots":files.warnings.isEmpty()?"local pose archive":"archive has gaps; see replay warnings";
+            }catch(Exception e){loaded.status="network snapshots (local pose archive unavailable)";}
+            Map<String,ServerReplayInputs> inputs=new LinkedHashMap<>();
+            for(String side:SIDES){
+                if(Thread.currentThread().isInterrupted())return;
+                boolean bot="bot".equals(object(availability.get(side)).get("role"));
+                try{inputs.put(side,ServerReplayInputs.read(folder,side,bot,start,s->gson.fromJson(s,Map.class)));}
+                catch(java.io.IOException|RuntimeException e){
+                    if(Thread.currentThread().isInterrupted())return;
+                    System.out.println("[PracticeReplay] Could not read "+id+" "+side+" inputs: "+e.getMessage());
+                }
+                loaded.inputs=Collections.unmodifiableMap(new LinkedHashMap<>(inputs));
+            }
+            loaded.loadingInputs=false;
+        },"practice-replay-archive");
+        loaded.reader.setDaemon(true);
+        archive=loaded;
+        loaded.reader.start();
     }
     Map<String,Object> render(Minecraft mc){
-        if(!active()||mc.field_71441_e==null||mc.field_71439_g==null)return Collections.emptyMap();
+        Map<String,Object> state=this.state;
+        if(!Boolean.TRUE.equals(state.get("active"))||mc.field_71441_e==null||mc.field_71439_g==null)return Collections.emptyMap();
+        Archive archive=this.archive;
+        if(archive!=null&&!archive.match.equals(state.get("match")))archive=null;
         double elapsed=Boolean.TRUE.equals(state.get("paused"))?0:Math.max(0,System.currentTimeMillis()-n(state,"server_ms",0));
         double time=Math.min(n(state,"duration_ms",0),n(state,"time_ms",0)+elapsed*n(state,"speed",1));
+        Map<String,PoseTrack> tracks=archive==null?Collections.emptyMap():archive.tracks;
         Map<String,Object> views=new LinkedHashMap<>(),packet=object(state.get("views")),next=object(state.get("next"));
         for(String source:Arrays.asList("server","a","b")){
             Map<String,Object> frame;PoseTrack track=tracks.get(source);
@@ -45,7 +86,8 @@ final class ReplayPresentation {
                 if(!current.isEmpty())for(String side:Arrays.asList("a","b")){Map<String,Object> p=object(current.get(side)),q=object(following.get(side));frame.put(side,q.isEmpty()?p:PoseTrack.interpolate(p,q,elapsed/50));}}
             if(!frame.isEmpty())views.put(source,frame);
         }
-        Map<String,Object> chosen=object(views.get(String.valueOf(state.get("source"))));double offset=n(state,"offset_x",0);
+        String source=String.valueOf(state.get("source"));
+        Map<String,Object> chosen=object(views.get(source));double offset=n(state,"offset_x",0);
         Object ids=state.get("actor_ids");
         if(ids instanceof List&&((List<?>)ids).size()==2)for(int i=0;i<2;i++){
             Entity e=mc.field_71441_e.func_73045_a(((Number)((List<?>)ids).get(i)).intValue());
@@ -57,7 +99,18 @@ final class ReplayPresentation {
         for(Map.Entry<String,Object> entry:views.entrySet()){Map<String,Object> view=object(entry.getValue());normalized.put(entry.getKey(),map("a",observation(object(view.get("a")),offset),"b",observation(object(view.get("b")),offset)));}
         Map<String,Object> availability=object(state.get("availability"));String mine="human".equals(object(availability.get("b")).get("role"))?"b":"a",other=mine.equals("a")?"b":"a";
         Map<String,Object> ownView=object(normalized.get(mine)),otherView=object(normalized.get(other));
-        Map<String,Object> out=new LinkedHashMap<>(state);out.put("reach_advantage",practice.math.ReachAdvantage.compare(object(ownView.get(mine)),object(ownView.get(other)),object(otherView.get(other)),object(otherView.get(mine))));out.put("advantage_owner",object(availability.get(mine)).getOrDefault("label",mine));out.put("views",normalized);out.put("time_ms",time);out.put("view_missing",chosen.isEmpty());out.put("archive_status",loadStatus);return out;
+        Map<String,Object> out=new LinkedHashMap<>(state);out.put("reach_advantage",practice.math.ReachAdvantage.compare(object(ownView.get(mine)),object(ownView.get(other)),object(otherView.get(other)),object(otherView.get(mine))));out.put("advantage_owner",object(availability.get(mine)).getOrDefault("label",mine));out.put("views",normalized);out.put("time_ms",time);out.put("view_missing",chosen.isEmpty());
+        out.put("archive_status",archive==null?"network snapshots":archive.status);
+        if(SIDES.contains(source)){
+            out.put("keystrokes_source",source);
+            out.put("keystrokes_loading",archive!=null&&archive.loadingInputs);
+            ServerReplayInputs inputs=archive==null?null:archive.inputs.get(source);
+            ReplayInputs.State keys=inputs==null?null:inputs.at(time);
+            if(keys!=null)out.put("keystrokes",map("mask",keys.mask,"left_cps",keys.leftCps,"right_cps",keys.rightCps));
+        }else if("server".equals(source)&&"free".equals(state.get("camera"))){
+            out.put("keystrokes_source","live");
+        }
+        return out;
     }
     private static void apply(EntityOtherPlayerMP e,Map<String,Object> p,double offset){
         double x=n(p,"posX",0)+offset,y=n(p,"posY",4),z=n(p,"posZ",0);e.func_70107_b(x,y,z);

@@ -7,7 +7,6 @@ public final class RemoteChecks {
     static int checks;
     static void check(boolean x,String why){checks++;if(!x)throw new AssertionError(why);}
     public static void run(Path jar)throws Exception{
-        AntiAfkChecks.run();
         Path dir=Files.createTempDirectory("practice-remote-check-");Files.copy(jar,dir.resolve("practice-module.jar"));Files.write(dir.resolve("settings.properties"),("metrics.enabled=true\nopening.enabled=true\nadvantage.enabled=true\nreach.enabled=true\nghost.bot.enabled=true\nghost.me.enabled=true\ndebug.enabled=true\nfeedback.hurtFlash=true\nrange.yours.enabled=true\nrange.theirs.enabled=true\n").getBytes("UTF-8"));
         try(ReloadHost host=new ReloadHost(dir)){check(host.reload(true),"module load");Snapshot.Player p=new Snapshot.Player(1,0,4,0,.2,0,0,5.62,20,10,true,false,true);
             host.tick(new Snapshot(100,100,1,true,false,false,p,p,Arrays.asList("Speed II"),true));

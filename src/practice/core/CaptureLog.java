@@ -36,6 +36,8 @@ public final class CaptureLog implements AutoCloseable {
         if(pending>32*1024*1024 || !queue.offer(bytes)){queuedBytes.addAndGet(-bytes.length);dropped.incrementAndGet();}
     }
     public long dropped(){return dropped.get();}
+    public int currentPart(){return segment;}
+    public boolean accepting(){return !closing&&!failed&&!capped;}
     public String status(){return failed?"Recording error: "+error:capped?"Recording size limit reached":closing?"Recording closed":"Recording "+path.getFileName()+" (part "+segment+")";}
     private Path segmentPath(int part){return part==1?path:path.resolveSibling(path.getFileName().toString().replace(".jsonl.gz","-part"+part+".jsonl.gz"));}
     private OutputStream open(Path p)throws IOException{

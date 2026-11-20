@@ -1,0 +1,78 @@
+{
+  "plan": {
+    "sinput-published-sumo-input-screen": {
+      "mode": "sumo",
+      "profile": "mmc",
+      "diameter": 13,
+      "start_gap": 8,
+      "fresh_hit_ticks": 10,
+      "knockback_model": "mmc_recorded_range_v4",
+      "aim_input": "mouse",
+      "arm": "sumo-input-screen",
+      "opponent": "research-wtap20",
+      "side": "a",
+      "rtt": 31,
+      "opponent_rtt": 109,
+      "ping_a": 31,
+      "ping_b": 109,
+      "command": "lab sumo sumo-input-screen research-wtap20 31 109 sinput-published-sumo-input-screen preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse"
+    },
+    "sinput-published-sumo-input-final": {
+      "mode": "sumo",
+      "profile": "mmc",
+      "diameter": 13,
+      "start_gap": 8,
+      "fresh_hit_ticks": 10,
+      "knockback_model": "mmc_recorded_range_v4",
+      "aim_input": "mouse",
+      "arm": "sumo-input-final",
+      "opponent": "research-wtap20",
+      "side": "b",
+      "rtt": 31,
+      "opponent_rtt": 109,
+      "ping_a": 109,
+      "ping_b": 31,
+      "command": "lab sumo research-wtap20 sumo-input-final 109 31 sinput-published-sumo-input-final preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse"
+    },
+    "sinput-published-sumo-input-refinement": {
+      "mode": "sumo",
+      "profile": "mmc",
+      "diameter": 13,
+      "start_gap": 8,
+      "fresh_hit_ticks": 10,
+      "knockback_model": "mmc_recorded_range_v4",
+      "aim_input": "mouse",
+      "arm": "sumo-input-refinement",
+      "opponent": "research-wtap20",
+      "side": "a",
+      "rtt": 109,
+      "opponent_rtt": 31,
+      "ping_a": 109,
+      "ping_b": 31,
+      "command": "lab sumo sumo-input-refinement research-wtap20 109 31 sinput-published-sumo-input-refinement preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse"
+    },
+    "sinput-published-sumo-vote-final": {
+      "mode": "sumo",
+      "profile": "mmc",
+      "diameter": 13,
+      "start_gap": 8,
+      "fresh_hit_ticks": 10,
+      "knockback_model": "mmc_recorded_range_v4",
+      "aim_input": "mouse",
+      "arm": "sumo-vote-final",
+      "opponent": "research-wtap20",
+      "side": "b",
+      "rtt": 109,
+      "opponent_rtt": 31,
+      "ping_a": 31,
+      "ping_b": 109,
+      "command": "lab sumo research-wtap20 sumo-vote-final 31 109 sinput-published-sumo-vote-final preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse"
+    }
+  },
+  "matches": {
+    "sinput-published-sumo-input-screen": "m7841",
+    "sinput-published-sumo-input-final": "m7842",
+    "sinput-published-sumo-input-refinement": "m7843",
+    "sinput-published-sumo-vote-final": "m7844"
+  }
+}

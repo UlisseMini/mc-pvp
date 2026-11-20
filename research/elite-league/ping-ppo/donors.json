@@ -1,0 +1,50 @@
+{
+  "plan": {
+    "pingppo-clock-0": {
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "side": "a",
+      "own": 23,
+      "other": 97,
+      "ping_a": 23,
+      "ping_b": 97,
+      "command": "lab sumo research-wtap20 research-wtap20 23 97 pingppo-clock-0 preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse"
+    },
+    "pingppo-clock-1": {
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "side": "a",
+      "own": 97,
+      "other": 23,
+      "ping_a": 97,
+      "ping_b": 23,
+      "command": "lab sumo research-wtap20 research-wtap20 97 23 pingppo-clock-1 preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse"
+    },
+    "pingppo-clock-2": {
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "side": "a",
+      "own": 0,
+      "other": 0,
+      "ping_a": 0,
+      "ping_b": 0,
+      "command": "lab sumo research-wtap20 research-wtap20 0 0 pingppo-clock-2 preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse"
+    },
+    "pingppo-clock-3": {
+      "arm": "research-wtap20",
+      "opponent": "research-wtap20",
+      "side": "a",
+      "own": 80,
+      "other": 80,
+      "ping_a": 80,
+      "ping_b": 80,
+      "command": "lab sumo research-wtap20 research-wtap20 80 80 pingppo-clock-3 preset=mmc reach=3 cps=20 tapdelay=0 aimdelay=0 aimnoise=0 aimrate=0 aiminput=mouse"
+    }
+  },
+  "matches": {
+    "pingppo-clock-1": "m7439",
+    "pingppo-clock-2": "m7440",
+    "pingppo-clock-0": "m7438",
+    "pingppo-clock-3": "m7441"
+  }
+}

@@ -11,7 +11,8 @@ final class WorldDrawing {
     // Opacity increases slightly inside the true boundary; no glow extends beyond actual reach.
     private static final double[] FIELD_RADII={1,.99,.975,.95};
     private static final float[] FIELD_OPACITY={.12f,.18f,.28f,.42f};
-    static void draw(WorldFrame frame,float partial){
+    static void draw(WorldFrame frame,float partial){draw(frame,partial,1);}
+    static void draw(WorldFrame frame,float partial,float lineWidth){
         if(frame==null)return;Entity camera=Minecraft.func_71410_x().func_175606_aa();if(camera==null)return;
         double cx=camera.field_70142_S+(camera.field_70165_t-camera.field_70142_S)*partial;
         double cy=camera.field_70137_T+(camera.field_70163_u-camera.field_70137_T)*partial;
@@ -21,7 +22,7 @@ final class WorldDrawing {
         try{
             GL11.glTranslated(-cx,-cy,-cz);
             GL11.glDisable(GL11.GL_TEXTURE_2D);GL11.glDisable(GL11.GL_LIGHTING);GL11.glDisable(GL11.GL_CULL_FACE);GL11.glDisable(GL11.GL_ALPHA_TEST);
-            GL11.glEnable(GL11.GL_BLEND);GL11.glBlendFunc(GL11.GL_SRC_ALPHA,GL11.GL_ONE_MINUS_SRC_ALPHA);GL11.glDepthMask(false);GL11.glLineWidth(1);
+            GL11.glEnable(GL11.GL_BLEND);GL11.glBlendFunc(GL11.GL_SRC_ALPHA,GL11.GL_ONE_MINUS_SRC_ALPHA);GL11.glDepthMask(false);GL11.glLineWidth(lineWidth);
             fields(frame.spheres,cx,cy,cz);
             GL11.glDisable(GL11.GL_CULL_FACE);GL11.glDisable(GL11.GL_DEPTH_TEST);
             int n=0;GL11.glBegin(GL11.GL_LINES);

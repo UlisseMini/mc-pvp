@@ -1,0 +1,11 @@
+{
+  "challenger": "sumo-input-edge8",
+  "screen_winner": "sumo-input-edge8",
+  "model_id": "edge8-66047",
+  "foes": [
+    "research-wtap20",
+    "shift-check-v4-4",
+    "v4-reply-g0312"
+  ],
+  "other_weakest": "v4-reply-g0312"
+}
