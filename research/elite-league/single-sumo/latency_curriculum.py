@@ -6,6 +6,7 @@ import random
 import subprocess
 import sys
 import time
+from statistics import mean, stdev
 
 from id_evaluate import make_panel
 from id_native import native_name
@@ -54,6 +55,42 @@ def train(until):
 
 def actors():return {'curriculum':OUT/f'n{END}.net','uniform':PARENT/f'n{END}.net','start':PARENT/f'n{BASE}.net','wtap':'wtap'}
 
+def report():
+    from scipy.stats import t
+    labels=('start','uniform','curriculum','wtap')
+    data={a:read(OUT/'model'/a/'target.json') for a in labels}
+    def cell(r):return '/'.join(str(r[s]) for s in ('wins','draws','losses'))
+    lines=['# Does extra adverse-ping practice help against the first league winner?','',
+           'Both continuations start with the same 32k MLP and Adam optimizer. Each plays 16,384 additional seven-CPS training games. The curriculum changes only the ping assignment in half of them. Counts are outright wins/draws/losses in the simulator.','',
+           '| Own / opponent RTT | 32k start | 49k uniform | 49k extra adverse pings | Plain W-tap |',
+           '| --- | --- | --- | --- | --- |']
+    for rtt in ('all','31/31','109/109','31/109','109/31'):
+        row=[cell(data[a]['aggregate'] if rtt=='all' else data[a]['aggregate']['rtt'][rtt]) for a in labels]
+        lines.append('| '+' | '.join([rtt,*row])+' |')
+    by_donor={}
+    for key,target_rtt in [('overall',None),('109/31',[109,31])]:
+        bins={}
+        for a,b in zip(data['curriculum']['games'],data['uniform']['games'],strict=True):
+            if a[:5]!=b[:5]:raise ValueError('Different comparison fixtures')
+            if target_rtt is None or a[3:5]==target_rtt:
+                bins.setdefault(a[0],[]).append(int(a[5]==1)-int(b[5]==1))
+        donors=list(map(mean,bins.values()));delta=mean(donors)
+        h=float(t.ppf(.975,len(donors)-1))*stdev(donors)/len(donors)**.5
+        by_donor[key]=dict(delta=delta,donor_deltas=donors,interval=[delta-h,delta+h])
+        lines.extend(['',f"The curriculum changed outright wins {key} by {100*delta:+.1f} percentage points (approximate paired 95% interval {100*(delta-h):+.1f} to {100*(delta+h):+.1f})."])
+    write_json(OUT/'model/paired.json',by_donor,fixed=True)
+    lines.extend(['','## Main Minecraft server',''])
+    native_out=OUT/'native/summary.json'
+    if native_out.is_file():
+        lines.extend(['| Opponent | 32k start | 49k uniform | 49k extra adverse pings | Plain W-tap |',
+                      '| --- | --- | --- | --- | --- |'])
+        for opponent,group in read(native_out).items():
+            name='W-tap' if opponent==WT else 'sumo-league-001'
+            lines.append('| '+' | '.join([name,*[cell(group[a]['all']) for a in labels]])+' |')
+    else:lines.append('The 64 matched native games are pending.')
+    lines.extend(['','[Prespecified comparison](protocol.json) · [Per-opponent, seat and RTT scores](model)'])
+    atomic(OUT/'README.md',('\n'.join(lines)+'\n').encode())
+
 def model():
     _,_,_,target=sources('g1')
     cells=make_panel(CLOCKS['dev'],8)
@@ -71,6 +108,7 @@ def model():
                     if rows!=read(baseline)['games']:raise ValueError('Unchanged comparator did not reproduce its native-clock fixture')
                 write_json(dst,dict(aggregate=stats(rows),games=rows),fixed=True)
     finally:w.close()
+    report()
 
 def native():
     _,_,_,target=sources('g1')
@@ -94,6 +132,7 @@ def native():
             totals[opponent][name]=dict(all=count(qs),seat={s:count([q for q in qs if plan[q]['side']==s]) for s in 'ab'},
                  rtt={f'{a}/{b}':count([q for q in qs if (plan[q]['rtt'],plan[q]['opponent_rtt'])==(a,b)]) for a,b in ((31,31),(109,109),(31,109),(109,31))})
     write_json(folder/'summary.json',totals,fixed=True)
+    report()
 
 def run():
     register()
@@ -116,3 +155,4 @@ if __name__=='__main__':
     if len(sys.argv)==1:run()
     elif sys.argv[1]=='train':train(int(sys.argv[2]))
     elif sys.argv[1]=='model':model()
+    elif sys.argv[1]=='report':report()
