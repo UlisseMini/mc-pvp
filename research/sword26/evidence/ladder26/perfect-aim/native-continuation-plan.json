@@ -1,0 +1,12 @@
+{
+  "target": "The final Java-promoted perfect-aim fighter at the league's stopping check.",
+  "opponent": "evidence/frozen/opponents/population.net",
+  "reason_for_opponent": "This archived retreating opponent produced enough W-tap acquisitions for continuation measurement in earlier development.",
+  "calendar_seeds": {"0": 67433591, "100": 83917843},
+  "pairs_per_rtt": 8,
+  "rtts_ms": [0, 100],
+  "clock": "scheduled real Java on two stock headless clients and the dedicated server",
+  "comparison": "Each opening and seat uses plain W-tap through three consecutive unanswered fresh hits after the defender starts pressing. The two continuations are the champion and W-tap. Endpoints are evaluated under the same rule in both arms.",
+  "measurement": "Report opening and branch qualification, hit-to-hit cycles, remaining fresh hits, remaining time, accepted returns including damage upgrades, censoring, and the inactivity-qualified version. Report later five- and ten-hit survivor landmarks separately from the common input at three. Bin by added RTT, opening and seat. Use measured branch HP, distance, ground state and first assigned-policy input to characterize native repeat comparability. Tournament win rate remains a distinct result.",
+  "scope": "These seeds are reserved before any fight on them is examined. The league cannot train or promote on these continuations. Native repeats share the acquisition protocol; they are independent processes of play with observed initial-state records. Exact common-state forks are a separate simulator test."
+}
