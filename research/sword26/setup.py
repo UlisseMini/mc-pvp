@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import platform
+import tarfile
 import tempfile
 import urllib.request
 
@@ -42,11 +44,23 @@ def fetch(spec, dest, installed=None):
 
 
 def jdk():
+    if platform.system()=="Linux":return Path("/usr/lib/jvm/java-25-openjdk-arm64/bin")
     installed = sorted(BUILD.glob("jdk-25*/Contents/Home/bin/javac"))
     if not installed and os.environ.get("JAVA_HOME"):
         installed = [Path(os.environ["JAVA_HOME"]) / "bin/javac"]
     if not installed:
-        raise SystemExit("Install JDK 25 and set JAVA_HOME, or place a JDK 25 macOS bundle in build/sword26.")
+        if platform.system()!="Darwin" or platform.machine()!="arm64":
+            raise SystemExit("This launcher targets Apple Silicon macOS. Set JAVA_HOME to a JDK 25 installation.")
+        url="https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1%2B2/OpenJDK25U-jdk_aarch64_mac_hotspot_25.0.5.1_2.tar.gz"
+        package=BUILD/"jdk.tar.gz"
+        digest="248353ea41be39d5d2c1c67c7ce0ae4d1668966aacd0c5308464bc1be42f677b"
+        if not package.exists() or hashlib.sha256(package.read_bytes()).hexdigest()!=digest:
+            subprocess.run(["curl","-fsSL","--retry","3",url,"-o",package],check=True)
+        if hashlib.sha256(package.read_bytes()).hexdigest()!=digest:
+            raise ValueError("JDK archive hash mismatch")
+        with tarfile.open(package) as archive:
+            archive.extractall(BUILD,filter="data")
+        installed=sorted(BUILD.glob("jdk-25*/Contents/Home/bin/javac"))
     return installed[0].parent
 
 
@@ -81,12 +95,22 @@ def setup():
 
 
 def compile_agent():
-    classes = BUILD / "classes"
-    classes.mkdir(exist_ok=True)
-    subprocess.run([jdk()/"javac", "-cp", (BUILD/"classpath").read_text(), "-d", classes, *sorted(SRC.glob("*.java"))], check=True)
-    manifest = BUILD/"agent-manifest"
-    manifest.write_text("Manifest-Version: 1.0\nPremain-Class: sword.Agent\n\n")
-    subprocess.run([jdk()/"jar", "cfm", BUILD/"agent.jar", manifest, "-C", classes, "."], check=True)
+    sources=sorted(SRC.glob("*.java"))
+    digest=hashlib.sha256(CLIENT_HASH.encode())
+    for source in sources:
+        digest.update(source.name.encode());digest.update(source.read_bytes())
+    target=BUILD/"agents"/(digest.hexdigest()+".jar")
+    target.parent.mkdir(exist_ok=True)
+    if target.exists():return target
+    with tempfile.TemporaryDirectory(dir=target.parent) as tmp:
+        folder=Path(tmp);classes=folder/"classes";classes.mkdir()
+        subprocess.run([jdk()/"javac","-cp",(BUILD/"classpath").read_text(),"-d",classes,*sources],check=True)
+        manifest=folder/"manifest"
+        manifest.write_text("Manifest-Version: 1.0\nPremain-Class: sword.Agent\n\n")
+        jar=folder/"agent.jar"
+        subprocess.run([jdk()/"jar","cfm",jar,manifest,"-C",classes,"."],check=True)
+        jar.replace(target)
+    return target
 
 
 if __name__ == "__main__":

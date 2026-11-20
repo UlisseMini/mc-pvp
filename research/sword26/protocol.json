@@ -1,7 +1,44 @@
 {
-  "version": "26.3", "kit": "unenchanted diamond sword and full diamond armor, 20 health, regeneration off",
+  "version": "26.3",
+  "kit": "unenchanted diamond sword and full diamond armor, 20 health, regeneration off",
   "arena": "24 by 24 stone floor with barrier walls",
-  "training": {"seed": 413692, "round_ticks":600, "one_way_delay_ticks":[0,1], "opponents":"random initial policies, current population, past champions", "selection":"last generation champion by training fitness"},
-  "evaluation": {"development_seed":1297714, "prospective_seed":77165131, "paired_openings_per_setting":16, "native_opening_seed":91621, "native_pairs_per_setting":4, "equal_rtt_ms":[0,100], "seats":"both", "timeout_seconds":30, "timeout":"draw", "metric":"wins, losses, draws and final health difference", "baseline":"plain W-tap with charged swings and the common aim controller", "latency_note":"Model one-way delay is quantized to ticks. Native comparison uses a delayed loopback TCP connection on top of loopback overhead. Native repeats share a starting protocol, not the exact game state."},
-  "split":"Model training and evaluation generate independent schedules, without recorded human timing donors. No claim of transfer to held-out human calendars. Native evaluation runs use newly generated schedules."
+  "training": {
+    "command": "python3 research/sword26/train.py",
+    "seeds": [
+      535713,
+      157339,
+      126321,
+      773315,
+      821735,
+      435529
+    ],
+    "round_ticks": 600,
+    "one_way_delay_ticks": [
+      0,
+      1
+    ],
+    "opponents": "current policies, archived policies, learned opponents that beat the incumbent",
+    "starts": "ordinary duels plus replayed prefixes sampled uniformly in time in training-only duels",
+    "selection": "0.8 times mean paired duel payoff plus 0.2 times worst opponent payoff on the registered learned cross-play field, seed 193721; no scripted opponent is used for training or selection"
+  },
+  "evaluation": {
+    "development_seed": 1297714,
+    "prospective_seed": 77165131,
+    "paired_openings_per_setting": 16,
+    "native_opening_seed": 91621,
+    "native_pairs_per_setting": 4,
+    "equal_rtt_ms": [
+      0,
+      100
+    ],
+    "seats": "both",
+    "timeout_seconds": 30,
+    "timeout": "draw",
+    "metric": "wins, losses, draws and final health difference",
+    "baseline": "plain W-tap with charged swings and the common aim controller",
+    "latency_note": "Model one-way delay is quantized to ticks. Native comparison uses a delayed loopback TCP connection on top of loopback overhead. Native repeats share a starting protocol, not the exact game state.",
+    "second_opponent": "also run the frozen policy and W-tap against an independently trained opponent when feasible",
+    "timing_scope": "Both seats at 0 and 100 ms added RTT. Native uses independent real-time matches. Accelerated native pilot runs are development only."
+  },
+  "split": "Model training and evaluation generate independent schedules, without recorded human timing donors. No claim of transfer to held-out human calendars. Native evaluation runs use newly generated schedules."
 }

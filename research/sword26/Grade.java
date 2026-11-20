@@ -8,9 +8,11 @@ public final class Grade {
         for(int lag=0;lag<=1;lag++)for(int i=0;i<pairs;i++){
             var scene=new Model.Scene(rng.nextLong(),lag,lag);
             for(int seat=0;seat<2;seat++){
-                var policy=Controls.get(args[0]);var w=Controls.get("wtap");
+                String rival=args.length>3?args[3]:"wtap";
+                var policy=Controls.get(args[0]);var w=Controls.get(rival);
                 var result=seat==0?Model.duel(policy,w,scene):Model.duel(w,policy,scene);
-                var base=Model.duel(Controls.get("wtap"),Controls.get("wtap"),scene);
+                var control=Controls.get("wtap");var sameRival=Controls.get(rival);
+                var base=seat==0?Model.duel(control,sameRival,scene):Model.duel(sameRival,control,scene);
                 boolean a=seat==0;
                 System.out.printf(Locale.ROOT,"%d,%d,%d,%.4f,%.4f,%d,%d,%d,%d,%d,%d,%.4f,%.4f,%d,%d,%d%n",i,lag,seat,
                     a?result.a():result.b(),a?result.b():result.a(),result.ticks(),a?result.hitsA():result.hitsB(),a?result.hitsB():result.hitsA(),

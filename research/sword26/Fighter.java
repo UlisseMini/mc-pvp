@@ -5,7 +5,7 @@ import java.nio.file.*;
 import java.util.*;
 
 /** Shared observation encoding, learned controller and steering for both runtimes. */
-public final class Fighter {
+public final class Fighter implements Model.Controller {
     static final int INPUTS=23, HIDDEN=12, OUTPUTS=8;
     static final int COUNT=(INPUTS+2)*HIDDEN+(HIDDEN+1)*OUTPUTS;
     public record View(double x,double y,double z,double vx,double vy,double vz,
@@ -15,9 +15,9 @@ public final class Fighter {
     public record Keys(int forward,int side,boolean sprint,boolean jump,boolean click,double offset) {
         static final Keys STILL=new Keys(0,0,false,false,false,0);
     }
-    final double[] weights, hidden=new double[HIDDEN], input=new double[INPUTS], output=new double[OUTPUTS];
+    final double[] weights, hidden=new double[HIDDEN], input, output=new double[OUTPUTS];
     Keys previous=Keys.STILL;
-    public Fighter(double[] w){ weights=w; }
+    public Fighter(double[] w){weights=w;input=new double[w.length==TreePolicy.COUNT?TreePolicy.SENSORS:INPUTS];}
     static double clip(double v,double lo,double hi){return Math.max(lo,Math.min(hi,v));}
     static double angle(double d){return Math.IEEEremainder(d,360);}
     static double targetYaw(View v){return Math.toDegrees(Math.atan2(v.tz-v.z,v.tx-v.x))-90;}
@@ -36,9 +36,20 @@ public final class Fighter {
         input[16]=previous.forward;input[17]=previous.side;input[18]=previous.sprint?1:0;
         input[19]=previous.jump?1:0;input[20]=previous.click?1:0;
         input[21]=clip(v.x/12,-1,1);input[22]=clip(v.z/12,-1,1);
+        if(input.length>INPUTS){
+            double height=v.ty-v.y-1.62;
+            double dxBox=Math.max(0,Math.abs(dx)-.3),dzBox=Math.max(0,Math.abs(dz)-.3);
+            double dyBox=Math.max(0,Math.max(height,-height-1.8));
+            input[23]=Math.sqrt(dxBox*dxBox+dyBox*dyBox+dzBox*dzBox)/3;
+            double yaw=Math.toRadians(v.yaw),pitch=Math.atan2(clip(0,height+.1,height+1.7),dist);
+            input[24]=Model.rayBox(dx,height,dz,-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch))?1:0;
+        }
     }
-    Keys act(View v){
-        observe(v);int off=0;
+    public void prime(View v,Keys applied){act(v);previous=applied;}
+    public Keys act(View v){
+        observe(v);
+        if(weights.length==TreePolicy.COUNT){previous=TreePolicy.decide(weights,input);return previous;}
+        int off=0;
         for(int j=0;j<HIDDEN;j++){
             double sum=weights[off++]+hidden[j]*weights[off++];
             for(double f:input)sum+=f*weights[off++];
@@ -49,20 +60,25 @@ public final class Fighter {
             output[j]=sum;
         }
         previous=new Keys(choice(output[0],output[1]),choice(output[2],output[3]),output[4]>0,
-            output[5]>0,output[6]>0,180*clip(output[7],-1,1));
+            output[5]>0,output[6]>0,weights.length==COUNT?heading(output[7]):180*clip(output[7],-1,1));
         return previous;
     }
+    // A centered aim controller and a signed stick with a neutral region for deliberate turns.
+    static double heading(double axis){return Math.copySign(180*clip(Math.abs(axis)-1,0,1),axis);}
     static int choice(double positive,double negative){return Math.max(positive,negative)<=0?0:positive>negative?1:-1;}
     static double[] read(Path p)throws IOException{
         try(var in=new DataInputStream(Files.newInputStream(p))){
-            if(in.readInt()!=0x53573236||in.readInt()!=COUNT)throw new IOException("Incompatible sword policy");
-            var w=new double[COUNT];for(int i=0;i<COUNT;i++){w[i]=in.readDouble();if(!Double.isFinite(w[i]))throw new IOException("Nonfinite weight");}
+            int format=in.readInt();
+            int count=in.readInt();
+            boolean tree=format==0x53575431;
+            if(tree?count!=TreePolicy.COUNT:((format!=0x53573236&&format!=0x53573237)||count!=COUNT))throw new IOException("Incompatible sword policy");
+            var w=new double[format==0x53573236?COUNT+1:count];for(int i=0;i<count;i++){w[i]=in.readDouble();if(!Double.isFinite(w[i]))throw new IOException("Nonfinite weight");}
             if(in.read()!=-1)throw new IOException("Trailing weight data");return w;
         }
     }
     static void write(Path p,double[] w)throws IOException{
         try(var out=new DataOutputStream(Files.newOutputStream(p,StandardOpenOption.CREATE_NEW))){
-            out.writeInt(0x53573236);out.writeInt(COUNT);for(double v:w)out.writeDouble(v);
+            out.writeInt(w.length==TreePolicy.COUNT?0x53575431:0x53573237);out.writeInt(w.length);for(double v:w)out.writeDouble(v);
         }
     }
 }

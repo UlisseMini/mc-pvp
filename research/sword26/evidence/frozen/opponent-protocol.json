@@ -1,0 +1,14 @@
+{
+  "purpose": "Unseen opponents trained independently after freezing the playing policy",
+  "generalist_training_uses_opponents": false,
+  "opponent_pipeline": [
+    {"class":"Train","generations":260,"seed":632911},
+    {"class":"PolicyGradient","iterations":240,"seed":533974,"inputs":"Train generations 40, 80, 120, 160, 200, 259"},
+    {"class":"League","generations":450,"seed":371613,"inputs":"PolicyGradient generations 40, 80, 120, 160, 200, 239"}
+  ],
+  "opponents": ["PolicyGradient generation 239", "League generation 449"],
+  "model_protocol": "16 newly generated paired openings in both seats at each of 0 and 100 ms. Candidate and W-tap face the identical opponent.",
+  "model_seed": 5489231,
+  "native_protocol": "Two paired openings in both seats at each latency with a matched W-tap control.",
+  "native_seed": 328919
+}

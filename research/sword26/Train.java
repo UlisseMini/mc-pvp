@@ -19,21 +19,24 @@ public final class Train {
     }
     static double play(double[] a,double[] b,Model.Scene scene,boolean swap){
         var p=new Fighter(a);var q=new Fighter(b);
-        return swap?-fitness(Model.duel(q::act,p::act,scene)):fitness(Model.duel(p::act,q::act,scene));
+        return swap?-fitness(Model.duel(q,p,scene)):fitness(Model.duel(p,q,scene));
     }
     public static void main(String[] args)throws Exception{
         Path dir=Path.of(args[0]);Files.createDirectory(dir);
         int generations=Integer.parseInt(args[1]);var rng=new Random(Long.parseLong(args[2]));
         List<double[]> pop=new ArrayList<>(),archive=new ArrayList<>();
         for(int k=0;k<POP;k++)pop.add(noise(rng,new double[COUNT],.35));
-        archive.addAll(pop);var pool=Executors.newFixedThreadPool(Integer.parseInt(args[3]));
+        archive.add(pop.get(0));var pool=Executors.newFixedThreadPool(Integer.parseInt(args[3]));
         try(var log=Files.newBufferedWriter(dir.resolve("fitness.tsv"))){
             log.write("generation\tbest\tmedian\tduels\n");
             for(int g=0;g<generations;g++){
                 var field=new ArrayList<double[]>();var scenes=new ArrayList<Model.Scene>();
                 for(int i=0;i<8;i++){
-                    var source=i%2==0?archive:pop;
-                    field.add(source.get(rng.nextInt(source.size())));
+                    var source=i<4?archive:pop;
+                    int n=source.size();
+                    if(i>=4 && g>0)n=ELITE;
+                    int index=i==0?n-1:rng.nextInt(n);
+                    field.add(source.get(index));
                     scenes.add(new Model.Scene(rng.nextLong(),rng.nextInt(2),rng.nextInt(2)));
                 }
                 List<Callable<Double>> tasks=new ArrayList<>();

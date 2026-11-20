@@ -28,15 +28,17 @@ public final class ClientKeys {
         if(mc.player==null||mc.level==null)return;
         try{
             mc.options.pauseOnLostFocus=false;
-            String line=Files.exists(control)?Files.readString(control).trim():"";
+            String line;
+            try{line=Files.readString(control).trim();}
+            catch(NoSuchFileException pending){apply(mc,Keys.STILL);return;}
             if(!line.equals(command)){
                 command=line;controller=null;primed=false;ticks=0;
                 if(trace!=null){trace.close();trace=null;}
                 if(!line.isEmpty()){
                     var fields=line.split("\t");target=fields[1];start=Long.parseLong(fields[2]);
                     controller=Controls.get(fields[3]);
-                    trace=new PrintWriter(Files.newBufferedWriter(control.resolveSibling(fields[0]+"-"+control.getFileName()+".tsv")));
-                    trace.println("tick\tx\ty\tz\ttargetX\ttargetY\ttargetZ\tvx\tvy\tvz\tground\tsprint\tcharge\thp\thurt\totherHurt\tforward\tside\trunKey\tjump\tpress\tyaw\tpitch");
+                    trace=new PrintWriter(Files.newBufferedWriter(Path.of(System.getProperty("sword.logs")).resolve(fields[0]+"-"+control.getFileName()+".tsv")));
+                    trace.println("tick\tx\ty\tz\ttargetX\ttargetY\ttargetZ\tvx\tvy\tvz\tground\tsprint\tcharge\thp\thurt\totherHurt\tforward\tside\trunKey\tjump\tpress\tyaw\tpitch\tepochMs");
                 }
             }
             if(controller==null||System.currentTimeMillis()<start){apply(mc,Keys.STILL);return;}
@@ -53,8 +55,8 @@ public final class ClientKeys {
             double dy=clip(p.getEyeY(),other.getY()+.1,other.getY()+1.7)-p.getEyeY();
             p.setXRot((float)-Math.toDegrees(Math.atan2(dy,Math.hypot(lx-p.getX(),lz-p.getZ()))));
             apply(mc,k);
-            trace.printf(java.util.Locale.ROOT,"%d\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%b\t%b\t%.4f\t%.3f\t%d\t%d\t%d\t%d\t%b\t%b\t%b\t%.2f\t%.2f%n",
-                ticks++,p.getX(),p.getY(),p.getZ(),lx,ly,lz,vel.x,vel.y,vel.z,v.grounded(),v.sprint(),v.charge(),v.health(),v.hurt(),v.otherHurt(),k.forward(),k.side(),k.sprint(),k.jump(),k.click(),p.getYRot(),p.getXRot());
+            trace.printf(java.util.Locale.ROOT,"%d\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%b\t%b\t%.4f\t%.3f\t%d\t%d\t%d\t%d\t%b\t%b\t%b\t%.2f\t%.2f\t%d%n",
+                ticks++,p.getX(),p.getY(),p.getZ(),lx,ly,lz,vel.x,vel.y,vel.z,v.grounded(),v.sprint(),v.charge(),v.health(),v.hurt(),v.otherHurt(),k.forward(),k.side(),k.sprint(),k.jump(),k.click(),p.getYRot(),p.getXRot(),System.currentTimeMillis());
             if(ticks%20==0)trace.flush();
         }catch(Exception e){throw new IllegalStateException("Sword input callback",e);}
     }

@@ -1,0 +1,19 @@
+{
+  "policy_sha256": "f6f2887237cc188680dc96c9dcc753880e6717fcef255fb5796bedbf557d033c",
+  "selected_checkpoint": "refined/gen-0024.net",
+  "development_crossplay_mean": 0.684103,
+  "development_worst_opponent": -0.259746,
+  "crossplay_bouts_per_checkpoint": 1152,
+  "training_sha256": {
+    "train.py": "78300b0af792663a495e893539d77b92e71104568f0039ee18ded7f2fa2ac0d9",
+    "Fighter.java": "91d4ea30a67b6a616f8a74ec4cae735e5ddbfa306223d7e05959f5b015fe75fc",
+    "Model.java": "4a1af335bcd98f3a8148f16136733c7318e0969d1551893d79137d4a18eab494",
+    "TreePolicy.java": "f0feaa93ddf3bd8815c8e714f5b9686832071af28d86d1c89ef2428d3cd4961a",
+    "Train.java": "8953e5157f351428883ba148822d219d95c714c894ab530450b9778d6a745618",
+    "PolicyGradient.java": "b5cc7b3de9030527bbd91adebea0cd6b71649fb97733767b87dbe427dbe98688",
+    "League.java": "a607d1fbe198322f1119240c397c4994c035eedf739ed2e2b797b6d0be9bf439",
+    "Refine.java": "46e79db64bdf493b6663efd14f5d49f5795208c5abd2d13051860a09763f02cc",
+    "Starts.java": "4b1bbb418cd0ed1dfb9bfae44ee3355f686886043127a94a0b492d6566471546",
+    "Cup.java": "7325f33efc5b0ecb794231ed9c46bd3061baeacf5b99952b3a7d2616d04426b6"
+  }
+}

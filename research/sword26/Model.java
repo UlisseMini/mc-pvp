@@ -12,37 +12,57 @@ final class Model {
         int age=20,immune,hurt,jumpDelay,miss;
         boolean ground=true,sprint,serverSprint;
         Keys keys=Keys.STILL;
-        final double[][] history=new double[12][4];
+        final double[][] history=new double[12][5];
         final double[][] pendingVelocity=new double[12][4];
         final boolean[] contacts=new boolean[12];
         final int[] chargeAt=new int[12];
         final boolean[] runningAt=new boolean[12],fallingAt=new boolean[12];
-        int firstHit=-1, hits, clicks, airHits, jumps;
-        void snapshot(int t){var row=history[t%12];row[0]=x;row[1]=y;row[2]=z;row[3]=hurt;}
+        int lastFresh=-1,firstHit=-1, hits, clicks, airHits, jumps;
+        void snapshot(int t){var row=history[t%12];row[0]=x;row[1]=y;row[2]=z;row[3]=hurt;row[4]=hp;}
     }
-    interface Controller {Keys act(View v);}
+    interface Controller {
+        Keys act(View v);
+        default void prime(View v,Keys applied){act(v);}
+        default void reward(double r){}
+    }
+    interface Observer {void step(int tick,Body a,Body b,Keys left,Keys right,boolean aFirst);}
+    record Frame(Keys a,Keys b){}
+    record Start(Scene scene,List<Frame> prefix){}
     record Score(double a,double b,int ticks,int hitsA,int hitsB,int clicksA,int clicksB,int jumpsA,int jumpsB,int airHitsA,int airHitsB){}
     record Scene(long seed,int delayA,int delayB){}
-    static View view(Body a,Body b,int tick,int lag){
+    static View view(Body a,Body b,int tick,int lag,int down){
         var p=b.history[Math.floorMod(tick-lag,12)];var q=b.history[Math.floorMod(tick-lag-1,12)];
+        var own=a.history[Math.floorMod(tick-down,12)];
+        var observedTarget=b.history[Math.floorMod(tick-down,12)];
         return new View(a.x,a.y,a.z,a.vx,a.vy,a.vz,p[0],p[1],p[2],p[0]-q[0],p[1]-q[1],p[2]-q[2],a.ground,a.sprint,
-            Math.min(1,a.age/12.5),a.hp,a.hurt,(int)p[3],a.yaw);
+            Math.min(1,a.age/12.5),own[4],(int)own[3],(int)observedTarget[3],a.yaw);
     }
     static void input(Body a,View v,Keys k,int tick,int up){
         a.keys=k;a.yaw=steer(v,k);
-        double dx=v.tx()-a.x,dz=v.tz()-a.z,d=Math.hypot(dx,dz);
+        double d=Math.hypot(v.tx()-a.x,v.tz()-a.z);
+        double dx=v.tx()-a.x,dz=v.tz()-a.z;
         // Ray from the eye to the nearest height inside the displayed box.
         double dy=clip(a.y+1.62,v.ty()+.1,v.ty()+1.7)-(a.y+1.62);
-        double factor=d>1e-9?Math.max(0,1-.3/Math.max(Math.abs(dx),Math.abs(dz))):0;
-        boolean ray=Math.hypot(d*factor,dy*factor)<=3 && (d<.30 || Math.abs(angle(targetYaw(v)-a.yaw))<=Math.toDegrees(Math.asin(Math.min(1,.30/d))));
+        double yaw=Math.toRadians(a.yaw), pitch=Math.atan2(dy,d);
+        boolean ray=rayBox(dx,v.ty()-a.y-1.62,dz,-Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch));
         if(k.click() && a.miss==0){
             a.clicks++;
             if(ray){
                 int i=(tick+up)%12;a.contacts[i]=true;a.chargeAt[i]=a.age;
                 a.runningAt[i]=a.serverSprint;a.fallingAt[i]=a.vy<0&&!a.ground;
-            }else a.miss=10;
+            }
             a.age=0;
         }
+    }
+    static boolean rayBox(double x,double y,double z,double vx,double vy,double vz){
+        double near=0,far=3;
+        for(int axis=0;axis<3;axis++){
+            double lo=axis==0?x-.3:axis==1?y:z-.3;
+            double hi=lo+(axis==1?1.8:.6),v=axis==0?vx:axis==1?vy:vz;
+            if(Math.abs(v)<1e-10){if(lo>0||hi<0)return false;continue;}
+            double a=lo/v,b=hi/v;near=Math.max(near,Math.min(a,b));far=Math.min(far,Math.max(a,b));
+        }
+        return near<=far;
     }
     static void hit(Body a,Body b,int tick,int down){
         int i=tick%12;if(!a.contacts[i])return;a.contacts[i]=false;
@@ -57,7 +77,7 @@ final class Model {
         b.lastDamage=raw;
         // Full diamond armor, eight toughness, no enchantments.
         b.hp=Math.max(0,b.hp-damage*(1-clip(20-damage/4,4,20)/25));a.hits++;
-        if(a.firstHit<0)a.firstHit=tick;if(critical)a.airHits++;
+        if(fresh)a.lastFresh=tick;if(a.firstHit<0)a.firstHit=tick;if(critical)a.airHits++;
         double dx=b.x-a.x,dz=b.z-a.z,d=Math.max(.001,Math.hypot(dx,dz));
         double vx=b.vx,vz=b.vz,vy=b.vy;
         if(fresh){vx=vx*.5+.4*dx/d;vz=vz*.5+.4*dz/d;vy=b.ground?Math.min(.4,vy*.5+.4):vy;}
@@ -85,16 +105,30 @@ final class Model {
         a.jumpDelay=Math.max(0,a.jumpDelay-1);a.miss=Math.max(0,a.miss-1);
     }
     static Score duel(Controller left,Controller right,Scene scene){
+        return duel(left,right,new Start(scene,List.of()),null);
+    }
+    static Score duel(Controller left,Controller right,Start start,Observer observer){
+        Scene scene=start.scene;
         var rng=new SplittableRandom(scene.seed);Body a=new Body(),b=new Body();
         double gap=rng.nextDouble(3.5,8),angle=rng.nextDouble(2*Math.PI);
         a.x=-Math.cos(angle)*gap/2;a.z=-Math.sin(angle)*gap/2;b.x=-a.x;b.z=-a.z;
         a.yaw=Math.toDegrees(angle)-90;b.yaw=a.yaw+180;
         for(int i=0;i<12;i++){a.snapshot(i);b.snapshot(i);}
         int t=0;for(;t<LIMIT&&a.hp>0&&b.hp>0;t++){
-            var va=view(a,b,t,scene.delayB+scene.delayA+1);var vb=view(b,a,t,scene.delayA+scene.delayB+1);
-            input(a,va,left.act(va),t,scene.delayA);input(b,vb,right.act(vb),t,scene.delayB);
-            if(rng.nextBoolean()){hit(a,b,t,scene.delayB);if(b.hp>0)hit(b,a,t,scene.delayA);}
+            var va=view(a,b,t,scene.delayB+scene.delayA+1,scene.delayA);var vb=view(b,a,t,scene.delayA+scene.delayB+1,scene.delayB);
+            double prevA=a.hp,prevB=b.hp;
+            boolean prefix=t<start.prefix.size();
+            Keys ka,kb;
+            if(prefix){
+                var frame=start.prefix.get(t);ka=frame.a;kb=frame.b;left.prime(va,ka);right.prime(vb,kb);
+            }else{ka=left.act(va);kb=right.act(vb);}
+            input(a,va,ka,t,scene.delayA);input(b,vb,kb,t,scene.delayB);
+            boolean aFirst=rng.nextBoolean();
+            if(aFirst){hit(a,b,t,scene.delayB);if(b.hp>0)hit(b,a,t,scene.delayA);}
             else{hit(b,a,t,scene.delayA);if(a.hp>0)hit(a,b,t,scene.delayB);}
+            double score=((a.hp-prevA)-(b.hp-prevB))/20+(b.hp==0?1:a.hp==0?-1:0);
+            if(!prefix){left.reward(score);right.reward(-score);}
+            if(observer!=null)observer.step(t,a,b,ka,kb,aFirst);
             move(a,t);move(b,t);a.snapshot(t+1);b.snapshot(t+1);
         }
         return new Score(a.hp,b.hp,t,a.hits,b.hits,a.clicks,b.clicks,a.jumps,b.jumps,a.airHits,b.airHits);
