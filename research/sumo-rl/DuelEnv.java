@@ -144,12 +144,17 @@ final class DuelEnv {
         this(tape,profile,rtt,otherRtt,sumo,trackerStart,solidRim,diameter,gap,lateralOffset,sumo?LIMIT:20000);
     }
     DuelEnv(Tape tape,String profile,int rtt,int otherRtt,boolean sumo,int trackerStart,boolean solidRim,int diameter,double gap,double lateralOffset,int duration){
+        this(tape,profile,rtt,otherRtt,sumo,trackerStart,solidRim,diameter,gap,lateralOffset,duration,null,null);
+    }
+    DuelEnv(Tape tape,String profile,int rtt,int otherRtt,boolean sumo,int trackerStart,boolean solidRim,int diameter,double gap,double lateralOffset,int duration,
+            double[] spawns,lab.ExactTravel.Terrain terrain){
         this.clockId=tape.id;this.profile=profile;this.rtt=rtt;this.otherRtt=otherRtt;this.sumo=sumo;limit=duration;serverEnds=tape.serverEnds;
         var config=BoxingModel.config(profile,rtt);config.otherRtt=otherRtt;config.sumo=sumo;config.sumoDiameter=diameter;
         if(sumo){
             config.sumoArena(4096,12);
             if(solidRim){config.solidEdge();config.trackerAFirst=tape.trackerAFirst();}
         }
+        if(terrain!=null)config.platform=new lab.ExactTravel.Environment(12,.6f,true,true,false,false,false,new lab.ExactTravel.Disk(4096,diameter,terrain));
         var t=new PeriodicComboClock.Timing();
         t.inputMode=PeriodicComboClock.InputMode.NATIVE_QUEUED;
         t.explicitPolls=tape.events.stream().anyMatch(e->e.kind()==PeriodicComboClock.Kind.POLL_FRAME
@@ -157,6 +162,13 @@ final class DuelEnv {
         t.uplinkA=t.uplinkB=t.downlinkA=t.downlinkB=.35;
         double offset=sumo?lab.SumoFootprint.centerOffset(diameter):0.;
         var state=new PeriodicComboFightModel.State(4096+offset-gap/2,lateralOffset+offset,4096+offset+gap/2,lateralOffset+offset,sumo?12:4);
+        if(spawns!=null){
+            state=new PeriodicComboFightModel.State(4096+spawns[0],spawns[1],4096+spawns[2],spawns[3],12);
+            float ay=(float)spawns[4],by=(float)spawns[5];
+            state.a.yaw=state.a.headYaw=state.a.reportYaw=ay;state.b.yaw=state.b.headYaw=state.b.reportYaw=by;
+            state.serverYawA=ay;state.serverYawB=by;
+            state.trackedYawA=(int)Math.floor(ay*256f/360f);state.trackedYawB=(int)Math.floor(by*256f/360f);
+        }
         if(!config.mmc)state.seedCoincidence(tape.id.hashCode());
         state.serverTicks=trackerStart;
         Player idle=new Player("wtap",0,rtt,0);

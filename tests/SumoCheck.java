@@ -29,6 +29,16 @@ public final class SumoCheck {
         left.posX=4092.5;right.posX=4100.5;left.posZ=right.posZ=.5;
         // Enter through native countdown holding. Both centered players must stay put.
         EntryDrills.holdStart(pinned,left,right);
+        var recorded=RecordedSumoMap.load("mmc-129");
+        pinned.sumoMap=recorded;left.posX=right.posX=4096.5;left.posZ=-3.5;right.posZ=4.5;
+        EntryDrills.holdStart(pinned,left,right);
+        check(pinned.spawnYaw(true)==0&&pinned.spawnYaw(false)==180,"look along the recorded axis");
+        var pair=BotMatchSettings.parse(new String[]{"map=mmc-221"},0,"test");
+        check("mmc-221".equals(pair.a.getProperty("sumo_map"))&&pair.a.equals(pair.b),"both fighters share the map");
+        for(String[] options:new String[][]{{"a.map=mmc-129"},{"map=mmc-129","diameter=10"},{"map=mmc-999"}}){
+            rejected=false;try{BotMatchSettings.parse(options,0,"test");}catch(IllegalArgumentException expected){rejected=true;}
+            check(rejected,"invalid named map settings rejected");
+        }
         check(cells==137,"recorded platform cell count");
         check(DuelSettings.sumoDiameter("13")==SumoArena.DIAMETER,"recorded layout selectable");
         check(SumoFootprint.state(-4,0,13)==656&&SumoFootprint.state(4,0,13)==656,"gold under both recorded spawns");

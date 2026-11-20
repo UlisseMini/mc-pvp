@@ -27,7 +27,7 @@ public final class Referee {
 
     static final class Match {
         String id,a,b,pa,pb,winner="",request="",mode="boxing",finishReason="100_hits"; int ha,hb,ba,bb,goal=100,arena,pingChanges; long start,finish,durationMs=180_000; boolean scenario,setupReseated; double pingA,pingB,initialPingA,initialPingB;
-        int sumoDiameter=SumoArena.DIAMETER;String observedFloor="";
+        int sumoDiameter=SumoArena.DIAMETER;String observedFloor="";RecordedSumoMap sumoMap;
         boolean boxing(){return mode.equals("boxing");}
         CombatProfile combat=CombatProfile.DEFAULT;
         SeededStartServer.Session seed;
@@ -35,6 +35,9 @@ public final class Referee {
         boolean box(){return mode.equals("diamond_box");}
         double laneZ(){return sumo()?SumoFootprint.centerOffset(sumoDiameter):0.;}
         double centerX(){return 4096.0*(arena+1)+laneZ();}
+        double spawnX(boolean first){return sumoMap==null?centerX()+(first?-1:1)*startGap/2:4096.0*(arena+1)+(first?sumoMap.ax:sumoMap.bx)+.5;}
+        double spawnZ(boolean first){return sumoMap==null?laneZ():(first?sumoMap.az:sumoMap.bz)+.5;}
+        int spawnYaw(boolean first){return sumoMap==null?(first?270:90):sumoMap.yaw(first);}
         boolean rods(){return mode.equals("rod_diamond");}
         boolean jumpReset(){return EntryDrills.JUMP_RESET.equals(drillPreset);}
         JumpResetFeedback jumpFeedback;
@@ -74,8 +77,8 @@ public final class Referee {
             m.put("attack_reach_a",DuelSettings.reach(configA));m.put("attack_reach_b",DuelSettings.reach(configB));
             m.put("modified_reach",DuelSettings.reach(configA)!=3||DuelSettings.reach(configB)!=3);
             if(sumo()){
-                var geometry=SumoArena.geometry(sumoDiameter,startGap);
-                if(!observedFloor.isEmpty())geometry.put("observed_floor_sha256",observedFloor);
+                var geometry=sumoMap==null?SumoArena.geometry(sumoDiameter,startGap):SumoArena.geometry(sumoMap);
+                if(!observedFloor.isEmpty())geometry.put(sumoMap==null?"observed_floor_sha256":"observed_volume_sha256",observedFloor);
                 m.put("sumo_arena",geometry);
             }
             m.put("armor_protection",0);m.put("weapon",sumo()?"fist":boxing()?"diamond_sword":"wooden_sword");
@@ -402,6 +405,11 @@ public final class Referee {
                 Match m=find(R.name(sender));if(m!=null)finish(m,"stopped");else{vanilla("gamemode 0 "+safeName(sender));teleport(sender,0,4,0);}
             }else if(cmd.equals("lab")&&args.length>=2&&args[1].equals("combat")){
                 CombatTuning.command(sender,args);
+            }else if(cmd.equals("lab")&&args.length==3&&args[1].equals("mapgeometry")){
+                if(sender!=server)throw new IllegalArgumentException("Use the server console for recorded geometry export");
+                Object world=R.call(server,"worldServerForDimension",0);
+                RecordedSumoArena.export(world,RecordedSumoMap.load(args[2]));
+                message(sender,"Verified native sumo geometry "+args[2]);
             }else if(cmd.equals("lab")&&args.length==3&&args[1].equals("prepare")&&args[2].equals("long")){
                 if(!matches.isEmpty())throw new IllegalArgumentException("Arena preparation requires no active matches.");
                 String bot=freeBot(Set.of());if(bot==null)throw new IllegalArgumentException("Wait for a bot to connect first.");
@@ -540,7 +548,11 @@ public final class Referee {
             if(!m.sumo())throw new IllegalArgumentException("diameter= applies to sumo matches");
             m.sumoDiameter=DuelSettings.sumoDiameter(overridesB.getProperty("sumo_diameter"));
         }
-        m.startGap=m.sumo()&&round==0?SumoFootprint.startGap(m.sumoDiameter):startGap;m.drillRound=round;m.drillPreset=preset;
+        if(overridesB.containsKey("sumo_map")){
+            if(!m.sumo()||round!=0)throw new IllegalArgumentException("map= applies to regulation sumo matches");
+            m.sumoMap=RecordedSumoMap.load(overridesB.getProperty("sumo_map"));
+        }
+        m.startGap=m.sumoMap!=null?m.sumoMap.gap:m.sumo()&&round==0?SumoFootprint.startGap(m.sumoDiameter):startGap;m.drillRound=round;m.drillPreset=preset;
         if(m.jumpReset())m.durationMs=0;
         else if(m.sumo()&&duration==0)m.durationMs=SumoArena.DURATION_MS;
         do{m.id=String.format("m%04d",++counter);}while(Files.exists(DATA.resolve("results/"+m.id+".json"))||Files.exists(DATA.resolve("replays/"+m.id+".jsonl")));
@@ -573,7 +585,7 @@ public final class Referee {
         if(duration>64_000)prepareLongArena(arenaWorld,m.arena);
         if(m.box())prepareBox(arenaWorld,m.arena);
         boolean continuousDrill=EntryDrills.sameArena(m);
-        if(m.sumo()&&!continuousDrill)m.observedFloor=SumoArena.build(arenaWorld,m.arena,m.sumoDiameter);
+        if(m.sumo()&&!continuousDrill)m.observedFloor=m.sumoMap==null?SumoArena.build(arenaWorld,m.arena,m.sumoDiameter):SumoArena.build(arenaWorld,m.arena,m.sumoMap);
         m.start=System.currentTimeMillis()+3000;
         m.replay=DATA.resolve("replays/"+m.id+".jsonl");matches.put(m.id,m);
         if(m.jumpReset())m.jumpFeedback=new JumpResetFeedback(m,player(a),player(b));
@@ -624,8 +636,8 @@ public final class Referee {
         double offset=m.laneZ(),center=m.centerX();
         // Two normal 0.6-wide player bodies fit in the same 1x1 cell by
         // overlapping each other, never the walls. Native collision handles KB.
-        preparePlayer(a,center+(m.box()?.32:-m.startGap/2),m.sumo()?SumoArena.TOP_Y:4,m.box()?.5:offset,270,m.mode);
-        preparePlayer(b,center+(m.box()?.68:m.startGap/2),m.sumo()?SumoArena.TOP_Y:4,m.box()?.5:offset,90,m.mode);
+        preparePlayer(a,(m.box()?center+.32:m.spawnX(true)),m.sumo()?SumoArena.TOP_Y:4,m.box()?.5:m.spawnZ(true),m.spawnYaw(true),m.mode);
+        preparePlayer(b,(m.box()?center+.68:m.spawnX(false)),m.sumo()?SumoArena.TOP_Y:4,m.box()?.5:m.spawnZ(false),m.spawnYaw(false),m.mode);
     }
     static void prepareBox(Object world,int arena){
         int center=4096*(arena+1);

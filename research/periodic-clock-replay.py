@@ -9,7 +9,7 @@ from network_pipeline_audit import archive,wire as pipeline_wire,pair_payloads,s
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 JAVA=Path(shutil.which('java') or 'java')
-SOURCES=['src/lab/ExactTravel.java','src/lab/SumoFootprint.java','src/lab/Json.java','src/lab/CombatProfile.java','src/lab/DuelSettings.java','src/lab/Compat.java','src/lab/PracticePresets.java','tests/PeriodicComboFightModel.java','tests/PeriodicComboReplay.java','tests/PeriodicComboTransport.java']
+SOURCES=['src/lab/ExactTravel.java','src/lab/SumoFootprint.java','src/lab/Json.java','src/lab/CombatProfile.java','src/lab/RecordedSumoMap.java','src/lab/DuelSettings.java','src/lab/Compat.java','src/lab/PracticePresets.java','tests/PeriodicComboFightModel.java','tests/PeriodicComboReplay.java','tests/PeriodicComboTransport.java']
 
 def wire(events,direction,player=None):
     rows=pipeline_wire(events,direction,player)

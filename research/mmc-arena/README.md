@@ -37,3 +37,22 @@ python3 research/mmc-arena/survey.py build/mmc-survey --retry-errors --publish b
 ```
 
 [Survey counts](evidence/survey.json) · [Source block states and spawns](evidence/platform.json) · [Per-match measurements](evidence/measurements.jsonl.gz)
+
+## Other recorded platforms
+
+Use `map=` in a sumo duel to select a recorded build. For example, `/duel best-sumo sumo preset=mmc cps=7 map=mmc-129` uses the alternate eight-block opening. Map names give the number of connected floor blocks. A suffix such as `mmc-177-04` selects a different material layout on the same footprint. Named maps preserve the original compass direction so stairs face the same way as in the recording.
+
+| Use | Playable floor cells | Gold-to-gold distance |
+| --- | --- | --- |
+| Training default | 137 | 8 |
+| Routine map validation | 129 | 8 |
+| Routine map validation | 155, 177, 221 | 10 |
+| Reserved for the frozen final comparison | 165, 193, 201, 223 | 10 |
+
+The 429 measured rounds contained nine outlines and 28 combinations of floor materials and spawn orientation. We recovered each seven-layer volume twice from different recordings. All 28 pairs matched block for block, including material metadata, both gold markers and a one-block margin. Each volume extends two layers below the fighting floor and four above it. The lab supplies its own surroundings and ring-out height. [Geometry split and recording IDs](evidence/platforms/split.json) · [Block-state cross-checks](evidence/platforms/catalog.json)
+
+The simulator queries the stock Minecraft 1.8.9 block implementations for the collision boxes of each cell with its recorded neighbors. It uses those boxes for vertical movement, horizontal movement and step-ups. A separate test ran the same moves through Minecraft's `Entity.moveEntity` and compared the six bounding-box endpoints and all three collision flags exactly. [Collision hashes](evidence/platforms/collision/proof.json) · [Movement tests per map](evidence/platforms/collision/move-parity.json)
+
+### Interpreting the validation games
+
+All specialists train on the original 137-block arena. The comparison includes its original lab orientation and the recorded orientation, in addition to the four routine validation maps. Compare `mmc-129` to `mmc-137` to study changing the edge with the same opening distance and approach direction. The larger maps also change opening distance. A score across these floors describes transfer against the specific frozen opponent. Independent human competition remains a separate test. [Frozen match protocol](evidence/platforms/tournaments/baseline16k/protocol.json)

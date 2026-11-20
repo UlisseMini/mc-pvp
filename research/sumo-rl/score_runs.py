@@ -24,7 +24,11 @@ def native(mid,setup,network=None):
     assert g['duration_limit_ms']==(120000 if g['mode']=='sumo' else 180000 if regulation else 20000)
     if regulation:assert g['mode']=='boxing' and g['goal']==100 and not g['scenario']
     if g['mode']=='sumo':assert g['sumo_arena']['diameter']==setup.get('diameter',10) and g['sumo_arena']['start_gap']==setup.get('start_gap',6)
-    if setup.get('diameter')==13:assert g['sumo_arena']['shape']=='mmc_recorded_13_v1' and g['sumo_arena']['floor_blocks']==137
+    if setup.get('map'):
+        arena=g['sumo_arena']
+        assert arena['map']==setup['map'] and arena['shape']=='mmc_recorded_volume_v1'
+        assert arena['source_volume_sha256']==arena['observed_volume_sha256']==setup['volume_sha256']
+    elif setup.get('diameter')==13:assert g['sumo_arena']['shape']=='mmc_recorded_13_v1' and g['sumo_arena']['floor_blocks']==137
     if setup['profile']=='mmc':assert g['combat_profile']['knockback_model']==setup.get('knockback_model','mmc_pre_attack_sprint_v2')
     p=g['parameters_'+side]
     expected=0 if network is not None or setup['arm'] in ('research-wtap20','research-hold20') else score.record(HERE/{'sumo-rl-jump':'v1/fit.json','sumo-rl':'fit.json','sumo-rl-pressure':'league-fit.json'}[setup['arm']])['mask']

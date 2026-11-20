@@ -32,8 +32,9 @@ final class LeagueWorker {
     }
     static DuelEnv clock(String path)throws IOException{
         if(!clocks.containsKey(path)){
-            DuelEnv e=InputStudy.clock(Path.of(path));CappedFrozenResponse.cap(e,CPS);
-            if(e.initial.config.sumoDiameter!=13||DuelEnv.regulationGap()!=8||e.limit!=120000)throw new IOException("Unexpected regulation geometry or duration");
+            String map=System.getProperty("league.map");
+            DuelEnv e=map==null?InputStudy.clock(Path.of(path)):RecordedMapClock.open(Path.of(path),map);CappedFrozenResponse.cap(e,CPS);
+            if((map==null&&(e.initial.config.sumoDiameter!=13||DuelEnv.regulationGap()!=8))||e.limit!=120000)throw new IOException("Unexpected regulation geometry or duration");
             clocks.put(path,e);
         }
         return clocks.get(path);

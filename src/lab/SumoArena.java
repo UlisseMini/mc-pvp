@@ -31,9 +31,20 @@ final class SumoArena {
         if(diameter==DIAMETER){g.put("center_offset",.5);g.put("floor_blocks",137);}
         return g;
     }
+    static Map<String,Object> geometry(RecordedSumoMap map){
+        return new java.util.LinkedHashMap<>(Map.ofEntries(
+            Map.entry("map",map.name),Map.entry("shape","mmc_recorded_volume_v1"),Map.entry("reference","mmc_capture_"+map.clip),
+            Map.entry("source_volume_sha256",map.hash),Map.entry("diameter",Math.max(map.width,map.depth)-2),
+            Map.entry("floor_blocks",map.area),Map.entry("start_gap",map.gap),Map.entry("floor_y",FLOOR_Y),
+            Map.entry("top_y",TOP_Y),Map.entry("loss_y",LOSS_Y),Map.entry("gold_spawns",java.util.List.of(java.util.List.of(map.ax,map.az),java.util.List.of(map.bx,map.bz)))));
+    }
+    static String build(Object world,int arena,RecordedSumoMap map){
+        change(world,arena,MAX_DIAMETER,false);
+        return RecordedSumoArena.build(world,arena,map);
+    }
     static void build(Object world,int arena){build(world,arena,DIAMETER);}
-    static String build(Object world,int arena,int diameter){return change(world,arena,diameter,true);}
-    static void clear(Object world,int arena){change(world,arena,MAX_DIAMETER,false);}
+    static String build(Object world,int arena,int diameter){RecordedSumoArena.clear(world,arena);return change(world,arena,diameter,true);}
+    static void clear(Object world,int arena){RecordedSumoArena.clear(world,arena);change(world,arena,MAX_DIAMETER,false);}
     private static String change(Object world,int arena,int diameter,boolean build){
         int center=4096*(arena+1),r=MAX_DIAMETER/2;
         Object blocks=R.cls("net.minecraft.init.Blocks");var states=new java.util.HashMap<Integer,Object>();

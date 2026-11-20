@@ -7,7 +7,7 @@ public final class DuelSettings {
     static final int DEFAULT_HIT_TICKS=9, VANILLA_HIT_TICKS=10;
     /** A tick sampled before the declared start cannot activate an optional acquisition policy. */
     public static boolean inOpening(long elapsedMs,double durationMs){return elapsedMs>=0 && elapsedMs<durationMs;}
-    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8|hypixel|mmc] [reach=3.0] [cps=20] [diameter=13] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks="+DEFAULT_HIT_TICKS+"] [sprint_vertical=.1]";
+    public static final String USAGE="/duel <bot> [mode] [bot RTT] [your RTT] [preset=lock8|hypixel|mmc] [reach=3.0] [cps=20] [map=mmc-129] [diameter=13] [ping=100] [myping=80] [kb=vanilla] [kb_horizontal=1] [kb_vertical=1] [hit_ticks="+DEFAULT_HIT_TICKS+"] [sprint_vertical=.1]";
     public final String mode;
     public final double botPing,humanPing;
     public final boolean humanPingExplicit;
@@ -60,6 +60,7 @@ public final class DuelSettings {
                     overrides.setProperty("click_cps",Integer.toString(cps));
                     break;
                 }
+                case "map": overrides.setProperty("sumo_map",RecordedSumoMap.load(value).name);break;
                 case "diameter": overrides.setProperty("sumo_diameter",Integer.toString(sumoDiameter(value)));break;
                 case "aiminput":
                     if(!value.equals("mouse") && !value.equals("ideal"))throw new IllegalArgumentException("Choose aiminput=mouse or aiminput=ideal");
@@ -97,6 +98,9 @@ public final class DuelSettings {
         }
         if(seen.contains("kb")&&(seen.contains("kb_horizontal")||seen.contains("kb_vertical")||seen.contains("hit_ticks")||seen.contains("sprint_vertical")))
             throw new IllegalArgumentException("Use kb=vanilla alone to reset combat settings, or give explicit multipliers/delay");
+        if(seen.contains("map"))overrides.remove("sumo_diameter");
+        if(seen.contains("diameter"))overrides.remove("sumo_map");
+        if(seen.contains("map")&&seen.contains("diameter"))throw new IllegalArgumentException("Choose map= or diameter= for a sumo match");
         String label=overrides.getProperty(PracticePresets.LABEL);
         if(label!=null&&!PracticePresets.combatMatches(label,overrides))overrides.remove(PracticePresets.LABEL);
         return new DuelSettings(mode,botPing,humanPing,overrides,seen.contains("myping"));

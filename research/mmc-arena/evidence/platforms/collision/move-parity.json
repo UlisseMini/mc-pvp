@@ -1,0 +1,147 @@
+{
+  "cases": {
+    "mmc-129": {
+      "horizontal_clips": 196,
+      "landings": 703,
+      "steps": 2700
+    },
+    "mmc-137": {
+      "horizontal_clips": 202,
+      "landings": 738,
+      "steps": 2700
+    },
+    "mmc-137-02": {
+      "horizontal_clips": 202,
+      "landings": 738,
+      "steps": 2700
+    },
+    "mmc-137-03": {
+      "horizontal_clips": 202,
+      "landings": 738,
+      "steps": 2700
+    },
+    "mmc-137-04": {
+      "horizontal_clips": 202,
+      "landings": 738,
+      "steps": 2700
+    },
+    "mmc-137-05": {
+      "horizontal_clips": 202,
+      "landings": 738,
+      "steps": 2700
+    },
+    "mmc-137-06": {
+      "horizontal_clips": 163,
+      "landings": 817,
+      "steps": 2700
+    },
+    "mmc-137-07": {
+      "horizontal_clips": 202,
+      "landings": 738,
+      "steps": 2700
+    },
+    "mmc-137-08": {
+      "horizontal_clips": 166,
+      "landings": 802,
+      "steps": 2700
+    },
+    "mmc-137-09": {
+      "horizontal_clips": 170,
+      "landings": 796,
+      "steps": 2700
+    },
+    "mmc-137-10": {
+      "horizontal_clips": 182,
+      "landings": 776,
+      "steps": 2700
+    },
+    "mmc-137-11": {
+      "horizontal_clips": 161,
+      "landings": 816,
+      "steps": 2700
+    },
+    "mmc-137-12": {
+      "horizontal_clips": 148,
+      "landings": 860,
+      "steps": 2700
+    },
+    "mmc-137-13": {
+      "horizontal_clips": 198,
+      "landings": 748,
+      "steps": 2700
+    },
+    "mmc-137-14": {
+      "horizontal_clips": 191,
+      "landings": 761,
+      "steps": 2700
+    },
+    "mmc-137-15": {
+      "horizontal_clips": 181,
+      "landings": 819,
+      "steps": 2700
+    },
+    "mmc-155": {
+      "horizontal_clips": 225,
+      "landings": 839,
+      "steps": 3060
+    },
+    "mmc-165": {
+      "horizontal_clips": 243,
+      "landings": 879,
+      "steps": 3468
+    },
+    "mmc-177": {
+      "horizontal_clips": 254,
+      "landings": 939,
+      "steps": 3468
+    },
+    "mmc-177-02": {
+      "horizontal_clips": 254,
+      "landings": 939,
+      "steps": 3468
+    },
+    "mmc-177-03": {
+      "horizontal_clips": 250,
+      "landings": 943,
+      "steps": 3468
+    },
+    "mmc-177-04": {
+      "horizontal_clips": 191,
+      "landings": 1067,
+      "steps": 3468
+    },
+    "mmc-177-05": {
+      "horizontal_clips": 209,
+      "landings": 1034,
+      "steps": 3468
+    },
+    "mmc-177-06": {
+      "horizontal_clips": 250,
+      "landings": 943,
+      "steps": 3468
+    },
+    "mmc-193": {
+      "horizontal_clips": 282,
+      "landings": 991,
+      "steps": 3468
+    },
+    "mmc-201": {
+      "horizontal_clips": 273,
+      "landings": 1049,
+      "steps": 3468
+    },
+    "mmc-221": {
+      "horizontal_clips": 308,
+      "landings": 1163,
+      "steps": 4332
+    },
+    "mmc-223": {
+      "horizontal_clips": 314,
+      "landings": 1168,
+      "steps": 4332
+    }
+  },
+  "scope": "exact AABB endpoints and ground/horizontal/vertical collision flags after native Entity.moveEntity on generated offsets at seven approach/landing heights and both ground flags",
+  "seed": 751239,
+  "stock_server": "c18e4245073aaff580eb7359902f0251436568b1647a9e443a924cdb73fa8312"
+}

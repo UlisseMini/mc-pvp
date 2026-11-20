@@ -76,7 +76,13 @@ public final class ExactTravel {
     }
 
     /** Solid, single-layer platform in open air. Player step height is the native 0.6f. */
-    public record Disk(double centerX,int diameter) {
+    public interface Terrain {
+        java.util.List<Box> boxes(Box sweep);
+        float slipperiness(State state);
+        boolean supports(Box footprint);
+    }
+    public record Disk(double centerX,int diameter,Terrain terrain) {
+        public Disk(double centerX,int diameter){this(centerX,diameter,null);}
         public Disk { if(diameter<=0)throw new IllegalArgumentException("Empty platform"); }
         boolean cell(int x,int z) {
             // An odd-width ring is centered on a block; an even one lies between four blocks.
@@ -85,6 +91,7 @@ public final class ExactTravel {
             return dx*dx+dz*dz<=r*r;
         }
         public boolean supports(Box box) {
+            if(terrain!=null)return terrain.supports(box);
             for(int x=(int)Math.floor(box.minX);x<box.maxX;x++)
                 for(int z=(int)Math.floor(box.minZ);z<box.maxZ;z++)if(cell(x,z))return true;
             return false;
@@ -113,6 +120,7 @@ public final class ExactTravel {
             return new Clip(out,x,y,z);
         }
         Clip collide(State s,double dx,double dy,double dz,double top) {
+            if(terrain!=null)return collideTerrain(terrain,s,dx,dy,dz);
             Clip normal=move(s.box,dx,dy,dz,top);
             if((dx==normal.x && dz==normal.z) || !(s.onGround || dy<0 && normal.y!=dy))return normal;
             // Both vanilla step candidates have the same overhead clearance on this disk.
@@ -127,6 +135,42 @@ public final class ExactTravel {
         }
     }
     private record Clip(Box box,double x,double y,double z) {}
+    private static Box sweep(Box b,double x,double y,double z){
+        return new Box(b.minX+Math.min(0,x),b.minY+Math.min(0,y),b.minZ+Math.min(0,z),
+                       b.maxX+Math.max(0,x),b.maxY+Math.max(0,y),b.maxZ+Math.max(0,z));
+    }
+    private static double clipAxis(java.util.List<Box> blocks,Box b,double d,int axis){
+        for(Box c:blocks){
+            if(axis!=0&&(b.maxX<=c.minX||b.minX>=c.maxX) ||
+               axis!=1&&(b.maxY<=c.minY||b.minY>=c.maxY) ||
+               axis!=2&&(b.maxZ<=c.minZ||b.minZ>=c.maxZ))continue;
+            double low=axis==0?b.minX:axis==1?b.minY:b.minZ;
+            double high=axis==0?b.maxX:axis==1?b.maxY:b.maxZ;
+            double front=axis==0?c.minX:axis==1?c.minY:c.minZ;
+            double back=axis==0?c.maxX:axis==1?c.maxY:c.maxZ;
+            if(d>0 && high<=front)d=Math.min(d,front-high);
+            if(d<0 && low>=back)d=Math.max(d,back-low);
+        }
+        return d;
+    }
+    private static Clip moveAcross(java.util.List<Box> blocks,Box box,double dx,double y,double dz){
+        Box raised=box.offset(0,y,0);
+        double x=clipAxis(blocks,raised,dx,0);raised=raised.offset(x,0,0);
+        double z=clipAxis(blocks,raised,dz,2);return new Clip(raised.offset(0,0,z),x,y,z);
+    }
+    private static Clip collideTerrain(Terrain terrain,State s,double dx,double dy,double dz){
+        Box b=s.box;var blocks=terrain.boxes(sweep(b,dx,dy,dz));
+        Clip flat=moveAcross(blocks,b,dx,clipAxis(blocks,b,dy,1),dz);
+        if((flat.x==dx&&flat.z==dz)||!(s.onGround||dy<0&&flat.y!=dy))return flat;
+        double step=(double).6f;
+        blocks=terrain.boxes(sweep(b,dx,step,dz));
+        Clip a=moveAcross(blocks,b,dx,clipAxis(blocks,sweep(b,dx,0,dz),step,1),dz);
+        Clip c=moveAcross(blocks,b,dx,clipAxis(blocks,b,step,1),dz);
+        Clip best=a.x*a.x+a.z*a.z>c.x*c.x+c.z*c.z?a:c;
+        if(flat.x*flat.x+flat.z*flat.z>=best.x*best.x+best.z*best.z)return flat;
+        double down=clipAxis(blocks,best.box,-best.y,1);
+        return new Clip(best.box.offset(0,down,0),best.x,down,best.z);
+    }
 
     /**
      * Reproduce setPosition's NEW-box construction. Use for an actual native
@@ -148,8 +192,10 @@ public final class ExactTravel {
         requireSupported(before, environment);
 
         // pr.g: all products/divisions below are floats in this exact order.
+        float surface=before.onGround && environment.disk!=null && environment.disk.terrain!=null?
+                environment.disk.terrain.slipperiness(before):environment.floorSlipperiness;
         float friction = .91f;
-        if (before.onGround) friction = environment.floorSlipperiness * .91f;
+        if (before.onGround) friction = surface * .91f;
         float normalization = .16277136f / (friction * friction * friction);
         float acceleration = before.onGround
                 ? input.groundAcceleration * normalization : input.airAcceleration;
@@ -175,7 +221,7 @@ public final class ExactTravel {
         // Native recomputes this BEFORE movement, so takeoff uses ground
         // friction and landing uses air friction for this complete travel call.
         friction = .91f;
-        if (before.onGround) friction = environment.floorSlipperiness * .91f;
+        if (before.onGround) friction = surface * .91f;
 
         // pk.d(DDD): Y, X, Z clipping and separate AABB offsets. A full plane
         // clips only downward Y; no other box intersects in this scoped world.

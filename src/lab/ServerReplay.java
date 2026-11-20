@@ -64,7 +64,9 @@ public final class ServerReplay {
         prepareStage(world,data,4096.0*(arena+1));Referee.clearBox(world,arena);SumoArena.clear(world,arena);
         if("sumo".equals(data.result.get("mode"))){
             double size=ReplayData.number(ReplayData.map(data.result.get("sumo_arena")),"diameter",SumoFootprint.LEGACY);
-            SumoArena.build(world,arena,DuelSettings.sumoDiameter(Integer.toString((int)size)));
+            Object map=ReplayData.map(data.result.get("sumo_arena")).get("map");
+            if(map!=null)SumoArena.build(world,arena,RecordedSumoMap.load(map.toString()));
+            else SumoArena.build(world,arena,DuelSettings.sumoDiameter(Integer.toString((int)size)));
         }
         if("diamond_box".equals(data.result.get("mode")))Referee.prepareBox(world,arena);
         Session s=new Session(who,data,arena,System.currentTimeMillis());sessions.put(who,s);

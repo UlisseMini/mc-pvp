@@ -96,7 +96,7 @@ public final class EntryDrills {
     static void holdStart(Referee.Match m,Object a,Object b){
         double center=m.centerX(),z=m.laneZ(),y=m.sumo()?SumoArena.TOP_Y:4;
         for(int side=0;side<2;side++){
-            Object p=side==0?a:b;double x=center+(side==0?-1:1)*m.startGap/2;
+            Object p=side==0?a:b;double x=m.spawnX(side==0);z=m.spawnZ(side==0);
             Object hook=R.get(p,"fishEntity");if(hook!=null){R.call(hook,"setDead");R.set(p,"fishEntity",null);}
             if(Math.abs(R.num(p,"posX")-x)>.02||Math.abs(R.num(p,"posY")-y)>.02||Math.abs(R.num(p,"posZ")-z)>.02){
                 Referee.teleport(p,x,y,z);R.set(p,"motionX",0.0);R.set(p,"motionY",0.0);R.set(p,"motionZ",0.0);

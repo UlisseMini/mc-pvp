@@ -178,6 +178,8 @@ def build():
                     if member.endswith('.class') and not member.endswith('module-info.class'):
                         jar.writestr(member, dependency.read(member))
         jar.writestr('HEADLESSMC-LICENSE', (CACHE / 'HEADLESSMC-LICENSE').read_bytes())
+        for volume in sorted((ROOT/'research/mmc-arena/evidence/platforms/packed').glob('*.bin.gz')):
+            jar.write(volume,'lab/mmc-maps/'+volume.name)
         jar.write(CACHE / 'joined.srg', 'lab/joined.srg')
         jar.write(CACHE / 'mappings.properties', 'lab/mappings.properties')
     archive=BUILD/'agents';archive.mkdir(exist_ok=True)

@@ -407,7 +407,7 @@ public final class PeriodicComboFightModel {
                 double height=ty-target.floor();
                 if(!c.recordedMmc)target=target.cap(height);
                 if(fromA)s.mmcB=target;else s.mmcA=target;
-                boolean landing=(!c.sumo||sumoSupport(victim.box(),c.sumoDiameter,c.centerX))&&target.landing(height,fromA?c.otherRtt:c.ownRtt);
+                boolean landing=(!c.sumo||(c.platform.disk()!=null?c.platform.disk().supports(victim.box()):sumoSupport(victim.box(),c.sumoDiameter,c.centerX)))&&target.landing(height,fromA?c.otherRtt:c.ownRtt);
                 vy=!c.recordedMmc&&target.capped()&&!landing?0:lab.CombatProfile.RECORDED_Y+(sprint?c.sprintVertical:0);
             }else if(fresh&&sprint&&c.sprintVertical!=.1)vy+=c.sprintVertical-.1;
             s.lastVx=vel(vx*(fresh?c.kbScale:1));s.lastVy=vel(vy*(fresh?c.verticalScale:1));
