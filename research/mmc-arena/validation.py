@@ -173,6 +173,27 @@ def verify_spawn(mid,expected_name):
         if positions!=expected:raise ValueError('Countdown spawn changed in '+mid)
     return dict(frames=len(frames),positions=expected,observed_volume=arena.get('observed_volume_sha256',arena.get('observed_floor_sha256')))
 
+def verify_networks(folder,doc,records):
+    expected={WT:None}
+    for ref in [*doc['contestants'].values(),*doc.get('original_16k',{}).values()]:
+        expected['idlab-'+ref['sha256'][:12]]=ref['sha256']
+        target=ref['target']
+        expected['idlab-'+ref['target_sha'][:12] if target.endswith('.net') else alias(target)]=ref['target_sha']
+    checks={}
+    for row in records.values():
+        game=read(ROOT/'runtime/results'/(row['mid']+'.json'))
+        sides={}
+        for seat in 'ab':
+            name=game['policy_'+seat];params=game['parameters_'+seat]
+            digest=expected[name];raw=params.get('duel_network','').encode()
+            if digest is None:
+                if raw or params['kind']!='wtap':raise ValueError('Expected plain W-tap in '+row['mid'])
+            elif digest not in (hashlib.sha256(raw).hexdigest(),hashlib.sha256(raw+b'\n').hexdigest()):
+                raise ValueError('Match used different weights from its frozen simulator actor in '+row['mid'])
+            sides[seat]=dict(controller=name,network_sha256=digest)
+        checks[row['mid']]=sides
+    write_json(folder/'network-checks.json',checks,fixed=True)
+
 def native_plan(stage,folder,doc):
     all_trials={};sources_by_key={}
     for idx,name in enumerate(doc['maps']):
@@ -202,6 +223,7 @@ def smoke(bridge):
     if len(first)!=4:raise ValueError('Expected matched specialist and plain W-tap fixtures on two maps')
     dest=folder/'native'/'release-check'
     scores=cohort(dest,first,bridge)
+    verify_networks(dest,doc,scores)
     write_json(dest/'spawn-checks.json',{q:verify_spawn(s['mid'],labels[q][0]) for q,s in scores.items()},fixed=True)
     from report_transfer import report
     report(stage)
@@ -236,6 +258,7 @@ def native(stage):
         if (batch/'verified.json').exists():new=read(batch/'verified.json')['matches']
         else:new=fair_cohort(batch,plan,bridge,server=release['server'])
         if read(batch/'native-build.json')!=versions:raise ValueError('Map panels used different client or server binaries')
+        verify_networks(batch,doc,new)
         checks=batch/'spawn-checks.json'
         if not checks.exists():write_json(checks,{o['mid']:verify_spawn(o['mid'],sources_by_key[q][0]) for q,o in new.items()},fixed=True)
         records.update(new)

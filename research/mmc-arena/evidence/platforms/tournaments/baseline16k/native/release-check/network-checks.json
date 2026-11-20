@@ -1,0 +1,42 @@
+{
+  "m9373": {
+    "a": {
+      "controller": "idlab-5601606a5a20",
+      "network_sha256": "5601606a5a201eba224dd577a29b553079e60a144d75f062af29f36d56675499"
+    },
+    "b": {
+      "controller": "v4-ppo-g0496",
+      "network_sha256": "bd2265e8498df5fe91f39f03e1dd0654ab16c5165bb9989df517890e6f2a75fe"
+    }
+  },
+  "m9374": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "v4-ppo-g0496",
+      "network_sha256": "bd2265e8498df5fe91f39f03e1dd0654ab16c5165bb9989df517890e6f2a75fe"
+    }
+  },
+  "m9375": {
+    "a": {
+      "controller": "idlab-5601606a5a20",
+      "network_sha256": "5601606a5a201eba224dd577a29b553079e60a144d75f062af29f36d56675499"
+    },
+    "b": {
+      "controller": "v4-ppo-g0496",
+      "network_sha256": "bd2265e8498df5fe91f39f03e1dd0654ab16c5165bb9989df517890e6f2a75fe"
+    }
+  },
+  "m9376": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "v4-ppo-g0496",
+      "network_sha256": "bd2265e8498df5fe91f39f03e1dd0654ab16c5165bb9989df517890e6f2a75fe"
+    }
+  }
+}

@@ -8,7 +8,7 @@ def configure(path, kind, role, seed, draw_seed, incumbent, counter, families, s
                action_seed=seed*101+1,incumbent=incumbent,counter=counter,families=families,
                scores=scores or {},warm=None if warm is None else str(warm)),fixed=True)
 
-def fit(path, total):
+def fit(path, total, schedule=training_schedule):
     cfg=json.loads((path/"config.json").read_text());torch.manual_seed(cfg["seed"])
     net=Actor(cfg["kind"]);opt=torch.optim.Adam(net.parameters(),lr=.00035)
     state=path/"trainer.pt";step=0;logs=[]
@@ -26,7 +26,7 @@ def fit(path, total):
     try:
         while step<total:
             t=time.monotonic(); weights=roller.folder/"current.net";net.export(weights)
-            rows=roller.run(training_schedule(cfg,weights,step),True); rolled=time.monotonic()
+            rows=roller.run(schedule(cfg,weights,step),True); rolled=time.monotonic()
             episodes=prepare(rows);stats=train_update(net,opt,episodes,cfg["seed"]+step)
             step+=1
             logs.append(dict(update=step,duels=step*64,heads=sum(len(e) for e in episodes),

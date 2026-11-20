@@ -42,6 +42,8 @@ python3 research/mmc-arena/survey.py build/mmc-survey --retry-errors --publish b
 
 Use `map=` in a sumo duel to select a recorded build. For example, `/duel best-sumo sumo preset=mmc cps=7 map=mmc-129` uses the alternate eight-block opening. Map names give the number of connected floor blocks. A suffix such as `mmc-177-04` selects a different material layout on the same footprint. Named maps preserve the original compass direction so stairs face the same way as in the recording.
 
+The public server build includes all 28 arenas. Older experiments sometimes load their original server binary for a block of matches. The lab restores the public build when that block releases the server.
+
 | Use | Playable floor cells | Gold-to-gold distance |
 | --- | --- | --- |
 | Training default | 137 | 8 |

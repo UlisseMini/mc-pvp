@@ -15,13 +15,15 @@ def register():
         arms='final frozen training-map selection, 16k control and plain W-tap; each against target and W-tap',
         cases='four fixed pairs plus four independently sampled RTT pairs in [0,150] per donor/rep, each mirrored across actor seats; eight replications per clock, 4096 games per matchup',
         score='outright wins, separate draws and losses, seat, donor and RTT group; these are simulator confirmations'),fixed=True)
-def score(key,selected):
+def score(key,selected,clocks=None,seed=46197541,replications=8,destination=None):
     folder=RUN/key;_,_,_,target=sources(key)
-    clocks=read(FOLDER/'replication/spaced/manifest.json')['selected'];assert len(clocks)==32
+    if clocks is None:
+        clocks=read(FOLDER/'replication/spaced/manifest.json')['selected'];assert len(clocks)==32
+    if destination is None:destination=folder/'confirmation'
     cases=[]
     for i,clock in enumerate(clocks):
-        for rep in range(8):
-            rng=random.Random(46197541+1009*i+23011*rep)
+        for rep in range(replications):
+            rng=random.Random(seed+1009*i+23011*rep)
             pairs=RTTS+[(rng.randrange(151),rng.randrange(151)) for _ in range(4)]
             for j,(a,b) in enumerate(pairs):
                 for seat in 'ab':
@@ -31,7 +33,7 @@ def score(key,selected):
         for label in dict.fromkeys([str(selected),str(BASE),'wtap']):
             actor='wtap' if label=='wtap' else folder/f'n{label}.net'
             for tag,foe in [('target',target),('wtap','wtap')]:
-                out=folder/'confirmation'/label/(tag+'.json')
+                out=destination/label/(tag+'.json')
                 if out.exists():continue
                 plan=[[actor,foe,c,s,a,b,x,y] for _,_,_,s,a,b,c,x,y in cases]
                 raw=[v for j in range(0,len(plan),32) for v in w.run(plan[j:j+32],False)]
@@ -39,7 +41,7 @@ def score(key,selected):
                 def tally(values):
                     v=[r[6] for r in values];return dict(wins=v.count(1),draws=v.count(.5),losses=v.count(0))
                 write_json(out,dict(**tally(rows),seat={s:tally([r for r in rows if r[3]==s]) for s in 'ab'},
-                    donor=[tally([r for r in rows if r[0]==i]) for i in range(32)],
+                    donor=[tally([r for r in rows if r[0]==i]) for i in range(len(clocks))],
                     rtt={**{f'{a}/{b}':tally([r for r in rows if r[2]==j]) for j,(a,b) in enumerate(RTTS)},
                          'randomized':tally([r for r in rows if r[2]>=4])},games=rows),fixed=True)
     finally:w.close()
