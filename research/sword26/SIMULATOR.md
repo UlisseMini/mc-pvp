@@ -52,6 +52,8 @@ With the current sprint implementation and the new league policy against the ret
 
 ## What ran inside actual Minecraft
 
+The accelerated stock-game oracle ran the final 96-fight panel with a median of 0.47 wall seconds per bout for each arm. That includes the between-round countdown and excludes starting the three JVMs. The two stock clients ran in private virtual displays.
+
 In 24 paired re-runs, the accelerated and normal-speed Java referee recorded the same winners, both terminal health values, hit ticks, native damage flags, pre-hit velocities, outgoing impulses, and death ticks in every fight. Both used the same tick-indexed network schedule. Both client recordings agree over their common samples. At 100 ms the final number of samples can differ when a client sees the bout end. The ordinary TCP confirmation lets the server and both render loops run on their own clocks. That is a separate measure of playing strength. [Clock comparison at zero added latency](evidence/kernel/java-clocks-0.csv) · [Clock comparison at 100 ms](evidence/kernel/java-clocks-100.csv)
 
 A separate component check calls Mojang’s methods directly. All 65,536 pairs of sine and cosine table indices and 16,384 randomized cases each for keyboard acceleration, knockback, packed velocity and armor damage matched at bit precision. The complete-game tests additionally exercise damage immunity, charge, movement prediction, interpolation, collision, attack ordering and input timing. [Component checker](VanillaParity.java) · [Full-duel checker](KernelReplay.java)

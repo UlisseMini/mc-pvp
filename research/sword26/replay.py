@@ -47,7 +47,7 @@ def match_labels(folder):
     titles={"wtap":"W-tap","champion":"Trained bot","population":"Retreating rival","gradient":"Recurrent rival"}
     saved={}
     for group,label in [("flat-training","Earlier fast-trained fighter"),("league26","League fighter"),
-                        ("neural26","Neural challenger")]:
+                        ("neural26","Neural challenger"),("random26","From-scratch fighter")]:
         record=Path(__file__).resolve().parent/"evidence"/group/"selection.json"
         if record.exists():
             saved[json.loads(record.read_text())["sha256"]]=label

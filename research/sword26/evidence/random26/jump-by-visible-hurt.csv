@@ -1,0 +1,5 @@
+added_rtt_ms,at_least_three_hurt_ticks_remaining,learned_jump,learned_samples,wtap_jump,wtap_samples
+0,False,0,593,0,595
+0,True,336,336,0,304
+100,False,0,438,0,538
+100,True,288,288,0,272

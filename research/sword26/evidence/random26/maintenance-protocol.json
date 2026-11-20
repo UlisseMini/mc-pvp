@@ -1,0 +1,10 @@
+{
+  "seeds": {
+    "0": 6532179,
+    "100": 2954117
+  },
+  "pairs": 3,
+  "opponent": "evidence/frozen/opponents/population.net",
+  "landmark": 3,
+  "acquisition": "Each independently run native arm is plain W-tap until three consecutive unanswered fresh hits after the opponent starts clicking. Then switch to the assigned policy at its next poll. Report entries, subsequent cycles, exposure, returns and inactivity with the same rules for both arms."
+}

@@ -18,4 +18,17 @@ def ablate(path,folder):
         dest.write_bytes(raw[:8]+struct.pack(">132d",*w))
 
 
+def fix_sensor_in_head(path, destination, head, sensor, value):
+    """Post-training intervention. Keep the original leaves and all other heads."""
+    raw=path.read_bytes()
+    if struct.unpack(">II",raw[:8])!=(0x53575431,132):
+        raise ValueError("This intervention requires a six-head tree policy")
+    weights=list(struct.unpack(">132d",raw[8:]))
+    for node in range(7):
+        offset=22*head+2*node
+        if int(weights[offset])==sensor:
+            weights[offset+1]=sys.float_info.max if value<weights[offset+1] else -sys.float_info.max
+    destination.write_bytes(raw[:8]+struct.pack(">132d",*weights))
+
+
 if __name__=="__main__":ablate(Path(sys.argv[1]),Path(sys.argv[2]))

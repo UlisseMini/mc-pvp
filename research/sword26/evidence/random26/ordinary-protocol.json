@@ -1,0 +1,11 @@
+{
+  "weight_sha256": "7fe78ecc393bbe9a8e125b791faa8f50830a92ab4c4fdfa535014ce18be030e2",
+  "opponent": "evidence/league26/fighter.net",
+  "seed": 4438172,
+  "openings_per_latency": 2,
+  "rtts": [
+    0,
+    100
+  ],
+  "purpose": "Supplementary ordinary wall-clock TCP confirmation of the frozen from-scratch policy against the previous league fighter, after seeing the scheduled-clock scores. Each arm plays both seats from the same openings. Normal render timing and 20 server ticks per second."
+}

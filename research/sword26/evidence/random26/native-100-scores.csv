@@ -1,0 +1,13 @@
+opponent,added_rtt_ms,opening,seat,policy,learned_hp,opponent_hp,wtap_hp,wtap_opponent_hp,learned_presses_per_second,wtap_presses_per_second,learned_critical,wtap_critical,learned_fresh,wtap_fresh,learned_upgrades,wtap_upgrades,learned_round,wtap_round
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,100,0,0,learned,0.0,6.770004,0.0,4.880004,0.886,0.976,0,0,7,8,0,0,round-009,round-003
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,100,0,1,learned,0.0,6.770004,0.0,4.880004,0.881,0.976,0,0,7,8,0,0,round-010,round-007
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,100,1,0,learned,0.0,1.1000042,0.0,6.770004,1.081,0.915,0,0,10,7,0,0,round-013,round-018
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/frozen/opponents/population.net,100,1,1,learned,4.7225003,0.0,0.0,6.770004,1.22,0.915,1,0,10,7,0,0,round-014,round-021
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,100,0,0,learned,0.0,3.567505,0.0,6.770004,1.509,1.416,1,0,8,7,0,0,round-002,round-001
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,100,0,1,learned,0.0,3.567505,0.0,8.660004,1.667,1.628,1,0,8,6,0,0,round-008,round-011
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,100,1,0,learned,3.567505,0.0,0.0,1.1000042,1.6,1.264,1,0,10,10,0,0,round-012,round-023
+/Users/ulissemini/Documents/ChatGPT/best-1.7/research/sword26/evidence/league26/fighter.net,100,1,1,learned,4.8800044,0.0,0.36500335,0.0,1.493,1.538,1,0,10,11,0,0,round-016,round-020
+wtap,100,0,0,learned,6.7700043,0.0,1.1000042,0.0,1.553,1.095,5,0,8,11,0,0,round-005,round-000
+wtap,100,0,1,learned,2.990004,0.0,0.0,1.1000042,1.353,1.095,4,0,9,10,0,0,round-006,round-004
+wtap,100,1,0,learned,6.7700043,0.0,1.1000042,0.0,1.702,1.128,6,0,8,11,0,0,round-019,round-022
+wtap,100,1,1,learned,2.9900043,0.0,0.0,1.1000042,1.463,1.128,3,0,9,10,0,0,round-017,round-015

@@ -7,7 +7,19 @@ import static sword.Fighter.*;
 /** Regression checks for observation timing, native input mapping and deterministic branching. */
 public final class Checks {
     static void check(boolean ok,String msg){if(!ok)throw new AssertionError(msg);}
+    static void airborneSprint(boolean reverse) {
+        var seat=new FastDuel.Seat(0,0,10);
+        seat.start(0,110,0,0,0,110,5);
+        seat.local.ground=false;
+        var forward=new Keys(1,0,false,false,false,0);
+        seat.input(0,forward,0,0);
+        check(!seat.sprint,"First airborne tap should arm sprint");
+        seat.input(1,new Keys(reverse?-1:0,0,false,false,false,0),0,0);
+        seat.input(2,forward,0,0);
+        check(seat.sprint!=reverse,"A backward press must clear the airborne double-tap window");
+    }
     public static void main(String[] args)throws Exception{
+        airborneSprint(false);airborneSprint(true);
         check(Model.rayBox(0,-1.62,3.29,0,0,1),"Reach at near face");
         check(!Model.rayBox(0,-1.62,3.32,0,0,1),"Reach past far boundary");
         check(!Model.rayBox(2,-1.62,2,0,0,1),"Ray direction");

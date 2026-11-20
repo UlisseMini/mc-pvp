@@ -1,0 +1,16 @@
+{
+  "training_source_hash": "44f28bb35d6052d050f9925ad781a7ebd08f8b913e172c9a3deb45f7d8710e8f",
+  "flat_physics_hash": "c9e2261700ca2a86e3a62d4b7261f31d73e5e89e9a435364d891d5977c2dfa81",
+  "training": "Unmodified train.py --engine flat26 at scale 1 on the current simulator, using only its own randomly initialized and evolved weights and generic intermediate states. Store the model-selected winner before evaluation. No weights from other experiments enter the training or selection.",
+  "model_grade_seed": 19226583,
+  "model_openings_per_latency": 24,
+  "native_base_seed": 1197362,
+  "native_openings_per_latency": 2,
+  "opponents": [
+    "wtap",
+    "evidence/frozen/opponents/population.net",
+    "evidence/league26/fighter.net"
+  ],
+  "comparison": "Evaluate the policy trained from random initialization from fresh model and native openings against W-tap, the retreating rival and the incumbent. Both seats and control arms. Scheduled Java comparison, with native RTT-specific seed equal to base plus RTT in ms. The practice recommendation is based on the broader previously qualified evaluation.",
+  "training_revision": "1653a285150ad426227fde48114e5693e5407795"
+}

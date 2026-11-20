@@ -1,0 +1,17 @@
+{
+  "base_seed": 2792053,
+  "model_seed": 4338095,
+  "candidate_sha256": "7fe78ecc393bbe9a8e125b791faa8f50830a92ab4c4fdfa535014ce18be030e2",
+  "purpose": "After inspecting only the frozen tree, test whether the newly discovered damage-dependent jump decision affects play. Override only the own-hurt observation used by the jump tree to its normal or recently damaged value. Keep every other input and head identical. No intervention enters training or promotion.",
+  "opponents": [
+    "wtap",
+    "evidence/league26/fighter.net"
+  ],
+  "pairs_per_rtt": 2,
+  "rtts": [
+    0,
+    100
+  ],
+  "native_seeds": "base plus RTT in ms, both seats",
+  "metrics": "Paired model and Java wins, observed grounded jump edges coinciding with the first local knockback delivery. This does not establish cancellation of the whole velocity impulse."
+}

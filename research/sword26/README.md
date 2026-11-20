@@ -2,7 +2,7 @@
 
 ## Fight the bot
 
-Double-click **Start Modern Sword Lab.command** in the project folder. Enter your Java player name and choose **4** for the new league-trained fighter. Option 1 plays the original checkpoint, option 2 plays the retreating and strafing rival, and option 3 gives a blind comparison of the original and plain W-tap. When Terminal prints the address, open **Minecraft Java 26.3**, choose **Multiplayer → Direct Connection**, and enter **127.0.0.1:25663**. The lab equips both players and starts a duel. The launcher runs ten rounds and saves the results and replay. Use Control-C in Terminal to end your session early.
+Double-click **Start Modern Sword Lab.command** in the project folder. Enter your Java player name and choose **5** for the fighter trained from scratch on the final simulator. It learned to jump on receiving knockback. Option 4 plays the earlier league-trained fighter. Option 1 plays the original checkpoint, option 2 plays the retreating and strafing rival, and option 3 gives a blind comparison of the original and plain W-tap. When Terminal prints the address, open **Minecraft Java 26.3**, choose **Multiplayer → Direct Connection**, and enter **127.0.0.1:25663**. The lab equips both players and starts a duel. The launcher runs ten rounds and saves the results and replay. Use Control-C in Terminal to end your session early.
 
 On this Mac, the bot and referee run in a dedicated Lima Linux VM. Each stock bot client has its own Xvfb virtual display and Mesa software renderer. The host launcher never opens a bot window. The first run downloads verified game assets and installs guest dependencies. The VM mounts the modern lab source read-only and its build folder read-write. The old practice server has its own port and runtime. The guest can be stopped with `limactl stop sword26` when you finish. The next launch starts it automatically.
 
@@ -49,4 +49,4 @@ python3 research/sword26/replay.py build/sword26/independent-replay
 open build/sword26/independent-replay/Replay.html
 ```
 
-Read the [results and observed techniques](RESULTS.md) and the [settings frozen before evaluation](protocol.json).
+Read the [from-scratch bot’s results and jump-reset tests](SELF-PLAY.md), the [earlier results and observed techniques](RESULTS.md) and the [settings frozen before evaluation](protocol.json).

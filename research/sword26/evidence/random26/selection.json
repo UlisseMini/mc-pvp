@@ -1,0 +1,17 @@
+{
+  "sha256": "7fe78ecc393bbe9a8e125b791faa8f50830a92ab4c4fdfa535014ce18be030e2",
+  "selected": "league-c/gen-0448.net",
+  "training_seconds": 209.2610679579666,
+  "tournament_policies": 102,
+  "tournament_duels": 117504,
+  "training_population": "All weights descended from random draws in this run.",
+  "training_duels_by_stage": {
+    "population": 241920,
+    "gradient": 14400,
+    "league-a": 499200,
+    "league-b": 624000,
+    "league-c": 624000,
+    "refined": 1084160
+  },
+  "scored_training_duels": 3087680
+}
