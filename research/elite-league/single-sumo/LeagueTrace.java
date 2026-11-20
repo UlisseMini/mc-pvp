@@ -1,6 +1,7 @@
 import java.io.*;
 import java.nio.file.*;
 import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.*;
 import lab.DuelNetwork;
 
@@ -9,6 +10,8 @@ public final class LeagueTrace {
     public static void main(String[] args)throws Exception {
         String weights=new String(Files.readAllBytes(Paths.get(args[0])),"US-ASCII").trim();
         MessageDigest hash=MessageDigest.getInstance("SHA-256"); int ticks=0;
+        int[] channels=args.length==3?Arrays.stream(args[2].split(",")).mapToInt(Integer::parseInt).toArray():new int[0];
+        DataOutputStream selected=new DataOutputStream(new BufferedOutputStream(System.out));
         DuelNetwork n=null;
         try(BufferedReader r=Files.newBufferedReader(Paths.get(args[1]))){
             String line;
@@ -22,13 +25,16 @@ public final class LeagueTrace {
                 int a=n.step(v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9]>0,v[10]>0,
                          v[11],v[12],v[13],v[14]);
                 hash.update((byte)a);
-                for(double x:n.features()){
+                double[] features=n.features();
+                for(int ix:channels)selected.writeFloat((float)features[ix]);
+                for(double x:features){
                     long bits=Double.doubleToLongBits(x);
                     for(int i=0;i<8;i++)hash.update((byte)(bits>>>(8*i)));
                 }
                 n.applied((int)v[17]);ticks++;
             }
         }
+        if(channels.length>0){selected.flush();return;}
         StringBuilder s=new StringBuilder();
         for(byte v:hash.digest())s.append(String.format("%02x",v&255));
         System.out.println(ticks+" "+s);

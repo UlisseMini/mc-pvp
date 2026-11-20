@@ -13,7 +13,7 @@ from torch.nn import functional as F
 from assay import lower_contrast
 from learner import CLOCKS,ROOT,Worker,atomic,write_json
 from remote_league import read
-from series_bank import CACHE,DEV_REPS,FOLDER,ROUNDS
+from series_bank import CACHE,DEV_REPS,FOLDER,ROUNDS,tape
 from series_eval import series,tally
 from series_hidden import donor_rows
 from series_targeted import DEST as LIB,bank
@@ -39,9 +39,10 @@ def summarize(rows):
     return np.concatenate((early,np.stack(pooled))).astype(np.float32)
 
 
-def load_traces(split,reps,data,c,opening):
+def load_traces(split,reps,data,c,opening,clocks=None):
     spec=read(LIB/'protocol.json');foes=list(spec['field']);opener=spec['experts']['original-mixture']['reference']
-    base=CACHE/'opening-observations'/split;clocks=CLOCKS[split]
+    base=CACHE/'opening-observations'/split
+    if clocks is None:clocks=CLOCKS[split]
     worker=Worker(current_runtime=True);out=[];last=[]
     try:
         for i,clock in enumerate(clocks):
@@ -97,18 +98,18 @@ def tables(data,c):
     return np.stack([points[bins==k].mean(0) for k in range(4)],1)
 
 
-def load_actor(role,na,nf):
-    folder=DEST/role;receipt=read(folder/'trained.json');raw=(folder/'actor.pt').read_bytes()
+def load_actor(role,na,nf,root=DEST):
+    folder=root/role;receipt=read(folder/'trained.json');raw=(folder/'actor.pt').read_bytes()
     if hashlib.sha256(raw).hexdigest()!=receipt['sha256']:raise ValueError('Opening observer changed')
     model=TraceResponse(na,nf);model.load_state_dict(torch.load(io.BytesIO(raw),weights_only=True));return model.eval()
 
 
-def fit(role,features,targets,na,nf):
-    folder=DEST/role
-    if (folder/'trained.json').exists():return load_actor(role,na,nf)
+def fit(role,features,targets,na,nf,seed=67219,root=DEST):
+    folder=root/role
+    if (folder/'trained.json').exists():return load_actor(role,na,nf,root)
     trace,last,public,foes=features;x=last if role=='last' else trace
-    torch.manual_seed(67219);model=TraceResponse(na,nf);opt=torch.optim.AdamW(model.parameters(),lr=.001)
-    rng=torch.Generator().manual_seed(31067)
+    torch.manual_seed(seed);model=TraceResponse(na,nf);opt=torch.optim.AdamW(model.parameters(),lr=.001)
+    rng=torch.Generator().manual_seed(31067+seed-67219)
     for epoch in range(36):
         for idx in torch.randperm(len(x),generator=rng).split(128):
             pred,identity=model(x[idx],public[idx],role)
@@ -116,21 +117,38 @@ def fit(role,features,targets,na,nf):
             opt.zero_grad();loss.backward();nn.utils.clip_grad_norm_(model.parameters(),1);opt.step()
     buf=io.BytesIO();torch.save(model.state_dict(),buf);atomic(folder/'actor.pt',buf.getvalue())
     write_json(folder/'trained.json',dict(sha256=hashlib.sha256(buf.getvalue()).hexdigest(),epochs=36,openers=len(x),
-        seed=67219,role=role,channels=CHANNELS),fixed=True)
+        seed=seed,role=role,channels=CHANNELS),fixed=True)
     return model.eval()
 
 
-def run():
+def run(split='dev',seed=67219):
     while not (LIB/'dev/comparison-08.json').exists():time.sleep(15)
     spec=read(LIB/'protocol.json');names=list(spec['field']);experts=list(spec['experts']);opening=experts.index('original-mixture')
-    train,c,_=bank('train',8);tr=inputs(train,c,load_traces('train',8,train,c,opening),opening)
+    study=DEST if seed==67219 else DEST/f'seed-{seed}'
+    train,train_c,_=bank('train',8);tr=inputs(train,train_c,load_traces('train',8,train,train_c,opening),opening)
     nclock,nrep,_,nf,na,_=train.shape
     # Center action values within each opponent and ping. Absolute strength does not identify the better response.
-    targets=np.stack([tables(train[1-i%2::2],c[1-i%2::2]) for i in range(nclock)])
+    targets=np.stack([tables(train[1-i%2::2],train_c[1-i%2::2]) for i in range(nclock)])
     targets=12*(targets-targets.mean(-1,keepdims=True))
     targets=torch.from_numpy(np.repeat(targets[:,None],nrep,axis=1).reshape(-1,4,na))
-    models={role:fit(role,tr,targets,na,nf) for role in MODES}
-    data,c,wt=bank('dev',DEV_REPS);nc,nr=data.shape[:2];trace,last,public,ids=inputs(data,c,load_traces('dev',DEV_REPS,data,c,opening),opening)
+    if split=='fresh':models={role:load_actor(role,na,nf,study) for role in MODES}
+    else:models={role:fit(role,tr,targets,na,nf,seed,study) for role in MODES}
+    clocks=None
+    if split=='fresh':
+        from series_learn import bank as stored_bank
+        enrolled=read(DEST/'prospective/assay.json')
+        if any(enrolled['policies'][role]!=read(study/role/'trained.json')['sha256'] for role in MODES):raise ValueError('Opening learner changed after enrollment')
+        clocks=read(DEST/'prospective/calendars/manifest.json')['selected']
+        from series_hidden import independent_clocks
+        independent_clocks(clocks)
+        cache=CACHE/'opening-observations/series'
+        for r in range(DEV_REPS):
+            for i,clock in enumerate(clocks):tape(spec,split,r,i,clock,cache)
+        write_json(DEST/split/'bank-04.json',dict(recordings=len(clocks),reps=DEV_REPS,experts=experts,
+            expert_fights=len(clocks)*DEV_REPS*10*nf*na),fixed=True)
+        data,c,wt=stored_bank(split,DEV_REPS,DEST,cache)
+    else:data,c,wt=bank(split,DEV_REPS)
+    nc,nr=data.shape[:2];trace,last,public,ids=inputs(data,c,load_traces(split,DEV_REPS,data,c,opening,clocks),opening)
     world=data.permute(0,1,3,2,4,5).reshape(-1,ROUNDS,na,2).numpy()
     ctx=c[:,:,None].expand(nc,nr,nf,ROUNDS,3).reshape(-1,ROUNDS,3).numpy();idx=np.arange(len(ids));time_index=np.arange(ROUNDS)[None,:]
     ping=ctx[...,1:]>=70;bins=2*ping[...,0]+ping[...,1]
@@ -143,7 +161,7 @@ def run():
             for label,move,fb in variants:
                 q,identity=m(x[move],public[fb],role);curves[label]=q.numpy()
                 accuracy[label]=float((identity.argmax(1)==ids).float().mean())
-    train_c=bank('train',8)[1];oracle=tables(train,train_c)
+    oracle=tables(train,train_c)
     curves['known-id']=oracle[ids.numpy()]
     curves['ping-only']=np.broadcast_to(oracle.mean(0),(len(ids),4,na))
     choices={}
@@ -166,11 +184,19 @@ def run():
         opponents={foe:dict(series=tally(series(w[ids.numpy()==j])),games=tally(w[ids.numpy()==j])) for j,foe in enumerate(names)},
         seat={s:tally(w[ctx[...,0]==j]) for j,s in enumerate('ab')},
         rtt={f'{a}/{b}':tally(w[(ctx[...,1]==a)&(ctx[...,2]==b)]) for a in (31,109) for b in (31,109)}) for n,w in scores.items()}
-    write_json(DEST/'dev/result.json',dict(series_per_arm=len(ids),scores=counts,effects=effects,opponent_top1=accuracy,
+    write_json(study/split/'result.json',dict(series_per_arm=len(ids),scores=counts,effects=effects,opponent_top1=accuracy,
         trace_second_choices={foe:np.bincount(choices['trace'][ids.numpy()==j,1],minlength=na).tolist() for j,foe in enumerate(names)},
-        experts=experts,unique_opening_traces=dict(train=len(tr[-1]),development=len(ids))),fixed=True)
+        experts=experts,unique_opening_traces=dict(train=len(tr[-1]),**{'development' if split=='dev' else 'prospective':len(ids)})),fixed=True)
 
 
 if __name__=='__main__':
     if sys.argv[1:]==['register']:register()
-    else:run()
+    elif sys.argv[1:]==['reserve']:
+        from remote_import import send_future_clocks,wait_for
+        from remote_league import OUT
+        send_future_clocks(DEST/'prospective',dict(policies={role:read(DEST/role/'trained.json')['sha256'] for role in MODES},
+            combat_experts=read(LIB/'protocol.json')['experts'],
+            goal='Confirm on future clocks whether the bot uses motion belonging to this opponent while retaining the real result, duration and ping pair. The first exposed test found a 4.64-point ring-out advantage for a same-opponent motion donor versus a different opponent. Separately grade actual game and series wins over feedback-only and ping-only, the best unrestricted GRU, and matched W-tap. Grade only seed 67219 on this sealed sample.'))
+        prefix=str(DEST.relative_to(OUT))+'/'
+        wait_for([prefix+'fresh/bank-04.json',prefix+'fresh/result.json'])
+    else:run(sys.argv[1] if len(sys.argv)>1 else 'dev',int(sys.argv[2]) if len(sys.argv)>2 else 67219)

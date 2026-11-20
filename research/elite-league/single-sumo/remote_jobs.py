@@ -98,7 +98,13 @@ if __name__=='__main__':
                 if (OUT/series/'targeted-response/protocol.json').is_file():
                     start('series-targeted','series_targeted.py',[],series/'targeted-response/dev/comparison-08.json')
                     if (OUT/series/'targeted-response/opening-observations/protocol.json').is_file():
-                        start('series-opening-observations','series_trace.py',[],series/'targeted-response/opening-observations/dev/result.json')
+                        motion=series/'targeted-response/opening-observations'
+                        start('series-opening-observations','series_trace.py',[],motion/'dev/result.json')
+                        if (OUT/motion/'dev/result.json').exists():
+                            for seed in (67220,67221):
+                                start('series-motion-seed-'+str(seed),'series_trace.py',['dev',str(seed)],motion/f'seed-{seed}/dev/result.json')
+                        if (OUT/motion/'prospective/calendars/manifest.json').is_file():
+                            start('series-opening-fresh','series_trace.py',['fresh'],motion/'fresh/result.json')
                 if (OUT/series/'score-aware/protocol.json').is_file():
                     start('series-score-aware','series_value.py',[],series/'score-aware/dev/evaluation-08.json')
                 if (OUT/series/'reward-ablation.json').is_file():

@@ -113,6 +113,21 @@ class Worker:
                                    cwd=ROOT,text=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE)
     def run(self, schedule, collect):
         if collect and self.map_name is not None:raise ValueError("Named validation platforms are evaluation-only")
+        return self._rollouts(schedule,collect)
+
+    def observe_frozen_evaluation(self, schedule, actor_hash, observe):
+        """Feed local observations to a frozen evaluation controller without exporting training rollouts."""
+        if not self.map_name or not schedule or len({row[0] for row in schedule}) != 1:
+            raise ValueError("Expected a single fixed actor on a named evaluation platform")
+        actor=ROOT/schedule[0][0]
+        if not actor.is_file() or hashlib.sha256(actor.read_bytes()).hexdigest()!=actor_hash:
+            raise ValueError("Validation actor differs from its registered weights")
+        try:
+            return [(w,ms,observe(rows)) for w,ms,rows in self._rollouts(schedule,True)]
+        finally:
+            (self.folder/"results.bin").unlink(missing_ok=True)
+
+    def _rollouts(self, schedule, collect):
         plan=self.folder/"plan.tsv"; out=self.folder/"results.bin"
         plan.write_text("".join("\t".join(map(str,r))+"\n" for r in schedule))
         self.proc.stdin.write(f"{'collect' if collect else 'eval'}\t{plan}\t{out}\n"); self.proc.stdin.flush()

@@ -34,9 +34,7 @@ def donor_rows(c,nf):
     return np.array(same),np.array(wrong)
 
 
-def field_confirmation():
-    src=FOLDER/'hidden-score';cache=CACHE/'hidden-score'
-    clocks=read(src/'prospective/calendars/manifest.json')['selected']
+def independent_clocks(clocks):
     def fingerprint(clock):
         path=ROOT/clock
         content=gzip.decompress(path.read_bytes()) if path.suffix=='.gz' else path.read_bytes()
@@ -44,11 +42,18 @@ def field_confirmation():
     fresh=set(map(fingerprint,clocks))
     old=set(map(fingerprint,(*CLOCKS['train'],*CLOCKS['dev'])))
     if len(fresh)!=24 or fresh&old:raise ValueError('Future clocks duplicate each other or an exposed recording')
+    return len(fresh&old)
+
+
+def field_confirmation():
+    src=FOLDER/'hidden-score';cache=CACHE/'hidden-score'
+    clocks=read(src/'prospective/calendars/manifest.json')['selected']
+    overlap=independent_clocks(clocks)
     spec=read(FOLDER/'protocol.json')
     for r in range(DEV_REPS):
         for i,clock in enumerate(clocks):tape(spec,'fresh',r,i,clock,cache)
     write_json(src/'fresh'/f'bank-{DEV_REPS:02}.json',dict(recordings=len(clocks),reps=DEV_REPS,
-        exposed_overlap=len(fresh&old),experts=list(spec['experts']),expert_fights=len(clocks)*DEV_REPS*ROUNDS*len(spec['experts'])*len(spec['field'])),fixed=True)
+        exposed_overlap=overlap,experts=list(spec['experts']),expert_fights=len(clocks)*DEV_REPS*ROUNDS*len(spec['experts'])*len(spec['field'])),fixed=True)
     return lambda split,reps:bank(split,reps,src,cache) if split=='fresh' else bank(split,reps)
 
 

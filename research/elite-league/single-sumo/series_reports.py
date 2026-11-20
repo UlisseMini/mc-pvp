@@ -24,6 +24,7 @@ def planned():
     files.append('archive-reversal/hidden-score/fresh/result.json')
     files.extend(f'{prefix}hidden-score/{split}/public-controls.json' for prefix in ('','archive-reversal/') for split in ('dev','fresh'))
     files.extend(f'{prefix}hidden-score/{split}/second-game-cues.json' for prefix in ('','archive-reversal/') for split in ('dev','fresh'))
+    files.extend(f'targeted-response/opening-observations/seed-{seed}/dev/result.json' for seed in (67220,67221))
     files.extend(['archive-reversal/dev/unrestricted.json','archive-reversal/fresh/evaluation-16.json',
                   'archive-reversal/fresh/whole-memory-16.json','archive-reversal/fresh/unrestricted.json',
                   'archive-reversal/ringout-reward/fresh/reward-comparison.json'])
