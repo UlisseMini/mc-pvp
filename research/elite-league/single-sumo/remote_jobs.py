@@ -95,16 +95,30 @@ if __name__=='__main__':
                         if (OUT/folder/'protocol.json').exists():start('series-clock-'+task,'series_public.py',[task],folder/'dev'/f'displayed-clock-{last:02}.json')
                 if (OUT/series/'diverse-experts/protocol.json').is_file():
                     start('series-diverse','series_expand.py',[],series/'diverse-experts/dev/library-08.json')
+                if (OUT/series/'targeted-response/protocol.json').is_file():
+                    start('series-targeted','series_targeted.py',[],series/'targeted-response/dev/comparison-08.json')
+                if (OUT/series/'score-aware/protocol.json').is_file():
+                    start('series-score-aware','series_value.py',[],series/'score-aware/dev/evaluation-08.json')
                 if (OUT/series/'reward-ablation.json').is_file():
                     for task in ('field','archive-reversal'):
                         folder=series if task=='field' else reversal
                         start('series-reward-'+task,'series_objective.py',[task],folder/'ringout-reward/dev/reward-comparison.json')
+                        if (OUT/series/'hidden-score-test.json').is_file():
+                            start('series-public-hidden-'+task,'series_hidden.py',[task],folder/'hidden-score/dev/public-controls.json')
+                            if (ROOT/SCRIPTS/'series_cues.py').is_file():
+                                start('series-cues-'+task,'series_cues.py',[task,'dev'],folder/'hidden-score/dev/second-game-cues.json')
+                if (OUT/series/'hidden-score/prospective/calendars/manifest.json').is_file():
+                    start('series-field-hidden-fresh','series_hidden.py',['field','fresh'],series/'hidden-score/fresh/public-controls.json')
+                    start('series-cues-field-fresh','series_cues.py',['field','fresh'],series/'hidden-score/fresh/second-game-cues.json')
                 if (OUT/reversal/'protocol.json').is_file():
                     start('series-archive','series_archive.py',[],reversal/'dev/whole-memory-16.json')
                     if (OUT/reversal/'prospective/calendars/manifest.json').is_file():
                         start('series-archive-fresh','series_archive.py',['fresh'],reversal/'fresh/unrestricted.json')
                         if (OUT/series/'reward-ablation.json').is_file():
                             start('series-archive-reward-fresh','series_objective.py',['archive-reversal','fresh'],reversal/'ringout-reward/fresh/reward-comparison.json')
+                        if (OUT/series/'hidden-score-test.json').is_file():
+                            start('series-archive-hidden-fresh','series_hidden.py',['archive-reversal','fresh'],reversal/'hidden-score/fresh/public-controls.json')
+                            start('series-cues-archive-fresh','series_cues.py',['archive-reversal','fresh'],reversal/'hidden-score/fresh/second-game-cues.json')
                 if (OUT/series/'belief/protocol.json').is_file():
                     start('series-belief','series_bayes.py',['dev'],series/'belief/dev/evaluation-16.json')
                 if (OUT/series/'prospective/calendars/manifest.json').is_file():

@@ -16,8 +16,8 @@ def load_models(budget,horizon,arms,foes,root=None):
     models=[]
     root=FOLDER if root is None else root
     for seed in SEEDS if budget==BUDGETS[-1] else SEEDS[:1]:
-        m=SeriesPolicy(arms,foes,horizon)
         folder=root/f'learn-{budget:02}'/f'h{horizon}-s{seed}'
+        m=SeriesPolicy(arms,foes,horizon,read(folder/'trained.json').get('scoreboard',True))
         m.load_state_dict(torch.load(folder/'actor.pt',weights_only=True));models.append(m.eval())
     return models
 

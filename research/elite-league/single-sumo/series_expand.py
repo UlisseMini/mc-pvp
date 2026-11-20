@@ -27,19 +27,19 @@ def register():
         design='All original eight expert outcomes are reused byte-for-byte. Simulate only the two additional experts. The training distribution and budgets match the original PPO for a direct library comparison. Evaluate the 2 and 8 schedule checkpoints. Grade series, ring-outs and whole-memory swaps separately. The archive-style selection used development data.'),fixed=True)
 
 
-def build(split,reps):
-    base=read(FOLDER/'protocol.json');spec=read(DEST/'protocol.json');extra=dict(spec,experts=spec['extra'])
+def build(split,reps,root=DEST,cache=DATA):
+    base=read(FOLDER/'protocol.json');spec=read(root/'protocol.json');extra=dict(spec,experts=spec['extra'])
     while not (FOLDER/split/f'bank-{reps:02}.json').is_file():time.sleep(15)
     clocks=CLOCKS[split]
     for r in range(reps):
-        for i,clock in enumerate(clocks):tape(extra,split,r,i,clock,DATA)
-    write_json(DEST/split/f'bank-{reps:02}.json',dict(recordings=len(clocks),reps=reps,
+        for i,clock in enumerate(clocks):tape(extra,split,r,i,clock,cache)
+    write_json(root/split/f'bank-{reps:02}.json',dict(recordings=len(clocks),reps=reps,
         original_experts=list(base['experts']),extra_experts=list(spec['extra']),new_fights=len(clocks)*reps*ROUNDS*len(spec['field'])*len(spec['extra'])),fixed=True)
 
 
-def load(split,reps):
-    spec=read(DEST/'protocol.json');record=read(DEST/split/f'bank-{reps:02}.json')
-    a,c,w=bank(split,reps);b,n,v=bank(split,reps,DEST,DATA)
+def load(split,reps,root=DEST,cache=DATA):
+    spec=read(root/'protocol.json');record=read(root/split/f'bank-{reps:02}.json')
+    a,c,w=bank(split,reps);b,n,v=bank(split,reps,root,cache)
     if not torch.equal(c,n) or not torch.equal(w,v):raise ValueError('Expanded library changed seats, pings or matched W-tap outcomes')
     ids=record['original_experts']+record['extra_experts']
     order=[ids.index(k) for k in spec['experts']]

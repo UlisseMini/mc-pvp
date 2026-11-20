@@ -40,9 +40,9 @@ def bank(split,reps,root=None,cache=None):
 
 
 class SeriesPolicy(nn.Module):
-    def __init__(self,arms,opponents,horizon):
+    def __init__(self,arms,opponents,horizon,scoreboard=True):
         super().__init__()
-        self.arms=arms;self.horizon=horizon
+        self.arms=arms;self.horizon=horizon;self.scoreboard=scoreboard
         self.encoder=nn.GRU(arms+6,64,batch_first=True)
         self.trunk=nn.Sequential(nn.Linear(68,64),nn.Tanh(),nn.Linear(64,64),nn.Tanh())
         self.payoffs=nn.Linear(64,arms)
@@ -54,7 +54,7 @@ class SeriesPolicy(nn.Module):
     def forward(self,history,context):
         b,n,_=history.shape
         zero=history.new_zeros(b,1,64)
-        if self.horizon<0:
+        if self.horizon<0 or not self.scoreboard:
             context=context.clone();context[:,:,1]=0
         if self.horizon<=0 or n==0:
             memory=zero.expand(b,n+1,64)
@@ -93,9 +93,10 @@ def choose(models,events,own,other,arms):
     return int(torch.stack([m(hist,x)[0][0,-1] for m in models]).mean(0).argmax())
 
 
-def draw(stats,context,generator,batch):
+def draw(stats,context,generator,batch,opponent_weights=None):
     nclock,nrep,_,opponents=stats.shape[:4]
-    rival=torch.randint(opponents,(batch,),generator=generator)
+    if opponent_weights is None:rival=torch.randint(opponents,(batch,),generator=generator)
+    else:rival=torch.multinomial(opponent_weights,batch,replacement=True,generator=generator)
     # The opponent stays fixed. No association between opponent identity and fixtures is introduced.
     picks=[torch.randint(m,(batch,ROUNDS),generator=generator) for m in (nclock,nrep,ROUNDS)]
     return stats[*picks,rival[:,None]],context[*picks],rival
@@ -116,11 +117,11 @@ def play(model,worlds,cues):
     return history[:,:-1],torch.stack(controls,1),torch.stack(actions,1),torch.stack(logps,1),torch.stack(values,1),torch.stack(outcomes,1)
 
 
-def fit(stats,cues,budget,horizon,seed,updates=None,batch=BATCH,folder=None,objective='series'):
+def fit(stats,cues,budget,horizon,seed,updates=None,batch=BATCH,folder=None,objective='series',scoreboard=True,opponent_weights=None):
     folder=FOLDER/f'learn-{budget:02}'/f'h{horizon}-s{seed}' if folder is None else folder
     if (folder/'trained.json').is_file():return
     torch.manual_seed(seed)
-    net=SeriesPolicy(stats.shape[-2],stats.shape[3],horizon)
+    net=SeriesPolicy(stats.shape[-2],stats.shape[3],horizon,scoreboard)
     opt=torch.optim.Adam(net.parameters(),lr=.0007)
     gen=torch.Generator().manual_seed(seed+927)
     total=updates or UPDATES[budget];start=0;curve=[]
@@ -130,7 +131,7 @@ def fit(stats,cues,budget,horizon,seed,updates=None,batch=BATCH,folder=None,obje
         net.load_state_dict(state['net']);opt.load_state_dict(state['optimizer'])
         gen.set_state(state['generator']);torch.set_rng_state(state['torch_rng'])
     for step in range(start,total):
-        worlds,ctx,rival=draw(stats,cues,gen,batch)
+        worlds,ctx,rival=draw(stats,cues,gen,batch,opponent_weights)
         hist,x,a,old,v,won=play(net,worlds,ctx)
         delta=2*won-1
         # The terminal majority dominates. A small ring-out reward also grades play after clinching.
@@ -155,7 +156,7 @@ def fit(stats,cues,budget,horizon,seed,updates=None,batch=BATCH,folder=None,obje
             write_json(folder/'progress.json',curve[-1])
     out=io.BytesIO();torch.save(net.state_dict(),out);atomic(folder/'actor.pt',out.getvalue())
     write_json(folder/'trained.json',dict(updates=total,sampled_series=total*batch,sampled_rounds=ROUNDS*total*batch,sha256=hashlib.sha256(out.getvalue()).hexdigest(),
-               horizon=horizon,seed=seed,objective=objective,learning_curve=curve),fixed=True)
+               horizon=horizon,seed=seed,objective=objective,scoreboard=scoreboard,learning_curve=curve),fixed=True)
 
 
 def run(horizon):

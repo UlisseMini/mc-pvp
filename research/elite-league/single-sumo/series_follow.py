@@ -32,13 +32,16 @@ def collect(budget,study=FOLDER):
     if study==FOLDER:wait_for([prefix+f'belief/learn-{budget:02}.npz',prefix+f'belief/dev/evaluation-{budget:02}.json'])
 
 
-def native(budget,study=FOLDER):
+def native(budget,study=FOLDER,hidden=False):
     import numpy as np
     from series_bayes import choose_public
     from series_public import observed
     sys.path.insert(0,str(ROOT/'research/mmc-arena'))
     from validation import assessment_bridge
-    archive=study!=FOLDER;expanded=study.name=='diverse-experts'
+    planner=study.name=='score-aware'
+    archive=study!=FOLDER and not planner
+    targeted=study.name in ('targeted-response','hard-curriculum')
+    expanded=study.name=='diverse-experts' or targeted
     ringout_study=study.name=='ringout-reward'
     spec=read(study/'protocol.json');foes=dict(spec['field']);experts=list(spec['experts'])
     field_size=len(foes)
@@ -46,11 +49,20 @@ def native(budget,study=FOLDER):
     actors={n:live(ref) for n,ref in spec['experts'].items()};wt=live(foes['wtap'])
     report=read(study/'dev'/f'evaluation-{budget:02}.json')['scores']['memory-9']['opponents']
     weakest=min(report,key=lambda n:(report[n]['series'][0],report[n]['ringouts'][0],n))
-    if archive:
+    if planner:
+        targets=list(dict.fromkeys(('wtap',weakest,'sumo-seven-first')))
+        modes=['memory','scoreboard','last-game','wtap','broad']
+        broad=live(read(FOLDER/'protocol.json')['experts']['original-mixture'])
+    elif hidden:
+        targets=['wtap',*spec['field']] if archive else list(dict.fromkeys(('wtap',weakest,'sumo-seven-first')))
+        modes=['memory','last-game','blind','wtap','broad']
+        broad=live(read(FOLDER/'protocol.json')['experts']['original-mixture'])
+    elif archive:
         targets=list(dict.fromkeys(('wtap',weakest,'sumo-seven-first'))) if expanded else ['wtap',*spec['field']]
         modes=['memory','scoreboard','memory-eight','wtap','broad',*spec['extra']] if expanded else ['memory','scoreboard','last-game','wtap','broad',*experts]
         broad=live(read(FOLDER/'protocol.json')['experts']['original-mixture'])
         if expanded:
+            if targeted:targets=list(dict.fromkeys(['wtap',spec['target'],weakest]))
             previous_order=list(read(FOLDER/'protocol.json')['experts'])
             previous=load_models(budget,9,len(previous_order),field_size)
     else:
@@ -59,9 +71,19 @@ def native(budget,study=FOLDER):
         targets=list(dict.fromkeys(('wtap',weakest,belief_weak,'sumo-seven-first')))
         with np.load(FOLDER/'belief'/f'learn-{budget:02}.npz') as saved:edges,probs=saved['edges'],saved['probabilities']
         modes=['memory','scoreboard','fixed','wtap','belief','belief-reset']
-    bridge,stamp=assessment_bridge();folder=study/f'native-{budget:02}'
+    bridge,stamp=assessment_bridge()
+    model_folder=study/'hidden-score' if hidden else study
+    folder=model_folder/f'native-{budget:02}'
+    if planner:tag='series10-score-aware'
+    elif hidden:tag='series10-hidden-archive' if archive else 'series10-hidden-field'
+    elif targeted:tag='series10-'+study.name
+    elif ringout_study:tag='series10-ringouts'
+    elif expanded:tag='series10-diverse'
+    elif archive:tag='series10-archive'
+    else:tag='series10'
     paired=2 if budget!=BUDGETS[-1] else 8
-    models={n:load_models(budget,h,len(experts),field_size,study) for n,h in [('memory',9),('scoreboard',0),('last-game',1)] if n in modes}
+    models={n:load_models(budget,h,len(experts),field_size,model_folder) for n,h in [('memory',9),('scoreboard',0),('last-game',1)] if n in modes}
+    if hidden:models['blind']=load_models(budget,-1,len(experts),field_size,study/'ringout-reward')
     records={}
     for rep in range(paired):
         for target in targets:
@@ -73,7 +95,6 @@ def native(budget,study=FOLDER):
         for (rep,target,arm),events in records.items():
             t=targets.index(target);j=modes.index(arm)
             side='ab'[(rep+g+t)%2];own,other=RTTS[(g+rep//2+t)%len(RTTS)]
-            tag='series10-ringouts' if ringout_study else 'series10-diverse' if expanded else 'series10-archive' if archive else 'series10'
             key=f'{tag}-{budget}-r{rep}-f{t}-a{j}-g{g}'
             # Commit the complete response to any possible displayed ping pair, before this fight exists.
             table={}
@@ -158,6 +179,25 @@ def follow_archive():
 
 if __name__=='__main__':
     if sys.argv[1:]==['archive']:follow_archive()
+    elif sys.argv[1:]==['score-aware']:
+        study=FOLDER/'score-aware';prefix=str(study.relative_to(OUT))+'/'
+        files=[prefix+f'learn-08/h{h}-s{SEEDS[0]}/{name}' for h in (0,1,9) for name in ('actor.pt','trained.json')]
+        wait_for([*files,prefix+'dev/evaluation-08.json'])
+        for path in (OUT/p for p in files if p.endswith('.pt')):
+            if hashlib.sha256(path.read_bytes()).hexdigest()!=read(path.with_name('trained.json'))['sha256']:
+                raise ValueError('Score-aware native actor differs from its trained weights')
+        native(8,study)
+    elif sys.argv[1:2]==['hidden'] and sys.argv[2:] in (['field'],['archive-reversal']):
+        study=FOLDER if sys.argv[2]=='field' else FOLDER/'archive-reversal'
+        prefix=str(study.relative_to(OUT))+'/'
+        files=[prefix+f'{group}/learn-02/h{h}-s{SEEDS[0]}/{file}'
+               for group,h in [('hidden-score',1),('hidden-score',9),('ringout-reward',-1)]
+               for file in ('actor.pt','trained.json')]
+        wait_for([*files,prefix+'hidden-score/dev/result.json'])
+        for path in (OUT/p for p in files if p.endswith('.pt')):
+            if hashlib.sha256(path.read_bytes()).hexdigest()!=read(path.with_name('trained.json'))['sha256']:
+                raise ValueError('Hidden-score actor changed before native play')
+        native(2,study,hidden=True)
     elif sys.argv[1:]==['reward-archive']:
         study=FOLDER/'archive-reversal/ringout-reward'
         wait_for([str(study.relative_to(OUT))+'/protocol.json'])

@@ -20,6 +20,10 @@ def planned():
     for b in (2,16):
         files.extend(f'archive-reversal/dev/{f}-{b:02}.json' for f in ('evaluation','whole-memory'))
     files.extend(f'{prefix}ringout-reward/dev/reward-comparison.json' for prefix in ('','archive-reversal/'))
+    files.extend(f'{prefix}hidden-score/dev/result.json' for prefix in ('','archive-reversal/'))
+    files.append('archive-reversal/hidden-score/fresh/result.json')
+    files.extend(f'{prefix}hidden-score/{split}/public-controls.json' for prefix in ('','archive-reversal/') for split in ('dev','fresh'))
+    files.extend(f'{prefix}hidden-score/{split}/second-game-cues.json' for prefix in ('','archive-reversal/') for split in ('dev','fresh'))
     files.extend(['archive-reversal/dev/unrestricted.json','archive-reversal/fresh/evaluation-16.json',
                   'archive-reversal/fresh/whole-memory-16.json','archive-reversal/fresh/unrestricted.json',
                   'archive-reversal/ringout-reward/fresh/reward-comparison.json'])
@@ -36,7 +40,8 @@ def report():
     fmt=lambda values:'/'.join(f'{n:,}' for n in values)
     groups=[('', '27 opponents, eight experts',BUDGETS),('diverse-experts/','27 opponents, ten experts',(2,8)),
             ('pair-drill/','Two opponents, eight experts',(2,)),('crossing-drill/','Two recently trained experts',(2,)),
-            ('archive-reversal/','Two historical experts',(2,16))]
+            ('archive-reversal/','Two historical experts',(2,16)),('targeted-response/','27 opponents with new counter',(2,8)),
+            ('targeted-response/hard-curriculum/','27 opponents with new counter and extra hard-opponent practice',(2,8))]
     for prefix,name,budgets in groups:
         for b in budgets:
             path=FOLDER/prefix/'dev'/f'evaluation-{b:02}.json'
