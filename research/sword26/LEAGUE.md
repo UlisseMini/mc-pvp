@@ -40,3 +40,16 @@ An offline intervention compared waiting with pressing once at the first skipped
 | Variable phases | 428 | 374 | 349 | 118 |
 
 The benefit of waiting changed sign with the clock. Native play establishes that the bot repeatedly chose this opening and won. The causal comparison above applies to simulated counterfactuals. [Fixed-clock forks](evidence/ladder26/opening-season-009-off.csv) · [Variable-clock forks](evidence/ladder26/opening-season-009-on.csv) · [Evaluation code](OpeningPressAudit.java)
+
+## First ordinary-Java promotion
+
+The independent replication promoted the season 7 specialist `1ed6988f` after season 9. It beat the original champion 7/8 and 8/8 on two separate panels. In those 32 fights against both rivals it passed up the available opening in all 32, never landed the first hit, and landed a critical as its first reply in every fight. The replication widened the reply interval to 8–14 server ticks. Across all contacts the count was 210 criticals out of 214, versus zero out of 286 for W-tap. [Independent opening audit](evidence/ladder26/java-009-b/opening-audit.csv)
+
+| Ordinary Java matchup | New champion | Other finalist | Option 4 | W-tap |
+|---|---:|---:|---:|---:|
+| Directly against option 4 | 15/16 | 10/16 | 8/16 | 7/16 |
+| Both opponents, first panel | 13/16 | 12/16 | 10/16 | 5/16 |
+| Both opponents, independent replication | 11/16 | 11/16 | 10/16 | 5/16 |
+| Both panels and opponents | 24/32 | 23/32 | 20/32 | 10/32 |
+
+This fighter wins damage trades, with a distinct weakness after entering an established combo. Against the retreating rival, switching to it after a common three-hit W-tap entry produced zero further unanswered fresh-hit cycles across 26 fixed-clock and 223 variable-clock starts. Continuing W-tap completed 17 and 100 more cycles, respectively. These totals count correlated cycles across the available starts. Independent native fights in the first panel had no three-hit entry for this fighter. [Fixed-clock continuations](evidence/ladder26/java-009/maintenance-retreating-off.csv) · [Variable-clock continuations](evidence/ladder26/java-009/maintenance-retreating-on.csv) · [Promotion decision](evidence/ladder26/java-009/decision.json)
