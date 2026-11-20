@@ -1,7 +1,7 @@
 {
-  "season": 8,
-  "incumbent": "evidence/league26/fighter.net",
-  "main": "evidence/ladder26/fighters/83260085ea89bf99.net",
+  "season": 14,
+  "incumbent": "evidence/ladder26/fighters/62476e8c5c6ffaff.net",
+  "main": "evidence/ladder26/fighters/62476e8c5c6ffaff.net",
   "pool": [
     "evidence/league26/fighter.net",
     "evidence/random26/fighter.net",
@@ -25,10 +25,25 @@
     "evidence/ladder26/fighters/1ed6988fc1d29b7d.net",
     "evidence/ladder26/fighters/83260085ea89bf99.net",
     "evidence/ladder26/fighters/c00725f5cca8c60e.net",
-    "evidence/ladder26/fighters/e01ff2837c4d870e.net"
+    "evidence/ladder26/fighters/e01ff2837c4d870e.net",
+    "evidence/ladder26/fighters/4daed3cc503d5297.net",
+    "evidence/ladder26/fighters/239cc877f07d4b32.net",
+    "evidence/ladder26/fighters/6fbadfed034dae51.net",
+    "evidence/ladder26/fighters/af6f7d1b2ab110c6.net",
+    "evidence/ladder26/fighters/9bb5bf67ba9891dd.net",
+    "evidence/ladder26/fighters/19ce92c853e624b1.net",
+    "evidence/ladder26/fighters/1ef8cdac288b79e0.net",
+    "evidence/ladder26/fighters/2610d4e38b3d2d4e.net",
+    "evidence/ladder26/fighters/3d986fc62cfc3f41.net",
+    "evidence/ladder26/fighters/485466355813522f.net",
+    "evidence/ladder26/fighters/889f6b8aa6d55afa.net",
+    "evidence/ladder26/fighters/c480317db0499c36.net",
+    "evidence/ladder26/fighters/62476e8c5c6ffaff.net",
+    "evidence/ladder26/fighters/a33e7fd8995e7864.net",
+    "evidence/ladder26/fighters/4351162bb4aee676.net"
   ],
   "stale": 0,
-  "last_java": 3,
+  "last_java": 14,
   "history": [
     1,
     2,
@@ -37,9 +52,18 @@
     5,
     6,
     7,
-    8
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14
   ],
-  "promotions": [],
+  "promotions": [
+    9,
+    14
+  ],
   "counter_signatures": [],
   "status": "running"
 }

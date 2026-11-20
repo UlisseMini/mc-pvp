@@ -1,0 +1,8 @@
+{
+  "effective_after_season": 14,
+  "reason": "The old AFK-enabled runs confounded latency with session age. In active season 14 C the median native render rate was 32 fps in the first minute, 37 fps from minutes 1–10 and 36 fps afterward.",
+  "first_promotion_panel_rtts_ms": [0, 100],
+  "independent_replication_rtts_ms": [100, 0],
+  "comparison": "All competitors, fighters playing from both seats, and plain W-tap receive the same openings and latency inside each panel. The two panels use independent seeds. Every completed season 14 and earlier result keeps its registered order.",
+  "recordings": "Following a new promotion, save the league decision and checkpoint first, then record a separate scheduled 720p, 60 fps exhibition against the prior champion. Its games do not contribute to selection."
+}

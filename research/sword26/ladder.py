@@ -12,6 +12,7 @@ from pathlib import Path
 
 from recordings import archive_panel,trim_after_knockout
 from report import export
+from showcase import record as record_exhibition
 from season import ANCHORS, EVIDENCE, WORK, PLAN, SRC, both_clocks, compile_sim, field_score, hash_policy, run_season, save, train_stage, unique, write_fighter
 
 
@@ -29,28 +30,28 @@ def guest_cpu():
                if "com.apple.Virtualization.VirtualMachine" in r or "/lima/hostagent" in r)
 
 
-def native_panel(tag, actors, opponents, seed, pairs, active=False, openings=None):
+def native_panel(tag, actors, opponents, seed, pairs, active=False, openings=None, rtts=(0,100)):
     dest=EVIDENCE/tag;work=WORK/tag
     dest.mkdir(exist_ok=True);work.mkdir(exist_ok=True)
-    if (dest/"panel.json").exists():
-        cached=json.loads((dest/"panel.json").read_text())
-        if cached.get("score_rule")=="first_lethal_contact" and (not active or cached.get("active_frames")):return cached
     registration=dict(actors=[local(p) for p in actors],opponents=[local(p) for p in opponents],
                       actor_hashes=[hash_policy(p) for p in actors],opponent_hashes=[hash_policy(p) for p in opponents],
-                      seed=seed,pairs=pairs,clock="ordinary TCP",rtts=[0,100])
+                      seed=seed,pairs=pairs,clock="ordinary TCP",rtts=list(rtts))
     if active:registration["client_frame_policy"]="minimized"
     if openings:registration["matched_openings_from"]=str(Path(openings).relative_to(WORK.parent))
     reg=dest/"registration.json"
     if reg.exists() and json.loads(reg.read_text())!=registration:raise ValueError(f"Registration mismatch for {tag}")
+    if reg.exists() and (dest/"panel.json").exists():
+        cached=json.loads((dest/"panel.json").read_text())
+        if cached.get("score_rule")=="first_lethal_contact" and (not active or cached.get("active_frames")):return cached
     save(reg,registration)
-    cmd=[sys.executable,SRC/"native.py","--weights",actors[0],"--rtts","0","100","--pairs",str(pairs),
+    cmd=[sys.executable,SRC/"native.py","--weights",actors[0],"--rtts",*map(str,rtts),"--pairs",str(pairs),
          "--opponents",*opponents,"--seed",str(seed),"--extra-weights",*actors[1:]]
     if openings:cmd.extend(["--openings-from",openings])
     run=None
     for log in sorted(work.glob("native-*.log")):
         names=[s.partition(": ")[2] for s in log.read_text().splitlines() if s.startswith("Round recordings:")]
         if names and (Path(names[-1])/"results.json").exists():run=Path(names[-1])
-    count=4*pairs*len(opponents)*(len(actors)+1)
+    count=2*len(rtts)*pairs*len(opponents)*(len(actors)+1)
     if run is None or len(json.loads((run/"results.json").read_text()))!=count:
         if run is not None:cmd.extend(["--resume",run])
         log=work/f"native-{time.time_ns()}.log"; readings=[]
@@ -66,7 +67,7 @@ def native_panel(tag, actors, opponents, seed, pairs, active=False, openings=Non
         if process.returncode:raise RuntimeError(f"Native worker failed; see {log}")
         run=Path(next(s.partition(": ")[2] for s in log.read_text().splitlines() if s.startswith("Round recordings:")))
     meta=json.loads((run/"metadata.json").read_text())
-    if meta["clock"] is not None or meta["speed"]!=1 or meta["weights_sha256"]!=registration["actor_hashes"][0] or meta["seed"]!=seed:
+    if meta["clock"] is not None or meta["speed"]!=1 or meta["weights_sha256"]!=registration["actor_hashes"][0] or meta["seed"]!=seed or meta["rtts"]!=list(rtts):
         raise ValueError("Unexpected native conditions")
     if [a["sha256"] for a in meta["extra_weights"]]!=registration["actor_hashes"][1:] or meta["opponent_hashes"]!={str(p):hash_policy(p) for p in opponents}:
         raise ValueError("Native roster changed")
@@ -214,7 +215,8 @@ def native_wave(index,main,inc,pool,history,final):
     uncertain=any(rate(native_rates(data,local(p),local(inc)))<.75 or min(rate(native_rates(data,local(p),local(inc),rtt=r)) for r in (0,100))<.5 for p in eligible)
     # Confirm a potential specialist failure even when it misses the broader promotion gate.
     if (eligible and uncertain) or (threats and not eligible) or panels[0]["unqualified_cells"] or final:
-        panels.append(native_panel(tag+"-"+suffixes[1],actors,opponents,base+seed_offset+2,2,active=active))
+        replication_order=(100,0) if index>14 else (0,100)
+        panels.append(native_panel(tag+"-"+suffixes[1],actors,opponents,base+seed_offset+2,2,active=active,rtts=replication_order))
         data=data+panels[1]["scores"]
         eligible,threats=compare_native(data,choices,inc)
     winner=eligible[0] if eligible else inc
@@ -260,11 +262,17 @@ def run():
                 elif final and not changed:
                     state["status"]="plateau_with_known_counter"
             elif final and not changed:state["status"]="plateau"
+        state["pool"]=[local(p) for p in pool]
+        save(state_file,state)
+        if due:
+            if outcome["promoted"] and i>=14:
+                try:
+                    record_exhibition(i,SRC/outcome["champion"],inc,export_frames=True,hd=True)
+                except (OSError,ValueError,RuntimeError,subprocess.CalledProcessError) as error:
+                    print(f"Season {i} exhibition recording failed: {error}",flush=True)
             if any("sword26 Running" in l for l in subprocess.check_output(["limactl","list","-f","{{.Name}} {{.Status}}"],text=True).splitlines()):
                 idle=subprocess.run(["limactl","shell","--workdir","/tmp","sword26","pgrep","-x","java"],stdout=subprocess.DEVNULL)
                 if idle.returncode==1:subprocess.run(["limactl","stop","sword26"],stdout=subprocess.DEVNULL,check=True)
-        state["pool"]=[local(p) for p in pool]
-        save(state_file,state)
     print(state["status"],flush=True)
 
 

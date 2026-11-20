@@ -99,6 +99,7 @@ async def proxy(reader, writer, latency):
 async def run(args):
     if args.export_frames and (not args.showcase or args.clock!="fast"):
         raise ValueError("Frame export requires a daylight exhibition on the scheduled native clock")
+    if args.hd and not args.export_frames:raise ValueError("HD recording uses the native frame exporter")
     if args.showcase and (args.human or (args.clock and not args.export_frames) or args.speed!=1):
         raise ValueError("Showcase recording uses ordinary bot fights at normal speed")
     if args.clock and (args.human or args.speed!=1 or len(args.rtts)!=1 or args.rtts[0]%100):
@@ -115,6 +116,7 @@ async def run(args):
                 "--rtts",*map(str,args.rtts),"--opponents",*args.opponents,"--extra-weights",*[str(w.resolve()) for w in args.extra_weights]]
         if args.showcase:params+=["--showcase"]
         if args.export_frames:params+=["--export-frames"]
+        if args.hd:params+=["--hd"]
         if args.blind:params+=["--blind"]
         if args.landmark:params+=["--landmark",str(args.landmark)]
         if args.clock:params+=["--clock",args.clock]
@@ -143,6 +145,7 @@ async def run(args):
     # Require this project's previously accepted server EULA or an explicit local acceptance.
     worker = WORKER/"showcase" if args.showcase else WORKER
     width,height,fps = (854,480,60) if args.showcase else (360,240,50)
+    if args.hd:width,height=1280,720
     server = worker/"native-server"
     server.mkdir(parents=True,exist_ok=True)
     accepted = SRC.parents[1]/"runtime/server/eula.txt"
@@ -231,6 +234,8 @@ async def run(args):
             previous=json.loads((args.resume/"metadata.json").read_text())
             if (previous.get("video",{}).get("source")=="native_frame_export")!=args.export_frames:
                 raise ValueError("Resume requires the same rendering method")
+            if args.export_frames and (previous["video"]["width"],previous["video"]["height"])!=(width,height):
+                raise ValueError("Resume requires the original frame dimensions")
             if previous.get("client_frame_policy","afk")!=metadata["client_frame_policy"]:raise ValueError("Resume requires the same client frame policy")
             if previous.get("clock")!=args.clock:raise ValueError("Resume requires the same game clock")
             if previous.get("opening_geometry")!=metadata.get("opening_geometry"):raise ValueError("Resume requires the same opening geometry")
@@ -298,7 +303,7 @@ async def run(args):
                     requested_at=time.monotonic()
                     tmp=run_dir/"request.tmp";tmp.write_text("\t".join(fields));tmp.replace(run_dir/"request")
                     result=run_dir/(idx+".result")
-                    await wait_for(result.exists,procs,240 if args.export_frames else 70,"Native round failed to finish")
+                    await wait_for(result.exists,procs,600 if args.hd else 240 if args.export_frames else 70,"Native round failed to finish")
                     a,b,t=map(float,result.read_text().split())
                     row=dict(id=idx,wall_seconds=time.monotonic()-requested_at,rtt=rtt,pair=pair,seat=seat,policy=policy,rival=rival,hp=a if seat==0 else b,opponent_hp=b if seat==0 else a,ticks=t,angle=angle,gap=gap)
                     if capture:
@@ -343,6 +348,7 @@ if __name__=="__main__":
     parser.add_argument("--landmark",type=int,default=0,help="Use the common W-tap opening until this many unanswered fresh hits after the defender begins pressing")
     parser.add_argument("--clock",choices=["realtime","fast"],help="Run the native clients and server on an ordered network tick schedule")
     parser.add_argument("--export-frames",action="store_true",help="Render three native frames per tick for a 60 fps exhibition")
+    parser.add_argument("--hd",action="store_true",help="Export the exhibition at 1280 × 720")
     args=parser.parse_args()
     args.opponents=[p if p in ("wtap","hold") else str(Path(p).resolve()) for p in args.opponents]
     if args.human:args.rtts=[0]

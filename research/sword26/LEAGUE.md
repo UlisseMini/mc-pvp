@@ -80,3 +80,18 @@ The matched-opening crossover then replayed the first panel’s angles and gaps 
 ## What the full-frame exhibition shows
 
 The season 9 champion played its season 11 counter from both seats on one scheduled Java opening. It began a grounded jump on the input tick delivering 14 of the 16 fresh knockbacks it received. W-tap did this on 0 of 14. For each of those 14 jumps, the simulator reproduced the pre-jump state and the next native position. Releasing only the jump key increased outward movement by approximately 0.20 blocks on the next tick in all 14 forks. The champion still lost both fights. This measures the physical effect of a learned jump reset on one opening. The score used to train the policy rewarded wins and health. [Watch one duel](http://127.0.0.1:25708/?match=showcase-003%2Fround-002#matches) · [Paired native inputs](evidence/ladder26/showcase-003/input-signatures.csv) · [One-key intervention](evidence/ladder26/showcase-003/jump-forks.csv)
+
+## Season 14 promotion
+
+The season 14 generalist, `62476e8c`, won 53 of its 64 fights against four opponents across the two independently seeded, active-client Java panels. It beat the defending champion in 13 of 16 direct fights. The season 11 counter swept the defending champion 16–0 and scored 41/64 across the field. The league promoted the generalist and resumed training against it. Each fighter played both seats with 0 and 100 ms added RTT. All 256 fights began at qualified positions. Draws count half a point. [Promotion decision](evidence/ladder26/java-014/decision.json) · [First panel](evidence/ladder26/java-014-c/ordinary-scores.csv) · [Replication](evidence/ladder26/java-014-d/ordinary-scores.csv)
+
+| Ordinary Java score | Season 14 generalist | Season 11 counter | Defending champion | W-tap |
+|---|---:|---:|---:|---:|
+| First panel, all four opponents | 27/32 | 20/32 | 22/32 | 16/32 |
+| Replication, all four opponents | 26/32 | 21/32 | 22/32 | 14/32 |
+| First panel, directly against defending champion | 8/8 | 8/8 | 4/8 | 0/8 |
+| Replication, directly against defending champion | 5/8 | 8/8 | 4/8 | 0/8 |
+
+Before these panels, the simulator’s nomination games gave the generalist 81.25% and the counter 100% against the incumbent, with W-tap at 1.17%. Their observed direct scores were 81.25%, 100% and 0% over 16 games per fighter. Supplying the native pre-hit state reproduced the resulting health and motion-packet presence on all 3,737 accepted contacts and all 3,731 comparable knockback vectors. One overlap required the server’s private random draw. [Frozen forecasts](evidence/ladder26/java-014/nomination.json) · [Contact audit C](evidence/ladder26/java-014-c/conditional-contact-parity.csv) · [Contact audit D](evidence/ladder26/java-014-d/conditional-contact-parity.csv)
+
+In those 64 fights the promoted bot landed 369 sprint-boosted hits and 139 criticals among 631 accepted attacks. It pressed back on 364 of 10,037 input ticks and used zero lateral inputs. W-tap recorded 630 sprint-boosted hits and zero criticals in 635 accepted attacks. The new bot established three unanswered fresh hits after its opponent started clicking in 33/64 games, versus 26/64 for W-tap. Those independent native runs measure entry frequency. In the matched simulated continuations against the retreating opponent, the generalist completed 31 further fresh-hit cycles versus W-tap’s 39 on the fixed clock and 96 versus 93 on the variable clock. The tests show mixed maintenance results. [Native input and contact audit](evidence/ladder26/java-014-c/ordinary-audit.json) · [Replication audit](evidence/ladder26/java-014-d/ordinary-audit.json) · [Matched continuation protocol and raw files](evidence/ladder26/java-014/maintenance)
