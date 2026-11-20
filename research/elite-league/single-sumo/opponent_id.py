@@ -1,6 +1,7 @@
 """Privileged opponent-ID controls. An ID is supplied by the experiment, never inferred from a fight."""
 import argparse
 import copy
+import fcntl
 from functools import lru_cache
 import time
 from learner import *
@@ -107,7 +108,13 @@ def plan():
     return spec
 
 def train_to(mode,end):
-    spec=plan();p=DIR/mode;p.mkdir(exist_ok=True,parents=True);net=architecture(mode)
+    p=DIR/mode;p.mkdir(exist_ok=True,parents=True)
+    with (p/'fit.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        _train_to(mode,end,p)
+
+def _train_to(mode,end,p):
+    spec=plan();net=architecture(mode)
     opt=torch.optim.Adam(net.parameters(),lr=.00035);save=p/'optimizer.pt';start=0;log=[]
     if save.exists():
         state=torch.load(save,map_location='cpu',weights_only=False);net.load_state_dict(state['net'])

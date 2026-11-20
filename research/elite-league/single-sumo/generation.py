@@ -26,6 +26,13 @@ def initialize(g):
         extra,groups=enrollment(g)
         field.update(extra)
         for family,names in groups.items():families.setdefault(family,[]).extend(names)
+        verdict=prev/'plateau/verdict.json'
+        if verdict.exists():
+            answers={n:v for n,v in read(verdict).get('responses',{}).items() if v['opponent']==inc}
+            for n,v in answers.items():
+                field[n]={k:v[k] for k in ('reference','sha256')}
+                families.setdefault('doubled-budget responses',[]).append(n)
+            if answers:counter=max(answers,key=lambda n:answers[n]['score'])
         scores=next(r['family'] for r in rounds['ranking'] if r['name']==f'sg{g-1:03d}-main')
         warm_r=prev/'main/trainer.pt';warm_m=prev/'mlp/trainer.pt'
     freeze_assay(g,folder)

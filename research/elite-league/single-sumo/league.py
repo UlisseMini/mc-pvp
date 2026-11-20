@@ -62,7 +62,7 @@ def main():
             result=stage(g);print(result,flush=True)
             idle=0 if result['promoted'] or result['novel'] else idle+1
             if idle>=3:
-                folder=EVIDENCE/f'g{g:03d}';clocks(folder)
+                folder=EVIDENCE/f'g{g:03d}'
                 subprocess.run([sys.executable,HERE/'stage_task.py','plateau',str(g)],check=True)
                 if read(folder/'plateau/verdict.json')['budgeted_plateau']:
                     write_json(EVIDENCE/'stop.json',dict(generation=g,reason='two independent search methods below .55 with a working positive control'),fixed=True)

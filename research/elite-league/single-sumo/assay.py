@@ -111,8 +111,8 @@ def donors(records):
             if len(choices[style])<256:choices[style].append((i,*selected))
     return choices,coverage
 
-def evaluate(g):
-    folder=EVIDENCE/f'g{g:03d}';spec=json.loads((folder/'assay.json').read_text())
+def evaluate(g,folder=None):
+    folder=folder or EVIDENCE/f'g{g:03d}';spec=json.loads((folder/'assay.json').read_text())
     dev=development(g,folder,spec)
     if not dev['eligible_for_sealed_test']:return
     seal=folder/'calendars/manifest.json'

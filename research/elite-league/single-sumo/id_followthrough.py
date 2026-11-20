@@ -22,6 +22,23 @@ def initial(target):
     finally:w.close()
     write_json(dest,table,fixed=True);return table
 
+def specialist_milestone(target,exposure):
+    from league_tournament import stats
+    net=DIR/('dedicated-'+target)/f'n{exposure:05d}.net'
+    cells=make_panel(CLOCKS['dev'],4)
+    dest=DIR/'specialist-development'/target/f'n{exposure:05d}.json'
+    if dest.exists():return
+    w=oracle_worker()
+    try:
+        plan=[[net,target,clk,side,a,b,s,f] for _,_,side,a,b,clk,s,f in cells]
+        results=[]
+        for i in range(0,len(plan),32):results+=w.run(plan[i:i+32],False)
+    finally:w.close()
+    rows=[[i,r,s,a,b,v[0],v[1]] for (i,r,s,a,b,_,_,_),v in zip(cells,results)]
+    original=initial(target)
+    write_json(dest,dict(duels_trained=exposure,specialist=stats(rows),wtap=original['wtap']['result'],
+        initializer=original['initializer']['result'],games=rows),fixed=True)
+
 def wait_file(path):
     while not path.is_file():time.sleep(10)
 
@@ -57,4 +74,5 @@ def follow():
             subprocess.run([sys.executable,HERE/'id_native.py',f],check=True)
 if __name__=='__main__':
     if sys.argv[1:2]==['initial']:initial(sys.argv[2])
+    elif sys.argv[1:2]==['snapshot']:specialist_milestone(sys.argv[2],int(sys.argv[3]))
     else:follow()

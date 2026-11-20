@@ -4,7 +4,7 @@ import sys
 import time
 from dedicated import *
 def launch(script,*args):
-    subprocess.run([sys.executable,HERE.parent/'cpu_limit.py','nice','-n','8',sys.executable,HERE/script,*map(str,args)],check=True)
+    subprocess.run([sys.executable,HERE.parent/'cpu_limit.py','--policy','nice','-n','8',sys.executable,HERE/script,*map(str,args)],check=True)
 def progress(folder,key):
     p=folder/'progress.json'
     return json.loads(p.read_text())[key] if p.exists() else 0

@@ -33,6 +33,11 @@ def extension(target,start,count):
 
 def train_target(target,n_updates):
     early,matched,orig=budgets(target);total=16384;folder=DIR/('dedicated-'+target);folder.mkdir(exist_ok=True,parents=True)
+    with (folder/'fit.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        _train_target(target,n_updates,early,matched,orig,total,folder)
+
+def _train_target(target,n_updates,early,matched,orig,total,folder):
     milestones=[early,matched,total]
     torch.manual_seed(3176221);model=Actor('mlp')
     model.load_state_dict(torch.load(DIR/'shared-mlp/trainer.pt',map_location='cpu',weights_only=False)['net'])
