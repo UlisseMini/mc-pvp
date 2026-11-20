@@ -11,6 +11,7 @@ import time
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
+from recordings import ARCHIVE,archive_panel
 
 SRC = Path(__file__).resolve().parent
 ROOT = SRC.parents[1] / "build/sword26"
@@ -51,7 +52,7 @@ def run_for(tag):
                         break
             if name:break
     if name and re.fullmatch(r"native-[a-zA-Z0-9_-]+",name):
-        return ROOT / name
+        return ROOT / name if (ROOT/name).is_dir() else ARCHIVE/tag
 
 
 @lru_cache(maxsize=512)
@@ -82,6 +83,7 @@ def snapshot():
             if not run:continue
             roster=read(reg,{})
             results=read(run/"results.json",[])
+            if results and run.parent==ROOT:archive_panel(tag,run,results)
             actors=roster["actors"];meta=read(run/"metadata.json",{})
             if tag.startswith("java-") and len(roster["opponents"])>=3:
                 wave=read(EVIDENCE/tag.rsplit("-",1)[0]/"nomination.json",{})
@@ -95,10 +97,10 @@ def snapshot():
                 rid=row["id"]
                 if not ROUND.fullmatch(rid):continue
                 clip=run/"videos"/(rid+".mp4")
-                has_video=clip.is_file()
+                has_video=clip.is_file() or (ARCHIVE/tag/(rid+".mp4")).is_file()
                 bouts.append(dict(id=tag+"/"+rid,tag=tag,number=int(rid[6:])+1,actor=short(actor,labels),rival=short(row["rival"],labels),
                                   rtt=row["rtt"],seat="AB"[row["seat"]],hp=row["hp"],otherHP=row["opponent_hp"],
-                                  ticks=row["ticks"],video=has_video,fps=meta.get("video",{}).get("fps",50),
+                                  ticks=row["ticks"],video=has_video,trace=(run/(rid+"-server.tsv")).is_file(),fps=meta.get("video",{}).get("fps",50),
                                   when=reg.stat().st_mtime))
         bouts.sort(key=lambda x:(x["when"],x["number"]),reverse=True)
         panels.sort(key=lambda x:x["when"],reverse=True)
@@ -173,8 +175,11 @@ class Handler(BaseHTTPRequestHandler):
             bits=route.strip("/").split("/")
             if len(bits)==3 and bits[0] in ("video","trace") and TAG.fullmatch(bits[1]) and ROUND.fullmatch(bits[2]):
                 run=run_for(bits[1]);rid=bits[2]
-                if not run or not (run/(rid+".result")).is_file():return self.send_error(404)
-                if bits[0]=="video":return self.clip(run/"videos"/(rid+".mp4"))
+                if not run:return self.send_error(404)
+                if bits[0]=="video":
+                    saved=ARCHIVE/bits[1]/(rid+".mp4")
+                    return self.clip(saved if saved.exists() else run/"videos"/(rid+".mp4"))
+                if not (run/(rid+"-server.tsv")).is_file():return self.send_error(404)
                 return self.blob(json.dumps(trace(run,rid),separators=(",",":")).encode(),"application/json")
             self.send_error(404)
         except (BrokenPipeError,ConnectionResetError):pass

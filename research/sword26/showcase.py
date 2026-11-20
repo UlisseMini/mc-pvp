@@ -6,6 +6,7 @@ import subprocess
 import sys
 import time
 
+from recordings import archive_panel
 from season import ANCHORS,EVIDENCE,WORK,SRC,hash_policy,save
 
 
@@ -34,6 +35,7 @@ def record(index, actor, opponent):
     results=json.loads((run/"results.json").read_text())
     if len(results)!=8 or any(not (run/"videos"/(r["id"]+".mp4")).is_file() for r in results):
         raise RuntimeError("Exhibition recordings incomplete")
+    archive_panel(tag,run,results)
     save(dest/"panel.json",dict(run=run.name,bouts=len(results),purpose="Exhibition, excluded from promotion results"))
     print(f"Saved {len(results)} exhibition videos to {run/'videos'}",flush=True)
 

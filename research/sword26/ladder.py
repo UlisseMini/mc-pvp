@@ -10,6 +10,7 @@ import sys
 import time
 from pathlib import Path
 
+from recordings import archive_panel
 from report import export
 from season import ANCHORS, EVIDENCE, WORK, PLAN, SRC, both_clocks, compile_sim, field_score, hash_policy, run_season, save, train_stage, unique, write_fighter
 
@@ -65,6 +66,7 @@ def native_panel(tag, actors, opponents, seed, pairs):
     if [a["sha256"] for a in meta["extra_weights"]]!=registration["actor_hashes"][1:] or meta["opponent_hashes"]!={str(p):hash_policy(p) for p in opponents}:
         raise ValueError("Native roster changed")
     data=export(run,dest,"ordinary")
+    archive_panel(tag,run)
     if len(data)!=count:raise ValueError(f"Incomplete Java panel for {tag}")
     labels=["learned" if i==0 else f"learned-{i}" for i in range(len(actors))]
     actor_names={k:local(v) for k,v in zip(labels,actors)}|{"wtap":"wtap"}

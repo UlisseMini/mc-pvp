@@ -44,7 +44,7 @@ function select(m,reset=false){
  const was=selected;selected=m;$('matchTitle').textContent=m.actor+' vs '+m.rival;
  const outcome=m.otherHP===0?m.actor+' won':m.hp===0?m.rival+' won':'Draw';
  $('matchMeta').textContent=panelName(m.tag)+' · Match '+m.number+' · '+m.rtt+' ms added RTT · '+outcome;
- $('switches').hidden=!m.video;$('saveFilm').href='/video/'+m.id;$('saveFilm').download=m.id.replace('/','-')+'.mp4';
+ $('switches').hidden=!m.video;$('map').hidden=m.trace===false;$('saveFilm').href='/video/'+m.id;$('saveFilm').download=m.id.replace('/','-')+'.mp4';
  if(reset)history.replaceState(null,'','?match='+encodeURIComponent(m.id)+'#matches');
  if(reset||!was||was.id!==m.id||!mode)setMode(m.video?'film':'map');
  showLibrary();
