@@ -4,5 +4,6 @@
   "population": "Add 80 generations of descendants of the actual champion, using mixed-clock fight outcomes and HP. Scout up to four distinct responses including overall leader, direct leader, clock-and-latency worst-case direct leader, and strongest close descendant.",
   "pilot": "One fresh opening per RTT, both seats, champion opponent. Retain W-tap and incumbent controls. Rank by Java fight score, then HP margin. Use this panel exclusively for nomination.",
   "promotion": "Carry the pilot winner alongside both original nominees to the ordinary-Java promotion panel on new opening seeds; final challenge always uses two fresh panels. The pilot games do not count for promotion or confirmation.",
-  "final_rechallenge": "Score the whole archived pool for the final nomination. Any prior credible ordinary-Java counter to the still-current champion also enters the final test and opposing field, even if its simulator ranking falls."
+  "final_rechallenge": "Score the whole archived pool for the final nomination. Any prior credible ordinary-Java counter to the still-current champion also enters the final test and opposing field, even if its simulator ranking falls.",
+  "standing_opponents": "Keep the original Java champion and retreating rival as reference opponents after the first promotion, along with the current champion. Deduplicate identical weights."
 }

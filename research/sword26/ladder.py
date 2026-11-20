@@ -148,7 +148,7 @@ def native_wave(index,main,inc,pool,history,final):
         candidates=[p for p in pool if not same(p,inc)]
     jar=compile_sim();base=PLAN["seed"]+index*6011+10000000
     merits=both_clocks(jar,wa,"nomination",[*candidates,inc,"wtap"],unique([inc,*ANCHORS,*pool]),base,64,index>=4)
-    opponents=unique([inc,ANCHORS[2]])
+    opponents=unique([inc,ANCHORS[2],ANCHORS[0]])
     if len(opponents)<2:opponents.append(ANCHORS[1])
     # A broad entrant and a champion-specific entrant can each qualify.
     def overall(p):
