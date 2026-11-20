@@ -18,17 +18,27 @@ def run(g,attach):
     with (p/'training.lock').open('a') as lock:
         fcntl.flock(lock.fileno(),fcntl.LOCK_EX)
         if (p/'tournament.json').exists():return
-        if not (p/'exploiter/config.json').is_file():operate('prepare',g)
-        if attach:
+        if g>=3:
+            from generation import prep_exploiter
+            if not (p/'exploiter/budget-result.json').is_file():prep_exploiter(g)
+        elif not (p/'exploiter/config.json').is_file():operate('prepare',g)
+        if attach and g<3:
             while True:
                 progress=p/'exploiter/progress.json'
                 if progress.exists() and json.loads(progress.read_text())['update']>=256:break
                 other=subprocess.run(['ps','-p',str(attach),'-o','command='],capture_output=True,text=True)
                 if 'run_training.py' not in other.stdout:break
                 time.sleep(2)
-        train(p/'exploiter',256)
+        if g<3:train(p/'exploiter',256)
         if not all((p/k).is_file() for k in ['counter.json','main/config.json','mlp/config.json']):operate('counter',g)
-        train(p/'main',512);train(p/'mlp',512)
+        from remote_fit import enabled,delegate
+        if g>=3 and enabled():
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                jobs=[pool.submit(delegate,p/role,512) for role in ('main','mlp')]
+                for job in jobs:job.result()
+        else:
+            train(p/'main',512);train(p/'mlp',512)
         operate('compete',g)
 
 if __name__=='__main__':

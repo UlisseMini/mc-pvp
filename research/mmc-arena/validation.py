@@ -39,8 +39,7 @@ def register(stage):
     maps=read(OUT/'split.json')
     if stage=='sealed-final':
         final_design()
-        while not all((RUN/k/'selection.json').is_file() and
-                ((d:=read(RUN/k/'selection.json'))['best_wins']==d['panel_size'] or d['stale']>=2) for k in keys()):time.sleep(10)
+        while not all((RUN/k/'budget-closure.json').is_file() for k in keys()):time.sleep(10)
     contestants={}
     for key in keys():
         directory,_,net,target=sources(key)
@@ -48,7 +47,10 @@ def register(stage):
         elif stage in ('checkpoint32k','checkpoint64k'):
             p=RUN/key/('n32768.net' if stage=='checkpoint32k' else 'n65536.net')
             while not p.is_file():time.sleep(5)
-        else:p=RUN/key/f"n{read(RUN/key/'selection.json')['selected']}.net"
+        else:
+            closure=read(RUN/key/'budget-closure.json')
+            p=RUN/key/f"n{closure['selected']}.net"
+            if sha(p)!=closure['selected_sha256']:raise ValueError('Sealed arena finalist changed')
         contestants[key]=dict(actor=str(p.relative_to(ROOT)),sha256=sha(p),target=target,
                          target_sha=read(RUN/key/'protocol.json')['target_sha'])
     names=['default','mmc-137',*['mmc-'+str(n) for n in maps['sealed' if stage=='sealed-final' else 'validation']]]

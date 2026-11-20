@@ -73,10 +73,9 @@ def run():
     while pending:
         for key in sorted(pending):
             publish_improvements(key)
-            p=RUN/key/'selection.json';manifest=FOLDER/'replication/spaced/manifest.json'
+            p=RUN/key/'budget-closure.json';manifest=FOLDER/'replication/spaced/manifest.json'
             if not p.exists() or not manifest.exists():continue
             d=read(p)
-            if d['best_wins']!=d['panel_size'] and d['stale']<2:continue
             subprocess.run([sys.executable,HERE.parent/'cpu_limit.py','--terrain','nice','-n','8',sys.executable,
                             '-u',__file__,key,str(d['selected'])],check=True);pending.remove(key)
         if pending:time.sleep(10)

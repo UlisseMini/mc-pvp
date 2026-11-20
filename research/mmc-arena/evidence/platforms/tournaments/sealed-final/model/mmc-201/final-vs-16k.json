@@ -1,0 +1,263 @@
+{
+  "g1": {
+    "approximate_interval": [
+      0.02216516821252601,
+      0.196584831787474
+    ],
+    "final_win_delta": 0.109375,
+    "paired_donor_means": [
+      0.0625,
+      0.125,
+      0.0625,
+      0.25,
+      -0.0625,
+      0.0625,
+      0.25,
+      0.125
+    ],
+    "plain_wtap": {
+      "actor": "wtap",
+      "clock": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0625,
+        0.0,
+        0.0
+      ],
+      "draws": 0,
+      "foe": "research/elite-league/single-sumo/evidence/g001/mlp/final.net",
+      "losses": 127,
+      "paired_donor_interval": [
+        -0.052572253922035926,
+        0.021322253922035926
+      ],
+      "rtt": {
+        "109/109": {
+          "draws": 0,
+          "losses": 32,
+          "score": 0.0,
+          "wins": 0
+        },
+        "109/31": {
+          "draws": 0,
+          "losses": 32,
+          "score": 0.0,
+          "wins": 0
+        },
+        "31/109": {
+          "draws": 0,
+          "losses": 32,
+          "score": 0.0,
+          "wins": 0
+        },
+        "31/31": {
+          "draws": 0,
+          "losses": 31,
+          "score": 0.03125,
+          "wins": 1
+        }
+      },
+      "score": 0.0078125,
+      "seat": {
+        "a": {
+          "draws": 0,
+          "losses": 64,
+          "score": 0.0,
+          "wins": 0
+        },
+        "b": {
+          "draws": 0,
+          "losses": 63,
+          "score": 0.015625,
+          "wins": 1
+        }
+      },
+      "seconds_quantiles": [
+        2.98321923828125,
+        6.029261840820313,
+        8.223180419921874,
+        13.94320458984375,
+        51.32942578125
+      ],
+      "win_delta_to_default": -0.015625,
+      "wins": 1
+    }
+  },
+  "incumbent": {
+    "approximate_interval": [
+      0.0,
+      0.0
+    ],
+    "final_win_delta": 0.0,
+    "paired_donor_means": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "plain_wtap": {
+      "actor": "wtap",
+      "clock": [
+        0.125,
+        0.125,
+        0.125,
+        0.5,
+        0.0,
+        0.0,
+        0.25,
+        0.25
+      ],
+      "draws": 0,
+      "foe": "v4-ppo-g0496",
+      "losses": 106,
+      "paired_donor_interval": [
+        -0.24511911403239595,
+        0.08886911403239595
+      ],
+      "rtt": {
+        "109/109": {
+          "draws": 0,
+          "losses": 20,
+          "score": 0.375,
+          "wins": 12
+        },
+        "109/31": {
+          "draws": 0,
+          "losses": 30,
+          "score": 0.0625,
+          "wins": 2
+        },
+        "31/109": {
+          "draws": 0,
+          "losses": 26,
+          "score": 0.1875,
+          "wins": 6
+        },
+        "31/31": {
+          "draws": 0,
+          "losses": 30,
+          "score": 0.0625,
+          "wins": 2
+        }
+      },
+      "score": 0.171875,
+      "seat": {
+        "a": {
+          "draws": 0,
+          "losses": 52,
+          "score": 0.1875,
+          "wins": 12
+        },
+        "b": {
+          "draws": 0,
+          "losses": 54,
+          "score": 0.15625,
+          "wins": 10
+        }
+      },
+      "seconds_quantiles": [
+        3.683390869140625,
+        8.1831845703125,
+        12.40635693359375,
+        20.15337255859375,
+        50.13080078125
+      ],
+      "win_delta_to_default": -0.078125,
+      "wins": 22
+    }
+  },
+  "seven": {
+    "approximate_interval": [
+      -0.026763788055323173,
+      0.4330137880553232
+    ],
+    "final_win_delta": 0.203125,
+    "paired_donor_means": [
+      0.125,
+      0.3125,
+      0.25,
+      -0.1875,
+      0.625,
+      0.5,
+      -0.0625,
+      0.0625
+    ],
+    "plain_wtap": {
+      "actor": "wtap",
+      "clock": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "draws": 0,
+      "foe": "sumo-seven-first",
+      "losses": 128,
+      "paired_donor_interval": [
+        -0.10096024169664425,
+        0.007210241696644255
+      ],
+      "rtt": {
+        "109/109": {
+          "draws": 0,
+          "losses": 32,
+          "score": 0.0,
+          "wins": 0
+        },
+        "109/31": {
+          "draws": 0,
+          "losses": 32,
+          "score": 0.0,
+          "wins": 0
+        },
+        "31/109": {
+          "draws": 0,
+          "losses": 32,
+          "score": 0.0,
+          "wins": 0
+        },
+        "31/31": {
+          "draws": 0,
+          "losses": 32,
+          "score": 0.0,
+          "wins": 0
+        }
+      },
+      "score": 0.0,
+      "seat": {
+        "a": {
+          "draws": 0,
+          "losses": 64,
+          "score": 0.0,
+          "wins": 0
+        },
+        "b": {
+          "draws": 0,
+          "losses": 64,
+          "score": 0.0,
+          "wins": 0
+        }
+      },
+      "seconds_quantiles": [
+        5.2962978515625,
+        9.85374462890625,
+        15.73395703125,
+        23.4757998046875,
+        50.029703125
+      ],
+      "win_delta_to_default": -0.046875,
+      "wins": 0
+    }
+  }
+}

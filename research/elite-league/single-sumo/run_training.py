@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-def train(path,total):
+def train(path,total,policy_lane=False):
     import json
     here=Path(__file__).resolve().parent
     with (path/'fit.lock').open('a') as lock:
@@ -17,7 +17,7 @@ def train(path,total):
             if step>=total:return
             # Aim for a 12-second turn on the shared CPU. Short bouts can fit more updates per JVM startup.
             chunk=max(4,min(64,int(12/max(.1,last.get('seconds',.65)))))
-            subprocess.run([sys.executable,here.parent/'cpu_limit.py','nice','-n','8',sys.executable,
+            subprocess.run([sys.executable,here.parent/'cpu_limit.py',*(['--policy'] if policy_lane else []),'nice','-n','8',sys.executable,
                             here/'train.py',path,str(min(total,step+chunk))],check=True)
 
 if __name__=='__main__':

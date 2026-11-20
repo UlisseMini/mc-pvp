@@ -17,15 +17,24 @@ def search(g):
         nom=read(parent/'nomination.json')
         target=nom['winner'];field=nom['field'].copy()
         name=f'sg{g:03d}-winner-response';initial=f'sg{g:03d}-mlp'
-        write_json(folder/'protocol.json',dict(target=target,target_sha=field[target]['sha256'],initial=initial,
-            initial_sha=field[initial]['sha256'],updates=256,episodes_per_update=64,checkpoint='last',
-            opponent_distribution='all bouts against this frozen winner; independent per-bout pings and both seats',
-            enrollment='lower development donor bound above 55 percent against winner; all W-tap and weakest cells reported',
-            native='eight seat/RTT blocks per opponent, candidate and W-tap'),fixed=True)
-        config=read(parent/'mlp/config.json')
-        configure(folder,'mlp','exploiter',853781+g*701,79781+g*1709,field[target]['reference'],
-                  config['counter'],config['families'],{},parent/'mlp/trainer.pt')
-        train(folder,256)
+        if g>=2:
+            from adversary import obtain, BUDGET, UPDATES
+            write_json(folder/'protocol.json',dict(target=target,target_sha=field[target]['sha256'],initial=initial,
+                initial_sha=field[initial]['sha256'],updates=UPDATES,episodes_per_update=64,checkpoint='last',
+                training='Use the one fixed-budget response for this opponent hash, reuse previous search if present.',
+                enrollment='Strictly more than 60% outright wins in 512 games after 65536 training fights.'),fixed=True)
+            outcome=obtain(field[target],parent/'mlp/trainer.pt',853781+g*701)
+            write_json(folder/'budget-result.json',outcome,fixed=True)
+        else:
+            write_json(folder/'protocol.json',dict(target=target,target_sha=field[target]['sha256'],initial=initial,
+                initial_sha=field[initial]['sha256'],updates=256,episodes_per_update=64,checkpoint='last',
+                opponent_distribution='all bouts against this frozen winner; independent per-bout pings and both seats',
+                enrollment='lower development donor bound above 55 percent against winner; all W-tap and weakest cells reported',
+                native='eight seat/RTT blocks per opponent, candidate and W-tap'),fixed=True)
+            config=read(parent/'mlp/config.json')
+            configure(folder,'mlp','exploiter',853781+g*701,79781+g*1709,field[target]['reference'],
+                      config['counter'],config['families'],{},parent/'mlp/trainer.pt')
+            train(folder,256)
         subprocess.run([sys.executable,HERE.parent/'cpu_limit.py','nice','-n','8',sys.executable,
                         __file__,str(g),'score'],check=True)
         return read(folder/'result.json')
@@ -34,11 +43,17 @@ def score(g):
     parent=EVIDENCE/f'g{g:03d}';folder=parent/'winner-response'
     field=read(parent/'nomination.json')['field'];protocol=read(folder/'protocol.json')
     initial=protocol['initial'];target=protocol['target'];name=f'sg{g:03d}-winner-response'
-    field[name]=pin_model(folder);worker=Worker()
+    budget=read(folder/'budget-result.json') if (folder/'budget-result.json').is_file() else None
+    field[name]=budget['policy'] if budget else pin_model(folder)
+    worker=Worker()
     try:
-        result=counter_gate(worker,field,name,target)
+        if budget:
+            from adversary import gate
+            result=gate(budget,name,target)
+        else:result=counter_gate(worker,field,name,target)
         scores={foe:stats(games(worker,field,name,foe)) for foe in field if foe!=name and '-seal-' not in foe}
-        weakest=min(scores,key=lambda f:(scores[f]['score'],f))
+        eligible=[f for f in scores if f!='wtap' and field[f]['sha256']!=field[name]['sha256']] if budget else scores
+        weakest=min(eligible,key=lambda f:(scores[f]['score'],f))
         comparison={f:{'learner':scores[f],'initial':stats(games(worker,field,initial,f)),
                        'wtap':stats(games(worker,field,'wtap',f))} for f in dict.fromkeys((target,'wtap',weakest))}
     finally:worker.close()

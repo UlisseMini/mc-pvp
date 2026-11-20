@@ -7,7 +7,7 @@ measurements and their original definitions; do not silently relabel them.
 
 ## Sumo research default, November 20
 
-Keep the 16,384-fight specialist as a fixed comparator. Double the training budget while a specialist gains ring-out wins on the original 137-block floor. Compare each saved policy with its predecessor and matched plain W-tap. The final test includes independent timing recordings and real Minecraft bouts.
+New single-opponent sumo adversaries train for exactly 65,536 fights at 7 CPS per player. Evaluate the final weights on 512 common development bouts. A response qualifies with 308 or more outright wins, counting draws in the denominator. Cache the result by the frozen opponent weights and move on after a miss. A miss is evidence about this training search. The generalist league continues to train across opponents and needs separate matched simulation and native results to promote a champion. Keep the 16,384-fight specialist as a comparator. The earlier doubling studies closed at the new cap, retaining their original best-on-default-floor selection for independent confirmation.
 
 Group the 28 captured MMC builds by their nine distinct floor outlines. Use 129, 155, 177 and 221 blocks for reusable map validation. Reserve the 165-, 193-, 201- and 223-block shapes until all final specialist weights have been frozen. Keep every material variant of a reserved outline in that same split. [Recorded arenas and exact gold spawns](mmc-arena/README.md)
 

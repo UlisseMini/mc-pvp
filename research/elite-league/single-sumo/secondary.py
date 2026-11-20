@@ -46,15 +46,28 @@ def enrollment(gen):
             name='sg003-student-'+role;field[name]=pin_model(OUT/role/'ppo')
             families.setdefault('oracle-distilled students',[]).append(name)
     if gen==3:
-        # All three weights come from the same predeclared training budget on the original platform.
-        import time
-        from long_specialist import RUN
-        for key in ('incumbent','seven','g1'):
-            net=RUN/key/'n32768.net'
-            while not net.exists():time.sleep(5)
+        import successor_pool as pool
+        from adversary import import_originals
+        import_originals()
+        for key in pool.KEYS:
             name='sg003-long-'+key
-            field[name]=dict(reference=str(net.relative_to(ROOT)),sha256=hashlib.sha256(net.read_bytes()).hexdigest())
-            families.setdefault('32k single-opponent PPO',[]).append(name)
+            field[name]=pool.model_ref(pool.RUN/key/'n65536.net')
+            families.setdefault('65k single-opponent PPO',[]).append(name)
+        from adversary import obtain
+        for key,seed in [('incumbent',1840291),('seven',1870327)]:
+            target=field['sg003-long-'+key]
+            response=obtain(target,EVIDENCE/'g001/mlp/trainer.pt',seed)
+            name='sg003-counter-response-'+key;field[name]=response['policy']
+            if response['confirmed']:families.setdefault('65k single-opponent PPO',[]).append(name)
+        subprocess.run([sys.executable,HERE/'successor_pool.py'],check=True)
+        for role,actor in json.loads((pool.OUT/'weights.json').read_text()).items():
+            name='sg003-counter-trained-'+role
+            field[name]=actor
+            families.setdefault('counter-trained generalists',[]).append(name)
+        from remote_import import enroll
+        remote=enroll()
+        field.update(remote)
+        families['remote mixed PPO']=list(remote)
     return field,families
 
 def declare(g):

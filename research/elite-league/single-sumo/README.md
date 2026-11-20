@@ -10,6 +10,14 @@ The [experiment plan](../sumo-league-proposal.md) defines the training and promo
 
 [league.py](league.py) resumes from the atomic training checkpoints and immutable fixture manifests. The development tournament reuses paired matchups only with the same model hashes and protocol. Native cohorts preserve request IDs and invalid games. Each full generation records a tournament winner and a separate decision about the live title. The server alias for a tournament winner is `sumo-league-NNN`.
 
+## Current seven-CPS league
+
+The regular league, counter-trained successor pair and remote population all use single matches. New adversaries play exactly 65,536 training fights against one frozen opponent. Their last checkpoint needs at least 308 outright ring-outs in 512 matched development games to qualify. A draw contributes zero wins to this gate. Both a pass and a miss are stored by opponent weight hash so future searches move to another opponent. The broader championship still requires independent Minecraft evidence. [Adversary receipts](evidence/fixed-adversaries)
+
+In the first successor pair, 32 out of 64 fights per update are against the three exact 65,536-fight specialists, 16 are against W-tap, Hold-W and three previous leaders, and 16 are against the remaining archive. Future ordinary generations start each architecture from its highest-ranked available broad PPO parent and reserve a quarter of training for confirmed responses. [Successor training mixture](evidence/counter-trained-successors/protocol.json)
+
+The Linux simulator host trains a second population of three legal policies. A plain GRU and a GRU with a training-only opponent classifier share their initial weights and all assigned fights. An equally sized MLP provides the memoryless comparison. All three play the common tournament after 65,536 fights. Its winner gets a playable alias on the main server. The fork test swaps older opponent history, preserves the last ten observations, checks an unchanged-history replay, and measures outright ring-outs. A separate training-calendar search can identify opponents that reward opposite responses before a prospective timing test. [Remote population design](evidence/robustness-001/protocol.json) · [Cross-host trajectory check](evidence/robustness-001/archive-parity.json)
+
 ## What has been verified
 
 Replaying 897 recorded local input heads on the Forge Java 8 bridge and simulator Java 17 produced identical features and buttons for both architectures. The Python forward pass matched the Java scores to within 0.000001 on the initial test episodes. An unchanged GRU continuation reproduced both players' outputs and random streams and the full clock state at 210 server boundaries. [Trace evidence](evidence/runtime-parity.json)

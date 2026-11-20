@@ -74,10 +74,12 @@ class Actor(nn.Module):
         nn.init.orthogonal_(self.head.weight[5:],1.0); nn.init.zeros_(self.head.bias)
         assert sum(p.numel() for p in self.parameters() if p.requires_grad)==5766
 
+    def encoded(self, packed):
+        if self.kind=="gru":return self.encoder(packed)[0].data
+        return F.softsign(self.encoder(packed.data))
+
     def sequences(self, packed):
-        if self.kind=="gru": h=self.encoder(packed)[0].data
-        else: h=F.softsign(self.encoder(packed.data))
-        return self.head(h)
+        return self.head(self.encoded(packed))
 
     def export(self, path):
         enc=self.encoder
@@ -135,12 +137,20 @@ def training_schedule(config, weights, step):
     ps=[(1-scores.get(k,.5))**2+.05 for k in families]
     options=[i for i in range(151) if i not in (31,109)]
     result=[]
-    for _ in range(64):
-        if config["role"]=="exploiter": foe=config["incumbent"]
+    mixture = None
+    if config["role"] == "counter-mixture":
+        mixture = []
+        for group, count in (("counters", 32), ("anchors", 16), ("archive", 16)):
+            members = families[group]
+            mixture.extend(members[(step*count+i) % len(members)] for i in range(count))
+        rng.shuffle(mixture)
+    for i in range(64):
+        if mixture is not None: foe=mixture[i]
+        elif config["role"]=="exploiter": foe=config["incumbent"]
         else:
             u=rng.random()
             if u<.25:foe=config["incumbent"]
-            elif u<.50:foe=config["counter"]
+            elif u<.50:foe=rng.choice(config["threats"]) if config.get("threats") else config["counter"]
             else:
                 family=rng.choice(list(families)) if rng.random()<.5 else rng.choices(list(families),weights=ps)[0]
                 foe=rng.choice(families[family])
@@ -161,14 +171,18 @@ def prepare(rollouts):
     for e in episodes:e[:,27]=(e[:,27]-mean)/sd
     return episodes
 
-def train_update(net,opt,episodes,seed,conditioned=False):
+def train_update(net,opt,episodes,seed,conditioned=False,style_classifier=None):
     rng=random.Random(seed);inds=list(range(len(episodes)));metrics=[];max_error=0.
     for epoch in range(3):
         rng.shuffle(inds)
         for start in range(0,len(inds),8):
             seq=pack_sequence([episodes[i] for i in inds[start:start+8]],enforce_sorted=False)
             d=seq.data; x=PackedSequence(d[:,:25],seq.batch_sizes,seq.sorted_indices,seq.unsorted_indices)
-            y=net.sequences(x,d[:,35].long()) if conditioned else net.sequences(x)
+            if style_classifier is None:
+                y=net.sequences(x,d[:,35].long()) if conditioned else net.sequences(x)
+            else:
+                encoded=net.encoded(x)
+                y=net.head(encoded)
             if epoch==0 and start==0:
                 max_error=float((y.detach()-d[:,29:35]).abs().max())
                 if max_error>.001:raise ValueError(f"Java/PyTorch on-policy disagreement {max_error}")
@@ -177,8 +191,15 @@ def train_update(net,opt,episodes,seed,conditioned=False):
             pg_loss=torch.maximum(-adv*ratio,-adv*ratio.clamp(.82,1.18)).mean()
             value_loss=F.mse_loss(y[:,5],d[:,28])
             loss=pg_loss+.5*value_loss
+            parameters=list(net.parameters())
+            if style_classifier is not None:
+                observed=d[:,36]>0
+                if observed.any():
+                    ce=F.cross_entropy(style_classifier(encoded[observed]),d[observed,35].long(),reduction="none")
+                    loss=loss+.10*(ce*d[observed,36]).sum()/len(inds[start:start+8])
+                parameters.extend(style_classifier.parameters())
             opt.zero_grad(); loss.backward()
-            norm=nn.utils.clip_grad_norm_(net.parameters(),.6,error_if_nonfinite=True)
+            norm=nn.utils.clip_grad_norm_(parameters,.6,error_if_nonfinite=True)
             opt.step()
             with torch.no_grad():
                 metrics.append([float(loss),float(((ratio-1)-logratio).mean()),float(((ratio-1).abs()>.18).float().mean()),float(norm)])

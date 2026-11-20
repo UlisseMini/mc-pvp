@@ -23,6 +23,8 @@ def run(g):
         initial=json.loads((generation/'winner-response/protocol.json').read_text())['initial']
         # The frontier response always starts from the generation's memoryless generalist.
         starts={'generalist':generation/'mlp/trainer.pt','response':generation/'winner-response/trainer.pt'}
+        receipt=generation/'winner-response/budget-result.json'
+        if receipt.is_file():starts['response']=ROOT/json.loads(receipt.read_text())['checkpoint']
         cfg=json.loads((generation/'mlp/config.json').read_text()); rankings={r['name']:r for r in t['ranking']}
         scores=rankings[champ]['family']
         spec=dict(generation=g,starting_generalist=initial,frozen_champion=champ,response=opponent,

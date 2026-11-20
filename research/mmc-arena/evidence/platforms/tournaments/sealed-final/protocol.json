@@ -1,0 +1,60 @@
+{
+  "clock_split": "eight previously exposed development donors, matched across maps",
+  "contestants": {
+    "g1": {
+      "actor": "research/elite-league/single-sumo/evidence/long-specialists/g1/n65536.net",
+      "sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646",
+      "target": "research/elite-league/single-sumo/evidence/g001/mlp/final.net",
+      "target_sha": "6d9878ad633b01bf4b1d332845382e9617977382ff0689e489efefdc3871a95e"
+    },
+    "incumbent": {
+      "actor": "research/elite-league/single-sumo/evidence/long-specialists/incumbent/n32768.net",
+      "sha256": "88c32dd7d4a28366764fab1ba32f856c40871e3092d2b95b606356d4cea4474e",
+      "target": "v4-ppo-g0496",
+      "target_sha": "bd2265e8498df5fe91f39f03e1dd0654ab16c5165bb9989df517890e6f2a75fe"
+    },
+    "seven": {
+      "actor": "research/elite-league/single-sumo/evidence/long-specialists/seven/n65536.net",
+      "sha256": "cd5443f19665cc07fa16bb93abf637675aa0f6421c9acbbd4ca5d3c30d8c78d5",
+      "target": "sumo-seven-first",
+      "target_sha": "12d477e6733f779bc0c94cc018b7dac7fb8d4e33e168dc7ea5901b87641f8e75"
+    }
+  },
+  "contrasts": "matched by donor, action seeds, seat and both RTTs; descriptive paired 95% Student intervals on eight donor means",
+  "maps": [
+    "default",
+    "mmc-137",
+    "mmc-165",
+    "mmc-193",
+    "mmc-201",
+    "mmc-223"
+  ],
+  "model_repetitions": 2,
+  "native_blocks": 8,
+  "origin": "same 137 outline in original Z orientation controls for changing the original lab X opening; other maps preserve their recorded gold spawns",
+  "original_16k": {
+    "g1": {
+      "actor": "research/elite-league/single-sumo/evidence/g001/winner-response/final.net",
+      "sha256": "2bc8be13fa9b5042a81474739254ad8d681b4c6acd0dd2d142ec87e73197c049",
+      "target": "research/elite-league/single-sumo/evidence/g001/mlp/final.net",
+      "target_sha": "6d9878ad633b01bf4b1d332845382e9617977382ff0689e489efefdc3871a95e"
+    },
+    "incumbent": {
+      "actor": "research/elite-league/single-sumo/evidence/id-oracle/dedicated-v4-ppo-g0496/n16384.net",
+      "sha256": "5601606a5a201eba224dd577a29b553079e60a144d75f062af29f36d56675499",
+      "target": "v4-ppo-g0496",
+      "target_sha": "bd2265e8498df5fe91f39f03e1dd0654ab16c5165bb9989df517890e6f2a75fe"
+    },
+    "seven": {
+      "actor": "research/elite-league/single-sumo/evidence/id-oracle/ringout-only-sumo-seven-first/n16384.net",
+      "sha256": "bae8d89efe826c97fecab41cd25ed0a74f2622017b009b6d62e8792f219088f0",
+      "target": "sumo-seven-first",
+      "target_sha": "12d477e6733f779bc0c94cc018b7dac7fb8d4e33e168dc7ea5901b87641f8e75"
+    }
+  },
+  "primary": "ring-out win fraction against the frozen training opponent; report W/D/L and time, plus plain W-tap against exactly the same opponent and W-tap itself",
+  "regulation": "120 s MMC-range, 7/7 CPS, reach 3, mouse aim, zero added reaction delay; no map identity or opponent ID sent to any policy",
+  "selection": "weights frozen before any outcome is read; later selection on original training geometry only",
+  "stage": "sealed-final",
+  "surface_split": "four reusable validation geometries; another four used once when all final training branches are locked"
+}

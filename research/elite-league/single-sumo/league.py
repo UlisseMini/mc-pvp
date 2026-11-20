@@ -53,10 +53,16 @@ def stage(g):
         held_out_elite_human_matches=0)
     write_json(decision,result,fixed=True);return result
 
-def main():
+def main(attach_stage=0):
     BUILD.mkdir(exist_ok=True,parents=True)
     with (BUILD/'league.lock').open('a') as supervisor:
         fcntl.flock(supervisor,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        # A coordinator upgrade can adopt a live frozen stage without replaying or interrupting its work.
+        if attach_stage:
+            while True:
+                cmd=subprocess.run(['ps','-p',str(attach_stage),'-o','command='],capture_output=True,text=True).stdout
+                if str(HERE/'league.py')+' stage ' not in cmd:break
+                time.sleep(5)
         g=1;idle=0
         while True:
             if (BUILD/'stop-after-current').exists():return
@@ -71,7 +77,8 @@ def main():
                 folder=EVIDENCE/f'g{g:03d}'
                 subprocess.run([sys.executable,HERE/'stage_task.py','plateau',str(g)],check=True)
                 if read(folder/'plateau/verdict.json')['budgeted_plateau']:
-                    write_json(EVIDENCE/'stop.json',dict(generation=g,reason='two independent search methods below .55 with a working positive control'),fixed=True)
+                    verdict=read(folder/'plateau/verdict.json')
+                    write_json(EVIDENCE/'stop.json',dict(generation=g,reason=verdict.get('reason','two independent search methods below .55 with a working positive control')),fixed=True)
                     return
                 idle=0
             g+=1
@@ -79,7 +86,8 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('operation',nargs='?',choices=['stage'])
     parser.add_argument('generation',nargs='?',type=int)
+    parser.add_argument('--attach-stage-pid',type=int,default=0)
     args=parser.parse_args()
     if args.operation=='stage' and args.generation is not None:stage(args.generation)
-    elif args.operation is None and args.generation is None:main()
+    elif args.operation is None and args.generation is None:main(args.attach_stage_pid)
     else:parser.error('stage requires a generation number')

@@ -6,7 +6,59 @@ from league_tournament import *
 from assay import CP,lower_contrast
 import sys
 
+def fixed_budget_verdict(g):
+    """Review independent completed searches. A failed search never gets another automatic budget."""
+    from adversary import STORE, native_check
+    folder=EVIDENCE/f'g{g:03d}'
+    result=folder/'plateau/verdict.json'
+    if result.is_file():return json.loads(result.read_text())
+    def read(p):return json.loads(p.read_text())
+    rounds=read(folder/'tournament.json')
+    decision=read(folder/'decision.json')
+    recent=[]
+    for n in range(max(3,g-2),g+1):
+        p=EVIDENCE/f'g{n:03d}'
+        counter=read(p/'counter.json')
+        recent.append(dict(generation=n,target=counter['target_sha256'],passed=counter['confirmed'],
+                           promoted=read(p/'decision.json')['promoted'],novel=counter['novel']))
+    titles=list(dict.fromkeys([rounds['winner'],decision['live_incumbent']]))
+    positives={}
+    for title in titles:
+        foes=[n for n,v in rounds['field'].items() if v['sha256']!=rounds['field'][title]['sha256']]
+        strongest=max(foes,key=lambda n:rounds['matrix'][n][title]['wins'])
+        row=rounds['matrix'][strongest][title]
+        positives[title]=dict(opponent=strongest,performance=row,wtap=rounds['matrix']['wtap'][title],
+                              passes=5*row['wins']>3*(row['wins']+row['draws']+row['losses']))
+    target_rows={n:STORE/rounds['field'][n]['sha256']/'result.json' for n in titles}
+    resolved=all(p.is_file() and not read(p)['confirmed'] for p in target_rows.values())
+    independent=len({r['target'] for r in recent})==3
+    stalled=independent and all(not any(r[k] for k in ('passed','novel','promoted')) for r in recent)
+    check=bool(stalled and resolved and not any(r['passes'] for r in positives.values()))
+    native={}
+    if check:
+        for n,p in target_rows.items():
+            outcome=read(p);native_check(outcome)
+            native[n]=read(p.parent/'native/summary.json')
+        # With only eight independent seat/RTT blocks this is a transfer check.
+        # A promising native response keeps the league running.
+        from id_native import native_name
+        from native_league import alias
+        for n,p in target_rows.items():
+            outcome=read(p);actor=native_name(ROOT/outcome['policy']['reference'])
+            target=outcome['target']['reference']
+            foe=native_name(ROOT/target) if target.endswith('.net') else alias(target)
+            row=native[n][actor][foe]
+            if 5*row['wins']>3*sum(row[k] for k in ('wins','draws','losses')):check=False
+    reason=('Three distinct 65536-fight searches missed the strict 60% win gate, neither leader had a qualifying counter, and native checks agreed.' if check else
+            'Continue the league. The fixed-budget searches, archive comparison and native evidence have not jointly established a plateau.')
+    report=dict(budgeted_plateau=check,reason=reason,
+                recent=recent,current_leaders=titles,each_has_completed_failed_search=resolved,
+                strongest_archive_responses=positives,native=native,training_fights_added_by_review=0)
+    write_json(result,report,fixed=True)
+    return report
+
 def search(g):
+    if g>=3:return fixed_budget_verdict(g)
     folder=EVIDENCE/f'g{g:03d}'/'plateau';cfg=initialize(g);field=cfg['field'].copy()
     inc=cfg['incumbent'];source=EVIDENCE/f'g{g:03d}'/'main/trainer.pt'
     tournament=json.loads((folder.parent/'tournament.json').read_text())

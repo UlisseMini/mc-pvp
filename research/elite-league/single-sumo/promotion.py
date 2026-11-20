@@ -15,7 +15,8 @@ def nomination(g):
     field=d['field'];inc=c['incumbent'];rank=d['ranking'];w=rank[0]['name'];challenger=next(x['name'] for x in rank if x['name']!=inc)
     # Compare the actual top eligible challenger even if the incumbent won the development tournament.
     def distinct(n):
-        return min((f for f in FIELD if f not in ('wtap',n) and field[f]['sha256']!=field[n]['sha256']),
+        opponents=field if g>=3 else FIELD
+        return min((f for f in opponents if f not in ('wtap',n) and '-seal-' not in f and field[f]['sha256']!=field[n]['sha256']),
                    key=lambda f:(d['matrix'][n][f]['score'],f))
     def weak(n):
         r=next(x for x in rank if x['name']==n)
@@ -23,6 +24,9 @@ def nomination(g):
     ctr=read(folder/'counter.json')
     newest=ctr['challenger'] if ctr['confirmed'] else c['counter']
     candidates=['wtap',INCUMBENT,BASE_COUNTER,newest,weak(challenger),weak(inc),inc]
+    if g>=3:
+        candidates.extend([distinct(challenger),distinct(inc),c['adversary_target']])
+        candidates.extend(d['families'].get('65k single-opponent PPO',[]))
     core=list(dict.fromkeys(candidates))
     ps=freeze_promotion_styles(g)
     for style,ref in ps.items():
@@ -153,6 +157,9 @@ def promote_title(g,nom):
 def native_diagnostics(g,nom):
     folder=EVIDENCE/f'g{g:03d}';field=nom['field'].copy();inc=nom['incumbent']
     pairs={n:list(dict.fromkeys(['wtap',foe,inc])) for n,foe in nom['weakest_distinct'].items() if n!=inc}
+    if g>=3:
+        opponent=read(folder/'generation.json')['adversary_target']
+        pairs[f'sg{g:03d}-counter']=list(dict.fromkeys([*pairs[f'sg{g:03d}-counter'],opponent]))
     if g==1:
         name='sg001-seven-clone';p=EVIDENCE/'bootstrap-sumo-seven-first/initial.net'
         field[name]=dict(reference=str(p.relative_to(ROOT)),sha256=hashlib.sha256(p.read_bytes()).hexdigest())

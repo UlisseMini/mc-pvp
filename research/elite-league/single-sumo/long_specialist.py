@@ -13,8 +13,7 @@ from id_evaluate import make_panel
 from id_native import native_name
 from learner import HERE, ROOT, EVIDENCE, BASE_COUNTER, INCUMBENT, CLOCKS, Worker, freeze, write_json, atomic
 from league_tournament import stats
-from native_league import fixtures, cohort, alias, WT
-from forge_window import cohort_window
+from native_league import fixtures, fair_cohort, alias, WT
 from train import fit
 
 RUN=EVIDENCE/'long-specialists'
@@ -103,7 +102,10 @@ def native(key,selected):
     foe=native_name(ROOT/target) if target.endswith('.net') else alias(target)
     arms=list(dict.fromkeys([native_name(dest/f'n{selected}.net'),native_name(dest/f'n{BASE}.net'),WT]))
     plan=fixtures(f'long-{key}-{selected}',arms,[foe,WT],16,7)
-    with cohort_window(dest/f'native-{selected}') as bridge:records=cohort(dest/f'native-{selected}',plan,bridge)
+    sys.path.insert(0,str(ROOT/'research/mmc-arena'))
+    from validation import assessment_bridge
+    bridge,version=assessment_bridge()
+    records=fair_cohort(dest/f'native-{selected}',plan,bridge,server=version['server'])
     results={}
     for opp in (foe,WT):
         results[opp]={}
@@ -120,19 +122,27 @@ def supervise(key):
     dest,_=initialize(key)
     with (dest/'supervisor.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
-        best=-1;selected=BASE;stale=0;n=BASE
-        while True:
+        # Preserve the original selection.json and choose the best at or below the owner's new cap.
+        for n in (BASE, 32768, 65536):
             while (current:=json.loads((dest/'progress.json').read_text())['duels'])<n:
-                until=min(n,current+1024) if key=='g1' else n
-                limited(key,'train',until,policy=True)
-            limited(key,'score',n)
-            wins=json.loads((dest/'development'/str(n)/'target.json').read_text())['aggregate']['wins']
-            if wins>best:best=wins;selected=n;stale=0
-            else:stale+=1
-            write_json(dest/'selection.json',dict(latest=n,latest_wins=wins,panel_size=512,best_wins=best,selected=selected,stale=stale))
-            if stale>=2 or best==512:break
-            n*=2
-        native(key,selected)
+                limited(key,'train',min(n,current+1024),policy=True)
+            if not (dest/'development'/str(n)/'comparison.json').is_file():
+                limited(key,'score',n)
+        receipt=lock_budget(key)
+        native(key,receipt['selected'])
+
+def lock_budget(key):
+    dest=RUN/key
+    panels={n:json.loads((dest/'development'/str(n)/'comparison.json').read_text()) for n in (BASE,32768,65536)}
+    selected=max(panels,key=lambda n:panels[n]['current']['wins'])
+    final=panels[65536]
+    receipt=dict(budget=65536, selected=selected, selected_sha256=hashlib.sha256((dest/f'n{selected}.net').read_bytes()).hexdigest(),
+                 final_sha256=hashlib.sha256((dest/'n65536.net').read_bytes()).hexdigest(),
+                 final_wdl=final['current'],plain_wtap=final['plain_wtap'],
+                 passed=5*final['current']['wins']>3*final['development_games'],
+                 confirmation='Original best-on-default-floor selector through 65536. Owner closed further doubling before sealed floor scoring. The league uses the exact 65536 checkpoint.')
+    write_json(dest/'budget-closure.json',receipt,fixed=True)
+    return receipt
 
 if __name__=='__main__':
     key=sys.argv[1]
