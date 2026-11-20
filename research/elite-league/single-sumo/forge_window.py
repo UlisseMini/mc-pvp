@@ -65,6 +65,14 @@ def manager_accepts(command,selector,target,digest):
     return (settings.get('cohort_selector')==str(selector) and
             settings.get('cohort_options',{}).get(str(target.resolve()))==digest)
 
+def training_slots_busy():
+    with (BUILD.parent/'rollout.lock').open('a') as public,(BUILD.parent/'policy-training.lock').open('a') as private:
+        try:
+            fcntl.flock(public,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            fcntl.flock(private,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except BlockingIOError:return True
+        return False
+
 def switch(target,settings,server=None):
     mgr=ROOT/'runtime/manager.json';hashcode=sha(target/'bridge.jar')
     if server:
@@ -72,10 +80,14 @@ def switch(target,settings,server=None):
         if sha(agent)!=server:raise RuntimeError('Archived server artifact changed')
         settings=dict(settings,server_agent=str(agent))
     def correct_server():return not server or server_hash()==server
-    # A different server binary always requires a full restart. Release the drained
-    # Forge clients before waiting for training slots: if their idle CPU plus other
-    # research exceeds the budget, the governed job holding a slot cannot finish.
-    if mgr.exists() and server and not correct_server():
+    # Let active training reclaim the idle clients' CPU while waiting for a cohort
+    # change. The old and new clients cannot serve the same frozen matches.
+    same_server=not mgr.exists() or correct_server()
+    if mgr.exists() and same_server and reliable(lambda:ready(hashcode)):return
+    current_client=reliable(active_bridge) if mgr.exists() and same_server else None
+    idle_client_change=(current_client and current_client!=hashcode and training_slots_busy()
+                        and all(p.startswith('LabSlot') for p in read(ROOT/'runtime/status.json')['players']))
+    if mgr.exists() and (not same_server or idle_client_change):
         wait(lambda:not read(ROOT/'runtime/status.json')['matches'],190,'Waiting for an active duel to finish')
         lab_runtime.send('shutdown')
         wait(lambda:not mgr.exists(),65,'Main lab did not stop')
