@@ -14,8 +14,8 @@ from series_eval import load_models,tally
 from series_learn import HORIZONS,SEEDS,choose
 
 
-def collect(budget):
-    prefix=str(FOLDER.relative_to(OUT))+'/'
+def collect(budget,study=FOLDER):
+    prefix=str(study.relative_to(OUT))+'/'
     paths=[]
     for h in HORIZONS:
         for s in SEEDS if budget==BUDGETS[-1] else SEEDS[:1]:
@@ -29,26 +29,35 @@ def collect(budget):
             from remote_fit import SSH,REMOTE,invoke
             expected=invoke([*SSH,'cd '+REMOTE+' && sha256sum '+str(path.relative_to(ROOT))]).split()[0]
         if hashlib.sha256(path.read_bytes()).hexdigest()!=expected:raise ValueError('Exported series policy hash differs')
-    wait_for([prefix+f'belief/learn-{budget:02}.npz',prefix+f'belief/dev/evaluation-{budget:02}.json'])
+    if study==FOLDER:wait_for([prefix+f'belief/learn-{budget:02}.npz',prefix+f'belief/dev/evaluation-{budget:02}.json'])
 
 
-def native(budget):
+def native(budget,study=FOLDER):
     import numpy as np
     from series_bayes import choose_public
     sys.path.insert(0,str(ROOT/'research/mmc-arena'))
     from validation import assessment_bridge
-    spec=read(FOLDER/'protocol.json');foes=spec['field'];experts=list(spec['experts'])
+    archive=study!=FOLDER
+    spec=read(study/'protocol.json');foes=dict(spec['field']);experts=list(spec['experts'])
+    field_size=len(foes)
+    if archive:foes['wtap']=read(FOLDER/'protocol.json')['field']['wtap']
     actors={n:live(ref) for n,ref in spec['experts'].items()};wt=live(foes['wtap'])
-    report=read(FOLDER/'dev'/f'evaluation-{budget:02}.json')['scores']['memory-9']['opponents']
+    report=read(study/'dev'/f'evaluation-{budget:02}.json')['scores']['memory-9']['opponents']
     weakest=min(report,key=lambda n:(report[n]['series'][0],report[n]['ringouts'][0],n))
-    badge=read(FOLDER/'belief/dev'/f'evaluation-{budget:02}.json')['scores']['lookahead']['opponents']
-    belief_weak=min(badge,key=lambda n:(badge[n]['series'][0],badge[n]['ringouts'][0],n))
-    targets=list(dict.fromkeys(('wtap',weakest,belief_weak,'sumo-seven-first')))
-    bridge,stamp=assessment_bridge();folder=FOLDER/f'native-{budget:02}'
+    if archive:
+        targets=['wtap',*spec['field']]
+        modes=['memory','scoreboard','last-game','wtap','broad',*experts]
+        broad=live(read(FOLDER/'protocol.json')['experts']['original-mixture'])
+    else:
+        badge=read(FOLDER/'belief/dev'/f'evaluation-{budget:02}.json')['scores']['lookahead']['opponents']
+        belief_weak=min(badge,key=lambda n:(badge[n]['series'][0],badge[n]['ringouts'][0],n))
+        targets=list(dict.fromkeys(('wtap',weakest,belief_weak,'sumo-seven-first')))
+        with np.load(FOLDER/'belief'/f'learn-{budget:02}.npz') as saved:edges,probs=saved['edges'],saved['probabilities']
+        modes=['memory','scoreboard','fixed','wtap','belief','belief-reset']
+    bridge,stamp=assessment_bridge();folder=study/f'native-{budget:02}'
     paired=2 if budget!=BUDGETS[-1] else 8
-    models={n:load_models(budget,h,len(experts),len(foes)) for n,h in [('memory',9),('scoreboard',0)]}
-    with np.load(FOLDER/'belief'/f'learn-{budget:02}.npz') as saved:edges,probs=saved['edges'],saved['probabilities']
-    modes=['memory','scoreboard','fixed','wtap','belief','belief-reset'];records={}
+    models={n:load_models(budget,h,len(experts),field_size,study) for n,h in [('memory',9),('scoreboard',0),('last-game',1)] if n in modes}
+    records={}
     for rep in range(paired):
         for target in targets:
             for arm in modes:records[rep,target,arm]=[]
@@ -59,10 +68,12 @@ def native(budget):
         for (rep,target,arm),events in records.items():
             t=targets.index(target);j=modes.index(arm)
             side='ab'[(rep+g+t)%2];own,other=RTTS[(g+rep//2+t)%len(RTTS)]
-            a=choose(models[arm],events,own,other,len(experts)) if arm in models else experts.index('original-mixture')
+            a=choose(models[arm],events,own,other,len(experts)) if arm in models else experts.index(arm) if arm in experts else 0
+            if arm=='fixed':a=experts.index('original-mixture')
             if arm.startswith('belief'):a=choose_public(edges,probs,events,own,other,arm=='belief')
-            key=f'series10-{budget}-r{rep}-f{t}-a{j}-g{g}'
-            player=wt if arm=='wtap' else actors[experts[a]]
+            tag='series10-archive' if archive else 'series10'
+            key=f'{tag}-{budget}-r{rep}-f{t}-a{j}-g{g}'
+            player=wt if arm=='wtap' else broad if arm=='broad' else actors[experts[a]]
             trial=fixture.trial(key,player,live(foes[target]),side,own,other)
             trial.update(cps_cap=7,command=trial['command'].replace(' cps=20 ',' cps=7 '),block=g)
             plan[key]=trial;rows[key]=(rep,target,arm,a,own,other)
@@ -102,4 +113,22 @@ def follow():
         for job in native_jobs:job.result()
 
 
-if __name__=='__main__':follow()
+def follow_archive():
+    study=FOLDER/'archive-reversal';prefix=str(study.relative_to(OUT))+'/'
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        jobs=[]
+        for budget in (2,16):
+            collect(budget,study)
+            wait_for([prefix+f'dev/whole-memory-{budget:02}.json'])
+            wait_for([prefix+'dev/unrestricted.json'])
+            jobs.append(pool.submit(native,budget,study))
+        # These opponents were discovered on the old development clocks; collect independent clocks even if the grade is negative.
+        send_future_clocks(study/'prospective',dict(experts=read(study/'protocol.json')['experts'],budgets=[16],
+              purpose='Independent confirmation of whether cross-game adaptation transfers in the two-opponent mechanism test.'))
+        wait_for([prefix+'fresh/evaluation-16.json',prefix+'fresh/whole-memory-16.json',prefix+'fresh/unrestricted.json'])
+        for job in jobs:job.result()
+
+
+if __name__=='__main__':
+    if sys.argv[1:]==['archive']:follow_archive()
+    else:follow()

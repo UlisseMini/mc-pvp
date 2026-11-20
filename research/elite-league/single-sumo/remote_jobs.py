@@ -81,6 +81,18 @@ if __name__=='__main__':
                 start('series-eval','series_eval.py',['dev'],series/'dev/evaluation-16.json')
                 if (ROOT/SCRIPTS/'series_pair.py').is_file():
                     start('series-pair','series_pair.py',[],series/'pair-drill/dev/evaluation-02.json')
+                if (OUT/series/'crossing-drill/selection-rule.json').is_file():
+                    start('series-crossing','series_crossing.py',[],series/'crossing-drill/dev/unrestricted-controls.json')
+                if (OUT/series/'memory-tests.json').is_file():
+                    for task in ('field','pair-drill','crossing-drill'):
+                        folder=series if task=='field' else series/task
+                        receipt='whole-memory-16.json' if task=='field' else 'whole-memory-02.json'
+                        start('series-memory-'+task,'series_memory.py',[task],folder/'dev'/receipt)
+                reversal=series/'archive-reversal'
+                if (OUT/reversal/'protocol.json').is_file():
+                    start('series-archive','series_archive.py',[],reversal/'dev/whole-memory-16.json')
+                    if (OUT/reversal/'prospective/calendars/manifest.json').is_file():
+                        start('series-archive-fresh','series_archive.py',['fresh'],reversal/'fresh/unrestricted.json')
                 if (OUT/series/'belief/protocol.json').is_file():
                     start('series-belief','series_bayes.py',['dev'],series/'belief/dev/evaluation-16.json')
                 if (OUT/series/'prospective/calendars/manifest.json').is_file():

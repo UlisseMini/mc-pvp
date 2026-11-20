@@ -75,7 +75,16 @@ def bundle():
         if (ROOT/training).is_file():files.add(training)
         belief=series.parent/'belief/protocol.json'
         if (ROOT/belief).is_file():files.add(belief)
-        for script in ('series_bank.py','series_learn.py','series_eval.py','series_pair.py','series_bayes.py','check_series.py'):
+        crossing=series.parent/'crossing-drill/selection-rule.json'
+        if (ROOT/crossing).is_file():files.add(crossing)
+        memory=series.parent/'memory-tests.json'
+        if (ROOT/memory).is_file():files.add(memory)
+        reversal=series.parent/'archive-reversal/protocol.json'
+        if (ROOT/reversal).is_file():
+            files.add(reversal)
+            for group in ('field','experts'):
+                files.update(Path(v['reference']) for v in read(reversal)[group].values() if v['reference'].endswith('.net'))
+        for script in ('series_bank.py','series_learn.py','series_eval.py','series_pair.py','series_bayes.py','series_crossing.py','series_memory.py','series_archive.py','check_series.py'):
             if (ROOT/LAB/script).exists():files.add(LAB/script)
     # Each path is relative to the project, and each checksum is verified again on the receiving host.
     assert all(not p.is_absolute() and '..' not in p.parts and (ROOT/p).is_file() for p in files)

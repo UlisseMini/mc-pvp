@@ -22,9 +22,9 @@ def load_models(budget,horizon,arms,foes,root=None):
     return models
 
 
-def donors(round_no,points,opponents,tapes,cues,catalog):
+def donors(round_no,points,opponents,tapes,cues,catalog,keep_last=1):
     # Replace the older prefix, preserving the last real game and exactly matching earlier points.
-    outside=catalog['points'][:,round_no-1];indices=np.arange(len(opponents))
+    outside=catalog['points'][:,round_no-keep_last];indices=np.arange(len(opponents))
     same=indices.copy();wrong=indices.copy();covered=np.zeros(len(indices),bool)
     for i in indices:
         mask=(outside==points[i])&(tapes!=tapes[i])
@@ -45,11 +45,12 @@ def matches(models,worlds,ctx,foes,tapes,mode='intact',catalog=None):
     for g in range(ROUNDS):
         points_before.append(points.clone());ping=ctx[:,g,1:];seen.append(features(points,g,ping))
         h=history
-        if mode in ('same','wrong') and g>=2:
-            same,wrong,cover=donors(g,points_before[-2].numpy(),foes,tapes,ping.numpy(),catalog)
-            ix=same if mode=='same' else wrong
+        keep_last=0 if mode.startswith('all-') else 1
+        if mode in ('same','wrong','all-same','all-wrong') and g>keep_last:
+            same,wrong,cover=donors(g,points_before[-1-keep_last].numpy(),foes,tapes,ping.numpy(),catalog,keep_last)
+            ix=same if mode.endswith('same') else wrong
             h=history.clone()
-            h[cover,:g-1]=catalog['history'][ix[cover],:g-1]
+            h[cover,:g-keep_last]=catalog['history'][ix[cover],:g-keep_last]
             matched.append(int(cover.sum()))
         if mode=='reset':h=torch.zeros_like(history)
         scores=torch.stack([m(h,torch.stack(seen,1))[0][:,-1] for m in models]).mean(0)
@@ -74,12 +75,15 @@ def tally(w):return [int((w==s).sum()) for s in (1,.5,0)]
 def series(w):return .5+.5*np.sign(w.sum(1)-5)
 
 
-def assess(budget,split='dev',root=None,opponents=None):
+def assess(budget,split='dev',root=None,opponents=None,arms=None,bank_loader=None):
     root=FOLDER if root is None else root
     spec=read(root/'protocol.json');names=list(spec['field']);experts=list(spec['experts'])
-    stats,c,wt=bank(split,DEV_REPS);train,train_context,_=bank('train',budget)
+    loader=bank if bank_loader is None else bank_loader
+    stats,c,wt=loader(split,DEV_REPS);train,train_context,_=loader('train',budget)
     if opponents is not None:
         stats=stats[:,:,:,opponents];wt=wt[:,:,:,opponents];train=train[:,:,:,opponents]
+    if arms is not None:
+        stats=stats[:,:,:,:,arms];train=train[:,:,:,:,arms]
     nclock,nrep,_,nfoe,narm,_=stats.shape
     worlds=stats.permute(0,1,3,2,4,5).reshape(-1,ROUNDS,narm,2)
     ctx=c[:,:,None].expand(nclock,nrep,nfoe,ROUNDS,3).reshape(-1,ROUNDS,3)

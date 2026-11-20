@@ -27,9 +27,10 @@ def register():
         scale='2, 8, then 16 unique training schedules per clock. Every horizon has the same PPO steps and simulation exposure at each stage. Reused game transitions are reported separately from generated Minecraft simulator fights.'),fixed=True)
 
 
-def bank(split,reps):
-    record=read(FOLDER/split/f'bank-{reps:02}.json')
-    files=[[CACHE/split/f'{r:02}-{i:02}.npz' for r in range(reps)] for i in range(record['recordings'])]
+def bank(split,reps,root=None,cache=None):
+    root=FOLDER if root is None else root;cache=CACHE if cache is None else cache
+    record=read(root/split/f'bank-{reps:02}.json')
+    files=[[cache/split/f'{r:02}-{i:02}.npz' for r in range(reps)] for i in range(record['recordings'])]
     def group(paths):
         data=[]
         for path in paths:
