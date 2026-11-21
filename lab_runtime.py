@@ -101,7 +101,7 @@ def match_events(path,identifier):
     yield from iter_events(path, identifier)
 
 
-async def latency_proxy(port,configuration,upstream_port=25566):
+async def latency_proxy(port,configuration,upstream_port=25566,game_speed=1.0):
     async def connection(reader,writer):
         try:up_reader,up_writer=await asyncio.open_connection('127.0.0.1',upstream_port)
         except OSError:writer.close();return
@@ -110,7 +110,7 @@ async def latency_proxy(port,configuration,upstream_port=25566):
             async def ingest():
                 last_due=0
                 while data:=await source.read(65536):
-                    delay=float(properties(configuration).get('rtt_ms','0'))/2000
+                    delay=float(properties(configuration).get('rtt_ms','0'))/(2000*game_speed)
                     due=max(last_due,asyncio.get_running_loop().time()+delay);last_due=due
                     await queue.put((due,data))
                 await queue.put((0,None))
@@ -171,8 +171,17 @@ max-tick-time=60000
     assets=CACHE/'assets';assets.mkdir(exist_ok=True)
 
 
-async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots=8,port_offset=0,client_start_timeout=150,server_agent=None):
-    global BOT_SLOTS
+async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots=8,port_offset=0,client_start_timeout=150,server_agent=None,training_root=None,training_speed=1.0):
+    global BOT_SLOTS,RUNTIME
+    game_root=training_root or ROOT
+    clock_flags=[]
+    if training_root is not None:
+        if not .1<=training_speed<=1 or bot_backend!="forge" or slot_backends:
+            raise ValueError("Slow sumo requires Forge and a speed from 0.10 to 1.00")
+        RUNTIME=training_root/"runtime"
+        clock_flags=["-Dlab.trainingRoom=true",f"-Dlab.trainingSpeed={training_speed}",f"-Dlab.trainingEpoch={int(time.time()*1000)}"]
+    elif training_speed!=1:
+        raise ValueError("A separate training room is required for slow motion")
     if bot_backend not in ('legacy','forge') or not 1<=bot_slots<=8:raise ValueError('Choose legacy/forge and 1–8 bot slots')
     if not 0<=port_offset<=39000:raise ValueError('Invalid local port offset')
     backends=slot_backends.split(',') if slot_backends else [bot_backend]*bot_slots
@@ -194,10 +203,11 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
     import importlib.util
     capture_spec=importlib.util.spec_from_file_location('practice_capture_ingest',ROOT/'practice-client/capture_ingest.py')
     capture_ingest=importlib.util.module_from_spec(capture_spec);capture_spec.loader.exec_module(capture_ingest)
-    capture_ingest.ensure_running(RUNTIME)
+    if training_root is None:capture_ingest.ensure_running(RUNTIME)
     forge_classpath=None
     if 'forge' in backends:
         import forge_runtime
+        if training_root is not None:forge_runtime.RUNTIME=RUNTIME
         forge_classpath=forge_runtime.stage_dependencies();forge_runtime.verify_security()
     (RUNTIME/'status.json').unlink(missing_ok=True)
     processes=[];logs=[];proxies=[];bot_started_at={}
@@ -211,7 +221,7 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
         if replace is None:processes.append(process)
         else:processes[replace]=process
         return process
-    base=['-Xms128M','-Xmx1024M','-XX:ActiveProcessorCount=2','-Dlab.root='+str(ROOT),'-javaagent:'+str(agent)]
+    base=['-Xms128M','-Xmx1024M','-XX:ActiveProcessorCount=2','-Dlab.root='+str(game_root),*clock_flags,'-javaagent:'+str(agent)]
     server=launch('server',[*base,'-Xmx2048M','-Dlab.role=server','-Dlog4j.configurationFile='+str(CACHE/'server-logging.xml'),'-jar',CACHE/'server.jar','nogui'],RUNTIME/'server')
     try:
         print('Starting the sandboxed real Minecraft server...',flush=True)
@@ -222,8 +232,8 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
             if status.exists() and status.stat().st_mtime>time.time()-3:break
             await asyncio.sleep(.5)
         else:raise RuntimeError('Server did not become ready; see runtime/logs/server.log')
-        proxies.append(await latency_proxy(25565+port_offset,RUNTIME/'proxy/human.properties',25566+port_offset))
-        proxies.append(await latency_proxy(25569+port_offset,RUNTIME/'proxy/observer.properties',25566+port_offset))
+        proxies.append(await latency_proxy(25565+port_offset,RUNTIME/'proxy/human.properties',25566+port_offset,training_speed))
+        proxies.append(await latency_proxy(25569+port_offset,RUNTIME/'proxy/observer.properties',25566+port_offset,training_speed))
         libraries=json.loads((CACHE/'classpath.json').read_text())
         classpath=os.pathsep.join([str(CACHE/'client.jar'),*libraries])
         def start_bot(i,replace=None):
@@ -231,7 +241,8 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
             bot_started_at[i]=time.time()*1000
             if backends[i]=='forge':
                 import forge_runtime
-                command=forge_runtime.bot_command(i,25570+port_offset+i,frame_sleep_ms,forge_classpath)
+                options=dict(game_root=game_root,clock_flags=clock_flags) if training_root else {}
+                command=forge_runtime.bot_command(i,25570+port_offset+i,round(frame_sleep_ms/training_speed),forge_classpath,**options)
                 launch(f'bot{i}',command,bot,replace,complete_command=True)
                 return
             digest=agent_hash
@@ -244,9 +255,9 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
                 '--assetsDir',CACHE/'assets','--assetIndex','1.8','--username',name,'--uuid',uuid.uuid3(uuid.NAMESPACE_DNS,name).hex,
                 '--accessToken','0','--userProperties','{}','--userType','legacy','--width','320','--height','240'],bot,replace)
         for i in range(BOT_SLOTS):
-            proxies.append(await latency_proxy(25570+port_offset+i,RUNTIME/f'proxy/slot{i}.properties',25566+port_offset))
+            proxies.append(await latency_proxy(25570+port_offset+i,RUNTIME/f'proxy/slot{i}.properties',25566+port_offset,training_speed))
             start_bot(i)
-        (RUNTIME/'manager.json').write_text(json.dumps({'pid':os.getpid(),'address':f'127.0.0.1:{25565+port_offset}','version':'1.8.9','started':time.time(),'frame_sleep_ms':frame_sleep_ms,'bot_backends':backends,'bot_slots':BOT_SLOTS,'port_offset':port_offset,'server_agent_sha256':agent_hash}))
+        (RUNTIME/'manager.json').write_text(json.dumps({'pid':os.getpid(),'address':f'127.0.0.1:{25565+port_offset}','version':'1.8.9','started':time.time(),'frame_sleep_ms':frame_sleep_ms,'bot_backends':backends,'bot_slots':BOT_SLOTS,'port_offset':port_offset,'server_agent_sha256':agent_hash,**({'training_speed':training_speed} if training_root else {})}))
         print(f'Server address: 127.0.0.1:{25565+port_offset} (Minecraft Java 1.8.9). Waiting for {BOT_SLOTS} real clients: {backends}.',flush=True)
         initialized=False;client_deadline=time.time()+client_start_timeout
         while not stop.is_set():

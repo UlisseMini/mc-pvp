@@ -226,8 +226,9 @@ public final class ReplayRecordingChecks {
             Path unmatched=root.resolve("unmatched.jsonl.gz");gzip(unmatched,"start","transaction","transaction","confirm","end");
             check(ReplayRecording.load(entry(unmatched),parser).timeline.stream().noneMatch(m->m.kind.equals("transaction_rtt")),"Duplicate transaction request identity never fabricates RTT");
 
-            Files.setLastModifiedTime(first,java.nio.file.attribute.FileTime.fromMillis(1100));
-            Files.setLastModifiedTime(captures.resolve("record-part2.jsonl.gz"),java.nio.file.attribute.FileTime.fromMillis(1600));
+            // The launcher Java 8 runtime on macOS reads file mtimes at second precision.
+            Files.setLastModifiedTime(first,java.nio.file.attribute.FileTime.fromMillis(2000));
+            Files.setLastModifiedTime(captures.resolve("record-part2.jsonl.gz"),java.nio.file.attribute.FileTime.fromMillis(3000));
             Path archive=Files.createDirectory(root.resolve("archive")),folder=Files.createDirectory(archive.resolve("m9999")),outside=Files.createDirectory(root.resolve("other-client-captures")),full=outside.resolve("full.jsonl.gz");Files.copy(first,full);
             fixtures.put("manifest",map("start_ms",1080,"finish_ms",1100));Files.write(folder.resolve("manifest.json"),"manifest".getBytes(StandardCharsets.UTF_8));
             fixtures.put("archiveHeader",map("type","pov_archive_start","time_ms",1080,"metadata",map("full_session_capture",full.toString(),"server_host","local lab")));
@@ -236,7 +237,7 @@ public final class ReplayRecordingChecks {
             ReplayRecording.Entry lab=null,local=null;for(ReplayRecording.Entry e:entries)if(e.id.equals("m9999"))lab=e;else local=e;
             check(lab!=null&&lab.firstFile.equals(full.toAbsolutePath())&&lab.archiveFolder.equals(folder),"Lab archive resolves trusted existing full-session file in another slot's local capture directory");
             check(lab.preferredStartMs==1080&&lab.finishMs==1100&&lab.startMs==1000,"Lab selection retains match bounds and full-session time origin");
-            check(local!=null&&local.startMs==1000&&local.durationEstimated&&local.durationMs==600&&local.server.equals("example.invalid"),"Estimated local duration uses the latest linked-part mtime, not just the first segment");
+            check(local!=null&&local.startMs==1000&&local.durationEstimated&&local.durationMs==2000&&local.server.equals("example.invalid"),"Estimated local duration uses the latest linked-part mtime, not just the first segment");
 
             StringBuilder large=new StringBuilder();for(int i=0;i<100000;i++)large.append('x');
             Map<String,Object> visualTarget=map("id",8,"kind","EntityOtherPlayerMP","pos",Arrays.asList(2.,4.,0.),"held","captured-target-item");

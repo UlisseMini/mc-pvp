@@ -134,18 +134,18 @@ public final class Client {
             // Tracking uses only this client's entity view; defaults preserve perfect aim.
             double dx=R.num(opponent,"posX")-R.num(player,"posX"), dz=R.num(opponent,"posZ")-R.num(player,"posZ");
             double eye=R.num(player,"posY")+((Number)R.call(player,"getEyeHeight")).doubleValue();
-            long aimNow=System.currentTimeMillis();
+            long aimNow=TrainingClock.millis();
             if(aimTarget!=opponent){aim.reset();aimTarget=opponent;mouseTimeNs=0;}
             AimController.Settings aimSettings=AimController.Settings.from(controls);
             // Tracking measures elapsed time. A corrected wall clock is still useful for recording timestamps.
-            long trackingMs=System.nanoTime()/1_000_000L;
+            long trackingMs=TrainingClock.nanos()/1_000_000L;
             AimController.Result tracking=aim.aim(trackingMs,R.num(player,"posX"),eye,R.num(player,"posZ"),
                 R.num(opponent,"posX"),R.num(opponent,"posY"),R.num(opponent,"posZ"),
                 (float)R.num(player,"rotationYaw"),(float)R.num(player,"rotationPitch"),aimSettings);
             float yaw=displacementTurn!=null&&!Float.isNaN(displacementTurn.yaw)?displacementTurn.yaw:tracking.yaw;
             boolean mouse=DuelSettings.mouseInput(controls);
             if(mouse && !nativeInputPoll){
-                long frameNs=System.nanoTime();
+                long frameNs=TrainingClock.nanos();
                 double elapsed=mouseTimeNs==0?0:(frameNs-mouseTimeNs)/1e6;
                 boolean first=mouseTimeNs==0;mouseTimeNs=frameNs;
                 Object settings=R.get(mc,"gameSettings");
@@ -178,7 +178,7 @@ public final class Client {
                 a.put("delay_ms",aimSettings.delayMs);a.put("noise_deg",aimSettings.noiseDegrees);a.put("turn_rate_dps",aimSettings.turnRate);a.put("seed",aimSettings.seed);log(a);}
             Object renderer=R.get(mc,"entityRenderer"); R.call(renderer,"getMouseOver",1.0f);
             Object ray=R.get(mc,"objectMouseOver"),selected=ray==null?null:R.get(ray,"entityHit");
-            long wall=System.currentTimeMillis();
+            long wall=TrainingClock.millis();
             Object world=R.get(mc,"theWorld");
             boolean canonical=R.call(world,"getEntityByID",(int)R.call(opponent,"getEntityId"))==opponent;
             boolean staleRay=selected!=null&&selected!=opponent&&R.name(selected).equals(controls.getProperty("opponent",""));
@@ -251,7 +251,7 @@ public final class Client {
                     plan.put("attack_start_at",motionClick.attackStartAt());plan.put("click_gate",clickGate);log(plan);
                 }
             }
-            long now=System.nanoTime();
+            long now=TrainingClock.nanos();
             long pollPreviousCompleted=lastClick;boolean pollGate=clickGate,pollAdmitted=false;
             if(clickGate&&firstClickEligible==0)firstClickEligible=now;
             long firstDelay=(long)Math.max(0,Math.min(100,number("first_click_delay_ms",0)))*1_000_000L;
@@ -271,7 +271,7 @@ public final class Client {
                 Object key=R.get(R.get(mc,"gameSettings"),"keyBindAttack");
                 R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 if(controls.getProperty("kind","").equals("cycle")){cycle.queued(ticks);clickGate=false;}
-                if(controls.getProperty("kind","").equals("frozen-cycle") || System.currentTimeMillis()-epoch<number("frozen_cycle_opening_ms",0))clickGate=frozenCycle.queued();
+                if(controls.getProperty("kind","").equals("frozen-cycle") || TrainingClock.millis()-epoch<number("frozen_cycle_opening_ms",0))clickGate=frozenCycle.queued();
                 if(controls.getProperty("kind","").equals("tick-cycle"))clickGate=tickCycle.queued();
                 if(inputWord!=null&&inputWordDecision!=null&&inputWordDecision.active)clickGate=inputWord.queued();
                 // A planned Ctrl pulse ends after the first queued click. Native
@@ -280,14 +280,16 @@ public final class Client {
                 if(controls.getProperty("sprint_mode","hold").equals("cycle"))sprintPulse=false;
                 // Pace from completed input injection, not from before reflection/GC pauses.
                 // No catch-up inputs: wait the full declared interval after completion.
-                lastClick=System.nanoTime();
+                long pressWallNanos=System.nanoTime();
+                lastClick=TrainingClock.gameNanos(pressWallNanos);
                 if(referenceActive)clickGate=referenceFeedback.injected(referencePoll(lastClick/1_000_000.0),lastClick/1_000_000.0);
                 pollAdmitted=true;
                 if(criticalOpportunity)criticalClicks.injected(lastObservedTargetHurt);
-                ModelController.click(System.currentTimeMillis());
+                ModelController.click(TrainingClock.millis());
                 Map<String,Object> issued=new LinkedHashMap<>();
-                long issuedAt=System.currentTimeMillis();
+                long issuedAt=TrainingClock.millis();
                 issued.put("type","click");issued.put("time",issuedAt);issued.put("monotonic_ns",lastClick);
+                if(TrainingClock.ROOM)issued.put("wall_monotonic_ns",pressWallNanos);
                 if(drillLandmarkParticipant&&!drillWakeSent&&issuedAt>=Long.parseLong(controls.getProperty("start_at","0"))){
                     BoxingLandmark.click(DIR,match,issuedAt);drillWakeSent=true;
                 }
@@ -334,8 +336,8 @@ public final class Client {
         boolean jumpOnImpact=jumpResetPending;
         jumpResetPending=false;
         try {
-            long now=System.currentTimeMillis();
-            long decisionHeadNanos=System.nanoTime();
+            long now=TrainingClock.millis();
+            long decisionHeadNanos=TrainingClock.nanos();
             seedPlanLastHeadNs=decisionHeadNanos;
             if(now-readAt>100){
                 Properties nextControls=R.properties(DIR.resolve("control.properties"));
@@ -362,12 +364,12 @@ public final class Client {
                 // Ordinary respawn input, including recovery from an interrupted old round.
                 setKeys(false);clickGate=false;R.call(player,"respawnPlayer");respawnAt=now;return;
             }
-            if(now-heartbeatAt>1000){
-                heartbeatAt=now;List<String> visible=new ArrayList<>();List<Map<String,Object>> entities=new ArrayList<>();
+            if(System.currentTimeMillis()-heartbeatAt>1000){
+                heartbeatAt=System.currentTimeMillis();List<String> visible=new ArrayList<>();List<Map<String,Object>> entities=new ArrayList<>();
                 for(Object e:(List<?>)R.get(world,"playerEntities")){
                     visible.add(R.name(e));entities.add(Compat.map("name",R.name(e),"id",R.call(e,"getEntityId"),"dead",R.get(e,"isDead"),"x",R.num(e,"posX"),"y",R.num(e,"posY"),"z",R.num(e,"posZ"),"canonical",R.call(world,"getEntityByID",(int)R.call(e,"getEntityId"))==e));
                 }
-                Map<String,Object> heartbeat=new LinkedHashMap<>();heartbeat.put("time",now);heartbeat.put("match",controls.getProperty("match",""));heartbeat.put("enabled",active());
+                Map<String,Object> heartbeat=new LinkedHashMap<>();heartbeat.put("time",heartbeatAt);heartbeat.put("match",controls.getProperty("match",""));heartbeat.put("enabled",active());
                 heartbeat.put("health",R.call(player,"getHealth"));heartbeat.put("alive",R.call(player,"isEntityAlive"));heartbeat.put("dead",R.get(player,"isDead"));
                 heartbeat.put("visible_players",visible);heartbeat.put("x",R.num(player,"posX"));heartbeat.put("y",R.num(player,"posY"));heartbeat.put("z",R.num(player,"posZ"));
                 heartbeat.put("entities",entities);
@@ -386,7 +388,7 @@ public final class Client {
                     heartbeat.put("maintenance",maintenanceHandoff.snapshot(decisionHeadNanos));
                 Object screen=R.get(mc,"currentScreen");heartbeat.put("screen",screen==null?null:screen.getClass().getName());
                 Files.createDirectories(DIR);Compat.writeString(DIR.resolve("heartbeat.json"),Json.encode(heartbeat));
-                Properties integrity=new Properties();integrity.setProperty("time",Long.toString(now));
+                Properties integrity=new Properties();integrity.setProperty("time",Long.toString(heartbeatAt));
                 integrity.setProperty("match",controls.getProperty("match",""));integrity.setProperty("target_ready",Boolean.toString(targetReady));
                 R.writeProperties(DIR.resolve("view.properties"),integrity);
             }
@@ -776,7 +778,7 @@ public final class Client {
                     ||maintenanceAcquisition&&maintenanceHandoff.settings.acquisition.equals("lock8")||maintenanceFeedbackOpening;
             if(hurtWindowActive){
                 double inputMs=maintenanceFeedbackOpening||Boolean.parseBoolean(controls.getProperty("hurt_window_head_clock","false"))?
-                        decisionHeadNanos/1_000_000.0:System.nanoTime()/1_000_000.0;
+                        decisionHeadNanos/1_000_000.0:TrainingClock.nanos()/1_000_000.0;
                 HurtWindowCoastController.Decision d=hurtWindowCoast.input(ticks,inputMs,obs.localRange,handledTargetHurtMs);
                 int side=d.strafe>0?-1:d.strafe<0?1:0;
                 setKeys(d.key!=0,side,d.key==2);clickGate=d.click;
@@ -903,7 +905,7 @@ public final class Client {
                 if(trial!=BoxingRecoilSprint.Decision.STOCK){
                     boolean enrolled=trial==BoxingRecoilSprint.Decision.ENROLLED;
                     boolean choosesSprint=enrolled&&boxingRecoilSprint.arm.sprints();
-                    long actionTime=System.nanoTime();
+                    long actionTime=TrainingClock.nanos();
                     if(choosesSprint)setKeys(true,0,true);
                     log(Compat.map("type",enrolled?"boxing_recoil_trial":"boxing_recoil_order_rejected","match",match,"tick",ticks,"time",now,
                             "monotonic_ns",actionTime,"sprint",choosesSprint,"nearest",obs.localRange,"along",along,
@@ -1247,14 +1249,14 @@ public final class Client {
         try{
             if(((Number)R.call(packet,"getOpCode")).intValue()!=2)return;
             Object entity=R.call(packet,"getEntity",R.get(mc,"theWorld"));
-            if(entity==opponent){freshTargetHurtStatus=System.currentTimeMillis();
-                long cueNs=System.nanoTime();handledTargetHurtMs=cueNs/1_000_000.0;
+            if(entity==opponent){freshTargetHurtStatus=TrainingClock.millis();
+                long cueNs=TrainingClock.nanos();handledTargetHurtMs=cueNs/1_000_000.0;
                 if(boxingSecondHurtJump!=null)boxingSecondHurtJump.targetHurt();
                 if(maintenanceCurrent())maintenanceHandoff.targetHurt(freshTargetHurtStatus,cueNs);
                 log(Compat.map("type","fresh_target_hurt_status","time",freshTargetHurtStatus,"match",match));
             }
-            if(entity==player){freshHurtStatus=System.currentTimeMillis();
-                long cueNs=System.nanoTime();maintenanceOwnHurtMs=cueNs/1000000.0;
+            if(entity==player){freshHurtStatus=TrainingClock.millis();
+                long cueNs=TrainingClock.nanos();maintenanceOwnHurtMs=cueNs/1000000.0;
                 if(boxingSecondHurtJump!=null)boxingSecondHurtJump.ownHurt(cueNs/1_000_000.0);
                 if(maintenanceCurrent())maintenanceHandoff.ownReturnCue(false,freshHurtStatus,cueNs);
                 log(Compat.map("type","fresh_hurt_status","time",freshHurtStatus,"match",match));
@@ -1295,14 +1297,14 @@ public final class Client {
                 &&self==player&&target==opponent)
             displacement.localContact(ticks,freshTargetHurtStatus);
         if(maintenanceCurrent()&&maintenanceFeedback!=null&&self==player&&target==opponent){
-            maintenanceLocalContacts++;maintenanceContactMs=System.nanoTime()/1000000.0;
+            maintenanceLocalContacts++;maintenanceContactMs=TrainingClock.nanos()/1000000.0;
         }
         if(controls.getProperty("kind","").equals("cycle")){cycle.contact(ticks);clickGate=false;}
         if(controls.getProperty("kind","").equals("frozen-cycle") || number("frozen_cycle_opening_ms",0)>0)frozenCycle.contact(ticks);
         if(controls.getProperty("kind","").equals("tick-cycle"))clickGate=tickCycle.contact(ticks);
         Map<String,Object> event=new LinkedHashMap<>();event.put("type","engine_attack");event.put("time",System.currentTimeMillis());event.put("match",match);
         event.put("attack_reach",attackReach());
-        long contactNs=System.nanoTime();
+        long contactNs=TrainingClock.nanos();
         event.put("monotonic_ns",contactNs);event.put("click_attempt",ScienceTrace.clickId());
         if(boxingSecondHurtJump!=null&&self==player&&target==opponent&&active())
             boxingSecondHurtJump.contact(contactNs/1_000_000.0);
@@ -1340,7 +1342,7 @@ public final class Client {
             if(SeededStartClient.beforePacket(System.currentTimeMillis(),System.nanoTime()))ReplicationTrace.refreshContext();
         }catch(Throwable error){matchInitialized=false;fail(error);}
     }
-    static boolean active(){return active(System.currentTimeMillis());}
+    static boolean active(){return active(TrainingClock.millis());}
     static boolean active(long now){
         return matchInitialized && match.equals(controls.getProperty("match","")) &&
             Boolean.parseBoolean(controls.getProperty("enabled","false")) && SeededStartClient.active() &&

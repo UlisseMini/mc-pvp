@@ -23,7 +23,7 @@ public final class Referee {
     static final Set<Integer> preparedLongArenas=new HashSet<>();
     static final List<String> MODES=List.of("boxing","diamond","diamond_box","rod_diamond","sumo");
     static long ticks, errors;
-    static int counter;
+    static int counter = TrainingClock.ROOM ? 800000000 : 0;
 
     static final class Match {
         String id,a,b,pa,pb,winner="",request="",mode="boxing",finishReason="100_hits"; int ha,hb,ba,bb,goal=100,arena,pingChanges; long start,finish,durationMs=180_000; boolean scenario,setupReseated; double pingA,pingB,initialPingA,initialPingB;
@@ -57,6 +57,7 @@ public final class Referee {
             m.put("display_a",label("a"));m.put("display_b",label("b"));
             m.put("hits_a",ha);m.put("hits_b",hb);m.put("goal",goal);m.put("ping_a",pingA);m.put("ping_b",pingB);
             m.put("damage_hits_a",sa.breakdown.damageHitsLanded);m.put("damage_hits_b",sb.breakdown.damageHitsLanded);
+            if(TrainingClock.ROOM)m.put("training_speed",TrainingClock.RATE);
             m.put("mode",mode);m.put("blocks_a",ba);m.put("blocks_b",bb);
             m.put("combat_profile",combat.state());
             if(seed!=null)m.put("seed",seed.state());
@@ -125,6 +126,7 @@ public final class Referee {
             for(Object p:people){
                 String name=R.name(p);
                 if(greeted.add(name)){
+                    if(TrainingClock.ROOM&&!isBot(name))message(p,"Slow sumo at "+TrainingClock.RATE+"x. /duel sumo-league-remote-001 sumo preset=mmc cps=7");
                     fullFood(p);
                     CombatTuning.configurePlayer(p,CombatProfile.DEFAULT);
                     if(isBot(name)){botLabel(p,"");vanilla("gamemode 3 "+name);teleport(p,-40-Integer.parseInt(name.substring(7))*6,4,0);disable(name);}
@@ -142,7 +144,7 @@ public final class Referee {
                 if(m.boxingLandmark!=null)m.boxingLandmark.poll();
                 EntryDrills.countdown(m,setupNow);
                 if(setupNow>=m.start){CombatStats.usingItemChanged(a);CombatStats.usingItemChanged(b);}
-                if(!m.setupReseated&&setupNow<m.start&&setupNow>=m.start-(m.drillRound>0?500:1500)){
+                if(!m.setupReseated&&setupNow<m.start&&setupNow>=m.start-TrainingClock.wallDuration(m.drillRound>0?500:1500)){
                     // Initial destination chunks may arrive after the teleport,
                     // allowing a client to fall into the floor during countdown.
                     // Re-seat once after terrain delivery, strictly before combat.
@@ -164,16 +166,16 @@ public final class Referee {
                 }
                 if(!m.winner.isEmpty()){finish(m,m.finishReason);continue;}
                 if(m.drillRound>0&&!m.jumpReset()&&m.drillFirstHit>0&&setupNow>=m.drillFirstHit+5000){finish(m,"drill_completed");continue;}
-                if(ticks%10==0&&System.currentTimeMillis()>m.start+2000&&!validBotViews(m)){
+                if(ticks%10==0&&System.currentTimeMillis()>m.start+TrainingClock.wallDuration(2000)&&!validBotViews(m)){
                     finish(m,"invalid_client_view");continue;
                 }
-                if(m.durationMs>0&&System.currentTimeMillis()>m.start+m.durationMs){finish(m,m.drillRound>0?"drill_completed":m.scenario?"scenario_completed":"timeout_draw");continue;}
+                if(m.durationMs>0&&System.currentTimeMillis()>m.start+TrainingClock.wallDuration(m.durationMs)){finish(m,m.drillRound>0?"drill_completed":m.scenario?"scenario_completed":"timeout_draw");continue;}
                 Map<String,Object> trace=new LinkedHashMap<>();trace.put("type","tick");trace.put("time",System.currentTimeMillis());
                 trace.put("a",replayPosition(a));trace.put("b",replayPosition(b));trace.put("hits_a",m.ha);trace.put("hits_b",m.hb);
                 trace.put("health_a",R.call(a,"getHealth"));trace.put("health_b",R.call(b,"getHealth"));
                 append(m.replay,trace);
                 if(ticks%10==0){
-                    long left=m.start-System.currentTimeMillis();
+                    long left=Math.round((m.start-System.currentTimeMillis())*TrainingClock.RATE);
                     String score=left>0?"Starting "+m.mode+" in "+((left+999)/1000)+"...":
                         (m.sumo()?"Sumo: "+m.label("a")+" "+m.ha+"–"+m.hb+" "+m.label("b"):m.boxing()?m.label("a")+" "+m.ha+(m.scenario?" hits  |  ":" / 100  |  ")+m.hb+" "+m.label("b"):
                         m.label("a")+" "+hearts(a)+" hearts  |  "+hearts(b)+" "+m.label("b"));
@@ -190,7 +192,7 @@ public final class Referee {
             ServerReplay.tick();
             PovLink.serverTick();
             EntryDrills.tick();
-            if(ticks%10==0){
+            if(ticks%Math.max(1,Math.round(10*TrainingClock.RATE))==0){
                 Map<String,Object> status=new LinkedHashMap<>();status.put("version","1.8.9");status.put("time",System.currentTimeMillis());
                 status.put("players",people.stream().map(R::name).toList());status.put("policies",new ArrayList<>(policies.keySet()));
                 status.put("matches",matches.values().stream().map(Match::state).toList());
@@ -314,7 +316,7 @@ public final class Referee {
                     if(find(name)!=null)throw new IllegalArgumentException("Use /stop before changing duel mode.");
                     preferredModes.put(name,mode(args[1]));
                 }else if(args.length!=1)throw new IllegalArgumentException("Usage: /mode boxing, diamond, diamond_box, rod_diamond, or sumo");
-                message(sender,"Duel mode: "+preferredModes.getOrDefault(name,"boxing")+". Choose a bot with /bots.");
+                message(sender,"Duel mode: "+preferredModes.getOrDefault(name,TrainingClock.ROOM?"sumo":"boxing")+". Choose a bot with /bots.");
                 button(sender,"Boxing: first to 100 hits","/mode boxing");button(sender,"Diamond: full armor, fight to death","/mode diamond");
                 button(sender,"Diamond box: 1x1, wood swords, unenchanted armor","/mode diamond_box");
                 button(sender,"Rod diamond: wood swords and fishing rods","/mode rod_diamond");
@@ -338,7 +340,7 @@ public final class Referee {
                     tournamentWinners(sender,args);
                     return true;
                 }
-                message(sender,"Choose a bot with /duel <name>. Mode: "+preferredModes.getOrDefault(R.name(sender),"boxing")+". Options: reach=3.5 cps=15 ping=100. Your ping is saved; /ping me <ms>.");
+                message(sender,"Choose a bot with /duel <name>. Mode: "+preferredModes.getOrDefault(R.name(sender),TrainingClock.ROOM?"sumo":"boxing")+". Options: reach=3.5 cps=15 ping=100. Your ping is saved; /ping me <ms>.");
                 button(sender,"Switch to boxing","/mode boxing");button(sender,"Switch to full diamond","/mode diamond");
                 button(sender,"Switch to 1x1 diamond box","/mode diamond_box");
                 button(sender,"Switch to rod diamond","/mode rod_diamond");
@@ -373,10 +375,12 @@ public final class Referee {
                 String policy=cmd.equals("rematch")?lastDuels.get(name):(args.length>1?args[1]:null);
                 if(policy==null){message(sender,"Usage: /duel <bot>. Use /bots for the list.");return true;}
                 boolean rematch=cmd.equals("rematch");double[] prior=lastPings.getOrDefault(name,new double[]{0,0});
-                String selectedMode=rematch?lastModes.getOrDefault(name,"boxing"):preferredModes.getOrDefault(name,"boxing");
+                String selectedMode=rematch?lastModes.getOrDefault(name,TrainingClock.ROOM?"sumo":"boxing"):preferredModes.getOrDefault(name,TrainingClock.ROOM?"sumo":"boxing");
                 boolean presetRematch=rematch&&lastOverrides.getOrDefault(name,new Properties()).containsKey(PracticePresets.LABEL);
+                Properties defaults=TrainingClock.ROOM?PracticePresets.defaults("mmc"):new Properties();
+                if(TrainingClock.ROOM)defaults.setProperty("click_cps","7");
                 DuelSettings setup=DuelSettings.parse(args,rematch?1:2,selectedMode,rematch?prior[0]:0,presetRematch?prior[1]:preferredPing(name),
-                    rematch?lastOverrides.getOrDefault(name,new Properties()):new Properties());
+                    rematch?lastOverrides.getOrDefault(name,defaults):defaults);
                 String bot=freeBot(Set.of());if(bot==null){message(sender,"All bot slots are busy. Try again shortly.");return true;}
                 loadPolicies();ServerReplay.close(name,false);watching.remove(name);
                 start(name,bot,"human",policy,setup.humanPing,setup.botPing,"human-"+System.nanoTime(),0,setup.mode,setup.overrides);
@@ -543,6 +547,11 @@ public final class Referee {
     static void start(String a,String b,String pa,String pb,double pingA,double pingB,String request,long duration,String selectedMode,Properties overridesA,Properties overridesB,double startGap,int round,String preset)throws Exception{
         if(a.equals(b)||find(a)!=null||find(b)!=null)throw new IllegalArgumentException("A player cannot be assigned to two matches");
         if(!pa.equals("human")&&!policies.containsKey(pa)||!policies.containsKey(pb))throw new IllegalArgumentException("Unknown bot; use /bots.");
+        if(TrainingClock.ROOM){
+            if(!"sumo".equals(selectedMode))throw new IllegalArgumentException("This training server runs sumo. Use /duel <bot> sumo preset=mmc cps=7");
+            for(String who:List.of(a,b))if(!PovLink.trainingReady(who))
+                throw new IllegalArgumentException("Waiting for "+who+" to sync slow motion. Use the updated practice mod with the local link enabled.");
+        }
         Match m=new Match();m.mode=mode(selectedMode);m.goal=m.boxing()?100:0;m.request=request;if(duration>0){m.scenario=true;m.durationMs=duration;}
         if(m.scenario&&isBot(a)&&isBot(b)){m.combat=CombatTuning.nextScenario;m.goal=0;}
         m.combat=CombatProfile.fromOverrides(overridesB,m.combat);
@@ -603,7 +612,7 @@ public final class Referee {
             resetTracking(player(a));resetTracking(player(b));
             seatPlayers(m,player(a),player(b));
         }
-        if(round>0||m.sumo()){m.start=System.currentTimeMillis()+(m.sumo()?SumoArena.COUNTDOWN_MS:EntryDrills.COUNTDOWN_MS);PovArchives.manifest(m,false);}
+        if(round>0||m.sumo()){m.start=System.currentTimeMillis()+TrainingClock.wallDuration(m.sumo()?SumoArena.COUNTDOWN_MS:EntryDrills.COUNTDOWN_MS);PovArchives.manifest(m,false);}
         SeededStartServer.prepare(m);
         botLabel(player(a),m.label("a"));botLabel(player(b),m.label("b"));
         CombatTuning.configurePlayer(player(a),m.combat);CombatTuning.configurePlayer(player(b),m.combat);
@@ -779,7 +788,7 @@ public final class Referee {
             if(who.equals(m.boxingLandmark.subject))p.setProperty("boxing_drill_subject","1");
         }
         p.setProperty("archive_side",who.equals(m.a)?"a":"b");
-        p.setProperty("match",m.id);p.setProperty("start_at",Long.toString(m.start));p.setProperty("ping",Double.toString(ping));p.setProperty("opponent_ping",Double.toString(oppPing));
+        p.setProperty("match",m.id);p.setProperty("start_at",Long.toString(TrainingClock.gameMillis(m.start)));p.setProperty("ping",Double.toString(ping));p.setProperty("opponent_ping",Double.toString(oppPing));
         R.writeProperties(DATA.resolve("bots/"+who.substring(7)+"/control.properties"),p);
     }
     static void disable(String who){if(isBot(who)){Properties p=new Properties();p.setProperty("enabled","false");R.writeProperties(DATA.resolve("bots/"+who.substring(7)+"/control.properties"),p);}}
@@ -821,6 +830,7 @@ public final class Referee {
         for(String side:List.of("a","b")){Object p=player(side.equals("a")?m.a:m.b);result.put("health_"+side,p==null?null:R.call(p,"getHealth"));}
         result.put("initial_ping_a",m.initialPingA);result.put("initial_ping_b",m.initialPingB);result.put("ping_changes",m.pingChanges);
         result.put("parameters_a",m.configA);result.put("parameters_b",m.configB);
+        if(TrainingClock.ROOM)result.put("game_duration_seconds",Math.max(0,(m.finish-m.start)*TrainingClock.RATE/1000.));
         result.put("duration_seconds",Math.max(0,(m.finish-m.start)/1000.0));
         writeJson(DATA.resolve("results/"+m.id+".json"),result);append(m.replay,Map.of("type","finish","result",result));
         matches.remove(m.id);

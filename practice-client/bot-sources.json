@@ -1,5 +1,6 @@
 [
   "Client",
+  "TrainingClock",
   "SeedState",
   "SeededEntity",
   "SeededStartClient",
@@ -23,6 +24,7 @@
   "DuelHudPing",
   "SumoInputs",
   "SumoFootprint",
+  "RecordedSumoMap",
 
   "ComboContinuationGate",
   "BoxingReleaseHold",

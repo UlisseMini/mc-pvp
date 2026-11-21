@@ -40,7 +40,7 @@ public final class DuelHudPing {
         }
         double opponent=Double.NaN;
         if(DuelNetwork.study(network.family())||network.league()!=null){
-            long now=System.nanoTime();double age=Client.lastClick==0?Double.POSITIVE_INFINITY:(now-Client.lastClick)/1e6;
+            long now=TrainingClock.nanos();double age=Client.lastClick==0?Double.POSITIVE_INFINITY:(now-Client.lastClick)/1e6;
             network.localTiming(now/1e6,age);
             Map<String,Object> row=new LinkedHashMap<>();
             row.put("type","duel_local_timing");row.put("tick",Client.ticks);row.put("match",Client.match);

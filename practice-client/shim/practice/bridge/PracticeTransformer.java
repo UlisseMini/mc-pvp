@@ -12,6 +12,30 @@ public final class PracticeTransformer implements IClassTransformer {
     public byte[] transform(String name,String transformed,byte[] bytes){
         if(bytes==null)return null;
         bytes=BotTransformer.transform(transformed,bytes);
+        if(transformed.equals("net.minecraft.util.Timer")){
+            ClassNode timer=new ClassNode();new ClassReader(bytes).accept(timer,0);
+            int reads=0,clockReads=0;
+            for(MethodNode m:timer.methods)if(m.desc.equals("()V") && named(m,"func_74275_a","updateTimer","a"))
+                for(AbstractInsnNode ins:m.instructions.toArray())if(ins instanceof FieldInsnNode){
+                    FieldInsnNode f=(FieldInsnNode)ins;
+                    if(f.getOpcode()==Opcodes.GETFIELD && f.owner.equals(timer.name) && f.desc.equals("F") &&
+                            (f.name.equals("field_74278_d")||f.name.equals("timerSpeed")||f.name.equals("d"))){
+                        m.instructions.insert(ins,new MethodInsnNode(Opcodes.INVOKESTATIC,"practice/bridge/TrainingTimer","scale","(F)F",false));
+                        reads++;
+                    }
+                    // updateTimer multiplies monotonic elapsed seconds by a smoothed
+                    // estimate of the LWJGL/system clock ratio. Both sides of a
+                    // local training duel use the same host's monotonic seconds.
+                    if(f.getOpcode()==Opcodes.GETFIELD && f.owner.equals(timer.name) && f.desc.equals("D") &&
+                            (f.name.equals("field_74283_j")||f.name.equals("timeSyncAdjustment")||f.name.equals("j")) &&
+                            ins.getNext()!=null && ins.getNext().getOpcode()==Opcodes.DMUL){
+                        m.instructions.insert(ins,new MethodInsnNode(Opcodes.INVOKESTATIC,"practice/bridge/TrainingTimer","clockAdjustment","(D)D",false));
+                        clockReads++;
+                    }
+                }
+            if(reads!=1 || clockReads!=1)throw new IllegalStateException("Unexpected Minecraft 1.8.9 Timer.updateTimer");
+            ClassWriter out=new ClassWriter(0);timer.accept(out);return out.toByteArray();
+        }
         if(transformed.equals("net.minecraft.client.gui.GuiIngame"))return replayHotbar(bytes);
         if(transformed.equals("net.minecraft.client.renderer.ItemRenderer"))return replayHand(firstPersonUse(bytes));
         if(transformed.equals("net.minecraft.client.renderer.EntityRenderer"))return replayWorldPartial(hurtCamera(sneakCamera(bytes)));

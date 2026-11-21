@@ -113,7 +113,7 @@ def verify_security():
     return results
 
 
-def bot_command(slot,port,frame_sleep_ms,classpath):
+def bot_command(slot,port,frame_sleep_ms,classpath,*,game_root=ROOT,clock_flags=()):
     game=RUNTIME/f'bots/{slot}'
     for d in ('mods','config/pvp-practice','tmp','home'):(game/d).mkdir(parents=True,exist_ok=True)
     allowed={'practice-bridge.jar'}
@@ -128,7 +128,7 @@ def bot_command(slot,port,frame_sleep_ms,classpath):
     metadata={'role':'bot','backend':'forge','slot':slot,'minecraft':'1.8.9','forge':'11.15.1.2318','bridge_sha256':digest(BRIDGE),'module_sha256':digest(MODULE),'headless_sha256':digest(HEADLESS),'java_sha256':digest(JAVA8)}
     (game/'client-runtime.json').write_text(json.dumps(metadata,indent=2))
     (game/'runtime.properties').write_text(''.join(str(k)+'='+str(v)+'\n' for k,v in metadata.items()))
-    args=['-Xms128M','-Xmx768M','-XX:ParallelGCThreads=2','-XX:ConcGCThreads=1','-Dlab.root='+str(ROOT),'-Dlab.role=client','-Dlab.backend=forge',f'-Dlab.slot={slot}',f'-Dlab.port={port}',
+    args=['-Xms128M','-Xmx768M','-XX:ParallelGCThreads=2','-XX:ConcGCThreads=1','-Dlab.root='+str(game_root),*clock_flags,'-Dlab.role=client','-Dlab.backend=forge',f'-Dlab.slot={slot}',f'-Dlab.port={port}',
         '-Dpractice.role=bot','-Dpractice.bridge_sha256='+metadata['bridge_sha256'],'-Dpractice.module_sha256='+metadata['module_sha256'],
         f'-Dhmc.lwjgl.update_sleep={frame_sleep_ms}','-Dlog4j.configurationFile='+str(CACHE/'server-logging.xml'),'-javaagent:'+str(HEADLESS),
         '-cp',os.pathsep.join(map(str,classpath)),'net.minecraft.launchwrapper.Launch','--username',name,'--version','1.8.9',

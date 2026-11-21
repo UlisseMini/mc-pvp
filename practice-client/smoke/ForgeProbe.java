@@ -84,11 +84,37 @@ public final class ForgeProbe {
                 for(int i=0;i<2;i++){List<?> pos=(List<?>)((Map<?,?>)pair.get(i==0?"a":"b")).get("render");net.minecraft.entity.Entity actor=mc.field_71441_e.func_73045_a(((Number)ids.get(i)).intValue());if(actor!=null){double dx=actor.field_70165_t-((Number)pos.get(0)).doubleValue(),dy=actor.field_70163_u-((Number)pos.get(1)).doubleValue(),dz=actor.field_70161_v-((Number)pos.get(2)).doubleValue();poseError=Math.max(poseError,Math.sqrt(dx*dx+dy*dy+dz*dz));poseChecks++;}}
             }
         }}catch(Exception failure){throw new RuntimeException(failure);}}
+    private final List<Long> slowTicks=new ArrayList<>();
+    private void slowSumo(Minecraft mc,float speed)throws Exception{
+        Method rate=Class.forName("practice.bridge.TrainingTimer").getDeclaredMethod("acknowledged");
+        rate.setAccessible(true);
+        if(Math.abs(((Number)rate.invoke(null)).floatValue()-speed)>.00001)return;
+        slowTicks.add(System.nanoTime());
+        if(slowTicks.size()==51){
+            List<Double> gaps=new ArrayList<>();
+            for(int i=11;i<slowTicks.size();i++)gaps.add((slowTicks.get(i)-slowTicks.get(i-1))/1e6);
+            Collections.sort(gaps);
+            double median=gaps.get(gaps.size()/2);
+            double mean=(slowTicks.get(50)-slowTicks.get(10))/40e6;
+            check(Math.abs(mean-50/speed)<5,"human client averaged "+mean+" ms/tick over 40 intervals at "+speed+"x (median "+median+" ms)");
+        }
+        if(slowTicks.size()>=51 && (slowTicks.size()-51)%25==0)
+            mc.field_71439_g.func_71165_d("/duel sumo-league-remote-001 sumo preset=mmc cps=7");
+        Map<?,?> view=linked();
+        if(slowTicks.size()>51 && "sumo".equals(view.get("mode")) && view.get("players") instanceof List
+                && ((List<?>)view.get("players")).contains(mc.field_71439_g.func_70005_c_())){
+            check(true,"human client started a synchronized native sumo duel");
+            mc.field_71439_g.func_71165_d("/stop");
+            System.out.println("[PracticeProbe] ALL CHECKS PASSED");
+            mc.func_71400_g();
+        }
+    }
     @SubscribeEvent public void tick(TickEvent.ClientTickEvent e){
         if(e.phase!=TickEvent.Phase.END)return;
         Minecraft mc=Minecraft.func_71410_x();if(mc.field_71439_g==null)return;
         try{
             ticks++;
+            if(System.getProperty("practice.probe.slow_sumo")!=null){slowSumo(mc,Float.parseFloat(System.getProperty("practice.probe.slow_sumo")));return;}
             if(Boolean.getBoolean("practice.probe.replay_controls")){replayControls.tick(this,mc,ticks);return;}
             if(ticks==25){nativeReachCheck();
                 check(frame().holdSprint,"Forge tick drives module");

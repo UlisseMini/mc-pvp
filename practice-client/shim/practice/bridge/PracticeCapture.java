@@ -61,8 +61,8 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     void settings(Properties p){
         boolean next=Boolean.parseBoolean(p.getProperty("capture.enabled","true"));
         frames=Boolean.parseBoolean(p.getProperty("capture.frames","true"));coordination=Boolean.parseBoolean(p.getProperty("link.enabled","true"));
-        String archivePath=p.getProperty("archive.directory","").trim();archive.root(!next||archivePath.isEmpty()?null:Paths.get(archivePath));replay.root(archivePath.isEmpty()?null:Paths.get(archivePath));
-        if(recording&&!next&&log!=null&&active!=null&&loopback(active)){emit("capture_stopped",map("reason","user"),false);finishLog();}recording=next;
+        String archivePath=p.getProperty("archive.directory","").trim();baseArchive=archivePath.isEmpty()?null:Paths.get(archivePath);
+        if(recording&&!next&&log!=null&&active!=null&&loopback(active)){emit("capture_stopped",map("reason","user"),false);finishLog();}recording=next;archiveLocation();
     }
     synchronized void remoteRecording(boolean next){
         if(remoteRecording&&!next&&active!=null&&!loopback(active)){emit("capture_stopped",map("reason","remote_record_off"),false);finishLog();}
@@ -87,9 +87,15 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         Object direction=GameObservations.field(manager,"direction");
         // The same class is also used by an integrated server. Observe client sockets only.
         if(direction==null || !direction.toString().equals("CLIENTBOUND"))return;
-        ConnectionScope.connected(c);clients.add(c);c.closeFuture().addListener(f->{ConnectionScope.disconnected(c);clients.remove(c);unrecordedPlay.remove(c);disconnected(c);});
+        ConnectionScope.connected(c);clients.add(c);c.closeFuture().addListener(f->{TrainingTimer.disconnected(c);ConnectionScope.disconnected(c);clients.remove(c);unrecordedPlay.remove(c);disconnected(c);});
     }
-    private synchronized void disconnected(Channel c){if(active==c){emit("connection_end",map(),false);finishLog();active=null;match="";lastServer=0;lastState=Collections.emptyMap();archive.end();publisher.close();}}
+    private synchronized void disconnected(Channel c){if(active==c){emit("connection_end",map(),false);finishLog();active=null;match="";lastServer=0;lastState=Collections.emptyMap();archive.end();publisher.close();archiveLocation();}}
+    private java.nio.file.Path baseArchive;
+    private void archiveLocation(){
+        java.nio.file.Path dir=baseArchive;
+        if(dir!=null && !BotRuntime.enabled() && TrainingTimer.active())dir=dir.resolveSibling("slow-sumo").resolve("runtime/pov");
+        archive.root(recording?dir:null);replay.root(dir);
+    }
     private void finishLog(){CaptureLog l=log;log=null;if(l!=null){l.close();finishing.add(l);}}
     private boolean play(Channel c){if(offlinePlayback)return false;boolean play=clients.contains(c)&&c.attr(NetworkManager.field_150739_c).get()==EnumConnectionState.PLAY;if(play&&!loopback(c)&&!remoteRecording)unrecordedPlay.add(c);return play&&(loopback(c)||remoteRecording);}
     private synchronized void session(Channel c){
@@ -176,7 +182,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
             int n=0;PracticeEvent e;while(n++<512 && (e=events.poll())!=null)host.event(e);
             long lost=eventDrops.getAndSet(0);if(lost>0)emit("module_event_drop",map("count",lost),false);
             long now=System.currentTimeMillis();
-            if(ConnectionScope.canSend(active)&&coordination&&now-lastHello>=(BotRuntime.enabled()?500:2000)){lastHello=now;sendRaw(map("type","hello","version",1,"session",session,"client_ms",now,"fast_view",publisher.descriptor(),"role",BotRuntime.role()));}
+            if(ConnectionScope.canSend(active)&&coordination&&now-lastHello>=(BotRuntime.enabled()?500:2000)){lastHello=now;sendRaw(map("type","hello","version",1,"session",session,"client_ms",now,"fast_view",publisher.descriptor(),"role",BotRuntime.role(),"training_rate_ack",TrainingTimer.acknowledged()));}
             if(ConnectionScope.canSend(active)&&coordination&&lastServer>0&&now-lastTelemetry>=200){lastTelemetry=now;sendRaw(map("type","telemetry","version",1,"session",session,"match",match,"client_ms",now,"client_tick",tick,"view",GameObservations.telemetry(mc,lastState.get("players"))));}
         }
     }
@@ -274,6 +280,9 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
             if(data==null||!(data.get("version") instanceof Number)||((Number)data.get("version")).intValue()!=1)return;
             String type=String.valueOf(data.get("type"));
             if(!Arrays.asList("welcome","state","pong","marker_ack","replay_view","replay_menu").contains(type))return;
+            if(type.equals("welcome") && data.get("training_speed") instanceof Number){
+                TrainingTimer.accept(active,((Number)data.get("training_speed")).doubleValue());archiveLocation();
+            }
             if(type.equals("replay_view")){replay.receive(data);return;}
             if(type.equals("replay_menu")){Minecraft.func_71410_x().func_147108_a(new ReplayMenu(this));return;}
             lastServer=System.currentTimeMillis();Object id=data.get("match");if(!BotRuntime.enabled()&&id instanceof String)match=(String)id;

@@ -78,7 +78,7 @@ public final class EntryDrills {
     }
     static void countdown(Referee.Match m,long now){
         if(m.drillRound==0&&!m.sumo())return;
-        int tenths=(int)Math.max(0,Math.min(COUNTDOWN_MS/100,(m.start-now+99)/100));
+        int tenths=(int)Math.max(0,Math.min(COUNTDOWN_MS/100,(Math.round((m.start-now)*TrainingClock.RATE)+99)/100));
         if(tenths==m.drillCountdown)return;
         boolean first=m.drillCountdown<0;m.drillCountdown=tenths;
         for(String who:List.of(m.a,m.b)){

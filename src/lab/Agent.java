@@ -30,6 +30,24 @@ public final class Agent implements ClassFileTransformer {
             new ClassReader(bytes).accept(node, 0);
             boolean changed = false;
             for (MethodNode method : node.methods) {
+                // The watchdog compares the last tick timestamp with physical wall time.
+                if (TrainingClock.RATE != 1 && name.equals("net/minecraft/server/MinecraftServer") && method.name.equals("aL") && method.desc.equals("()J")) {
+                    for(AbstractInsnNode ins:method.instructions.toArray()) if(ins.getOpcode()==Opcodes.LRETURN)
+                        method.instructions.insertBefore(ins,new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/TrainingClock","wallTimestamp","(J)J",false));
+                    changed=true;
+                }
+                if (TrainingClock.RATE != 1 && name.equals("net/minecraft/server/MinecraftServer") && method.name.equals("run") && method.desc.equals("()V")) {
+                    int timers=0, sleeps=0;
+                    for(AbstractInsnNode ins:method.instructions.toArray()) if(ins instanceof MethodInsnNode fn) {
+                        if(fn.owner.equals(name) && fn.name.equals("az") && fn.desc.equals("()J")) {
+                            fn.owner="lab/TrainingClock";fn.name="millis";timers++;
+                        } else if(fn.owner.equals("java/lang/Thread") && fn.name.equals("sleep") && fn.desc.equals("(J)V")) {
+                            fn.owner="lab/TrainingClock";sleeps++;
+                        }
+                    }
+                    if(timers!=2||sleeps!=1)throw new IllegalStateException("Unexpected 1.8.9 server scheduler");
+                    changed=true;
+                }
                 if(name.equals("en")&&method.name.equals("decode")&&method.desc.equals("(Lio/netty/channel/ChannelHandlerContext;Lio/netty/buffer/ByteBuf;Ljava/util/List;)V")){
                     method.instructions.insert(objects("lab/ArchiveWire","before",1,2));
                     for(AbstractInsnNode i:method.instructions.toArray())if(i.getOpcode()==Opcodes.RETURN)method.instructions.insertBefore(i,objects("lab/ArchiveWire","after",3));changed=true;

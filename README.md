@@ -23,6 +23,14 @@ python3 lab.py serve --bot-backend legacy
 
 In Minecraft, open **Multiplayer → Direct Connect**, enter `127.0.0.1:25565`, and type `/bots` for the clickable opponent list. Keep Terminal open while you play. The **Start PvP Lab.command** launcher uses the default Forge bot backend. Its setup uses the launcher’s Java 8 runtime and the same practice bridge as the optional human client. [Full setup and backend guide](LAB-GUIDE.md#setup-and-checks)
 
+### Slow-motion sumo
+
+Open **[Start Slow Sumo.command](Start%20Slow%20Sumo.command)**, enter a speed from `0.10` to `1.00` (Return selects half speed), and join `127.0.0.1:25585` with the updated Forge 1.8.9 practice mod. Keep its local link enabled. Type `/duel sumo-league-remote-001` to play the first Hetzner champion on the MMC platform. The room defaults to the MMC preset and a seven-CPS bot. Use `/rematch` for another round.
+
+At half speed, each physics tick lasts 100 real milliseconds. A ten-tick fresh-hit window lasts one real second. Seven bot clicks per game second allow at most 3.5 per real second. Your mouse aim and physical clicks remain live. To practice the equivalent human cadence, aim for 3.5 clicks per real second. Configured network delay also scales, so a 100 ms added RTT takes 200 real milliseconds at half speed.
+
+To change the speed, finish your duel, reopen the launcher, and reconnect. From Terminal, `python3 slow_sumo.py 0.25` starts quarter speed and `python3 slow_sumo.py --stop` closes the training room. The regular lab runs independently on port 25565.
+
 ### Modern sword combat on macOS
 
 Open **Start Modern Sword Lab.command**, enter your player name, and select a fighter. When the launcher is ready, connect with **Minecraft Java 26.3** at `127.0.0.1:25663`. The modern lab uses a Lima Linux VM to run real Minecraft bots without opening game windows on your desktop. [Prerequisites, launcher options, and benchmarks](research/sword26/README.md)
