@@ -196,6 +196,7 @@ public final class Referee {
                 Map<String,Object> status=new LinkedHashMap<>();status.put("version","1.8.9");status.put("time",System.currentTimeMillis());
                 status.put("players",people.stream().map(R::name).toList());status.put("policies",new ArrayList<>(policies.keySet()));
                 status.put("matches",matches.values().stream().map(Match::state).toList());
+                if(TrainingClock.ROOM)status.put("training_ready",people.stream().map(R::name).filter(PovLink::trainingReady).toList());
                 status.put("next_scenario_combat",CombatTuning.nextScenario.state());
                 status.put("replays",ServerReplay.state());
                 List<Map<String,Object>> details=new ArrayList<>();

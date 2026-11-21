@@ -33,7 +33,7 @@ def ready(pid):
         return False
     try:
         status = json.loads((DATA / 'status.json').read_text())
-        return all('LabSlot'+str(i) in status['players'] and
+        return all('LabSlot'+str(i) in status.get('training_ready', []) and
                    json.loads((DATA/f'bots/{i}/heartbeat.json').read_text())['time'] >= 1000*state['started']
                    for i in range(state['bot_slots']))
     except (OSError, KeyError, ValueError):
@@ -42,9 +42,16 @@ def ready(pid):
 
 def change(speed, stop):
     state = manager()
-    if state and not stop and state['training_speed'] == speed and ready(state['pid']):
-        print(f'Slow sumo is ready at {ADDRESS} ({speed:g}×).')
-        return
+    if state and not stop and state['training_speed'] == speed:
+        deadline = time.monotonic() + 180
+        while manager() and time.monotonic() < deadline:
+            if ready(state['pid']):
+                print(f'Slow sumo is ready at {ADDRESS} ({speed:g}×).')
+                return
+            time.sleep(.5)
+        if manager():
+            raise SystemExit('The training clients have not synchronized. See '+str(ROOM/'launcher.log'))
+        state=None
     if state:
         if json.loads((DATA/'status.json').read_text())['matches']:
             raise SystemExit('Finish the active slow sumo duel or use /stop before changing the room.')
