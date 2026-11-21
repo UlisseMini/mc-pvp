@@ -4,6 +4,7 @@ import sys
 from dedicated import *
 from league_tournament import interval
 from assay import lower_contrast
+from development_panel import make_panel
 
 def clock_protocol():
     folder=DIR/'prospective';path=folder/'assay.json'
@@ -11,16 +12,6 @@ def clock_protocol():
     latest=max(int(p.stem[1:]) for p in (ROOT/'runtime/results').glob('m[0-9]*.json') if p.stem[1:].isdigit())
     spec=dict(first_future_id=latest+6,calendar_count=32,rule='first complete bot-only sumo timing donors, independent of the GRU generation-one sealed panel')
     write_json(path,spec,fixed=True);return spec
-
-def make_panel(clocks,rep_count):
-    cells=[]
-    for i,clock in enumerate(clocks):
-        for rep in range(rep_count):
-            for side in 'ab':
-                for a,b in RTTS:
-                    idx=len(cells);rng=random.Random(5533711+idx*71023)
-                    cells.append((i,rep,side,a,b,clock,rng.getrandbits(60),rng.getrandbits(60)))
-    return cells
 
 def arm_paths(update,target,foe):
     ix=FIELD.index(foe);suffix=f'u{update:03d}'

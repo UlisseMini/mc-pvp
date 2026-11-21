@@ -1,0 +1,14 @@
+[Unit]
+Description=Continuous seven-CPS Minecraft sumo league
+After=local-fs.target
+
+[Service]
+User=uli
+WorkingDirectory=/home/uli/mc-sumo-league/runs/robust-001
+ExecStart=/home/uli/mc-sumo-league/venv/bin/python -u research/elite-league/single-sumo/continuous_remote.py run
+Restart=on-failure
+RestartSec=30
+Environment=OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+
+[Install]
+WantedBy=multi-user.target

@@ -168,8 +168,13 @@ def compare(coverage, seed):
     # Use the identical Laplace-smoothed observation and payoff model as expanded_crossplay.
     counts=np.stack([np.stack([(train.numpy()[b==i]==s).sum(0)+1 for s in (0,.5,1)],-1) for i in range(4)])
     rates=(counts/counts.sum(-1,keepdims=True))[...,2]
-    for label,choice in [('blind',rates.mean(1)[test].argmax(-1)),('known-id',rates[test,ids[:,None]].argmax(-1))]:
-        choice[:,0]=opener
+    # Use the exact contraction and axis order of route_expansion. A mean over
+    # opponents rounds differently for tied actions. After the opener the
+    # original blind belief inherits float32 from the motion encoder.
+    for label,belief in [('blind',np.full((len(ids),nf),1/nf,dtype=np.float32)),('known-id',np.eye(nf)[ids])]:
+        choice=np.full((len(ids),g),opener)
+        for j in range(1,g):
+            choice[:,j]=np.einsum('bf,bfa->ba',belief,rates[test[:,j]]).argmax(1)
         seen[label]=z.numpy()[rows,games,choice]
     seen['wtap']=wt.permute(0,1,3,2).reshape(-1,g).numpy()
     official=read(FOLDER/f'crossplay/routed-{coverage:02}.json')['scores']

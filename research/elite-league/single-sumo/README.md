@@ -18,6 +18,14 @@ In the first successor pair, 32 out of 64 fights per update are against the thre
 
 The Linux simulator host trains a second population of three legal policies. A plain GRU and a GRU with a training-only opponent classifier share their initial weights and all assigned fights. An equally sized MLP provides the memoryless comparison. All three play the common tournament after 65,536 fights. Its winner gets a playable alias on the main server. The fork test swaps older opponent history, preserves the last ten observations, checks an unchanged-history replay, and measures outright ring-outs. A separate training-calendar search can identify opponents that reward opposite responses before a prospective timing test. [Remote population design](evidence/robustness-001/protocol.json) · [Cross-host trajectory check](evidence/robustness-001/archive-parity.json)
 
+## Continuous Hetzner league
+
+The `mc-sumo-league` systemd service on `uli@hetzner1` runs successive single-match generations starting from the remote generation-one champion. Each generation trains an MLP and a GRU against the exact incumbent for 65,536 fights each. The 512-game counter test uses common action seeds for the counter and W-tap. A counter needs 308 outright wins to enter the targeted threat pool. A second MLP and GRU each train for 65,536 fights against the incumbent, the weakest matchup, new threats, and the archive. The full field then plays the development tournament. Each pairing gets 256 games over eight clock recordings, both seats and four RTT pairs.
+
+The winner gets a permanent `sumo-league-remote-NNN` alias and becomes the next generation's target. With the Mac logged in, the local publisher catches up on finished generations and a separate worker schedules native W-tap, weakest-opponent, and previous-champion comparisons. Results live under `evidence/robustness-001/continuous-league/gNNN/`. Each native scoreboard includes wins, draws and losses by seat and RTT. Native validation can continue while Hetzner trains.
+
+Use `ssh uli@hetzner1 'systemctl status mc-sumo-league'` to check the service. Use `ssh uli@hetzner1 'sudo systemctl disable --now mc-sumo-league'` to stop training across reboots. Re-enabling it with `sudo systemctl enable --now mc-sumo-league` resumes the last 64-fight checkpoint. [Runner](continuous_remote.py) · [Service configuration](mc-sumo-league.service)
+
 ## What has been verified
 
 Replaying 897 recorded local input heads on the Forge Java 8 bridge and simulator Java 17 produced identical features and buttons for both architectures. The Python forward pass matched the Java scores to within 0.000001 on the initial test episodes. An unchanged GRU continuation reproduced both players' outputs and random streams and the full clock state at 210 server boundaries. [Trace evidence](evidence/runtime-parity.json)
