@@ -23,7 +23,7 @@ def allowed_console_command(command):
     if not isinstance(command,str) or not command or not all(c.isalnum() or c in '-_ ./=?' for c in command):
         return False
     return command in ('lab combat','lab prepare long') or command.startswith(('lab combat ','lab demo ','lab seed ','lab match ','lab diamond ','lab diamond_box ','lab rod_diamond ','lab sumo ','lab ping ','lab scenario ')) or bool(
-        re.fullmatch(r'lab (?:mapprepare|mapgeometry) mmc-[0-9]{3}(?:-[0-9]{2})?|(?:op|deop) [A-Za-z0-9_]{1,16}|weather clear(?: 1000000)?|(?:help|\?|lab help)(?: (?:[1-6]|lab|all|play|settings|matches|replay|views|client))?',command))
+        re.fullmatch(r'slowmo [01]?(?:[.][0-9]+)?|lab (?:mapprepare|mapgeometry) mmc-[0-9]{3}(?:-[0-9]{2})?|(?:op|deop) [A-Za-z0-9_]{1,16}|weather clear(?: 1000000)?|(?:help|\?|lab help)(?: (?:[1-6]|lab|all|play|settings|matches|replay|views|client))?',command))
 
 
 def clean_environment():
@@ -101,7 +101,40 @@ def match_events(path,identifier):
     yield from iter_events(path, identifier)
 
 
-async def latency_proxy(port,configuration,upstream_port=25566,game_speed=1.0):
+class RoomProxyClock:
+    """Queue packet delivery in game seconds so outstanding RTT follows a live speed change."""
+    def __init__(self, path, epoch_ms, rate):
+        self.path = path
+        self.plan = (epoch_ms, 0., rate, 0, rate)
+        self.next_read = 0.
+
+    def now(self):
+        real = time.monotonic()
+        if real >= self.next_read:
+            self.next_read = real + .025
+            try:
+                plan = json.loads(self.path.read_text())
+                self.plan = (plan['training_wall'], plan['training_game_ns'] / 1e9, plan['training_speed'],
+                             plan['training_next_wall'], plan['training_next_speed'])
+            except FileNotFoundError:
+                pass
+        start, game, rate, switch, target = self.plan
+        now_ms = time.time() * 1000
+        if switch and now_ms >= switch:
+            game += (switch - start) * rate / 1000
+            start, rate = switch, target
+        return game + (now_ms - start) * rate / 1000, rate
+
+    async def wait(self, due):
+        while True:
+            game, rate = self.now()
+            remaining = (due - game) / rate
+            if remaining <= 0:
+                return
+            await asyncio.sleep(min(.05, remaining))
+
+
+async def latency_proxy(port,configuration,upstream_port=25566,room_clock=None):
     async def connection(reader,writer):
         try:up_reader,up_writer=await asyncio.open_connection('127.0.0.1',upstream_port)
         except OSError:writer.close();return
@@ -110,15 +143,17 @@ async def latency_proxy(port,configuration,upstream_port=25566,game_speed=1.0):
             async def ingest():
                 last_due=0
                 while data:=await source.read(65536):
-                    delay=float(properties(configuration).get('rtt_ms','0'))/(2000*game_speed)
-                    due=max(last_due,asyncio.get_running_loop().time()+delay);last_due=due
+                    delay=float(properties(configuration).get('rtt_ms','0'))/2000
+                    now=room_clock.now()[0] if room_clock else asyncio.get_running_loop().time()
+                    due=max(last_due,now+delay);last_due=due
                     await queue.put((due,data))
                 await queue.put((0,None))
             async def deliver():
                 while True:
                     due,data=await queue.get()
                     if data is None:return
-                    await asyncio.sleep(max(0,due-asyncio.get_running_loop().time()))
+                    if room_clock:await room_clock.wait(due)
+                    else:await asyncio.sleep(max(0,due-asyncio.get_running_loop().time()))
                     dest.write(data);await dest.drain()
             try:await asyncio.gather(ingest(),deliver())
             finally:dest.close()
@@ -174,12 +209,15 @@ max-tick-time=60000
 async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots=8,port_offset=0,client_start_timeout=150,server_agent=None,training_root=None,training_speed=1.0):
     global BOT_SLOTS,RUNTIME
     game_root=training_root or ROOT
+    room_clock=None
     clock_flags=[]
     if training_root is not None:
         if not .1<=training_speed<=1 or bot_backend!="forge" or slot_backends:
             raise ValueError("Slow sumo requires Forge and a speed from 0.10 to 1.00")
         RUNTIME=training_root/"runtime"
-        clock_flags=["-Dlab.trainingRoom=true",f"-Dlab.trainingSpeed={training_speed}",f"-Dlab.trainingEpoch={int(time.time()*1000)}"]
+        epoch_ms=int(time.time()*1000)
+        room_clock=RoomProxyClock(RUNTIME/"training-clock.json",epoch_ms,training_speed)
+        clock_flags=["-Dlab.trainingRoom=true",f"-Dlab.trainingSpeed={training_speed}",f"-Dlab.trainingEpoch={epoch_ms}"]
     elif training_speed!=1:
         raise ValueError("A separate training room is required for slow motion")
     if bot_backend not in ('legacy','forge') or not 1<=bot_slots<=8:raise ValueError('Choose legacy/forge and 1–8 bot slots')
@@ -193,6 +231,7 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
     lock=open(lock_file,'w')
     try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     except BlockingIOError:raise RuntimeError('PvP Lab is already running')
+    if room_clock:room_clock.path.unlink(missing_ok=True)
     agent=Path(server_agent).resolve() if server_agent else BUILD/'lab-agent.jar'
     verify_cache();sandbox_test()
     agent_hash=hashlib.sha256(agent.read_bytes()).hexdigest()
@@ -232,8 +271,8 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
             if status.exists() and status.stat().st_mtime>time.time()-3:break
             await asyncio.sleep(.5)
         else:raise RuntimeError('Server did not become ready; see runtime/logs/server.log')
-        proxies.append(await latency_proxy(25565+port_offset,RUNTIME/'proxy/human.properties',25566+port_offset,training_speed))
-        proxies.append(await latency_proxy(25569+port_offset,RUNTIME/'proxy/observer.properties',25566+port_offset,training_speed))
+        proxies.append(await latency_proxy(25565+port_offset,RUNTIME/'proxy/human.properties',25566+port_offset,room_clock))
+        proxies.append(await latency_proxy(25569+port_offset,RUNTIME/'proxy/observer.properties',25566+port_offset,room_clock))
         libraries=json.loads((CACHE/'classpath.json').read_text())
         classpath=os.pathsep.join([str(CACHE/'client.jar'),*libraries])
         def start_bot(i,replace=None):
@@ -242,7 +281,7 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
             if backends[i]=='forge':
                 import forge_runtime
                 options=dict(game_root=game_root,clock_flags=clock_flags) if training_root else {}
-                command=forge_runtime.bot_command(i,25570+port_offset+i,round(frame_sleep_ms/training_speed),forge_classpath,**options)
+                command=forge_runtime.bot_command(i,25570+port_offset+i,frame_sleep_ms,forge_classpath,**options)
                 launch(f'bot{i}',command,bot,replace,complete_command=True)
                 return
             digest=agent_hash
@@ -255,7 +294,7 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
                 '--assetsDir',CACHE/'assets','--assetIndex','1.8','--username',name,'--uuid',uuid.uuid3(uuid.NAMESPACE_DNS,name).hex,
                 '--accessToken','0','--userProperties','{}','--userType','legacy','--width','320','--height','240'],bot,replace)
         for i in range(BOT_SLOTS):
-            proxies.append(await latency_proxy(25570+port_offset+i,RUNTIME/f'proxy/slot{i}.properties',25566+port_offset,training_speed))
+            proxies.append(await latency_proxy(25570+port_offset+i,RUNTIME/f'proxy/slot{i}.properties',25566+port_offset,room_clock))
             start_bot(i)
         (RUNTIME/'manager.json').write_text(json.dumps({'pid':os.getpid(),'address':f'127.0.0.1:{25565+port_offset}','version':'1.8.9','started':time.time(),'frame_sleep_ms':frame_sleep_ms,'bot_backends':backends,'bot_slots':BOT_SLOTS,'port_offset':port_offset,'server_agent_sha256':agent_hash,**({'training_speed':training_speed} if training_root else {})}))
         print(f'Server address: 127.0.0.1:{25565+port_offset} (Minecraft Java 1.8.9). Waiting for {BOT_SLOTS} real clients: {backends}.',flush=True)

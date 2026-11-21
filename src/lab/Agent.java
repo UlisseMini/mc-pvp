@@ -31,12 +31,12 @@ public final class Agent implements ClassFileTransformer {
             boolean changed = false;
             for (MethodNode method : node.methods) {
                 // The watchdog compares the last tick timestamp with physical wall time.
-                if (TrainingClock.RATE != 1 && name.equals("net/minecraft/server/MinecraftServer") && method.name.equals("aL") && method.desc.equals("()J")) {
+                if (TrainingClock.ROOM && name.equals("net/minecraft/server/MinecraftServer") && method.name.equals("aL") && method.desc.equals("()J")) {
                     for(AbstractInsnNode ins:method.instructions.toArray()) if(ins.getOpcode()==Opcodes.LRETURN)
                         method.instructions.insertBefore(ins,new MethodInsnNode(Opcodes.INVOKESTATIC,"lab/TrainingClock","wallTimestamp","(J)J",false));
                     changed=true;
                 }
-                if (TrainingClock.RATE != 1 && name.equals("net/minecraft/server/MinecraftServer") && method.name.equals("run") && method.desc.equals("()V")) {
+                if (TrainingClock.ROOM && name.equals("net/minecraft/server/MinecraftServer") && method.name.equals("run") && method.desc.equals("()V")) {
                     int timers=0, sleeps=0;
                     for(AbstractInsnNode ins:method.instructions.toArray()) if(ins instanceof MethodInsnNode fn) {
                         if(fn.owner.equals(name) && fn.name.equals("az") && fn.desc.equals("()J")) {

@@ -57,7 +57,7 @@ public final class Referee {
             m.put("display_a",label("a"));m.put("display_b",label("b"));
             m.put("hits_a",ha);m.put("hits_b",hb);m.put("goal",goal);m.put("ping_a",pingA);m.put("ping_b",pingB);
             m.put("damage_hits_a",sa.breakdown.damageHitsLanded);m.put("damage_hits_b",sb.breakdown.damageHitsLanded);
-            if(TrainingClock.ROOM)m.put("training_speed",TrainingClock.RATE);
+            if(TrainingClock.ROOM)m.put("training_speed",TrainingClock.rate());
             m.put("mode",mode);m.put("blocks_a",ba);m.put("blocks_b",bb);
             m.put("combat_profile",combat.state());
             if(seed!=null)m.put("seed",seed.state());
@@ -104,6 +104,7 @@ public final class Referee {
                 R.call(rules,"setOrCreateGameRule","sendCommandFeedback","false");
                 R.call(rules,"setOrCreateGameRule","commandBlockOutput","false");
             }
+            if(TrainingClock.ROOM)SlowSumo.tick();
             if(policies.isEmpty())loadPolicies();
             List<?> people=players();
             greeted.retainAll(people.stream().map(R::name).toList());
@@ -126,7 +127,7 @@ public final class Referee {
             for(Object p:people){
                 String name=R.name(p);
                 if(greeted.add(name)){
-                    if(TrainingClock.ROOM&&!isBot(name))message(p,"Slow sumo at "+TrainingClock.RATE+"x. /duel sumo-league-remote-001 sumo preset=mmc cps=7");
+                    if(TrainingClock.ROOM&&!isBot(name))message(p,"Slow sumo at "+TrainingClock.rate()+"×. /slowmo changes speed. /duel sumo-league-remote-001 starts a duel.");
                     fullFood(p);
                     CombatTuning.configurePlayer(p,CombatProfile.DEFAULT);
                     if(isBot(name)){botLabel(p,"");vanilla("gamemode 3 "+name);teleport(p,-40-Integer.parseInt(name.substring(7))*6,4,0);disable(name);}
@@ -144,7 +145,7 @@ public final class Referee {
                 if(m.boxingLandmark!=null)m.boxingLandmark.poll();
                 EntryDrills.countdown(m,setupNow);
                 if(setupNow>=m.start){CombatStats.usingItemChanged(a);CombatStats.usingItemChanged(b);}
-                if(!m.setupReseated&&setupNow<m.start&&setupNow>=m.start-TrainingClock.wallDuration(m.drillRound>0?500:1500)){
+                if(!m.setupReseated&&setupNow<m.start&&TrainingClock.gameMillis(m.start)-TrainingClock.gameMillis(setupNow)<=(m.drillRound>0?500:1500)){
                     // Initial destination chunks may arrive after the teleport,
                     // allowing a client to fall into the floor during countdown.
                     // Re-seat once after terrain delivery, strictly before combat.
@@ -166,16 +167,16 @@ public final class Referee {
                 }
                 if(!m.winner.isEmpty()){finish(m,m.finishReason);continue;}
                 if(m.drillRound>0&&!m.jumpReset()&&m.drillFirstHit>0&&setupNow>=m.drillFirstHit+5000){finish(m,"drill_completed");continue;}
-                if(ticks%10==0&&System.currentTimeMillis()>m.start+TrainingClock.wallDuration(2000)&&!validBotViews(m)){
+                if(ticks%10==0&&TrainingClock.millis()-TrainingClock.gameMillis(m.start)>2000&&!validBotViews(m)){
                     finish(m,"invalid_client_view");continue;
                 }
-                if(m.durationMs>0&&System.currentTimeMillis()>m.start+TrainingClock.wallDuration(m.durationMs)){finish(m,m.drillRound>0?"drill_completed":m.scenario?"scenario_completed":"timeout_draw");continue;}
+                if(m.durationMs>0&&TrainingClock.millis()-TrainingClock.gameMillis(m.start)>m.durationMs){finish(m,m.drillRound>0?"drill_completed":m.scenario?"scenario_completed":"timeout_draw");continue;}
                 Map<String,Object> trace=new LinkedHashMap<>();trace.put("type","tick");trace.put("time",System.currentTimeMillis());
                 trace.put("a",replayPosition(a));trace.put("b",replayPosition(b));trace.put("hits_a",m.ha);trace.put("hits_b",m.hb);
                 trace.put("health_a",R.call(a,"getHealth"));trace.put("health_b",R.call(b,"getHealth"));
                 append(m.replay,trace);
                 if(ticks%10==0){
-                    long left=Math.round((m.start-System.currentTimeMillis())*TrainingClock.RATE);
+                    long left=TrainingClock.gameMillis(m.start)-TrainingClock.millis();
                     String score=left>0?"Starting "+m.mode+" in "+((left+999)/1000)+"...":
                         (m.sumo()?"Sumo: "+m.label("a")+" "+m.ha+"–"+m.hb+" "+m.label("b"):m.boxing()?m.label("a")+" "+m.ha+(m.scenario?" hits  |  ":" / 100  |  ")+m.hb+" "+m.label("b"):
                         m.label("a")+" "+hearts(a)+" hearts  |  "+hearts(b)+" "+m.label("b"));
@@ -192,11 +193,14 @@ public final class Referee {
             ServerReplay.tick();
             PovLink.serverTick();
             EntryDrills.tick();
-            if(ticks%Math.max(1,Math.round(10*TrainingClock.RATE))==0){
+            if(ticks%Math.max(1,Math.round(10*TrainingClock.rate()))==0){
                 Map<String,Object> status=new LinkedHashMap<>();status.put("version","1.8.9");status.put("time",System.currentTimeMillis());
                 status.put("players",people.stream().map(R::name).toList());status.put("policies",new ArrayList<>(policies.keySet()));
                 status.put("matches",matches.values().stream().map(Match::state).toList());
-                if(TrainingClock.ROOM)status.put("training_ready",people.stream().map(R::name).filter(PovLink::trainingReady).toList());
+                if(TrainingClock.ROOM){
+                    status.putAll(SlowSumo.clock(System.currentTimeMillis()));
+                    status.put("training_ready",people.stream().map(R::name).filter(PovLink::trainingReady).toList());
+                }
                 status.put("next_scenario_combat",CombatTuning.nextScenario.state());
                 status.put("replays",ServerReplay.state());
                 List<Map<String,Object>> details=new ArrayList<>();
@@ -300,12 +304,14 @@ public final class Referee {
         String[] args=text.trim().split("\\s+");if(args.length==0)return false;
         String cmd=args[0].toLowerCase(Locale.ROOT);
         if(cmd.equals("stop")&&!R.cls("net.minecraft.entity.player.EntityPlayerMP").isInstance(sender))return false;
-        boolean ours=List.of("bots","duel","drill","mode","blocksound","blocktiming","ping","matches","watch","replay","stop","rematch","lab","help","?").contains(cmd);
+        boolean ours=List.of("bots","duel","drill","mode","blocksound","blocktiming","ping","matches","watch","replay","stop","rematch","lab","help","?","slowmo").contains(cmd);
         if(!ours)return false;
         try{
             if(server==null){message(sender,"Lab is still starting.");return true;}
             if(List.of("duel","rematch","watch","replay").contains(cmd)&&find(R.name(sender))==null)EntryDrills.cancel(R.name(sender));
-            if(cmd.equals("help")||cmd.equals("?")){
+            if(cmd.equals("slowmo")){
+                SlowSumo.command(sender,args);
+            }else if(cmd.equals("help")||cmd.equals("?")){
                 LabHelp.show(sender,args.length>1?args[1].toLowerCase(Locale.ROOT):"1");
             }else if(cmd.equals("drill")){
                 EntryDrills.command(sender,args);
@@ -831,7 +837,7 @@ public final class Referee {
         for(String side:List.of("a","b")){Object p=player(side.equals("a")?m.a:m.b);result.put("health_"+side,p==null?null:R.call(p,"getHealth"));}
         result.put("initial_ping_a",m.initialPingA);result.put("initial_ping_b",m.initialPingB);result.put("ping_changes",m.pingChanges);
         result.put("parameters_a",m.configA);result.put("parameters_b",m.configB);
-        if(TrainingClock.ROOM)result.put("game_duration_seconds",Math.max(0,(m.finish-m.start)*TrainingClock.RATE/1000.));
+        if(TrainingClock.ROOM)result.put("game_duration_seconds",Math.max(0,(TrainingClock.gameMillis(m.finish)-TrainingClock.gameMillis(m.start))/1000.));
         result.put("duration_seconds",Math.max(0,(m.finish-m.start)/1000.0));
         writeJson(DATA.resolve("results/"+m.id+".json"),result);append(m.replay,Map.of("type","finish","result",result));
         matches.remove(m.id);

@@ -6,6 +6,7 @@ import java.lang.reflect.*;
 import java.nio.file.*;
 import java.util.*;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.*;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.client.ClientCommandHandler;
@@ -85,29 +86,52 @@ public final class ForgeProbe {
             }
         }}catch(Exception failure){throw new RuntimeException(failure);}}
     private final List<Long> slowTicks=new ArrayList<>();
-    private void slowSumo(Minecraft mc,float speed)throws Exception{
+    private int slowStage;
+    private String slowMatch;
+    private void press(Minecraft mc,String label)throws Exception{
+        GuiScreen screen=mc.field_71462_r;
+        Field buttons=GuiScreen.class.getDeclaredField("field_146292_n");buttons.setAccessible(true);
+        for(Object entry:(List<?>)buttons.get(screen)){
+            GuiButton button=(GuiButton)entry;
+            if(!label.equals(button.field_146126_j))continue;
+            Method click=GuiScreen.class.getDeclaredMethod("func_73864_a",int.class,int.class,int.class);
+            click.setAccessible(true);click.invoke(screen,button.field_146128_h+1,button.field_146129_i+1,0);
+            return;
+        }
+        throw new AssertionError("Missing button "+label);
+    }
+    private void slowSumo(Minecraft mc,float initial)throws Exception{
         Method rate=Class.forName("practice.bridge.TrainingTimer").getDeclaredMethod("acknowledged");
         rate.setAccessible(true);
+        float speed=slowStage==1?.25f:slowStage==2?1:initial;
         if(Math.abs(((Number)rate.invoke(null)).floatValue()-speed)>.00001)return;
         slowTicks.add(System.nanoTime());
+        if(slowTicks.size()<51)return;
         if(slowTicks.size()==51){
-            List<Double> gaps=new ArrayList<>();
-            for(int i=11;i<slowTicks.size();i++)gaps.add((slowTicks.get(i)-slowTicks.get(i-1))/1e6);
-            Collections.sort(gaps);
-            double median=gaps.get(gaps.size()/2);
             double mean=(slowTicks.get(50)-slowTicks.get(10))/40e6;
-            check(Math.abs(mean-50/speed)<5,"human client averaged "+mean+" ms/tick over 40 intervals at "+speed+"x (median "+median+" ms)");
+            check(Math.abs(mean-50/speed)<5,"human client averaged "+mean+" ms/tick over 40 intervals at "+speed+"x");
         }
-        if(slowTicks.size()>=51 && (slowTicks.size()-51)%25==0)
-            mc.field_71439_g.func_71165_d("/duel sumo-league-remote-001 sumo preset=mmc cps=7");
         Map<?,?> view=linked();
-        if(slowTicks.size()>51 && "sumo".equals(view.get("mode")) && view.get("players") instanceof List
-                && ((List<?>)view.get("players")).contains(mc.field_71439_g.func_70005_c_())){
-            check(true,"human client started a synchronized native sumo duel");
-            mc.field_71439_g.func_71165_d("/stop");
-            System.out.println("[PracticeProbe] ALL CHECKS PASSED");
-            mc.func_71400_g();
+        if(slowStage==0){
+            if(!"sumo".equals(view.get("mode"))){
+                if((slowTicks.size()-51)%25==0)mc.field_71439_g.func_71165_d("/duel standstill sumo preset=mmc cps=7");
+                return;
+            }
+            slowMatch=(String)view.get("match");
+            check(slowMatch!=null && !slowMatch.isEmpty(),"native duel started "+slowMatch);
+            mc.func_147108_a(new GuiIngameMenu());
+            press(mc,"Slow motion");press(mc,"25%");press(mc,"Apply");
+            check(mc.field_71462_r==null,"applying Escape-menu speed returns to duel");
+        }else{
+            check(slowMatch.equals(view.get("match")),"same native duel "+slowMatch+" at "+speed+"x");
+            if(slowStage==1)mc.field_71439_g.func_71165_d("/slowmo 1");
+            if(slowStage==2)mc.field_71439_g.func_71165_d("/slowmo "+initial);
+            if(slowStage==3){
+                mc.field_71439_g.func_71165_d("/stop");
+                System.out.println("[PracticeProbe] ALL CHECKS PASSED");mc.func_71400_g();return;
+            }
         }
+        slowStage++;slowTicks.clear();
     }
     @SubscribeEvent public void tick(TickEvent.ClientTickEvent e){
         if(e.phase!=TickEvent.Phase.END)return;

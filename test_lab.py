@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 import lab
 from native_windows import overlap,sustained_combo
-from lab_runtime import latency_proxy
+from lab_runtime import RoomProxyClock, latency_proxy
 
 
 class NativeWindowMetricTest(unittest.TestCase):
@@ -75,6 +75,41 @@ class SupplyChainTest(unittest.TestCase):
 
 
 class NetworkTest(unittest.IsolatedAsyncioTestCase):
+    async def test_queued_packet_follows_room_speed(self):
+        loop = asyncio.get_running_loop()
+        arrived = loop.create_future()
+
+        async def receive(reader, writer):
+            data = await reader.readexactly(2)
+            arrived.set_result((data, loop.time()))
+            writer.close()
+
+        with tempfile.TemporaryDirectory() as folder:
+            clock_path = Path(folder)/'clock.json'
+            config = Path(folder)/'rtt.properties'
+            config.write_text('rtt_ms=400\n')
+            epoch = int(time.time()*1000)
+            clock = RoomProxyClock(clock_path, epoch, 1.0)
+            async with await asyncio.start_server(receive, '127.0.0.1', 0) as upstream:
+                async with await latency_proxy(0, config, upstream.sockets[0].getsockname()[1], clock) as proxy:
+                    _, writer = await asyncio.open_connection('127.0.0.1', proxy.sockets[0].getsockname()[1])
+                    start = loop.time()
+                    writer.write(b'A')
+                    await writer.drain()
+                    await asyncio.sleep(.03)
+                    switch = int(time.time()*1000) + 50
+                    clock_path.write_text(json.dumps(dict(training_wall=epoch, training_game_ns=0,
+                        training_speed=1., training_next_wall=switch, training_next_speed=.25)))
+                    config.write_text('rtt_ms=0\n')
+                    writer.write(b'B')
+                    await writer.drain()
+                    data, end = await asyncio.wait_for(arrived, 2)
+                    writer.close()
+                    await writer.wait_closed()
+                    self.assertEqual(data, b'AB')
+                    # 80 ms at full speed, then 120 game ms at quarter speed.
+                    self.assertAlmostEqual(end-start, .56, delta=.10)
+
     async def test_delay_preserves_order_without_accumulating_per_packet(self):
         async def echo(reader,writer):
             try:

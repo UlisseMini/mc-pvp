@@ -281,7 +281,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
             String type=String.valueOf(data.get("type"));
             if(!Arrays.asList("welcome","state","pong","marker_ack","replay_view","replay_menu").contains(type))return;
             if(type.equals("welcome") && data.get("training_speed") instanceof Number){
-                TrainingTimer.accept(active,((Number)data.get("training_speed")).doubleValue());archiveLocation();
+                TrainingTimer.accept(active,data);archiveLocation();
             }
             if(type.equals("replay_view")){replay.receive(data);return;}
             if(type.equals("replay_menu")){Minecraft.func_71410_x().func_147108_a(new ReplayMenu(this));return;}

@@ -29,7 +29,7 @@ Open **[Start Slow Sumo.command](Start%20Slow%20Sumo.command)**, enter a speed f
 
 At half speed, each physics tick lasts 100 real milliseconds. A ten-tick fresh-hit window lasts one real second. Seven bot clicks per game second allow at most 3.5 per real second. Your mouse aim and physical clicks remain live. To practice the equivalent human cadence, aim for 3.5 clicks per real second. Configured network delay also scales, so a 100 ms added RTT takes 200 real milliseconds at half speed.
 
-To change the speed, finish your duel, reopen the launcher, and reconnect. From Terminal, `python3 slow_sumo.py 0.25` starts quarter speed and `python3 slow_sumo.py --stop` closes the training room. The regular lab runs independently on port 25565.
+To change speed during a duel, press **Esc → Slow motion**, choose a percentage, and click **Apply**. In chat, `/slowmo` shows clickable presets and `/slowmo 0.35` sets an exact speed. Changes apply to everyone in the training room, including the bots. From Terminal, `python3 slow_sumo.py 0.25` selects quarter speed and `python3 slow_sumo.py --stop` closes the training room. The regular lab runs independently on port 25565.
 
 ### Modern sword combat on macOS
 

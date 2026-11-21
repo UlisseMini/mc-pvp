@@ -158,7 +158,10 @@ public final class PracticeBridge {
     }
     void offlineStarted(){sprintPressed=false;}
     void offlineStopped(){sprintPressed=false;host.event(new PracticeEvent("replay_frame",0,0,0,Collections.emptyMap()));scope();}
+    private static final int SLOW_MOTION_BUTTON=8137;
     @SubscribeEvent public void menuButtons(GuiScreenEvent.InitGuiEvent.Post e){
+        if(e.gui instanceof GuiIngameMenu && TrainingTimer.configurable())
+            e.buttonList.add(new GuiButton(SLOW_MOTION_BUTTON,4,28,100,20,"Slow motion"));
         if(e.gui instanceof GuiMainMenu)e.buttonList.add(new GuiButton(LOCAL_REPLAYS_BUTTON,4,4,100,20,"Local replays"));
         if(offline.active&&e.gui instanceof GuiIngameMenu){
             int x=e.gui.field_146294_l/2-100, y=e.gui.field_146295_m/4+128;
@@ -166,6 +169,8 @@ public final class PracticeBridge {
         }
     }
     @SubscribeEvent public void menuAction(GuiScreenEvent.ActionPerformedEvent.Post e){
+        if(e.gui instanceof GuiIngameMenu && e.button.field_146127_k==SLOW_MOTION_BUTTON && TrainingTimer.configurable())
+            Minecraft.func_71410_x().func_147108_a(new SlowMotionScreen(e.gui));
         if(e.gui instanceof GuiMainMenu&&e.button.field_146127_k==LOCAL_REPLAYS_BUTTON)offline.browser();
         if(e.gui instanceof GuiIngameMenu&&e.button.field_146127_k==RETURN_TO_MMC_BUTTON)offline.returnToMmc();
     }

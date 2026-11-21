@@ -32,7 +32,7 @@ public final class PovLink {
     static boolean trainingReady(String name){
         Peer p=peers.get(name);Object player=Referee.player(name);
         return player!=null && p!=null && p.connection==R.get(player,"playerNetServerHandler") &&
-                Math.abs(p.trainingRate-TrainingClock.RATE)<.000001;
+                Math.abs(p.trainingRate-TrainingClock.rate())<.000001;
     }
     public static boolean subscribed(String player){Peer p=peers.get(player);return p!=null&&System.currentTimeMillis()-p.seen<6000;}
     @SuppressWarnings("unchecked") public static void serverTick(){
@@ -61,7 +61,7 @@ public final class PovLink {
                     }
                     if(data.get("fast_view") instanceof Map fast)peer.fast=fast;
                     Map<String,Object> reply=new LinkedHashMap<>();reply.put("type",type.equals("hello")?"welcome":"pong");reply.put("version",1);
-                    if(TrainingClock.ROOM)reply.put("training_speed",TrainingClock.RATE);
+                    if(TrainingClock.ROOM)reply.putAll(SlowSumo.clock(now));
                     reply.put("match",match);reply.put("client_send_ms",sent);reply.put("server_receive_ms",incoming.received);reply.put("server_send_ms",System.currentTimeMillis());
                     reply.put("server_tick",Referee.ticks);reply.put("clock","same-host UNIX ms; delivery includes configured ping");send(player,reply);
                 }else if(type.equals("telemetry")&&data.get("view") instanceof Map view){
