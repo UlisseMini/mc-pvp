@@ -30,13 +30,18 @@ public final class BowReleasePolicy {
     public double baseline() { return ema; }
     public int holdTicks() { return holdTicks; }
 
+    public boolean shouldFire(double prob, int thresholdPct, ReleaseMode mode) {
+        return shouldFire(prob, thresholdPct, mode, false);
+    }
+
     /**
      * Evaluate whether to release the arrow on this full-draw tick.
      * @param prob calibrated expected hit probability in [0, 1]
      * @param thresholdPct user layup threshold in [1, 100]
      * @param mode SMART (optimal-stopping peak-spike) or THRESHOLD (fixed cutoff)
+     * @param losingCover true if target is predicted to step behind terrain cover in ~4 ticks
      */
-    public boolean shouldFire(double prob, int thresholdPct, ReleaseMode mode) {
+    public boolean shouldFire(double prob, int thresholdPct, ReleaseMode mode, boolean losingCover) {
         if (!Double.isFinite(prob) || prob <= 0.0) return false;
         double layup = thresholdPct / 100.0;
         if (mode == ReleaseMode.THRESHOLD) {
@@ -52,6 +57,12 @@ public final class BowReleasePolicy {
 
         // 1. Instant layup
         if (prob >= layup) {
+            spiking = true;
+            return true;
+        }
+
+        // 1b. Cover-urgency: target is visible now (decent shot) but about to duck behind blocks!
+        if (losingCover && prob >= MIN_FLOOR) {
             spiking = true;
             return true;
         }

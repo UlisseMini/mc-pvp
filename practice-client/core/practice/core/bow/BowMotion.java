@@ -29,52 +29,73 @@ public final class BowMotion {
 
     public static final class Track {
         private final double[][] pos = new double[3][CAPACITY];
+        private final double[][] spos = new double[3][CAPACITY];
         private final byte[] context = new byte[CAPACITY];
         private final float[] yaw = new float[CAPACITY];
         private final float[] pitch = new float[CAPACITY];
         private final byte[] flags = new byte[CAPACITY];
+        private final float[][] rel = new float[CAPACITY][10];
+        private final boolean[] hasRel = new boolean[CAPACITY];
         private int tick = Integer.MIN_VALUE, length;
 
         public int tick() { return tick; }
         public int length() { return length; }
 
         public void add(int now, double x, double y, double z) {
-            add(now, x, y, z, 0, 0f, 0f, 0);
+            add(now, x, y, z, 0, 0f, 0f, 0, x, y, z, null);
         }
 
         public void add(int now, double x, double y, double z, int cue) {
-            add(now, x, y, z, cue, 0f, 0f, 0);
+            add(now, x, y, z, cue, 0f, 0f, 0, x, y, z, null);
         }
 
         public void add(int now, double x, double y, double z, int cue, float headYaw, float headPitch, int stateFlags) {
+            add(now, x, y, z, cue, headYaw, headPitch, stateFlags, x, y, z, null);
+        }
+
+        public void add(int now, double x, double y, double z, int cue, float headYaw, float headPitch, int stateFlags,
+                        double serverX, double serverY, double serverZ, float[] relational10) {
             if (now == tick) return;
             int gap = now - tick;
             if (length == 0 || gap <= 0 || gap > 3 || distance(x, y, z) > 2.5 * gap) {
                 length = 0;
             } else if (gap > 1) {
-                double sx = get(0, 0), sy = get(0, 1), sz = get(0, 2);
+                double sx0 = get(0, 0), sy0 = get(0, 1), sz0 = get(0, 2);
                 for (int step = 1; step < gap; step++) {
                     double frac = step / (double)gap;
                     int idx = (tick + step) & MASK;
-                    pos[0][idx] = sx + (x - sx) * frac;
-                    pos[1][idx] = sy + (y - sy) * frac;
-                    pos[2][idx] = sz + (z - sz) * frac;
+                    double ix = sx0 + (x - sx0) * frac, iy = sy0 + (y - sy0) * frac, iz = sz0 + (z - sz0) * frac;
+                    pos[0][idx] = ix; pos[1][idx] = iy; pos[2][idx] = iz;
+                    spos[0][idx] = ix; spos[1][idx] = iy; spos[2][idx] = iz;
                     context[idx] = (byte)cue;
                     yaw[idx] = headYaw;
                     pitch[idx] = headPitch;
                     flags[idx] = (byte)stateFlags;
+                    if (relational10 != null && relational10.length >= 10) {
+                        System.arraycopy(relational10, 0, rel[idx], 0, 10);
+                        hasRel[idx] = true;
+                    } else {
+                        Arrays.fill(rel[idx], 0f);
+                        hasRel[idx] = false;
+                    }
                     length = Math.min(CAPACITY, length + 1);
                 }
             }
             tick = now;
             int index = now & MASK;
-            pos[0][index] = x;
-            pos[1][index] = y;
-            pos[2][index] = z;
+            pos[0][index] = x; pos[1][index] = y; pos[2][index] = z;
+            spos[0][index] = serverX; spos[1][index] = serverY; spos[2][index] = serverZ;
             context[index] = (byte)cue;
             yaw[index] = headYaw;
             pitch[index] = headPitch;
             flags[index] = (byte)stateFlags;
+            if (relational10 != null && relational10.length >= 10) {
+                System.arraycopy(relational10, 0, rel[index], 0, 10);
+                hasRel[index] = true;
+            } else {
+                Arrays.fill(rel[index], 0f);
+                hasRel[index] = false;
+            }
             length = Math.min(CAPACITY, length + 1);
         }
 
@@ -83,10 +104,13 @@ public final class BowMotion {
         }
 
         public double get(int age, int axis) { return pos[axis][(tick - age) & MASK]; }
+        public double serverGet(int age, int axis) { return spos[axis][(tick - age) & MASK]; }
         public int cue(int age) { return context[(tick - age) & MASK] & 3; }
         public float yaw(int age) { return yaw[(tick - age) & MASK]; }
         public float pitch(int age) { return pitch[(tick - age) & MASK]; }
         public int flags(int age) { return flags[(tick - age) & MASK] & 0xFF; }
+        public float[] rel(int age) { return rel[(tick - age) & MASK]; }
+        public boolean hasRel(int age) { return hasRel[(tick - age) & MASK]; }
 
         /** Native observations can repeat between packets, so estimate velocity across multiple ticks. */
         private double velocity(int age, int a, int b, int axis) {

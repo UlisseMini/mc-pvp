@@ -44,19 +44,25 @@ public final class DodgeNeuralBench {
             return x >= 0 && x < nx && y >= 0 && y < ny && z >= 0 && z < nz && blocks[(x * ny + y) * nz + z];
         }
 
-        byte[] sampleVox(double wx, double wy, double wz) {
-            byte[] vox = new byte[BowNeuralMotion.VOX_DIM];
+        byte[][] sampleMultiVox(double wx, double wy, double wz) {
+            byte[] fine = new byte[BowNeuralMotion.FINE_DIM];
+            byte[] coarse = new byte[BowNeuralMotion.COARSE_DIM];
             int bx = floor(wx), by = floor(wy), bz = floor(wz);
-            for (int dy = -3; dy <= 3; dy++) {
-                int yOff = (dy + 3) * 81;
-                for (int dz = -4; dz <= 4; dz++) {
-                    int zOff = yOff + (dz + 4) * 9;
-                    for (int dx = -4; dx <= 4; dx++) {
-                        if (block(bx + dx, by + dy, bz + dz)) vox[zOff + (dx + 4)] = 1;
+            for (int cy = 0; cy < 10; cy++) {
+                int fy = cy - 1, coarseYOff = (cy >> 1) * 121;
+                for (int cz = 0; cz < 22; cz++) {
+                    int fz = cz - 6, coarseZOff = coarseYOff + (cz >> 1) * 11;
+                    for (int cx = 0; cx < 22; cx++) {
+                        if (block(bx - 10 + cx, by - 4 + cy, bz - 10 + cz)) {
+                            coarse[coarseZOff + (cx >> 1)] = 1;
+                            int fx = cx - 6;
+                            if (fy >= 0 && fy < 7 && fz >= 0 && fz < 9 && fx >= 0 && fx < 9)
+                                fine[fy * 81 + fz * 9 + fx] = 1;
+                        }
                     }
                 }
             }
-            return vox;
+            return new byte[][]{fine, coarse};
         }
 
         boolean body(double x, double y, double z, double height) {
@@ -254,17 +260,20 @@ public final class DodgeNeuralBench {
                                     legacy.path(track, Mode.LINEAR, FLIGHT), .90);
                             shots[1] = BowBallistics.intercept(shooter.x, shooter.y + EYE, shooter.z, speed,
                                     legacy.path(track, Mode.ADAPTIVE, FLIGHT), .90);
-                            // Multi-mode neural + live 9x7x9 voxels from DodgeArena map!
-                            BowNeuralMotion.Prediction pred = neural.predict(track,
-                                    arena.sampleVox(target.x, target.y, target.z), true);
+                            // Multi-mode neural v2 + live multi-scale voxels + continuous refinement!
+                            byte[][] vox = arena.sampleMultiVox(target.x, target.y, target.z);
+                            BowNeuralMotion.Prediction pred = neural.predict(track, vox[0], vox[1], true);
                             Shot best = null; double bestP = -1;
                             for (int c = 0; c <= pred.paths.length; c++) {
                                 double[][] path = c < pred.paths.length ? pred.paths[c] : pred.meanPath;
                                 Shot cand = BowBallistics.intercept(shooter.x, shooter.y + EYE, shooter.z, speed, path, .90);
                                 if (cand != null) {
-                                    double pr = neural.rawHitProb(cand, pred);
+                                    double pr = neural.rawHitProb(cand, pred, 0.0);
                                     if (pr > bestP) { bestP = pr; best = cand; }
                                 }
+                            }
+                            if (best != null) {
+                                best = neural.refineShot(shooter.x, shooter.y + EYE, shooter.z, speed, best, pred, 0.0, null);
                             }
                             shots[2] = best;
                             for (int k = 0; k < 3; k++) {
