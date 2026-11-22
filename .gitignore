@@ -5,4 +5,15 @@ logs/
 recordings/match-ledgers/
 __pycache__/
 *.pyc
+*.pt
+*.lock
 .DS_Store
+
+# Ephemeral experiment policy dumps and raw ladder/training artifacts
+policies/idlab-*.properties
+policies/sg-router-*.properties
+research/sword26/evidence/ladder26/season-*/
+research/sword26/evidence/ladder26/scout-*/
+research/sword26/evidence/ladder26/java-*/
+research/sword26/evidence/ladder26/fighters/
+

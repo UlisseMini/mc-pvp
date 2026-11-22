@@ -5,3 +5,7 @@
 **/plateau/evolution/es-*.txt
 **/bootstrap-state.pt
 **/fit.lock
+evidence/**
+!evidence/**/
+!evidence/**/*.md
+
