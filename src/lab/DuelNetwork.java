@@ -116,6 +116,12 @@ public final class DuelNetwork {
         return key+4*(side+1)+(click?STRIDE:0)+(jump?2*STRIDE:0);
     }
     public static int key(int a){return a%4;} // 0 release, 1 W, 2 W+Ctrl, 3 S
+    /** Release Ctrl while sprint is latched. A local contact can then produce STOP before the next input head. */
+    public static int withAutoSprint(int action,boolean sprinting){
+        int key=key(action);
+        if(key!=1 && key!=2)return action;
+        return action-key+(sprinting?1:2);
+    }
     public static int side(int a){return a/4%3-1;} // +1 = left
     public static boolean click(int a){return (a/STRIDE&1)!=0;}
     public static boolean jump(int a){return a>=2*STRIDE;}

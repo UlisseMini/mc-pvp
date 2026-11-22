@@ -13,6 +13,7 @@ final class ReplayData {
     Map<String,Object> setup=Map.of();
     final List<Map<String,Object>> frames=new ArrayList<>(),events=new ArrayList<>();
     final List<Long> times=new ArrayList<>();
+    final Map<String,NavigableMap<Long,Boolean>> sprintHits=Map.of("a",new TreeMap<>(),"b",new TreeMap<>());
     final long start,duration;
     final double originalCenter;
     final boolean posesRecorded;
@@ -65,6 +66,9 @@ final class ReplayData {
                 if(type.equals("tick"))frames.add(e);
                 else if(Set.of("hit","critical","blocked_damage","rod_trick","melee_damage").contains(type)){
                     events.add(e);
+                    Boolean sprint=practice.replay.SprintHit.classify(e);
+                    if(sprint!=null)for(String side:List.of("a","b"))
+                        if(Objects.equals(result.get(side),e.get("attacker")))sprintHits.get(side).put(time-start,sprint);
                     if(type.equals("hit")&&!frames.isEmpty()){
                         Map<String,Object> f=new LinkedHashMap<>(frames.get(frames.size()-1));f.put("time",time);
                         String attacker=Objects.equals(e.get("attacker"),result.get("a"))?"a":"b",victim=attacker.equals("a")?"b":"a";

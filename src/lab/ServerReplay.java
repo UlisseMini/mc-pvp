@@ -267,6 +267,15 @@ public final class ServerReplay {
         Map<String,Object> data=new LinkedHashMap<>();data.put("type","replay_view");data.put("version",1);data.put("active",true);data.put("match",s.data.id);data.put("start_ms",s.data.start);data.put("server_ms",now);data.put("time_ms",ms);data.put("duration_ms",s.data.duration);
         data.put("step_label",s.stepLabel);data.put("paused",s.clock.paused());data.put("speed",s.clock.speed());data.put("source",s.source);data.put("camera",s.camera);data.put("ghosts",new ArrayList<>(s.ghosts));data.put("views",views);data.put("next",next);data.put("view_missing",s.viewMissing);
         data.put("offset_x",s.center-s.data.originalCenter);data.put("actor_ids",Arrays.stream(s.actors).map(ServerReplay::id).toList());data.put("availability",s.data.pov.info());data.put("labels",List.of(s.data.label("a"),s.data.label("b")));
+        String subject=s.source.equals("server")?s.camera:s.source;
+        NavigableMap<Long,Boolean> hits=s.data.sprintHits.get(subject);
+        if(hits!=null){
+            List<Object> cues=new ArrayList<>();
+            // Include upcoming hits for the client's interpolated playhead between replay updates.
+            hits.subMap(ms-practice.replay.SprintHit.DISPLAY_MS,true,ms+1000,true)
+                .forEach((at,sprint)->cues.add(Map.of("at",at,"sprint",sprint)));
+            data.put("sprint_hits",cues);
+        }
         data.put("reach",List.of(ReplayData.number(s.data.result,"attack_reach_a",3),ReplayData.number(s.data.result,"attack_reach_b",3)));PovLink.send(viewer,data);
     }
     private static Map<String,Object> viewFrame(Session s,String source,long ms){

@@ -109,6 +109,22 @@ public final class PovLink {
         Map<String,Object> out=ScienceTrace.state(player);out.put("id",R.call(player,"getEntityId"));out.put("name",R.name(player));
         out.put("health",R.call(player,"getHealth"));out.put("blocking",R.call(player,"isBlocking"));out.put("hurt_time",R.num(player,"hurtTime"));return out;
     }
+    static void sumoFinished(Referee.Match match,String reason){
+        List<String> players=List.of(match.a,match.b);
+        for(int side=0;side<players.size();side++){
+            String who=players.get(side);
+            Object player=Referee.player(who);
+            if(player==null||Referee.isBot(who)||!subscribed(who))continue;
+            try{
+                Object handler=R.get(player,"playerNetServerHandler");
+                Object address=R.call(R.get(handler,"netManager"),"getRemoteAddress");
+                if(!(address instanceof InetSocketAddress remote)||remote.getAddress()==null||!remote.getAddress().isLoopbackAddress())continue;
+                String result=match.winner.isEmpty()?"Draw":match.winner.equals(who)?"Won":"Lost";
+                send(player,Map.of("type","sumo_finish","version",1,"match",match.id,"finish",match.finish,
+                        "reason",reason,"result",result,"sprint_hits",match.sumoSprint[side],"fresh_hits",match.sumoFresh[side]));
+            }catch(RuntimeException error){if(errors++<4)error.printStackTrace();}
+        }
+    }
     static void send(Object player,Map<String,Object> data){
         byte[] bytes=Json.encode(data).getBytes(StandardCharsets.UTF_8);if(bytes.length>30000){dropped++;return;}
         Object buffer=R.construct("net.minecraft.network.PacketBuffer",R.call(R.cls("io.netty.buffer.Unpooled"),"wrappedBuffer",bytes));

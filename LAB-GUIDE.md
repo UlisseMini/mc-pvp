@@ -186,16 +186,20 @@ combat. The client reads its own movement and incoming game packets.
 | Client command | Feedback |
 |---|---|
 | `/p jumpreset on` | XP orb ping that grows louder with the estimated reduction, plus early or late timing and the measured first step back. |
-| `/p blockhit on` | Anvil chime for definite blocks and a result above the hotbar for incoming player melee. |
+| `/p blockhit on` | Anvil chime for blocked player melee and a result above the hotbar. |
 | `/p oldblock off` | Restore 1.8 first-person item-use animations. The 1.7-style swing during blocking, bow draw, eating and drinking starts enabled. |
 
-Use `off` to disable either trainer. The blockhit trainer tests health loss
-against nearby players' plausible weapons and your visible mitigation. If the
-verdict depends on the attacker, a clear knockback direction can narrow the
-candidates and the result is marked **Likely**. The game does not send the
-attacker's identity for ordinary hits. Confidence can drop with custom damage,
-hidden equipment stats, or several overlapping hits. The client uses the lab's
-anvil cue if it already arrived for the hit.
+Use `off` to disable either trainer. The blockhit trainer briefly buffers
+incoming hurt and damage updates so it can combine red and yellow hearts lost
+and grade each hit once throughout a held block. It compares the loss with
+likely weapons and visible mitigation. Sword-use, release, and slot-change
+packets help establish whether the server had time to see a guard. A nearby
+sword swing, critical-hit cue, and knockback can support a **Likely blocked**
+chime when damage alone is ambiguous. Active projectiles and nearby hazards
+are considered separately from melee. When the server reports an arrow sticking
+in the player, the trainer can also grade a blocked arrow with a sustained
+guard. Public servers provide limited evidence for overlapping or lethal hits.
+If the lab's anvil cue already arrived for the hit, the client reuses it.
 
 Both trainers show text above the hotbar by default. Use `/p jumpreset hud center`
 or `/p blockhit hud center` for larger centered text. Use `hud off` to hide the
@@ -221,7 +225,9 @@ To rerun the native blockhit suite, build the lab and Forge client, then run
 `python3 practice-client/blockhit_smoke.py`. It uses an isolated loopback
 server and saves the client logs and server verdicts under `build/blockhit-smoke`.
 The hidden-gear case strips the observed sword's enchantment data while the
-server still applies it.
+server still applies it. Add `--perturb` to delay hurt status until after the
+damage update and remove incoming velocity for the sustained block.
+Add `--arrows` to also test a blocked and an unblocked arrow hit.
 
 ### Minemen-like knockback
 

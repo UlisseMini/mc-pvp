@@ -125,6 +125,17 @@ class RoomProxyClock:
             start, rate = switch, target
         return game + (now_ms - start) * rate / 1000, rate
 
+    def bot_clock_flags(self, epoch_ms):
+        # A replacement bot can join hours after the initial rate changed. Give it
+        # the server's time origin before it starts polling controls or accepting input.
+        plan = json.loads(self.path.read_text())
+        return ['-Dlab.trainingRoom=true', f'-Dlab.trainingEpoch={epoch_ms}',
+                f'-Dlab.trainingSpeed={plan["training_speed"]}',
+                f'-Dlab.trainingWall={plan["training_wall"]}',
+                f'-Dlab.trainingGameNs={plan["training_game_ns"]}',
+                f'-Dlab.trainingNextWall={plan["training_next_wall"]}',
+                f'-Dlab.trainingNextSpeed={plan["training_next_speed"]}']
+
     async def wait(self, due):
         while True:
             game, rate = self.now()
@@ -280,7 +291,10 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
             bot_started_at[i]=time.time()*1000
             if backends[i]=='forge':
                 import forge_runtime
-                options=dict(game_root=game_root,clock_flags=clock_flags) if training_root else {}
+                options={}
+                if room_clock is not None:
+                    flags=room_clock.bot_clock_flags(epoch_ms) if room_clock.path.is_file() else clock_flags
+                    options=dict(game_root=game_root,clock_flags=flags)
                 command=forge_runtime.bot_command(i,25570+port_offset+i,frame_sleep_ms,forge_classpath,**options)
                 launch(f'bot{i}',command,bot,replace,complete_command=True)
                 return

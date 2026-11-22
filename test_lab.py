@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import json
+import subprocess
 import tempfile
 import time
 import unittest
@@ -61,6 +62,19 @@ class NativeWindowMetricTest(unittest.TestCase):
         self.assertEqual(sustained_combo(windows,contacts,[2500],max_gap_ms=None)['duration_ms'],0)
         split=[{'start':0,'end':2500},{'start':2600,'end':6000}]
         self.assertEqual(sustained_combo(split,contacts,[],max_gap_ms=None)['duration_ms'],0)
+
+
+class TrainingClockTest(unittest.TestCase):
+    def test_resumed_and_rejoining_forge_clock(self):
+        with tempfile.TemporaryDirectory() as temp:
+            folder=Path(temp)
+            plan=folder/'room.json'
+            plan.write_text(json.dumps(dict(training_wall=2000,training_game_ns=400_000_000,
+                                            training_speed=.3,training_next_wall=3200,training_next_speed=1)))
+            flags=RoomProxyClock(plan,1000,1).bot_clock_flags(1000)
+            subprocess.run(['javac','--release','8','-proc:none','-d',temp,lab.ROOT/'src/lab/TrainingClock.java',
+                            lab.ROOT/'tests/TrainingClockResumeCheck.java'],check=True)
+            subprocess.run(['java',*flags,'-cp',temp,'lab.TrainingClockResumeCheck'],check=True)
 
 
 class SupplyChainTest(unittest.TestCase):

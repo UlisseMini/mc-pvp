@@ -28,6 +28,7 @@ public final class Referee {
     static final class Match {
         String id,a,b,pa,pb,winner="",request="",mode="boxing",finishReason="100_hits"; int ha,hb,ba,bb,goal=100,arena,pingChanges; long start,finish,durationMs=180_000; boolean scenario,setupReseated; double pingA,pingB,initialPingA,initialPingB;
         int sumoDiameter=SumoArena.DIAMETER;String observedFloor="";RecordedSumoMap sumoMap;
+        final int[] sumoFresh = new int[2], sumoSprint = new int[2];
         boolean boxing(){return mode.equals("boxing");}
         CombatProfile combat=CombatProfile.DEFAULT;
         SeededStartServer.Session seed;
@@ -288,11 +289,23 @@ public final class Referee {
             hit.put("attacker",who);hit.put("target",victim);hit.put("damage",damage);hit.put("hits_a",m.ha);hit.put("hits_b",m.hb);
             // This hook runs inside attackEntityFrom's return, before the outer
             // player attack clears its sprint flag. Pure observation only.
-            hit.put("attacker_sprint",R.call(attacker,"isSprinting"));hit.put("attacker_state",position(attacker));hit.put("target_state",position(target));
+            Object attackerSprint=R.call(attacker,"isSprinting");
+            hit.put("attacker_sprint",attackerSprint);hit.put("attacker_state",position(attacker));hit.put("target_state",position(target));
+            if(m.sumo()&&!rod&&!immuneBefore){
+                int side=who.equals(m.a)?0:1;
+                m.sumoFresh[side]++;
+                if(Boolean.TRUE.equals(attackerSprint))m.sumoSprint[side]++;
+            }
             hit.put("health_after",R.call(target,"getHealth"));hit.put("blocking",R.call(target,"isBlocking"));
             hit.put("rod",rod);hit.put("damage_upgrade",immuneBefore);
+            hit.put("direct_melee",direct==attacker&&"player".equals(R.call(source,"getDamageType")));
             hit.put("hit_index",m.ha+m.hb);hit.put("server_tick",ticks);
             append(m.replay,hit);
+            Boolean sprintKb=practice.replay.SprintHit.classify(hit);
+            if(sprintKb!=null&&!isBot(who)&&PovLink.subscribed(who)){
+                try{PovLink.send(attacker,Map.of("type","sprint_hit","version",1,"match",m.id,"attacker",who,"sprint",sprintKb,"index",m.ha+m.hb));}
+                catch(RuntimeException error){if(errors++<4)error.printStackTrace();}
+            }
             if(m.boxingLandmark!=null&&!rod)m.boxingLandmark.accepted(who,immuneBefore,((Number)hit.get("time")).longValue());
             if(m.boxing()){if(!m.scenario){if(m.ha>=m.goal)m.winner=m.a;else if(m.hb>=m.goal)m.winner=m.b;}}
             else if(!m.sumo()&&((Number)R.call(target,"getHealth")).floatValue()<=0){m.winner=who;m.finishReason="death";}
@@ -840,6 +853,7 @@ public final class Referee {
         if(TrainingClock.ROOM)result.put("game_duration_seconds",Math.max(0,(TrainingClock.gameMillis(m.finish)-TrainingClock.gameMillis(m.start))/1000.));
         result.put("duration_seconds",Math.max(0,(m.finish-m.start)/1000.0));
         writeJson(DATA.resolve("results/"+m.id+".json"),result);append(m.replay,Map.of("type","finish","result",result));
+        if(m.sumo())PovLink.sumoFinished(m,reason);
         matches.remove(m.id);
         Set<String> recipients=new LinkedHashSet<>(List.of(m.a,m.b));
         for(var watcher:watching.entrySet())if(watcher.getValue().equals(m.id))recipients.add(watcher.getKey());

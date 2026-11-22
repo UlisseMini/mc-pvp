@@ -4,6 +4,9 @@ Help the non-programmer user build and understand the project. Apply ordinary
 Git, coding and verification practices without requiring them to manage those
 details. Explain results plainly and distinguish tested behavior from hypotheses.
 
+For three-POV Sumo replay diagnosis and counterfactual analysis, use the
+[Sumo Replay Analysis project skill](.agents/skills/sumo-replay-analysis/SKILL.md).
+
 Before combat-model or combo experiments, read
 [the current research brief](research/combo-research-brief.md). It records the
 user's objective, constraints, hints and methodological corrections. The current

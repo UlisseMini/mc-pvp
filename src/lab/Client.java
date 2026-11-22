@@ -36,6 +36,8 @@ public final class Client {
     static long heartbeatAt,respawnAt,probeAt;
     static final TargetWatchdog targetWatchdog=new TargetWatchdog();
     static final MomentumController momentum=new MomentumController();
+    static SumoWtapController sumoWtap;
+    static long sumoContact, sumoConsumedPress;
     static final OrbitController orbit=new OrbitController();
     static final CycleController cycle=new CycleController();
     static final FrozenLegalCycleController frozenCycle=new FrozenLegalCycleController();
@@ -433,6 +435,8 @@ public final class Client {
                 sprintPulse=true;
                 ModelController.reset();
                 momentum.reset();
+                sumoWtap=controls.getProperty("kind", "").equals("sumo-wtap") ? new SumoWtapController() : null;
+                sumoContact=sumoConsumedPress=0;
                 orbit.reset();
                 cycle.reset();
                 frozenCycle.reset();
@@ -701,6 +705,18 @@ public final class Client {
                     entry.put("desired_gap",decision.desiredGap());entry.put("window_lower",decision.lower());entry.put("window_upper",decision.upper());log(entry);
                 }
             }
+            if(sumoWtap!=null){
+                double lastPress=lastClick==0 ? Double.NEGATIVE_INFINITY : now-(decisionHeadNanos-lastClick)/1e6;
+                SumoWtapController.Decision tap=sumoWtap.decide(now,obs.targetFreshHurtCue==0?Double.NEGATIVE_INFINITY:obs.targetFreshHurtCue,
+                    sumoContact==0?Double.NEGATIVE_INFINITY:sumoContact,ping,
+                    DuelSettings.hurtWindowTicks(controls),ClickRate.intervalNanos(controls)/1e6,lastPress,
+                    lastClick>sumoConsumedPress,obs.sprint,obs.ground,obs.x,obs.z,obs.vx,obs.vz,obs.tx,obs.tz,
+                    obs.tvx*.05,obs.tvz*.05,obs.localRange,attackReach());
+                setKeys(tap.forward(),0,tap.forward());
+                if(tap!=SumoWtapController.Decision.HOLD)log(Compat.map("type","sumo_wtap","time",now,"match",match,
+                    "native_tick",ticks,"decision",tap.name(),"forward",tap.forward(),"target_hurt",obs.targetFreshHurtCue,
+                    "own_hurt",obs.freshHurtCue,"last_press_ms",Double.isFinite(lastPress)?lastPress:null));
+            }
             if(kind.equals("orbit")){
                 OrbitController.Settings orbitSettings=OrbitController.Settings.from(controls);
                 double nx=(obs.tx-obs.x)/Math.max(.001,obs.distance),nz=(obs.tz-obs.z)/Math.max(.001,obs.distance);
@@ -933,6 +949,8 @@ public final class Client {
                         obs.targetFreshHurtCue==0?Double.NEGATIVE_INFINITY:obs.targetFreshHurtCue);
                 int action=networkReleased&&!continueWithWtap?proposed:
                         DuelNetwork.pack(forward?(sprintKey?2:1):0,-strafe,clickGate,false);
+                if(networkReleased&&!continueWithWtap&&Boolean.parseBoolean(controls.getProperty("network_auto_sprint","false")))
+                    action=DuelNetwork.withAutoSprint(action,obs.sprint);
                 int key=DuelNetwork.key(action);
                 setKeys(key==1||key==2,-DuelNetwork.side(action),key==2);
                 if(key==3){
@@ -1176,6 +1194,7 @@ public final class Client {
     }
     /** A local movement boundary, independent of optional scientific logging. */
     public static void inputWordMoved(Object self){
+        if(self==player&&sumoWtap!=null)sumoWtap.moved(TrainingClock.millis(),Boolean.TRUE.equals(R.call(self,"isSprinting")));
         if(self==player&&inputWord!=null&&inputWordDecision!=null&&inputWordDecision.active)
             inputWord.movementCompleted(ticks);
     }
@@ -1183,6 +1202,7 @@ public final class Client {
      * This acknowledges an ordinary queued press; it never changes the attack.
      */
     public static void inputWordConsumed(Object minecraft){
+        if(minecraft==mc&&sumoWtap!=null)sumoConsumedPress=lastClick;
         if(minecraft!=mc||inputWord==null||inputWordDecision==null||
                 (!inputWordDecision.active&&inputWord.pendingAdmissions()==0))return;
         InputWordController.Consumption c=inputWord.consumed(ticks);
@@ -1198,7 +1218,7 @@ public final class Client {
         if(!Boolean.parseBoolean(p.getProperty("enabled","false")))return;
         if(!p.getProperty("match","").matches("m[0-9]{4,9}")||!p.getProperty("opponent","").matches("[A-Za-z0-9_]{1,16}"))
             throw new IllegalArgumentException("Enabled bot controls require a valid match and opponent");
-        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","orbit","cycle","frozen-cycle","tick-cycle","gap-strafe","hurt-window-coast","reference-feedback","blockhit","scripted","input-word").contains(p.getProperty("kind","hold")))
+        if(!Compat.list("hold","standstill","periodic","wtap","hitreset","tradetap","spacing","predictive","phase","zest","mpcprobe","momentum","sumo-wtap","orbit","cycle","frozen-cycle","tick-cycle","gap-strafe","hurt-window-coast","reference-feedback","blockhit","scripted","input-word").contains(p.getProperty("kind","hold")))
             throw new IllegalArgumentException("Unsupported bot strategy: "+p.getProperty("kind"));
         ClickRate.cps(p);ClickRate.intervalNanos(p);DuelSettings.reach(p);
         MaintenanceHandoff.Settings.from(p);
@@ -1293,6 +1313,7 @@ public final class Client {
     }
     public static void attackAfter(Object self,Object target){
         if(!"client".equals(System.getProperty("lab.role")))return;
+        if(sumoWtap!=null&&self==player&&target==opponent)sumoContact=TrainingClock.millis();
         if(displacementTurn!=null&&displacementTurn.phase==KnockbackDisplacement.Phase.STRIKE
                 &&self==player&&target==opponent)
             displacement.localContact(ticks,freshTargetHurtStatus);

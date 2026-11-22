@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sumo Replay Analysis"
+  short_description: "Trace Sumo exchanges and test individual fixes"
+  default_prompt: "Use $sumo-replay-analysis to explain this Sumo replay and test what one changed input could have done."
