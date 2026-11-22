@@ -1,0 +1,41 @@
+{
+  "controls": {
+    "a": {
+      "coverage": {
+        "missing_inputs": [],
+        "missing_moves": [],
+        "unpaired_inputs": [],
+        "unpaired_moves": []
+      },
+      "disagreements": [],
+      "heads": 1098,
+      "method": "frozen network replay and actual movement",
+      "policy": "idlab-12d477e6733f"
+    },
+    "b": {
+      "coverage": {
+        "missing_inputs": [],
+        "missing_moves": [],
+        "unpaired_inputs": [],
+        "unpaired_moves": []
+      },
+      "disagreements": [],
+      "heads": 1098,
+      "method": "frozen network replay and actual movement",
+      "policy": "idlab-6d9878ad633b"
+    }
+  },
+  "duration": 54.894,
+  "local_timing_heads": {
+    "a": 1098,
+    "b": 1098
+  },
+  "mid": "m10335",
+  "minimum_physical_ns": {
+    "a": 142890125,
+    "b": 143048167
+  },
+  "reason": "ring_out",
+  "score": 1,
+  "valid": true
+}

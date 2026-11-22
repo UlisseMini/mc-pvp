@@ -1,0 +1,175 @@
+{
+  "original": {
+    "cf7-l14-fit-20-a31": "m9712",
+    "cf7-l14-newfield-b31": "m9713",
+    "cf7-l14-fit-20-b109": "m9711",
+    "cf7-l14-fit-7-b31": "m9714",
+    "cf7-l14-fit-7-a31": "m9716",
+    "cf7-l14-fit-20-b31": "m9715",
+    "cf7-l14-fit-20-a109": "m9718",
+    "cf7-l14-wtfield-b31": "m9717",
+    "cf7-l14-fit-7-b109": "m9719",
+    "cf7-l14-fit-7-a109": "m9720"
+  },
+  "rows": {
+    "cf7-l14-fit-20-a31": {
+      "valid": true,
+      "mid": "m9712",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 212,
+      "local_timing": {
+        "a": 106
+      },
+      "click_min_ms": 50.026541,
+      "max_server_gap_ms": 104
+    },
+    "cf7-l14-newfield-b31": {
+      "valid": true,
+      "mid": "m9713",
+      "arm": "sumo-seven-ppo",
+      "foe": "sumo-own-ping",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 357,
+      "local_timing": {
+        "b": 179
+      },
+      "click_min_ms": 142.974417,
+      "max_server_gap_ms": 131
+    },
+    "cf7-l14-fit-20-b109": {
+      "valid": true,
+      "mid": "m9711",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 436,
+      "local_timing": {
+        "b": 218
+      },
+      "click_min_ms": 50.041375,
+      "max_server_gap_ms": 131
+    },
+    "cf7-l14-fit-7-b31": {
+      "valid": true,
+      "mid": "m9714",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 293,
+      "local_timing": {
+        "b": 147
+      },
+      "click_min_ms": 143.385583,
+      "max_server_gap_ms": 103
+    },
+    "cf7-l14-fit-7-a31": {
+      "valid": true,
+      "mid": "m9716",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 292,
+      "local_timing": {
+        "a": 146
+      },
+      "click_min_ms": 142.932375,
+      "max_server_gap_ms": 90
+    },
+    "cf7-l14-fit-20-b31": {
+      "valid": true,
+      "mid": "m9715",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 462,
+      "local_timing": {
+        "b": 231
+      },
+      "click_min_ms": 50.026125,
+      "max_server_gap_ms": 117
+    },
+    "cf7-l14-fit-20-a109": {
+      "valid": true,
+      "mid": "m9718",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 144,
+      "local_timing": {
+        "a": 72
+      },
+      "click_min_ms": 50.075834,
+      "max_server_gap_ms": 113
+    },
+    "cf7-l14-wtfield-b31": {
+      "valid": true,
+      "mid": "m9717",
+      "arm": "research-wtap20",
+      "foe": "sumo-own-ping",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 296,
+      "local_timing": {},
+      "click_min_ms": 142.886583,
+      "max_server_gap_ms": 117
+    },
+    "cf7-l14-fit-7-b109": {
+      "valid": true,
+      "mid": "m9719",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 761,
+      "local_timing": {
+        "b": 381
+      },
+      "click_min_ms": 143.110916,
+      "max_server_gap_ms": 100
+    },
+    "cf7-l14-fit-7-a109": {
+      "valid": true,
+      "mid": "m9720",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 906,
+      "local_timing": {
+        "a": 453
+      },
+      "click_min_ms": 142.910875,
+      "max_server_gap_ms": 96
+    }
+  },
+  "invalid": []
+}

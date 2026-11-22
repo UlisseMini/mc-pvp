@@ -1,0 +1,175 @@
+{
+  "original": {
+    "cf7-l08-fit-7-a31": "m8597",
+    "cf7-l08-wtfield-b109": "m8598",
+    "cf7-l08-fit-7-b31": "m8599",
+    "cf7-l08-fit-20-b109": "m8601",
+    "cf7-l08-fit-20-a31": "m8602",
+    "cf7-l08-fit-20-b31": "m8604",
+    "cf7-l08-newfield-b109": "m8605",
+    "cf7-l08-fit-7-a109": "m8603",
+    "cf7-l08-fit-20-a109": "m8606",
+    "cf7-l08-fit-7-b109": "m8600"
+  },
+  "rows": {
+    "cf7-l08-fit-7-a31": {
+      "valid": true,
+      "mid": "m8597",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 190,
+      "local_timing": {
+        "a": 96
+      },
+      "click_min_ms": 143.008,
+      "max_server_gap_ms": 81
+    },
+    "cf7-l08-wtfield-b109": {
+      "valid": true,
+      "mid": "m8598",
+      "arm": "research-wtap20",
+      "foe": "sumo-own-ping",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 200,
+      "local_timing": {},
+      "click_min_ms": 142.944083,
+      "max_server_gap_ms": 81
+    },
+    "cf7-l08-fit-7-b31": {
+      "valid": true,
+      "mid": "m8599",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 284,
+      "local_timing": {
+        "b": 142
+      },
+      "click_min_ms": 143.062583,
+      "max_server_gap_ms": 98
+    },
+    "cf7-l08-fit-20-b109": {
+      "valid": true,
+      "mid": "m8601",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 394,
+      "local_timing": {
+        "b": 198
+      },
+      "click_min_ms": 50.03475,
+      "max_server_gap_ms": 79
+    },
+    "cf7-l08-fit-20-a31": {
+      "valid": true,
+      "mid": "m8602",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 335,
+      "local_timing": {
+        "a": 169
+      },
+      "click_min_ms": 50.119666,
+      "max_server_gap_ms": 93
+    },
+    "cf7-l08-fit-20-b31": {
+      "valid": true,
+      "mid": "m8604",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 204,
+      "local_timing": {
+        "b": 103
+      },
+      "click_min_ms": 50.020708,
+      "max_server_gap_ms": 62
+    },
+    "cf7-l08-newfield-b109": {
+      "valid": true,
+      "mid": "m8605",
+      "arm": "sumo-seven-ppo",
+      "foe": "sumo-own-ping",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 532,
+      "local_timing": {
+        "b": 267
+      },
+      "click_min_ms": 142.879375,
+      "max_server_gap_ms": 84
+    },
+    "cf7-l08-fit-7-a109": {
+      "valid": true,
+      "mid": "m8603",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 1080,
+      "local_timing": {
+        "a": 541
+      },
+      "click_min_ms": 142.914583,
+      "max_server_gap_ms": 110
+    },
+    "cf7-l08-fit-20-a109": {
+      "valid": true,
+      "mid": "m8606",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 146,
+      "local_timing": {
+        "a": 74
+      },
+      "click_min_ms": 50.060791,
+      "max_server_gap_ms": 110
+    },
+    "cf7-l08-fit-7-b109": {
+      "valid": true,
+      "mid": "m8600",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 1887,
+      "local_timing": {
+        "b": 944
+      },
+      "click_min_ms": 142.915583,
+      "max_server_gap_ms": 110
+    }
+  },
+  "invalid": []
+}

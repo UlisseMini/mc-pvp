@@ -1,0 +1,33 @@
+{
+  "controls": {
+    "a": {
+      "boundary_only_inputs": [],
+      "boundary_only_moves": [],
+      "disagreements": [],
+      "heads": 977,
+      "method": "physical forward and strafe against issued legacy keys",
+      "policy": "research-wtap20"
+    },
+    "b": {
+      "boundary_only_inputs": [],
+      "boundary_only_moves": [],
+      "disagreements": [],
+      "heads": 977,
+      "method": "physical forward and strafe against issued legacy keys",
+      "policy": "research-wtap20"
+    }
+  },
+  "duration": 48.859,
+  "local_timing_heads": {
+    "a": 0,
+    "b": 0
+  },
+  "mid": "m10147",
+  "minimum_physical_ns": {
+    "a": 143052000,
+    "b": 142893084
+  },
+  "reason": "ring_out",
+  "score": 0,
+  "valid": true
+}

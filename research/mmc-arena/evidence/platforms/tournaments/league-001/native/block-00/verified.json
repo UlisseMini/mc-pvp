@@ -1,0 +1,897 @@
+{
+  "invalid": [],
+  "matches": {
+    "map-league-001-m00-p00-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 791,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 791,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        }
+      },
+      "duration": 39.518,
+      "local_timing_heads": {
+        "a": 791,
+        "b": 791
+      },
+      "mid": "m9778",
+      "minimum_physical_ns": {
+        "a": 143016083,
+        "b": 142941916
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m00-p01-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 318,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 318,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        }
+      },
+      "duration": 15.9,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 318
+      },
+      "mid": "m9771",
+      "minimum_physical_ns": {
+        "a": 143095708,
+        "b": 143008583
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m00-p02-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 165,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        },
+        "b": {
+          "boundary_only_inputs": [
+            2626
+          ],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 164,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 8.216,
+      "local_timing_heads": {
+        "a": 165,
+        "b": 0
+      },
+      "mid": "m9781",
+      "minimum_physical_ns": {
+        "a": 142956417,
+        "b": 143075583
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m00-p03-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 140,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 140,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 7.014,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m9775",
+      "minimum_physical_ns": {
+        "a": 143047458,
+        "b": 143049459
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m01-p00-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 557,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 557,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        }
+      },
+      "duration": 27.864,
+      "local_timing_heads": {
+        "a": 557,
+        "b": 558
+      },
+      "mid": "m9785",
+      "minimum_physical_ns": {
+        "a": 142911084,
+        "b": 143012084
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m01-p01-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 176,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 175,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        }
+      },
+      "duration": 8.767,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 176
+      },
+      "mid": "m9791",
+      "minimum_physical_ns": {
+        "a": 142938500,
+        "b": 143139417
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m01-p02-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 105,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        },
+        "b": {
+          "boundary_only_inputs": [
+            2846
+          ],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 104,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 5.217,
+      "local_timing_heads": {
+        "a": 105,
+        "b": 0
+      },
+      "mid": "m9784",
+      "minimum_physical_ns": {
+        "a": 144055750,
+        "b": 142923083
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m01-p03-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 1489,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 1488,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 74.408,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m9792",
+      "minimum_physical_ns": {
+        "a": 142880542,
+        "b": 142916458
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m02-p00-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 747,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 746,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        }
+      },
+      "duration": 37.351,
+      "local_timing_heads": {
+        "a": 748,
+        "b": 747
+      },
+      "mid": "m9776",
+      "minimum_physical_ns": {
+        "a": 142879958,
+        "b": 143094875
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m02-p01-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 168,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 167,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        }
+      },
+      "duration": 8.369,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 168
+      },
+      "mid": "m9774",
+      "minimum_physical_ns": {
+        "a": 143281750,
+        "b": 143132750
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m02-p02-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 73,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 74,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 3.652,
+      "local_timing_heads": {
+        "a": 73,
+        "b": 0
+      },
+      "mid": "m9773",
+      "minimum_physical_ns": {
+        "a": 143270458,
+        "b": 142999333
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m02-p03-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 127,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 128,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 6.404,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m9770",
+      "minimum_physical_ns": {
+        "a": 142906334,
+        "b": 143156292
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m03-p00-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 303,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 302,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        }
+      },
+      "duration": 15.142,
+      "local_timing_heads": {
+        "a": 303,
+        "b": 303
+      },
+      "mid": "m9772",
+      "minimum_physical_ns": {
+        "a": 143297209,
+        "b": 142890417
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m03-p01-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 114,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 113,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        }
+      },
+      "duration": 5.669,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 114
+      },
+      "mid": "m9780",
+      "minimum_physical_ns": {
+        "a": 142958333,
+        "b": 143028542
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m03-p02-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 209,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 208,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 10.411,
+      "local_timing_heads": {
+        "a": 209,
+        "b": 0
+      },
+      "mid": "m9782",
+      "minimum_physical_ns": {
+        "a": 143053792,
+        "b": 142927042
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m03-p03-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 2401,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 2400,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 120.018,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m9787",
+      "minimum_physical_ns": {
+        "a": 142876958,
+        "b": 142873333
+      },
+      "reason": "timeout_draw",
+      "score": 0.5,
+      "valid": true
+    },
+    "map-league-001-m04-p00-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 1462,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 1462,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        }
+      },
+      "duration": 73.106,
+      "local_timing_heads": {
+        "a": 1462,
+        "b": 1463
+      },
+      "mid": "m9786",
+      "minimum_physical_ns": {
+        "a": 143017750,
+        "b": 143063333
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m04-p01-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 341,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 341,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        }
+      },
+      "duration": 17.051,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 341
+      },
+      "mid": "m9790",
+      "minimum_physical_ns": {
+        "a": 142991000,
+        "b": 142990125
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m04-p02-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 159,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 159,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 7.953,
+      "local_timing_heads": {
+        "a": 160,
+        "b": 0
+      },
+      "mid": "m9789",
+      "minimum_physical_ns": {
+        "a": 142905625,
+        "b": 142893083
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m04-p03-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 1674,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 1675,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 83.726,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m9779",
+      "minimum_physical_ns": {
+        "a": 142877042,
+        "b": 142919291
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m05-p00-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 381,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 381,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        }
+      },
+      "duration": 19.067,
+      "local_timing_heads": {
+        "a": 381,
+        "b": 381
+      },
+      "mid": "m9777",
+      "minimum_physical_ns": {
+        "a": 142931250,
+        "b": 142933666
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m05-p01-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 646,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 646,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        }
+      },
+      "duration": 32.282,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 646
+      },
+      "mid": "m9769",
+      "minimum_physical_ns": {
+        "a": 142905792,
+        "b": 143091834
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m05-p02-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 205,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 205,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 10.229,
+      "local_timing_heads": {
+        "a": 205,
+        "b": 0
+      },
+      "mid": "m9788",
+      "minimum_physical_ns": {
+        "a": 143011166,
+        "b": 142940708
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m05-p03-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 100,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 99,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 4.991,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m9783",
+      "minimum_physical_ns": {
+        "a": 143142208,
+        "b": 143869875
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    }
+  }
+}

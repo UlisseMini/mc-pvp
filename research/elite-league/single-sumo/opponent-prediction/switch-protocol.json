@@ -1,0 +1,72 @@
+{
+  "clocks": [
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9096.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9105.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9116.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9129.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9140.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9157.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9166.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9174.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9191.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9200.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9212.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9226.txt.gz"
+  ],
+  "note": "Diagnostic on the held-out donor panel. Both policies receive the matching realized prefix.",
+  "pairs": [
+    [
+      "sumo-seven-first",
+      "v3-memory-27"
+    ],
+    [
+      "shift-check-v4-4",
+      "sumo-seven-ppo"
+    ]
+  ],
+  "rtts": [
+    [
+      31,
+      31
+    ],
+    [
+      109,
+      109
+    ],
+    [
+      31,
+      109
+    ],
+    [
+      109,
+      31
+    ]
+  ],
+  "score_bands_ms": [
+    [
+      0,
+      1800
+    ],
+    [
+      2000,
+      2300
+    ],
+    [
+      2300,
+      2800
+    ],
+    [
+      2800,
+      3800
+    ],
+    [
+      3800,
+      6000
+    ]
+  ],
+  "seats": [
+    "a",
+    "b"
+  ],
+  "switch_ms": 2000
+}

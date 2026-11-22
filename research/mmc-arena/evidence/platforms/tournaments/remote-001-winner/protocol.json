@@ -1,0 +1,27 @@
+{
+  "contestants": {
+    "winner": {
+      "actor": "research/elite-league/single-sumo/evidence/robustness-001/gru/final.net",
+      "sha256": "b698ab51e6605db2cb57f7f5904838f4b18b772bef39f47a62eb40fa4bcddd53",
+      "target": "research/elite-league/single-sumo/evidence/robustness-001/mlp/final.net",
+      "target_sha": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    }
+  },
+  "controls": "Common action seeds and clocks across simulator arms and floors. Independent fully audited Minecraft matches in the same seat and RTT blocks.",
+  "maps": [
+    "default",
+    "mmc-137",
+    "mmc-129",
+    "mmc-155",
+    "mmc-177",
+    "mmc-221"
+  ],
+  "model_repetitions": 2,
+  "native_blocks": 8,
+  "opponent_name": "remote-001-mlp",
+  "opponent_rule": "Lowest score in the entire frozen development field excluding own weights and plain W-tap. Alphabetical tie-break. Plain W-tap also plays both opposing policies.",
+  "published_winner": "sumo-league-remote-001",
+  "purpose": "Post-publication transfer on reusable validation floors. Sealed floors stay reserved for the frozen specialist test. These matches do not choose the tournament winner.",
+  "regulation": "Seven CPS for both players, MMC preset, three-block reach, mouse aim, 120 seconds, same eight mirrored seat and RTT settings in Minecraft.",
+  "stage": "remote-001-winner"
+}

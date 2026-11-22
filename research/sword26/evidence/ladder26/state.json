@@ -1,9 +1,9 @@
 {
-  "season": 28,
+  "season": 45,
   "series_start": 21,
   "aim_profile": "perfect",
   "incumbent": "evidence/ladder26/fighters/45b036297b60d75d.net",
-  "main": "evidence/ladder26/fighters/45b036297b60d75d.net",
+  "main": "evidence/ladder26/fighters/11b1ea50cdee4a8e.net",
   "pool": [
     "evidence/league26/fighter.net",
     "evidence/random26/fighter.net",
@@ -66,10 +66,35 @@
     "evidence/ladder26/fighters/7058c4342c90fa33.net",
     "evidence/ladder26/fighters/0754fe2d0e4deb87.net",
     "evidence/ladder26/fighters/69f6ab860c27c27e.net",
-    "evidence/ladder26/fighters/a92eb3c4197ccf0d.net"
+    "evidence/ladder26/fighters/a92eb3c4197ccf0d.net",
+    "evidence/ladder26/fighters/95d2597982785ca9.net",
+    "evidence/ladder26/fighters/e26a92c2b04ffb24.net",
+    "evidence/ladder26/fighters/83841f7724c32f14.net",
+    "evidence/ladder26/fighters/5b7fdcd3ca2bea9e.net",
+    "evidence/ladder26/fighters/6dcab1a233ccb191.net",
+    "evidence/ladder26/fighters/82f3a4855f7ab139.net",
+    "evidence/ladder26/fighters/b7b961e2b0cd7f58.net",
+    "evidence/ladder26/fighters/34a20708a99d53d4.net",
+    "evidence/ladder26/fighters/df0597f9e4b604f0.net",
+    "evidence/ladder26/fighters/5345f6c946c344c5.net",
+    "evidence/ladder26/fighters/9c14367abe3559c0.net",
+    "evidence/ladder26/fighters/fd23c196cd1dbb8d.net",
+    "evidence/ladder26/fighters/e140a3d1cf2935a3.net",
+    "evidence/ladder26/fighters/40af2fe38e474f17.net",
+    "evidence/ladder26/fighters/14673da4af03835c.net",
+    "evidence/ladder26/fighters/257da3b0d5d4d024.net",
+    "evidence/ladder26/fighters/a01ef732edca4ab1.net",
+    "evidence/ladder26/fighters/3203fc578bca97ce.net",
+    "evidence/ladder26/fighters/7947d3ab95748701.net",
+    "evidence/ladder26/fighters/6cbe9723c9cf63cf.net",
+    "evidence/ladder26/fighters/defa579a053181c6.net",
+    "evidence/ladder26/fighters/5a63f5bb03e0bd2d.net",
+    "evidence/ladder26/fighters/11b1ea50cdee4a8e.net",
+    "evidence/ladder26/fighters/a9606fc259f52198.net",
+    "evidence/ladder26/fighters/54238d5410d1515a.net"
   ],
-  "stale": 0,
-  "last_java": 28,
+  "stale": 1,
+  "last_java": 40,
   "history": [
     21,
     22,
@@ -78,13 +103,38 @@
     25,
     26,
     27,
-    28
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45
   ],
   "promotions": [
     23,
     28
   ],
-  "counter_signatures": [],
+  "counter_signatures": [
+    "evidence/ladder26/fighters/83841f7724c32f14.net",
+    "evidence/ladder26/fighters/5b7fdcd3ca2bea9e.net",
+    "evidence/ladder26/fighters/82f3a4855f7ab139.net",
+    "evidence/ladder26/fighters/257da3b0d5d4d024.net"
+  ],
   "status": "running",
-  "reference_pending": false
+  "reference_pending": false,
+  "supplementary_decisions": [
+    "queue-challenge-028"
+  ]
 }

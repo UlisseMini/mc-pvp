@@ -1,0 +1,182 @@
+{
+  "actors": [
+    "wtap",
+    "hold",
+    "sumo-cap-ramp",
+    "v4-ppo-g0496"
+  ],
+  "archive_sha256": "a89703c4278916f1fdd8609790e4b97135f80bb8cf813751a5f63a8185cddbc1",
+  "arena_cells": 137,
+  "clock_hashes": {
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9096.txt.gz": "7d5973024035e2b50c930923254d0bb9d23a60a4ef3896def828f5729bee8404",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9105.txt.gz": "1f2f6a5a2b0631148bd37361d7e984a5fb175d4cef4671fc9e11144e6da08f40",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9116.txt.gz": "b6eeccf1de891d806530386f8dacf52a94e975390a60db84810bf98e6b48aafc",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9129.txt.gz": "d4e7017eb3cadc4edb4f60ec16acf6d57602285af31655bdc484f2553a951407",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9140.txt.gz": "a6b02bdc8944125f709aee41c8fa13e91eebd96ed2d85f1231e21d8e0a2860d4",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9157.txt.gz": "0bc6f0c220233392a678631bd2a16bb7633889be06196523684d5e18711c4be6",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9166.txt.gz": "d589d8349333264376bcc1c5c405cc8f74311d761bb2d153731dbb7712aa71b7",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9174.txt.gz": "c8592f3fbe0d1e432ed93e137fce9c63530a2325129210bcc133c1c007ea6d03",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9191.txt.gz": "9587ad9e393dcc2c97adb24bff6b4d10981e507f5332ad2fbd162adcb60c7378",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9200.txt.gz": "7c2caaf33b3205a1e6dabbffe3786cced8ea64c3514f04f832b882bc250f18d2",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9212.txt.gz": "19788fe7f83a706b26cb84a4333cc73be2c06bb5f75cbae52f35db8b1f1a3a81",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9226.txt.gz": "94af4c5ac3f18d39fc0dbf335dd56113e0f7848953bb06bef98348e8f5e84db0",
+    "research/sumo-rl/league-clocks/m2193.txt.gz": "1c298568067580e89af03172f5ce587ed5abe8db5228722a6988744b20d662b2",
+    "research/sumo-rl/league-clocks/m2201.txt.gz": "57fa859dfc90f9949b2d6bdd90b3b09035e23b3104ba90de583d4a231e491399",
+    "research/sumo-rl/league-clocks/m2218.txt.gz": "c4c7fb18d9bf9801da85f9ca943cc512bf8329b61419616f8991291b372c93dc",
+    "research/sumo-rl/league-clocks/m2247.txt.gz": "95a2e91335ac3d34e8d83d6aa8a6cc870afb5d5c78c68985a481d6694844cbad",
+    "research/sumo-rl/league-clocks/m2257.txt.gz": "78a2012fd63fe4c3011eda447aae529c06d1c10501fc5b8cde600719d2661785",
+    "research/sumo-rl/league-clocks/m2259.txt.gz": "293bccc5380c0d2f3d709bc010823f5d22517da57af40eed3087761624be8d86",
+    "research/sumo-rl/league-clocks/m2268.txt.gz": "320f691bb768803769948dd9d02e4ca764caa226b8ce02c1eeeb3d1857643a43",
+    "research/sumo-rl/league-clocks/m2276.txt.gz": "1cc6888bb5a3c0dd66efe2a54bc6c404e8c4c200c0685a81b007a73c64cbb432",
+    "research/sumo-rl/league-validation-clocks/m2375.txt.gz": "c95ac1ac54017a181c725011d3011c84ced613aa05c37db4c320fac13123f15b",
+    "research/sumo-rl/league-validation-clocks/m2376.txt.gz": "15cf68dda2b8706a3c9dc7969129650db36169701ce022b3f77f20c868eb5816",
+    "research/sumo-rl/league-validation-clocks/m2377.txt.gz": "fb2a8bf616c9e871ce9fefc0515d583eecdc718d3831aff8ff72b99d248e246b",
+    "research/sumo-rl/league-validation-clocks/m2378.txt.gz": "f7aea1991c441bec02d67df01e1b6ef9ccc9c496cb684736dc03d76780d68316",
+    "research/sumo-rl/league-validation-clocks/m2379.txt.gz": "57e4bb377f2a63b8c44487b3029b1f41778d6a8759662c3fe7a0c949d658da8a",
+    "research/sumo-rl/league-validation-clocks/m2380.txt.gz": "7dc7e6914d1ff376dadd6f473c3219ec1dbd855f0cfa821331c5424fb393c723",
+    "research/sumo-rl/league-validation-clocks/m2381.txt.gz": "d6766e8bcd5dd1ad59f70d0b5fff60b8a55cff3d6ece0f81cdc32be6e6526ef6",
+    "research/sumo-rl/league-validation-clocks/m2382.txt.gz": "7f24d2b1576eed24636566357b8742dd3ab80bc4bf9cd06e7e78b6ee947636e2",
+    "research/sumo-rl/train-clocks/m2065.txt.gz": "7eba479e1d3bb4b2714b169ccb3c37217f6a99523ec84d3b592b15e07916c3e7",
+    "research/sumo-rl/train-clocks/m2073.txt.gz": "f6e0f21979074200fdc146d85a74c89ec8663dbece781430e18e135fedbc7498",
+    "research/sumo-rl/train-clocks/m2090.txt.gz": "9f38d3118360338f03b8bc3279462c482be3f9fd1c1c95f37dc82ea79f469431",
+    "research/sumo-rl/train-clocks/m2093.txt.gz": "dcd1d7c041e47fd0f55a75c592cb0f5590a1562b48edec22aecd254f8c074855",
+    "research/sumo-rl/train-clocks/m2097.txt.gz": "184012527653ba24aa8e935cb0549f2a6343a65663b402d956fb6a77934c9b20",
+    "research/sumo-rl/train-clocks/m2098.txt.gz": "06bb800a98dcf91cb87d432c159fcca8a4cfdd7cedb69f70210c47f9444c10c2",
+    "research/sumo-rl/train-clocks/m2107.txt.gz": "3ab017920eac858d85161ba7d437d3495c498bcd325613ccab4a475292bf86ea",
+    "research/sumo-rl/train-clocks/m2110.txt.gz": "f722e0e305bc3bc2f8d573bfb9bb56e5e16e84259b1e9ac186a7ca53f123ba90"
+  },
+  "clocks": {
+    "support": [
+      "research/sumo-rl/train-clocks/m2065.txt.gz",
+      "research/sumo-rl/train-clocks/m2073.txt.gz",
+      "research/sumo-rl/train-clocks/m2090.txt.gz",
+      "research/sumo-rl/train-clocks/m2093.txt.gz",
+      "research/sumo-rl/train-clocks/m2097.txt.gz",
+      "research/sumo-rl/train-clocks/m2098.txt.gz",
+      "research/sumo-rl/train-clocks/m2107.txt.gz",
+      "research/sumo-rl/train-clocks/m2110.txt.gz",
+      "research/sumo-rl/league-clocks/m2193.txt.gz",
+      "research/sumo-rl/league-clocks/m2201.txt.gz",
+      "research/sumo-rl/league-clocks/m2218.txt.gz",
+      "research/sumo-rl/league-clocks/m2247.txt.gz",
+      "research/sumo-rl/league-clocks/m2257.txt.gz",
+      "research/sumo-rl/league-clocks/m2259.txt.gz",
+      "research/sumo-rl/league-clocks/m2268.txt.gz",
+      "research/sumo-rl/league-clocks/m2276.txt.gz"
+    ],
+    "test": [
+      "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9096.txt.gz",
+      "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9105.txt.gz",
+      "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9116.txt.gz",
+      "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9129.txt.gz",
+      "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9140.txt.gz",
+      "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9157.txt.gz",
+      "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9166.txt.gz",
+      "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9174.txt.gz",
+      "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9191.txt.gz",
+      "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9200.txt.gz",
+      "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9212.txt.gz",
+      "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9226.txt.gz"
+    ],
+    "validation": [
+      "research/sumo-rl/league-validation-clocks/m2375.txt.gz",
+      "research/sumo-rl/league-validation-clocks/m2376.txt.gz",
+      "research/sumo-rl/league-validation-clocks/m2377.txt.gz",
+      "research/sumo-rl/league-validation-clocks/m2378.txt.gz",
+      "research/sumo-rl/league-validation-clocks/m2379.txt.gz",
+      "research/sumo-rl/league-validation-clocks/m2380.txt.gz",
+      "research/sumo-rl/league-validation-clocks/m2381.txt.gz",
+      "research/sumo-rl/league-validation-clocks/m2382.txt.gz"
+    ]
+  },
+  "controls": "matched all-foe GRU, generic MLP, ID MLP, and independent per-foe MLP on identical support worlds",
+  "cps": 7,
+  "epochs": 8,
+  "families": {
+    "hold": "baseline",
+    "legacy-wtap-clickphase": "click-phase",
+    "mmc13-actor-2-fit": "trade and sprint",
+    "mmc13-trade-2-fit": "trade and sprint",
+    "population-01": "recurrent archive",
+    "shift-check-v4-4": "style switches",
+    "shift-train-07": "style switches",
+    "sumo-cap-ramp": "20 CPS responses",
+    "sumo-frozen-ppo": "20 CPS responses",
+    "sumo-own-ping": "input studies",
+    "sumo-seven-first": "7 CPS responses",
+    "sumo-seven-ppo": "7 CPS responses",
+    "sumo-two-ping": "input studies",
+    "sumo-vote-final": "input studies",
+    "v3-link-fixed-63": "recurrent archive",
+    "v3-memory-27": "recurrent archive",
+    "v4-ppo-g0496": "frozen champion",
+    "v4-reply-g0312": "trade and sprint",
+    "v4-sprint-link-jitter-15": "trade and sprint",
+    "wtap": "baseline"
+  },
+  "foes": [
+    "wtap",
+    "hold",
+    "legacy-wtap-clickphase",
+    "v4-ppo-g0496",
+    "sumo-seven-first",
+    "sumo-seven-ppo",
+    "sumo-frozen-ppo",
+    "sumo-cap-ramp",
+    "sumo-vote-final",
+    "sumo-own-ping",
+    "sumo-two-ping",
+    "v3-link-fixed-63",
+    "v3-memory-27",
+    "shift-train-07",
+    "population-01",
+    "mmc13-trade-2-fit",
+    "mmc13-actor-2-fit",
+    "v4-sprint-link-jitter-15",
+    "shift-check-v4-4",
+    "v4-reply-g0312"
+  ],
+  "hard_slice": "first 350 ms after a locally seen own hurt cue with displayed nearest distance at most 4.5 blocks",
+  "horizon_ms": 100,
+  "maximum_heads": 320,
+  "primary": "unseen family GRU versus short-context generic MLP, family-equal per-action log loss",
+  "recent_offsets": [
+    0,
+    1,
+    3,
+    7
+  ],
+  "repeats": {
+    "support": 2,
+    "test": 1,
+    "validation": 1
+  },
+  "rtt_pairs": [
+    [
+      31,
+      31
+    ],
+    [
+      109,
+      109
+    ],
+    [
+      31,
+      109
+    ],
+    [
+      109,
+      31
+    ]
+  ],
+  "seeds": [
+    8039,
+    17231
+  ],
+  "source": "sim-c749dc981c082601e212",
+  "unseen": [
+    "7 CPS responses",
+    "recurrent archive",
+    "style switches"
+  ]
+}

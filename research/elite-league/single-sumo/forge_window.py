@@ -116,7 +116,8 @@ def resume_paused(paused):
     for pid,cmd in paused.items():
         if process_cmd(int(pid))==cmd:os.kill(int(pid),signal.SIGCONT)
 @contextlib.contextmanager
-def window(bridge_path=None,server=None,admit=None):
+def window(bridge_path=None,server=None,admit=None,retain=False):
+    """Switch clients for a trial, optionally keeping the new build after a successful trial."""
     b=BUILD/'forge-window';b.mkdir(exist_ok=True)
     bridge=bridge_path or BUILD/'bridge.jar';newhash=sha(bridge)
     target=b/('league' if bridge==BUILD/'bridge.jar' else 'league-'+newhash[:20])
@@ -154,6 +155,7 @@ def window(bridge_path=None,server=None,admit=None):
         paused=schedulers()
         journal.write_text(json.dumps(dict(settings=settings,schedulers=paused,at=time.time(),old=oldhash,new=newhash,
             restore=str(origin),old_server=oldserver,requested_server=server)))
+        completed=False
         try:
             for pid,cmd in paused.items():
                 if process_cmd(pid)==cmd:os.kill(pid,signal.SIGSTOP)
@@ -161,13 +163,14 @@ def window(bridge_path=None,server=None,admit=None):
                  not any((ROOT/'runtime/manager/inbox').glob('*.json')),195,'Waiting for earlier admissions to drain')
             switch(target,settings,server)
             yield newhash
+            completed=True
         finally:
             # Preserve an unrelated release that independently took over the main process.
             active=reliable(active_bridge)
             resident=reliable(server_hash)
             replaced=resident and (resident not in (oldserver,server) or active and active not in (oldhash,newhash))
             restore_server=server if public_was_origin and sha(public_agent)==server else oldserver
-            if not replaced:switch(origin,settings,restore_server)
+            if not replaced and not (retain and completed):switch(origin,settings,restore_server)
             resume_paused(paused);journal.unlink(missing_ok=True)
 
 

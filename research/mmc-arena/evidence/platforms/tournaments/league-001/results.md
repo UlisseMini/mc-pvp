@@ -1,6 +1,6 @@
 # sumo-league-001 on the MMC validation floors
 
-Entries are wins/draws/losses. The published league winner faces sumo-seven-first, its weakest distinct development opponent, and plain W-tap. Every matchup uses seven CPS on both sides.
+Entries are wins/draws/losses. The published winner faces sumo-seven-first, its weakest distinct development opponent, and plain W-tap. Every matchup uses seven CPS on both sides.
 
 ## Simulator
 
@@ -19,12 +19,12 @@ Each cell contains 128 bouts from eight timing recordings, mirrored seats and fo
 
 | Platform | Winner vs sumo-seven-first | Plain W-tap vs sumo-seven-first | Winner vs W-tap | Plain W-tap mirror |
 | --- | --- | --- | --- | --- |
-| default | pending | pending | pending | pending |
-| mmc-137 | pending | pending | pending | pending |
-| mmc-129 | pending | pending | pending | pending |
-| mmc-155 | pending | pending | pending | pending |
-| mmc-177 | pending | pending | pending | pending |
-| mmc-221 | pending | pending | pending | pending |
+| default | 1/0/0 | 0/0/1 | 1/0/0 | 1/0/0 |
+| mmc-137 | 1/0/0 | 0/0/1 | 1/0/0 | 0/0/1 |
+| mmc-129 | 1/0/0 | 0/0/1 | 1/0/0 | 1/0/0 |
+| mmc-155 | 1/0/0 | 0/0/1 | 1/0/0 | 0/1/0 |
+| mmc-177 | 1/0/0 | 1/0/0 | 1/0/0 | 0/0/1 |
+| mmc-221 | 1/0/0 | 0/0/1 | 1/0/0 | 1/0/0 |
 
 The live comparison has eight independently played seat and RTT blocks per matchup. Each published block has passed movement, physical click-spacing, map-state and countdown spawn checks.
 

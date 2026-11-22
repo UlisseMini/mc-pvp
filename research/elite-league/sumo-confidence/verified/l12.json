@@ -1,0 +1,175 @@
+{
+  "original": {
+    "cf7-l12-fit-20-a109": "m9419",
+    "cf7-l12-fit-7-a109": "m9420",
+    "cf7-l12-fit-20-b31": "m9421",
+    "cf7-l12-wtfield-a109": "m9422",
+    "cf7-l12-fit-7-b31": "m9423",
+    "cf7-l12-newfield-a109": "m9424",
+    "cf7-l12-fit-7-a31": "m9425",
+    "cf7-l12-fit-20-a31": "m9427",
+    "cf7-l12-fit-20-b109": "m9428",
+    "cf7-l12-fit-7-b109": "m9426"
+  },
+  "rows": {
+    "cf7-l12-fit-20-a109": {
+      "valid": true,
+      "mid": "m9419",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 381,
+      "local_timing": {
+        "a": 190
+      },
+      "click_min_ms": 50.026625,
+      "max_server_gap_ms": 168
+    },
+    "cf7-l12-fit-7-a109": {
+      "valid": true,
+      "mid": "m9420",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 524,
+      "local_timing": {
+        "a": 263
+      },
+      "click_min_ms": 143.30175,
+      "max_server_gap_ms": 169
+    },
+    "cf7-l12-fit-20-b31": {
+      "valid": true,
+      "mid": "m9421",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 780,
+      "local_timing": {
+        "b": 391
+      },
+      "click_min_ms": 50.063542,
+      "max_server_gap_ms": 169
+    },
+    "cf7-l12-wtfield-a109": {
+      "valid": true,
+      "mid": "m9422",
+      "arm": "research-wtap20",
+      "foe": "sumo-own-ping",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 392,
+      "local_timing": {},
+      "click_min_ms": 143.069375,
+      "max_server_gap_ms": 161
+    },
+    "cf7-l12-fit-7-b31": {
+      "valid": true,
+      "mid": "m9423",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 566,
+      "local_timing": {
+        "b": 284
+      },
+      "click_min_ms": 142.965792,
+      "max_server_gap_ms": 161
+    },
+    "cf7-l12-newfield-a109": {
+      "valid": true,
+      "mid": "m9424",
+      "arm": "sumo-seven-ppo",
+      "foe": "sumo-own-ping",
+      "seat": "a",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 322,
+      "local_timing": {
+        "a": 161
+      },
+      "click_min_ms": 142.994083,
+      "max_server_gap_ms": 99
+    },
+    "cf7-l12-fit-7-a31": {
+      "valid": true,
+      "mid": "m9425",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "W",
+      "checked_heads": 265,
+      "local_timing": {
+        "a": 132
+      },
+      "click_min_ms": 142.928667,
+      "max_server_gap_ms": 98
+    },
+    "cf7-l12-fit-20-a31": {
+      "valid": true,
+      "mid": "m9427",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "a",
+      "own": 31,
+      "other": 109,
+      "outcome": "L",
+      "checked_heads": 160,
+      "local_timing": {
+        "a": 81
+      },
+      "click_min_ms": 50.151709,
+      "max_server_gap_ms": 80
+    },
+    "cf7-l12-fit-20-b109": {
+      "valid": true,
+      "mid": "m9428",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "L",
+      "checked_heads": 228,
+      "local_timing": {
+        "b": 114
+      },
+      "click_min_ms": 50.127958,
+      "max_server_gap_ms": 80
+    },
+    "cf7-l12-fit-7-b109": {
+      "valid": true,
+      "mid": "m9426",
+      "arm": "sumo-seven-ppo",
+      "foe": "v4-ppo-g0496",
+      "seat": "b",
+      "own": 109,
+      "other": 31,
+      "outcome": "W",
+      "checked_heads": 454,
+      "local_timing": {
+        "b": 227
+      },
+      "click_min_ms": 142.906917,
+      "max_server_gap_ms": 129
+    }
+  },
+  "invalid": []
+}

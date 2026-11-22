@@ -1,0 +1,39 @@
+{
+  "controls": {
+    "a": {
+      "coverage": {
+        "missing_inputs": [],
+        "missing_moves": [],
+        "unpaired_inputs": [],
+        "unpaired_moves": []
+      },
+      "disagreements": [],
+      "heads": 105,
+      "method": "frozen network replay and actual movement",
+      "policy": "idlab-6d9878ad633b"
+    },
+    "b": {
+      "boundary_only_inputs": [
+        2846
+      ],
+      "boundary_only_moves": [],
+      "disagreements": [],
+      "heads": 104,
+      "method": "physical forward and strafe against issued legacy keys",
+      "policy": "research-wtap20"
+    }
+  },
+  "duration": 5.217,
+  "local_timing_heads": {
+    "a": 105,
+    "b": 0
+  },
+  "mid": "m9784",
+  "minimum_physical_ns": {
+    "a": 144055750,
+    "b": 142923083
+  },
+  "reason": "ring_out",
+  "score": 1,
+  "valid": true
+}

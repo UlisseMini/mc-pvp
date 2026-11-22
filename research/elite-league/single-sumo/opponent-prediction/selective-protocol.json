@@ -1,0 +1,32 @@
+{
+  "clock_hashes": {
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9240.txt.gz": "c696a9109310b8d2f10c993d2d76fd80eff0e22846bacdff2a47a8417db3318d",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9256.txt.gz": "b21c19c28d40295ed5cdb45db13d144e7a03094943fdb0ffc197568ef4351713",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9272.txt.gz": "01e833b1ac36b5ab683b1550344b8d2767ff97423018db60e174efaefaeff6af",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9274.txt.gz": "ee97d054a802e6415e1df883d7ddcf517d3dca6b3ec91f9890ee888f5a9e0e7e",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9286.txt.gz": "138a03f5354d83b001fa2f5a561a4acf8270105a47872e4dc0f03db36eafef94",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9292.txt.gz": "b82394cb2165c7319d0b871a88f00b2214f107e2b9ea35a972e9c0fdabc89ea8",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9302.txt.gz": "508158cf667efbab8a592c55864db2827a59cad71ccf0cc06f767fac1697eab2",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9310.txt.gz": "fb94081f9fe011b7d6f5ff17c95d3097dd1695fe9b73e721550f8193a1b2822d",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9319.txt.gz": "1f6f3caa5b0f1f93aff84aea0748b75f10eea58af6f43f2b2bb03abe7b8305da",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9330.txt.gz": "f6dad2196caa330a212d955af70f0fb642272ff25b0533131b3e7c9091677561",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9339.txt.gz": "4b2010c82d12681a6c426f72bc618385994f10558d9e39b00de34273572ee1d6",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9352.txt.gz": "d2d4863dfcc2cfe37e6d58c9398f1dcb967bdf75e9b2dfa8c472e5a05110d92f"
+  },
+  "clocks": [
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9240.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9256.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9272.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9274.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9286.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9292.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9302.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9310.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9319.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9330.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9339.txt.gz",
+    "research/elite-league/single-sumo/evidence/id-oracle/recognition/payoff/replication/spaced/m9352.txt.gz"
+  ],
+  "rule": "Generic MLP for forward/sprint and jump. Frozen GRU for strafe and physical attack.",
+  "scope": "Follow-up driven by the first model result. Same unseen opponents on different archived clocks."
+}

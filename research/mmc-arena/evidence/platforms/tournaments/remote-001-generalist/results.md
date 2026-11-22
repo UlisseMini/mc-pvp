@@ -19,12 +19,12 @@ Each cell contains 128 bouts from eight timing recordings, mirrored seats and fo
 
 | Platform | Generalist vs sg003-long-g1 | Plain W-tap vs sg003-long-g1 | Generalist vs W-tap | Plain W-tap mirror |
 | --- | --- | --- | --- | --- |
-| default | pending | pending | pending | pending |
-| mmc-137 | pending | pending | pending | pending |
-| mmc-129 | pending | pending | pending | pending |
-| mmc-155 | pending | pending | pending | pending |
-| mmc-177 | pending | pending | pending | pending |
-| mmc-221 | pending | pending | pending | pending |
+| default | 0/0/1 | 0/0/1 | 1/0/0 | 0/0/1 |
+| mmc-137 | 0/0/1 | 0/0/1 | 1/0/0 | 1/0/0 |
+| mmc-129 | 0/0/1 | 0/0/1 | 1/0/0 | 0/0/1 |
+| mmc-155 | 0/0/1 | 0/0/1 | 1/0/0 | 0/0/1 |
+| mmc-177 | 0/0/1 | 0/0/1 | 1/0/0 | 0/1/0 |
+| mmc-221 | 0/0/1 | 0/0/1 | 1/0/0 | 1/0/0 |
 
 The live comparison has eight independently played seat and RTT blocks per matchup. Each published block has passed movement, physical click-spacing, map-state and countdown spawn checks.
 

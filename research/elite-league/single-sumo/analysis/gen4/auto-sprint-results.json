@@ -1,0 +1,2613 @@
+{
+ "format": "outcome counts are wins, draws, losses from the named actor seat",
+ "bridge_sha256": "14b12bc6164c8ed0ec692ac30a3af45ef7a22765bd9c47772c28c5a2abf18c8e",
+ "sim": {
+  "remote-004-main-gru": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     31,
+     11,
+     214
+    ],
+    "sprint": 8271,
+    "fresh": 8430
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     112,
+     27,
+     117
+    ],
+    "sprint": 15286,
+    "fresh": 16124
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     256
+    ],
+    "sprint": 1380,
+    "fresh": 1532
+   }
+  },
+  "remote-004-main-gru 0/0": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     26,
+     11,
+     27
+    ],
+    "sprint": 4266,
+    "fresh": 4269
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     31,
+     14,
+     19
+    ],
+    "sprint": 4314,
+    "fresh": 4777
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 400,
+    "fresh": 449
+   }
+  },
+  "remote-004-main-gru seat a": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     16,
+     7,
+     105
+    ],
+    "sprint": 4133,
+    "fresh": 4213
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     56,
+     13,
+     59
+    ],
+    "sprint": 7602,
+    "fresh": 8051
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     128
+    ],
+    "sprint": 703,
+    "fresh": 781
+   }
+  },
+  "remote-004-main-gru 0/80": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     4,
+     0,
+     60
+    ],
+    "sprint": 2125,
+    "fresh": 2125
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     44,
+     4,
+     16
+    ],
+    "sprint": 3250,
+    "fresh": 3431
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 333,
+    "fresh": 366
+   }
+  },
+  "remote-004-main-gru 80/0": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 686,
+    "fresh": 765
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     12,
+     3,
+     49
+    ],
+    "sprint": 3467,
+    "fresh": 3606
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 240,
+    "fresh": 261
+   }
+  },
+  "remote-004-main-gru 80/80": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     1,
+     0,
+     63
+    ],
+    "sprint": 1194,
+    "fresh": 1271
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     25,
+     6,
+     33
+    ],
+    "sprint": 4255,
+    "fresh": 4310
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 407,
+    "fresh": 456
+   }
+  },
+  "remote-004-main-gru seat b": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     15,
+     4,
+     109
+    ],
+    "sprint": 4138,
+    "fresh": 4217
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     56,
+     14,
+     58
+    ],
+    "sprint": 7684,
+    "fresh": 8073
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     128
+    ],
+    "sprint": 677,
+    "fresh": 751
+   }
+  },
+  "wtap": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     249,
+     1,
+     6
+    ],
+    "sprint": 2256,
+    "fresh": 2341
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     255,
+     1,
+     0
+    ],
+    "sprint": 1785,
+    "fresh": 1914
+   },
+   "wtap": {
+    "wdl": [
+     128,
+     0,
+     128
+    ],
+    "sprint": 4240,
+    "fresh": 4816
+   }
+  },
+  "wtap 0/0": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     63,
+     0,
+     1
+    ],
+    "sprint": 637,
+    "fresh": 639
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     63,
+     1,
+     0
+    ],
+    "sprint": 399,
+    "fresh": 494
+   },
+   "wtap": {
+    "wdl": [
+     32,
+     0,
+     32
+    ],
+    "sprint": 1008,
+    "fresh": 1020
+   }
+  },
+  "wtap seat a": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     126,
+     1,
+     1
+    ],
+    "sprint": 1183,
+    "fresh": 1226
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     127,
+     1,
+     0
+    ],
+    "sprint": 870,
+    "fresh": 928
+   },
+   "wtap": {
+    "wdl": [
+     60,
+     0,
+     68
+    ],
+    "sprint": 2100,
+    "fresh": 2384
+   }
+  },
+  "wtap 0/80": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     64,
+     0,
+     0
+    ],
+    "sprint": 418,
+    "fresh": 420
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     64,
+     0,
+     0
+    ],
+    "sprint": 368,
+    "fresh": 377
+   },
+   "wtap": {
+    "wdl": [
+     48,
+     0,
+     16
+    ],
+    "sprint": 916,
+    "fresh": 1072
+   }
+  },
+  "wtap 80/0": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     63,
+     1,
+     0
+    ],
+    "sprint": 542,
+    "fresh": 563
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     64,
+     0,
+     0
+    ],
+    "sprint": 494,
+    "fresh": 511
+   },
+   "wtap": {
+    "wdl": [
+     16,
+     0,
+     48
+    ],
+    "sprint": 872,
+    "fresh": 1004
+   }
+  },
+  "wtap 80/80": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     59,
+     0,
+     5
+    ],
+    "sprint": 659,
+    "fresh": 719
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     64,
+     0,
+     0
+    ],
+    "sprint": 524,
+    "fresh": 532
+   },
+   "wtap": {
+    "wdl": [
+     32,
+     0,
+     32
+    ],
+    "sprint": 1444,
+    "fresh": 1720
+   }
+  },
+  "wtap seat b": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     123,
+     0,
+     5
+    ],
+    "sprint": 1073,
+    "fresh": 1115
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     128,
+     0,
+     0
+    ],
+    "sprint": 915,
+    "fresh": 986
+   },
+   "wtap": {
+    "wdl": [
+     68,
+     0,
+     60
+    ],
+    "sprint": 2140,
+    "fresh": 2432
+   }
+  },
+  "remote-004-counter-gru": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     18,
+     18,
+     220
+    ],
+    "sprint": 8969,
+    "fresh": 9103
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     125,
+     11,
+     120
+    ],
+    "sprint": 12981,
+    "fresh": 13590
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     256
+    ],
+    "sprint": 1186,
+    "fresh": 1319
+   }
+  },
+  "remote-004-counter-gru 0/0": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     12,
+     17,
+     35
+    ],
+    "sprint": 5206,
+    "fresh": 5211
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     30,
+     9,
+     25
+    ],
+    "sprint": 4063,
+    "fresh": 4401
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 327,
+    "fresh": 367
+   }
+  },
+  "remote-004-counter-gru seat a": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     10,
+     9,
+     109
+    ],
+    "sprint": 4585,
+    "fresh": 4644
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     63,
+     5,
+     60
+    ],
+    "sprint": 6194,
+    "fresh": 6479
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     128
+    ],
+    "sprint": 628,
+    "fresh": 687
+   }
+  },
+  "remote-004-counter-gru 0/80": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     4,
+     1,
+     59
+    ],
+    "sprint": 2076,
+    "fresh": 2076
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     48,
+     1,
+     15
+    ],
+    "sprint": 3100,
+    "fresh": 3242
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 311,
+    "fresh": 337
+   }
+  },
+  "remote-004-counter-gru 80/0": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 715,
+    "fresh": 772
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     10,
+     0,
+     54
+    ],
+    "sprint": 2192,
+    "fresh": 2265
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 259,
+    "fresh": 278
+   }
+  },
+  "remote-004-counter-gru 80/80": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     2,
+     0,
+     62
+    ],
+    "sprint": 972,
+    "fresh": 1044
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     37,
+     1,
+     26
+    ],
+    "sprint": 3626,
+    "fresh": 3682
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 289,
+    "fresh": 337
+   }
+  },
+  "remote-004-counter-gru seat b": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     8,
+     9,
+     111
+    ],
+    "sprint": 4384,
+    "fresh": 4459
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     62,
+     6,
+     60
+    ],
+    "sprint": 6787,
+    "fresh": 7111
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     128
+    ],
+    "sprint": 558,
+    "fresh": 632
+   }
+  },
+  "sumo-seven-first": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     122,
+     29,
+     105
+    ],
+    "sprint": 15305,
+    "fresh": 15626
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     234,
+     4,
+     18
+    ],
+    "sprint": 9703,
+    "fresh": 9959
+   },
+   "wtap": {
+    "wdl": [
+     8,
+     0,
+     248
+    ],
+    "sprint": 2280,
+    "fresh": 2568
+   }
+  },
+  "sumo-seven-first 0/0": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     38,
+     15,
+     11
+    ],
+    "sprint": 5123,
+    "fresh": 5138
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     53,
+     1,
+     10
+    ],
+    "sprint": 2572,
+    "fresh": 2694
+   },
+   "wtap": {
+    "wdl": [
+     4,
+     0,
+     60
+    ],
+    "sprint": 388,
+    "fresh": 452
+   }
+  },
+  "sumo-seven-first seat a": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     62,
+     11,
+     55
+    ],
+    "sprint": 7894,
+    "fresh": 8059
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     122,
+     0,
+     6
+    ],
+    "sprint": 4780,
+    "fresh": 4908
+   },
+   "wtap": {
+    "wdl": [
+     4,
+     0,
+     124
+    ],
+    "sprint": 1272,
+    "fresh": 1420
+   }
+  },
+  "sumo-seven-first 0/80": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     44,
+     6,
+     14
+    ],
+    "sprint": 3692,
+    "fresh": 3697
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     64,
+     0,
+     0
+    ],
+    "sprint": 1325,
+    "fresh": 1365
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 520,
+    "fresh": 596
+   }
+  },
+  "sumo-seven-first 80/0": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     20,
+     2,
+     42
+    ],
+    "sprint": 2673,
+    "fresh": 2778
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     56,
+     2,
+     6
+    ],
+    "sprint": 2924,
+    "fresh": 2981
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 428,
+    "fresh": 460
+   }
+  },
+  "sumo-seven-first 80/80": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     20,
+     6,
+     38
+    ],
+    "sprint": 3817,
+    "fresh": 4013
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     61,
+     1,
+     2
+    ],
+    "sprint": 2882,
+    "fresh": 2919
+   },
+   "wtap": {
+    "wdl": [
+     4,
+     0,
+     60
+    ],
+    "sprint": 944,
+    "fresh": 1060
+   }
+  },
+  "sumo-seven-first seat b": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     60,
+     18,
+     50
+    ],
+    "sprint": 7411,
+    "fresh": 7567
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     112,
+     4,
+     12
+    ],
+    "sprint": 4923,
+    "fresh": 5051
+   },
+   "wtap": {
+    "wdl": [
+     4,
+     0,
+     124
+    ],
+    "sprint": 1008,
+    "fresh": 1148
+   }
+  },
+  "remote-003-counter-gru": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     33,
+     20,
+     203
+    ],
+    "sprint": 9181,
+    "fresh": 9348
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     130,
+     14,
+     112
+    ],
+    "sprint": 12488,
+    "fresh": 13235
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     2,
+     254
+    ],
+    "sprint": 1496,
+    "fresh": 1734
+   }
+  },
+  "remote-003-counter-gru 0/0": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     21,
+     16,
+     27
+    ],
+    "sprint": 4467,
+    "fresh": 4469
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     32,
+     7,
+     25
+    ],
+    "sprint": 3143,
+    "fresh": 3551
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     1,
+     63
+    ],
+    "sprint": 443,
+    "fresh": 535
+   }
+  },
+  "remote-003-counter-gru seat a": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     17,
+     11,
+     100
+    ],
+    "sprint": 4595,
+    "fresh": 4675
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     66,
+     9,
+     53
+    ],
+    "sprint": 6553,
+    "fresh": 6924
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     128
+    ],
+    "sprint": 766,
+    "fresh": 890
+   }
+  },
+  "remote-003-counter-gru 0/80": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     11,
+     1,
+     52
+    ],
+    "sprint": 2733,
+    "fresh": 2736
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     53,
+     1,
+     10
+    ],
+    "sprint": 3046,
+    "fresh": 3209
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 373,
+    "fresh": 410
+   }
+  },
+  "remote-003-counter-gru 80/0": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     0,
+     1,
+     63
+    ],
+    "sprint": 711,
+    "fresh": 788
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     14,
+     1,
+     49
+    ],
+    "sprint": 2569,
+    "fresh": 2677
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     1,
+     63
+    ],
+    "sprint": 266,
+    "fresh": 308
+   }
+  },
+  "remote-003-counter-gru 80/80": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     1,
+     2,
+     61
+    ],
+    "sprint": 1270,
+    "fresh": 1355
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     31,
+     5,
+     28
+    ],
+    "sprint": 3730,
+    "fresh": 3798
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     0,
+     64
+    ],
+    "sprint": 414,
+    "fresh": 481
+   }
+  },
+  "remote-003-counter-gru seat b": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     16,
+     9,
+     103
+    ],
+    "sprint": 4586,
+    "fresh": 4673
+   },
+   "remote-004-main-gru": {
+    "wdl": [
+     64,
+     5,
+     59
+    ],
+    "sprint": 5935,
+    "fresh": 6311
+   },
+   "wtap": {
+    "wdl": [
+     0,
+     2,
+     126
+    ],
+    "sprint": 730,
+    "fresh": 844
+   }
+  }
+ },
+ "zero_sim": {
+  "gen4-auto-sprint": [
+   307,
+   223,
+   494
+  ],
+  "remote-004-main-gru": [
+   464,
+   152,
+   408
+  ],
+  "wtap": [
+   8,
+   14,
+   1002
+  ]
+ },
+ "native": {
+  "research-wtap20": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     8,
+     0,
+     0
+    ],
+    "sprint": 71,
+    "fresh": 76
+   },
+   "sumo-league-remote-004": {
+    "wdl": [
+     8,
+     0,
+     0
+    ],
+    "sprint": 54,
+    "fresh": 63
+   }
+  },
+  "research-wtap20 0/0": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     2,
+     0,
+     0
+    ],
+    "sprint": 24,
+    "fresh": 24
+   },
+   "sumo-league-remote-004": {
+    "wdl": [
+     2,
+     0,
+     0
+    ],
+    "sprint": 9,
+    "fresh": 13
+   }
+  },
+  "research-wtap20 seat b": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     4,
+     0,
+     0
+    ],
+    "sprint": 42,
+    "fresh": 47
+   },
+   "sumo-league-remote-004": {
+    "wdl": [
+     4,
+     0,
+     0
+    ],
+    "sprint": 27,
+    "fresh": 33
+   }
+  },
+  "gen4-auto-sprint": {
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     8
+    ],
+    "sprint": 59,
+    "fresh": 61
+   },
+   "sumo-league-remote-004": {
+    "wdl": [
+     12,
+     2,
+     2
+    ],
+    "sprint": 539,
+    "fresh": 570
+   }
+  },
+  "gen4-auto-sprint 0/0": {
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     2
+    ],
+    "sprint": 25,
+    "fresh": 25
+   },
+   "sumo-league-remote-004": {
+    "wdl": [
+     2,
+     2,
+     0
+    ],
+    "sprint": 311,
+    "fresh": 330
+   }
+  },
+  "gen4-auto-sprint seat a": {
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     4
+    ],
+    "sprint": 40,
+    "fresh": 41
+   },
+   "sumo-league-remote-004": {
+    "wdl": [
+     7,
+     1,
+     0
+    ],
+    "sprint": 286,
+    "fresh": 299
+   }
+  },
+  "sumo-league-remote-004": {
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     8
+    ],
+    "sprint": 49,
+    "fresh": 55
+   },
+   "gen4-auto-sprint": {
+    "wdl": [
+     2,
+     2,
+     12
+    ],
+    "sprint": 548,
+    "fresh": 560
+   }
+  },
+  "sumo-league-remote-004 0/0": {
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     2
+    ],
+    "sprint": 12,
+    "fresh": 13
+   },
+   "gen4-auto-sprint": {
+    "wdl": [
+     0,
+     2,
+     2
+    ],
+    "sprint": 326,
+    "fresh": 326
+   }
+  },
+  "sumo-league-remote-004 seat a": {
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     4
+    ],
+    "sprint": 29,
+    "fresh": 31
+   },
+   "gen4-auto-sprint": {
+    "wdl": [
+     2,
+     1,
+     5
+    ],
+    "sprint": 264,
+    "fresh": 275
+   }
+  },
+  "sumo-league-remote-004 seat b": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     0,
+     1,
+     7
+    ],
+    "sprint": 284,
+    "fresh": 285
+   },
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     4
+    ],
+    "sprint": 20,
+    "fresh": 24
+   }
+  },
+  "sumo-league-remote-004 80/80": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     0,
+     0,
+     4
+    ],
+    "sprint": 51,
+    "fresh": 60
+   },
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     2
+    ],
+    "sprint": 16,
+    "fresh": 17
+   }
+  },
+  "gen4-auto-sprint 80/80": {
+   "sumo-league-remote-004": {
+    "wdl": [
+     4,
+     0,
+     0
+    ],
+    "sprint": 64,
+    "fresh": 68
+   },
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     2
+    ],
+    "sprint": 24,
+    "fresh": 25
+   }
+  },
+  "research-wtap20 80/80": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     2,
+     0,
+     0
+    ],
+    "sprint": 27,
+    "fresh": 31
+   },
+   "sumo-league-remote-004": {
+    "wdl": [
+     2,
+     0,
+     0
+    ],
+    "sprint": 18,
+    "fresh": 19
+   }
+  },
+  "research-wtap20 80/0": {
+   "sumo-league-remote-004": {
+    "wdl": [
+     2,
+     0,
+     0
+    ],
+    "sprint": 12,
+    "fresh": 15
+   },
+   "gen4-auto-sprint": {
+    "wdl": [
+     2,
+     0,
+     0
+    ],
+    "sprint": 8,
+    "fresh": 9
+   }
+  },
+  "research-wtap20 seat a": {
+   "sumo-league-remote-004": {
+    "wdl": [
+     4,
+     0,
+     0
+    ],
+    "sprint": 27,
+    "fresh": 30
+   },
+   "gen4-auto-sprint": {
+    "wdl": [
+     4,
+     0,
+     0
+    ],
+    "sprint": 29,
+    "fresh": 29
+   }
+  },
+  "sumo-league-remote-004 0/80": {
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     2
+    ],
+    "sprint": 8,
+    "fresh": 11
+   },
+   "gen4-auto-sprint": {
+    "wdl": [
+     2,
+     0,
+     2
+    ],
+    "sprint": 116,
+    "fresh": 116
+   }
+  },
+  "gen4-auto-sprint 0/80": {
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     2
+    ],
+    "sprint": 4,
+    "fresh": 4
+   },
+   "sumo-league-remote-004": {
+    "wdl": [
+     4,
+     0,
+     0
+    ],
+    "sprint": 61,
+    "fresh": 62
+   }
+  },
+  "gen4-auto-sprint seat b": {
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     4
+    ],
+    "sprint": 19,
+    "fresh": 20
+   },
+   "sumo-league-remote-004": {
+    "wdl": [
+     5,
+     1,
+     2
+    ],
+    "sprint": 253,
+    "fresh": 271
+   }
+  },
+  "sumo-league-remote-004 80/0": {
+   "gen4-auto-sprint": {
+    "wdl": [
+     0,
+     0,
+     4
+    ],
+    "sprint": 55,
+    "fresh": 58
+   },
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     2
+    ],
+    "sprint": 13,
+    "fresh": 14
+   }
+  },
+  "gen4-auto-sprint 80/0": {
+   "sumo-league-remote-004": {
+    "wdl": [
+     2,
+     0,
+     2
+    ],
+    "sprint": 103,
+    "fresh": 110
+   },
+   "research-wtap20": {
+    "wdl": [
+     0,
+     0,
+     2
+    ],
+    "sprint": 6,
+    "fresh": 7
+   }
+  },
+  "research-wtap20 0/80": {
+   "sumo-league-remote-004": {
+    "wdl": [
+     2,
+     0,
+     0
+    ],
+    "sprint": 15,
+    "fresh": 16
+   },
+   "gen4-auto-sprint": {
+    "wdl": [
+     2,
+     0,
+     0
+    ],
+    "sprint": 12,
+    "fresh": 12
+   }
+  }
+ },
+ "native_matches": [
+  {
+   "request": "gen4autoc-v1-1-3",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "b",
+   "own": 0,
+   "other": 0,
+   "mid": "m10374",
+   "WDL": "L",
+   "end": 1943,
+   "reasons": [
+    "b no verified running controller"
+   ],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 1,
+     "sprint": 1,
+     "heads": 37,
+     "changed": 0,
+     "presses": 3,
+     "first_head_ms": 45,
+     "min_press_ms": 187.483167
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 0,
+     "sprint": 0,
+     "heads": 0,
+     "changed": 0,
+     "presses": 0,
+     "first_head_ms": null,
+     "min_press_ms": null
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-1-1",
+   "actor": "gen4-auto-sprint",
+   "foe": "research-wtap20",
+   "seat": "b",
+   "own": 0,
+   "other": 0,
+   "mid": "m10375",
+   "WDL": "W",
+   "end": 18516,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "research-wtap20",
+     "fresh": 19,
+     "sprint": 19,
+     "heads": 0,
+     "changed": 0,
+     "presses": 122,
+     "first_head_ms": null,
+     "min_press_ms": 142.926125
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 18,
+     "sprint": 18,
+     "heads": 363,
+     "changed": 112,
+     "presses": 74,
+     "first_head_ms": 58,
+     "min_press_ms": 143.031083
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-1-2",
+   "actor": "sumo-league-remote-004",
+   "foe": "research-wtap20",
+   "seat": "b",
+   "own": 0,
+   "other": 0,
+   "mid": "m10376",
+   "WDL": "W",
+   "end": 7516,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "research-wtap20",
+     "fresh": 8,
+     "sprint": 8,
+     "heads": 0,
+     "changed": 0,
+     "presses": 50,
+     "first_head_ms": null,
+     "min_press_ms": 142.874667
+    },
+    "b": {
+     "name": "sumo-league-remote-004",
+     "fresh": 8,
+     "sprint": 5,
+     "heads": 150,
+     "changed": 0,
+     "presses": 27,
+     "first_head_ms": 32,
+     "min_press_ms": 143.216167
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-1-0",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "b",
+   "own": 0,
+   "other": 0,
+   "mid": "m10377",
+   "WDL": "D",
+   "end": 120013,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 145,
+     "sprint": 136,
+     "heads": 2269,
+     "changed": 0,
+     "presses": 429,
+     "first_head_ms": 40,
+     "min_press_ms": 142.902958
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 144,
+     "sprint": 144,
+     "heads": 2246,
+     "changed": 1321,
+     "presses": 438,
+     "first_head_ms": 42,
+     "min_press_ms": 142.882333
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-7-0",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "b",
+   "own": 80,
+   "other": 80,
+   "mid": "m10378",
+   "WDL": "L",
+   "end": 12764,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 16,
+     "sprint": 16,
+     "heads": 255,
+     "changed": 0,
+     "presses": 50,
+     "first_head_ms": 65,
+     "min_press_ms": 143.258875
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 12,
+     "sprint": 11,
+     "heads": 248,
+     "changed": 109,
+     "presses": 52,
+     "first_head_ms": 105,
+     "min_press_ms": 143.04325
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-7-1",
+   "actor": "gen4-auto-sprint",
+   "foe": "research-wtap20",
+   "seat": "b",
+   "own": 80,
+   "other": 80,
+   "mid": "m10379",
+   "WDL": "W",
+   "end": 14014,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "research-wtap20",
+     "fresh": 15,
+     "sprint": 15,
+     "heads": 0,
+     "changed": 0,
+     "presses": 93,
+     "first_head_ms": null,
+     "min_press_ms": 142.962583
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 18,
+     "sprint": 14,
+     "heads": 281,
+     "changed": 113,
+     "presses": 56,
+     "first_head_ms": 49,
+     "min_press_ms": 143.351125
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-7-3",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "b",
+   "own": 80,
+   "other": 80,
+   "mid": "m10380",
+   "WDL": "L",
+   "end": 6969,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 9,
+     "sprint": 9,
+     "heads": 139,
+     "changed": 0,
+     "presses": 26,
+     "first_head_ms": 35,
+     "min_press_ms": 143.1215
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 6,
+     "sprint": 6,
+     "heads": 141,
+     "changed": 74,
+     "presses": 27,
+     "first_head_ms": 4,
+     "min_press_ms": 143.08125
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-7-2",
+   "actor": "sumo-league-remote-004",
+   "foe": "research-wtap20",
+   "seat": "b",
+   "own": 80,
+   "other": 80,
+   "mid": "m10381",
+   "WDL": "W",
+   "end": 8512,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "research-wtap20",
+     "fresh": 9,
+     "sprint": 9,
+     "heads": 0,
+     "changed": 0,
+     "presses": 56,
+     "first_head_ms": null,
+     "min_press_ms": 143.224542
+    },
+    "b": {
+     "name": "sumo-league-remote-004",
+     "fresh": 10,
+     "sprint": 10,
+     "heads": 172,
+     "changed": 0,
+     "presses": 33,
+     "first_head_ms": 5,
+     "min_press_ms": 143.176
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-4-2",
+   "actor": "sumo-league-remote-004",
+   "foe": "research-wtap20",
+   "seat": "a",
+   "own": 80,
+   "other": 0,
+   "mid": "m10382",
+   "WDL": "W",
+   "end": 4669,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 7,
+     "sprint": 6,
+     "heads": 93,
+     "changed": 0,
+     "presses": 20,
+     "first_head_ms": 46,
+     "min_press_ms": 143.331792
+    },
+    "b": {
+     "name": "research-wtap20",
+     "fresh": 4,
+     "sprint": 3,
+     "heads": 0,
+     "changed": 0,
+     "presses": 32,
+     "first_head_ms": null,
+     "min_press_ms": 143.2555
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-4-1",
+   "actor": "gen4-auto-sprint",
+   "foe": "research-wtap20",
+   "seat": "a",
+   "own": 80,
+   "other": 0,
+   "mid": "m10383",
+   "WDL": "W",
+   "end": 3218,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "gen4-auto-sprint",
+     "fresh": 4,
+     "sprint": 4,
+     "heads": 65,
+     "changed": 33,
+     "presses": 14,
+     "first_head_ms": 49,
+     "min_press_ms": 143.277625
+    },
+    "b": {
+     "name": "research-wtap20",
+     "fresh": 2,
+     "sprint": 2,
+     "heads": 0,
+     "changed": 0,
+     "presses": 22,
+     "first_head_ms": null,
+     "min_press_ms": 144.111666
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-4-0",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "a",
+   "own": 80,
+   "other": 0,
+   "mid": "m10384",
+   "WDL": "L",
+   "end": 10164,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "gen4-auto-sprint",
+     "fresh": 13,
+     "sprint": 10,
+     "heads": 204,
+     "changed": 101,
+     "presses": 37,
+     "first_head_ms": 46,
+     "min_press_ms": 143.870959
+    },
+    "b": {
+     "name": "sumo-league-remote-004",
+     "fresh": 13,
+     "sprint": 12,
+     "heads": 204,
+     "changed": 0,
+     "presses": 45,
+     "first_head_ms": 1,
+     "min_press_ms": 142.923417
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-4-3",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "a",
+   "own": 80,
+   "other": 0,
+   "mid": "m10385",
+   "WDL": "L",
+   "end": 18216,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "gen4-auto-sprint",
+     "fresh": 21,
+     "sprint": 21,
+     "heads": 364,
+     "changed": 172,
+     "presses": 70,
+     "first_head_ms": 38,
+     "min_press_ms": 143.231542
+    },
+    "b": {
+     "name": "sumo-league-remote-004",
+     "fresh": 22,
+     "sprint": 22,
+     "heads": 365,
+     "changed": 0,
+     "presses": 81,
+     "first_head_ms": 9,
+     "min_press_ms": 142.958167
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-6-3",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "a",
+   "own": 80,
+   "other": 80,
+   "mid": "m10386",
+   "WDL": "L",
+   "end": 26909,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "gen4-auto-sprint",
+     "fresh": 35,
+     "sprint": 27,
+     "heads": 538,
+     "changed": 273,
+     "presses": 114,
+     "first_head_ms": 34,
+     "min_press_ms": 142.931125
+    },
+    "b": {
+     "name": "sumo-league-remote-004",
+     "fresh": 35,
+     "sprint": 31,
+     "heads": 539,
+     "changed": 0,
+     "presses": 121,
+     "first_head_ms": 11,
+     "min_press_ms": 142.932875
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-6-1",
+   "actor": "gen4-auto-sprint",
+   "foe": "research-wtap20",
+   "seat": "a",
+   "own": 80,
+   "other": 80,
+   "mid": "m10387",
+   "WDL": "W",
+   "end": 10314,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "gen4-auto-sprint",
+     "fresh": 13,
+     "sprint": 13,
+     "heads": 208,
+     "changed": 81,
+     "presses": 42,
+     "first_head_ms": 40,
+     "min_press_ms": 144.753375
+    },
+    "b": {
+     "name": "research-wtap20",
+     "fresh": 10,
+     "sprint": 9,
+     "heads": 0,
+     "changed": 0,
+     "presses": 69,
+     "first_head_ms": null,
+     "min_press_ms": 143.070791
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-6-2",
+   "actor": "sumo-league-remote-004",
+   "foe": "research-wtap20",
+   "seat": "a",
+   "own": 80,
+   "other": 80,
+   "mid": "m10388",
+   "WDL": "W",
+   "end": 7658,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 9,
+     "sprint": 8,
+     "heads": 154,
+     "changed": 0,
+     "presses": 31,
+     "first_head_ms": 61,
+     "min_press_ms": 143.011792
+    },
+    "b": {
+     "name": "research-wtap20",
+     "fresh": 8,
+     "sprint": 7,
+     "heads": 0,
+     "changed": 0,
+     "presses": 52,
+     "first_head_ms": null,
+     "min_press_ms": 142.927583
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-6-0",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "a",
+   "own": 80,
+   "other": 80,
+   "mid": "m10389",
+   "WDL": "L",
+   "end": 6764,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "gen4-auto-sprint",
+     "fresh": 7,
+     "sprint": 7,
+     "heads": 135,
+     "changed": 81,
+     "presses": 26,
+     "first_head_ms": 43,
+     "min_press_ms": 145.803417
+    },
+    "b": {
+     "name": "sumo-league-remote-004",
+     "fresh": 8,
+     "sprint": 8,
+     "heads": 137,
+     "changed": 0,
+     "presses": 26,
+     "first_head_ms": 10,
+     "min_press_ms": 143.289625
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-2-0",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "a",
+   "own": 0,
+   "other": 80,
+   "mid": "m10390",
+   "WDL": "W",
+   "end": 10664,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "gen4-auto-sprint",
+     "fresh": 15,
+     "sprint": 15,
+     "heads": 213,
+     "changed": 108,
+     "presses": 44,
+     "first_head_ms": 35,
+     "min_press_ms": 143.136
+    },
+    "b": {
+     "name": "sumo-league-remote-004",
+     "fresh": 11,
+     "sprint": 9,
+     "heads": 215,
+     "changed": 0,
+     "presses": 41,
+     "first_head_ms": 1,
+     "min_press_ms": 143.208
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-2-3",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "a",
+   "own": 0,
+   "other": 80,
+   "mid": "m10391",
+   "WDL": "W",
+   "end": 6213,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "gen4-auto-sprint",
+     "fresh": 8,
+     "sprint": 8,
+     "heads": 124,
+     "changed": 63,
+     "presses": 24,
+     "first_head_ms": 40,
+     "min_press_ms": 143.512791
+    },
+    "b": {
+     "name": "sumo-league-remote-004",
+     "fresh": 6,
+     "sprint": 5,
+     "heads": 125,
+     "changed": 0,
+     "presses": 24,
+     "first_head_ms": 4,
+     "min_press_ms": 143.044042
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-2-2",
+   "actor": "sumo-league-remote-004",
+   "foe": "research-wtap20",
+   "seat": "a",
+   "own": 0,
+   "other": 80,
+   "mid": "m10392",
+   "WDL": "W",
+   "end": 7713,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 9,
+     "sprint": 9,
+     "heads": 154,
+     "changed": 0,
+     "presses": 31,
+     "first_head_ms": 36,
+     "min_press_ms": 143.01475
+    },
+    "b": {
+     "name": "research-wtap20",
+     "fresh": 7,
+     "sprint": 6,
+     "heads": 0,
+     "changed": 0,
+     "presses": 51,
+     "first_head_ms": null,
+     "min_press_ms": 143.060584
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-2-1",
+   "actor": "gen4-auto-sprint",
+   "foe": "research-wtap20",
+   "seat": "a",
+   "own": 0,
+   "other": 80,
+   "mid": "m10393",
+   "WDL": "W",
+   "end": 4308,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "gen4-auto-sprint",
+     "fresh": 6,
+     "sprint": 6,
+     "heads": 87,
+     "changed": 31,
+     "presses": 16,
+     "first_head_ms": 35,
+     "min_press_ms": 143.203417
+    },
+    "b": {
+     "name": "research-wtap20",
+     "fresh": 2,
+     "sprint": 2,
+     "heads": 0,
+     "changed": 0,
+     "presses": 29,
+     "first_head_ms": null,
+     "min_press_ms": 143.0245
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-5-0",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "b",
+   "own": 80,
+   "other": 0,
+   "mid": "m10394",
+   "WDL": "L",
+   "end": 9461,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 12,
+     "sprint": 12,
+     "heads": 189,
+     "changed": 0,
+     "presses": 40,
+     "first_head_ms": 34,
+     "min_press_ms": 143.13325
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 11,
+     "sprint": 11,
+     "heads": 190,
+     "changed": 94,
+     "presses": 33,
+     "first_head_ms": 4,
+     "min_press_ms": 143.281167
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-5-2",
+   "actor": "sumo-league-remote-004",
+   "foe": "research-wtap20",
+   "seat": "b",
+   "own": 80,
+   "other": 0,
+   "mid": "m10395",
+   "WDL": "W",
+   "end": 6363,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "research-wtap20",
+     "fresh": 7,
+     "sprint": 5,
+     "heads": 0,
+     "changed": 0,
+     "presses": 42,
+     "first_head_ms": null,
+     "min_press_ms": 143.124208
+    },
+    "b": {
+     "name": "sumo-league-remote-004",
+     "fresh": 8,
+     "sprint": 6,
+     "heads": 128,
+     "changed": 0,
+     "presses": 27,
+     "first_head_ms": 6,
+     "min_press_ms": 145.228166
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-5-3",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "b",
+   "own": 80,
+   "other": 0,
+   "mid": "m10396",
+   "WDL": "L",
+   "end": 11470,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 15,
+     "sprint": 15,
+     "heads": 229,
+     "changed": 0,
+     "presses": 48,
+     "first_head_ms": 38,
+     "min_press_ms": 143.398417
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 13,
+     "sprint": 13,
+     "heads": 231,
+     "changed": 114,
+     "presses": 38,
+     "first_head_ms": 3,
+     "min_press_ms": 142.88275
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-5-1",
+   "actor": "gen4-auto-sprint",
+   "foe": "research-wtap20",
+   "seat": "b",
+   "own": 80,
+   "other": 0,
+   "mid": "m10397",
+   "WDL": "W",
+   "end": 3611,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "research-wtap20",
+     "fresh": 2,
+     "sprint": 2,
+     "heads": 0,
+     "changed": 0,
+     "presses": 24,
+     "first_head_ms": null,
+     "min_press_ms": 143.749416
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 5,
+     "sprint": 4,
+     "heads": 72,
+     "changed": 33,
+     "presses": 15,
+     "first_head_ms": 84,
+     "min_press_ms": 142.959334
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-3-2",
+   "actor": "sumo-league-remote-004",
+   "foe": "research-wtap20",
+   "seat": "b",
+   "own": 0,
+   "other": 80,
+   "mid": "m10398",
+   "WDL": "W",
+   "end": 6758,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "research-wtap20",
+     "fresh": 7,
+     "sprint": 7,
+     "heads": 0,
+     "changed": 0,
+     "presses": 44,
+     "first_head_ms": null,
+     "min_press_ms": 143.185667
+    },
+    "b": {
+     "name": "sumo-league-remote-004",
+     "fresh": 7,
+     "sprint": 6,
+     "heads": 136,
+     "changed": 0,
+     "presses": 30,
+     "first_head_ms": 182,
+     "min_press_ms": 143.663708
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-3-3",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "b",
+   "own": 0,
+   "other": 80,
+   "mid": "m10399",
+   "WDL": "L",
+   "end": 43280,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 58,
+     "sprint": 55,
+     "heads": 866,
+     "changed": 0,
+     "presses": 197,
+     "first_head_ms": 9,
+     "min_press_ms": 143.291
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 58,
+     "sprint": 58,
+     "heads": 866,
+     "changed": 398,
+     "presses": 178,
+     "first_head_ms": 21,
+     "min_press_ms": 142.899125
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-3-1",
+   "actor": "gen4-auto-sprint",
+   "foe": "research-wtap20",
+   "seat": "b",
+   "own": 0,
+   "other": 80,
+   "mid": "m10400",
+   "WDL": "W",
+   "end": 5453,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "research-wtap20",
+     "fresh": 5,
+     "sprint": 4,
+     "heads": 0,
+     "changed": 0,
+     "presses": 37,
+     "first_head_ms": null,
+     "min_press_ms": 143.2115
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 6,
+     "sprint": 6,
+     "heads": 109,
+     "changed": 46,
+     "presses": 21,
+     "first_head_ms": 43,
+     "min_press_ms": 143.308541
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-3-0",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "b",
+   "own": 0,
+   "other": 80,
+   "mid": "m10401",
+   "WDL": "L",
+   "end": 27113,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 35,
+     "sprint": 34,
+     "heads": 543,
+     "changed": 0,
+     "presses": 118,
+     "first_head_ms": 35,
+     "min_press_ms": 143.267292
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 35,
+     "sprint": 35,
+     "heads": 543,
+     "changed": 237,
+     "presses": 110,
+     "first_head_ms": 50,
+     "min_press_ms": 143.007833
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-0-1",
+   "actor": "gen4-auto-sprint",
+   "foe": "research-wtap20",
+   "seat": "a",
+   "own": 0,
+   "other": 0,
+   "mid": "m10402",
+   "WDL": "W",
+   "end": 6095,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "gen4-auto-sprint",
+     "fresh": 6,
+     "sprint": 6,
+     "heads": 122,
+     "changed": 37,
+     "presses": 26,
+     "first_head_ms": 28,
+     "min_press_ms": 142.983167
+    },
+    "b": {
+     "name": "research-wtap20",
+     "fresh": 6,
+     "sprint": 6,
+     "heads": 0,
+     "changed": 0,
+     "presses": 41,
+     "first_head_ms": null,
+     "min_press_ms": 142.96925
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-0-3",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "a",
+   "own": 0,
+   "other": 0,
+   "mid": "m10403",
+   "WDL": "L",
+   "end": 24303,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "gen4-auto-sprint",
+     "fresh": 29,
+     "sprint": 29,
+     "heads": 486,
+     "changed": 306,
+     "presses": 96,
+     "first_head_ms": 27,
+     "min_press_ms": 142.977208
+    },
+    "b": {
+     "name": "sumo-league-remote-004",
+     "fresh": 30,
+     "sprint": 28,
+     "heads": 486,
+     "changed": 0,
+     "presses": 90,
+     "first_head_ms": 40,
+     "min_press_ms": 142.98075
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-0-0",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "a",
+   "own": 0,
+   "other": 0,
+   "mid": "m10404",
+   "WDL": "D",
+   "end": 120019,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "gen4-auto-sprint",
+     "fresh": 147,
+     "sprint": 147,
+     "heads": 2278,
+     "changed": 1323,
+     "presses": 430,
+     "first_head_ms": 27,
+     "min_press_ms": 142.8915
+    },
+    "b": {
+     "name": "sumo-league-remote-004",
+     "fresh": 146,
+     "sprint": 138,
+     "heads": 2279,
+     "changed": 0,
+     "presses": 450,
+     "first_head_ms": 2,
+     "min_press_ms": 142.941583
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-0-2",
+   "actor": "sumo-league-remote-004",
+   "foe": "research-wtap20",
+   "seat": "a",
+   "own": 0,
+   "other": 0,
+   "mid": "m10405",
+   "WDL": "W",
+   "end": 4454,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 5,
+     "sprint": 4,
+     "heads": 90,
+     "changed": 0,
+     "presses": 18,
+     "first_head_ms": 27,
+     "min_press_ms": 142.902709
+    },
+    "b": {
+     "name": "research-wtap20",
+     "fresh": 5,
+     "sprint": 4,
+     "heads": 0,
+     "changed": 0,
+     "presses": 30,
+     "first_head_ms": null,
+     "min_press_ms": 142.914208
+    }
+   }
+  },
+  {
+   "request": "gen4autoc-v1-1-3-retry1",
+   "actor": "gen4-auto-sprint",
+   "foe": "sumo-league-remote-004",
+   "seat": "b",
+   "own": 0,
+   "other": 0,
+   "mid": "m10406",
+   "WDL": "L",
+   "end": 7365,
+   "reasons": [],
+   "players": {
+    "a": {
+     "name": "sumo-league-remote-004",
+     "fresh": 9,
+     "sprint": 9,
+     "heads": 147,
+     "changed": 0,
+     "presses": 28,
+     "first_head_ms": 37,
+     "min_press_ms": 142.981291
+    },
+    "b": {
+     "name": "gen4-auto-sprint",
+     "fresh": 6,
+     "sprint": 6,
+     "heads": 145,
+     "changed": 80,
+     "presses": 27,
+     "first_head_ms": 117,
+     "min_press_ms": 143.241917
+    }
+   }
+  }
+ ],
+ "native_forward_sprint_contacts_same_tick_stop_and_next_tick_start": {
+  "sumo-league-remote-004": [
+   1394,
+   554,
+   179
+  ],
+  "gen4-auto-sprint": [
+   1330,
+   1329,
+   1327
+  ]
+ },
+ "model_mechanism_at_80ms_own": {
+  "intact": {
+   "press_contact_fraction": 0.7629669651126891,
+   "outward_brakes_per_incoming_fresh": 1.791817388050393
+  },
+  "auto-sprint": {
+   "press_contact_fraction": 0.6779635933106408,
+   "outward_brakes_per_incoming_fresh": 1.4965831435079726
+  }
+ },
+ "sha256": {
+  "cases.tsv": "b4bd905b8ae65a79ed89c8b0f8adee57d27aeec6c30a4207c5a409cf399dca8c",
+  "sim.jsonl.gz": "b4df28fdc60f2206fea1edc5188136722f47e0bc729bd76024034755c2182fe7",
+  "trade.jsonl.gz": "862db1b80b70974578a867bfd0ca547e95a8f868046831e60915145d1709ef1e"
+ }
+}

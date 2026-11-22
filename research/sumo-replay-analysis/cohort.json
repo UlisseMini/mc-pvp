@@ -1,0 +1,267 @@
+{
+  "selection": "Previous ten from the frozen Sumo Coach report. New ten selected from result metadata before opening exchange traces for this review. Five wins and five losses, varied duration and opposition (best-sumo, sumo-seven-first, sumo-league-001, W-tap, mmc13-trades). All were completed on the recorded MMC footprint, with server, human and bot event archives. This is a case-study cohort.",
+  "previous": [
+    {
+      "id": "m9186",
+      "opponent": "best-sumo",
+      "outcome": "won",
+      "duration_ms": 4381,
+      "sources": {
+        "runtime/results/m9186.json": "f484ac420dc5a6c9e62e23a08568df3dbb4b36c7da1c19b832bee4fb770a081e",
+        "runtime/replays/m9186.jsonl": "a6638e469730ae42167369da197bf94c5fedb36299532af09639901b8b97963e",
+        "runtime/pov/m9186/a-client-1795182258622-d58fc430-events.jsonl.gz": "61c27afbb8e3040e1a5b9f461af07977daa16c01f00a322134f489524f900e55",
+        "runtime/pov/m9186/b-client-1795182258614-221893d1-events.jsonl.gz": "9c58e621aa2b5ab3587567a85bf5146db229e1a29b446628b717f5527e953346",
+        "runtime/pov/m9186/server-1795182258563-3cee866c-events.jsonl.gz": "eefbfa0c66ed7f37cfa4b7206e838b7d064e6e83e67391db2524d80e6fba787f"
+      }
+    },
+    {
+      "id": "m9161",
+      "opponent": "best-sumo",
+      "outcome": "won",
+      "duration_ms": 40363,
+      "sources": {
+        "runtime/results/m9161.json": "109cdac5d00750455edfe6c4dcea97cb8e81fc698b4301941a08cb781235f88c",
+        "runtime/replays/m9161.jsonl": "ef296116e7a87e2f37dfa60f8234784cf313c832c89e1f72fad0fef0c25847f7",
+        "runtime/pov/m9161/a-client-1795182062216-e7c85761-events.jsonl.gz": "28d83bb381f4d9541e31153a559454d3c7f3aa42b76bcf5b78dab4e83ce0fa87",
+        "runtime/pov/m9161/b-client-1795182062107-8d5f90d4-events.jsonl.gz": "789e3aecfc39610dfc86e096d52020de0effd9ecf869ed1e84271ee87a275d64",
+        "runtime/pov/m9161/server-1795182062070-891e3b97-events.jsonl.gz": "a06284f1e50f4c3a029729ad71cba63e9ee522893b40218d33b2a89323f81537"
+      }
+    },
+    {
+      "id": "m9159",
+      "opponent": "best-sumo",
+      "outcome": "lost",
+      "duration_ms": 3818,
+      "sources": {
+        "runtime/results/m9159.json": "d5444b73f49b91f46b1bdd9e30552c2414abe6fee2b81fae16a96c3459b28fff",
+        "runtime/replays/m9159.jsonl": "42c8b683f7bc2b3a635638c58f1f0088e05bc445b7742412bfcda6c5a77b2e54",
+        "runtime/pov/m9159/a-client-1795182055186-7e84cd2a-events.jsonl.gz": "1126fbc0ff1a05967c5877ac2c7c2ad0f868208d7e9dc5a4a0e88ca7eec86473",
+        "runtime/pov/m9159/b-client-1795182055160-76b4830a-events.jsonl.gz": "0731cf93d6b1d7fc63ca910ad21651440bd4bb6f21cb738373b2cc13ca03ecc8",
+        "runtime/pov/m9159/server-1795182055066-8d047ced-events.jsonl.gz": "5ef7f1ab2fc9066fe8cfba219c68c6e5d3ba2318adb58205fc175e0f7ebc3fac"
+      }
+    },
+    {
+      "id": "m9153",
+      "opponent": "best-sumo",
+      "outcome": "lost",
+      "duration_ms": 15174,
+      "sources": {
+        "runtime/results/m9153.json": "0c4273464d4207df12f45ccadbb0f4c449a99f9aff83a6bf89dd935fe2c9941f",
+        "runtime/replays/m9153.jsonl": "a68113c6e404effefba7a1b69346c609e9d6210236033a3e2f4fcd25cb72ddbc",
+        "runtime/pov/m9153/a-client-1795182021561-4257a79f-events.jsonl.gz": "5864962da6242dbb835a78031a90a5f8d4c20db2d1b0c047b225b94fa54018c3",
+        "runtime/pov/m9153/b-client-1795182021445-957d148b-events.jsonl.gz": "6a283e0a6f4d7ff44099102f756f9499cd75d8e1b5510ca8be56e4ac42b00ce4",
+        "runtime/pov/m9153/server-1795182021415-2cc80abb-events.jsonl.gz": "3fb6d3d6630d03cb9b08d1731c5773239d39338613f44067a6a68229fe0ede29"
+      }
+    },
+    {
+      "id": "m9108",
+      "opponent": "best-sumo",
+      "outcome": "lost",
+      "duration_ms": 11564,
+      "sources": {
+        "runtime/results/m9108.json": "f406a3ac43aa08c6b80301238849b07ab817f1be7d3089db772cb9d93c1b9482",
+        "runtime/replays/m9108.jsonl": "df8536d4a29a757b1caa2876b449c9038e22ab40fd863ccb7e1b7fd5305d9de8",
+        "runtime/pov/m9108/a-client-1795181748837-4b348df4-events.jsonl.gz": "fb71fffdce954c5e50037cfff98f14b3a53af82b317d85ee5f68cb9059bab4fe",
+        "runtime/pov/m9108/b-client-1795181748843-d03756cb-events.jsonl.gz": "563d0512335e142c2e7ca4c9f918c672697026803dafe8e806cb71c8f17a6f22",
+        "runtime/pov/m9108/server-1795181748724-371d99e5-events.jsonl.gz": "80908c3d5fa4835b109292ffcb0c7cd72bb74fd95bb772a3bf48770c08fe3fd1"
+      }
+    },
+    {
+      "id": "m9092",
+      "opponent": "best-sumo",
+      "outcome": "lost",
+      "duration_ms": 51677,
+      "sources": {
+        "runtime/results/m9092.json": "5b462c943a9f8c1dbe73ac915b9b225d45f62e3ca2cfe5739b75fb342672f366",
+        "runtime/replays/m9092.jsonl": "c6857d922bee9074c0167c7696908446bb049c2c5a068371a853a72dd5519651",
+        "runtime/pov/m9092/a-client-1795181573761-e6ac30d7-events.jsonl.gz": "2693e78fd119df62a31271a037d8c81506573b75ddccdb5b24de594547e5a55c",
+        "runtime/pov/m9092/b-client-1795181573463-3a3385c0-events.jsonl.gz": "1327ef764f2cf32763808704224914d844e60825b90a517845055777e38cc7ba",
+        "runtime/pov/m9092/server-1795181573412-6dfa74db-events.jsonl.gz": "f021f82b08065fff96e632893f5ba7881ba594662f0e11e6c0d034d1bd4bee34"
+      }
+    },
+    {
+      "id": "m9051",
+      "opponent": "sumo-seven-first",
+      "outcome": "lost",
+      "duration_ms": 1847,
+      "sources": {
+        "runtime/results/m9051.json": "c022efea2d4232977ff7254a66a7285c7ea257cd3b6ebb4d14c4a11eae75448c",
+        "runtime/replays/m9051.jsonl": "62209cb5b1f6f7462f690f2fbc70b422b5aa5d07dc9f83af8a77d665310e1d36",
+        "runtime/pov/m9051/a-client-1795181316394-882744b8-events.jsonl.gz": "fcb5f11b8082588e014ec698d93bed1ef89e83d5685055eb95028bd1392a8fdf",
+        "runtime/pov/m9051/b-client-1795181316402-eac4a0ca-events.jsonl.gz": "321f40675a68031b5bb0b1bd644f99813d235159b4405dc603c17e6f8c3df2c8",
+        "runtime/pov/m9051/server-1795181316361-73b55f2f-events.jsonl.gz": "fac9ac57044c33467077fb61e9090445c932c6d03a1b81ef78822b231515933e"
+      }
+    },
+    {
+      "id": "m9040",
+      "opponent": "sumo-seven-first",
+      "outcome": "lost",
+      "duration_ms": 29720,
+      "sources": {
+        "runtime/results/m9040.json": "903ac037f83e857fc63e4e8632c605252570a221b997c62d936af72a792efeb9",
+        "runtime/replays/m9040.jsonl": "9104be0cbb56e32ad174a8b7ac6f45c768886ce498fe4769c40aa80bb57327a4",
+        "runtime/pov/m9040/a-client-1795181275389-3ccd1f0d-events.jsonl.gz": "233ab1fcb35143c9ade9d33f150f06cc46b8f2db40a0ff11d67b10f67a03cc97",
+        "runtime/pov/m9040/b-client-1795181275262-8d72b2c3-events.jsonl.gz": "b173d93f9582cd3b56b7064117aeeb1f7b06c1454b69355b66427130d4832d0d",
+        "runtime/pov/m9040/server-1795181275217-f5c34230-events.jsonl.gz": "bf09c83881ba8481a19d5f8ddb662d91461ed60e0b430b4eac2d3ef94000072f"
+      }
+    },
+    {
+      "id": "m8974",
+      "opponent": "sumo-seven-first",
+      "outcome": "lost",
+      "duration_ms": 14981,
+      "sources": {
+        "runtime/results/m8974.json": "60d138e251599af1012c09f3f1f243b51bb895225b3f39cc73874ce705a07d14",
+        "runtime/replays/m8974.jsonl": "a493afa3e2b436ebab66d3afec3ec79aeb406e76642a7c70d3837383e800c83e",
+        "runtime/pov/m8974/a-client-1795180895563-50036bf9-events.jsonl.gz": "d5f054cca24e6339ca2205a6ebe3b642cd6aa4bfe7fc2f3af75043a251ef6ac7",
+        "runtime/pov/m8974/b-client-1795180895564-eea92547-events.jsonl.gz": "3f49f32331f9458e236165e1572109dd5decef52bc0b09f1c2c0e6f51eab29b3",
+        "runtime/pov/m8974/server-1795180895465-b7dfe4d7-events.jsonl.gz": "cb5dbbc9abb460efa26ba29d01472f1e160a9d62a7d3b22077363123dda15f8a"
+      }
+    },
+    {
+      "id": "m8926",
+      "opponent": "sumo-league-001",
+      "outcome": "won",
+      "duration_ms": 12094,
+      "sources": {
+        "runtime/results/m8926.json": "ed9ab2a0e586851112b18887e9c2df7915dc2ae7a1282beae61609ad4a55cacc",
+        "runtime/replays/m8926.jsonl": "a7f14b41ddf1a4967c80c9d42a48c9c398218b74c1db9e318eee52e6fffa7995",
+        "runtime/pov/m8926/a-client-1795180279672-5ca92161-events.jsonl.gz": "5fb8d33df8c179fdab3b3dfde4d769f65854a7f82782d61cab0cf2c4a8418aa3",
+        "runtime/pov/m8926/b-client-1795180279618-0a9cd5ee-events.jsonl.gz": "525db9b39bf287a773d0ab2bb6751b29196613ac3ba04489ca4e5fb0f93d5a35",
+        "runtime/pov/m8926/server-1795180279536-ba341d7f-events.jsonl.gz": "de52918fa1f94252e77070955ac71e77bb350e2c2a3f470d7383417363c789c2"
+      }
+    }
+  ],
+  "new": [
+    {
+      "id": "m8900",
+      "opponent": "best-sumo",
+      "outcome": "won",
+      "duration_ms": 14732,
+      "sources": {
+        "runtime/results/m8900.json": "ce144ff60f8a9e84920faa0450bbe0b21666067f972a0bc42786661161214526",
+        "runtime/replays/m8900.jsonl": "86529fd31e31406f7442b10f262ec7d9f679d5ffc860f0f9bf9368ef49ea0ab3",
+        "runtime/pov/m8900/a-client-1795180047275-e7217d67-events.jsonl.gz": "ed8c88a76986386f5242dc6154053fbfca984db390a5b05b412ef4d060409485",
+        "runtime/pov/m8900/b-client-1795180047302-4c9071fe-events.jsonl.gz": "f01fd09e4d1586b849574ce05393ec9e80b9fe085d1753533c7fc1cd58549900",
+        "runtime/pov/m8900/server-1795180047190-bc213e9d-events.jsonl.gz": "918328e10a938152354c78681d11a3c1332698865b9661ac219ae0f5bd656f92"
+      }
+    },
+    {
+      "id": "m8886",
+      "opponent": "best-sumo",
+      "outcome": "lost",
+      "duration_ms": 28271,
+      "sources": {
+        "runtime/results/m8886.json": "40ba8f75932c7ca0b3be85523084f7c50acbc01db179086dda2c62e6e868a8d1",
+        "runtime/replays/m8886.jsonl": "1673cd5b9cbccd814aadc7faf7509d9958f68ab6d1ada55b28784196856026e1",
+        "runtime/pov/m8886/a-client-1795179795334-5f7274e1-events.jsonl.gz": "ab9547e29685d0d56f4c516b6f14c2c9d100f4c88ed67aa69753f8ffead27f6a",
+        "runtime/pov/m8886/b-client-1795179795390-acfeea42-events.jsonl.gz": "a180cc42bd1828046196ea86ef2e73d9c0cd12f742c0fd70fcc7e02b4095fba6",
+        "runtime/pov/m8886/server-1795179795269-1bf6170a-events.jsonl.gz": "ed227b0f5374d41896aa0c444ba32ce53f1217e3775a521995a390338f0722b9"
+      }
+    },
+    {
+      "id": "m8620",
+      "opponent": "best-sumo",
+      "outcome": "won",
+      "duration_ms": 6227,
+      "sources": {
+        "runtime/results/m8620.json": "9c009b3dc9a9b0093e520c9b33e98a10a2a092eb65903efcf55e8ca1490ae864",
+        "runtime/replays/m8620.jsonl": "2c14cb53e4f3e19598c057f56751a7772389cb26ae51b8cf25108252004f6a68",
+        "runtime/pov/m8620/a-client-1795175620726-f75daa7a-events.jsonl.gz": "a390bae12386184e1fe730a07edf494f1a78f062e9fe9e349e5d80f85407f2e9",
+        "runtime/pov/m8620/b-client-1795175620675-39714e05-events.jsonl.gz": "9a3fc3c062b15bd5f8c0ad38d010b72c945a480f3a90a2ed6889185d4e766fec",
+        "runtime/pov/m8620/server-1795175620638-362af8e6-events.jsonl.gz": "5a7406b2f3404087b64dd36a253b2ede3dfbd8b0a13d76cef6b77cb28d4af216"
+      }
+    },
+    {
+      "id": "m9005",
+      "opponent": "sumo-seven-first",
+      "outcome": "lost",
+      "duration_ms": 19860,
+      "sources": {
+        "runtime/results/m9005.json": "7b3194797ae2f4e4b9e8cf65d7c060a76a5b63e76d45f584773fee64e92445cc",
+        "runtime/replays/m9005.jsonl": "3360cf53934367dd9aa227fec2784e362eee4ada9034da718556b2c73d50bd13",
+        "runtime/pov/m9005/a-client-1795181048388-473e1810-events.jsonl.gz": "88ccd296e4d82e95f2c0111bc1afd89b4dae7f6805c9eaae1cb69463eb4c0b97",
+        "runtime/pov/m9005/b-client-1795181048321-f2b4f462-events.jsonl.gz": "31a1d6fbf0d76da5a1047479a09bb1cd35cbbcff55ee7f3d6920f68c2a610374",
+        "runtime/pov/m9005/server-1795181048226-8a60dfa2-events.jsonl.gz": "d60a6e073f3184da7565c695526d0a743b4ddc8d1e1341a8a08dcf7fbda94f77"
+      }
+    },
+    {
+      "id": "m8170",
+      "opponent": "sumo-seven-first",
+      "outcome": "won",
+      "duration_ms": 3247,
+      "sources": {
+        "runtime/results/m8170.json": "a4d723d6b509703c5ab003680fc0ffa99212b4969e9fd7f6a614ce3df945b74b",
+        "runtime/replays/m8170.jsonl": "ecc6ce1612f5ee7a7314a8973e35b8c318bec371f52fd5335a060593f7e203fa",
+        "runtime/pov/m8170/a-client-1795171348045-0e9b26c6-events.jsonl.gz": "05482eb57192b89e902b2043c5b4d9f10a3c2c640e631870c10a6883f9b4d8e5",
+        "runtime/pov/m8170/b-client-1795171347975-06bf030a-events.jsonl.gz": "e0ee9a9c9a68b54166272fd47e7b3a9c128495b45e04bde6a15afe35c13effae",
+        "runtime/pov/m8170/server-1795171347901-03259bf3-events.jsonl.gz": "c33c5565f50aa3cad6abbe914588c9b1ac53698f903f22b5eaeaf59d42aa4b42"
+      }
+    },
+    {
+      "id": "m8948",
+      "opponent": "sumo-league-001",
+      "outcome": "lost",
+      "duration_ms": 6978,
+      "sources": {
+        "runtime/results/m8948.json": "ed2522fe5d50775362b1a26ca0cc48ec19591636daf712086f815616c4beb835",
+        "runtime/replays/m8948.jsonl": "a21886b392b61ffe4f5d5a8617f4bb2cae1ec074445668159d046564e55b3de7",
+        "runtime/pov/m8948/a-client-1795180498460-edec0005-events.jsonl.gz": "543719c26c4664ca1a45f664e18de5b3152ac809f648f8651cc02addcfe2e87f",
+        "runtime/pov/m8948/b-client-1795180498467-d1ded673-events.jsonl.gz": "e3bda74e6f212b0a48cfc627a2b9ed24a16d9809fc106998cea5e4a57dfae766",
+        "runtime/pov/m8948/server-1795180498338-000ff015-events.jsonl.gz": "d809fadfc0d1b45510977143cb34185268c28c67ba85e1b823321d0859b5f0c4"
+      }
+    },
+    {
+      "id": "m8774",
+      "opponent": "wtap",
+      "outcome": "lost",
+      "duration_ms": 11582,
+      "sources": {
+        "runtime/results/m8774.json": "5e6456ec40ce5f04efd8340efcffc8769ab7b43fde517f925e32d5ad40f81923",
+        "runtime/replays/m8774.jsonl": "9031122aa9014a3f2e570679175e0894c65ad016732a9e1639839bcc6fed024d",
+        "runtime/pov/m8774/a-client-1795177137146-fcd26686-events.jsonl.gz": "589c841025b0c4ee00b808778cd8ce99abbcda75a1fb0bf3236a4ffb85118134",
+        "runtime/pov/m8774/b-client-1795177137184-c1e2eef8-events.jsonl.gz": "276bc242a83581bb90a76c7448a03f51b95c7a76a148edbb8f1428d26d8e98c9",
+        "runtime/pov/m8774/server-1795177137049-f323a917-events.jsonl.gz": "84a11624505b7f3f63626906af6ccc0fd1a7d1d8a74f0bb14473608892b56fe0"
+      }
+    },
+    {
+      "id": "m8762",
+      "opponent": "wtap",
+      "outcome": "won",
+      "duration_ms": 27340,
+      "sources": {
+        "runtime/results/m8762.json": "d0aab82190836d97ba405d75a2847928de8795246f10efb5df7f387bbeef2510",
+        "runtime/replays/m8762.jsonl": "75f30a5d40b1942b05308fdf1b3ec93f4037e8e302fcc2c86c7714defae0effe",
+        "runtime/pov/m8762/a-client-1795176994970-59f40d61-events.jsonl.gz": "3ad3906abe5de7f63efe29f059c514068dd14066d8450f033f33fe2a89590b55",
+        "runtime/pov/m8762/b-client-1795176994932-09c8f098-events.jsonl.gz": "20bd8ef3844d7e57c63995870c33560ec6d29dcf1430372fac7db96737f5b4b2",
+        "runtime/pov/m8762/server-1795176994895-40e718bf-events.jsonl.gz": "1fd79634497cdfa9d128088dbcf6b57a6fea5073c61264f08878530b2254ba29"
+      }
+    },
+    {
+      "id": "m5922",
+      "opponent": "mmc13-trades",
+      "outcome": "won",
+      "duration_ms": 6575,
+      "sources": {
+        "runtime/results/m5922.json": "33c81605d8de52cdee217a72a5369dcac7fa9f80029fbfefffcceee3bf19c907",
+        "runtime/replays/m5922.jsonl": "4fea51bdef054e2abe74d712ae80f0446b534c900d3f12eea683eabb321288c8",
+        "runtime/pov/m5922/a-client-1795096645837-254e3962-events.jsonl.gz": "0b92e8e4b665aa0ffc989c298c7170303d1ba88a720830d4e1e724218f35acb6",
+        "runtime/pov/m5922/b-client-1795096645854-7267e69d-events.jsonl.gz": "8aa94f20f0e8ac4cc457e755870acc198b3887ac7e0e71a805d099471f615151",
+        "runtime/pov/m5922/server-1795096645749-539460bf-events.jsonl.gz": "b3ab32cced54feb55cc687d7d573adb9c4b1a3dfcf291d9f704daaabfe426fdf"
+      }
+    },
+    {
+      "id": "m5919",
+      "opponent": "mmc13-trades",
+      "outcome": "lost",
+      "duration_ms": 10078,
+      "sources": {
+        "runtime/results/m5919.json": "1fec244d960c33239f4ab90407ab1eed7d1a67a89e1246f2ef384ddff3286ee6",
+        "runtime/replays/m5919.jsonl": "8056a1a2a4080016a0517717c047259f55a476325b58b0076381884945d42612",
+        "runtime/pov/m5919/a-client-1795096603627-6f966b4e-events.jsonl.gz": "8bb7f92326e82876a6041aa435ff4e2820c4b481d02e2900938fad39efaa80ae",
+        "runtime/pov/m5919/b-client-1795096603609-8ef976ee-events.jsonl.gz": "24f4ec124c9efbd95320e27c70f33fe242c833c565ed81324a239e5c4eabdcd3",
+        "runtime/pov/m5919/server-1795096603548-cbd9e74a-events.jsonl.gz": "a6e63bb4b464340de2150073bfc07d52d39aad0bfe53cb5ee3e7c4f7b6943c6c"
+      }
+    }
+  ]
+}

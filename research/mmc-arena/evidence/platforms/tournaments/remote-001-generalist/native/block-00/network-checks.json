@@ -1,0 +1,242 @@
+{
+  "m10129": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "idlab-4748376543e3",
+      "network_sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "m10130": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    }
+  },
+  "m10131": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "idlab-4748376543e3",
+      "network_sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "m10132": {
+    "a": {
+      "controller": "idlab-36e705d85159",
+      "network_sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    },
+    "b": {
+      "controller": "idlab-4748376543e3",
+      "network_sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "m10133": {
+    "a": {
+      "controller": "idlab-36e705d85159",
+      "network_sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    },
+    "b": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    }
+  },
+  "m10134": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "idlab-4748376543e3",
+      "network_sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "m10135": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    }
+  },
+  "m10136": {
+    "a": {
+      "controller": "idlab-36e705d85159",
+      "network_sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    },
+    "b": {
+      "controller": "idlab-4748376543e3",
+      "network_sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "m10137": {
+    "a": {
+      "controller": "idlab-36e705d85159",
+      "network_sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    },
+    "b": {
+      "controller": "idlab-4748376543e3",
+      "network_sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "m10138": {
+    "a": {
+      "controller": "idlab-36e705d85159",
+      "network_sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    },
+    "b": {
+      "controller": "idlab-4748376543e3",
+      "network_sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "m10139": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    }
+  },
+  "m10140": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "idlab-4748376543e3",
+      "network_sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "m10141": {
+    "a": {
+      "controller": "idlab-36e705d85159",
+      "network_sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    },
+    "b": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    }
+  },
+  "m10142": {
+    "a": {
+      "controller": "idlab-36e705d85159",
+      "network_sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    },
+    "b": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    }
+  },
+  "m10143": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    }
+  },
+  "m10144": {
+    "a": {
+      "controller": "idlab-36e705d85159",
+      "network_sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    },
+    "b": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    }
+  },
+  "m10145": {
+    "a": {
+      "controller": "idlab-36e705d85159",
+      "network_sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    },
+    "b": {
+      "controller": "idlab-4748376543e3",
+      "network_sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "m10146": {
+    "a": {
+      "controller": "idlab-36e705d85159",
+      "network_sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    },
+    "b": {
+      "controller": "idlab-4748376543e3",
+      "network_sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "m10147": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    }
+  },
+  "m10148": {
+    "a": {
+      "controller": "idlab-36e705d85159",
+      "network_sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    },
+    "b": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    }
+  },
+  "m10149": {
+    "a": {
+      "controller": "idlab-36e705d85159",
+      "network_sha256": "36e705d8515916ff135b4369edbbb8675ea91f6bd6e2944fe41490c13ec1e0d4"
+    },
+    "b": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    }
+  },
+  "m10150": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "idlab-4748376543e3",
+      "network_sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "m10151": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "idlab-4748376543e3",
+      "network_sha256": "4748376543e35de1a8d08f4a7cdf9184efd85ae7e778824e16dccbfbd176c646"
+    }
+  },
+  "m10152": {
+    "a": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    },
+    "b": {
+      "controller": "research-wtap20",
+      "network_sha256": null
+    }
+  }
+}

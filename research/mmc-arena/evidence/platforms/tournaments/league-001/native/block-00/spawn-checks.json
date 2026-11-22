@@ -1,0 +1,386 @@
+{
+  "m9769": {
+    "frames": 79,
+    "observed_volume": "c4c7ca9f832d33c5087c072b7168d7192266505e6c0efacb34ad55aef920a585",
+    "positions": [
+      [
+        4096.5,
+        12,
+        -4.5
+      ],
+      [
+        4096.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "m9770": {
+    "frames": 45,
+    "observed_volume": "287292e9bb5a3896796ce12107344fa975eda30b4956fa40c0cce3f8cf475e03",
+    "positions": [
+      [
+        8192.5,
+        12,
+        -3.5
+      ],
+      [
+        8192.5,
+        12,
+        4.5
+      ]
+    ]
+  },
+  "m9771": {
+    "frames": 43,
+    "observed_volume": "89f9197f91ca4b33e1e00ef751b22ab2ba476885608c528b51bfdb32cb6c123a",
+    "positions": [
+      [
+        8188.5,
+        12,
+        0.5
+      ],
+      [
+        8196.5,
+        12,
+        0.5
+      ]
+    ]
+  },
+  "m9772": {
+    "frames": 42,
+    "observed_volume": "a85b39bebb02744ac68327e854d5eea1c8e1c99ef04f1a69c6e824d3997a632c",
+    "positions": [
+      [
+        12288.5,
+        12,
+        -4.5
+      ],
+      [
+        12288.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "m9773": {
+    "frames": 42,
+    "observed_volume": "287292e9bb5a3896796ce12107344fa975eda30b4956fa40c0cce3f8cf475e03",
+    "positions": [
+      [
+        8192.5,
+        12,
+        -3.5
+      ],
+      [
+        8192.5,
+        12,
+        4.5
+      ]
+    ]
+  },
+  "m9774": {
+    "frames": 41,
+    "observed_volume": "287292e9bb5a3896796ce12107344fa975eda30b4956fa40c0cce3f8cf475e03",
+    "positions": [
+      [
+        12288.5,
+        12,
+        -3.5
+      ],
+      [
+        12288.5,
+        12,
+        4.5
+      ]
+    ]
+  },
+  "m9775": {
+    "frames": 41,
+    "observed_volume": "89f9197f91ca4b33e1e00ef751b22ab2ba476885608c528b51bfdb32cb6c123a",
+    "positions": [
+      [
+        4092.5,
+        12,
+        0.5
+      ],
+      [
+        4100.5,
+        12,
+        0.5
+      ]
+    ]
+  },
+  "m9776": {
+    "frames": 43,
+    "observed_volume": "287292e9bb5a3896796ce12107344fa975eda30b4956fa40c0cce3f8cf475e03",
+    "positions": [
+      [
+        8192.5,
+        12,
+        -3.5
+      ],
+      [
+        8192.5,
+        12,
+        4.5
+      ]
+    ]
+  },
+  "m9777": {
+    "frames": 41,
+    "observed_volume": "c4c7ca9f832d33c5087c072b7168d7192266505e6c0efacb34ad55aef920a585",
+    "positions": [
+      [
+        4096.5,
+        12,
+        -4.5
+      ],
+      [
+        4096.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "m9778": {
+    "frames": 41,
+    "observed_volume": "89f9197f91ca4b33e1e00ef751b22ab2ba476885608c528b51bfdb32cb6c123a",
+    "positions": [
+      [
+        12284.5,
+        12,
+        0.5
+      ],
+      [
+        12292.5,
+        12,
+        0.5
+      ]
+    ]
+  },
+  "m9779": {
+    "frames": 42,
+    "observed_volume": "e7a0ec2d1a50a977972dc143725129cd6805a40fef86ea20a3b80bb2ba620900",
+    "positions": [
+      [
+        4096.5,
+        12,
+        -4.5
+      ],
+      [
+        4096.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "m9780": {
+    "frames": 41,
+    "observed_volume": "a85b39bebb02744ac68327e854d5eea1c8e1c99ef04f1a69c6e824d3997a632c",
+    "positions": [
+      [
+        8192.5,
+        12,
+        -4.5
+      ],
+      [
+        8192.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "m9781": {
+    "frames": 41,
+    "observed_volume": "89f9197f91ca4b33e1e00ef751b22ab2ba476885608c528b51bfdb32cb6c123a",
+    "positions": [
+      [
+        8188.5,
+        12,
+        0.5
+      ],
+      [
+        8196.5,
+        12,
+        0.5
+      ]
+    ]
+  },
+  "m9782": {
+    "frames": 41,
+    "observed_volume": "a85b39bebb02744ac68327e854d5eea1c8e1c99ef04f1a69c6e824d3997a632c",
+    "positions": [
+      [
+        12288.5,
+        12,
+        -4.5
+      ],
+      [
+        12288.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "m9783": {
+    "frames": 41,
+    "observed_volume": "c4c7ca9f832d33c5087c072b7168d7192266505e6c0efacb34ad55aef920a585",
+    "positions": [
+      [
+        8192.5,
+        12,
+        -4.5
+      ],
+      [
+        8192.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "m9784": {
+    "frames": 41,
+    "observed_volume": "72fadeeee17d46fa2e4d71f8c2c86bc5d4c0cf70cd2fbb0b4d3b23d5045cac7a",
+    "positions": [
+      [
+        12288.5,
+        12,
+        -3.5
+      ],
+      [
+        12288.5,
+        12,
+        4.5
+      ]
+    ]
+  },
+  "m9785": {
+    "frames": 41,
+    "observed_volume": "72fadeeee17d46fa2e4d71f8c2c86bc5d4c0cf70cd2fbb0b4d3b23d5045cac7a",
+    "positions": [
+      [
+        8192.5,
+        12,
+        -3.5
+      ],
+      [
+        8192.5,
+        12,
+        4.5
+      ]
+    ]
+  },
+  "m9786": {
+    "frames": 41,
+    "observed_volume": "e7a0ec2d1a50a977972dc143725129cd6805a40fef86ea20a3b80bb2ba620900",
+    "positions": [
+      [
+        12288.5,
+        12,
+        -4.5
+      ],
+      [
+        12288.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "m9787": {
+    "frames": 41,
+    "observed_volume": "a85b39bebb02744ac68327e854d5eea1c8e1c99ef04f1a69c6e824d3997a632c",
+    "positions": [
+      [
+        8192.5,
+        12,
+        -4.5
+      ],
+      [
+        8192.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "m9788": {
+    "frames": 43,
+    "observed_volume": "c4c7ca9f832d33c5087c072b7168d7192266505e6c0efacb34ad55aef920a585",
+    "positions": [
+      [
+        4096.5,
+        12,
+        -4.5
+      ],
+      [
+        4096.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "m9789": {
+    "frames": 42,
+    "observed_volume": "e7a0ec2d1a50a977972dc143725129cd6805a40fef86ea20a3b80bb2ba620900",
+    "positions": [
+      [
+        4096.5,
+        12,
+        -4.5
+      ],
+      [
+        4096.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "m9790": {
+    "frames": 42,
+    "observed_volume": "e7a0ec2d1a50a977972dc143725129cd6805a40fef86ea20a3b80bb2ba620900",
+    "positions": [
+      [
+        4096.5,
+        12,
+        -4.5
+      ],
+      [
+        4096.5,
+        12,
+        5.5
+      ]
+    ]
+  },
+  "m9791": {
+    "frames": 41,
+    "observed_volume": "72fadeeee17d46fa2e4d71f8c2c86bc5d4c0cf70cd2fbb0b4d3b23d5045cac7a",
+    "positions": [
+      [
+        12288.5,
+        12,
+        -3.5
+      ],
+      [
+        12288.5,
+        12,
+        4.5
+      ]
+    ]
+  },
+  "m9792": {
+    "frames": 41,
+    "observed_volume": "72fadeeee17d46fa2e4d71f8c2c86bc5d4c0cf70cd2fbb0b4d3b23d5045cac7a",
+    "positions": [
+      [
+        12288.5,
+        12,
+        -3.5
+      ],
+      [
+        12288.5,
+        12,
+        4.5
+      ]
+    ]
+  }
+}

@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import lab.DuelNetwork;
+import lab.SumoWtapController;
 
 /** Policy adapters may see only the local input-head observation. */
 final class Arena {
@@ -22,12 +23,56 @@ final class Arena {
         }
         DuelEnv.Player create(int rtt,int opponentRtt,int wake,boolean mmc,int diameter,int freshTicks){
             if(model!=null)return new Neural(model,rtt,opponentRtt);
+            if(name.equals("wtap-sumo"))return new SumoWtap(rtt,freshTicks);
             if(name.startsWith("legacy-"))return new HistoricalMovement(name.substring(7),rtt,opponentRtt,freshTicks);
             if(NATIVE_STYLES.contains(name))
                 return new StrafeOpponent(name,rtt,mmc,diameter);
             if(name.equals("select")||name.equals("counterstrafe"))return new Sparring(name,rtt);
             if(name.equals("pressure")){var p=new DuelEnv.Player("hold",5168,rtt,wake);return p;}
             return new DuelEnv.Player(name,0,rtt,wake);
+        }
+    }
+    static final class SumoWtap extends DuelEnv.Player {
+        private final int freshTicks;
+        private final SumoWtapController controller;
+        private double time=Double.NEGATIVE_INFINITY, lastPress=Double.NEGATIVE_INFINITY;
+        private double targetX, targetZ, targetVx, targetVz;
+        private boolean queued;
+
+        SumoWtap(int rtt,int freshTicks){
+            super("wtap-sumo",0,rtt,0);
+            this.freshTicks=freshTicks;
+            controller=new SumoWtapController();
+        }
+        private SumoWtap(SumoWtap p){
+            super(p.style,0,p.rtt,p.wake);
+            freshTicks=p.freshTicks;
+            controller=new SumoWtapController(p.controller);
+            time=p.time;lastPress=p.lastPress;firstClick=p.firstClick;queued=p.queued;
+            targetX=p.targetX;targetZ=p.targetZ;targetVx=p.targetVx;targetVz=p.targetVz;
+        }
+        @Override SumoWtap copy(){return new SumoWtap(this);}
+        @Override public PeriodicComboClock.Control input(PeriodicComboClock.Observation o){
+            double elapsed=o.time()-time;
+            if(Double.isFinite(elapsed)&&elapsed>0){
+                targetVx=.5*targetVx+25*(o.targetX()-targetX)/elapsed;
+                targetVz=.5*targetVz+25*(o.targetZ()-targetZ)/elapsed;
+            }
+            time=o.time();targetX=o.targetX();targetZ=o.targetZ();
+            var q=o.own();
+            double interval=Math.ceil(1e9/Integer.getInteger("league.cps",7))/1e6;
+            var decision=controller.decide(time,o.lastTargetHurtTime(),o.lastContactTime(),rtt,freshTicks,
+                interval,lastPress,queued,o.sprint(),q.onGround(),q.x(),q.z(),q.vx(),q.vz(),targetX,targetZ,targetVx,targetVz,o.nearest(),3);
+            return new PeriodicComboClock.Control(decision.forward()?2:0,0,true);
+        }
+        @Override public boolean injected(PeriodicComboClock.Observation o,double t){
+            lastPress=t;queued=true;
+            return super.injected(o,t);
+        }
+        @Override public void consumed(PeriodicComboClock.Observation o,long id){queued=false;}
+        @Override public PeriodicComboClock.Control movement(PeriodicComboClock.Control issued){
+            controller.moved(time,issued.key()==2);
+            return issued;
         }
     }
     static class Neural extends DuelEnv.Player{

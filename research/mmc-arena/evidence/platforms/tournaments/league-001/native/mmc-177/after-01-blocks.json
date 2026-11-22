@@ -1,0 +1,166 @@
+{
+  "p00": {
+    "arm": "winner",
+    "draws": 0,
+    "foe": "research/elite-league/sumo-confidence/specialist/fits/seven-ppo-specialist-1801.net",
+    "losses": 0,
+    "rtt": {
+      "109/109": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      },
+      "109/31": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      },
+      "31/109": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      },
+      "31/31": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 1
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 1
+      },
+      "b": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      }
+    },
+    "wins": 1
+  },
+  "p01": {
+    "arm": "wtap",
+    "draws": 0,
+    "foe": "research/elite-league/sumo-confidence/specialist/fits/seven-ppo-specialist-1801.net",
+    "losses": 0,
+    "rtt": {
+      "109/109": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      },
+      "109/31": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      },
+      "31/109": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      },
+      "31/31": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 1
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 1
+      },
+      "b": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      }
+    },
+    "wins": 1
+  },
+  "p02": {
+    "arm": "winner",
+    "draws": 0,
+    "foe": "wtap",
+    "losses": 0,
+    "rtt": {
+      "109/109": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      },
+      "109/31": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      },
+      "31/109": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      },
+      "31/31": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 1
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 1
+      },
+      "b": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      }
+    },
+    "wins": 1
+  },
+  "p03": {
+    "arm": "wtap",
+    "draws": 0,
+    "foe": "wtap",
+    "losses": 1,
+    "rtt": {
+      "109/109": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      },
+      "109/31": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      },
+      "31/109": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      },
+      "31/31": {
+        "draws": 0,
+        "losses": 1,
+        "wins": 0
+      }
+    },
+    "seat": {
+      "a": {
+        "draws": 0,
+        "losses": 1,
+        "wins": 0
+      },
+      "b": {
+        "draws": 0,
+        "losses": 0,
+        "wins": 0
+      }
+    },
+    "wins": 0
+  }
+}

@@ -1,0 +1,899 @@
+{
+  "invalid": [],
+  "matches": {
+    "map-remote-001-generalist-m00-p00-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 944,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-36e705d85159"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 944,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-4748376543e3"
+        }
+      },
+      "duration": 47.211,
+      "local_timing_heads": {
+        "a": 945,
+        "b": 944
+      },
+      "mid": "m10138",
+      "minimum_physical_ns": {
+        "a": 143094792,
+        "b": 142910500
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m00-p01-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 147,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": [
+              1240
+            ]
+          },
+          "disagreements": [],
+          "heads": 147,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-4748376543e3"
+        }
+      },
+      "duration": 7.355,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 147
+      },
+      "mid": "m10131",
+      "minimum_physical_ns": {
+        "a": 142966583,
+        "b": 143947250
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m00-p02-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 124,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-36e705d85159"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 124,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 6.165,
+      "local_timing_heads": {
+        "a": 124,
+        "b": 0
+      },
+      "mid": "m10141",
+      "minimum_physical_ns": {
+        "a": 143054750,
+        "b": 143004375
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-remote-001-generalist-m00-p03-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 763,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 764,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 38.174,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m10135",
+      "minimum_physical_ns": {
+        "a": 143080542,
+        "b": 142921750
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m01-p00-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 147,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-36e705d85159"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 148,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-4748376543e3"
+        }
+      },
+      "duration": 7.366,
+      "local_timing_heads": {
+        "a": 147,
+        "b": 148
+      },
+      "mid": "m10145",
+      "minimum_physical_ns": {
+        "a": 143915792,
+        "b": 143690041
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m01-p01-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 115,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 115,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-4748376543e3"
+        }
+      },
+      "duration": 5.712,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 115
+      },
+      "mid": "m10151",
+      "minimum_physical_ns": {
+        "a": 143349250,
+        "b": 142940917
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m01-p02-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 135,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-36e705d85159"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 135,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 6.748,
+      "local_timing_heads": {
+        "a": 136,
+        "b": 0
+      },
+      "mid": "m10144",
+      "minimum_physical_ns": {
+        "a": 143025166,
+        "b": 143159875
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-remote-001-generalist-m01-p03-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 111,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 111,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 5.568,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m10152",
+      "minimum_physical_ns": {
+        "a": 144807334,
+        "b": 143322416
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-remote-001-generalist-m02-p00-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 1500,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-36e705d85159"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 1500,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-4748376543e3"
+        }
+      },
+      "duration": 74.968,
+      "local_timing_heads": {
+        "a": 1500,
+        "b": 1500
+      },
+      "mid": "m10136",
+      "minimum_physical_ns": {
+        "a": 142872166,
+        "b": 142944375
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m02-p01-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 100,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 100,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-4748376543e3"
+        }
+      },
+      "duration": 4.982,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 100
+      },
+      "mid": "m10134",
+      "minimum_physical_ns": {
+        "a": 143462500,
+        "b": 142930667
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m02-p02-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 111,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-36e705d85159"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [
+            2342
+          ],
+          "disagreements": [],
+          "heads": 111,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 5.567,
+      "local_timing_heads": {
+        "a": 112,
+        "b": 0
+      },
+      "mid": "m10133",
+      "minimum_physical_ns": {
+        "a": 143310166,
+        "b": 142959958
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-remote-001-generalist-m02-p03-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 220,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 221,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 11.024,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m10130",
+      "minimum_physical_ns": {
+        "a": 143304875,
+        "b": 143311292
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m03-p00-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 301,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-36e705d85159"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 301,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-4748376543e3"
+        }
+      },
+      "duration": 15.033,
+      "local_timing_heads": {
+        "a": 302,
+        "b": 301
+      },
+      "mid": "m10132",
+      "minimum_physical_ns": {
+        "a": 142990416,
+        "b": 143007958
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m03-p01-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 117,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 117,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-4748376543e3"
+        }
+      },
+      "duration": 5.81,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 117
+      },
+      "mid": "m10140",
+      "minimum_physical_ns": {
+        "a": 143140541,
+        "b": 143398209
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m03-p02-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 194,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-36e705d85159"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 195,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 9.72,
+      "local_timing_heads": {
+        "a": 194,
+        "b": 0
+      },
+      "mid": "m10142",
+      "minimum_physical_ns": {
+        "a": 143368375,
+        "b": 143103125
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-remote-001-generalist-m03-p03-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 977,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 977,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 48.859,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m10147",
+      "minimum_physical_ns": {
+        "a": 143052000,
+        "b": 142893084
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m04-p00-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 194,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-36e705d85159"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 195,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-4748376543e3"
+        }
+      },
+      "duration": 9.721,
+      "local_timing_heads": {
+        "a": 195,
+        "b": 195
+      },
+      "mid": "m10146",
+      "minimum_physical_ns": {
+        "a": 142957583,
+        "b": 142969000
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m04-p01-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 240,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [
+              5583
+            ],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 240,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-4748376543e3"
+        }
+      },
+      "duration": 12.013,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 241
+      },
+      "mid": "m10150",
+      "minimum_physical_ns": {
+        "a": 143108667,
+        "b": 143263417
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m04-p02-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 75,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-36e705d85159"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 75,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 3.764,
+      "local_timing_heads": {
+        "a": 75,
+        "b": 0
+      },
+      "mid": "m10149",
+      "minimum_physical_ns": {
+        "a": 145081666,
+        "b": 143369209
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-remote-001-generalist-m04-p03-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 1148,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 1149,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 57.418,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m10139",
+      "minimum_physical_ns": {
+        "a": 142881792,
+        "b": 142934792
+      },
+      "reason": "double_ring_out",
+      "score": 0.5,
+      "valid": true
+    },
+    "map-remote-001-generalist-m05-p00-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 775,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-36e705d85159"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 775,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-4748376543e3"
+        }
+      },
+      "duration": 38.759,
+      "local_timing_heads": {
+        "a": 775,
+        "b": 775
+      },
+      "mid": "m10137",
+      "minimum_physical_ns": {
+        "a": 142924709,
+        "b": 142921000
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m05-p01-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 213,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 213,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-4748376543e3"
+        }
+      },
+      "duration": 10.634,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 213
+      },
+      "mid": "m10129",
+      "minimum_physical_ns": {
+        "a": 142890292,
+        "b": 144386750
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-remote-001-generalist-m05-p02-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 142,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-36e705d85159"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 142,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 7.117,
+      "local_timing_heads": {
+        "a": 142,
+        "b": 0
+      },
+      "mid": "m10148",
+      "minimum_physical_ns": {
+        "a": 143129625,
+        "b": 142942166
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-remote-001-generalist-m05-p03-b00-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 1029,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 1029,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 51.421,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m10143",
+      "minimum_physical_ns": {
+        "a": 142926375,
+        "b": 143021542
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    }
+  }
+}

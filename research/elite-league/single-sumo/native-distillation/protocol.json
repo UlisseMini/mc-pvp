@@ -1,0 +1,18 @@
+{
+  "teacher": "v4-ppo-g0496",
+  "teacher_sha256": "bd2265e8498df5fe91f39f03e1dd0654ab16c5165bb9989df517890e6f2a75fe",
+  "max_native_match": 9438,
+  "split_seed": 64195,
+  "fit_seeds": [631, 1531, 2503],
+  "training_games": [1, 4, 16, 64, 128, 256, 512, "all"],
+  "guess_before_fitting": {
+    "99_percent_joint_agreement": "50–150 varied fights, roughly 10,000–45,000 heads",
+    "99_5_percent_joint_agreement": "150–400 varied fights, roughly 30,000–120,000 heads",
+    "99_9_percent_joint_agreement": "Hundreds or more. Coverage of rare boundary states matters more than raw head count."
+  },
+  "scope": "Native 1.8.9 sumo with a complete verified teacher-client decision stream. Archive stress tests and reused experiments, with new whole-fight splits for this fit.",
+  "splits": "Use a frozen seed to reserve whole opponent identities at 20%, then assign matches of the remaining identities to 70% train, 15% development, 15% test. Group currently identical published opponent control identities and keep both perspectives of each fight in the same split.",
+  "inputs": "Exact 22 native MLP features reconstructed in Java with recorded previous applied action, one network instance per match. Reject a whole perspective if any proposed action fails parity or if decision ticks are discontinuous.",
+  "primary": "Decision-weighted exact agreement on all four controls from the same input head. Labels are only decisions in native logs, fixed independently of teacher score replay.",
+  "comparison": "Same student architecture on teacher scores as a white-box diagnostic. Only the sampled training fights supply weight updates. Frozen development fights select checkpoints by the corresponding objective. Test has no role in selection."
+}

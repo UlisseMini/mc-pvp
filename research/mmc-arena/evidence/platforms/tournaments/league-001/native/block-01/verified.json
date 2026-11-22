@@ -1,0 +1,905 @@
+{
+  "invalid": [],
+  "matches": {
+    "map-league-001-m00-p00-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [
+              2210
+            ],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 972,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": [
+              1157
+            ]
+          },
+          "disagreements": [],
+          "heads": 972,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        }
+      },
+      "duration": 48.609,
+      "local_timing_heads": {
+        "a": 973,
+        "b": 972
+      },
+      "mid": "m10336",
+      "minimum_physical_ns": {
+        "a": 142920375,
+        "b": 143133334
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m00-p01-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 216,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 216,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 10.801,
+      "local_timing_heads": {
+        "a": 216,
+        "b": 0
+      },
+      "mid": "m10340",
+      "minimum_physical_ns": {
+        "a": 143642667,
+        "b": 143171333
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m00-p02-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 207,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 207,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        }
+      },
+      "duration": 10.364,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 208
+      },
+      "mid": "m10349",
+      "minimum_physical_ns": {
+        "a": 142995500,
+        "b": 143551167
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m00-p03-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 352,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [
+            3427
+          ],
+          "boundary_only_moves": [
+            3075
+          ],
+          "disagreements": [],
+          "heads": 351,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 17.611,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m10351",
+      "minimum_physical_ns": {
+        "a": 142886042,
+        "b": 142919625
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m01-p00-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 78,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [
+              2928
+            ],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 78,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        }
+      },
+      "duration": 3.918,
+      "local_timing_heads": {
+        "a": 78,
+        "b": 79
+      },
+      "mid": "m10348",
+      "minimum_physical_ns": {
+        "a": 142896500,
+        "b": 144174875
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m01-p01-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 196,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 196,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 9.811,
+      "local_timing_heads": {
+        "a": 197,
+        "b": 0
+      },
+      "mid": "m10346",
+      "minimum_physical_ns": {
+        "a": 143396750,
+        "b": 142982084
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m01-p02-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 183,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 183,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        }
+      },
+      "duration": 9.165,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 183
+      },
+      "mid": "m10354",
+      "minimum_physical_ns": {
+        "a": 143017875,
+        "b": 143006250
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m01-p03-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 1118,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 1118,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 55.911,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m10341",
+      "minimum_physical_ns": {
+        "a": 142892375,
+        "b": 142954917
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m02-p00-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 575,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 575,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        }
+      },
+      "duration": 28.734,
+      "local_timing_heads": {
+        "a": 576,
+        "b": 575
+      },
+      "mid": "m10357",
+      "minimum_physical_ns": {
+        "a": 143192917,
+        "b": 142881000
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m02-p01-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 125,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 125,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 6.267,
+      "local_timing_heads": {
+        "a": 125,
+        "b": 0
+      },
+      "mid": "m10333",
+      "minimum_physical_ns": {
+        "a": 143652167,
+        "b": 144292833
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m02-p02-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 156,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 156,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        }
+      },
+      "duration": 7.802,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 157
+      },
+      "mid": "m10342",
+      "minimum_physical_ns": {
+        "a": 143028125,
+        "b": 142987209
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m02-p03-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 67,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [
+            939
+          ],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 66,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 3.383,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m10334",
+      "minimum_physical_ns": {
+        "a": 145130625,
+        "b": 144342750
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m03-p00-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 684,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 685,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        }
+      },
+      "duration": 34.217,
+      "local_timing_heads": {
+        "a": 685,
+        "b": 685
+      },
+      "mid": "m10338",
+      "minimum_physical_ns": {
+        "a": 142913750,
+        "b": 142949167
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m03-p01-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 234,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 235,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 11.707,
+      "local_timing_heads": {
+        "a": 235,
+        "b": 0
+      },
+      "mid": "m10355",
+      "minimum_physical_ns": {
+        "a": 142958875,
+        "b": 142963708
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m03-p02-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 144,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 144,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        }
+      },
+      "duration": 7.216,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 144
+      },
+      "mid": "m10337",
+      "minimum_physical_ns": {
+        "a": 142973875,
+        "b": 143169208
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m03-p03-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 101,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 100,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 5.044,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m10339",
+      "minimum_physical_ns": {
+        "a": 143050792,
+        "b": 143133292
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m04-p00-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 2401,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 2400,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        }
+      },
+      "duration": 120.044,
+      "local_timing_heads": {
+        "a": 2401,
+        "b": 2401
+      },
+      "mid": "m10353",
+      "minimum_physical_ns": {
+        "a": 142873333,
+        "b": 142885333
+      },
+      "reason": "timeout_draw",
+      "score": 0.5,
+      "valid": true
+    },
+    "map-league-001-m04-p01-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 80,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 81,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 4.014,
+      "local_timing_heads": {
+        "a": 80,
+        "b": 0
+      },
+      "mid": "m10350",
+      "minimum_physical_ns": {
+        "a": 143318459,
+        "b": 143381916
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m04-p02-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 254,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 255,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        }
+      },
+      "duration": 12.711,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 255
+      },
+      "mid": "m10347",
+      "minimum_physical_ns": {
+        "a": 142913458,
+        "b": 142960667
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m04-p03-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 105,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 105,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 5.254,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m10356",
+      "minimum_physical_ns": {
+        "a": 143044292,
+        "b": 142952625
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m05-p00-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 1098,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 1098,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        }
+      },
+      "duration": 54.894,
+      "local_timing_heads": {
+        "a": 1098,
+        "b": 1098
+      },
+      "mid": "m10335",
+      "minimum_physical_ns": {
+        "a": 142890125,
+        "b": 143048167
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m05-p01-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 338,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-12d477e6733f"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 339,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 16.902,
+      "local_timing_heads": {
+        "a": 339,
+        "b": 0
+      },
+      "mid": "m10343",
+      "minimum_physical_ns": {
+        "a": 142874708,
+        "b": 142948792
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    },
+    "map-league-001-m05-p02-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 92,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "coverage": {
+            "missing_inputs": [],
+            "missing_moves": [],
+            "unpaired_inputs": [],
+            "unpaired_moves": []
+          },
+          "disagreements": [],
+          "heads": 93,
+          "method": "frozen network replay and actual movement",
+          "policy": "idlab-6d9878ad633b"
+        }
+      },
+      "duration": 4.618,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 93
+      },
+      "mid": "m10344",
+      "minimum_physical_ns": {
+        "a": 143344708,
+        "b": 143085834
+      },
+      "reason": "ring_out",
+      "score": 1,
+      "valid": true
+    },
+    "map-league-001-m05-p03-b01-f00-a0": {
+      "controls": {
+        "a": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 1264,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        },
+        "b": {
+          "boundary_only_inputs": [],
+          "boundary_only_moves": [],
+          "disagreements": [],
+          "heads": 1264,
+          "method": "physical forward and strafe against issued legacy keys",
+          "policy": "research-wtap20"
+        }
+      },
+      "duration": 63.209,
+      "local_timing_heads": {
+        "a": 0,
+        "b": 0
+      },
+      "mid": "m10352",
+      "minimum_physical_ns": {
+        "a": 142898000,
+        "b": 142916250
+      },
+      "reason": "ring_out",
+      "score": 0,
+      "valid": true
+    }
+  }
+}

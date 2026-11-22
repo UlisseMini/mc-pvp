@@ -1,0 +1,1694 @@
+[
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8703",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8703",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8704",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8704",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8706",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8706",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8709",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8709",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8710",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8710",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8713",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8713",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8714",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8714",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8716",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8716",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8718",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8718",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8720",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8720",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8722",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8723",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8725",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8725",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8727",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8727",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8729",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8732",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8734",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8734",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8735",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8737",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8737",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8891",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8891",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8896",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8896",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8898",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8899",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8901",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8901",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8902",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8904",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8911",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8911",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8916",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8918",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8918",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8922",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8927",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m8929",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8936",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8936",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8942",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8942",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m8946",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m8946",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8953",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8953",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8957",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8957",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8960",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8960",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8961",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8961",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8964",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8964",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8965",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8965",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8968",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8968",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8975",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8975",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8982",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8982",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8987",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8987",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8989",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8989",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8998",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m8998",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9001",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9001",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9008",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9008",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9010",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9011",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-ppo",
+    "match": "m9013",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9014",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9017",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9017",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-first",
+    "match": "m9032",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-cap-ramp",
+    "match": "m9034",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "wtap",
+    "match": "m9034",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-ppo",
+    "match": "m9035",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9036",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9036",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9037",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9037",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9038",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9038",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-ppo",
+    "match": "m9039",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-ppo",
+    "match": "m9042",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9044",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9050",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9052",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9052",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9055",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9055",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9056",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9056",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9057",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "v4-ppo-g0496",
+    "match": "m9059",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "v4-ppo-g0496",
+    "match": "m9059",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9062",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9062",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-first",
+    "match": "m9065",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "wtap",
+    "match": "m9066",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-cap-ramp",
+    "match": "m9066",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-cap-ramp",
+    "match": "m9069",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "wtap",
+    "match": "m9069",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9070",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-ppo",
+    "match": "m9072",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9073",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9073",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-first",
+    "match": "m9078",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9079",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9080",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9080",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9081",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9081",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-ppo",
+    "match": "m9086",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9089",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9089",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9091",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9093",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "wtap",
+    "match": "m9094",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-cap-ramp",
+    "match": "m9094",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9096",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9096",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9097",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9098",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-first",
+    "match": "m9099",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9107",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9107",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9112",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9112",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-ppo",
+    "match": "m9116",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-ppo",
+    "match": "m9117",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9118",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9118",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9122",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9124",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9124",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-first",
+    "match": "m9128",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-ppo",
+    "match": "m9131",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-cap-ramp",
+    "match": "m9135",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "wtap",
+    "match": "m9135",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9136",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9136",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9137",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9138",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9139",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9139",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9140",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9140",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-ppo",
+    "match": "m9141",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9146",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9146",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "wtap",
+    "match": "m9152",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-cap-ramp",
+    "match": "m9152",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-ppo",
+    "match": "m9158",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9162",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9163",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9165",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9165",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9167",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9169",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9169",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9171",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9171",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-ppo",
+    "match": "m9172",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-first",
+    "match": "m9173",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9174",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9175",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9175",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-cap-ramp",
+    "match": "m9179",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "wtap",
+    "match": "m9179",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-first",
+    "match": "m9180",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9182",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9182",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9183",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9183",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9187",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-ppo",
+    "match": "m9190",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "v4-ppo-g0496",
+    "match": "m9193",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "v4-ppo-g0496",
+    "match": "m9193",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9195",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-ppo",
+    "match": "m9201",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-ppo",
+    "match": "m9202",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9203",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9203",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-ppo",
+    "match": "m9204",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "v4-ppo-g0496",
+    "match": "m9205",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "v4-ppo-g0496",
+    "match": "m9205",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9206",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9207",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9207",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9209",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9213",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9213",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "wtap",
+    "match": "m9214",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-cap-ramp",
+    "match": "m9214",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-frozen-ppo",
+    "match": "m9219",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9222",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9222",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-seven-first",
+    "match": "m9224",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9226",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9226",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9228",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9232",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9232",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9235",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9240",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9240",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9241",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9247",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9247",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9249",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9251",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9253",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9253",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9256",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9256",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9261",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9262",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9262",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9265",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9271",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "wtap",
+    "match": "m9271",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9272",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9275",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "sumo-seven-first",
+    "match": "m9280",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9281",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9281",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9283",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9283",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9288",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "sumo-seven-first",
+    "match": "m9292",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9294",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9294",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9300",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9300",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9304",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "sumo-seven-first",
+    "match": "m9305",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9311",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9311",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9313",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9313",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9319",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9319",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9320",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9320",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "sumo-seven-first",
+    "match": "m9326",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9329",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "sumo-seven-first",
+    "match": "m9331",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9332",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9332",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9333",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9333",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9334",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "sumo-seven-first",
+    "match": "m9355",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "sumo-seven-first",
+    "match": "m9356",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9362",
+    "side": "a"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9362",
+    "side": "b"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9363",
+    "side": "a"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9363",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "v4-ppo-g0496",
+    "match": "m9364",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "sumo-cap-ramp",
+    "match": "m9364",
+    "side": "b"
+  },
+  {
+    "actor": "sumo-cap-ramp",
+    "foe": "sumo-seven-first",
+    "match": "m9365",
+    "side": "b"
+  },
+  {
+    "actor": "wtap",
+    "foe": "v4-ppo-g0496",
+    "match": "m9368",
+    "side": "a"
+  },
+  {
+    "actor": "v4-ppo-g0496",
+    "foe": "wtap",
+    "match": "m9368",
+    "side": "b"
+  }
+]

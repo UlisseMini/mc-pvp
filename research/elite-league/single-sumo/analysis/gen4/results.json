@@ -1,0 +1,3259 @@
+{
+  "controls": {
+    "control-remote-003-counter-gru": {
+      "effects": {
+        "click": 0.054361979166666664,
+        "forward and sprint": 0.0693359375,
+        "jump": 0.0283203125,
+        "strafe": 0.012044270833333334
+      },
+      "endpoint_checks": 512,
+      "fixtures": 256,
+      "wins": [
+        111,
+        132,
+        112,
+        116,
+        125,
+        138,
+        116,
+        134,
+        120,
+        133,
+        111,
+        124,
+        118,
+        129,
+        127,
+        153
+      ]
+    },
+    "control-remote-004-counter-gru": {
+      "effects": {
+        "click": 0.1083984375,
+        "forward and sprint": 0.056966145833333336,
+        "jump": -0.0029296875,
+        "strafe": -0.056966145833333336
+      },
+      "endpoint_checks": 512,
+      "fixtures": 256,
+      "wins": [
+        97,
+        101,
+        74,
+        95,
+        115,
+        130,
+        101,
+        121,
+        93,
+        108,
+        64,
+        87,
+        113,
+        131,
+        107,
+        124
+      ]
+    },
+    "control-sumo-seven-first": {
+      "effects": {
+        "click": 0.021809895833333332,
+        "forward and sprint": -0.0107421875,
+        "jump": 0.002278645833333333,
+        "strafe": -0.021158854166666668
+      },
+      "endpoint_checks": 512,
+      "fixtures": 256,
+      "wins": [
+        228,
+        222,
+        218,
+        221,
+        231,
+        228,
+        222,
+        230,
+        226,
+        223,
+        223,
+        222,
+        228,
+        236,
+        235,
+        226
+      ]
+    },
+    "control-wtap": {
+      "effects": {
+        "click": 0.0026041666666666665,
+        "forward and sprint": 0.004557291666666667,
+        "jump": 0.0,
+        "strafe": 0.0006510416666666667
+      },
+      "endpoint_checks": 512,
+      "fixtures": 256,
+      "wins": [
+        253,
+        255,
+        254,
+        256,
+        256,
+        255,
+        254,
+        255,
+        253,
+        255,
+        254,
+        256,
+        256,
+        255,
+        254,
+        255
+      ]
+    }
+  },
+  "memory": {
+    "memory-100": {
+      "remote-003-counter-gru": {
+        "other_wins_same_doesnt": 15,
+        "same_wins_other_doesnt": 13,
+        "swap-other": [
+          130,
+          9,
+          87
+        ],
+        "swap-same": [
+          128,
+          9,
+          89
+        ],
+        "swap-sham": [
+          136,
+          6,
+          84
+        ]
+      },
+      "remote-004-counter-gru": {
+        "other_wins_same_doesnt": 10,
+        "same_wins_other_doesnt": 16,
+        "swap-other": [
+          110,
+          15,
+          107
+        ],
+        "swap-same": [
+          116,
+          15,
+          101
+        ],
+        "swap-sham": [
+          112,
+          12,
+          108
+        ]
+      },
+      "sumo-seven-first": {
+        "other_wins_same_doesnt": 7,
+        "same_wins_other_doesnt": 8,
+        "swap-other": [
+          196,
+          8,
+          22
+        ],
+        "swap-same": [
+          197,
+          8,
+          21
+        ],
+        "swap-sham": [
+          197,
+          10,
+          19
+        ]
+      },
+      "wtap": {
+        "other_wins_same_doesnt": 0,
+        "same_wins_other_doesnt": 0,
+        "swap-other": [
+          144,
+          1,
+          1
+        ],
+        "swap-same": [
+          144,
+          1,
+          1
+        ],
+        "swap-sham": [
+          145,
+          1,
+          0
+        ]
+      }
+    },
+    "memory-24": {
+      "remote-003-counter-gru": {
+        "other_wins_same_doesnt": 5,
+        "same_wins_other_doesnt": 5,
+        "swap-other": [
+          150,
+          9,
+          97
+        ],
+        "swap-same": [
+          150,
+          8,
+          98
+        ],
+        "swap-sham": [
+          153,
+          8,
+          95
+        ]
+      },
+      "remote-004-counter-gru": {
+        "other_wins_same_doesnt": 6,
+        "same_wins_other_doesnt": 7,
+        "swap-other": [
+          124,
+          11,
+          121
+        ],
+        "swap-same": [
+          125,
+          12,
+          119
+        ],
+        "swap-sham": [
+          124,
+          12,
+          120
+        ]
+      },
+      "sumo-seven-first": {
+        "other_wins_same_doesnt": 6,
+        "same_wins_other_doesnt": 1,
+        "swap-other": [
+          229,
+          10,
+          17
+        ],
+        "swap-same": [
+          224,
+          10,
+          22
+        ],
+        "swap-sham": [
+          226,
+          10,
+          20
+        ]
+      },
+      "wtap": {
+        "other_wins_same_doesnt": 1,
+        "same_wins_other_doesnt": 0,
+        "swap-other": [
+          256,
+          0,
+          0
+        ],
+        "swap-same": [
+          255,
+          1,
+          0
+        ],
+        "swap-sham": [
+          255,
+          1,
+          0
+        ]
+      }
+    },
+    "memory-240": {
+      "remote-003-counter-gru": {
+        "other_wins_same_doesnt": 11,
+        "same_wins_other_doesnt": 11,
+        "swap-other": [
+          70,
+          4,
+          58
+        ],
+        "swap-same": [
+          70,
+          8,
+          54
+        ],
+        "swap-sham": [
+          77,
+          5,
+          50
+        ]
+      },
+      "remote-004-counter-gru": {
+        "other_wins_same_doesnt": 4,
+        "same_wins_other_doesnt": 6,
+        "swap-other": [
+          55,
+          7,
+          63
+        ],
+        "swap-same": [
+          57,
+          8,
+          60
+        ],
+        "swap-sham": [
+          56,
+          9,
+          60
+        ]
+      },
+      "sumo-seven-first": {
+        "other_wins_same_doesnt": 4,
+        "same_wins_other_doesnt": 2,
+        "swap-other": [
+          105,
+          7,
+          7
+        ],
+        "swap-same": [
+          103,
+          8,
+          8
+        ],
+        "swap-sham": [
+          102,
+          9,
+          8
+        ]
+      },
+      "wtap": {
+        "other_wins_same_doesnt": 0,
+        "same_wins_other_doesnt": 0,
+        "swap-other": [
+          1,
+          0,
+          0
+        ],
+        "swap-same": [
+          1,
+          0,
+          0
+        ],
+        "swap-sham": [
+          1,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "native_other_pre_fix": [
+    {
+      "a": {
+        "brakes": 25,
+        "contact": 28,
+        "crits": 8,
+        "fresh": 11,
+        "mouse": 47,
+        "press": 47,
+        "sprint_fresh": 10,
+        "tps": 20.020112221521067,
+        "upgrade": 4
+      },
+      "b": {
+        "admissions": 14,
+        "allow": 87,
+        "brakes": 11,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.30000051555385554,
+        "contact": 11,
+        "crits": 2,
+        "decisions": 168,
+        "fresh": 11,
+        "injected": 14,
+        "injection_clock_ratio": 0.2999999999468827,
+        "jumps": 2,
+        "longest_ray": 2.8930967670024486,
+        "min_wall_click_ms": 479.042417,
+        "mouse": 0,
+        "press": 14,
+        "sprint_fresh": 1,
+        "tps": 20.009624989074087,
+        "upgrade": 0
+      },
+      "mid": "m800000037",
+      "policies": [
+        "human",
+        "sumo-league-remote-002"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-768962093815333",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 8.419,
+      "speed": 1.0,
+      "winner": "Nomophobia"
+    },
+    {
+      "a": {
+        "brakes": 96,
+        "contact": 104,
+        "crits": 24,
+        "fresh": 37,
+        "mouse": 153,
+        "press": 153,
+        "sprint_fresh": 26,
+        "tps": 19.99761560985303,
+        "upgrade": 14
+      },
+      "b": {
+        "admissions": 40,
+        "allow": 267,
+        "brakes": 36,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.3000000260888098,
+        "contact": 36,
+        "crits": 2,
+        "decisions": 498,
+        "fresh": 36,
+        "injected": 40,
+        "injection_clock_ratio": 0.2999999999792382,
+        "jumps": 8,
+        "longest_ray": 2.9434216469309433,
+        "min_wall_click_ms": 478.747792,
+        "mouse": 0,
+        "press": 40,
+        "sprint_fresh": 1,
+        "tps": 19.99747288756447,
+        "upgrade": 0
+      },
+      "mid": "m800000038",
+      "policies": [
+        "human",
+        "sumo-league-remote-002"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-768975650965666",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 24.91,
+      "speed": 1.0,
+      "winner": "Nomophobia"
+    },
+    {
+      "a": {
+        "brakes": 23,
+        "contact": 25,
+        "crits": 3,
+        "fresh": 9,
+        "mouse": 34,
+        "press": 34,
+        "sprint_fresh": 9,
+        "tps": 19.975308173512108,
+        "upgrade": 1
+      },
+      "b": {
+        "admissions": 13,
+        "allow": 108,
+        "brakes": 6,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.3000001257834226,
+        "contact": 6,
+        "crits": 1,
+        "decisions": 134,
+        "fresh": 5,
+        "injected": 14,
+        "injection_clock_ratio": 0.2999999999397305,
+        "jumps": 3,
+        "longest_ray": 2.6151749325092712,
+        "min_wall_click_ms": 476.963292,
+        "mouse": 0,
+        "press": 13,
+        "sprint_fresh": 1,
+        "tps": 20.02739517344683,
+        "upgrade": 0
+      },
+      "mid": "m800000039",
+      "policies": [
+        "human",
+        "sumo-seven-first"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769010601544166",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 6.657,
+      "speed": 1.0,
+      "winner": "Nomophobia"
+    },
+    {
+      "a": {
+        "brakes": 23,
+        "contact": 28,
+        "crits": 4,
+        "fresh": 9,
+        "mouse": 45,
+        "press": 45,
+        "sprint_fresh": 7,
+        "tps": 20.003374952135058,
+        "upgrade": 2
+      },
+      "b": {
+        "admissions": 17,
+        "brakes": 8,
+        "cap_ns": [
+          142857143
+        ],
+        "clock_ratio": 0.30000990218258283,
+        "contact": 8,
+        "crits": 1,
+        "fresh": 7,
+        "injected": 17,
+        "injection_clock_ratio": 0.2999999999870777,
+        "longest_ray": 2.943142756930087,
+        "min_wall_click_ms": 476.528334,
+        "mouse": 0,
+        "press": 17,
+        "sprint_fresh": 7,
+        "tps": 20.03388405752215,
+        "upgrade": 0
+      },
+      "mid": "m800000040",
+      "policies": [
+        "human",
+        "wtap"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769026704596791",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 8.154,
+      "speed": 1.0,
+      "winner": "Nomophobia"
+    },
+    {
+      "a": {
+        "brakes": 37,
+        "contact": 43,
+        "crits": 4,
+        "fresh": 10,
+        "mouse": 59,
+        "press": 59,
+        "sprint_fresh": 8,
+        "tps": 19.992271920648168,
+        "upgrade": 2
+      },
+      "b": {
+        "admissions": 15,
+        "brakes": 6,
+        "cap_ns": [
+          142857143
+        ],
+        "clock_ratio": 0.30000065832121825,
+        "contact": 6,
+        "crits": 0,
+        "fresh": 6,
+        "injected": 15,
+        "injection_clock_ratio": 0.2999999999413267,
+        "longest_ray": 2.9422042160200386,
+        "min_wall_click_ms": 477.074417,
+        "mouse": 0,
+        "press": 15,
+        "sprint_fresh": 6,
+        "tps": 19.999578808870286,
+        "upgrade": 0
+      },
+      "mid": "m800000041",
+      "policies": [
+        "human",
+        "wtap"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769040751675583",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 7.408,
+      "speed": 1.0,
+      "winner": "Nomophobia"
+    }
+  ],
+  "native_post_fix": [
+    {
+      "a": {
+        "admissions": 16,
+        "allow": 34,
+        "brakes": 13,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 1.0005815292520244,
+        "contact": 14,
+        "crits": 1,
+        "decisions": 84,
+        "fresh": 6,
+        "injected": 16,
+        "injection_clock_ratio": 1.0,
+        "jumps": 1,
+        "longest_ray": 2.9229306737806224,
+        "min_wall_click_ms": 148.022833,
+        "mouse": 0,
+        "press": 16,
+        "sprint_fresh": 5,
+        "tps": 20.231585032426665,
+        "upgrade": 1
+      },
+      "b": {
+        "brakes": 6,
+        "contact": 8,
+        "crits": 2,
+        "fresh": 3,
+        "injected": 27,
+        "injection_clock_ratio": 1.0,
+        "min_wall_click_ms": 143.769375,
+        "mouse": 0,
+        "press": 27,
+        "sprint_fresh": 3,
+        "tps": 20.436574880383837,
+        "upgrade": 1
+      },
+      "mid": "m800000049",
+      "policies": [
+        "sumo-league-remote-004",
+        "wtap"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "gen4-clock-after-sync-a",
+      "seats": [
+        "LabSlot0",
+        "LabSlot1"
+      ],
+      "seconds": 4.164,
+      "speed": 1.0,
+      "winner": "LabSlot0"
+    },
+    {
+      "a": {
+        "brakes": 7,
+        "contact": 8,
+        "crits": 1,
+        "fresh": 2,
+        "jumps": 1,
+        "mouse": 22,
+        "press": 22,
+        "sprint_fresh": 1,
+        "tps": 20.00675850004378,
+        "upgrade": 0
+      },
+      "b": {
+        "admissions": 11,
+        "allow": 20,
+        "brakes": 10,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 1.0003915507698455,
+        "contact": 10,
+        "crits": 2,
+        "decisions": 60,
+        "fresh": 4,
+        "injected": 11,
+        "injection_clock_ratio": 1.0,
+        "jumps": 1,
+        "longest_ray": 2.891616875679201,
+        "min_wall_click_ms": 143.279167,
+        "mouse": 0,
+        "press": 11,
+        "sprint_fresh": 4,
+        "tps": 20.439854697936944,
+        "upgrade": 1
+      },
+      "mid": "m800000050",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769570383455791",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 2.999,
+      "speed": 1.0,
+      "winner": "LabSlot0"
+    },
+    {
+      "a": {
+        "brakes": 46,
+        "contact": 54,
+        "crits": 6,
+        "fresh": 14,
+        "mouse": 95,
+        "press": 95,
+        "sprint_fresh": 10,
+        "tps": 20.00686606287409,
+        "upgrade": 3
+      },
+      "b": {
+        "admissions": 45,
+        "allow": 100,
+        "brakes": 33,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 1.0000319008773566,
+        "contact": 33,
+        "crits": 5,
+        "decisions": 215,
+        "fresh": 14,
+        "injected": 45,
+        "injection_clock_ratio": 1.0,
+        "jumps": 3,
+        "longest_ray": 2.992874508351222,
+        "min_wall_click_ms": 143.305208,
+        "mouse": 0,
+        "press": 45,
+        "sprint_fresh": 11,
+        "tps": 20.012853737866067,
+        "upgrade": 4
+      },
+      "mid": "m800000051",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769577144374125",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 10.747,
+      "speed": 1.0,
+      "winner": "LabSlot0"
+    },
+    {
+      "a": {
+        "brakes": 114,
+        "contact": 126,
+        "crits": 19,
+        "fresh": 37,
+        "jumps": 1,
+        "mouse": 202,
+        "press": 202,
+        "sprint_fresh": 26,
+        "tps": 19.99875062805139,
+        "upgrade": 7
+      },
+      "b": {
+        "admissions": 112,
+        "allow": 238,
+        "brakes": 81,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 1.0000186462137355,
+        "contact": 81,
+        "crits": 14,
+        "decisions": 578,
+        "fresh": 36,
+        "injected": 112,
+        "injection_clock_ratio": 1.0,
+        "jumps": 10,
+        "longest_ray": 2.9905373636005215,
+        "min_wall_click_ms": 143.134209,
+        "mouse": 0,
+        "press": 112,
+        "sprint_fresh": 32,
+        "tps": 20.00042289644188,
+        "upgrade": 11
+      },
+      "mid": "m800000052",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769592841143750",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 28.854,
+      "speed": 1.0,
+      "winner": "LabSlot0"
+    },
+    {
+      "a": {
+        "brakes": 27,
+        "contact": 30,
+        "crits": 5,
+        "fresh": 14,
+        "mouse": 54,
+        "press": 54,
+        "sprint_fresh": 10,
+        "tps": 19.999887385494663,
+        "upgrade": 3
+      },
+      "b": {
+        "admissions": 51,
+        "allow": 112,
+        "brakes": 30,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 1.0001978424387485,
+        "contact": 30,
+        "crits": 5,
+        "decisions": 253,
+        "fresh": 14,
+        "injected": 51,
+        "injection_clock_ratio": 1.0,
+        "jumps": 7,
+        "longest_ray": 2.9473044620398046,
+        "min_wall_click_ms": 142.9195,
+        "mouse": 0,
+        "press": 51,
+        "sprint_fresh": 13,
+        "tps": 20.14174142099995,
+        "upgrade": 4
+      },
+      "mid": "m800000053",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769663472493166",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 12.567,
+      "speed": 1.0,
+      "winner": "LabSlot0"
+    },
+    {
+      "a": {
+        "brakes": 7,
+        "contact": 8,
+        "crits": 1,
+        "fresh": 2,
+        "mouse": 27,
+        "press": 27,
+        "sprint_fresh": 1,
+        "tps": 20.03549295395522,
+        "upgrade": 0
+      },
+      "b": {
+        "admissions": 16,
+        "allow": 27,
+        "brakes": 16,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 1.0000007329269136,
+        "contact": 16,
+        "crits": 1,
+        "decisions": 82,
+        "fresh": 6,
+        "injected": 16,
+        "injection_clock_ratio": 1.0,
+        "longest_ray": 2.8147387776121735,
+        "min_wall_click_ms": 143.214791,
+        "mouse": 0,
+        "press": 16,
+        "sprint_fresh": 6,
+        "tps": 20.013639750120536,
+        "upgrade": 1
+      },
+      "mid": "m800000054",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769679635078458",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 4.104,
+      "speed": 1.0,
+      "winner": "LabSlot0"
+    }
+  ],
+  "native_pre_fix": [
+    {
+      "a": {
+        "brakes": 75,
+        "contact": 124,
+        "crits": 11,
+        "fresh": 14,
+        "jumps": 4,
+        "mouse": 173,
+        "press": 173,
+        "sprint_fresh": 4,
+        "tps": 6.000386579872235,
+        "upgrade": 4
+      },
+      "b": {
+        "admissions": 47,
+        "allow": 102,
+        "brakes": 33,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.30000710149458965,
+        "contact": 33,
+        "crits": 11,
+        "decisions": 211,
+        "fresh": 15,
+        "injected": 48,
+        "injection_clock_ratio": 0.3,
+        "jumps": 5,
+        "longest_ray": 2.9861598758472785,
+        "min_wall_click_ms": 476.789125,
+        "mouse": 0,
+        "press": 47,
+        "sprint_fresh": 11,
+        "tps": 5.992109302276109,
+        "upgrade": 5
+      },
+      "mid": "m800000032",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-768797231227000",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 34.941,
+      "speed": 0.3,
+      "winner": "LabSlot0"
+    },
+    {
+      "a": {
+        "brakes": 51,
+        "contact": 59,
+        "crits": 12,
+        "fresh": 13,
+        "mouse": 82,
+        "press": 82,
+        "sprint_fresh": 11,
+        "tps": 19.991073243905657,
+        "upgrade": 6
+      },
+      "b": {
+        "admissions": 15,
+        "allow": 95,
+        "brakes": 13,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.30000634219683947,
+        "contact": 13,
+        "crits": 2,
+        "decisions": 181,
+        "fresh": 13,
+        "injected": 15,
+        "injection_clock_ratio": 0.299999999951469,
+        "jumps": 5,
+        "longest_ray": 2.659566823617687,
+        "min_wall_click_ms": 477.709958,
+        "mouse": 0,
+        "press": 15,
+        "sprint_fresh": 2,
+        "tps": 20.00273500507261,
+        "upgrade": 0
+      },
+      "mid": "m800000033",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-768849302577583",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 9.055,
+      "speed": 1.0,
+      "winner": "Nomophobia"
+    },
+    {
+      "a": {
+        "brakes": 97,
+        "contact": 112,
+        "crits": 26,
+        "fresh": 27,
+        "mouse": 147,
+        "press": 147,
+        "sprint_fresh": 17,
+        "tps": 20.00446468207736,
+        "upgrade": 11
+      },
+      "b": {
+        "admissions": 27,
+        "allow": 192,
+        "brakes": 26,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.30000000360124013,
+        "contact": 26,
+        "crits": 0,
+        "decisions": 342,
+        "fresh": 26,
+        "injected": 27,
+        "injection_clock_ratio": 0.29999999994937837,
+        "jumps": 3,
+        "longest_ray": 2.956263497129638,
+        "min_wall_click_ms": 486.52425,
+        "mouse": 0,
+        "press": 27,
+        "sprint_fresh": 1,
+        "tps": 20.00426972893001,
+        "upgrade": 0
+      },
+      "mid": "m800000034",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-768863349885041",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 17.109,
+      "speed": 1.0,
+      "winner": "Nomophobia"
+    },
+    {
+      "a": {
+        "brakes": 82,
+        "contact": 91,
+        "crits": 18,
+        "fresh": 30,
+        "mouse": 124,
+        "press": 124,
+        "sprint_fresh": 24,
+        "tps": 20.011247233928042,
+        "upgrade": 11
+      },
+      "b": {
+        "admissions": 30,
+        "allow": 204,
+        "brakes": 27,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.2999999853879078,
+        "contact": 27,
+        "crits": 1,
+        "decisions": 411,
+        "fresh": 27,
+        "injected": 30,
+        "injection_clock_ratio": 0.29999999998963806,
+        "jumps": 5,
+        "longest_ray": 2.690187742271229,
+        "min_wall_click_ms": 477.112041,
+        "mouse": 0,
+        "press": 30,
+        "sprint_fresh": 1,
+        "tps": 20.005337854572296,
+        "upgrade": 0
+      },
+      "mid": "m800000035",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-768885947859041",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 20.509,
+      "speed": 1.0,
+      "winner": "Nomophobia"
+    },
+    {
+      "a": {
+        "brakes": 100,
+        "contact": 113,
+        "crits": 23,
+        "fresh": 37,
+        "mouse": 168,
+        "press": 168,
+        "sprint_fresh": 27,
+        "tps": 19.997375280901196,
+        "upgrade": 13
+      },
+      "b": {
+        "admissions": 38,
+        "allow": 266,
+        "brakes": 36,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.3000007286218146,
+        "contact": 36,
+        "crits": 0,
+        "decisions": 524,
+        "fresh": 36,
+        "injected": 38,
+        "injection_clock_ratio": 0.29999999999191135,
+        "jumps": 6,
+        "longest_ray": 2.7274001927672975,
+        "min_wall_click_ms": 479.592333,
+        "mouse": 0,
+        "press": 38,
+        "sprint_fresh": 3,
+        "tps": 19.997901018776663,
+        "upgrade": 0
+      },
+      "mid": "m800000036",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-768913903070333",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 26.161,
+      "speed": 1.0,
+      "winner": "Nomophobia"
+    },
+    {
+      "a": {
+        "brakes": 58,
+        "contact": 70,
+        "crits": 12,
+        "fresh": 17,
+        "mouse": 97,
+        "press": 97,
+        "sprint_fresh": 13,
+        "tps": 20.002962553308556,
+        "upgrade": 4
+      },
+      "b": {
+        "admissions": 18,
+        "allow": 121,
+        "brakes": 17,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.30000016231546495,
+        "contact": 17,
+        "crits": 1,
+        "decisions": 229,
+        "fresh": 17,
+        "injected": 18,
+        "injection_clock_ratio": 0.30000000000940685,
+        "jumps": 5,
+        "longest_ray": 2.9165468308152644,
+        "min_wall_click_ms": 485.632458,
+        "mouse": 0,
+        "press": 18,
+        "sprint_fresh": 2,
+        "tps": 20.01640183999573,
+        "upgrade": 0
+      },
+      "mid": "m800000042",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769060891443583",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 11.42,
+      "speed": 1.0,
+      "winner": "Nomophobia"
+    },
+    {
+      "a": {
+        "brakes": 68,
+        "contact": 75,
+        "crits": 22,
+        "fresh": 24,
+        "jumps": 1,
+        "mouse": 94,
+        "press": 94,
+        "sprint_fresh": 13,
+        "tps": 19.994058586467307,
+        "upgrade": 13
+      },
+      "b": {
+        "admissions": 24,
+        "allow": 175,
+        "brakes": 23,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.30000036541383396,
+        "contact": 23,
+        "crits": 1,
+        "decisions": 326,
+        "fresh": 23,
+        "injected": 24,
+        "injection_clock_ratio": 0.2999999999864309,
+        "jumps": 5,
+        "longest_ray": 2.7973295730552223,
+        "min_wall_click_ms": 485.482584,
+        "mouse": 0,
+        "press": 24,
+        "sprint_fresh": 2,
+        "tps": 19.98649860853557,
+        "upgrade": 0
+      },
+      "mid": "m800000043",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769077654291916",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 16.302,
+      "speed": 1.0,
+      "winner": "Nomophobia"
+    },
+    {
+      "a": {
+        "brakes": 79,
+        "contact": 94,
+        "crits": 16,
+        "fresh": 20,
+        "mouse": 118,
+        "press": 118,
+        "sprint_fresh": 12,
+        "tps": 19.98696300871952,
+        "upgrade": 6
+      },
+      "b": {
+        "admissions": 21,
+        "allow": 146,
+        "brakes": 19,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.3000064979266398,
+        "contact": 19,
+        "crits": 1,
+        "decisions": 260,
+        "fresh": 19,
+        "injected": 21,
+        "injection_clock_ratio": 0.3,
+        "jumps": 2,
+        "longest_ray": 2.9346135922059595,
+        "min_wall_click_ms": 476.434708,
+        "mouse": 0,
+        "press": 21,
+        "sprint_fresh": 1,
+        "tps": 19.97992473939115,
+        "upgrade": 0
+      },
+      "mid": "m800000044",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769132861964666",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 12.998,
+      "speed": 1.0,
+      "winner": "Nomophobia"
+    },
+    {
+      "a": {
+        "brakes": 68,
+        "contact": 75,
+        "crits": 18,
+        "fresh": 23,
+        "jumps": 1,
+        "mouse": 105,
+        "press": 105,
+        "sprint_fresh": 15,
+        "tps": 20.012442250114532,
+        "upgrade": 12
+      },
+      "b": {
+        "admissions": 28,
+        "allow": 196,
+        "brakes": 27,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.30000749400370685,
+        "contact": 27,
+        "crits": 2,
+        "decisions": 354,
+        "fresh": 27,
+        "injected": 28,
+        "injection_clock_ratio": 0.3,
+        "jumps": 6,
+        "longest_ray": 2.84614081608774,
+        "min_wall_click_ms": 476.756416,
+        "mouse": 0,
+        "press": 28,
+        "sprint_fresh": 7,
+        "tps": 20.004476309291785,
+        "upgrade": 0
+      },
+      "mid": "m800000045",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769149945925041",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 17.722,
+      "speed": 1.0,
+      "winner": "LabSlot0"
+    },
+    {
+      "a": {
+        "brakes": 189,
+        "contact": 204,
+        "crits": 45,
+        "fresh": 69,
+        "jumps": 1,
+        "mouse": 288,
+        "press": 288,
+        "sprint_fresh": 45,
+        "tps": 19.99987097519135,
+        "upgrade": 27
+      },
+      "b": {
+        "admissions": 75,
+        "allow": 517,
+        "brakes": 72,
+        "cap_ns": [
+          142857143
+        ],
+        "changed_action": 0,
+        "clock_ratio": 0.3000025693329439,
+        "contact": 72,
+        "crits": 3,
+        "decisions": 976,
+        "fresh": 71,
+        "injected": 75,
+        "injection_clock_ratio": 0.30000000000837507,
+        "jumps": 17,
+        "longest_ray": 2.9975270587402156,
+        "min_wall_click_ms": 478.791959,
+        "mouse": 0,
+        "press": 75,
+        "sprint_fresh": 10,
+        "tps": 20.001256899497672,
+        "upgrade": 0
+      },
+      "mid": "m800000046",
+      "policies": [
+        "human",
+        "sumo-league-remote-004"
+      ],
+      "reach": [
+        3.0,
+        3.0
+      ],
+      "reason": "ring_out",
+      "request": "human-769176107080500",
+      "seats": [
+        "Nomophobia",
+        "LabSlot0"
+      ],
+      "seconds": 48.804,
+      "speed": 1.0,
+      "winner": "LabSlot0"
+    }
+  ],
+  "new_seeds": {
+    "check-hold": {
+      "remote-004-main-gru/intact": [
+        125,
+        2,
+        1
+      ],
+      "remote-004-main-gru/no-strafe": [
+        124,
+        3,
+        1
+      ],
+      "wtap/intact": [
+        102,
+        0,
+        26
+      ]
+    },
+    "check-remote-002-main-gru": {
+      "remote-004-main-gru/intact": [
+        98,
+        5,
+        25
+      ],
+      "remote-004-main-gru/no-strafe": [
+        99,
+        3,
+        26
+      ],
+      "wtap/intact": [
+        2,
+        2,
+        124
+      ]
+    },
+    "check-remote-003-counter-gru": {
+      "remote-004-main-gru/intact": [
+        67,
+        6,
+        55
+      ],
+      "remote-004-main-gru/no-strafe": [
+        85,
+        6,
+        37
+      ],
+      "wtap/intact": [
+        1,
+        1,
+        126
+      ]
+    },
+    "check-remote-004-counter-gru": {
+      "remote-004-main-gru/intact": [
+        67,
+        3,
+        58
+      ],
+      "remote-004-main-gru/no-strafe": [
+        93,
+        6,
+        29
+      ],
+      "wtap/intact": [
+        1,
+        0,
+        127
+      ]
+    },
+    "check-remote-004-main-mlp": {
+      "remote-004-main-gru/intact": [
+        83,
+        7,
+        38
+      ],
+      "remote-004-main-gru/no-strafe": [
+        92,
+        15,
+        21
+      ],
+      "wtap/intact": [
+        2,
+        0,
+        126
+      ]
+    },
+    "check-sumo-frozen-ppo": {
+      "remote-004-main-gru/intact": [
+        127,
+        1,
+        0
+      ],
+      "remote-004-main-gru/no-strafe": [
+        120,
+        1,
+        7
+      ],
+      "wtap/intact": [
+        14,
+        2,
+        112
+      ]
+    },
+    "check-sumo-seven-first": {
+      "remote-004-main-gru/intact": [
+        109,
+        7,
+        12
+      ],
+      "remote-004-main-gru/no-strafe": [
+        105,
+        8,
+        15
+      ],
+      "wtap/intact": [
+        6,
+        0,
+        122
+      ]
+    },
+    "check-wtap": {
+      "remote-004-main-gru/intact": [
+        127,
+        0,
+        1
+      ],
+      "remote-004-main-gru/no-strafe": [
+        127,
+        1,
+        0
+      ],
+      "wtap/intact": [
+        64,
+        0,
+        64
+      ]
+    }
+  },
+  "phase_edits": {
+    "phase-remote-003-counter-gru": {
+      "click-after": {
+        "became_win": 2,
+        "draws": 0,
+        "lost_win": 149,
+        "wins": 6
+      },
+      "click-opening": {
+        "became_win": 51,
+        "draws": 11,
+        "lost_win": 54,
+        "wins": 150
+      },
+      "forward-after": {
+        "became_win": 0,
+        "draws": 3,
+        "lost_win": 151,
+        "wins": 2
+      },
+      "no-hurt-jump": {
+        "became_win": 13,
+        "draws": 9,
+        "lost_win": 127,
+        "wins": 39
+      },
+      "no-other-jump": {
+        "became_win": 0,
+        "draws": 8,
+        "lost_win": 0,
+        "wins": 153
+      }
+    },
+    "phase-remote-004-counter-gru": {
+      "click-after": {
+        "became_win": 1,
+        "draws": 1,
+        "lost_win": 124,
+        "wins": 1
+      },
+      "click-opening": {
+        "became_win": 46,
+        "draws": 12,
+        "lost_win": 64,
+        "wins": 106
+      },
+      "forward-after": {
+        "became_win": 1,
+        "draws": 0,
+        "lost_win": 123,
+        "wins": 2
+      },
+      "no-hurt-jump": {
+        "became_win": 15,
+        "draws": 4,
+        "lost_win": 102,
+        "wins": 37
+      },
+      "no-other-jump": {
+        "became_win": 0,
+        "draws": 12,
+        "lost_win": 0,
+        "wins": 124
+      }
+    },
+    "phase-sumo-seven-first": {
+      "click-after": {
+        "became_win": 2,
+        "draws": 0,
+        "lost_win": 216,
+        "wins": 12
+      },
+      "click-opening": {
+        "became_win": 29,
+        "draws": 6,
+        "lost_win": 24,
+        "wins": 231
+      },
+      "forward-after": {
+        "became_win": 1,
+        "draws": 0,
+        "lost_win": 223,
+        "wins": 4
+      },
+      "no-hurt-jump": {
+        "became_win": 11,
+        "draws": 46,
+        "lost_win": 70,
+        "wins": 167
+      },
+      "no-other-jump": {
+        "became_win": 0,
+        "draws": 10,
+        "lost_win": 0,
+        "wins": 226
+      }
+    },
+    "phase-wtap": {
+      "click-after": {
+        "became_win": 1,
+        "draws": 0,
+        "lost_win": 44,
+        "wins": 212
+      },
+      "click-opening": {
+        "became_win": 1,
+        "draws": 1,
+        "lost_win": 1,
+        "wins": 255
+      },
+      "forward-after": {
+        "became_win": 0,
+        "draws": 7,
+        "lost_win": 90,
+        "wins": 165
+      },
+      "no-hurt-jump": {
+        "became_win": 0,
+        "draws": 1,
+        "lost_win": 0,
+        "wins": 255
+      },
+      "no-other-jump": {
+        "became_win": 0,
+        "draws": 1,
+        "lost_win": 0,
+        "wins": 255
+      }
+    }
+  },
+  "tournament_replays": {
+    "remote-003-counter-gru--remote-004-counter-gru": {
+      "arms": {
+        "intact": [
+          99,
+          16,
+          141
+        ]
+      },
+      "minimum_press_interval_ns": [
+        142859250,
+        142859250
+      ],
+      "sides": {
+        "actor": {
+          "before_either_hurt_cue": [
+            4374,
+            25,
+            188,
+            4127,
+            34,
+            2183,
+            142,
+            0,
+            4374,
+            0,
+            0
+          ],
+          "counts": [
+            183134,
+            494,
+            75320,
+            106697,
+            623,
+            67960,
+            87212,
+            3864,
+            68279,
+            10047,
+            3864
+          ],
+          "first_fresh_actor_wdl": [
+            43,
+            9,
+            20
+          ],
+          "fresh": 11642,
+          "fresh_sprinting": 11104
+        },
+        "opponent": {
+          "before_either_hurt_cue": [
+            4363,
+            11,
+            1586,
+            2730,
+            36,
+            2054,
+            252,
+            0,
+            4363,
+            0,
+            0
+          ],
+          "counts": [
+            183121,
+            257,
+            83879,
+            98535,
+            450,
+            63228,
+            89820,
+            3876,
+            68759,
+            9815,
+            3876
+          ],
+          "first_fresh_actor_wdl": [
+            56,
+            7,
+            121
+          ],
+          "fresh": 11704,
+          "fresh_sprinting": 11481
+        }
+      },
+      "verified": 256
+    },
+    "remote-003-counter-gru--sumo-seven-first": {
+      "arms": {
+        "intact": [
+          230,
+          9,
+          17
+        ]
+      },
+      "minimum_press_interval_ns": [
+        142859250,
+        142859250
+      ],
+      "sides": {
+        "actor": {
+          "before_either_hurt_cue": [
+            6489,
+            63,
+            234,
+            5968,
+            224,
+            3904,
+            477,
+            0,
+            6489,
+            0,
+            0
+          ],
+          "counts": [
+            147195,
+            1359,
+            38388,
+            105021,
+            2427,
+            66085,
+            73856,
+            2645,
+            58130,
+            8367,
+            2645
+          ],
+          "first_fresh_actor_wdl": [
+            225,
+            9,
+            17
+          ],
+          "fresh": 9621,
+          "fresh_sprinting": 9361
+        },
+        "opponent": {
+          "before_either_hurt_cue": [
+            6501,
+            27,
+            0,
+            6474,
+            0,
+            1845,
+            8,
+            0,
+            6501,
+            0,
+            0
+          ],
+          "counts": [
+            147166,
+            342,
+            34465,
+            112342,
+            17,
+            74178,
+            90701,
+            2559,
+            54134,
+            8578,
+            2559
+          ],
+          "first_fresh_actor_wdl": [
+            5,
+            0,
+            0
+          ],
+          "fresh": 9228,
+          "fresh_sprinting": 8072
+        }
+      },
+      "verified": 256
+    },
+    "remote-003-counter-gru--wtap": {
+      "arms": {
+        "intact": [
+          254,
+          2,
+          0
+        ]
+      },
+      "minimum_press_interval_ns": [
+        142859250,
+        142887416
+      ],
+      "sides": {
+        "actor": {
+          "before_either_hurt_cue": [
+            3990,
+            3,
+            141,
+            3845,
+            1,
+            2016,
+            4,
+            0,
+            3990,
+            0,
+            0
+          ],
+          "counts": [
+            34920,
+            319,
+            15355,
+            18851,
+            395,
+            13187,
+            17106,
+            479,
+            19403,
+            1605,
+            478
+          ],
+          "first_fresh_actor_wdl": [
+            3,
+            0,
+            0
+          ],
+          "fresh": 2120,
+          "fresh_sprinting": 1930
+        },
+        "opponent": {
+          "before_either_hurt_cue": [
+            3966,
+            0,
+            0,
+            3966,
+            0,
+            0,
+            3966,
+            0,
+            3966,
+            0,
+            0
+          ],
+          "counts": [
+            34925,
+            2748,
+            0,
+            32177,
+            0,
+            0,
+            34925,
+            0,
+            15604,
+            1970,
+            0
+          ],
+          "first_fresh_actor_wdl": [
+            251,
+            2,
+            0
+          ],
+          "fresh": 1625,
+          "fresh_sprinting": 1414
+        }
+      },
+      "verified": 256
+    },
+    "remote-004-main-gru--remote-003-counter-gru": {
+      "arms": {
+        "always-click": [
+          2,
+          1,
+          253
+        ],
+        "forward-sprint": [
+          6,
+          3,
+          247
+        ],
+        "intact": [
+          153,
+          8,
+          95
+        ],
+        "no-jump": [
+          39,
+          9,
+          208
+        ],
+        "no-state": [
+          1,
+          0,
+          255
+        ],
+        "no-strafe": [
+          182,
+          8,
+          66
+        ],
+        "recent6": [
+          118,
+          11,
+          127
+        ]
+      },
+      "minimum_press_interval_ns": [
+        142859250,
+        142859250
+      ],
+      "sides": {
+        "actor": {
+          "before_either_hurt_cue": [
+            5674,
+            29,
+            168,
+            5432,
+            45,
+            3025,
+            262,
+            0,
+            5674,
+            0,
+            0
+          ],
+          "counts": [
+            192526,
+            269,
+            83385,
+            108553,
+            319,
+            74054,
+            93190,
+            3973,
+            72253,
+            10595,
+            3973
+          ],
+          "first_fresh_actor_wdl": [
+            104,
+            4,
+            46
+          ],
+          "fresh": 12386,
+          "fresh_sprinting": 12028
+        },
+        "opponent": {
+          "before_either_hurt_cue": [
+            5675,
+            26,
+            196,
+            5386,
+            67,
+            3263,
+            224,
+            0,
+            5675,
+            0,
+            0
+          ],
+          "counts": [
+            192545,
+            520,
+            76376,
+            114937,
+            712,
+            76291,
+            90450,
+            3835,
+            71495,
+            10678,
+            3834
+          ],
+          "first_fresh_actor_wdl": [
+            49,
+            4,
+            49
+          ],
+          "fresh": 12288,
+          "fresh_sprinting": 11683
+        }
+      },
+      "verified": 256
+    },
+    "remote-004-main-gru--remote-004-counter-gru": {
+      "arms": {
+        "always-click": [
+          2,
+          1,
+          253
+        ],
+        "forward-sprint": [
+          2,
+          1,
+          253
+        ],
+        "intact": [
+          124,
+          12,
+          120
+        ],
+        "no-jump": [
+          37,
+          4,
+          215
+        ],
+        "no-state": [
+          0,
+          1,
+          255
+        ],
+        "no-strafe": [
+          185,
+          12,
+          59
+        ],
+        "recent6": [
+          112,
+          2,
+          142
+        ]
+      },
+      "minimum_press_interval_ns": [
+        142859250,
+        142859250
+      ],
+      "sides": {
+        "actor": {
+          "before_either_hurt_cue": [
+            4667,
+            5,
+            147,
+            4510,
+            5,
+            2155,
+            78,
+            0,
+            4667,
+            0,
+            0
+          ],
+          "counts": [
+            192863,
+            212,
+            85730,
+            106696,
+            225,
+            73909,
+            93651,
+            4049,
+            71169,
+            10809,
+            4049
+          ],
+          "first_fresh_actor_wdl": [
+            34,
+            3,
+            21
+          ],
+          "fresh": 12403,
+          "fresh_sprinting": 11985
+        },
+        "opponent": {
+          "before_either_hurt_cue": [
+            4664,
+            17,
+            1541,
+            3058,
+            48,
+            2273,
+            256,
+            0,
+            4664,
+            0,
+            0
+          ],
+          "counts": [
+            192832,
+            275,
+            86357,
+            105712,
+            488,
+            69057,
+            94651,
+            3986,
+            71322,
+            10603,
+            3986
+          ],
+          "first_fresh_actor_wdl": [
+            90,
+            9,
+            99
+          ],
+          "fresh": 12433,
+          "fresh_sprinting": 12164
+        }
+      },
+      "verified": 256
+    },
+    "remote-004-main-gru--sumo-seven-first": {
+      "arms": {
+        "always-click": [
+          13,
+          0,
+          243
+        ],
+        "forward-sprint": [
+          4,
+          0,
+          252
+        ],
+        "intact": [
+          226,
+          10,
+          20
+        ],
+        "no-jump": [
+          167,
+          46,
+          43
+        ],
+        "no-state": [
+          3,
+          83,
+          170
+        ],
+        "no-strafe": [
+          231,
+          5,
+          20
+        ],
+        "recent6": [
+          223,
+          6,
+          27
+        ]
+      },
+      "minimum_press_interval_ns": [
+        142859250,
+        142859250
+      ],
+      "sides": {
+        "actor": {
+          "before_either_hurt_cue": [
+            6490,
+            65,
+            172,
+            6114,
+            139,
+            3822,
+            578,
+            0,
+            6490,
+            0,
+            0
+          ],
+          "counts": [
+            143952,
+            622,
+            46837,
+            95375,
+            1118,
+            67400,
+            71612,
+            2439,
+            57152,
+            8261,
+            2438
+          ],
+          "first_fresh_actor_wdl": [
+            223,
+            9,
+            19
+          ],
+          "fresh": 9465,
+          "fresh_sprinting": 9273
+        },
+        "opponent": {
+          "before_either_hurt_cue": [
+            6498,
+            39,
+            0,
+            6459,
+            0,
+            1870,
+            8,
+            0,
+            6498,
+            0,
+            0
+          ],
+          "counts": [
+            143949,
+            449,
+            33409,
+            110068,
+            23,
+            76844,
+            89012,
+            2343,
+            52779,
+            8513,
+            2343
+          ],
+          "first_fresh_actor_wdl": [
+            3,
+            1,
+            1
+          ],
+          "fresh": 9028,
+          "fresh_sprinting": 7838
+        }
+      },
+      "verified": 256
+    },
+    "remote-004-main-gru--wtap": {
+      "arms": {
+        "always-click": [
+          224,
+          0,
+          32
+        ],
+        "forward-sprint": [
+          165,
+          7,
+          84
+        ],
+        "intact": [
+          255,
+          1,
+          0
+        ],
+        "no-jump": [
+          255,
+          1,
+          0
+        ],
+        "no-state": [
+          246,
+          1,
+          9
+        ],
+        "no-strafe": [
+          256,
+          0,
+          0
+        ],
+        "recent6": [
+          256,
+          0,
+          0
+        ]
+      },
+      "minimum_press_interval_ns": [
+        142859250,
+        142859250
+      ],
+      "sides": {
+        "actor": {
+          "before_either_hurt_cue": [
+            3977,
+            0,
+            9,
+            3968,
+            0,
+            1755,
+            0,
+            0,
+            3977,
+            0,
+            0
+          ],
+          "counts": [
+            31985,
+            196,
+            15183,
+            16361,
+            245,
+            12092,
+            14701,
+            467,
+            17590,
+            1482,
+            467
+          ],
+          "first_fresh_actor_wdl": [
+            0,
+            0,
+            0
+          ],
+          "fresh": 1938,
+          "fresh_sprinting": 1836
+        },
+        "opponent": {
+          "before_either_hurt_cue": [
+            3956,
+            0,
+            0,
+            3956,
+            0,
+            0,
+            3956,
+            0,
+            3956,
+            0,
+            0
+          ],
+          "counts": [
+            31986,
+            2554,
+            0,
+            29432,
+            0,
+            0,
+            31986,
+            0,
+            14356,
+            1807,
+            0
+          ],
+          "first_fresh_actor_wdl": [
+            255,
+            1,
+            0
+          ],
+          "fresh": 1503,
+          "fresh_sprinting": 1338
+        }
+      },
+      "verified": 256
+    },
+    "wtap--remote-003-counter-gru": {
+      "arms": {
+        "intact": [
+          0,
+          2,
+          254
+        ]
+      },
+      "minimum_press_interval_ns": [
+        142887416,
+        142859250
+      ],
+      "sides": {
+        "actor": {
+          "before_either_hurt_cue": [
+            3966,
+            0,
+            0,
+            3966,
+            0,
+            0,
+            3966,
+            0,
+            3966,
+            0,
+            0
+          ],
+          "counts": [
+            34925,
+            2748,
+            0,
+            32177,
+            0,
+            0,
+            34925,
+            0,
+            15604,
+            1970,
+            0
+          ],
+          "first_fresh_actor_wdl": [
+            0,
+            2,
+            251
+          ],
+          "fresh": 1625,
+          "fresh_sprinting": 1414
+        },
+        "opponent": {
+          "before_either_hurt_cue": [
+            3990,
+            3,
+            141,
+            3845,
+            1,
+            2016,
+            4,
+            0,
+            3990,
+            0,
+            0
+          ],
+          "counts": [
+            34920,
+            319,
+            15355,
+            18851,
+            395,
+            13187,
+            17106,
+            479,
+            19403,
+            1605,
+            478
+          ],
+          "first_fresh_actor_wdl": [
+            0,
+            0,
+            3
+          ],
+          "fresh": 2120,
+          "fresh_sprinting": 1930
+        }
+      },
+      "verified": 256
+    },
+    "wtap--remote-004-counter-gru": {
+      "arms": {
+        "intact": [
+          1,
+          0,
+          255
+        ]
+      },
+      "minimum_press_interval_ns": [
+        142859250,
+        142884750
+      ],
+      "sides": {
+        "actor": {
+          "before_either_hurt_cue": [
+            3886,
+            0,
+            0,
+            3886,
+            0,
+            0,
+            3886,
+            0,
+            3886,
+            0,
+            0
+          ],
+          "counts": [
+            29342,
+            2113,
+            0,
+            27229,
+            0,
+            0,
+            29342,
+            0,
+            13145,
+            1606,
+            0
+          ],
+          "first_fresh_actor_wdl": [
+            0,
+            0,
+            181
+          ],
+          "fresh": 1236,
+          "fresh_sprinting": 1103
+        },
+        "opponent": {
+          "before_either_hurt_cue": [
+            3885,
+            1,
+            1247,
+            2637,
+            0,
+            1819,
+            116,
+            0,
+            3885,
+            0,
+            0
+          ],
+          "counts": [
+            29346,
+            335,
+            15097,
+            13572,
+            342,
+            10280,
+            14190,
+            458,
+            17312,
+            1218,
+            458
+          ],
+          "first_fresh_actor_wdl": [
+            1,
+            0,
+            74
+          ],
+          "fresh": 1763,
+          "fresh_sprinting": 1685
+        }
+      },
+      "verified": 256
+    },
+    "wtap--sumo-seven-first": {
+      "arms": {
+        "intact": [
+          12,
+          0,
+          244
+        ]
+      },
+      "minimum_press_interval_ns": [
+        142859250,
+        142859250
+      ],
+      "sides": {
+        "actor": {
+          "before_either_hurt_cue": [
+            3900,
+            0,
+            0,
+            3900,
+            0,
+            0,
+            3900,
+            0,
+            3900,
+            0,
+            0
+          ],
+          "counts": [
+            64988,
+            6204,
+            0,
+            58784,
+            0,
+            0,
+            64988,
+            0,
+            30788,
+            3696,
+            0
+          ],
+          "first_fresh_actor_wdl": [
+            12,
+            0,
+            244
+          ],
+          "fresh": 3644,
+          "fresh_sprinting": 3272
+        },
+        "opponent": {
+          "before_either_hurt_cue": [
+            3920,
+            0,
+            0,
+            3920,
+            0,
+            364,
+            0,
+            0,
+            3920,
+            0,
+            0
+          ],
+          "counts": [
+            64976,
+            1832,
+            13072,
+            49700,
+            372,
+            26028,
+            49496,
+            1064,
+            30012,
+            3576,
+            1064
+          ],
+          "first_fresh_actor_wdl": [
+            0,
+            0,
+            0
+          ],
+          "fresh": 3756,
+          "fresh_sprinting": 3224
+        }
+      },
+      "verified": 256
+    },
+    "wtap--wtap": {
+      "arms": {
+        "intact": [
+          128,
+          0,
+          128
+        ]
+      },
+      "minimum_press_interval_ns": [
+        142859250,
+        142859250
+      ],
+      "sides": {
+        "actor": {
+          "before_either_hurt_cue": [
+            3760,
+            0,
+            0,
+            3760,
+            0,
+            0,
+            3760,
+            0,
+            3760,
+            0,
+            0
+          ],
+          "counts": [
+            104300,
+            8812,
+            0,
+            95488,
+            0,
+            0,
+            104300,
+            0,
+            57244,
+            5180,
+            0
+          ],
+          "first_fresh_actor_wdl": [
+            56,
+            0,
+            72
+          ],
+          "fresh": 5248,
+          "fresh_sprinting": 4580
+        },
+        "opponent": {
+          "before_either_hurt_cue": [
+            3760,
+            0,
+            0,
+            3760,
+            0,
+            0,
+            3760,
+            0,
+            3760,
+            0,
+            0
+          ],
+          "counts": [
+            104300,
+            8812,
+            0,
+            95488,
+            0,
+            0,
+            104300,
+            0,
+            57244,
+            5180,
+            0
+          ],
+          "first_fresh_actor_wdl": [
+            72,
+            0,
+            56
+          ],
+          "fresh": 5248,
+          "fresh_sprinting": 4580
+        }
+      },
+      "verified": 256
+    }
+  },
+  "trades": {
+    "trade-remote-003-counter-gru": {
+      "click-after": {
+        "actor": [
+          11757,
+          5986,
+          5209,
+          2938,
+          2042,
+          1847,
+          5738
+        ],
+        "opponent": [
+          8297,
+          6046,
+          5480,
+          3464,
+          2417,
+          2193,
+          2240
+        ],
+        "seconds": 2034.06556640625,
+        "summed_horizontal_impulses": [
+          1788.3635648510103,
+          2050.0222055467066
+        ]
+      },
+      "forward-after": {
+        "actor": [
+          10934,
+          9043,
+          8957,
+          6894,
+          3105,
+          355,
+          1872
+        ],
+        "opponent": [
+          10486,
+          9335,
+          8578,
+          4957,
+          3341,
+          3124,
+          1140
+        ],
+        "seconds": 2339.2639956054686,
+        "summed_horizontal_impulses": [
+          1731.9609234292966,
+          2937.5887352378563
+        ]
+      },
+      "intact": {
+        "actor": [
+          40607,
+          30884,
+          28868,
+          22485,
+          12386,
+          12028,
+          9714
+        ],
+        "opponent": [
+          39393,
+          30139,
+          28089,
+          22542,
+          12288,
+          11683,
+          9249
+        ],
+        "seconds": 9614.642026367188,
+        "summed_horizontal_impulses": [
+          11225.550127741015,
+          10987.629736822126
+        ]
+      },
+      "no-hurt-jump": {
+        "actor": [
+          36015,
+          26700,
+          25343,
+          21017,
+          11262,
+          10523,
+          9305
+        ],
+        "opponent": [
+          37391,
+          30047,
+          27919,
+          21073,
+          11734,
+          11117,
+          7338
+        ],
+        "seconds": 8697.575852783204,
+        "summed_horizontal_impulses": [
+          10070.164397902568,
+          10402.165351042635
+        ]
+      }
+    },
+    "trade-remote-004-counter-gru": {
+      "click-after": {
+        "actor": [
+          9356,
+          4539,
+          3989,
+          2394,
+          1576,
+          1428,
+          4783
+        ],
+        "opponent": [
+          6916,
+          5065,
+          4732,
+          2895,
+          2003,
+          1908,
+          1834
+        ],
+        "seconds": 1630.5795217285156,
+        "summed_horizontal_impulses": [
+          1386.1912861939927,
+          1757.6054398517813
+        ]
+      },
+      "forward-after": {
+        "actor": [
+          11082,
+          9201,
+          9100,
+          7190,
+          3139,
+          294,
+          1862
+        ],
+        "opponent": [
+          10681,
+          9431,
+          8790,
+          5074,
+          3410,
+          3269,
+          1237
+        ],
+        "seconds": 2340.1052231445315,
+        "summed_horizontal_impulses": [
+          1727.6324950268258,
+          3071.2117681205705
+        ]
+      },
+      "intact": {
+        "actor": [
+          40799,
+          30762,
+          28944,
+          23164,
+          12403,
+          11985,
+          10028
+        ],
+        "opponent": [
+          41414,
+          30981,
+          29077,
+          22728,
+          12433,
+          12164,
+          10416
+        ],
+        "seconds": 9629.78727294922,
+        "summed_horizontal_impulses": [
+          11218.244667667363,
+          11313.229984559077
+        ]
+      },
+      "no-hurt-jump": {
+        "actor": [
+          26825,
+          19686,
+          18586,
+          15711,
+          8213,
+          7662,
+          7134
+        ],
+        "opponent": [
+          28429,
+          22568,
+          21088,
+          15395,
+          8763,
+          8526,
+          5851
+        ],
+        "seconds": 6487.105448242188,
+        "summed_horizontal_impulses": [
+          7288.766831855979,
+          7830.738359807439
+        ]
+      }
+    },
+    "trade-sumo-seven-first": {
+      "click-after": {
+        "actor": [
+          23129,
+          13284,
+          11637,
+          6144,
+          4262,
+          3895,
+          9805
+        ],
+        "opponent": [
+          19165,
+          12044,
+          9926,
+          7345,
+          4463,
+          3753,
+          7083
+        ],
+        "seconds": 3775.0569389648435,
+        "summed_horizontal_impulses": [
+          3729.22969661989,
+          3758.0408907890474
+        ]
+      },
+      "forward-after": {
+        "actor": [
+          17168,
+          14088,
+          14019,
+          10767,
+          4991,
+          456,
+          3064
+        ],
+        "opponent": [
+          18100,
+          14623,
+          11592,
+          7484,
+          5065,
+          4639,
+          3444
+        ],
+        "seconds": 3676.82919921875,
+        "summed_horizontal_impulses": [
+          2661.739112241685,
+          4382.11601896619
+        ]
+      },
+      "intact": {
+        "actor": [
+          30722,
+          25298,
+          24124,
+          17549,
+          9465,
+          9273,
+          5414
+        ],
+        "opponent": [
+          33561,
+          23709,
+          21395,
+          19040,
+          9028,
+          7838,
+          9818
+        ],
+        "seconds": 7187.307503417969,
+        "summed_horizontal_impulses": [
+          8284.862071875303,
+          7583.322562973244
+        ]
+      },
+      "no-hurt-jump": {
+        "actor": [
+          57851,
+          46606,
+          44419,
+          33281,
+          17779,
+          17330,
+          11232
+        ],
+        "opponent": [
+          60011,
+          46131,
+          39932,
+          35494,
+          17322,
+          15565,
+          13832
+        ],
+        "seconds": 13670.058360351562,
+        "summed_horizontal_impulses": [
+          15325.89365695036,
+          14217.157097501326
+        ]
+      }
+    },
+    "trade-wtap": {
+      "click-after": {
+        "actor": [
+          18312,
+          9747,
+          7679,
+          4283,
+          3208,
+          2855,
+          8530
+        ],
+        "opponent": [
+          19621,
+          8876,
+          6475,
+          3292,
+          3049,
+          2652,
+          10722
+        ],
+        "seconds": 2961.583234375,
+        "summed_horizontal_impulses": [
+          2791.1475401807884,
+          2681.9805137255416
+        ]
+      },
+      "forward-after": {
+        "actor": [
+          43447,
+          37328,
+          37220,
+          24825,
+          13017,
+          256,
+          6103
+        ],
+        "opponent": [
+          57952,
+          44265,
+          33187,
+          18726,
+          12665,
+          8798,
+          13659
+        ],
+        "seconds": 8768.393141601562,
+        "summed_horizontal_impulses": [
+          6894.189513085883,
+          10235.195756961382
+        ]
+      },
+      "intact": {
+        "actor": [
+          6479,
+          4792,
+          4327,
+          2646,
+          1938,
+          1836,
+          1679
+        ],
+        "opponent": [
+          10608,
+          4102,
+          2919,
+          1647,
+          1503,
+          1338,
+          6476
+        ],
+        "seconds": 1595.3241882324219,
+        "summed_horizontal_impulses": [
+          1677.3473666544205,
+          1346.0352270735334
+        ]
+      },
+      "no-hurt-jump": {
+        "actor": [
+          6964,
+          5040,
+          4630,
+          2928,
+          2099,
+          1983,
+          1916
+        ],
+        "opponent": [
+          11544,
+          4502,
+          3207,
+          1835,
+          1624,
+          1418,
+          7013
+        ],
+        "seconds": 1736.2727622070313,
+        "summed_horizontal_impulses": [
+          1817.0868101312979,
+          1441.972975368557
+        ]
+      }
+    }
+  }
+}
