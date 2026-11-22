@@ -9,17 +9,26 @@ import java.util.regex.Pattern;
 public final class DuelHudPing {
     private static final Pattern PAIR=Pattern.compile("RTT (\\d+)/(\\d+) ms\\b");
     static final class Reading {
-        String match;
+        String match, lastBar, staleBar;
         double own,opponent=Double.NaN;
         double observe(String next,boolean first,double local,String bar){
-            if(!next.equals(match)||own!=local){match=next;own=local;opponent=Double.NaN;}
-            double published=read(bar,first,local);
-            if(Double.isFinite(published))opponent=published;
+            if(!next.equals(match)){
+                staleBar=lastBar;
+                match=next;own=local;opponent=Double.NaN;
+            }else if(own!=local){
+                own=local;opponent=Double.NaN;
+            }
+            if(bar!=null && !bar.equals(staleBar)){
+                staleBar=null;
+                double published=read(bar,first,local);
+                if(Double.isFinite(published))opponent=published;
+            }
+            lastBar=bar;
             return opponent;
         }
     }
     private static final Reading current=new Reading();
-    private static String lastMatch;
+    private static String lastMatch, seededMatch;
     private static DuelNetwork seededLeague;
     private static double previous=Double.NaN;
     static double read(String bar,boolean first,double own){
@@ -31,12 +40,13 @@ public final class DuelHudPing {
     public static int step(DuelNetwork network,double x,double y,double z,double tx,double ty,double tz,
                            double vx,double vy,double vz,boolean ground,boolean sprint,
                            double ownAge,double targetAge,double own){
-        if(network.league()!=null && network!=seededLeague){
+        if(network.league()!=null && (network!=seededLeague || !Client.match.equals(seededMatch))){
             String seat=Client.controls.getProperty("archive_side","");
             long seed=(Client.match+"#"+seat).hashCode();
             network.league().seed(seed);
             Client.log(Compat.map("type","sumo_league_seed","match",Client.match,"seed",seed));
             seededLeague=network;
+            seededMatch=Client.match;
         }
         double opponent=Double.NaN;
         if(DuelNetwork.study(network.family())||network.league()!=null){

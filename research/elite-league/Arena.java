@@ -22,31 +22,44 @@ final class Arena {
             return create(rtt,rtt,wake,mmc,diameter,mmc?9:10);
         }
         DuelEnv.Player create(int rtt,int opponentRtt,int wake,boolean mmc,int diameter,int freshTicks){
+            return create(rtt,opponentRtt,wake,mmc,diameter,freshTicks,null,0);
+        }
+        DuelEnv.Player create(int rtt,int opponentRtt,int wake,boolean mmc,int diameter,int freshTicks,lab.RecordedSumoMap map,double clickIntervalMs){
             if(model!=null)return new Neural(model,rtt,opponentRtt);
-            if(name.equals("wtap-sumo"))return new SumoWtap(rtt,freshTicks);
+            if(name.equals("wtap-sumo"))return new SumoWtap(rtt,freshTicks,diameter,map,clickIntervalMs);
             if(name.startsWith("legacy-"))return new HistoricalMovement(name.substring(7),rtt,opponentRtt,freshTicks);
-            if(NATIVE_STYLES.contains(name))
-                return new StrafeOpponent(name,rtt,mmc,diameter);
+            if(NATIVE_STYLES.contains(name)){
+                int cps=clickIntervalMs>0?(int)Math.max(1,Math.round(1000.0/clickIntervalMs)):Integer.getInteger("league.cps",20);
+                return new StrafeOpponent(name,rtt,mmc,diameter,freshTicks,cps);
+            }
             if(name.equals("select")||name.equals("counterstrafe"))return new Sparring(name,rtt);
             if(name.equals("pressure")){var p=new DuelEnv.Player("hold",5168,rtt,wake);return p;}
             return new DuelEnv.Player(name,0,rtt,wake);
         }
     }
     static final class SumoWtap extends DuelEnv.Player {
-        private final int freshTicks;
+        private final int freshTicks, diameter;
+        private final lab.RecordedSumoMap map;
+        private final double clickIntervalMs;
         private final SumoWtapController controller;
         private double time=Double.NEGATIVE_INFINITY, lastPress=Double.NEGATIVE_INFINITY;
         private double targetX, targetZ, targetVx, targetVz;
         private boolean queued;
 
         SumoWtap(int rtt,int freshTicks){
+            this(rtt,freshTicks,lab.SumoFootprint.DEFAULT,null,0);
+        }
+        SumoWtap(int rtt,int freshTicks,int diameter,lab.RecordedSumoMap map,double clickIntervalMs){
             super("wtap-sumo",0,rtt,0);
             this.freshTicks=freshTicks;
-            controller=new SumoWtapController();
+            this.diameter=diameter;
+            this.map=map;
+            this.clickIntervalMs=clickIntervalMs>0?clickIntervalMs:Math.ceil(1e9/Integer.getInteger("league.cps",7))/1e6;
+            controller=map!=null?new SumoWtapController(map):new SumoWtapController(diameter);
         }
         private SumoWtap(SumoWtap p){
             super(p.style,0,p.rtt,p.wake);
-            freshTicks=p.freshTicks;
+            freshTicks=p.freshTicks;diameter=p.diameter;map=p.map;clickIntervalMs=p.clickIntervalMs;
             controller=new SumoWtapController(p.controller);
             time=p.time;lastPress=p.lastPress;firstClick=p.firstClick;queued=p.queued;
             targetX=p.targetX;targetZ=p.targetZ;targetVx=p.targetVx;targetVz=p.targetVz;
@@ -60,9 +73,8 @@ final class Arena {
             }
             time=o.time();targetX=o.targetX();targetZ=o.targetZ();
             var q=o.own();
-            double interval=Math.ceil(1e9/Integer.getInteger("league.cps",7))/1e6;
             var decision=controller.decide(time,o.lastTargetHurtTime(),o.lastContactTime(),rtt,freshTicks,
-                interval,lastPress,queued,o.sprint(),q.onGround(),q.x(),q.z(),q.vx(),q.vz(),targetX,targetZ,targetVx,targetVz,o.nearest(),3);
+                clickIntervalMs,lastPress,queued,o.sprint(),q.onGround(),q.x(),q.z(),q.vx(),q.vz(),targetX,targetZ,targetVx,targetVz,o.nearest(),3);
             return new PeriodicComboClock.Control(decision.forward()?2:0,0,true);
         }
         @Override public boolean injected(PeriodicComboClock.Observation o,double t){
@@ -70,9 +82,8 @@ final class Arena {
             return super.injected(o,t);
         }
         @Override public void consumed(PeriodicComboClock.Observation o,long id){queued=false;}
-        @Override public PeriodicComboClock.Control movement(PeriodicComboClock.Control issued){
-            controller.moved(time,issued.key()==2);
-            return issued;
+        @Override public void moved(PeriodicComboClock.Observation after){
+            controller.moved(after.time(),after.sprint());
         }
     }
     static class Neural extends DuelEnv.Player{
@@ -88,11 +99,12 @@ final class Arena {
             handled=p.handled;releaseUntil=p.releaseUntil;jumps=p.jumps;
         }
         @Override Neural copy(){return new Neural(this);}
+        protected double effectiveOpponentRtt(PeriodicComboClock.Observation o){return opponentRtt;}
         @Override public PeriodicComboClock.Control input(PeriodicComboClock.Observation o){
             var q=o.own();
             net.localTiming(o.time(),o.time()-lastPress);
             int action=net.step(q.x(),q.y(),q.z(),o.targetX(),o.targetY(),o.targetZ(),q.vx(),q.vy(),q.vz(),q.onGround(),
-                o.sprint(),o.time()-o.lastOwnHurtTime(),o.time()-o.lastTargetHurtTime(),rtt,opponentRtt);
+                o.sprint(),o.time()-o.lastOwnHurtTime(),o.time()-o.lastTargetHurtTime(),rtt,effectiveOpponentRtt(o));
             if(shadow){
                 var w=super.input(o);
                 net.applied(DuelNetwork.pack(w.key(),(int)Math.signum(w.strafe()),w.click(),w.jump()));
@@ -132,9 +144,12 @@ final class Arena {
         double game(Fighter fighter){return round(fighter).reward();}
         DuelEnv.Game round(Fighter fighter){
             var config=env.initial.config;
+            var disk=config.platform.disk();
+            lab.RecordedSumoMap map=disk!=null && disk.terrain() instanceof lab.RecordedCollisions rc ? rc.map : null;
+            double intervalMs=env.initial.timing.clickIntervalNanos/1e6;
             int ourRtt=first?env.rtt:env.otherRtt,otherRtt=first?env.otherRtt:env.rtt;
-            DuelEnv.Game game=env.new Game(first,fighter.create(ourRtt,otherRtt,0,config.mmc,config.sumoDiameter,config.hitTicks),
-                opponent.create(otherRtt,ourRtt,0,config.mmc,config.sumoDiameter,config.hitTicks));
+            DuelEnv.Game game=env.new Game(first,fighter.create(ourRtt,otherRtt,0,config.mmc,config.sumoDiameter,config.hitTicks,map,intervalMs),
+                opponent.create(otherRtt,ourRtt,0,config.mmc,config.sumoDiameter,config.hitTicks,map,intervalMs));
             game.finish();return game;
         }
     }

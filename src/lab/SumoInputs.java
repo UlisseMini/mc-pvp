@@ -13,9 +13,10 @@ public final class SumoInputs {
     private static double soft(double v){return v/(1+Math.abs(v));}
     private static double clip(double v){return Math.max(-1,Math.min(1,v));}
     // Exact point-to-first-unsupported-cell distance along a horizontal ray, capped at four blocks.
-    static double clearance(double x,double z,double vx,double vz){
+    static double clearance(double x,double z,double vx,double vz){return clearance(x,z,vx,vz,SumoFootprint.DEFAULT);}
+    static double clearance(double x,double z,double vx,double vz,int diameter){
         int bx=(int)Math.floor(x),bz=(int)Math.floor(z);
-        if(!SumoFootprint.cell(bx,bz,13))return 0;
+        if(!SumoFootprint.cell(bx,bz,diameter))return 0;
         double length=Math.hypot(vx,vz);
         if(length<1e-7)return 4;
         double dx=vx/length,dz=vz/length;int sx=dx>0?1:-1,sz=dz>0?1:-1;
@@ -25,7 +26,7 @@ public final class SumoInputs {
             double at=Math.min(tx,tz);
             if(tx==at){bx+=sx;tx+=1/Math.abs(dx);}
             if(tz==at){bz+=sz;tz+=1/Math.abs(dz);}
-            if(!SumoFootprint.cell(bx,bz,13))return Math.max(0,at);
+            if(!SumoFootprint.cell(bx,bz,diameter))return Math.max(0,at);
         }
         return 4;
     }

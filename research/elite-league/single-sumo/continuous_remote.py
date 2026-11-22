@@ -70,11 +70,14 @@ def train_one(g,role):
     families={k:[old['field'][n]['reference'] for n in v] for k,v in old['families'].items()}
     threats=[old['field'][cfg['weakest']]['reference']]
     if role.startswith('main'):
+        confirmed_counters=[]
         for side in ROLES[:2]:
             counter=read(home/side/'result.json')
             if counter['confirmed']:
                 threats.append(counter['policy']['reference'])
-        families['current counters']=[read(home/v/'result.json')['policy']['reference'] for v in ROLES[:2]]
+                confirmed_counters.append(counter['policy']['reference'])
+        if confirmed_counters:
+            families['current counters']=confirmed_counters
     path=home/role
     if (path/'result.json').exists():
         return
@@ -125,7 +128,14 @@ def run_round(g):
     for role in ROLES:
         n=name(g,role)
         field[n]=read(home/role/'result.json')['policy']
-        families.setdefault('league counters' if role.startswith('counter') else 'league generalists',[]).append(n)
+        fam='league counters' if role.startswith('counter') else 'league generalists'
+        group=families.setdefault(fam,[])
+        group.append(n)
+        if len(group)>6:
+            del group[:-6]
+    # Keep field bounded to active family members plus the incumbent champion.
+    active={cfg['champion']}|{member for members in families.values() for member in members}
+    field={k:v for k,v in field.items() if k in active}
     if not (home/'tournament.json').exists():
         worker=Worker()
         try:

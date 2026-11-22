@@ -116,6 +116,8 @@ public final class PeriodicComboClock {
         default boolean releaseSprintForMove(Observation own){return false;}
         /** Ordinary key changes after click admission and before the native living movement. */
         default Control movement(Control issued){return issued;}
+        /** Called immediately after the local living movement step completes, with post-move sprint state. */
+        default void moved(Observation after){}
     }
     public interface Audit {void event(double time,String event,PeriodicComboFightModel.State state);}
     /** ADMIT time is completion; admittedNanos records the originating poll opportunity. */
@@ -666,7 +668,8 @@ public final class PeriodicComboClock {
                 PeriodicComboFightModel.View v=a?state.ab:state.ba;
                 if(!recordedSchedule&&first){v.step();checkpoint("INTERP"+(a?"A":"B"));}
                 control=Objects.requireNonNull(policies[side].movement(control));
-                PeriodicComboFightModel.replayMove(state,config,a,control.key,control.strafe,(a?state.a:state.b).yaw,control.jump,now);checkpoint("MOVE"+(a?"A":"B"));
+                PeriodicComboFightModel.replayMove(state,config,a,control.key,control.strafe,(a?state.a:state.b).yaw,control.jump,now);
+                policies[side].moved(observation(a));checkpoint("MOVE"+(a?"A":"B"));
                 if(!recordedSchedule&&!first)v.step();ticks[side]++;selectionReady[side]=false;name=recordedSchedule||first?"AFTER_MOVE":"INTERP"+(a?"A":"B");
             }
             else if(k<8){PeriodicComboFightModel.replayFlush(state,config,a,now);name="FLUSH"+(a?"A":"B");}

@@ -5,13 +5,23 @@ public final class SumoWtapController {
     private static final double TICK_MS = 50, REACH_TOLERANCE = .12;
     private enum Reset { READY, RELEASE, RESUME }
 
+    private final int diameter;
+    private final RecordedSumoMap map;
     private Reset reset = Reset.READY;
     private double seenHurt = Double.NEGATIVE_INFINITY, rearmed = Double.NEGATIVE_INFINITY;
     private boolean resetOwed;
 
-    public SumoWtapController() {}
+    public SumoWtapController() { this(SumoFootprint.DEFAULT, null); }
+    public SumoWtapController(int diameter) { this(diameter, null); }
+    public SumoWtapController(RecordedSumoMap map) { this(SumoFootprint.DEFAULT, map); }
+    public SumoWtapController(int diameter, RecordedSumoMap map) {
+        this.diameter = diameter;
+        this.map = map;
+    }
 
     public SumoWtapController(SumoWtapController other) {
+        diameter = other.diameter;
+        map = other.map;
         reset = other.reset;
         seenHurt = other.seenHurt;
         rearmed = other.rearmed;
@@ -81,10 +91,10 @@ public final class SumoWtapController {
         }
     }
 
-    private static boolean supports(double x, double z) {
+    private boolean supports(double x, double z) {
         for (int bx = (int)Math.floor(x - .3); bx < x + .3; bx++) {
             for (int bz = (int)Math.floor(z - .3); bz < z + .3; bz++) {
-                if (SumoFootprint.cell(bx, bz, SumoFootprint.DEFAULT)) return true;
+                if (map != null ? map.state(bx, 0, bz) != 0 : SumoFootprint.cell(bx, bz, diameter)) return true;
             }
         }
         return false;

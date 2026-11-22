@@ -8,18 +8,24 @@ final class StrafeOpponent extends DuelEnv.Player {
     private final SumoModel.Bot bot;
     private interface Event {void apply(SumoModel.Bot replay);}
     private final List<Event> history=new ArrayList<>();
+    private final int freshTicks, cps;
     StrafeOpponent(int rtt){this("zest-strafe",rtt,true,DuelEnv.regulationDiameter());}
     StrafeOpponent(String name,int rtt,boolean mmc,int diameter){
+        this(name,rtt,mmc,diameter,mmc?9:10,Integer.getInteger("league.cps",20));
+    }
+    StrafeOpponent(String name,int rtt,boolean mmc,int diameter,int freshTicks,int cps){
         super(name,0,rtt,0);
+        this.freshTicks=freshTicks;
+        this.cps=cps;
         // The archived client's displacement controller estimates width by doubling
         // the number of visible center-row blocks west of the anchor. An odd ring
         // therefore gives it a 12-block estimate. World collision still uses all 137 cells.
         int observedWidth=2*(diameter/2);
-        try{bot=new SumoModel.Bot(name,rtt,9,20,mmc,observedWidth);}
+        try{bot=new SumoModel.Bot(name,rtt,freshTicks,cps,mmc,observedWidth);}
         catch(IOException ex){throw new UncheckedIOException(ex);}
     }
     @Override public StrafeOpponent copy(){
-        StrafeOpponent c=new StrafeOpponent(style,rtt,bot.mmc,bot.diameter);
+        StrafeOpponent c=new StrafeOpponent(style,rtt,bot.mmc,bot.diameter,freshTicks,cps);
         if(!c.bot.options.equals(bot.options))throw new IllegalStateException("Opponent configuration changed since the opening");
         // Some displacement decisions depend on consumed attacks and impact callbacks between input heads.
         for(Event e:history)e.apply(c.bot);

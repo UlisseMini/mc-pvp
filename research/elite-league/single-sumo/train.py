@@ -14,7 +14,7 @@ def fit(path, total, schedule=training_schedule, warm_override=None):
     cfg=json.loads((path/"config.json").read_text());torch.manual_seed(cfg["seed"])
     net=Actor(cfg["kind"])
     labels=cfg.get("auxiliary_opponents",[])
-    classifier=nn.Linear(32,len(labels)) if labels else None
+    classifier=nn.Linear(net.width,len(labels)) if labels else None
     params=list(net.parameters())+(list(classifier.parameters()) if labels else [])
     opt=torch.optim.Adam(params,lr=.00035)
     state=path/"trainer.pt";step=0;logs=[]
@@ -27,8 +27,6 @@ def fit(path, total, schedule=training_schedule, warm_override=None):
     elif cfg["warm"]:
         previous=torch.load(ROOT/(warm_override or cfg["warm"]),map_location="cpu",weights_only=False)
         net.load_state_dict(previous["net"])
-        if cfg["role"] in ("main","mlp") and "opt" in previous and "logs" in previous and "auxiliary" not in previous:
-            opt.load_state_dict(previous["opt"])
     roller=Worker()
     try:
         while step<total:

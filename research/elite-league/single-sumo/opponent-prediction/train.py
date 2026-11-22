@@ -54,6 +54,7 @@ class Predictor(nn.Module):
         self.foes = foes
         self.short = nn.Sequential(nn.Linear(width*len(RECENT),64),nn.SiLU())
         self.memory = nn.GRU(width,32,batch_first=True) if kind=='gru' else None
+        self.mem_drop = nn.Dropout(0.25) if kind=='gru' else None
         extra = 32 if kind=='gru' else foes if kind=='id' else 0
         self.head = nn.Sequential(nn.Linear(64+extra,48),nn.SiLU(),nn.Linear(48,sum(SIZES)))
 
@@ -67,7 +68,7 @@ class Predictor(nn.Module):
                 # The feedforward path already sees the recent eight ticks.
                 h = F.pad(past,(0,0,8,0))[:,:x.shape[1]]
                 if self.training:
-                    h = h*(torch.rand(len(x),1,1)>.12)
+                    h = self.mem_drop(h)*(torch.rand(len(x),1,1)>.15)
             local = torch.cat((local,h),-1)
         elif self.kind=='id':
             identity = F.one_hot(foe,self.foes).float()
@@ -103,7 +104,7 @@ def measure(model,panel,ids,mean,scale,reset=False,store=False):
     return (loss,correct) if store else total/max(1,count)
 
 
-def fit(name, kind, train, valid, train_ids, val_ids, mean, scale, setup, seed, epochs=None):
+def fit(name, kind, train, valid, train_ids, val_ids, mean, scale, setup, seed, epochs=None, fixed_epoch=None, weight_decay=None):
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
     model = Predictor(kind,train.x.shape[1],len(setup['foes']))
@@ -112,9 +113,11 @@ def fit(name, kind, train, valid, train_ids, val_ids, mean, scale, setup, seed, 
         data = torch.load(path,map_location='cpu',weights_only=True)
         model.load_state_dict(data['weights'])
         return model,data['epoch']
-    opt = torch.optim.AdamW(model.parameters(),lr=.002,weight_decay=.005)
+    wd = (.02 if (kind=='gru' and name.startswith('unseen_')) else .005) if weight_decay is None else weight_decay
+    opt = torch.optim.AdamW(model.parameters(),lr=.002,weight_decay=wd)
     best = math.inf
-    for epoch in range(1,(epochs or setup['epochs'])+1):
+    total_epochs = fixed_epoch or epochs or setup['epochs']
+    for epoch in range(1,total_epochs+1):
         model.train()
         for ids in train.batches(train_ids,32,rng):
             x,short,y,foe,rows,_ = train.batch(ids,mean,scale)
@@ -125,17 +128,56 @@ def fit(name, kind, train, valid, train_ids, val_ids, mean, scale, setup, seed, 
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(),1.0)
             opt.step()
-        score = measure(model,valid,val_ids,mean,scale)
-        if score<best:
-            best = score
-            best_epoch = epoch
-            best_state = {k:v.detach().clone() for k,v in model.state_dict().items()}
+        if fixed_epoch is None:
+            score = measure(model,valid,val_ids,mean,scale)
+            if score<best:
+                best = score
+                best_epoch = epoch
+                best_state = {k:v.detach().clone() for k,v in model.state_dict().items()}
+    if fixed_epoch is not None:
+        best_epoch = fixed_epoch
+        best_state = {k:v.detach().clone() for k,v in model.state_dict().items()}
+        best = measure(model,valid,val_ids,mean,scale)
     model.load_state_dict(best_state)
     temporary = path.with_suffix('.tmp')
     torch.save(dict(weights=best_state,epoch=best_epoch),temporary)
     temporary.replace(path)
     print(f'{seed} {name} epoch {best_epoch}, validation {best:.4f}',flush=True)
     return model,best_epoch
+
+
+def select_unseen_epoch(kind, support, validation, mean, scale, setup, seed):
+    """Select stopping epoch by 3-fold held-out-family CV across the seen families (no closed-set leakage)."""
+    seen_families = sorted({setup['families'][f] for f in setup['foes'] if setup['families'][f] not in setup['unseen']})
+    folds = [set(seen_families[i::3]) for i in range(3)]
+    foe_fam = np.array([setup['families'][f] for f in setup['foes']])
+    sup_fam = foe_fam[support.foe]
+    val_fam = foe_fam[validation.foe]
+    epochs = setup['epochs']
+    totals = np.zeros(epochs, dtype=np.float64)
+    wd = .02 if kind == 'gru' else .005
+    for fold_idx, held in enumerate(folds):
+        tr_ids = np.flatnonzero((~support.unseen) & (~np.isin(sup_fam, list(held))))
+        va_ids = np.flatnonzero((~validation.unseen) & np.isin(val_fam, list(held)))
+        torch.manual_seed(seed + 1009 * (fold_idx + 1))
+        rng = np.random.default_rng(seed + 1009 * (fold_idx + 1))
+        model = Predictor(kind, support.x.shape[1], len(setup['foes']))
+        opt = torch.optim.AdamW(model.parameters(), lr=.002, weight_decay=wd)
+        for epoch in range(epochs):
+            model.train()
+            for ids in support.batches(tr_ids, 32, rng):
+                x, short, y, foe, rows, _ = support.batch(ids, mean, scale)
+                weight = (y[:, :, 0] >= 0) * (1 + torch.from_numpy(support.hard[rows]).float())
+                per_head = losses(model(x, short, foe), y).mean(-1)
+                loss = ((per_head * weight).sum(1) / weight.sum(1).clamp_min(1)).mean()
+                opt.zero_grad()
+                loss.backward()
+                nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                opt.step()
+            totals[epoch] += measure(model, validation, va_ids, mean, scale)
+    best_epoch = int(np.argmin(totals)) + 1
+    print(f'{seed} {kind} family-CV curve: {[round(v/len(folds), 4) for v in totals]} -> epoch {best_epoch}', flush=True)
+    return best_epoch
 
 
 def summarize(panel, loss, correct, mask):
@@ -240,7 +282,10 @@ def run(seed, setup, panels):
             ('matched_mlp','mlp',full,valid,scale['all']),
             ('matched_gru','gru',full,valid,scale['all']),
             ('matched_id','id',full,valid,scale['all'])):
-        model,epochs[name] = fit(name,kind,support,validation,train_ids,val_ids,*stats,setup,seed)
+        fixed_epoch = None
+        if name.startswith('unseen_') and not (OUT/'weights'/f'{seed}-{name}.pt').exists():
+            fixed_epoch = select_unseen_epoch(kind, support, validation, *stats, setup, seed)
+        model,epochs[name] = fit(name,kind,support,validation,train_ids,val_ids,*stats,setup,seed,fixed_epoch=fixed_epoch)
         ids = test_ids[test.unseen] if name.startswith('unseen_') else test_ids
         predictions[name] = measure(model,test,ids,*stats,store=True)
         if name=='unseen_gru':

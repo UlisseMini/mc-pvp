@@ -22,9 +22,14 @@ public final class RuntimeParity {
                     ownAge+=49.8;targetAge+=49.8;if(t%17==9)ownAge=4;if(t%19==10)targetAge=19;
                     boolean sprint=t%5<3,ground=y==12;
                     if(t==9 || t==90)fork=n.copy();
+                    double pressAge=t==0?Double.POSITIVE_INFINITY:((t%3)*50.0+12.5);
+                    n.localTiming(t*50.0,pressAge);
                     int action=n.step(x,y,z,tx,ty,tz,vx,vy,vz,ground,sprint,ownAge,targetAge,rtt);
-                    if(fork!=null && fork.step(x,y,z,tx,ty,tz,vx,vy,vz,ground,sprint,ownAge,targetAge,rtt)!=action)
-                        throw new AssertionError("Different decision after copy at "+t);
+                    if(fork!=null){
+                        fork.localTiming(t*50.0,pressAge);
+                        if(fork.step(x,y,z,tx,ty,tz,vx,vy,vz,ground,sprint,ownAge,targetAge,rtt)!=action)
+                            throw new AssertionError("Different decision after copy at "+t);
+                    }
                     // Some prefixes execute W-tap during shadow observation.
                     int applied=t%11==0?DuelNetwork.pack(t%3==0?0:2,0,true,false):action;
                     n.applied(applied);if(fork!=null)fork.applied(applied);

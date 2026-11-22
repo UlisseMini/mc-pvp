@@ -98,9 +98,8 @@ def read_side(m, s, d):
 def native_features(rows,presses,contacts,d,side):
     floor = d['sumo_arena']['top_y']
     center = d['sumo_arena']['center_offset']
-    # InputStudy simulates arena zero at (4096.5, 12, .5). Translate native
-    # lanes to that same world frame before evaluating the frozen features.
-    cx,cz = 4096*(d['arena']+1)+center-4096.5,center-.5
+    # Center every arena on its own (centerX, floorY, centerZ) matching PredictionTrace.
+    cx,cz = 4096*(d['arena']+1)+center,center
     last = None
     previous = (0,0,False)
     observations = []
@@ -120,7 +119,7 @@ def native_features(rows,presses,contacts,d,side):
             return min(1.5,(at-events[i])/1e9) if i>=0 else 1.5
 
         key,lateral,jump = previous
-        observations.append([gap,nearest,y-floor+8,ty-floor+8,(dx*vx+dz*vz)/norm,vy,(dz*vx-dx*vz)/norm,
+        observations.append([gap,nearest,y-floor,ty-floor,(dx*vx+dz*vz)/norm,vy,(dz*vx-dx*vz)/norm,
             ground,sprint,(dx*mx+dz*mz)/norm,my,(dz*mx-dx*mz)/norm,hypot(x,z),hypot(tx,tz),
             (dx*x+dz*z)/norm,(dz*x-dx*z)/norm,np.clip(own_hurt/1000,0,1.5),np.clip(target_hurt/1000,0,1.5),
             seen_age(contacts),seen_age(presses),min(.25,elapsed/1000),d[f'initial_ping_{side}']/1000,

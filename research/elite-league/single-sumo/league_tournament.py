@@ -78,7 +78,7 @@ def tournament(worker,field,families,incumbent,path):
         if a!=b:matrix[b][a]=stats([[i,j,'b' if s=='a' else 'a',y,x,1-v,end] for i,j,s,x,y,v,end in rows])
     ranks=[]
     for name,row in matrix.items():
-        family={f:float(np.mean([row[n]['score'] for n in ns])) for f,ns in families.items()}
+        family={f:float(np.mean([row[n]['score'] for n in ([m for m in ns if m!=name] or ns)])) for f,ns in families.items()}
         weakest=min(family,key=family.get);avg=float(np.mean(list(family.values())))
         ranks.append(dict(name=name,field_mean=avg,worst_family=weakest,worst=family[weakest],merit=(avg+family[weakest])/2,
                           family=family,vs_wtap=row['wtap'],wtap_vs_weakest=float(np.mean([matrix['wtap'][n]['score'] for n in families[weakest]]))))

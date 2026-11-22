@@ -20,6 +20,7 @@ final class PredictionTrace {
         PeriodicComboClock.Control previous = new PeriodicComboClock.Control(0, 0, false, false);
         double lastPress = Double.NEGATIVE_INFINITY;
         double lastHead = Double.NaN;
+        double centerX, centerZ, floorY;
         double lastTargetX, lastTargetY, lastTargetZ;
 
         Recorder(DuelEnv.Player policy, boolean observe) {
@@ -43,7 +44,14 @@ final class PredictionTrace {
 
         private float[] features(PeriodicComboClock.Observation o) {
             var p = o.own();
-            double dx = o.targetX()-p.x(), dz = o.targetZ()-p.z(), gap = Math.hypot(dx,dz);
+            if (Double.isNaN(lastHead)) {
+                centerX = (p.x() + o.targetX()) * 0.5;
+                centerZ = (p.z() + o.targetZ()) * 0.5;
+                floorY = Math.min(p.y(), o.targetY());
+            }
+            double ax = p.x() - centerX, az = p.z() - centerZ;
+            double bx = o.targetX() - centerX, bz = o.targetZ() - centerZ;
+            double dx = bx - ax, dz = bz - az, gap = Math.hypot(dx,dz);
             double n = Math.max(.001,gap);
             double elapsed = Double.isNaN(lastHead) ? 50 : Math.max(8,o.time()-lastHead);
             double tx = Double.isNaN(lastHead) ? 0 : (o.targetX()-lastTargetX)*50/elapsed;
@@ -51,12 +59,12 @@ final class PredictionTrace {
             double tz = Double.isNaN(lastHead) ? 0 : (o.targetZ()-lastTargetZ)*50/elapsed;
             lastHead = o.time(); lastTargetX = o.targetX(); lastTargetY = o.targetY(); lastTargetZ = o.targetZ();
             return new float[] {
-                (float)gap, (float)o.nearest(), (float)(p.y()-4), (float)(o.targetY()-4),
+                (float)gap, (float)o.nearest(), (float)(p.y()-floorY), (float)(o.targetY()-floorY),
                 (float)((dx*p.vx()+dz*p.vz())/n), (float)p.vy(), (float)((dz*p.vx()-dx*p.vz())/n),
                 p.onGround()?1:0, o.sprint()?1:0,
                 (float)((dx*tx+dz*tz)/n), (float)ty, (float)((dz*tx-dx*tz)/n),
-                (float)Math.hypot(p.x(),p.z()), (float)Math.hypot(o.targetX(),o.targetZ()),
-                (float)((dx*p.x()+dz*p.z())/n), (float)((dz*p.x()-dx*p.z())/n),
+                (float)Math.hypot(ax,az), (float)Math.hypot(bx,bz),
+                (float)((dx*ax+dz*az)/n), (float)((dz*ax-dx*az)/n),
                 age(o.time(),o.lastOwnHurtTime()), age(o.time(),o.lastTargetHurtTime()),
                 age(o.time(),o.lastContactTime()), age(o.time(),lastPress),
                 (float)Math.min(.25,elapsed/1000), rtt/1000f,

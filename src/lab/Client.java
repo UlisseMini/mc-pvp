@@ -435,7 +435,10 @@ public final class Client {
                 sprintPulse=true;
                 ModelController.reset();
                 momentum.reset();
-                sumoWtap=controls.getProperty("kind", "").equals("sumo-wtap") ? new SumoWtapController() : null;
+                sumoWtap=controls.getProperty("kind", "").equals("sumo-wtap") ?
+                    (controls.containsKey("sumo_map") ? new SumoWtapController(RecordedSumoMap.load(controls.getProperty("sumo_map"))) :
+                     controls.containsKey("sumo_diameter") ? new SumoWtapController(DuelSettings.sumoDiameter(controls.getProperty("sumo_diameter"))) :
+                     new SumoWtapController()) : null;
                 sumoContact=sumoConsumedPress=0;
                 orbit.reset();
                 cycle.reset();

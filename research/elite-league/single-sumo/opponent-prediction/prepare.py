@@ -3,6 +3,7 @@
 from collections import Counter
 import hashlib
 import json
+import os
 from pathlib import Path
 import random
 import struct
@@ -14,7 +15,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[3]
 LEAGUE = HERE.parent
 BUILD = ROOT/'build/elite-league/single-sumo'
-OUT = BUILD/'opponent-prediction'
+OUT = Path(os.environ['OPPONENT_PRED_OUT']) if 'OPPONENT_PRED_OUT' in os.environ else BUILD/'opponent-prediction'
 ACTORS = ('wtap','hold','sumo-cap-ramp','v4-ppo-g0496')
 UNSEEN = ('7 CPS responses','recurrent archive','style switches')
 RECENT = (0,1,3,7)
@@ -134,9 +135,12 @@ def main():
     registration = OUT/'protocol.json'
     frozen_path = HERE/'protocol.json'
     if not registration.exists():
-        save(registration,load(frozen_path) if frozen_path.exists() else register())
+        proto = load(frozen_path) if frozen_path.exists() else register()
+        if os.environ.get('OPPONENT_PRED_USE_CURRENT_SIM'):
+            proto['source'] = load(BUILD/'sim-current.json')['directory']
+        save(registration,proto)
     setup = load(registration)
-    if frozen_path.exists() and load(frozen_path)!=setup:
+    if frozen_path.exists() and not os.environ.get('OPPONENT_PRED_USE_CURRENT_SIM') and load(frozen_path)!=setup:
         raise ValueError('Cached data uses a different experiment registration')
     if any(hash_file(ROOT/path)!=digest for path,digest in setup['clock_hashes'].items()):
         raise ValueError('Frozen timing recording changed')

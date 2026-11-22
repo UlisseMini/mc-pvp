@@ -41,6 +41,9 @@ final class NetworkChecks {
             var n=new DuelNetwork(family,w);var m=DuelNetwork.decode(DuelNetwork.encode(family,w));DuelNetwork fork=null;
             for(int i=0;i<100;i++){
                 if(i==35)fork=n.copy();
+                double pressAge=i==0?Double.POSITIVE_INFINITY:(i%4)*37.5;
+                n.localTiming(i*50.0,pressAge);
+                m.localTiming(i*50.0,pressAge);
                 int a=n.step(3+i*.125,1,2,4,1+i%2,2,.375,.0625,0,i%3==0,true,i*10,650,80);
                 // Reverse spawn side and translate to a different arena; retain egocentric inputs.
                 int b=m.step(4096-3-i*.125,12,-2,4096-4,12+i%2,-2,-.375,.0625,0,i%3==0,true,i*10,650,80);
@@ -49,6 +52,7 @@ final class NetworkChecks {
                 for(int z=0;z<x.length;z++)if(x[z]!=y[z])throw new AssertionError("Egocentric feature "+z+" differs: "+x[z]+" / "+y[z]);
                 n.applied(a);m.applied(b);
                 if(fork!=null){
+                    fork.localTiming(i*50.0,pressAge);
                     int f=fork.step(3+i*.125,1,2,4,1+i%2,2,.375,.0625,0,i%3==0,true,i*10,650,80);
                     if(f!=a)throw new AssertionError("Unfaithful policy fork");
                     fork.applied(f);

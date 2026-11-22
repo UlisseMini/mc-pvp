@@ -59,6 +59,7 @@ class Actor(nn.Module):
         super().__init__()
         self.kind=kind
         width=32 if kind=="gru" else 180
+        self.width=width
         if kind=="gru":
             self.encoder=nn.GRU(25,width)
             self.encoder.bias_hh_l0.requires_grad_(False)
@@ -102,18 +103,39 @@ def log_prob(y, ground, action):
     jump=F.logsigmoid(torch.where(action>=24,y[:,3],-y[:,3])/.25)
     return ordinal_logit(y[:,0],-.65,0,walk)+torch.where(walk==1,sprint,0.)+ordinal_logit(y[:,4],-.45,.45,side)+click+torch.where(ground,jump,0.)
 
+def ordinal_entropy(x, low, high):
+    a=(low-x)/.25; b=(x-high)/.25
+    lp_lo=F.logsigmoid(a); lp_hi=F.logsigmoid(b)
+    lp_mid=F.logsigmoid(-a)+F.logsigmoid(-b)+math.log(-math.expm1((low-high)/.25))
+    return -(lp_lo.exp()*lp_lo + lp_mid.exp()*lp_mid + lp_hi.exp()*lp_hi)
+
+def bernoulli_entropy(logit):
+    lp1=F.logsigmoid(logit); lp0=F.logsigmoid(-logit)
+    return -(lp1.exp()*lp1 + lp0.exp()*lp0)
+
+def policy_entropy(y, ground):
+    p_fwd=torch.sigmoid(y[:,0]/.25)
+    h_walk=ordinal_entropy(y[:,0],-.65,0)
+    h_sprint=p_fwd*bernoulli_entropy(y[:,1]/.25)
+    h_side=ordinal_entropy(y[:,4],-.45,.45)
+    h_click=bernoulli_entropy(y[:,2]/.25)
+    h_jump=torch.where(ground,bernoulli_entropy(y[:,3]/.25),0.)
+    return h_walk+h_sprint+h_side+h_click+h_jump
+
 class Worker:
-    def __init__(self,cps=7,current_runtime=False,runtime_directory=None,map_name=None):
+    def __init__(self,cps=7,current_runtime=False,runtime_directory=None,map_name=None,threads=None):
         if cps not in (7,20):raise ValueError(cps)
         self.map_name=map_name
         self.tmp=tempfile.TemporaryDirectory(dir=BUILD); self.folder=Path(self.tmp.name)
         from build import sim_paths
         cp=str(runtime_directory) if runtime_directory else os.pathsep.join(map(str,sim_paths(training=not current_runtime)))
-        self.proc=subprocess.Popen(["java","-ea",*([f"-Dleague.map={map_name}"] if map_name else []),f"-Dleague.cps={cps}","-XX:ActiveProcessorCount=2","-XX:+UseSerialGC","-Xms128m","-Xmx1400m","-cp",cp,"LeagueWorker","2"],
+        n_threads=int(threads or os.environ.get("SUMO_WORKER_THREADS","2"))
+        self.proc=subprocess.Popen(["java","-ea",*([f"-Dleague.map={map_name}"] if map_name else []),f"-Dleague.cps={cps}",f"-XX:ActiveProcessorCount={n_threads}","-XX:+UseSerialGC","-Xms128m","-Xmx1400m","-cp",cp,"LeagueWorker",str(n_threads)],
                                    cwd=ROOT,text=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE)
-    def run(self, schedule, collect):
+    def run(self, schedule, collect, mask_rtt=True):
         if collect and self.map_name is not None:raise ValueError("Named validation platforms are evaluation-only")
-        return self._rollouts(schedule,collect)
+        mode = ("train" if mask_rtt else "collect") if collect else "eval"
+        return self._rollouts(schedule,mode)
 
     def observe_frozen_evaluation(self, schedule, actor_hash, observe):
         """Feed local observations to a frozen evaluation controller without exporting training rollouts."""
@@ -123,14 +145,15 @@ class Worker:
         if not actor.is_file() or hashlib.sha256(actor.read_bytes()).hexdigest()!=actor_hash:
             raise ValueError("Validation actor differs from its registered weights")
         try:
-            return [(w,ms,observe(rows)) for w,ms,rows in self._rollouts(schedule,True)]
+            return [(w,ms,observe(rows)) for w,ms,rows in self._rollouts(schedule,"collect")]
         finally:
             (self.folder/"results.bin").unlink(missing_ok=True)
 
-    def _rollouts(self, schedule, collect):
+    def _rollouts(self, schedule, mode):
+        if isinstance(mode, bool): mode = "collect" if mode else "eval"
         plan=self.folder/"plan.tsv"; out=self.folder/"results.bin"
         plan.write_text("".join("\t".join(map(str,r))+"\n" for r in schedule))
-        self.proc.stdin.write(f"{'collect' if collect else 'eval'}\t{plan}\t{out}\n"); self.proc.stdin.flush()
+        self.proc.stdin.write(f"{mode}\t{plan}\t{out}\n"); self.proc.stdin.flush()
         if self.proc.stdout.readline().strip()!="OK":raise RuntimeError(f"Java roller exited {self.proc.poll()}")
         data=memoryview(out.read_bytes()); count,=struct.unpack_from(">i",data); pos=4; results=[]
         if count!=len(schedule): raise ValueError("Incomplete rollout")
@@ -172,26 +195,35 @@ def training_schedule(config, weights, step):
         result.append((weights,foe,rng.choice(CLOCKS["train"]),rng.choice("ab"),rng.choice(options),rng.choice(options),action_rng.getrandbits(60),rng.getrandbits(60)))
     return result
 
-def prepare(rollouts):
+def prepare(rollouts, gamma=0.996):
     episodes=[]
     for reward,_,array in rollouts:
+        if len(array)==0:continue
         data=torch.from_numpy(array);v=array[:,31].astype(np.float64)
-        delta=np.empty_like(v);delta[:-1]=v[1:]-v[:-1];delta[-1]=2*reward-1-v[-1]
+        delta=np.empty_like(v);delta[:-1]=gamma*v[1:]-v[:-1];delta[-1]=2*reward-1-v[-1]
         from scipy.signal import lfilter
-        adv=lfilter([1.],[1.,-.97],delta[::-1])[::-1].copy()
+        adv=lfilter([1.],[1.,-gamma*.97],delta[::-1])[::-1].copy()
         advantages=torch.tensor(adv,dtype=torch.float32)
         action=data[:,25].long();logp=log_prob(data[:,26:31],data[:,8]>0,action)
         episodes.append(torch.cat((data[:,:26],logp[:,None],advantages[:,None],(advantages+data[:,31])[:,None],data[:,26:32]),dim=1))
-    flat=torch.cat([e[:,27] for e in episodes]);mean=flat.mean();sd=flat.std(unbiased=False).clamp_min(1e-8)
+    if not episodes:return episodes
+    # Episode-equal normalization so long timeout draws do not dominate advantage scale.
+    ep_w=torch.cat([e.new_full((len(e),),1.0/(len(e)*len(episodes))) for e in episodes])
+    flat=torch.cat([e[:,27] for e in episodes])
+    mean=(ep_w*flat).sum()
+    sd=((ep_w*(flat-mean).pow(2)).sum()).sqrt().clamp_min(1e-8)
     for e in episodes:e[:,27]=(e[:,27]-mean)/sd
     return episodes
 
-def train_update(net,opt,episodes,seed,conditioned=False,style_classifier=None):
+def train_update(net,opt,episodes,seed,conditioned=False,style_classifier=None,ent_coef=0.008):
     rng=random.Random(seed);inds=list(range(len(episodes)));metrics=[];max_error=0.
     for epoch in range(3):
         rng.shuffle(inds)
         for start in range(0,len(inds),8):
-            seq=pack_sequence([episodes[i] for i in inds[start:start+8]],enforce_sorted=False)
+            batch_eps=[episodes[i] for i in inds[start:start+8]]
+            seq=pack_sequence(batch_eps,enforce_sorted=False)
+            w_seq=pack_sequence([e.new_full((len(e),),1.0/(len(e)*len(batch_eps))) for e in batch_eps],enforce_sorted=False)
+            step_w=w_seq.data
             d=seq.data; x=PackedSequence(d[:,:25],seq.batch_sizes,seq.sorted_indices,seq.unsorted_indices)
             if style_classifier is None:
                 y=net.sequences(x,d[:,35].long()) if conditioned else net.sequences(x)
@@ -201,21 +233,23 @@ def train_update(net,opt,episodes,seed,conditioned=False,style_classifier=None):
             if epoch==0 and start==0:
                 max_error=float((y.detach()-d[:,29:35]).abs().max())
                 if max_error>.001:raise ValueError(f"Java/PyTorch on-policy disagreement {max_error}")
-            logratio=log_prob(y,d[:,8]>0,d[:,25].long())-d[:,26]
+            ground=d[:,8]>0
+            logratio=log_prob(y,ground,d[:,25].long())-d[:,26]
             ratio=logratio.exp();adv=d[:,27]
-            pg_loss=torch.maximum(-adv*ratio,-adv*ratio.clamp(.82,1.18)).mean()
-            value_loss=F.mse_loss(y[:,5],d[:,28])
-            loss=pg_loss+.5*value_loss
+            pg_loss=(step_w*torch.maximum(-adv*ratio,-adv*ratio.clamp(.82,1.18))).sum()
+            value_loss=(step_w*(y[:,5]-d[:,28]).pow(2)).sum()
+            ent=(step_w*policy_entropy(y,ground)).sum()
+            loss=pg_loss+.5*value_loss-ent_coef*ent
             parameters=list(net.parameters())
             if style_classifier is not None:
                 observed=d[:,36]>0
                 if observed.any():
                     ce=F.cross_entropy(style_classifier(encoded[observed]),d[observed,35].long(),reduction="none")
-                    loss=loss+.10*(ce*d[observed,36]).sum()/len(inds[start:start+8])
+                    loss=loss+.10*(ce*d[observed,36]).sum()/len(batch_eps)
                 parameters.extend(style_classifier.parameters())
             opt.zero_grad(); loss.backward()
             norm=nn.utils.clip_grad_norm_(parameters,.6,error_if_nonfinite=True)
             opt.step()
             with torch.no_grad():
-                metrics.append([float(loss),float(((ratio-1)-logratio).mean()),float(((ratio-1).abs()>.18).float().mean()),float(norm)])
-    return dict(zip(("loss","kl","clip_fraction","grad_norm"),np.mean(metrics,axis=0).tolist()),parity_max=max_error)
+                metrics.append([float(loss),float((step_w*((ratio-1)-logratio)).sum()),float((step_w*((ratio-1).abs()>.18).float()).sum()),float(norm),float(ent)])
+    return dict(zip(("loss","kl","clip_fraction","grad_norm","entropy"),np.mean(metrics,axis=0).tolist()),parity_max=max_error)

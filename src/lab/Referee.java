@@ -645,6 +645,11 @@ public final class Referee {
         initial.put("bot_click_cap_cps",caps);
         append(m.replay,Map.of("type","start","match",initial));
         EntryDrills.countdown(m,System.currentTimeMillis());
+        long leftInit=TrainingClock.gameMillis(m.start)-TrainingClock.millis();
+        String initScore=leftInit>0?"Starting "+m.mode+" in "+((leftInit+999)/1000)+"...":m.mode;
+        String initPing=" §8| §7RTT "+(int)m.pingA+"/"+(int)m.pingB+" ms";
+        overlay(player(a),initScore+initPing);
+        overlay(player(b),initScore+initPing);
         String rules=m.jumpReset()?"Jump Reset round "+round+". Knock your opponent off to win the round.":
             m.sumo()?"Sumo: bare fists, full health; knock your opponent off the platform. Two-minute limit.":
             m.drillRound>0?"Entry drill #"+round+", "+startGap+" block gap. Rod diamond; automatic repeat.":
@@ -808,6 +813,10 @@ public final class Referee {
             if(who.equals(m.boxingLandmark.subject))p.setProperty("boxing_drill_subject","1");
         }
         p.setProperty("archive_side",who.equals(m.a)?"a":"b");
+        if(m.sumo()){
+            p.setProperty("sumo_diameter",Integer.toString(m.sumoDiameter));
+            if(m.sumoMap!=null)p.setProperty("sumo_map",m.sumoMap.name);
+        }
         p.setProperty("match",m.id);p.setProperty("start_at",Long.toString(TrainingClock.gameMillis(m.start)));p.setProperty("ping",Double.toString(ping));p.setProperty("opponent_ping",Double.toString(oppPing));
         R.writeProperties(DATA.resolve("bots/"+who.substring(7)+"/control.properties"),p);
     }
