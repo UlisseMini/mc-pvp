@@ -80,10 +80,15 @@ def main():
             elif p[0]=='MD:':
                 owner,name=p[3].rsplit('/',1);bot_mappings.append(f'M.{owner}.{name}{p[4]}={names_by_srg.get(name,name)}')
         manifest='Manifest-Version: 1.0\nFMLCorePlugin: practice.bridge.PracticeLoadingPlugin\nFMLCorePluginContainsFMLMod: true\n\n'
-        jar(BUILD/'practice-bridge.jar',shim,[{'modid':'practicebridge','name':'PvP Practice Bridge','description':'Local, reloadable practice HUD and telemetry.','version':'0.4.0','mcversion':'1.8.9','authorList':['PvP Lab']}],{'META-INF/MANIFEST.MF':manifest,'practice/field-names.properties':field_names,'lab/mappings.properties':'\n'.join(bot_mappings)})
+        bow_models = {f'practice/{name}': (SRC/'assets/practice'/name).read_bytes()
+                      for name in ('bow-motion.bin','bridge-motion.bin','bow-hit-chance.bin')}
+        jar(BUILD/'practice-bridge.jar',shim,[{'modid':'practicebridge','name':'PvP Practice Bridge','description':'Local, reloadable practice HUD and telemetry.','version':'0.4.0','mcversion':'1.8.9','authorList':['PvP Lab']}],{'META-INF/MANIFEST.MF':manifest,'practice/field-names.properties':field_names,'lab/mappings.properties':'\n'.join(bot_mappings),**bow_models})
     tests=BUILD/'tests';compile_to(tests,sorted((SRC/'tests').rglob('*.java')),os.pathsep.join(map(str,[api,core,module])))
     run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.Check',BUILD/'practice-module.jar'])
     run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.CombatCoachChecks'])
+    run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.SumoStatsChecks'])
+    run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.BedWarsForecastHistoryCheck'])
+    run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.BedWarsForecastGhostsCheck'])
     if args.install:
         if not args.module_only:
             backup=args.game_dir/'settings-backups'/('practice-bridge-'+str(time.time_ns()))

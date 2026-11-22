@@ -9,6 +9,8 @@ public interface PracticeExtension extends AutoCloseable {
     Frame tick(Snapshot snapshot) throws Exception;
     default void services(PracticeServices services) throws Exception {}
     default void event(PracticeEvent event) throws Exception {}
+    /** Opt out of live remote capture events while retaining the full recording on disk. */
+    default boolean wantsRemoteCaptureEvents() {return true;}
     /** Return null to retain the tick HUD, or return a per-render-frame HUD. */
     default Frame render(float partialTicks,int width,int height) throws Exception {return null;}
     default WorldFrame world(float partialTicks) throws Exception {return null;}

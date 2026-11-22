@@ -22,8 +22,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemSword;
 import net.minecraft.item.ItemFishingRod;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.Vec3;
 
 /** Player melee candidates from the visible world. Swing and look direction are
  * imperfect under packet delay, so neither rules out a nearby player's sword. */
@@ -131,7 +134,8 @@ final class MeleeObservations {
         ItemStack weapon = opponent.func_70694_bm();
         candidate.sword = weapon != null && weapon.func_77973_b() instanceof ItemSword;
         candidate.rod = weapon != null && weapon.func_77973_b() instanceof ItemFishingRod;
-        candidate.hiddenSharpness = candidate.sword && weapon.func_77986_q() == null;
+        NBTTagList enchantments = candidate.sword ? weapon.func_77986_q() : null;
+        candidate.hiddenSharpness = candidate.sword && (enchantments == null || enchantments.func_74745_c() == 0);
         candidate.grounded = opponent.field_70122_E;
         if (candidate.sword) candidate.weaponKey = candidate.id + ":" +
             Item.func_150891_b(weapon.func_77973_b()) + ":" + weapon.func_77978_p();
@@ -177,6 +181,21 @@ final class MeleeObservations {
         int operation = modifier.func_111169_c();
         if (operation == 2) modifiers[2] *= 1 + amount;
         else modifiers[operation] += amount;
+    }
+
+    static boolean arrowThreat(Minecraft mc, EntityPlayerSP self) {
+        AxisAlignedBB hitBox = self.func_174813_aQ().func_72314_b(.35, .35, .35);
+        for (Entity entity : mc.field_71441_e.func_72839_b(self, hitBox.func_72314_b(5, 5, 5))) {
+            if (!(entity instanceof EntityArrow) || Boolean.TRUE.equals(GameObservations.field(entity, "inGround")))
+                continue;
+            double x = entity.field_70165_t, y = entity.field_70163_u, z = entity.field_70161_v;
+            double vx = entity.field_70159_w, vy = entity.field_70181_x, vz = entity.field_70179_y;
+            if (vx * vx + vy * vy + vz * vz < .01) continue;
+            Vec3 start = new Vec3(x - vx, y - vy, z - vz);
+            Vec3 end = new Vec3(x + 2 * vx, y + 2 * vy, z + 2 * vz);
+            if (hitBox.func_72318_a(start) || hitBox.func_72327_a(start, end) != null) return true;
+        }
+        return false;
     }
 
     static boolean mixedSources(Minecraft mc, EntityPlayerSP self) {

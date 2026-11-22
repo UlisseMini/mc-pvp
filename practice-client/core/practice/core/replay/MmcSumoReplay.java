@@ -24,6 +24,14 @@ public final class MmcSumoReplay {
     private long start, fight, resultHeader;
     private boolean sumo;
 
+    public String activeId() { return sumo && opponent != null ? id() : null; }
+    public String opponent() { return opponent; }
+    public long combatStart() { return fight; }
+
+    private String id() {
+        return UUID.nameUUIDFromBytes((capture + ":" + fight).getBytes(StandardCharsets.UTF_8)).toString().replace("-", "");
+    }
+
     public static final class Match {
         public final String id, capture, opponent;
         public final int part;
@@ -119,6 +127,7 @@ public final class MmcSumoReplay {
         } else if (text.equals("5...") && fight == 0 && start != 0 && now - start <= 10000) {
             start = now;
         } else if (text.equals("Match started!")) {
+            if (fight != 0 && now - fight <= 2500) return null;
             if (start == 0 || now - start > 30000) {
                 clearMatch();
                 start = now;
@@ -138,8 +147,7 @@ public final class MmcSumoReplay {
             if (!won && !loser.equalsIgnoreCase(player)) return null;
             String other = won ? loser : winner;
             if (opponent != null && !opponent.equalsIgnoreCase(other)) return null;
-            String id = UUID.nameUUIDFromBytes((capture + ":" + fight).getBytes(StandardCharsets.UTF_8)).toString().replace("-", "");
-            Match match = new Match(id, capture, other, part, start, now, won);
+            Match match = new Match(id(), capture, other, part, start, now, won);
             clearMatch();
             return match;
         }

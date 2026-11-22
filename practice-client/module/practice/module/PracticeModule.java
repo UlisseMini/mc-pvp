@@ -26,6 +26,7 @@ public final class PracticeModule implements PracticeExtension {
     private final RangeCommands rangeCommands=new RangeCommands();
     private final JumpResetHud jumpReset=new JumpResetHud();
     private long liveReceived;
+    @Override public boolean wantsRemoteCaptureEvents(){return false;}
     public void event(PracticeEvent e){
         if(e.type.equals("connection_scope"))practiceAllowed=Boolean.TRUE.equals(e.data.get("practice_allowed"));
         if(e.type.equals("replay_frame"))replay.state=e.data;

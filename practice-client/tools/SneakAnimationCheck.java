@@ -95,6 +95,29 @@ public final class SneakAnimationCheck {
         check(hurtHooks == 1, "missing damage camera hook");
     }
 
+    private static void verifyMovementFov(String jar, String entry, String expectedMethod) throws Exception {
+        String player = "net.minecraft.client.entity.AbstractClientPlayer";
+        try (ZipFile zip = new ZipFile(jar); InputStream stream = zip.getInputStream(zip.getEntry(entry))) {
+            ByteArrayOutputStream data = new ByteArrayOutputStream();
+            byte[] buffer = new byte[4096];
+            for (int n; (n = stream.read(buffer)) != -1;) data.write(buffer, 0, n);
+            ClassNode node = new ClassNode();
+            new ClassReader(new PracticeTransformer().transform(entry, player, data.toByteArray())).accept(node, 0);
+            int count = 0;
+            for (MethodNode method : node.methods) for (AbstractInsnNode instruction : method.instructions.toArray()) {
+                if (!(instruction instanceof MethodInsnNode)) continue;
+                MethodInsnNode call = (MethodInsnNode)instruction;
+                if (!"practice/bridge/MovementFov".equals(call.owner)) continue;
+                check(expectedMethod.equals(method.name) && "multiplier".equals(call.name) && "(D)D".equals(call.desc),
+                        "unexpected FOV hook");
+                check(call.getPrevious().getOpcode() == Opcodes.DDIV && call.getNext().getOpcode() == Opcodes.DMUL,
+                        "hook must replace only the movement factor");
+                count++;
+            }
+            check(count == 1, "expected one movement FOV hook");
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         curve();
         Properties properties = new Properties();
@@ -106,9 +129,18 @@ public final class SneakAnimationCheck {
         properties.setProperty("hurtcam.enabled", "true");
         HurtCamera.settings(properties);
         near(HurtCamera.damageTime(6.5f), 6.5f);
+        verifyMovementFov(args[0], "bet.class", "o");
+        verifyMovementFov(args[1], "net/minecraft/client/entity/AbstractClientPlayer.class", "func_175156_o");
+        for (boolean enabled : new boolean[]{true, false, true}) {
+            properties.setProperty("dynamicfov.enabled", String.valueOf(enabled));
+            MovementFov.settings(properties);
+            for (double factor : new double[]{0.85, 1, 1.15, 1.28}) {
+                check(MovementFov.multiplier(factor) == (enabled ? factor : 1), "wrong movement FOV factor");
+            }
+        }
         verify(args[0], "bfk.class", "f", "h", "aS", "d", "au");
         verify(args[1], RENDERER.replace('.', '/') + ".class", "func_78467_g", "func_175067_i", "func_70047_e",
                 "func_78482_e", "field_70737_aN");
-        System.out.println("PASS sneak camera interpolation and damage camera toggle");
+        System.out.println("PASS sneak interpolation, damage camera tilt and movement FOV toggles");
     }
 }

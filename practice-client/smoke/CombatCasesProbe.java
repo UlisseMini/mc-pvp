@@ -2,6 +2,7 @@ package practice.smoke;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.settings.KeyBinding;
@@ -29,6 +30,7 @@ public final class CombatCasesProbe {
     private boolean enableChime;
     private static final int PERIOD=46;
     private static final int CASES=20;
+    private static final int SUSTAINED_HITS=6;
 
     @Mod.EventHandler public void init(FMLInitializationEvent event) throws Exception {
         FMLCommonHandler.instance().bus().register(this);
@@ -84,6 +86,52 @@ public final class CombatCasesProbe {
             " fall="+self.field_70143_R+" distance="+self.func_70032_d(victim));
     }
 
+    private void sustainedGuard(Minecraft mc, EntityPlayerSP self, EntityPlayer victim, int elapsed) {
+        if (elapsed == 0) {
+            say(self, "/tell LabObserver probe-sustained");
+            say(self, "/tell LabObserver probe-block-on");
+            say(self, "/effect LabObserver clear");
+            say(self, "/effect LabObserver 6 1 5 true");
+            say(self, "/effect LabObserver 22 12 0 true");
+            say(self, "/replaceitem entity LabObserver slot.armor.head diamond_helmet");
+            say(self, "/replaceitem entity LabSlot0 slot.hotbar.0 diamond_sword 1 0 {ench:[{id:16s,lvl:2s}]}");
+        }
+        int hit = (elapsed - 2 * PERIOD) / 16;
+        int phase = (elapsed - 2 * PERIOD) % 16;
+        if (elapsed >= 2 * PERIOD && hit < SUSTAINED_HITS) {
+            if (phase == 0) say(self, String.format(Locale.ROOT, "/tp LabSlot0 %.3f 4.0 %.3f 90 0",
+                victim.field_70165_t + (hit % 2 == 0 ? 1 : -1), victim.field_70161_v));
+            if (phase == 5) {
+                face(self, victim, 1.45);
+                strike(mc, self, victim, CASES, "sustained-guard");
+            }
+        }
+        if (elapsed == 2 * PERIOD + SUSTAINED_HITS * 16 + 5) say(self, "/effect LabObserver 7 1 0 true");
+        int afterSustained = elapsed - (2 * PERIOD + SUSTAINED_HITS * 16 + 20);
+        if (afterSustained < 0) return;
+        if (Boolean.getBoolean("probe.arrows")) arrows(self, victim, afterSustained);
+        else if (afterSustained == 0) say(self, "/tell LabObserver probe-done");
+    }
+
+    private void arrows(EntityPlayerSP self, EntityPlayer victim, int elapsed) {
+        if (elapsed == 0) say(self, "/tell LabObserver probe-arrows");
+        if (elapsed >= 120) {
+            if (elapsed == 120) say(self, "/tell LabObserver probe-done");
+            return;
+        }
+        int phase = elapsed % 60;
+        if (phase == 0) {
+            say(self, "/tell LabObserver probe-block-" + (elapsed == 0 ? "on" : "off"));
+            say(self, "/effect LabObserver 6 1 5 true");
+            say(self, String.format(Locale.ROOT, "/tp LabSlot0 %.3f 4.0 %.3f 90 0",
+                victim.field_70165_t + 7, victim.field_70161_v + 3));
+        }
+        if (phase == 20) {
+            say(self, String.format(Locale.ROOT, "/summon Arrow %.3f 5.4 %.3f {Motion:[-1.5d,0d,0d],damage:4d}",
+                victim.field_70165_t + 7, victim.field_70161_v));
+        }
+    }
+
     @SubscribeEvent public void tick(TickEvent.ClientTickEvent event) throws Exception {
         if(event.phase!=TickEvent.Phase.START)return;
         Minecraft mc=Minecraft.func_71410_x();
@@ -121,7 +169,7 @@ public final class CombatCasesProbe {
         if(elapsed<0)return;
         int trial=elapsed/PERIOD, phase=elapsed%PERIOD;
         if(trial>=CASES) {
-            if(trial==CASES&&phase==0)say(self,"/tell LabObserver probe-done");
+            sustainedGuard(mc,self,victim,elapsed-CASES*PERIOD);
             return;
         }
         int kind=(trial/2)%5;
@@ -130,8 +178,8 @@ public final class CombatCasesProbe {
         if(phase==0){
             attacked=second=false;
             say(self, "/tell LabObserver probe-block-"+(trial%2==1?"on":"off"));
-            say(self, "/tp LabObserver 4095.4 4.0 0.1 270 0");
-            say(self, "/tp LabSlot0 4096.35 4.0 0.1 90 0");
+            say(self, "/tp LabObserver 4100.4 4.0 0.1 270 0");
+            say(self, "/tp LabSlot0 4101.35 4.0 0.1 90 0");
             say(self, "/effect LabObserver 6 1 5 true");
             if(trial==10)say(self,"/replaceitem entity LabSlot0 slot.hotbar.0 diamond_sword 1 0 {ench:[{id:16s,lvl:4s}]}");
             if(trial==12)say(self,"/tell LabObserver probe-chime-on");

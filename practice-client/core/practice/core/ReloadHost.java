@@ -15,11 +15,13 @@ public final class ReloadHost implements AutoCloseable {
     private URLClassLoader loader;
     private Path copy;
     private boolean faulted;
+    private volatile boolean remoteCaptureEvents=true;
     private PracticeServices services;
 
     public ReloadHost(Path directory){this.directory=directory;}
     public String status(){return status;}
     public String moduleSha256(){return moduleSha256;}
+    public boolean wantsRemoteCaptureEvents(){return remoteCaptureEvents;}
     public void services(PracticeServices services){this.services=services;}
     private byte[] readBounded(Path p,int max) throws IOException {
         if(Files.size(p)>max)throw new IOException(p.getFileName()+" is too large");
@@ -40,8 +42,10 @@ public final class ReloadHost implements AutoCloseable {
             candidate=(PracticeExtension)Class.forName("practice.module.PracticeModule",true,candidateLoader).getDeclaredConstructor().newInstance();
             if(services!=null)candidate.services(services);
             candidate.configure(props,directory);
+            boolean wantsRemote=candidate.wantsRemoteCaptureEvents();
             dispose(active,loader,copy);
             active=candidate;loader=candidateLoader;copy=candidateCopy;faulted=false;
+            remoteCaptureEvents=wantsRemote;
             StringBuilder hex=new StringBuilder();for(byte b:MessageDigest.getInstance("SHA-256").digest(jar))hex.append(String.format("%02x",b&255));moduleSha256=hex.toString();
             status="Loaded local module "+next.substring(0,8);return true;
         } catch(Exception|LinkageError error) {

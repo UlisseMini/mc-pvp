@@ -78,6 +78,14 @@ public final class ReplayRecording {
     public final List<Wire> packets;
     public final List<Pose> poses;
     public final List<Mark> timeline;
+    private final NavigableMap<Double,Boolean> sprintHits=new TreeMap<>();
+    private final ReplayCoachFeedback.Reader coach;
+    private final double coachOrigin;
+    public Map<String,Object> coachAt(double ms){return coach.at(coachOrigin+ms);}
+    public Boolean sprintHitAt(double ms){
+        Map.Entry<Double,Boolean> hit=sprintHits.floorEntry(ms);
+        return hit!=null&&ms-hit.getKey()<practice.replay.SprintHit.DISPLAY_MS?hit.getValue():null;
+    }
     public final List<String> warnings;
     public final boolean hasJoin;
     public final int selfId;
@@ -88,12 +96,14 @@ public final class ReplayRecording {
     private final List<Wire> inbound;
     private final double[] ticks;
     private final ReplayRecoil recoil;
-    private ReplayRecording(Entry entry,long start,double duration,List<Wire> packets,List<Pose> poses,List<Mark> marks,List<String> warnings,boolean join,int selfId,List<Double> ticks,boolean hasAttackSamples,List<ReplayMotion.Sample> motionSamples,ReplaySumoClip sumo,ReplayInputs inputs){
+    private ReplayRecording(Entry entry,long start,double duration,List<Wire> packets,List<Pose> poses,List<Mark> marks,List<String> warnings,boolean join,int selfId,List<Double> ticks,boolean hasAttackSamples,List<ReplayMotion.Sample> motionSamples,ReplaySumoClip sumo,ReplayInputs inputs,ReplayCoachFeedback.Reader coach,double coachOrigin){
         this.entry=entry;startMs=start;durationMs=duration;this.packets=Collections.unmodifiableList(packets);this.poses=Collections.unmodifiableList(poses);
         timeline=Collections.unmodifiableList(marks);this.warnings=Collections.unmodifiableList(new ArrayList<String>(warnings));hasJoin=join;this.selfId=selfId;
         this.hasAttackSamples=hasAttackSamples;
         this.sumo=sumo;
         this.inputs=inputs;
+        this.coach=coach;this.coachOrigin=coachOrigin;
+        for(Mark m:marks)if("sprint_hit".equals(m.kind))sprintHits.put(m.atMs,(Boolean)m.details.get("sprint"));
         recoil=new ReplayRecoil(marks,sumo==null?Math.max(0,entry.preferredStartMs-start):sumo.startMs);
         motion=new ReplayMotion(motionSamples,marks,poses);
         List<Wire> in=new ArrayList<Wire>();for(Wire w:packets)if(w.inbound)in.add(w);inbound=Collections.unmodifiableList(in);
@@ -338,8 +348,16 @@ public final class ReplayRecording {
         Objects.requireNonNull(entry);Objects.requireNonNull(parser);Objects.requireNonNull(limits);
         List<RawWire> wires=new ArrayList<RawWire>();List<RawPose> samples=new ArrayList<RawPose>();List<Stamp> tickStamps=new ArrayList<Stamp>();
         List<RawContact> contacts=new ArrayList<>();
+        // archiveEntry selects the A stream when present, otherwise B; it can then
+        // substitute that same client's full session. A bare remote log has no lab opponent.
+        String side="a";
+        if(entry.archiveFolder!=null&&Files.isDirectory(entry.archiveFolder))try(java.util.stream.Stream<Path> names=Files.list(entry.archiveFolder)){
+            if(!names.anyMatch(p->firstSegment(p)&&p.getFileName().toString().matches("a-client-.*-events\\.jsonl\\.gz")))side="b";
+        }
+        ReplayCoachFeedback.Reader coach=new ReplayCoachFeedback.Reader(ServerReplayInputs.opponent(entry.archiveFolder,side,parser));
         List<RawMotion> motionSamples=new ArrayList<>();
         List<RawInput> inputEvents=new ArrayList<>();
+        Map<Stamp,Boolean> sprintHits=new LinkedHashMap<>();
         Map<String,Object> pendingClick=null;
         Stamp clickStamp=null;
         boolean hasAttackSamples=false,screenOpen=false;
@@ -362,9 +380,14 @@ public final class ReplayRecording {
                     try{row=parse(parser,text);}catch(RuntimeException malformed){warnings.add("Malformed JSON row in "+part.getFileName());continue;}
                     String type=text(row,"type","");Map<String,Object> data=object(row.get("data"));Stamp stamp=new Stamp(row);
                     if(entry.finishMs>0&&stamp.wall>entry.finishMs+(entry.isSumo()?750:0)){clipped=true;break;}
+                    if(!coach.opponent.isEmpty()||type.equals("sumo_coach_cue"))
+                        coach.accept(type,stamp.ns==Long.MIN_VALUE?stamp.wall:stamp.ns/1e6,row,data);
                     if("packet_oversize".equals(type)){warnings.add("Capture omitted an oversize wire packet ("+integer(data,"bytes",0)+" bytes)");continue;}
                     if("capture_end".equals(type)){footer=true;next=text(row,"continues",null);if(!bool(row,"writer_complete",false)||integer(row,"dropped",0)>0||bool(row,"size_capped",false))warnings.add("Incomplete/dropped capture segment: "+part.getFileName());continue;}
                     if("capture_start".equals(type)){origin.add(stamp);captureMid=bool(data,"started_mid_connection",true);continue;}
+                    if("link_sprint_hit".equals(type)&&data.get("sprint") instanceof Boolean){
+                        origin.add(stamp);sprintHits.put(stamp,(Boolean)data.get("sprint"));continue;
+                    }
                     if(type.equals("key")||type.equals("mouse")){
                         ReplayInputs.Key key=type.equals("key")&&!bool(data,"repeat",false)
                                 ?ReplayInputs.Key.keyboard((int)integer(data,"key",-1))
@@ -467,6 +490,8 @@ public final class ReplayRecording {
         if(selfId<0)for(Pose pose:poses){int id=(int)integer(pose.self,"id",-1);if(id>=0){selfId=id;break;}}
         if(!join)warnings.add("Mid-connection recording: no JOIN_GAME; world bootstrap may be incomplete");else if(captureMid)warnings.add("Capture marked started mid-connection despite containing JOIN_GAME");
         List<Mark> marks=marks(packets,poses,-1,warnings);
+        for(Map.Entry<Stamp,Boolean> hit:sprintHits.entrySet())
+            marks.add(new Mark(origin.at(hit.getKey()),"sprint_hit",hit.getValue()?"Sprint KB":"Base KB",Collections.singletonMap("sprint",hit.getValue())));
         for(RawContact contact:contacts){
             contact.details.put("click_start_ms",origin.at(contact.before));
             boolean backward=Boolean.TRUE.equals(contact.details.get("backward"));
@@ -484,7 +509,12 @@ public final class ReplayRecording {
         ReplaySumoClip sumo=ReplaySumoClip.read(entry,origin.wall,duration,packets,poses,parser);
         List<ReplayInputs.Event> events=new ArrayList<>(inputEvents.size());
         for(RawInput input:inputEvents)events.add(new ReplayInputs.Event(Math.max(0,origin.at(input.stamp)),input.key,input.down));
-        return new ReplayRecording(entry,origin.wall,duration,packets,poses,marks,warnings.finish(),join,selfId,ticks,hasAttackSamples,motion,sumo,new ReplayInputs(events));
+        for(Pose pose:poses){
+            ReplayInputs.Event sprint=ReplayInputs.Event.recordedSprint(pose.atMs,pose.state);
+            if(sprint!=null)events.add(sprint);
+        }
+        return new ReplayRecording(entry,origin.wall,duration,packets,poses,marks,warnings.finish(),join,selfId,ticks,hasAttackSamples,
+                motion,sumo,new ReplayInputs(events),coach,origin.ns==Long.MAX_VALUE?origin.wall:origin.ns/1e6);
     }
     private static List<Mark> marks(List<Wire> packets,List<Pose> poses,int initialSelf,Warnings warnings){
         List<Mark> out=new ArrayList<Mark>();Map<String,Double> transactions=new HashMap<String,Double>();Map<Integer,Double> keepalives=new HashMap<Integer,Double>();
@@ -537,6 +567,8 @@ public final class ReplayRecording {
     private static Map<String,Object> compactState(Map<String,Object> state){
         Map<String,Object> out=new LinkedHashMap<String,Object>();
         for(String key:Arrays.asList("self","opponent","ray","camera_settings","partial_ticks","sample_begin_ms","sample_begin_ns","sample_end_ms","sample_end_ns","entities_truncated","source_scope","target_names","screen"))if(state.containsKey(key))out.put(key,state.get(key));
+        if(state.containsKey("sprint_key_down"))out.put("sprint_key_down",state.get("sprint_key_down"));
+        if(state.containsKey("sprint_key_code"))out.put("sprint_key_code",state.get("sprint_key_code"));
         if(object(out.get("opponent")).isEmpty()){Map<String,Object> target=selectTarget(state);if(!target.isEmpty())out.put("opponent",target);}
         if(state.get("entities")instanceof List){
             List<Object> entities=new ArrayList<Object>();for(Object value:(List<?>)state.get("entities")){

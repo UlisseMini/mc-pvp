@@ -39,6 +39,9 @@ public final class PracticeTransformer implements IClassTransformer {
         if(transformed.equals("net.minecraft.client.gui.GuiIngame"))return replayHotbar(bytes);
         if(transformed.equals("net.minecraft.client.renderer.ItemRenderer"))return replayHand(firstPersonUse(bytes));
         if(transformed.equals("net.minecraft.client.renderer.EntityRenderer"))return replayWorldPartial(hurtCamera(sneakCamera(bytes)));
+        if(transformed.equals("net.minecraft.client.entity.AbstractClientPlayer"))return movementFov(bytes);
+        if(transformed.equals("net.minecraft.client.multiplayer.PlayerControllerMP") &&
+                !"bot".equals(System.getProperty("practice.role","human")))return bowRelease(bytes);
         boolean network=transformed.equals("net.minecraft.network.NetworkManager"),
             decoder=transformed.equals("net.minecraft.util.MessageDeserializer"),
             encoder=transformed.equals("net.minecraft.util.MessageSerializer"),
@@ -114,6 +117,11 @@ public final class PracticeTransformer implements IClassTransformer {
                 }
                 if(locks!=1||unlocks!=2)throw new IllegalStateException("Practice task drain hook changed: "+locks+","+unlocks);
                 hooks++;
+            }else if(minecraft&&m.desc.equals("()V")&&named(m,"func_71407_l","runTick","s")){
+                if(!"bot".equals(System.getProperty("practice.role","human"))){
+                    m.instructions.insertBefore(BotTransformer.attackLoopEntry(m,node.name),call("attackSlot"));
+                    hooks++;
+                }
             }else if(minecraft&&m.desc.equals("()V")){
                 String kind=m.name.equals("func_147116_af")||m.name.equals("clickMouse")||m.name.equals("aw")?"attack_click":
                     m.name.equals("func_147121_ag")||m.name.equals("rightClickMouse")||m.name.equals("ax")?"use_click":null;
@@ -150,6 +158,23 @@ public final class PracticeTransformer implements IClassTransformer {
     private static boolean named(MethodNode m,String srg,String mcp,String obf){
         return m.name.equals(srg)||m.name.equals(mcp)||m.name.equals(obf);
     }
+    private static byte[] bowRelease(byte[] bytes) {
+        ClassNode node = new ClassNode();
+        new ClassReader(bytes).accept(node, 0);
+        for (MethodNode m : node.methods) {
+            if (!named(m, "func_78766_c", "onStoppedUsingItem", "c")
+                    || !(m.desc.equals("(Lnet/minecraft/entity/player/EntityPlayer;)V") || m.desc.equals("(Lwn;)V"))) continue;
+            InsnList hook = new InsnList();
+            hook.add(new VarInsnNode(Opcodes.ALOAD, 1));
+            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "practice/bridge/BowAim", "beforeRelease",
+                    "(Ljava/lang/Object;)V", false));
+            m.instructions.insert(hook);
+            ClassWriter output = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            node.accept(output);
+            return output.toByteArray();
+        }
+        throw new IllegalStateException("Minecraft bow release hook missing");
+    }
     private static void lockOutboundDrain(MethodNode method) {
         // sendPacket and processReceivedPackets can drain this queue concurrently.
         // Use the same exclusive lock as enqueue so isEmpty, poll and dispatch stay ordered.
@@ -184,6 +209,31 @@ public final class PracticeTransformer implements IClassTransformer {
             ClassWriter out=new ClassWriter(ClassWriter.COMPUTE_MAXS);node.accept(out);
             return out.toByteArray();
         }
+        return bytes;
+    }
+    private static byte[] movementFov(byte[] bytes) {
+        ClassNode node = new ClassNode();
+        new ClassReader(bytes).accept(node, 0);
+        for (MethodNode method : node.methods) {
+            if (!"()F".equals(method.desc) || !named(method, "func_175156_o", "getFovModifier", "o")) continue;
+            // The camera multiplies the flying FOV by (speed / walkSpeed + 1) / 2 before bow zoom.
+            for (AbstractInsnNode multiply : method.instructions.toArray()) {
+                if (multiply.getOpcode() != Opcodes.DMUL) continue;
+                AbstractInsnNode divide = previousCode(multiply);
+                if (divide == null || divide.getOpcode() != Opcodes.DDIV) continue;
+                AbstractInsnNode two = previousCode(divide);
+                if (!(two instanceof LdcInsnNode) || !Double.valueOf(2).equals(((LdcInsnNode)two).cst)) continue;
+                AbstractInsnNode add = previousCode(two);
+                if (add == null || add.getOpcode() != Opcodes.DADD) continue;
+                method.instructions.insertBefore(multiply, new MethodInsnNode(Opcodes.INVOKESTATIC,
+                        "practice/bridge/MovementFov", "multiplier", "(D)D", false));
+                ClassWriter out = new ClassWriter(0);
+                node.accept(out);
+                System.out.println("[PracticeBridge] Movement FOV toggle hooked");
+                return out.toByteArray();
+            }
+        }
+        System.out.println("[PracticeBridge] Movement FOV toggle unavailable for this player renderer");
         return bytes;
     }
     private static byte[] hurtCamera(byte[] bytes) {

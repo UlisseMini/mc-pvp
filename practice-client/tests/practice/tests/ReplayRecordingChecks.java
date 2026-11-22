@@ -35,6 +35,12 @@ public final class ReplayRecordingChecks {
         rows.put("gui",row("tick_end",100,map("screen","GuiChat")));
         rows.put("botTick",row("tick_end",10,map("self",map("movement_input",map("moveForward",-1,"moveStrafe",1,"jump",true)))));
         rows.put("botStop",row("tick_end",100,map("self",map("movement_input",map("moveForward",0,"moveStrafe",0,"jump",false)))));
+        rows.get("botTick").put("client_tick",41);
+        rows.get("botStop").put("client_tick",42);
+        rows.put("applied",map("type","duel_network","time",800L,"tick",41,"action",18,"proposed",4));
+        rows.put("released",map("type","duel_network","time",850L,"tick",42,"action",5));
+        rows.put("ctrl",row("tick_end",5,map("sprint_key_code",-97,"sprint_key_down",true)));
+        rows.put("packet",row("packet_wire",48,map("packet",map("direction","out","kind","C0BPacketEntityAction"),"base64","CwAEAA==")));
         rows.put("inject",map("type","click","time",1040L));
         rows.put("consume",row("attack_click_before",41,map()));
         rows.put("use",row("use_click_before",46,map()));
@@ -42,8 +48,8 @@ public final class ReplayRecordingChecks {
         rows.put("lower",map("type","blockhit_plan","time",1060L,"block_key",false));
         rows.put("tail",row("tick_end",1200,map("screen",null)));
         Path folder=Files.createDirectory(root.resolve("server-replay-inputs"));
-        gzip(folder.resolve("a-client-fixture-events.jsonl.gz"),"w","mouse","mouseUp","gui","tail");
-        gzip(folder.resolve("b-client-fixture-events.jsonl.gz"),"botTick","inject","consume","raise","use","lower","botStop","tail");
+        gzip(folder.resolve("a-client-fixture-events.jsonl.gz"),"w","ctrl","mouse","mouseUp","gui","tail");
+        gzip(folder.resolve("b-client-fixture-events.jsonl.gz"),"applied","botTick","inject","consume","raise","use","packet","lower","released","botStop","tail");
         ServerReplayInputs human=ServerReplayInputs.read(folder,"a",false,1000,rows::get);
         check(human.at(0).down(ReplayInputs.Key.W)&&human.at(25).down(ReplayInputs.Key.LMB),"server replay preserves held human inputs across the start and at the exact click time");
         check(!human.at(55).down(ReplayInputs.Key.LMB)&&human.at(100).mask==0&&human.at(1024).leftCps==1&&human.at(1025).leftCps==0,
@@ -55,7 +61,44 @@ public final class ReplayRecordingChecks {
                 "attack injections and block presses count once even with native consume records");
         check(!bot.at(60).down(ReplayInputs.Key.RMB)&&!bot.at(72).down(ReplayInputs.Key.LMB)&&bot.at(100).mask==0&&bot.at(1201)==null,
                 "bot holds, click flash and missing archive tail are distinct");
+        check(human.at(0).sprintCode==ReplayInputs.INPUT_UNKNOWN&&human.at(25).sprintCode==-97&&human.at(25).down(ReplayInputs.Key.SPRINT),"remapped mouse sprint binding, unknown before first observation");
+        check(state.down(ReplayInputs.Key.SPRINT)&&state.sprintCode==ReplayInputs.BINDING_UNKNOWN&&Boolean.TRUE.equals(bot.botDetails(50).get("click_gate")),
+                "legacy applied action joins by native tick despite a shifted game clock");
+        check(Boolean.FALSE.equals(bot.botDetails(48).get("sent_sprint"))&&!bot.botDetails(47).containsKey("sent_sprint")&&
+                !bot.at(100).down(ReplayInputs.Key.SPRINT)&&bot.at(50).down(ReplayInputs.Key.SPRINT),"seek restores sprint input and never shows future packets");
+        Map<String,Object> hit=map("type","hit","rod",false,"damage_upgrade",false,"attacker_sprint",false);
+        check(Boolean.FALSE.equals(practice.replay.SprintHit.classify(hit)),"base fresh hit has a distinct verdict");
+        hit.put("attacker_sprint",true);check(Boolean.TRUE.equals(practice.replay.SprintHit.classify(hit)),"fresh sprint bonus");
+        hit.put("damage_upgrade",true);check(practice.replay.SprintHit.classify(hit)==null,"upgrades cannot masquerade as fresh KB");
+        hit.put("damage_upgrade",false);hit.put("direct_melee",false);check(practice.replay.SprintHit.classify(hit)==null,"projectiles excluded");
         check(ServerReplayInputs.read(root,"b",true,1000,rows::get).at(50)==null,"missing participant archive is unavailable");
+    }
+    private static void replayBrakes(Path root)throws Exception{
+        Path folder=Files.createDirectory(root.resolve("brake-history"));
+        Files.write(folder.resolve("manifest.json"),"manifest".getBytes(StandardCharsets.UTF_8));
+        Map<String,Map<String,Object>> rows=new HashMap<>();
+        rows.put("manifest",map("players",map("a",map("name","One"),"b",map("name","Two"))));
+        rows.put("tick",row("tick_start",0,map("self",map("id",7),"entities",Arrays.asList(map("id",8,"name","Two")))));
+        String[] kinds={"S19PacketEntityStatus","S12PacketEntityVelocity"};
+        byte[][] bytes={{0x1a,0,0,0,7,2},{0x12,7,0x0f,(byte)0xa0,0,0,0,0}};
+        for(int i=0;i<2;i++){
+            rows.put("wire"+i,row("packet_wire",i,map("packet",map("packet_id",i,"direction","in","kind",kinds[i]),"base64",Base64.getEncoder().encodeToString(bytes[i]))));
+            rows.put("apply"+i,row("packet_handler_enter",5+i,map("packet_id",i,"kind",kinds[i],"main_thread",true)));
+        }
+        for(int i=0;i<3;i++)for(int phase=0;phase<2;phase++){
+            double v=(i==0?-.2:.2)*(phase==0?1:.6);
+            String type=phase==0?"attack_click_before":"attack_click_after";
+            Map<String,Object> row=row(type,20+i*60+phase,map("self",map("id",7,"sprinting",phase==0,"motion",Arrays.asList(v,0.,0.)),
+                    "ray",map("type","ENTITY","entity",8),"left_click_counter",0));
+            row.put("thread","Client thread");row.put("client_tick",i);rows.put(type+i,row);
+        }
+        gzip(folder.resolve("a-client-fixture-events.jsonl.gz"),"tick","wire0","wire1","apply0","apply1","attack_click_before0","attack_click_after0",
+                "attack_click_before1","attack_click_after1","attack_click_before2","attack_click_after2");
+        ServerReplayInputs history=ServerReplayInputs.read(folder,"a",false,1000,rows::get);
+        check(history.coachAt(21).isEmpty(),"forward sprint drag is not a brake against this launch");
+        check(history.coachAt(80).isEmpty()&&Boolean.TRUE.equals(history.coachAt(81).get("brake")),"green begins at the completed outward cut");
+        check(Integer.valueOf(2).equals(history.coachAt(141).get("cuts"))&&!history.coachAt(241).containsKey("brake")&&history.coachAt(621).isEmpty(),"first flash and grouped count use separate replay durations");
+        check(history.coachAt(80).isEmpty(),"backwards seek clears future brakes");
     }
     private static Map<String,Object> click(String phase,int time,double speed,int hurt){
         return row("attack_click_"+phase,time,map("self",map("id",7,"motion",Arrays.asList(speed,0.,0.),
@@ -121,11 +164,15 @@ public final class ReplayRecordingChecks {
         parser.chat("5...","Player",9100,capture,8);
         parser.chat("Match started!","Player",14000,capture,10);
         parser.chat("§aSumo \n Knock your opponents off the platform!","Player",14001,capture,10);
+        String active=parser.activeId();
+        check(active!=null&&parser.combatStart()==14000,"Sumo coach uses combat start rather than countdown");
+        parser.chat("Match started!","Player",14002,capture,10);
+        check(active.equals(parser.activeId()),"A duplicate start does not reset the round ID");
         parser.chat("Match Results (Click to view)","Player",18000,capture,12);
         check(parser.chat("Winner: Someone  ▏  Loser: Example","Player",18001,capture,12)==null,
                 "spectator result is ignored");
         MmcSumoReplay.Match match=parser.chat("Winner: Example  ▏  Loser: Player","Player",18002,capture,12);
-        check(match!=null&&!match.won&&match.opponent.equals("Example")&&match.start==9100&&match.finish==18002&&match.part==6,
+        check(match!=null&&active.equals(match.id)&&parser.activeId()==null&&!match.won&&match.opponent.equals("Example")&&match.start==9100&&match.finish==18002&&match.part==6,
                 "MMC duel bookmark uses the exact five-second countdown and keeps earlier arena packets");
         Path metadata=root.resolve("sumo-replays");
         match.save(metadata);
@@ -260,6 +307,7 @@ public final class ReplayRecordingChecks {
             check(sampled.poses.size()==20&&sampled.poses.get(19).atMs==950&&sampled.durationMs==990,"Tick-free remote poses are recorded samples at <=20Hz while real recording duration stays exact");
             replayCombat(root);
             serverReplayInputs(root);
+            replayBrakes(root);
             sumoBookmarks(root);
             smoothPoses();
         }finally{try(java.util.stream.Stream<Path> files=Files.walk(root)){files.sorted(Comparator.reverseOrder()).forEach(p->{try{Files.delete(p);}catch(IOException e){throw new UncheckedIOException(e);}});}}

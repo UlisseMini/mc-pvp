@@ -17,13 +17,14 @@ final class HudEditor extends GuiScreen {
     private final HudLayout layout;
     private final Frame.Line sprint;
     private final GuiScreen parent;
+    private final PracticeBridge bridge;
     private final List<Widget> widgets=new ArrayList<>();
     private Widget dragging;
     private int grabX,grabY;
     private String message="";
 
-    HudEditor(HudLayout layout,Frame.Line sprint,GuiScreen parent){
-        this.layout=layout;this.sprint=sprint;this.parent=parent;
+    HudEditor(HudLayout layout,Frame.Line sprint,GuiScreen parent,PracticeBridge bridge){
+        this.layout=layout;this.sprint=sprint;this.parent=parent;this.bridge=bridge;
     }
 
     private static final class Widget {
@@ -34,16 +35,27 @@ final class HudEditor extends GuiScreen {
     }
 
     @Override public void func_73866_w_(){
-        widgets.clear();dragging=null;
-        State sample=new State(Key.W.mask()|Key.LMB.mask(),8,0);
+        widgets.clear();field_146292_n.clear();dragging=null;
+        State sample=new State(Key.W.mask()|Key.LMB.mask()|Key.SPRINT.mask(),8,0,field_146297_k.field_71474_y.field_151444_V.func_151463_i());
         widgets.add(new Widget(KeystrokesHud.ID,KeystrokesHud.defaultBounds(field_146294_l,field_146295_m),
                 at->KeystrokesHud.draw(field_146289_q,sample,at.x,at.y)));
         int width=field_146289_q.func_78256_a(sprint.text);
         widgets.add(new Widget(sprint.hudId,new Rectangle(field_146294_l-sprint.x-width,sprint.y,width,9),
                 at->field_146289_q.func_175063_a(sprint.text,at.x,at.y,sprint.color)));
+        for (SumoCoach.HudPart part : SumoCoach.HudPart.values()) {
+            Rectangle box = part.bounds(field_146289_q, field_146294_l, field_146295_m);
+            widgets.add(new Widget(part.id, box, at -> {
+                Rectangle atBox = new Rectangle(at.x, at.y, box.width, box.height);
+                for (int row = 0; row < part.sample.length; row++) {
+                    Frame.Line line = part.line(field_146289_q, atBox, row, part.sample[row]);
+                    field_146289_q.func_175063_a(line.text, line.x, line.y, line.color);
+                }
+            }));
+        }
         int center=field_146294_l/2;
-        field_146292_n.add(new GuiButton(0,center-103,field_146295_m-24,100,20,"Reset layout"));
-        field_146292_n.add(new GuiButton(1,center+3,field_146295_m-24,100,20,"Done"));
+        field_146292_n.add(new GuiButton(0,center-143,field_146295_m-24,86,20,"Reset layout"));
+        field_146292_n.add(new GuiButton(2,center-54,field_146295_m-24,128,20,"Sprint KB cue: "+(bridge.sprintHitHud?"ON":"OFF")));
+        field_146292_n.add(new GuiButton(1,center+77,field_146295_m-24,66,20,"Done"));
     }
 
     @Override public boolean func_73868_f(){return false;}
@@ -93,6 +105,10 @@ final class HudEditor extends GuiScreen {
 
     @Override protected void func_146284_a(GuiButton button){
         if(button.field_146127_k==0){layout.reset();save();}
+        else if(button.field_146127_k==2){
+            try{bridge.storeSetting("sprintkb.enabled",String.valueOf(!bridge.sprintHitHud));func_73866_w_();}
+            catch(IOException error){message="Could not save sprint KB setting";}
+        }
         else close();
     }
 

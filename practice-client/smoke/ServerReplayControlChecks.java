@@ -83,10 +83,12 @@ final class ServerReplayControlChecks {
                 click(mc,6,true);break;
             case 272:
                 toolbar(probe,mc,true);probe.check("b".equals(state.get("source")),"compass selected bot POV");
-                checkInputs(probe,"b",1,3);mc.field_71439_g.func_71165_d("/replay camera free");break;
+                checkInputs(probe,"b",129,3);
+                probe.check(String.valueOf(probe.replayFrame().get("sprint_hits")).contains("sprint=true"),"outgoing sprint knockback comes from the server replay");
+                mc.field_71439_g.func_71165_d("/replay camera free");break;
             case 284:
                 toolbar(probe,mc,false);
-                checkInputs(probe,"b",1,3);
+                checkInputs(probe,"b",129,3);
                 mc.field_71439_g.func_71165_d("/replay camera b");click(mc,3,true);break;
             case 296:
                 probe.check(label(state).contains("client tick")&&Boolean.TRUE.equals(state.get("paused")),"bot tick inspected while paused");
@@ -105,7 +107,22 @@ final class ServerReplayControlChecks {
             case 348:
                 probe.check(!Boolean.TRUE.equals(state.get("active"))&&mc.func_175606_aa()==mc.field_71439_g,"exit restores normal view");
                 probe.check(inventory(mc.field_71439_g).equals(initialInventory)&&mc.field_71439_g.field_71071_by.field_70461_c==initialSlot,"exit restores inventory and selected slot");
-                System.out.println("[PracticeProbe] ALL CHECKS PASSED");mc.func_71400_g();break;
+                mc.field_71439_g.func_71165_d("/replay m2151");break;
+            case 405:
+                mc.field_71439_g.func_71165_d("/replay pause");
+                mc.field_71439_g.func_71165_d("/replay pov human");
+                mc.field_71439_g.func_71165_d("/replay seek 1.620");break;
+            case 429:
+                probe.check(Boolean.TRUE.equals(((Map<?,?>)probe.replayFrame().get("coach_feedback")).get("brake")),"human replay shows its confirmed brake");
+                mc.field_71439_g.func_71165_d("/replay pov bot");
+                mc.field_71439_g.func_71165_d("/replay seek 0.700");break;
+            case 453:
+                probe.check(Boolean.TRUE.equals(((Map<?,?>)probe.replayFrame().get("coach_feedback")).get("brake")),"bot replay shows its own confirmed brake");
+                mc.field_71439_g.func_71165_d("/replay seek 0.670");break;
+            case 477:
+                probe.check(!Boolean.TRUE.equals(((Map<?,?>)probe.replayFrame().get("coach_feedback")).get("brake")),"rewinding before the contact clears the cue");
+                mc.field_71439_g.func_71165_d("/replay stop");break;
+            case 490:System.out.println("[PracticeProbe] ALL CHECKS PASSED");mc.func_71400_g();break;
         }
     }
 }

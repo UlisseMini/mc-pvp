@@ -43,6 +43,13 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     private volatile long lastHello,lastTelemetry;
     private volatile boolean started;
     private volatile long lastServer;
+    private String sprintHitMatch="";
+    private long sprintHitUntil;
+    private boolean sprintHitBonus;
+
+    Boolean liveSprintHit(){
+        return practiceAllowed()&&sprintHitMatch.equals(match)&&System.nanoTime()<sprintHitUntil?sprintHitBonus:null;
+    }
     private volatile Map<String,Object> lastState=Collections.emptyMap();
     private final Gson gson=new Gson();
     private final PracticeViews views=new PracticeViews();
@@ -101,9 +108,13 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     private synchronized void session(Channel c){
         if(active!=c){finishLog();active=c;session=System.currentTimeMillis()+"-"+UUID.randomUUID().toString();match="";lastServer=0;lastState=Collections.emptyMap();lastHello=0;lastTelemetry=0;started=unrecordedPlay.contains(c);remoteSession="r"+UUID.randomUUID().toString().replace("-","");archive.end();publisher.close();views.close();lastViews=Collections.emptyMap();replay.clear();}
         if(shouldRecord(c)&&log==null){
-            String name=(remote()?"a-client-":"")+session+"-"+System.nanoTime()+(remote()?"-events":"")+".jsonl.gz";
-            log=remote()?new CaptureLog(directory.resolve("captures").resolve(name),16L*1024*1024,10000,2000):new CaptureLog(directory.resolve("captures").resolve(name),256L*1024*1024,128);
-            if(remote())remoteUpload.register(remoteSession,serverHost(c),log.path);
+            boolean remote=remote();
+            String name=(remote?"a-client-":"")+session+"-"+System.nanoTime()+(remote?"-events":"")+".jsonl.gz";
+            Path path=directory.resolve("captures").resolve(name);
+            if(remote){
+                log=new CaptureLog(path,16L*1024*1024,10000,2000,8192,96L*1024*1024,
+                    remoteUpload.register(remoteSession,serverHost(c),path));
+            }else log=new CaptureLog(path,256L*1024*1024,128);
             emit("capture_start",map("schema",2,"minecraft","1.8.9","protocol",47,"bridge","0.4.0","module_status",host.status(),"clock","unix_ms_shared_host; monotonic_ns_process_local",
                 "packet_bytes","uncompressed PLAY packet id + body, base64","login_recorded",false,
                 "role",remote()?"human-remote":BotRuntime.role(),"server_host",serverHost(c),"server_endpoint",ConnectionScope.host(c),"remote_session",remote()?remoteSession:null,"coordination_allowed",loopback(c),
@@ -130,12 +141,31 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     private long packetId(Object p){synchronized(packetIds){Long id=packetIds.get(p);if(id==null){id=packetSequence.incrementAndGet();packetIds.put(p,id);}return id;}}
     private void wire(String direction,Object packet,Raw raw){
         long id=packetId(packet);Map<String,Object> meta=map("packet_id",id,"direction",direction,"kind",packet.getClass().getSimpleName(),"bytes",raw.bytes.length);
-        String encoded=Base64.getEncoder().encodeToString(raw.bytes);
-        long seq=sequence.incrementAndGet();record("packet_wire",seq,raw.ms,raw.ns,map("packet",meta,"base64",encoded));
+        boolean local=loopback(raw.channel),deliver=local||host.wantsRemoteCaptureEvents();
+        boolean modulePayload=deliver&&raw.bytes.length<=16384;
+        String encoded=local||modulePayload?Base64.getEncoder().encodeToString(raw.bytes):null;
+        long seq=sequence.incrementAndGet();
+        Map<String,Object> data=map("packet",meta,"base64",encoded);
+        if(local){
+            record("packet_wire",seq,raw.ms,raw.ns,data);
+        }else{
+            CaptureLog writer=log;
+            if(writer!=null){
+                Map<String,Object> row=observation("packet_wire",seq,raw.ms,raw.ns,data);
+                byte[] bytes=raw.bytes;
+                writer.offerDeferred(1024L+bytes.length+(encoded==null?0:2L*encoded.length()),()->{
+                    if(encoded==null)data.put("base64",Base64.getEncoder().encodeToString(bytes));
+                    return JsonData.encode(row);
+                });
+            }
+        }
         // Live modules can decode normal gameplay packets without another hook
         // restart. Large chunk payloads stay in the full on-disk capture only.
-        if(raw.bytes.length<=16384)meta.put("base64",encoded);else meta.put("module_payload_omitted",true);
-        enqueue(new PracticeEvent("packet_wire",seq,raw.ms,raw.ns,meta));
+        if(deliver){
+            Map<String,Object> event=new LinkedHashMap<>(meta);
+            if(modulePayload)event.put("base64",encoded);else event.put("module_payload_omitted",true);
+            enqueue(new PracticeEvent("packet_wire",seq,raw.ms,raw.ns,event));
+        }
     }
     public void apply(Object packet,boolean after){
         if(!observing()||!(packet instanceof Packet)||EnumConnectionState.func_150752_a((Packet)packet)!=EnumConnectionState.PLAY)return;
@@ -175,10 +205,14 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         this.tick=tick;if(!observing()){publisher.close();views.close();archive.end();replay.clear();lastViews=Collections.emptyMap();return;}
         if(!after&&practiceAllowed())publisher.tick();
         Minecraft mc=Minecraft.func_71410_x();if(mc.field_71439_g==null)return;
-        emit(after?"tick_end":"tick_start",GameObservations.state(mc,true),true);
+        Map<String,Object> sample=GameObservations.state(mc,true);
+        net.minecraft.client.settings.KeyBinding sprint=mc.field_71474_y.field_151444_V;
+        sample.put("sprint_key_code",sprint.func_151463_i());
+        sample.put("sprint_key_down",sprint.func_151470_d());
+        emit(after?"tick_end":"tick_start",sample,true);
         if(!after){
             if(tick%20==0)emit("capture_health",map("observer_errors",ObserverHooks.errors,"writer_drops",log==null?0:log.dropped()),true);
-            if(tick%20==0)for(CaptureLog l:finishing)try{if(l.awaitClosed(1))finishing.remove(l);}catch(InterruptedException e){Thread.currentThread().interrupt();}
+            if(tick%20==0)finishing.removeIf(CaptureLog::closed);
             int n=0;PracticeEvent e;while(n++<512 && (e=events.poll())!=null)host.event(e);
             long lost=eventDrops.getAndSet(0);if(lost>0)emit("module_event_drop",map("count",lost),false);
             long now=System.currentTimeMillis();
@@ -253,12 +287,42 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     String status(){return "Remote record "+(remoteRecording?"ON":"OFF")+" | "+(log==null?"Capture off":log.status())+" | "+remoteUpload.status()+" | observer errors "+ObserverHooks.errors+" | link "+(lastServer==0?"waiting":System.currentTimeMillis()-lastServer+" ms old")+" | "+(remote()?remoteSession:match);}
     void emit(String type,Map<String,Object> data,boolean deliver){
         long seq=sequence.incrementAndGet(),ms=System.currentTimeMillis(),ns=System.nanoTime();record(type,seq,ms,ns,data);
-        if(deliver)enqueue(new PracticeEvent(type,seq,ms,ns,data));
+        if(deliver&&(!remote()||host.wantsRemoteCaptureEvents()))enqueue(new PracticeEvent(type,seq,ms,ns,data));
     }
     private void record(String type,long seq,long ms,long ns,Map<String,Object> data){
-        String line=JsonData.encode(map("type",type,"sequence",seq,"time_ms",ms,"monotonic_ns",ns,"client_tick",tick,"session",session,"match",match,"thread",Thread.currentThread().getName(),"data",data));
-        CaptureLog l=log;if(l!=null)l.offer(line);archive.event(line);
+        CaptureLog writer=log;
+        if(writer==null&&archive.match().isEmpty())return;
+        Map<String,Object> row=observation(type,seq,ms,ns,data);
+        if(writer!=null&&remote()&&archive.match().isEmpty()){
+            // Observation maps are detached from Minecraft and are no longer mutated by their producers.
+            writer.offerDeferred(retainedBytes(data),()->JsonData.encode(row));
+        }else{
+            String line=JsonData.encode(row);
+            if(writer!=null)writer.offer(line);
+            archive.event(line);
+        }
     }
+    private Map<String,Object> observation(String type,long seq,long ms,long ns,Map<String,Object> data){
+        return map("type",type,"sequence",seq,"time_ms",ms,"monotonic_ns",ns,"client_tick",tick,"session",session,"match",match,"thread",Thread.currentThread().getName(),"data",data);
+    }
+    /** Account for snapshot objects and their only potentially large strings, the item tags. */
+    private static long retainedBytes(Map<String,Object> data){
+        Object view=data.get("view");
+        Map<?,?> state=view instanceof Map?(Map<?,?>)view:data;
+        long bytes=4096+entityBytes(state.get("self"))+entityBytes(state.get("opponent"));
+        Object entities=state.get("entities");
+        if(entities instanceof List)for(Object entity:(List<?>)entities)bytes+=entityBytes(entity);
+        return bytes;
+    }
+    private static long entityBytes(Object value){
+        if(!(value instanceof Map))return 0;
+        Map<?,?> entity=(Map<?,?>)value;
+        long bytes=4096+stringBytes(entity.get("held"));
+        Object armor=entity.get("armor");
+        if(armor instanceof List)for(Object item:(List<?>)armor)bytes+=stringBytes(item);
+        return bytes;
+    }
+    private static long stringBytes(Object value){return value instanceof String?2L*((String)value).length():0;}
     private void enqueue(PracticeEvent e){if(!events.offer(e))eventDrops.incrementAndGet();}
     public void marker(String label){if(label==null)return;String s=label.substring(0,Math.min(120,label.length()));emit("marker",map("label",s),true);send("marker",s);}
     public boolean send(String type,String value){
@@ -279,12 +343,24 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
             Map<String,Object> data=gson.fromJson(json,Map.class);
             if(data==null||!(data.get("version") instanceof Number)||((Number)data.get("version")).intValue()!=1)return;
             String type=String.valueOf(data.get("type"));
-            if(!Arrays.asList("welcome","state","pong","marker_ack","replay_view","replay_menu").contains(type))return;
+            if(type.equals("sprint_hit")){
+                Minecraft mc=Minecraft.func_71410_x();
+                if(!BotRuntime.enabled()&&mc.field_71439_g!=null&&mc.field_71439_g.func_70005_c_().equals(data.get("attacker"))
+                        &&!match.isEmpty()&&match.equals(data.get("match"))&&data.get("sprint") instanceof Boolean){
+                    sprintHitMatch=match;sprintHitBonus=(Boolean)data.get("sprint");
+                    sprintHitUntil=System.nanoTime()+practice.replay.SprintHit.DISPLAY_MS*1_000_000L;
+                    inputEvent("link_sprint_hit",data);
+                }
+                return;
+            }
+            if(!Arrays.asList("welcome","state","pong","marker_ack","replay_view","replay_menu","sumo_finish").contains(type))return;
             if(type.equals("welcome") && data.get("training_speed") instanceof Number){
                 TrainingTimer.accept(active,data);archiveLocation();
             }
             if(type.equals("replay_view")){replay.receive(data);return;}
             if(type.equals("replay_menu")){Minecraft.func_71410_x().func_147108_a(new ReplayMenu(this));return;}
+            if(SumoCoach.hooks!=null)SumoCoach.hooks.lab(data,type);
+            if(type.equals("sumo_finish"))return;
             lastServer=System.currentTimeMillis();Object id=data.get("match");if(!BotRuntime.enabled()&&id instanceof String)match=(String)id;
             PracticeEvent event=new PracticeEvent("link_"+type,sequence.incrementAndGet(),lastServer,System.nanoTime(),data);
             if(type.equals("state")&&!BotRuntime.enabled()){
@@ -305,6 +381,6 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         Minecraft mc=Minecraft.func_71410_x();if(mc.field_71439_g==null||id==null||!id.matches("[a-z0-9_.:]{1,80}")||!Float.isFinite(volume)||!Float.isFinite(pitch))return;
         mc.field_71439_g.func_85030_a(id,Math.min(1,Math.max(0,volume)),Math.min(2,Math.max(.5f,pitch)));
     }
-    synchronized void close(){publisher.close();views.close();archive.close();finishLog();long deadline=System.currentTimeMillis()+2000;
+    synchronized void close(){publisher.close();views.close();archive.close();finishLog();long deadline=System.currentTimeMillis()+10000;
         for(CaptureLog l:finishing)try{l.awaitClosed(Math.max(1,deadline-System.currentTimeMillis()));}catch(InterruptedException e){Thread.currentThread().interrupt();break;}remoteUpload.close();}
 }

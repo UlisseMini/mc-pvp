@@ -48,6 +48,7 @@ public final class CombatCoachChecks {
         expect(0f, CombatCoachMath.jumpCueVolume(0));
         expect(true, CombatCoachMath.jumpCueVolume(.18) > CombatCoachMath.jumpCueVolume(.05));
         expect(true, CombatCoachMath.jumpCueVolume(.20) > CombatCoachMath.jumpCueVolume(.18));
+        BlockhitTimelineChecks.run();
         System.out.println("PASS melee ambiguity, armor/absorption, and directional jump reduction");
     }
 }

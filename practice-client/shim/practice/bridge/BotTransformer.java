@@ -64,7 +64,11 @@ final class BotTransformer {
     /** Pinned while(keyBindAttack.isPressed()) clickMouse() loop. The native
      * condition and backedge remain intact; the observer never reads pressTime. */
     private static void hookAttackLoop(MethodNode method,String owner){
-        int found=0;
+        method.instructions.insertBefore(attackLoopEntry(method, owner), call("attackLoop"));
+    }
+
+    static AbstractInsnNode attackLoopEntry(MethodNode method, String owner) {
+        AbstractInsnNode entry=null;
         for(AbstractInsnNode ins:method.instructions.toArray())if(ins instanceof MethodInsnNode){
             MethodInsnNode click=(MethodInsnNode)ins;
             if(!click.owner.equals(owner)||!click.desc.equals("()V")||
@@ -88,9 +92,11 @@ final class BotTransformer {
             // Inserting before its FrameNode would move the frame past the hook.
             AbstractInsnNode first=header;while(first!=null&&first.getOpcode()<0)first=first.getNext();
             if(first==null)throw new IllegalStateException("Missing attack loop body");
-            method.instructions.insertBefore(first,call("attackLoop"));found++;
+            if(entry!=null)throw new IllegalStateException("More than one native attack loop");
+            entry=first;
         }
-        if(found!=1)throw new IllegalStateException("Pinned attack loop count changed: "+found);
+        if(entry==null)throw new IllegalStateException("Missing native attack loop");
+        return entry;
     }
     private static InsnList call(String name,int... locals){return call(name,false,false,locals);}
     private static InsnList call(String name,boolean flag,boolean after,int... locals){

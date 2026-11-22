@@ -14,6 +14,7 @@
   "ComboModel",
   "VisibleTracker",
   "MomentumController",
+  "SumoWtapController",
   "BurstClickController",
   "MotionClickController",
   "ClickPause",

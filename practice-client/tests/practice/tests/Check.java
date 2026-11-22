@@ -6,6 +6,8 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.jar.*;
 import java.io.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
 public final class Check {
@@ -97,8 +99,32 @@ public final class Check {
         check(content.contains("rotating-part2.jsonl.gz")&&content.contains("\"writer_complete\":true"),"rotation links a complete first segment");
         try(Scanner scanner=new Scanner(new GZIPInputStream(Files.newInputStream(dir.resolve("rotating-part2.jsonl.gz"))),"UTF-8")){content=scanner.useDelimiter("\\A").next();}
         check(content.contains("\"n\":3")&&content.contains("\"writer_complete\":true")&&rotating.dropped()==0,"boundary record is retained in the next compressed segment");
+        deferredCapture(dir);
         ViewChecks.run(dir);
         try(java.util.stream.Stream<Path> paths=Files.walk(dir)){paths.sorted(Comparator.reverseOrder()).forEach(p->{try{Files.delete(p);}catch(IOException e){throw new UncheckedIOException(e);}});}
         System.out.println("Practice checks passed: "+checks);
+    }
+    private static void deferredCapture(Path dir)throws Exception{
+        List<Path> closedParts=new ArrayList<>();
+        CaptureLog writer=new CaptureLog(dir.resolve("deferred.jsonl.gz"),10000,1,0,4,100,closedParts::add);
+        CountDownLatch entered=new CountDownLatch(1),release=new CountDownLatch(1);
+        String first=JsonData.encode(JsonData.map("sequence",1,"packet",Base64.getEncoder().encodeToString(new byte[]{0,-1,127})));
+        try{
+            writer.offerDeferred(60,()->{
+                entered.countDown();
+                try{if(!release.await(5,TimeUnit.SECONDS))throw new IllegalStateException("Encoder timed out");}
+                catch(InterruptedException e){Thread.currentThread().interrupt();throw new IllegalStateException(e);}
+                return first;
+            });
+            check(entered.await(5,TimeUnit.SECONDS),"deferred encoding runs on the writer");
+            writer.offer("{\"sequence\":2}");
+            writer.offerDeferred(60,()->"{\"sequence\":3}");
+            check(writer.dropped()==1,"deferred records respect the pending memory limit");
+        }finally{release.countDown();writer.close();}
+        check(writer.awaitClosed(5000)&&closedParts.equals(Collections.singletonList(writer.path)),"closed gzip part is published after draining");
+        try(Scanner scanner=new Scanner(new GZIPInputStream(Files.newInputStream(writer.path)),"UTF-8")){
+            check(scanner.nextLine().equals(first)&&scanner.nextLine().equals("{\"sequence\":2}"),"mixed queue maintains bytes and enqueue order");
+            check(scanner.nextLine().contains("\"writer_complete\":false")&&!scanner.hasNext(),"memory overflow is reported in the footer");
+        }
     }
 }

@@ -16,16 +16,38 @@ import net.minecraft.util.*;
 /** Deliberately selected game fields; never session/account or arbitrary reflection dumps. */
 final class GameObservations {
     private static final Properties names=new Properties();
-    private static final Map<String,Field> fields=new ConcurrentHashMap<>();
+    private static final ClassValue<Map<String,Optional<Field>>> fields=new ClassValue<Map<String,Optional<Field>>>(){
+        @Override protected Map<String,Optional<Field>> computeValue(Class<?> type){return new ConcurrentHashMap<>();}
+    };
+    private static final String[] ENTITY_FIELDS={"fallDistance","width","height","stepHeight","isCollidedHorizontally","isCollidedVertically","isInWeb",
+        "hurtTime","hurtResistantTime","maxHurtResistantTime","lastDamage","swingProgress","prevSwingProgress","swingProgressInt",
+        "serverPosX","serverPosY","serverPosZ","otherPlayerMPPosRotationIncrements","otherPlayerMPX","otherPlayerMPY","otherPlayerMPZ",
+        "otherPlayerMPYaw","otherPlayerMPPitch","rotationYawHead","prevRotationYawHead","renderYawOffset","prevRenderYawOffset",
+        "jumpTicks","jumpMovementFactor","sprintingTicksLeft","serverSprintState","isAirBorne","noClip","isSwingInProgress","limbSwing","limbSwingAmount","prevLimbSwingAmount"};
+    private static final ClassValue<Map<String,Field>> entityFields=new ClassValue<Map<String,Field>>(){
+        @Override protected Map<String,Field> computeValue(Class<?> type){
+            Map<String,Field> found=new LinkedHashMap<>();
+            for(String name:ENTITY_FIELDS)lookup(type,name).ifPresent(field->found.put(name,field));
+            return found;
+        }
+    };
     static{try(InputStream in=GameObservations.class.getResourceAsStream("/practice/field-names.properties")){if(in!=null)names.load(in);}catch(IOException e){throw new ExceptionInInitializerError(e);}}
     static Object field(Object object,String name){
         if(object==null)return null;
-        String key=object.getClass().getName()+"#"+name;Field f=fields.get(key);
-        if(f==null){
-            for(Class<?> c=object.getClass();c!=null && f==null;c=c.getSuperclass())for(Field candidate:c.getDeclaredFields())
-                if(candidate.getName().equals(name)||names.getProperty(candidate.getName(),"").equals(name)){candidate.setAccessible(true);f=candidate;break;}
-            if(f==null)return null;fields.put(key,f);
-        }
+        Field f=lookup(object.getClass(),name).orElse(null);
+        return f==null?null:read(f,object);
+    }
+    private static Optional<Field> lookup(Class<?> type,String name){
+        return fields.get(type).computeIfAbsent(name,key->{
+            for(Class<?> c=type;c!=null;c=c.getSuperclass())for(Field candidate:c.getDeclaredFields())
+                if(candidate.getName().equals(key)||names.getProperty(candidate.getName(),"").equals(key)){
+                    candidate.setAccessible(true);
+                    return Optional.of(candidate);
+                }
+            return Optional.empty();
+        });
+    }
+    private static Object read(Field f,Object object){
         try{return f.get(object);}catch(IllegalAccessException e){return null;}
     }
     static Map<String,Object> entity(Entity e){
@@ -38,12 +60,8 @@ final class GameObservations {
         out.put("border",e.func_70111_Y());
         AxisAlignedBB box=e.func_174813_aQ();
         out.put("box",Arrays.asList(box.field_72340_a,box.field_72338_b,box.field_72339_c,box.field_72336_d,box.field_72337_e,box.field_72334_f));
-        for(String name:new String[]{"fallDistance","width","height","stepHeight","isCollidedHorizontally","isCollidedVertically","isInWeb",
-            "hurtTime","hurtResistantTime","maxHurtResistantTime","lastDamage","swingProgress","prevSwingProgress","swingProgressInt",
-            "serverPosX","serverPosY","serverPosZ","otherPlayerMPPosRotationIncrements","otherPlayerMPX","otherPlayerMPY","otherPlayerMPZ",
-            "otherPlayerMPYaw","otherPlayerMPPitch","rotationYawHead","prevRotationYawHead","renderYawOffset","prevRenderYawOffset",
-            "jumpTicks","jumpMovementFactor","sprintingTicksLeft","serverSprintState","isAirBorne","noClip","isSwingInProgress","limbSwing","limbSwingAmount","prevLimbSwingAmount"}){
-            Object v=field(e,name);if(v instanceof Number||v instanceof Boolean)out.put(name,v);
+        for(Map.Entry<String,Field> entry:entityFields.get(e.getClass()).entrySet()){
+            Object v=read(entry.getValue(),e);if(v instanceof Number||v instanceof Boolean)out.put(entry.getKey(),v);
         }
         if(e instanceof EntityLivingBase){EntityLivingBase l=(EntityLivingBase)e;out.put("health",l.func_110143_aJ());out.put("eye_height",l.func_70047_e());}
         if(e instanceof EntityPlayer){
@@ -56,6 +74,7 @@ final class GameObservations {
                 out.put("hand_pitch_offset",local.field_70125_A-local.field_71155_g);
             }
             out.put("blocking",p.func_70632_aY());out.put("using_item",p.func_71039_bw());out.put("use_ticks",p.func_71052_bv());
+            out.put("use_elapsed_ticks",p.func_71057_bx());
             out.put("held",item(p.func_70694_bm()));out.put("slot",p.field_71071_by.field_70461_c);
             out.put("held_item_id",p.func_70694_bm()==null?0:Item.func_150891_b(p.func_70694_bm().func_77973_b()));
             Object hook=field(p,"fishEntity");if(hook instanceof Entity){Entity h=(Entity)hook;out.put("fish_hook",map("id",h.func_145782_y(),"x",h.field_70165_t,"y",h.field_70163_u,"z",h.field_70161_v));}

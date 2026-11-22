@@ -65,13 +65,16 @@ public final class ForgeProbe {
     private void checkHealth(Minecraft mc){if(mc.field_71439_g.func_110143_aJ()!=20)throw new AssertionError("sumo lost health");}
     private void sumoPlatform(double center,boolean present){
         Minecraft mc=Minecraft.func_71410_x();int count=0;
-        for(int x=-5;x<5;x++)for(int z=-5;z<5;z++){
+        int[] widths={5,9,11,11,13,13,13,13,13,11,11,9,5};
+        for(int x=-7;x<=7;x++)for(int z=-7;z<=7;z++){
             net.minecraft.block.Block block=mc.field_71441_e.func_180495_p(new net.minecraft.util.BlockPos(center+x,11,z)).func_177230_c();
-            boolean expected=present&&(x+.5)*(x+.5)+(z+.5)*(z+.5)<=25;
-            if((block==net.minecraft.init.Blocks.field_150357_h)!=expected)throw new AssertionError("sumo platform mismatch "+x+","+z);
+            boolean expected=present&&Math.abs(z)<=6&&Math.abs(x)<=widths[z+6]/2;
+            int id=net.minecraft.block.Block.func_149682_b(block);
+            boolean gold=expected&&z==0&&Math.abs(x)==4;
+            if(expected?(gold?id!=41:id!=1&&id!=98):id!=0)throw new AssertionError("sumo platform mismatch "+x+","+z+" block "+id);
             if(expected)count++;
         }
-        check(count==(present?80:0),present?"native client sees complete 10-block-wide circular platform":"ordinary replay clears previous sumo platform");
+        check(count==(present?137:0),present?"native client sees the 137-block MMC floor and both gold spawns":"ordinary replay clears previous sumo platform");
     }
     private void cleanHooks()throws Exception{check(Class.forName("practice.bridge.ObserverHooks").getField("errors").getLong(null)==0,"native observer hooks report no errors");}
     void check(boolean ok,String message){if(!ok)throw new AssertionError(message);System.out.println("[PracticeProbe] PASS "+message);}

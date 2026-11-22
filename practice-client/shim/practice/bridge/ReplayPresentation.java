@@ -105,8 +105,12 @@ final class ReplayPresentation {
             out.put("keystrokes_source",source);
             out.put("keystrokes_loading",archive!=null&&archive.loadingInputs);
             ServerReplayInputs inputs=archive==null?null:archive.inputs.get(source);
+            if(inputs!=null)out.put("coach_feedback",inputs.coachAt(time));
             ReplayInputs.State keys=inputs==null?null:inputs.at(time);
-            if(keys!=null)out.put("keystrokes",map("mask",keys.mask,"left_cps",keys.leftCps,"right_cps",keys.rightCps));
+            if(keys!=null){
+                out.put("keystrokes",map("mask",keys.mask,"left_cps",keys.leftCps,"right_cps",keys.rightCps,"sprint_code",keys.sprintCode));
+                if("bot".equals(object(availability.get(source)).get("role")))out.put("bot_controls",inputs.botDetails(time));
+            }
         }else if("server".equals(source)&&"free".equals(state.get("camera"))){
             out.put("keystrokes_source","live");
         }

@@ -130,6 +130,10 @@ final class OfflineReplay {
     Map<String,PoseTrack> linked=Collections.emptyMap();String ownSource,opponentName;
     boolean active,paused=true,loading,seeking;double time,speed=1;long lastNs;int cursor,applied,skipped,errors;
     private boolean hideText;
+    Boolean sprintHit(){return recording!=null&&!hideText?recording.sprintHitAt(playhead()):null;}
+    Map<String,Object> coachFeedback(){
+        return recording!=null&&!hideText&&shows(RECOIL_FLASH)?recording.coachAt(playhead()):Collections.emptyMap();
+    }
     private int scrubDirection;
     private boolean worldAheadOfPlayhead;
     private long loadToken;

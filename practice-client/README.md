@@ -34,11 +34,15 @@ the help menu. Click a category or type a command such as `/p help replay` or
 | `/practice status` | Show reload, capture and server-link status |
 | `/practice sprint on` / `off` | Enable/disable ToggleSprint |
 | `/p oldsneak on` / `off` | Smooth the camera as you sneak and stand back up (on by default) |
+| `/p dynamicfov off` / `on` | Keep your chosen FOV at different movement speeds or restore speed-dependent FOV. Bow zoom still works. |
 | `/p hurtcam off` / `on` | Turn damage camera tilt off or restore it (on by default) |
 | `/practice potions on` / `off` | Show/hide potion timers |
 | `/practice metrics on` / `off` | Show observed speeds, target gap/height, and blocking time |
 | `/practice record on` / `off` | Start/stop local client-observation CSV recording |
 | `/p remote record on` / `off` | Opt in/out of remote-server recording (default off); local archive upload only |
+| `/p remote crosshair on` / `off` | Toggle the public-server KB brake flash and your reach brackets together |
+| `/p remote crosshair brake on` / `off` | Toggle just the public-server KB brake flash |
+| `/p remote crosshair reach on` / `off` | Toggle just your public-server reach brackets |
 | `/practice capture on` / `off` | Enable/disable the detailed localhost capture |
 | `/practice link on` / `off` | Enable/disable localhost coordination |
 | `/practice mark <text>` | Timestamp a named marker on client and server |
@@ -141,10 +145,32 @@ actors as seen by each client (four ghosts), plus two optional server ghosts.
 `/replay ghost human on` (both), and `/replay ghost off`.
 The selected POV chooses the recorded positions; camera follow/free is separate.
 The keystrokes HUD follows the selected human or bot POV, including in free
-camera. It shows that participant's WASD, Space, mouse buttons and one-second CPS
+camera. It shows that participant's WASD, Space, Sprint, mouse buttons and one-second CPS
 at the playhead, or **Inputs unavailable** if their archive lacks inputs. The
 free camera in Server POV shows your normal live keystrokes.
 Use `/p keystrokes off` or `/p keystrokes on` to hide or show it.
+
+The Sprint tile lights when Minecraft's sprint binding is held, including by
+ToggleSprint. New recordings display the participant's key or mouse binding.
+Older bot policies with recorded decisions show **Sprint**. **SPR ?** means the
+recording has no evidence for that input. In a bot POV, the extra lines show
+local sprint, the last outgoing START or STOP sprint packet and its age, and
+whether the bot allowed a click. LMB flashes on an actual press.
+
+With **/p sumocoach → Settings → Live coaching** and the successful-brake
+**Flash** enabled, the first verified brake after an incoming launch shows
+green brackets for 160 ms. Further brakes in that exchange show **×2**, **×3**,
+etc. Server replays use the selected participant’s client archive. Pausing or
+stepping backward restores the feedback at that instant. New human lab
+recordings also capture the aim-miss cue. Its amber outline lasts 180 ms.
+
+A separate label below the crosshair appears for 300 ms after an outgoing fresh
+melee hit confirmed by the lab referee. **Sprint KB** means sprint powered the
+hit. **Base KB** means the server saw sprint off. Choose **Esc → Edit HUD →
+Sprint KB cue**, or use `/p sprintkb on` and `/p sprintkb off`. Server replays
+read this verdict from the selected participant’s hits. The local offline viewer
+can show verdicts saved in new lab recordings. Public MMC recordings lack the
+referee feed.
 Reach fields and the numeric advantage use the same observation and drawing
 functions as live play. Clients with no recorded data are explicitly unavailable;
 older 5 Hz recordings are labeled. Playback interpolates visual poses between
@@ -218,7 +244,7 @@ and commands are included in the raw packets.** Player names/UUIDs are present.
 Nothing leaves this computer. Remote captures may transfer to the local lab receiver
 as described below. Captures are not screenshots or video.
 
-The asynchronous writer has a 2,048-record/32 MiB pending limit, rotates at
+The asynchronous local writer has a 2,048-record/32 MiB pending limit, rotates at
 256 MiB of uncompressed records per file, and permits 128 linked parts per session.
 It requires at least 512 MiB free space at each new part. Old captures are never
 deleted automatically. Overflow, cap exhaustion, observer errors and module-event
@@ -233,6 +259,102 @@ it does **not** promise pixel-perfect reconstruction. Entity
 snapshots are capped at 128 (with a truncation flag); packets remain captured.
 We do not save resource-pack binaries or every rendered frame. Native handler
 hooks observe work but still have CPU cost, measured in snapshot timing fields.
+
+## Live BedWars forecasts
+
+Open **`/p forecast`** for the in-game controls. Turn on the overlay, pick a
+model, and enable any combination of 5, 10, 30, 60 and 120 seconds. Enter one or
+more player names or team colors and select **Done**. When both filters are set,
+either match is included. Leave both fields blank to use every player whose
+position your client currently knows. Each horizon has its own color in the HUD.
+Tiles use separate stripes when several horizons are enabled. The combined map
+averages the selected players' probabilities.
+
+Choose **Heatmap**, **Ghosts**, or **Both** under **Display**. In ghost modes,
+set **Ghost min %** to the minimum probability in a local hotspot and **Max
+ghosts** to cap the total across horizons. The defaults are 25% and three
+ghosts. Each ghost stands at a predicted feet block in its 3D hotspot. The
+label shows the probability in the surrounding neighborhood, up to 48 blocks
+wide and 12 blocks high. A bin contributes once per horizon. Nearby
+predictions at different horizons share one silhouette, with separate colored
+labels such as `10s 43%` and `60s 28%`. Hotspots at substantially different
+heights can show separate ghosts in the same X/Z column.
+
+Under **Heatmap**, choose **3D** for translucent 16×4×16-block volumes at their
+forecast heights, or **Sum over Y** for the horizontal probability
+painted on the loaded terrain. The 3D display draws up to 80 of the strongest
+bins per horizon. Ghosts use predicted height in either heatmap projection.
+**Both** dims the heatmap so silhouettes stand out. Display choices save
+locally when you select **Done**. The 3D features require the updated model
+bundle.
+
+| Command | Action |
+| --- | --- |
+| `/p forecast on` / `/p forecast off` | Toggle the overlay for the current Minecraft launch. |
+| `/p forecast horizons 10,60` | Show both 10s and 60s. |
+| `/p forecast display both` | Choose `heatmap`, `ghosts`, or `both`. |
+| `/p forecast projection 3d` | Choose `3d` or `sum-y` for the heatmap. |
+| `/p forecast threshold 35` | Show only hotspots with at least 35% probability. Set 0–100. |
+| `/p forecast ghost-limit 2` | Cap the total number of silhouettes. Set 1–8. |
+| `/p forecast models` | List installed model IDs. |
+| `/p forecast model anil` | Use the adaptive last-layer model. |
+| `/p forecast players me,SomePlayer` | Select yourself and another player by name. |
+| `/p forecast teams red,blue` | Select colors or scoreboard team IDs. |
+| `/p forecast players clear` / `/p forecast teams clear` | Clear one filter. |
+| `/p forecast status` | Check the current model, match and overlay status. |
+| `/p forecast attach 130` | Attach after joining late and use 130 seconds as the elapsed time. |
+| `/p forecast reload` | Reload `config/pvp-practice/bedwars-forecast.bin.gz`. |
+
+The overlay starts off and reads the same player position features used in the
+replay benchmark. It starts tracking at the BedWars instructions in chat. It can
+estimate the clock from the initial Diamond II countdown if you join after the
+start. The attach command lets you supply an elapsed-time estimate later. The
+model uses completed outcomes from this match, grouped into 30-second updates
+with up to 32 observations per player and horizon. Longer forecasts need longer
+to collect usable outcomes. Changing a model, horizon or filter retains the
+observations already available for the match. A new match clears that history.
+
+The overlay reads loaded entities and the scoreboard from your client. The
+height-summed heatmap uses loaded terrain. The 3D elements occupy forecast
+coordinates and are occluded by the world geometry. The overlay works
+independently of remote recording and sends no packets. Predictions about
+players leaving view are limited by the server's entity tracking, and the
+estimated match clock can differ from the replay clock.
+
+## Adaptive bow aim
+
+After launching Forge 1.8.9, enter `/p bowaim on` to enable the assist.
+Draw your bow while looking near an opponent. The assist favors the closest
+player directly under your aim and can also pick a nearby lead angle. It nudges
+your view up to 3° from your own aim by default. The limit applies throughout
+the draw. In BedWars it uses the player's squad color, including when one
+squad has several scoreboard IDs. It waits for a confirmed enemy color.
+Release normally when you want to shoot.
+
+Use `/p bowaim linear` to try the straight-line movement comparison,
+`/p bowaim off` for manual aim, or `/p bowaim status` to check the current
+mode. The assist starts off each launch.
+
+| Command | Action |
+| --- | --- |
+| `/p bowaim preview` | Show the trajectory with manual aiming. |
+| `/p bowaim trajectory on` | Show the trajectory whenever the bow is drawn. |
+| `/p bowaim trajectory auto` | Show it when the assist is enabled. |
+| `/p bowaim trajectory off` | Hide the trajectory. |
+| `/p bowaim intercept on` | Show a box and time estimate where your current shot is predicted to meet the target. |
+| `/p bowaim limit 2` | Set the maximum camera correction in degrees, from 0 to 8. |
+| `/p bowaim chance on` | Show estimated hit chance above the crosshair in adaptive mode. |
+| `/p bowaim autorelease on` | Release once per held draw at full charge if the estimated hit chance is high enough. |
+| `/p bowaim threshold 80` | Set the auto-release hit chance from 1% to 100%. The default is 75%. |
+
+The preview follows the direction you're actually aiming at the current draw
+strength. It uses the arrow's gravity and drag and stops at terrain or a
+predicted intercept. The chance estimate uses that same direction and
+draw strength. Auto-release starts off, requires adaptive mode and a held
+use key, and still lets you release manually at any point. Options save
+locally. With detailed remote recording enabled, the capture stores the draw,
+selected target, and displayed estimate at release for shot review.
+[Bridge and probability tests](../research/bow-aim/bridging/RESULTS.md)
 
 ## Remote recording
 
@@ -254,14 +376,17 @@ bot or practice-server handshake is needed. Files are tagged `role=human-remote`
 and with the configured server host and actual connected socket endpoint. A single client's timestamps,
 S12s and keepalive/transaction observations can support timing estimates and
 bounds; they cannot reveal exact one-way latency or private server processing.
+The background writer encodes detached snapshots and packet copies to the same
+JSONL format. Its pending limit is 8,192 records or an estimated 96 MiB of
+retained data. Capture status and the file footer report queue drops.
 
 **The recorder adds zero Minecraft packets on remote connections.** It does not
 send the lab's C17 hello, telemetry, markers, clock probes or replay commands.
 The guard checks the current real socket, including during a server switch,
-regardless of whether a prior capture is still active. All practice overlays
+regardless of whether a prior capture is still active. The practice-only overlays
 (range indicators, reach fields, opening/advantage, ghosts, metrics, hurt flash,
 replay/debug) are suppressed remotely even if their local settings are on.
-ToggleSprint and potion timers remain available.
+ToggleSprint, potion timers and the opt-in BedWars forecast remain available.
 
 Captures stay in local `config/pvp-practice/captures/` gzip files. Closed parts
 are offered approximately every two seconds to **literal `127.0.0.1:8766`** over
@@ -359,14 +484,67 @@ Press **/** in a replay for local commands. **/p reach on** and **/p reach off**
 control reach fields, and **/p crosshair on** and **/p crosshair off** control the
 in-range brackets. The recoil flash has its own Display switch.
 
-The keystrokes HUD shows W/A/S/D, Space, and both mouse buttons, with separate
+The keystrokes HUD shows W/A/S/D, Space, the bound Sprint input, and both mouse buttons, with separate
 one-second click counts. Use **/p keystrokes on** or **/p keystrokes off** for live
 play and server replays. Local replays use recorded key and click events at the playhead, so their
 CPS stays on the recording's time scale at every playback speed. The replay HUD
 shows keystrokes when the capture contains input events. First-person
 playback also uses the recorded swing for the native fist animation.
-Open **/p hud** in live play or choose **Edit HUD** in F8 to drag the keystrokes
-and sprint indicators. The positions are saved and adapt to the GUI size.
+Open **Esc → Edit HUD** or use **/p hud** in live play. In a local replay, choose
+**F8 → Edit HUD**. Drag the keystrokes, sprint indicator, Sumo stats and Sumo
+cue text. The positions are saved and adapt to the GUI size.
+
+### Sumo Coach
+
+Open **Esc → Sumo Coach** or type **/p sumocoach**. Turn on **Live coaching** in the
+lab for a two-line HUD and separate switches for the successful brake flash,
+sprint-off sound and note, miss timer sound and note, unclicked opening sound and
+note, and silent aim-miss outline. The brake sound button cycles through grouped
+pitch, grouped volume, grouped tones, first brake, every brake, and off. Grouped
+audio plays when the six-move window ends. The flash and multiplier update on
+contact. Volume and all switches are saved with your local settings.
+
+**KB saved** is the estimated reduction in peak backward travel over the first
+six moves after a hit. It compares your confirmed brakes with the same recorded
+movement and footing with the cuts removed. The match card sums complete,
+unobstructed windows and shows how many hits contributed.
+**Ideal** on the HUD uses the same comparison with one brake per observed
+movement tick when the crosshair selected the opponent and the miss timer
+allowed an attack. It keeps the measured inputs, footing and hitbox openings.
+
+The **Brake alert** plays when an on-target sprint-off click would have reduced
+peak backward travel by at least half a block. It compares the observed slide
+with just that one brake added, keeping the measured movement and later cuts.
+It plays when the exchange closes, within six moves in ordinary play.
+**Costly missed brakes** on the match card counts affected exchanges and shows
+how many followed a W-up move. In **Sounds**, click a sound name to change it
+and use **Play** to hear it. Each cue has its own choice, including the three
+grouped tones and the aim miss, which starts silent.
+
+**Current** shows the live match counts. **Analysis** lists up to four of the
+biggest slides in match order, with observed footing, W timing, and the brake
+events within each slide. The timeline can include multiple events such as a
+sprint-off contact, an on-target opening without a click, and a later brake.
+Each event is timed from the incoming hit. When the recorded motion supports
+it, the card estimates how much less you would have slid by fixing that one
+moment. Choose **Help** on the card for the terms and how to read the estimates.
+A recent hit before a loss is included when measured.
+**Where you gained ground** estimates how much farther you would have slid
+without your brakes. After a lab match, the card can also match your server hits
+to the bot's archived movement and show how it responded.
+Lab analyses can include the server sprint flag on fresh accepted hits. Open a
+result's **Match analysis** link or type **/p sumoanalysis**. **Recent** keeps up
+to 20 completed matches across launches.
+Interruptions leave the last completed result available.
+
+An older lab server can provide its sprint totals through the existing local
+match archive. Near-edge recovery measures flat floor support roughly 2.5
+blocks or less along the push, with one second to regain footing.
+
+MMC summaries use the existing Sumo bookmark detector with **/p remote record on**.
+Lab summaries use the match ID and combat boundary from the local practice link.
+The three grouped sounds and the live HUD are lab feedback. MMC post-match
+summaries use the recorded local view of inputs and movement.
 
 The viewer feeds safe recorded inbound PLAY packets into native Minecraft
 handlers using a fake play connection with **no channel or socket**. Both outbound

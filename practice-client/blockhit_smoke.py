@@ -24,7 +24,7 @@ SWORD_IDS = {267, 268, 272, 276, 283}
 PLAYER = "LabObserver"
 
 
-def serve_fixture(work, build, offset):
+def serve_fixture(work, build, offset, arrows):
     lab.ROOT = work
     lab.RUNTIME = work / "runtime"
     forge.RUNTIME = lab.RUNTIME
@@ -47,6 +47,8 @@ def serve_fixture(work, build, offset):
         shutil.copyfile(work / "combat-cases.jar", probe)
         command[command.index("-Dlab.root=" + str(ROOT))] = "-Dlab.root=" + str(work)
         command.insert(command.index("-cp"), "-Dprobe.attacker=true")
+        if arrows:
+            command.insert(command.index("-cp"), "-Dprobe.arrows=true")
         return command
 
     lab.sandbox_profile = sandbox
@@ -93,7 +95,7 @@ def hide_sword_tag(payload, offset):
     return payload
 
 
-async def redact_equipment(client, downstream, port, counts):
+async def redact_equipment(client, downstream, port, counts, perturb):
     upstream, server = await asyncio.open_connection("127.0.0.1", port)
 
     async def upstream_packets():
@@ -103,18 +105,48 @@ async def redact_equipment(client, downstream, port, counts):
 
     async def downstream_packets():
         play = False
+        own_id = None
+        sustained = False
+        pending_hurt = None
+
+        def send(frame):
+            downstream.write(varint(len(frame)) + frame)
+
         while True:
             frame = await read_frame(upstream)
             packet, offset = read_varint(frame)
-            if play and packet == 4:
-                filtered = hide_sword_tag(frame, offset)
-                counts["redacted"] += frame != filtered
-                frame = filtered
-            elif not play and packet == 2:
+            if play:
+                if packet == 1:
+                    own_id = struct.unpack_from(">i", frame, offset)[0]
+                elif packet == 2 and b"probe-sustained" in frame:
+                    sustained = perturb
+                elif packet == 4:
+                    filtered = hide_sword_tag(frame, offset)
+                    counts["redacted"] += frame != filtered
+                    frame = filtered
+                if sustained and packet == 0x12 and read_varint(frame, offset)[0] == own_id:
+                    counts["velocity_skipped"] += 1
+                    continue
+                if sustained and packet == 0x1a and struct.unpack_from(">iB", frame, offset) == (own_id, 2):
+                    if pending_hurt is not None:
+                        send(pending_hurt)
+                    pending_hurt = frame
+                    continue
+                own_metadata = packet == 0x1c and read_varint(frame, offset)[0] == own_id
+                if pending_hurt is not None and (packet == 0x06 or own_metadata):
+                    send(frame)
+                    await downstream.drain()
+                    await asyncio.sleep(.055)
+                    send(pending_hurt)
+                    pending_hurt = None
+                    counts["hurt_reordered"] += 1
+                    await downstream.drain()
+                    continue
+            elif packet == 2:
                 play = True
-            elif not play and packet == 3:
+            elif packet == 3:
                 raise ValueError("The test proxy expects the lab's uncompressed protocol")
-            downstream.write(varint(len(frame)) + frame)
+            send(frame)
             await downstream.drain()
 
     tasks = [asyncio.create_task(upstream_packets()), asyncio.create_task(downstream_packets())]
@@ -140,7 +172,7 @@ def prepare_fixture(work, build):
     jar(work / "combat-cases.jar", work / "classes")
 
 
-async def defender(work, build, port, hidden):
+async def defender(work, build, port, hidden, perturb):
     game = work / "runtime/defender"
     for folder in ("mods", "config/pvp-practice", "tmp", "home"):
         (game / folder).mkdir(parents=True, exist_ok=True)
@@ -158,7 +190,7 @@ async def defender(work, build, port, hidden):
     proxy = None
     if hidden:
         proxy = await asyncio.start_server(
-            lambda r, w: redact_equipment(r, w, port, counts), "127.0.0.1", 0)
+            lambda r, w: redact_equipment(r, w, port, counts, perturb), "127.0.0.1", 0)
         target = proxy.sockets[0].getsockname()[1]
     else:
         target = port
@@ -194,17 +226,24 @@ async def defender(work, build, port, hidden):
         if proxy:
             proxy.close()
             await proxy.wait_closed()
-    return log, counts["redacted"]
+    return log, counts
 
 
-def verify(work, log, redacted, hidden):
+def verify(work, log, redacted, hidden, arrows=False):
     text = log.read_text()
     identifier = re.search(r"Starting (m\d+):.*Rod diamond", text)
     assert identifier and "[Cases] DONE errors=0" in text, log
     replay = work / "runtime/replays" / (identifier[1] + ".jsonl")
     with replay.open() as rows:
         events = [json.loads(row) for row in rows]
-    hits = [e for e in events if e["type"] == "melee_damage" and e["target"] == PLAYER and e["health_loss"] > .015]
+    melee = [e for e in events if e["type"] == "melee_damage" and e["target"] == PLAYER]
+    # The last six strikes hold one continuous guard against a Sharpness II sword.
+    # The hidden-equipment proxy conceals the enchantment from the defender.
+    sustained = melee[-6:]
+    assert len(sustained) == 6 and all(e["blocked"] and e["noncrit_raw_damage"] == 10.5 for e in sustained), sustained
+    assert sum(e["health_loss"] <= .015 for e in sustained) == 3, sustained
+    assert 0 < sustained[3]["health_loss"] < 1.15 and abs(sustained[4]["health_loss"] - 1.15) < .015, sustained
+    hits = [e for e in melee[:-6] if e["health_loss"] > .015]
     records = list(re.finditer(r"\[CombatCoach\] block (\d+) (\w+) (\w+) ([\d.E-]+)", text))
     labels = [(int(r[1]), r[2], float(r[4])) for r in records]
     presentations = {}
@@ -217,12 +256,45 @@ def verify(work, log, redacted, hidden):
         )
     chimes = [(int(t), source) for t, source in re.findall(r"\[CombatCoach\] block chime (\d+) (server|local)", text)]
     sounds = [(int(t), float(pitch)) for t, pitch in re.findall(r"\[Cases\] sound (\d+) ([\d.]+)", text)]
+    sent = [e["time"] for e in events if e["type"] == "blocked_damage" and e["target"] == PLAYER and e["sound_sent"]]
+    heard = [t for t, pitch in sounds if abs(pitch - 100 / 63) < .001]
+    assert len(sent) == len(heard) and all(-20 <= t - s <= 250 for s, t in zip(sent, heard)), (sent, heard)
+    sustained_start = sustained[0]["time"] - 20
+    sustained_end = sustained[-1]["time"] + 450
+    sustained_notes = [(t, label, loss) for t, label, loss in labels
+                       if sustained_start <= t <= sustained_end and label == "BLOCKED"]
+    sustained_chimes = [t for t, _ in chimes if sustained_start <= t <= sustained_end]
+    sustained_sounds = [t for t, _ in sounds if sustained_start <= t <= sustained_end]
+    assert len(sustained_notes) == len(sustained_chimes) == len(sustained_sounds) == len(sustained), (
+        sustained_notes, sustained_chimes, sustained_sounds)
+    for hit, (t, _, loss), chime, sound in zip(sustained, sustained_notes, sustained_chimes, sustained_sounds):
+        assert -20 <= t - hit["time"] <= 450 and abs(loss - 1.15) < .015 and abs(t - chime) < 20, (hit, t, loss, chime)
+        assert -20 <= sound - hit["time"] <= 450, (hit, sound)
+    if hidden:
+        assert any(int(r[1]) >= sustained_start and r.group(2, 3) == ("BLOCKED", "true") for r in records)
+    late_chimes = [t for t, _ in chimes if t > sustained_end]
+    if arrows:
+        arrows_seen = [(int(t), label) for t, label in re.findall(r"\[CombatCoach\] arrow (\d+) (\w+)", text)]
+        assert [label for _, label in arrows_seen] == ["BLOCKED", "UNBLOCKED"], arrows_seen
+        assert len(late_chimes) == 1 and abs(late_chimes[0] - arrows_seen[0][0]) < 20, late_chimes
+        arrow_damage = [e for e in events if e["type"] == "health_damage" and e["source"] == "arrow"
+                        and e["target"] == PLAYER and e["time"] > sustained_end]
+        assert len(arrow_damage) == 2, arrow_damage
+        for (verdict_time, _), event in zip(arrows_seen, arrow_damage):
+            assert -20 <= verdict_time - event["time"] <= 450, (verdict_time, event)
+        # Identical projectile launches and armor. The server reports HP (not
+        # pixels); applying the diamond armor factor to (raw + 1) / 2 gives this.
+        assert abs(arrow_damage[0]["amount"] - (arrow_damage[1]["amount"] + .2) / 2) < .015, arrow_damage
+    else:
+        assert not late_chimes, late_chimes
     matched = {}
     for t, label, loss in labels:
         eligible = [e for e in hits if e["hit_index"] not in matched and -20 <= t - e["time"] <= 450
                     and abs(e["health_loss"] - loss) < .015]
         if eligible:
-            e = min(eligible, key=lambda e: abs(t - e["time"] - (110 if hidden else 50)))
+            # Updates grade in impact order. Two rod follow-ups can have the same
+            # loss and the first verdict can land after the second server hit.
+            e = eligible[0]
             matched[e["hit_index"]] = (t, label)
     totals = collections.Counter()
     for e in hits:
@@ -236,8 +308,6 @@ def verify(work, log, redacted, hidden):
             source, local_audio = presentations[t]
             assert len(source) == 1, (e, source)
             assert len(local_audio) == (1 if source[0] == "local" else 0), (e, source)
-            if source[0] == "server":
-                assert sum(abs(stamp - t) <= 200 and abs(pitch - 100 / 63) < .001 for stamp, pitch in sounds) == 1
     print(f"{'Hidden' if hidden else 'Visible'} equipment, {identifier[1]}. Results in {work}", flush=True)
     for row, total in sorted(totals.items()):
         print(*row, total, flush=True)
@@ -257,18 +327,20 @@ def verify(work, log, redacted, hidden):
                    matched.get(e["hit_index"], (0, ""))[1] == "BLOCKED" for e in hits)
     else:
         assert any(source == "server" for _, source in chimes), "missing server chime deduplication"
-    print("PASS melee verdicts, critical/rod upgrades, chimes and current-health HUD", flush=True)
+    print("PASS melee verdicts, critical/rod upgrades, sustained-guard chimes, absorption and current-health HUD", flush=True)
 
 
-async def run_case(build, offset, hidden):
+async def run_case(build, offset, hidden, perturb, arrows):
     parent = ROOT / "build/blockhit-smoke"
     parent.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="hidden-" if hidden else "visible-", dir=parent))
     prepare_fixture(work, build)
     with (work / "manager.log").open("w") as out:
-        manager = subprocess.Popen([sys.executable, __file__, "--fixture", str(work),
-                                    "--build-dir", str(build), "--port-offset", str(offset)],
-                                   cwd=ROOT, stdout=out, stderr=subprocess.STDOUT)
+        command = [sys.executable, __file__, "--fixture", str(work),
+                   "--build-dir", str(build), "--port-offset", str(offset)]
+        if arrows:
+            command.append("--arrows")
+        manager = subprocess.Popen(command, cwd=ROOT, stdout=out, stderr=subprocess.STDOUT)
     old_runtime = lab.RUNTIME
     lab.RUNTIME = work / "runtime"
     try:
@@ -281,9 +353,12 @@ async def run_case(build, offset, hidden):
         else:
             raise RuntimeError("Isolated bot did not start. See " + str(work / "manager.log"))
         lab.send("op LabSlot0")
-        log, redacted = await defender(work, build, 25569 + offset, hidden)
-        (work / "redacted-equipment.txt").write_text(str(redacted) + "\n")
-        verify(work, log, redacted, hidden)
+        log, counts = await defender(work, build, 25569 + offset, hidden, perturb)
+        (work / "redacted-equipment.txt").write_text(str(counts["redacted"]) + "\n")
+        if perturb:
+            assert counts["hurt_reordered"] >= 6 and counts["velocity_skipped"] >= 6, (work, counts)
+            print(f"Perturbed packet delivery in {work}: {dict(counts)}", flush=True)
+        verify(work, log, counts["redacted"], hidden, arrows)
     finally:
         lab.RUNTIME = old_runtime
         if manager.poll() is None:
@@ -296,16 +371,19 @@ def main():
     parser.add_argument("--build-dir", type=Path, default=ROOT / "build/practice-client")
     parser.add_argument("--port-offset", type=int, default=420)
     parser.add_argument("--case", choices=("visible", "hidden", "both"), default="both")
+    parser.add_argument("--perturb", action="store_true",
+                        help="Reorder hurt and bar updates and drop own velocity during the hidden-gear sustained hold")
+    parser.add_argument("--arrows", action="store_true", help="Also verify two native arrow hits, one blocked and one open")
     parser.add_argument("--fixture", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.port_offset < 20 or args.port_offset > 39000:
         parser.error("Use an isolated port offset from 20 to 39000")
     build = args.build_dir.resolve()
     if args.fixture:
-        serve_fixture(args.fixture, build, args.port_offset)
+        serve_fixture(args.fixture, build, args.port_offset, args.arrows)
     else:
         for name in ("visible", "hidden") if args.case == "both" else (args.case,):
-            asyncio.run(run_case(build, args.port_offset, name == "hidden"))
+            asyncio.run(run_case(build, args.port_offset, name == "hidden", args.perturb and name == "hidden", args.arrows))
 
 
 if __name__ == "__main__":

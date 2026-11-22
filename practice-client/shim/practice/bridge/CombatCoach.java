@@ -1,18 +1,32 @@
 package practice.bridge;
 
 import java.util.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemSword;
+import net.minecraft.network.play.client.C07PacketPlayerDigging;
+import net.minecraft.network.play.client.C08PacketPlayerBlockPlacement;
+import net.minecraft.network.play.client.C09PacketHeldItemChange;
 import net.minecraft.network.play.server.S06PacketUpdateHealth;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
 import net.minecraft.network.play.server.S0BPacketAnimation;
 import net.minecraft.network.play.server.S12PacketEntityVelocity;
 import net.minecraft.network.play.server.S19PacketEntityStatus;
+import net.minecraft.network.play.server.S1CPacketEntityMetadata;
+import net.minecraft.network.play.server.S1EPacketRemoveEntityEffect;
+import net.minecraft.potion.Potion;
 import net.minecraft.network.play.server.S29PacketSoundEffect;
 import net.minecraft.util.AxisAlignedBB;
 import practice.api.Frame;
+import practice.core.BlockhitGuard;
+import practice.core.BlockhitTimeline;
+import practice.core.BlockhitTimeline.Hit;
 import practice.core.CombatCoachMath;
 import practice.core.CombatCoachMath.Block;
 import practice.core.CombatCoachMath.DamageMatch;
@@ -20,7 +34,9 @@ import practice.core.CombatCoachMath.DamageMatch;
 /** Read-only coaching uses this client's applied packets and native movement boundaries. */
 final class CombatCoach {
     private static final long DISPLAY = 1_800_000_000L;
-    private static final int HIT_WINDOW = 10, LATE_WINDOW = 4;
+    private static final int HIT_WINDOW = BlockhitTimeline.HURT_TICKS;
+    private static final int PACKET_PAIR_WINDOW = BlockhitTimeline.PAIR_TICKS;
+    private static final int JUMP_LATE_WINDOW = 4;
     private static final int NOMINAL_TICK_MS = 50;
     private static final long GUARD_QUIET = 650_000_000L;
     private static final double MEANINGFUL_REDUCTION = CombatCoachMath.MEANINGFUL_JUMP_REDUCTION;
@@ -29,6 +45,8 @@ final class CombatCoach {
     private static final float BLOCK_CHIME_VOLUME = .25f, BLOCK_CHIME_PITCH = 1.6f;
     private static final boolean VERIFY = Boolean.getBoolean("practice.coach.verify");
     private static final CombatCoach INSTANCE = new CombatCoach();
+
+    static boolean jumpEnabled() { return INSTANCE.jump; }
 
     enum Hud { HOTBAR, CENTER, OFF }
 
@@ -44,31 +62,32 @@ final class CombatCoach {
         catch (IllegalArgumentException invalid) { return fallback; }
     }
 
-    private static final class Damage {
-        final int tick, armor, resistance, protection;
+    private static final class Defense {
         final float hp, absorption;
+        final int armor, resistance, protection;
         final List<MeleeObservations.Candidate> candidates;
-        final boolean directionReliable, rodCue, openForLearning;
-        final Set<Float> previousRaw;
-        boolean ambiguous, critical, serverChime;
-        double lost, pushX, pushZ;
-        int observedAt = -1;
+        final boolean mixed, arrowThreat, rodCue, open, settledGuard, directionReliable;
 
-        Damage(int tick, float hp, EntityPlayerSP player, List<MeleeObservations.Candidate> candidates,
-               boolean serverChime, boolean rodCue, boolean openForLearning, Set<Float> previousRaw) {
-            this.tick = tick;
-            this.hp = hp;
-            absorption = player.func_110139_bj();
+        Defense(Minecraft mc, CombatCoach coach, long received) {
+            EntityPlayerSP player = coach.player;
+            hp = coach.health;
+            absorption = coach.absorption;
             armor = player.func_70658_aO();
             resistance = MeleeObservations.resistance(player);
             protection = MeleeObservations.protection(player);
-            this.candidates = candidates;
-            this.serverChime = serverChime;
-            this.rodCue = rodCue;
-            this.openForLearning = openForLearning;
-            this.previousRaw = previousRaw;
+            candidates = coach.candidates(mc);
+            mixed = MeleeObservations.mixedSources(mc, player);
+            arrowThreat = MeleeObservations.arrowThreat(mc, player);
+            rodCue = MeleeObservations.nearbyRod(mc, player) || candidates.stream().anyMatch(c -> c.rod);
+            settledGuard = coach.settledGuard(mc, received);
+            open = !player.func_70632_aY() && received - coach.lastGuard >= GUARD_QUIET && !settledGuard;
             directionReliable = player.field_70122_E && Math.hypot(player.field_70159_w, player.field_70179_y) <= .28;
         }
+    }
+
+    private static final class Swing {
+        final int id, tick;
+        Swing(int id, int tick) { this.id = id; this.tick = tick; }
     }
 
     private static final class Impact {
@@ -106,22 +125,27 @@ final class CombatCoach {
     private volatile boolean block, jump;
     private Hud jumpHud = Hud.HOTBAR, blockHud = Hud.HOTBAR;
     private JumpSound jumpSound = JumpSound.ORB;
-    private boolean suspended;
-    private int movement, lastHurt = -1000;
-    private int serverChimeTick = -1000;
+    private volatile boolean suspended;
+    private int movement, blockTick, lastHurt = -1000;
     private int lastTakeoff = -1000, takeoffFor = -1000, missed = -1000;
     private boolean previousJump, jumpKey, delaying, overlappingHurt, meleeCue;
     private double preJumpX, preJumpY, preJumpZ, changeX, changeZ;
     private double jumpBack, jumpSaved;
     private int knockbackDelay;
-    private float health;
+    private float health, absorption;
     private Note blockNote, jumpNote;
     private Impact pending, moving;
-    private Damage damage;
+    private final BlockhitTimeline<Defense> damage = new BlockhitTimeline<>();
+    private final BlockhitGuard guardPackets = new BlockhitGuard();
+    private final Map<Object, Long> receivedTimes = Collections.synchronizedMap(new WeakHashMap<>());
+    private int absorptionRemovedAt = -1000, arrowCount;
     private Set<Float> previousRaw = Collections.emptySet();
-    private int knownDamageTick = -1000, swingTick = -1000;
-    private long lastGuard;
+    private int knownDamageTick = -1000;
+    private long lastGuard, guardStartedAt;
+    private int guardDuration;
+    private final Deque<Swing> swings = new ArrayDeque<>();
     private final Map<String, Set<Float>> learnedWeapons = new HashMap<>();
+    private final Map<String, Set<Float>> provisionalWeapons = new HashMap<>();
     private final Deque<List<MeleeObservations.Candidate>> history = new ArrayDeque<>();
 
     static void settings(Properties settings) {
@@ -138,7 +162,14 @@ final class CombatCoach {
 
     static void tick(Minecraft mc, boolean suspended) {
         INSTANCE.suspended = suspended;
-        if (INSTANCE.block || INSTANCE.jump) INSTANCE.bind(mc);
+        CombatCoach coach = INSTANCE;
+        if ((coach.block || coach.jump) && coach.bind(mc) && coach.block) {
+            coach.blockTick++;
+            coach.resolveDamage();
+            while (!coach.swings.isEmpty() &&
+                    coach.blockTick - coach.swings.peekFirst().tick > HIT_WINDOW + PACKET_PAIR_WINDOW)
+                coach.swings.removeFirst();
+        }
     }
 
     private boolean bind(Minecraft mc) {
@@ -153,20 +184,26 @@ final class CombatCoach {
     private void reset(EntityPlayerSP next, Object nextWorld) {
         if (next != player || nextWorld != world) {
             learnedWeapons.clear();
+            provisionalWeapons.clear();
+            guardPackets.clear();
             lastGuard = System.nanoTime();
         }
         player = next;
         world = nextWorld;
         health = next == null ? 0 : next.func_110143_aJ();
-        movement = 0;
-        lastHurt = lastTakeoff = takeoffFor = missed = serverChimeTick = -1000;
+        absorption = next == null ? 0 : next.func_110139_bj();
+        arrowCount = next == null ? 0 : next.func_85035_bI();
+        guardDuration = 0;
+        movement = blockTick = 0;
+        lastHurt = lastTakeoff = takeoffFor = missed = absorptionRemovedAt = -1000;
         previousJump = jumpKey = delaying = overlappingHurt = meleeCue = false;
         pending = moving = null;
-        damage = null;
+        damage.clear();
         previousRaw = Collections.emptySet();
-        knownDamageTick = swingTick = -1000;
+        knownDamageTick = -1000;
         blockNote = jumpNote = null;
         history.clear();
+        swings.clear();
     }
 
     static void packet(Object packet, boolean after) {
@@ -174,35 +211,72 @@ final class CombatCoach {
         if ((!coach.jump && !coach.block) || !after ||
             !(packet instanceof S19PacketEntityStatus || packet instanceof S12PacketEntityVelocity ||
                 packet instanceof S06PacketUpdateHealth || packet instanceof S08PacketPlayerPosLook ||
-                coach.block && (packet instanceof S29PacketSoundEffect || packet instanceof S0BPacketAnimation))) return;
+                coach.block && (packet instanceof S29PacketSoundEffect || packet instanceof S0BPacketAnimation ||
+                    packet instanceof S1CPacketEntityMetadata || packet instanceof S1EPacketRemoveEntityEffect))) return;
         Minecraft mc = Minecraft.func_71410_x();
         if (!mc.func_152345_ab() || !coach.bind(mc)) return;
+        Long encoded = coach.receivedTimes.remove(packet);
+        long received = encoded == null ? System.nanoTime() : encoded;
         if (packet instanceof S19PacketEntityStatus) {
             S19PacketEntityStatus status = (S19PacketEntityStatus) packet;
-            if (status.func_149160_c() == 2 && status.func_149161_a(mc.field_71441_e) == coach.player) coach.hurt(mc);
+            if (status.func_149160_c() == 2 && status.func_149161_a(mc.field_71441_e) == coach.player) coach.hurt(mc, received);
         } else if (packet instanceof S12PacketEntityVelocity) {
             S12PacketEntityVelocity velocity = (S12PacketEntityVelocity) packet;
             if (velocity.func_149412_c() == coach.player.func_145782_y()) {
                 coach.velocity(velocity.func_149411_d() / 8000.0, velocity.func_149409_f() / 8000.0);
             }
         } else if (packet instanceof S06PacketUpdateHealth) {
-            coach.health(mc, ((S06PacketUpdateHealth) packet).func_149332_c());
+            coach.health(mc, ((S06PacketUpdateHealth) packet).func_149332_c(), received);
+        } else if (packet instanceof S1CPacketEntityMetadata) {
+            if (((S1CPacketEntityMetadata) packet).func_149375_d() == coach.player.func_145782_y())
+                coach.metadata(mc, received);
+        } else if (packet instanceof S1EPacketRemoveEntityEffect) {
+            S1EPacketRemoveEntityEffect effect = (S1EPacketRemoveEntityEffect) packet;
+            if (effect.func_149076_c() == coach.player.func_145782_y() &&
+                    effect.func_149075_d() == Potion.field_76444_x.field_76415_H)
+                coach.absorptionRemovedAt = coach.blockTick;
         } else if (packet instanceof S0BPacketAnimation) {
             S0BPacketAnimation animation = (S0BPacketAnimation) packet;
             if (animation.func_148977_d() == 4 && animation.func_148978_c() == coach.player.func_145782_y())
-                coach.critical(mc);
+                coach.damage.critical(coach.blockTick);
             else if (animation.func_148977_d() == 0) coach.swing(mc, animation.func_148978_c());
         } else if (packet instanceof S29PacketSoundEffect) {
             coach.serverSound((S29PacketSoundEffect) packet);
         } else {
-            coach.reset(mc.field_71439_g, mc.field_71441_e);
+            coach.lastHurt = coach.lastTakeoff = coach.takeoffFor = coach.missed = -1000;
+            coach.delaying = coach.overlappingHurt = coach.meleeCue = false;
+            coach.pending = coach.moving = null;
+            coach.jumpNote = null;
+            coach.history.clear();
         }
     }
 
-    private boolean takeServerChime() {
-        boolean heard = movement - serverChimeTick <= 2;
-        serverChimeTick = -1000;
-        return heard;
+    static void inbound(Object packets) {
+        CombatCoach coach = INSTANCE;
+        if (!coach.block || coach.suspended || !(packets instanceof List)) return;
+        for (Object packet : (List<?>) packets)
+            if (packet instanceof S19PacketEntityStatus || packet instanceof S06PacketUpdateHealth)
+                coach.receivedTimes.put(packet, System.nanoTime());
+    }
+
+    static void outbound(Object context, Object packet) {
+        CombatCoach coach = INSTANCE;
+        if (!coach.block || coach.suspended || !(context instanceof ChannelHandlerContext) ||
+                !(packet instanceof C08PacketPlayerBlockPlacement || packet instanceof C07PacketPlayerDigging ||
+                    packet instanceof C09PacketHeldItemChange)) return;
+        Channel channel = ((ChannelHandlerContext) context).channel();
+        if (channel != ConnectionScope.current()) return;
+        boolean guard = false;
+        if (packet instanceof C08PacketPlayerBlockPlacement) {
+            C08PacketPlayerBlockPlacement use = (C08PacketPlayerBlockPlacement) packet;
+            if (use.func_149568_f() != 255) return;
+            ItemStack stack = use.func_149574_g();
+            guard = stack != null && stack.func_77973_b() instanceof ItemSword;
+        } else if (packet instanceof C07PacketPlayerDigging &&
+                ((C07PacketPlayerDigging) packet).func_180762_c() != C07PacketPlayerDigging.Action.RELEASE_USE_ITEM) {
+            return;
+        }
+        coach.guardPackets.transition(channel, System.nanoTime(), guard);
     }
 
     private List<MeleeObservations.Candidate> candidates(Minecraft mc) {
@@ -214,7 +288,30 @@ final class CombatCoach {
     private void swing(Minecraft mc, int id) {
         Entity source = mc.field_71441_e.func_73045_a(id);
         if (source instanceof EntityPlayer && source != player &&
-                player.func_70068_e(source) <= MeleeObservations.RANGE * MeleeObservations.RANGE) swingTick = movement;
+                player.func_70068_e(source) <= MeleeObservations.RANGE * MeleeObservations.RANGE) {
+            swings.addLast(new Swing(id, blockTick));
+            if (swings.size() > 64) swings.removeFirst();
+        }
+    }
+
+    private void observeGuard(long now) {
+        if (!player.func_70632_aY()) {
+            guardDuration = 0;
+            return;
+        }
+        int duration = player.func_71057_bx();
+        if (guardDuration == 0 || duration < guardDuration) guardStartedAt = now;
+        guardDuration = duration;
+        lastGuard = now;
+    }
+
+    private boolean settledGuard(Minecraft mc, long received) {
+        if (mc.func_147114_u() == null) return false;
+        NetworkPlayerInfo info = mc.func_147114_u().func_175102_a(player.func_110124_au());
+        int ping = info == null ? 0 : info.func_178853_c();
+        if (info != null && ping >= 0 && guardPackets.covers(ConnectionScope.current(), received, ping)) return true;
+        // Native-use history also covers enabling the trainer in the middle of a hold.
+        return guardDuration >= 3 && received - guardStartedAt >= Math.max(150, ping + 50L) * 1_000_000L;
     }
 
     private void serverSound(S29PacketSoundEffect sound) {
@@ -224,10 +321,10 @@ final class CombatCoach {
         if (BLOCK_CHIME.equals(sound.func_149212_c()) && sound.func_149208_g() == BLOCK_CHIME_VOLUME &&
                 sound.func_149209_h() == wirePitch &&
                 player.func_70092_e(sound.func_149207_d(), sound.func_149211_e(), sound.func_149210_f()) <= 9)
-            serverChimeTick = movement;
+            damage.chime(blockTick);
     }
 
-    private void hurt(Minecraft mc) {
+    private void hurt(Minecraft mc, long received) {
         overlappingHurt = delaying && movement - lastHurt <= HIT_WINDOW;
         lastHurt = movement;
         meleeCue = MeleeObservations.hasNearbyPlayer(mc, player) && !MeleeObservations.mixedSources(mc, player);
@@ -237,41 +334,13 @@ final class CombatCoach {
             pending.hurt = delaying ? movement : -1000;
         }
         if (!block) return;
-        boolean serverChime = takeServerChime();
-        if (damage != null && damage.observedAt < 0 && movement - damage.tick <= 2) {
-            damage.ambiguous = true;
-            return;
-        }
-        if (damage != null) resolveDamage(true);
-        previousRaw = Collections.emptySet();
-        if (!meleeCue) return;
-        List<MeleeObservations.Candidate> nearby = candidates(mc);
-        boolean rodCue = MeleeObservations.nearbyRod(mc, player) || nearby.stream().anyMatch(c -> c.rod);
-        boolean open = !player.func_70632_aY() && System.nanoTime() - lastGuard >= GUARD_QUIET;
-        damage = new Damage(movement, health, player, nearby, serverChime, rodCue, open, CombatCoachMath.FRESH);
-    }
-
-    private void critical(Minecraft mc) {
-        if (damage != null && damage.observedAt < 0 && movement - damage.tick <= HIT_WINDOW) {
-            damage.critical = true;
-            return;
-        }
-        if (damage != null) resolveDamage(true);
-        if (!previousRaw.isEmpty() && movement - knownDamageTick <= HIT_WINDOW &&
-                !MeleeObservations.mixedSources(mc, player)) {
-            // A crit can raise an earlier hit's raw damage during immunity.
-            // That sends the crit animation and HP update without another hurt event.
-            damage = new Damage(movement, health, player, candidates(mc), takeServerChime(), false, false, previousRaw);
-            damage.critical = true;
-        }
+        observeGuard(System.nanoTime());
+        Defense defense = new Defense(mc, this, received);
+        damage.hurt(blockTick, defense, defense.rodCue);
     }
 
     private void velocity(double x, double z) {
-        if (damage != null && movement - damage.tick <= HIT_WINDOW) {
-            if (damage.pushX != 0 || damage.pushZ != 0) damage.ambiguous = true;
-            damage.pushX = x;
-            damage.pushZ = z;
-        }
+        if (block) damage.push(blockTick, x, z);
         if (!jump) return;
         if (Math.hypot(x, z) < .01) {
             pending = null;
@@ -281,105 +350,196 @@ final class CombatCoach {
         pending = new Impact(movement, hurt, x, z, pending != null || overlappingHurt);
     }
 
-    private void health(Minecraft mc, float next) {
-        float before = health;
-        double lost = before - next;
+    private void health(Minecraft mc, float next, long received) {
+        double lost = health - next;
+        if (block && lost > .015)
+            damage.loss(blockTick, new Defense(mc, this, received), lost, false, absorption > .015);
         health = next;
-        if (!block || lost < .015) return;
-        if (damage == null && !previousRaw.isEmpty() && movement - knownDamageTick <= HIT_WINDOW &&
-                movement - swingTick <= 2 && !MeleeObservations.mixedSources(mc, player)) {
-            damage = new Damage(movement, before, player, candidates(mc), takeServerChime(), false, false, previousRaw);
+    }
+
+    private void metadata(Minecraft mc, long received) {
+        int nextArrows = player.func_85035_bI();
+        if (nextArrows > arrowCount) damage.arrow(blockTick);
+        arrowCount = nextArrows;
+        float next = player.func_110139_bj();
+        double lost = absorption - next;
+        if (lost > .015 && blockTick - absorptionRemovedAt > PACKET_PAIR_WINDOW)
+            damage.loss(blockTick, new Defense(mc, this, received), lost, true, next <= .015);
+        absorption = next;
+    }
+
+    private void resolveDamage() {
+        Hit<Defense> hit;
+        while ((hit = damage.poll(blockTick)) != null) grade(hit);
+    }
+
+    private void grade(Hit<Defense> hit) {
+        Defense loss = hit.atLoss;
+        Defense source = hit.atHurt == null ? loss : hit.atHurt;
+        double lost = hit.health + hit.absorption;
+        boolean fresh = hit.atHurt != null;
+        if (hit.arrow) {
+            gradeArrow(hit, source, lost);
+            previousRaw = Collections.emptySet();
+            knownDamageTick = hit.hurtTick;
+            return;
         }
-        if (damage == null || damage.observedAt >= 0 || movement - damage.tick > HIT_WINDOW) {
-            // Upgrades and custom health changes may omit the fresh-hurt cue.
-            damage = null;
-            if (meleeCue || movement - lastHurt > HIT_WINDOW && !history.isEmpty() && !history.getLast().isEmpty())
+        List<MeleeObservations.Candidate> nearby = new ArrayList<>(source.candidates);
+        nearby.addAll(loss.candidates);
+        if (!history.isEmpty()) nearby.addAll(history.getLast());
+        if (nearby.isEmpty()) {
+            if (fresh) previousRaw = Collections.emptySet();
+            return;
+        }
+        int swordSwing = recentSwordSwing(nearby, hit.tick, hit.hurtTick);
+        boolean movingPush = hit.clearPush && Math.hypot(hit.pushX, hit.pushZ) >= .01;
+        int aligned = movingPush ? MeleeObservations.fromDirection(nearby, hit.pushX, hit.pushZ) : -1;
+        boolean mixed = source.mixed || loss.mixed;
+        boolean arrowThreat = source.arrowThreat || loss.arrowThreat;
+        boolean meleeEvidence = hit.critical || swordSwing != -1 && (!mixed || movingPush && !arrowThreat);
+        if (mixed && !meleeEvidence || hit.health == 0 && !fresh && !hit.critical && swordSwing == -1) {
+            if (fresh) previousRaw = Collections.emptySet();
+            showBlock(Block.UNCERTAIN, false, lost);
+            return;
+        }
+
+        // Some servers skip hurt status even for a fresh hit. Require a new impulse
+        // and corroborated melee outside the window of the last observed damage.
+        fresh |= movingPush && meleeEvidence && hit.tick - knownDamageTick > HIT_WINDOW;
+        // A stronger hit can update the bars without another hurt packet.
+        Set<Float> prior = CombatCoachMath.FRESH;
+        if (!fresh) {
+            if (hit.tick - knownDamageTick > HIT_WINDOW || previousRaw.isEmpty() || !meleeEvidence) {
                 showBlock(Block.UNCERTAIN, false, lost);
-            return;
+                return;
+            }
+            prior = previousRaw;
         }
-        damage.observedAt = movement;
-        damage.lost = lost;
-        if (damage.rodCue) {
-            // A zero-damage rod gives us a hurt cue. The next sword can arrive
-            // during immunity, after the attacker has changed their held item.
-            damage.candidates.addAll(candidates(mc));
-            damage.serverChime |= takeServerChime();
-        }
-    }
-
-    private void resolveDamage(boolean superseded) {
-        Damage d = damage;
-        if (!block || d == null) return;
-        if (d.observedAt < 0) {
-            if (superseded || movement - d.tick > HIT_WINDOW) damage = null;
-            return;
-        }
-        if (d.rodCue && !history.isEmpty()) d.candidates.addAll(history.getLast());
-        DamageMatch match = estimate(d, -1);
-        Block verdict = d.ambiguous ? Block.UNCERTAIN : match.verdict;
-        boolean direction = false;
-        if (verdict == Block.UNCERTAIN && !d.ambiguous && !d.rodCue && d.directionReliable) {
-            int attacker = MeleeObservations.fromDirection(d.candidates, d.pushX, d.pushZ);
-            if (attacker != -1) {
-                verdict = estimate(d, attacker).verdict;
-                direction = verdict != Block.UNCERTAIN;
+        boolean rod = source.rodCue && hit.hurtTick < hit.tick - 1;
+        Set<Float> modeled = MeleeObservations.damage(nearby, -1, hit.critical, rod, learnedWeapons);
+        DamageMatch match = estimate(hit, modeled, prior);
+        Block verdict = match.verdict;
+        boolean likely = false;
+        if (verdict == Block.UNCERTAIN && !rod && source.directionReliable && aligned != -1) {
+            Block directed = estimate(hit, MeleeObservations.damage(nearby, aligned, hit.critical, false, learnedWeapons), prior).verdict;
+            if (directed != Block.UNCERTAIN) {
+                verdict = directed;
+                likely = true;
             }
         }
-        if (superseded || verdict != Block.UNCERTAIN || movement - d.observedAt >= LATE_WINDOW) {
-            showBlock(verdict, direction, d.lost);
-            if (verdict == Block.BLOCKED && !direction) {
-                if (!d.serverChime) player.func_85030_a(BLOCK_CHIME, BLOCK_CHIME_VOLUME, BLOCK_CHIME_PITCH);
-                if (VERIFY) System.out.println("[CombatCoach] block chime " + System.currentTimeMillis() +
-                    (d.serverChime ? " server" : " local"));
+        boolean settled = fresh ? source.settledGuard : loss.settledGuard;
+        boolean nonlethal = hit.health < loss.hp - .015;
+        boolean linkedMelee = meleeEvidence && (hit.critical || !arrowThreat &&
+            (movingPush || fresh && !mixed && swordSwing != -1));
+        if (verdict == Block.UNBLOCKED && settled && linkedMelee && nonlethal) {
+            Set<Float> visible = MeleeObservations.damage(nearby, -1, hit.critical, rod);
+            if (!visible.equals(modeled) && estimate(hit, visible, prior).verdict == Block.BLOCKED) {
+                verdict = Block.BLOCKED;
+                likely = true;
             }
-            previousRaw = d.ambiguous ? Collections.emptySet() : match.rawDamage;
-            if (d.previousRaw == CombatCoachMath.FRESH) {
-                knownDamageTick = d.tick;
-                learnWeapon(d);
-            }
-            if (VERIFY && (d.critical || d.rodCue))
-                System.out.println("[CombatCoach] melee detail " + System.currentTimeMillis() +
-                    " critical " + d.critical + " rod " + d.rodCue + " upgrade " + (d.previousRaw != CombatCoachMath.FRESH));
-            damage = null;
         }
+        if (verdict == Block.UNCERTAIN && settled && linkedMelee &&
+                (nonlethal || hit.critical || aligned == swordSwing && aligned != -1)) {
+            verdict = Block.BLOCKED;
+            likely = true;
+        }
+
+        showBlock(verdict, likely, lost);
+        if (verdict == Block.BLOCKED && (!likely || linkedMelee)) chime(hit.serverChime);
+        if (!match.rawDamage.isEmpty()) previousRaw = match.rawDamage;
+        else if (fresh) previousRaw = meleeEvidence ? modeled : Collections.emptySet();
+        if (fresh) {
+            knownDamageTick = hit.hurtTick;
+            if (hit.atHurt != null && !mixed && !rod && !source.rodCue && source.open && loss.absorption == 0)
+                learnWeapon(hit, source.candidates, swordSwing);
+        }
+        if (VERIFY && (hit.critical || rod))
+            System.out.println("[CombatCoach] melee detail " + System.currentTimeMillis() +
+                " critical " + hit.critical + " rod " + rod + " upgrade " + !fresh);
     }
 
-    private DamageMatch estimate(Damage d, int attacker) {
-        return CombatCoachMath.match(d.lost, d.hp, d.absorption, d.armor, d.resistance, d.protection,
-            MeleeObservations.damage(d.candidates, attacker, d.critical, d.rodCue, learnedWeapons), d.previousRaw);
+    private void gradeArrow(Hit<Defense> hit, Defense defense, double lost) {
+        // Vanilla increments the stuck-arrow count only when an arrow hit is accepted.
+        // Damage above this bound guarantees that the raw arrow damage exceeded one.
+        float onePoint = CombatCoachMath.healthLoss(1, false, hit.atLoss.hp + hit.atLoss.absorption, 0,
+            defense.armor, defense.resistance, 0);
+        boolean blocked = defense.settledGuard && !hit.critical && lost > onePoint + .015;
+        Block verdict = blocked ? Block.BLOCKED : defense.open && hit.atLoss.open && !hit.critical
+            ? Block.UNBLOCKED : Block.UNCERTAIN;
+        showBlock(verdict, blocked, lost);
+        if (blocked) chime(hit.serverChime);
+        if (VERIFY) System.out.println("[CombatCoach] arrow " + System.currentTimeMillis() + " " + verdict);
     }
 
-    private void learnWeapon(Damage d) {
-        if (!d.openForLearning || d.ambiguous || d.rodCue || d.absorption != 0 || d.candidates.isEmpty()) return;
-        MeleeObservations.Candidate weapon = d.candidates.get(0);
-        if (weapon.weaponKey == null) return;
-        for (MeleeObservations.Candidate c : d.candidates) {
-            if (!weapon.weaponKey.equals(c.weaponKey) || c.base != weapon.base || !d.critical && !c.grounded) return;
+    private void chime(boolean serverChime) {
+        if (!serverChime) player.func_85030_a(BLOCK_CHIME, BLOCK_CHIME_VOLUME, BLOCK_CHIME_PITCH);
+        if (VERIFY) System.out.println("[CombatCoach] block chime " + System.currentTimeMillis() +
+            (serverChime ? " server" : " local"));
+    }
+
+    private int recentSwordSwing(List<MeleeObservations.Candidate> candidates, int lossTick, int hurtTick) {
+        int attacker = -1;
+        for (Swing swing : swings) {
+            if (Math.abs(swing.tick - lossTick) > PACKET_PAIR_WINDOW &&
+                    Math.abs(swing.tick - hurtTick) > PACKET_PAIR_WINDOW) continue;
+            for (MeleeObservations.Candidate c : candidates) {
+                if (!c.sword || c.id != swing.id) continue;
+                if (attacker != -1 && attacker != c.id) return -1;
+                attacker = c.id;
+            }
         }
-        Set<Float> observed = CombatCoachMath.weaponBonuses(d.lost, d.hp, d.armor, d.resistance,
-            d.protection, weapon.base, weapon.visibleBonus, d.critical);
+        return attacker;
+    }
+
+    private DamageMatch estimate(Hit<Defense> hit, Set<Float> raw, Set<Float> prior) {
+        Defense loss = hit.atLoss, defense = hit.atHurt == null ? loss : hit.atHurt;
+        return CombatCoachMath.match(hit.health + hit.absorption, loss.hp + loss.absorption, 0,
+            defense.armor, defense.resistance, defense.protection, raw, prior);
+    }
+
+    private void learnWeapon(Hit<Defense> hit, List<MeleeObservations.Candidate> candidates, int attacker) {
+        MeleeObservations.Candidate weapon = null;
+        for (MeleeObservations.Candidate c : candidates) {
+            if (attacker != -1 && attacker != c.id) continue;
+            if (c.weaponKey == null || !hit.critical && !c.grounded) return;
+            if (weapon == null) weapon = c;
+            else if (!weapon.weaponKey.equals(c.weaponKey) || c.base != weapon.base) return;
+        }
+        if (weapon == null) return;
+        Defense defense = hit.atHurt;
+        Set<Float> observed = CombatCoachMath.weaponBonuses(hit.health, hit.atLoss.hp, defense.armor,
+            defense.resistance, defense.protection, weapon.base, weapon.visibleBonus, hit.critical);
         if (observed.isEmpty()) return;
-        Set<Float> previous = learnedWeapons.get(weapon.weaponKey);
+        String key = weapon.weaponKey;
+        Set<Float> previous = learnedWeapons.get(key);
+        Set<Float> repeated = sharedBonuses(previous, observed);
+        if (repeated.isEmpty()) repeated = sharedBonuses(provisionalWeapons.get(key), observed);
+        if (repeated.isEmpty()) {
+            provisionalWeapons.put(key, observed);
+            return;
+        }
+        provisionalWeapons.remove(key);
+        learnedWeapons.put(key, repeated);
+        if (VERIFY && !repeated.equals(previous))
+            System.out.println("[CombatCoach] weapon calibration " + System.currentTimeMillis() + " " + repeated);
+    }
+
+    private static Set<Float> sharedBonuses(Set<Float> earlier, Set<Float> observed) {
         Set<Float> shared = new LinkedHashSet<>();
-        if (previous != null)
-            for (float candidate : previous)
+        if (earlier != null)
+            for (float candidate : earlier)
                 for (float next : observed)
                     if (Math.abs(candidate - next) < .06f) shared.add(candidate);
-        // If two clean hits cannot fit the same sword, use the latest evidence.
-        // A server can replace concealed gear without changing its visible stack.
-        Set<Float> fit = shared.isEmpty() ? observed : shared;
-        learnedWeapons.put(weapon.weaponKey, fit);
-        if (VERIFY && !fit.equals(previous))
-            System.out.println("[CombatCoach] weapon calibration " + System.currentTimeMillis() + " " + fit);
+        return shared;
     }
 
-    private void showBlock(Block verdict, boolean direction, double lost) {
+    private void showBlock(Block verdict, boolean likely, double lost) {
         String title = verdict == Block.BLOCKED ? "Blocked" : verdict == Block.UNBLOCKED ? "Unblocked" : "Block uncertain";
-        if (direction) title = "Likely " + title.toLowerCase(Locale.ROOT);
+        if (likely) title = "Likely " + title.toLowerCase(Locale.ROOT);
         blockNote = new Note(title, String.format(Locale.ROOT, "%.2f hearts lost", lost / 2),
             verdict == Block.BLOCKED ? 0x77FFAA : 0xFFBB66);
         if (VERIFY) System.out.println("[CombatCoach] block " + System.currentTimeMillis() + " " + verdict +
-            " " + direction + " " + lost);
+            " " + likely + " " + lost);
     }
 
     static void jump(Object entity, boolean after) {
@@ -406,7 +566,7 @@ final class CombatCoach {
 
     private void beforeTravel() {
         movement++;
-        if (block && player.func_70632_aY()) lastGuard = System.nanoTime();
+        if (block) observeGuard(System.nanoTime());
         jumpKey = player.field_71158_b != null && player.field_71158_b.field_78901_c;
         moving = pending;
         pending = null;
@@ -432,7 +592,6 @@ final class CombatCoach {
             Minecraft mc = Minecraft.func_71410_x();
             history.addLast(MeleeObservations.nearby(mc, player));
             if (history.size() > 3) history.removeFirst();
-            resolveDamage(false);
         }
     }
 
@@ -460,7 +619,7 @@ final class CombatCoach {
                 showJump(movement - lastTakeoff <= 14 ? timing("Early by ", movement - lastTakeoff) : "Airborne at impact", 0xFFBB66);
             }
             lastTakeoff = -1000;
-        } else if (movement - missed <= LATE_WINDOW && jumpKey && !previousJump) {
+        } else if (movement - missed <= JUMP_LATE_WINDOW && jumpKey && !previousJump) {
             showJump(timing("Late by ", movement - missed), 0xFFBB66);
             missed = -1000;
         }
