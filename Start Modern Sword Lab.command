@@ -13,11 +13,11 @@ fi
 read "opponent?Choose an opponent [1]: "
 lab_args=(--human "$player_name")
 case "${opponent:-1}" in
-  1) lab_args+=(--pairs 10) ;;
-  2) lab_args+=(--pairs 10 --weights research/sword26/evidence/frozen/opponents/population.net) ;;
-  3) lab_args+=(--pairs 5 --blind) ;;
-  4) lab_args+=(--pairs 10 --weights research/sword26/evidence/league26/fighter.net) ;;
-  5) lab_args+=(--pairs 10 --weights research/sword26/evidence/random26/fighter.net) ;;
+  1) lab_args+=(--pairs 10 --aim-profile tournament) ;;
+  2) lab_args+=(--pairs 10 --aim-profile tournament --weights research/sword26/evidence/frozen/opponents/population.net) ;;
+  3) lab_args+=(--pairs 5 --aim-profile tournament --blind) ;;
+  4) lab_args+=(--pairs 10 --aim-profile tournament --weights research/sword26/evidence/league26/fighter.net) ;;
+  5) lab_args+=(--pairs 10 --aim-profile tournament --weights research/sword26/evidence/random26/fighter.net) ;;
   6) [[ -f "$league_champion" ]] || { print "The league is still testing its challengers."; exit 1; }
      lab_args+=(--pairs 10 --weights "$league_champion") ;;
   *) print "Choose one of the displayed opponents."; exit 1 ;;

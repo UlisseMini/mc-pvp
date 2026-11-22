@@ -246,6 +246,7 @@ async def run(args):
                 raise ValueError("Resume requires the same rendering method")
             if args.export_frames and (previous["video"]["width"],previous["video"]["height"])!=(width,height):
                 raise ValueError("Resume requires the original frame dimensions")
+            if previous.get("agent")!=metadata["agent"]:raise ValueError("Resume requires the same agent build")
             if previous.get("aim_profile","tournament")!=metadata["aim_profile"]:raise ValueError("Resume requires the same aim profile")
             if previous.get("client_frame_policy","afk")!=metadata["client_frame_policy"]:raise ValueError("Resume requires the same client frame policy")
             if previous.get("clock")!=args.clock:raise ValueError("Resume requires the same game clock")
@@ -334,10 +335,15 @@ async def run(args):
         if capture:capture.finish()
         for listener in servers:listener.close()
         for proc,_ in reversed(procs):
-            if proc.poll() is None:os.killpg(proc.pid,signal.SIGTERM)
+            if proc.poll() is None:
+                try:os.killpg(proc.pid,signal.SIGTERM)
+                except ProcessLookupError:pass
         for proc,_ in procs:
             try:proc.wait(8)
-            except subprocess.TimeoutExpired:os.killpg(proc.pid,signal.SIGKILL);proc.wait()
+            except subprocess.TimeoutExpired:
+                try:os.killpg(proc.pid,signal.SIGKILL)
+                except ProcessLookupError:pass
+                proc.wait()
         shutil.rmtree(spool,ignore_errors=True)
         for h in handles:h.close()
         if list(run_dir.glob("*.result")):print("Replay:",build_replay(run_dir),flush=True)

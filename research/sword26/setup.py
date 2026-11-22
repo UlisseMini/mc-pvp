@@ -80,8 +80,9 @@ def setup():
     fetch(meta["downloads"]["server"], BUILD / "server.jar")
     jobs = []
     libs = [client]
+    os_name = "linux" if sys.platform.startswith("linux") else "osx"
     for lib in meta["libraries"]:
-        if "rules" in lib and not any(r["action"] == "allow" and r.get("os", {}).get("name", "osx") == "osx" for r in lib["rules"]):
+        if "rules" in lib and not any(r["action"] == "allow" and r.get("os", {}).get("name", os_name) == os_name for r in lib["rules"]):
             continue
         entry = lib["downloads"]["artifact"]
         path = Path("libraries") / entry["path"]
@@ -96,7 +97,8 @@ def setup():
         jobs.append(({"sha1": h, "url": f"https://resources.download.minecraft.net/{key}"}, BUILD/path, GAME/path))
     with concurrent.futures.ThreadPoolExecutor(12) as pool:
         list(pool.map(lambda job: fetch(*job), jobs))
-    (BUILD / "classpath").write_text(os.pathsep.join(map(str, libs)))
+    cp = os.pathsep.join(map(str, libs))
+    (BUILD / ("linux-classpath" if os_name == "linux" else "classpath")).write_text(cp)
     print("Verified Minecraft", VERSION, flush=True)
 
 

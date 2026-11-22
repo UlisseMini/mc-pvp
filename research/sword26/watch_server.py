@@ -65,13 +65,21 @@ def counted(path, size, modified):
 
 
 @lru_cache(maxsize=4096)
-def rendered_rate(path):
-    if not path.is_file():return None
+def rendered_rate_cached(path, size, modified):
     with path.open() as f:
         source=csv.DictReader(f,delimiter="\t")
         if "renderFps" not in (source.fieldnames or []):return None
-        values=[int(r["renderFps"]) for r in source]
+        values=[]
+        for r in source:
+            raw=(r.get("renderFps") or "").strip()
+            if raw.isdigit():values.append(int(raw))
     return statistics.median(values) if values else None
+
+
+def rendered_rate(path):
+    if not path.is_file():return None
+    st=path.stat()
+    return rendered_rate_cached(path, st.st_size, st.st_mtime_ns)
 
 
 def snapshot():
@@ -161,7 +169,7 @@ def trace(run,rid):
         frames=[f for f in frames if f[0]<=end];hits=[e for e in hits if e[0]<=end]
         hp=[fixed["hp"],fixed["opponent_hp"]]
         if match["seat"]==1:hp.reverse()
-        frames.append([end,*frames[-1][1:7],*hp])
+        if frames:frames.append([end,*frames[-1][1:7],*hp])
     return {"frames":frames,"hits":hits}
 
 
@@ -197,7 +205,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if route in ("/","/style.css","/watch.js"):
                 p=SITE/("index.html" if route=="/" else route[1:])
-                return self.blob(p.read_bytes(),mimetypes.guess_type(p)[0]+"; charset=utf-8")
+                return self.blob(p.read_bytes(),(mimetypes.guess_type(p)[0] or "application/octet-stream")+"; charset=utf-8")
             if route=="/api/league":
                 return self.blob(json.dumps(snapshot(),separators=(",",":")).encode(),"application/json")
             bits=route.strip("/").split("/")

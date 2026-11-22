@@ -49,6 +49,12 @@ final class PhaseClock {
         }
         int nextUpload(){return incoming.isEmpty()?Integer.MAX_VALUE:incoming.getFirst().due;}
     }
+    private static int driftPhase(int phase, int delta) {
+        int next = phase + delta;
+        if (next < 0) return -next;
+        if (next >= 50) return 98 - next;
+        return next;
+    }
     static Model.Score duel(Seat a,Seat b,Model.Controller ca,Model.Controller cb,Model.Start start,
                             Model.Observer observer,long seed,boolean aFirst){
         var rng=new SplittableRandom(seed);
@@ -56,8 +62,8 @@ final class PhaseClock {
         int serverPhase=rng.nextInt(50),t=0;
         for(;t<Model.LIMIT&&a.hp>0&&b.hp>0;t++){
             int origin=50*t;
-            left.phase=Math.floorMod(left.phase+rng.nextInt(-4,5),50);
-            right.phase=Math.floorMod(right.phase+rng.nextInt(-4,5),50);
+            left.phase=driftPhase(left.phase,rng.nextInt(-4,5));
+            right.phase=driftPhase(right.phase,rng.nextInt(-4,5));
             left.pollTime=origin+left.phase;right.pollTime=origin+right.phase;
             int server=origin+serverPhase;
             int aUp=rng.nextInt(1,5),bUp=rng.nextInt(1,5),aDown=rng.nextInt(1,5),bDown=rng.nextInt(1,5);

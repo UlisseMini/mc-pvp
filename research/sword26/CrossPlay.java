@@ -14,7 +14,7 @@ public final class CrossPlay {
     static List<Player> load(Path list) throws Exception {
         var players = new ArrayList<Player>();
         for (String name : Files.readAllLines(list)) {
-            players.add(new Player(name, name.equals("wtap") ? null : Fighter.read(Path.of(name))));
+            players.add(new Player(name, (name.equals("wtap") || name.equals("hold")) ? null : Fighter.read(Path.of(name))));
         }
         return players;
     }

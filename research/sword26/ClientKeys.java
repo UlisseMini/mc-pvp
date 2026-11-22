@@ -52,7 +52,10 @@ public final class ClientKeys {
         return entity==Minecraft.getInstance().player&&aim!=null&&aim.ready?aim.yawAt(fraction):entity.getViewYRot(fraction);
     }
     public static float cameraPitch(net.minecraft.world.entity.Entity entity,float fraction){
-        if(PerfectAim.ENABLED && aimTarget!=null && entity==Minecraft.getInstance().player)return cameraLook.pitch();
+        if(PerfectAim.ENABLED && aimTarget!=null && entity==Minecraft.getInstance().player){
+            if(cameraLook==null)cameraLook=visualLock(entity,fraction);
+            return cameraLook.pitch();
+        }
         return entity==Minecraft.getInstance().player&&aim!=null&&aim.ready?aim.pitchAt(fraction):entity.getViewXRot(fraction);
     }
     public static void tick(Minecraft mc){
@@ -88,7 +91,7 @@ public final class ClientKeys {
             if(controller==null||now()<start){apply(mc,Keys.STILL);return;}
             AbstractClientPlayer other=null;
             for(var p:mc.level.players())if(p.getGameProfile().name().equals(target))other=p;
-            if(other==null||!mc.player.isAlive()||!other.isAlive()){apply(mc,Keys.STILL);return;}
+            if(other==null||!mc.player.isAlive()||!other.isAlive()){aimTarget=null;cameraLook=null;apply(mc,Keys.STILL);return;}
             var p=mc.player;var vel=p.getDeltaMovement();
             if(aim!=null&&aim.ready){p.setYRot(aim.yawAt(1));p.setXRot(aim.pitchAt(1));}
             if(ticks==0&&Lockstep.ENABLED){

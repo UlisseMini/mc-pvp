@@ -52,7 +52,7 @@ public final class Refine {
                     if(i<Math.min(12,parents.size()))w=parents.get(i);
                     else if(seedFile!=null&&i%4==0){
                         w=parents.get(rng.nextInt(parents.size())).clone();
-                        for(int head=0;head<TreePolicy.HEADS;head++)if(rng.nextBoolean()){
+                        for(int head=0;head<TreePolicy.ACTIVE_HEADS;head++)if(rng.nextBoolean()){
                             var source=rng.nextBoolean()?donors:parents;
                             var donor=source.get(rng.nextInt(source.size()));
                             int offset=head*TreePolicy.SIZE;
