@@ -3,6 +3,7 @@ package practice.bridge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.client.network.NetworkPlayerInfo;
@@ -15,6 +16,10 @@ import net.minecraft.item.ItemBow;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
 import net.minecraft.network.play.client.C03PacketPlayer.C05PacketPlayerLook;
+import net.minecraft.network.play.client.C07PacketPlayerDigging;
+import net.minecraft.network.play.client.C0EPacketClickWindow;
+import net.minecraft.network.play.server.S0EPacketSpawnObject;
+import net.minecraft.network.play.server.S32PacketConfirmTransaction;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.MovingObjectPosition;
@@ -71,8 +76,13 @@ public final class BowAim {
     private ReleaseMode releaseMode = ReleaseMode.SMART;
     private double probability = Double.NaN;
     private int threshold = 75;
-    private int pingOverrideMs = -1; // -1 = auto from own NetworkPlayerInfo (never reads others' hidden Hypixel pings)
-    private double ownPingEma = 0.0;
+    private int pingOverrideMs = -1; // -1 = auto (passive live packet RTT -> server-list ping -> non-spoofed tab ping)
+    private volatile double livePacketPingMs = 0.0;
+    private double serverListPingMs = 0.0;
+    private double tabPingMs = 0.0;
+    private final Map<Integer, Long> pendingClicks = new HashMap<>();
+    private volatile long lastBowReleaseNs = 0L;
+    private NetHandlerPlayClient lastConn;
     private Trajectory trajectory = Trajectory.AUTO;
 
     private enum Trajectory { AUTO, ON, OFF }
@@ -160,13 +170,86 @@ public final class BowAim {
     private double effectivePingMs(Minecraft mc) {
         if (pingOverrideMs >= 0) return pingOverrideMs;
         if (mc.func_71356_B()) return 0.0; // integrated singleplayer
-        return ownPingEma;
+        if (livePacketPingMs > 0.5) return livePacketPingMs;
+        if (serverListPingMs > 5.0) return serverListPingMs;
+        if (tabPingMs > 5.0) return tabPingMs;
+        return 0.0;
+    }
+
+    private String pingSourceLabel(Minecraft mc) {
+        if (pingOverrideMs >= 0) return pingOverrideMs + " ms (manual)";
+        if (mc.func_71356_B()) return "0 ms (local)";
+        if (livePacketPingMs > 0.5) return "auto " + Math.round(livePacketPingMs) + " ms (live rtt)";
+        if (serverListPingMs > 5.0) return "auto " + Math.round(serverListPingMs) + " ms (server list)";
+        if (tabPingMs > 5.0) return "auto " + Math.round(tabPingMs) + " ms (tab)";
+        return "auto (measuring — or /p bowaim ping <ms>)";
     }
 
     private double leadShiftTicks(Minecraft mc) {
         double ms = effectivePingMs(mc);
         return ms <= 8.0 ? 0.0 : Math.min(5.0, ms / 50.0);
     }
+
+    /** Passive zero-extra-packet RTT measurement from own C0E->S32 clicks & C07->S0E bow arrow spawns. */
+    static void observePacket(boolean outbound, Object packet, long ns) {
+        BowAim aim = hooks;
+        if (aim == null || packet == null) return;
+        if (outbound) {
+            if (packet instanceof C0EPacketClickWindow) {
+                C0EPacketClickWindow click = (C0EPacketClickWindow)packet;
+                int key = (click.func_149548_c() << 16) | (click.func_149547_f() & 0xFFFF);
+                synchronized (aim.pendingClicks) {
+                    if (aim.pendingClicks.size() > 32) aim.pendingClicks.clear();
+                    aim.pendingClicks.put(key, ns);
+                }
+            } else if (packet instanceof C07PacketPlayerDigging) {
+                if (((C07PacketPlayerDigging)packet).func_180762_c() == C07PacketPlayerDigging.Action.RELEASE_USE_ITEM) {
+                    aim.lastBowReleaseNs = ns;
+                }
+            }
+            return;
+        }
+        if (packet instanceof S32PacketConfirmTransaction) {
+            S32PacketConfirmTransaction tx = (S32PacketConfirmTransaction)packet;
+            int key = (tx.func_148889_c() << 16) | (tx.func_148890_d() & 0xFFFF);
+            Long sent;
+            synchronized (aim.pendingClicks) { sent = aim.pendingClicks.remove(key); }
+            if (sent != null) aim.recordRttSample((ns - sent) / 1_000_000.0);
+        } else if (packet instanceof S0EPacketSpawnObject) {
+            S0EPacketSpawnObject spawn = (S0EPacketSpawnObject)packet;
+            if (spawn.func_148993_l() == 60) { // arrow
+                long sent = aim.lastBowReleaseNs;
+                if (sent > 0L) {
+                    double ms = (ns - sent) / 1_000_000.0;
+                    if (ms >= 5.0 && ms <= 500.0) {
+                        Minecraft mc = Minecraft.func_71410_x();
+                        EntityPlayerSP self = mc == null ? null : mc.field_71439_g;
+                        if (self != null) {
+                            double ax = spawn.func_148997_d() / 32.0;
+                            double ay = spawn.func_148998_e() / 32.0;
+                            double az = spawn.func_148994_f() / 32.0;
+                            double d2 = sq(ax - self.field_70165_t) + sq(ay - (self.field_70163_u + self.func_70047_e()))
+                                    + sq(az - self.field_70161_v);
+                            if (d2 <= 9.0) {
+                                aim.lastBowReleaseNs = 0L;
+                                aim.recordRttSample(ms);
+                            }
+                        }
+                    } else if (ms > 500.0) {
+                        aim.lastBowReleaseNs = 0L;
+                    }
+                }
+            }
+        }
+    }
+
+    private void recordRttSample(double ms) {
+        if (!(ms >= 5.0 && ms <= 500.0)) return;
+        double cur = livePacketPingMs;
+        livePacketPingMs = cur <= 0.5 ? ms : 0.78 * cur + 0.22 * ms;
+    }
+
+    private static double sq(double v) { return v * v; }
 
     private static int degrees(String value) {
         try {
@@ -267,8 +350,7 @@ public final class BowAim {
                 return "Bow auto-release threshold " + threshold + "%";
             case "ping":
                 if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, autoRelease, threshold, releaseMode, parsePing(value));
-                return "Bow ping lead " + (pingOverrideMs < 0
-                        ? "auto (" + Math.round(ownPingEma) + " ms)" : pingOverrideMs + " ms");
+                return "Bow ping lead " + pingSourceLabel(Minecraft.func_71410_x());
             case "status": break;
             default: throw new IllegalArgumentException("Use /p help bowaim");
         }
@@ -279,7 +361,7 @@ public final class BowAim {
         String activeName = mode == null ? "off"
                 : mode == Mode.ADAPTIVE ? (neural != null && !legacyAdaptive
                         ? "neural v2 (K=" + neural.modes() + " + multi-vox, ping="
-                          + (pingOverrideMs < 0 ? "auto " + Math.round(ownPingEma) : pingOverrideMs) + "ms)"
+                          + pingSourceLabel(Minecraft.func_71410_x()) + ")"
                         : "legacy adaptive")
                 : mode.name().toLowerCase(Locale.ROOT);
         return "Bow aim " + activeName + (target == null ? "" : " · " + target.player.func_70005_c_());
@@ -315,14 +397,26 @@ public final class BowAim {
         EntityPlayerSP self = mc.field_71439_g;
         if (self == null) return;
         tick++;
-        // Update own-ping EMA from own NetworkPlayerInfo only (Hypixel hides other players' tab pings)
+        // Reset measured ping on server switch; seed from ServerData.pingToServer & ignore spoofed <=5ms tab pings (Hypixel)
         NetHandlerPlayClient conn = mc.func_147114_u();
+        if (conn != lastConn) {
+            lastConn = conn;
+            livePacketPingMs = 0.0;
+            serverListPingMs = 0.0;
+            tabPingMs = 0.0;
+            lastBowReleaseNs = 0L;
+            synchronized (pendingClicks) { pendingClicks.clear(); }
+        }
+        ServerData serverData = mc.func_147104_D();
+        if (serverData != null && serverData.field_78844_e > 5L && serverData.field_78844_e <= 500L) {
+            serverListPingMs = serverData.field_78844_e;
+        }
         if (conn != null) {
             NetworkPlayerInfo ownInfo = conn.func_175102_a(self.func_110124_au());
             if (ownInfo != null) {
                 int ms = ownInfo.func_178853_c();
-                if (ms > 0 && ms <= 500) {
-                    ownPingEma = ownPingEma <= 0.5 ? ms : 0.92 * ownPingEma + 0.08 * ms;
+                if (ms > 5 && ms <= 500) {
+                    tabPingMs = tabPingMs <= 0.5 ? ms : 0.92 * tabPingMs + 0.08 * ms;
                 }
             }
         }

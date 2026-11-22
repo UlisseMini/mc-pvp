@@ -135,12 +135,16 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         Raw raw=pending.get();pending.remove();if(raw==null)return;
         List<?> list=(List<?>)packets;if(list.isEmpty())return;Object packet=list.get(list.size()-1);
         if(ConnectionScope.canSend(raw.channel))BotHooks.receive(packet);
+        BowAim.observePacket(false,packet,raw.ns);
         wire("in",packet,raw);
     }
     public void wireOut(Object context,Object packet,Object buffer){
         Channel c=((ChannelHandlerContext)context).channel();if(!play(c))return;session(c);
         ByteBuf b=(ByteBuf)buffer;int size=b.readableBytes();if(size>2097152){emit("packet_oversize",map("bytes",size),true);return;}
-        byte[] copy=new byte[size];b.getBytes(b.readerIndex(),copy);wire("out",packet,new Raw(c,copy));
+        byte[] copy=new byte[size];b.getBytes(b.readerIndex(),copy);
+        Raw raw=new Raw(c,copy);
+        BowAim.observePacket(true,packet,raw.ns);
+        wire("out",packet,raw);
     }
     private long packetId(Object p){synchronized(packetIds){Long id=packetIds.get(p);if(id==null){id=packetSequence.incrementAndGet();packetIds.put(p,id);}return id;}}
     private void wire(String direction,Object packet,Raw raw){
