@@ -26,7 +26,7 @@ Each cell contains 128 bouts from eight timing recordings, mirrored seats and fo
 | mmc-177 | pending | pending | pending | pending | pending | pending |
 | mmc-221 | pending | pending | pending | pending | pending | pending |
 
-The live comparison has eight independently played seat and RTT blocks per matchup. Each published block has passed movement, physical click-spacing, map-state and countdown spawn checks.
+Partial native sample: 0 of 8 planned seat-and-RTT blocks completed per matchup. Each published block has passed movement, physical click-spacing, map-state and countdown spawn checks.
 
 Four release checks already played on the main server. These same games count in the first full block. Both players had 31 ms RTT. The challenger occupied seat A in each game.
 

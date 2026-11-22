@@ -20,14 +20,13 @@ ROOT=Path(__file__).resolve().parent
 def reach_window(probes,start,end,max_age=100):
     """Piecewise sampled reach, retaining unknown time and avoiding future data."""
     points=sorted((p['time'],geometric_distance(p),float(p.get('attack_reach',3))) for p in probes)
-    points=[p for p in points if p[1] is not None]
     times=[p[0] for p in points]
     durations={'in':0.,'out':0.,'unknown':0.};distances=[]
     cursor=start
     while cursor<end:
         i=bisect.bisect_right(times,cursor)-1
         next_sample=times[i+1] if i+1<len(times) else end
-        if i<0 or cursor>=times[i]+max_age:
+        if i<0 or points[i][1] is None or cursor>=times[i]+max_age:
             right=min(end,next_sample);kind='unknown'
         else:
             right=min(end,next_sample,times[i]+max_age)
@@ -70,9 +69,20 @@ def analyze_events(game,side,raw,native,opposite):
     ticks=[p for p in raw if p['type']=='tick']
     fresh=[(i,e) for i,e in enumerate(raw) if e['type']=='science_server_attack' and e['attacker']==game[side]
            and e['score_before']!=e['score_after'] and e['target_before']['hurtResistantTime']<=fresh_ticks]
-    returns=[e['time'] for e in raw if e['type']=='hit' and e['attacker']==game[other] and not e.get('rod')]
+    # Ordered accepted returns (including damage upgrades). Prefer authoritative science_server_attack
+    # when present for the opponent so hit/science duplicates on the same attack are not double-counted.
+    opp_attacks=[(i,e['time']) for i,e in enumerate(raw)
+                 if e['type']=='science_server_attack' and e['attacker']==game[other] and e['score_before']!=e['score_after']]
+    returns=opp_attacks if opp_attacks else [
+        (i,e['time']) for i,e in enumerate(raw)
+        if e['type']=='hit' and e['attacker']==game[other] and not e.get('rod')]
     windows=[]
+    streak=0
+    prev_i=-1
     for index,((i,hit),(j,next_hit)) in enumerate(zip(fresh,fresh[1:])):
+        had_return_before=any(prev_i<ri<i for ri,_ in returns)
+        streak=1 if (index==0 or had_return_before) else streak+1
+        prev_i=i
         left,end=hit['time'],next_hit['time']
         bracket=ready_bracket(ticks,left,end,other,fresh_ticks)
         if bracket is None:
@@ -83,21 +93,36 @@ def analyze_events(game,side,raw,native,opposite):
         local=[bracket[0]-delay_hi,bracket[1]-delay_lo]
         own=reach_window(own_probes,*local)
         defender=reach_window(other_probes,left,end)
-        received=sum(left<=t<=end for t in returns)
-        windows.append(dict(after_fresh_hit=index+1,hit_ms=left-game['start'],next_hit_ms=end-game['start'],
+        received=sum(i<ri<j for ri,_ in returns)
+        windows.append(dict(after_fresh_hit=index+1,unanswered_fresh_streak=streak,
+                            hit_ms=left-game['start'],next_hit_ms=end-game['start'],
                             ready_server_bracket_ms=[t-game['start'] for t in bracket],
                             corresponding_local_send_interval_ms=[t-game['start'] for t in local],
                             own_reach_at_ready=own,defender_reach_until_next_hit=defender,
                             accepted_returns=received,
                             window_to_next_hit_delay_ms=[end-bracket[1],end-bracket[0]],
                             own_range_at_actual_next_click=links.get(j,{}).get('current_box_min_distance')))
-    after_entry=[w for w in windows if w['after_fresh_hit']>=3]
-    # Diagnostic milestone tolerance: two native nominal ticks, not an altered
-    # cooldown. Unknown/mixed deadline geometry cannot be certified as in range.
-    successes=[w['own_reach_at_ready']['classification']=='in' and w['defender_reach_until_next_hit']['classification']=='out'
-               and not w['accepted_returns'] and w['window_to_next_hit_delay_ms'][1]<=100 for w in after_entry]
-    best=run=0
-    for ok in successes:run=run+1 if ok else 0;best=max(best,run)
+    def summarize_landmark(k):
+        entry_idx=next((idx for idx,w in enumerate(windows) if w['unanswered_fresh_streak']>=k),None)
+        cohort=[] if entry_idx is None else windows[entry_idx:]
+        ok_list=[w['own_reach_at_ready']['classification']=='in'
+                 and w['defender_reach_until_next_hit']['classification']=='out'
+                 and not w['accepted_returns'] and w['window_to_next_hit_delay_ms'][1]<=100 for w in cohort]
+        best_run=cur_run=0
+        for ok in ok_list:
+            cur_run=cur_run+1 if ok else 0
+            best_run=max(best_run,cur_run)
+        return dict(
+            established=entry_idx is not None,
+            entry_hit_ms=None if entry_idx is None else windows[entry_idx]['hit_ms'],
+            windows=len(cohort),
+            certified_ready_windows=sum(ok_list),
+            longest_certified_ready_window_run=best_run,
+            readiness_class_counts={c:sum(w['own_reach_at_ready']['classification']==c for w in cohort)
+                                    for c in ('in','out','mixed','unknown')},
+        )
+    landmarks={str(k):summarize_landmark(k) for k in (3,5,10)}
+    k3=landmarks['3']
     terminal=None
     if fresh:
         bracket=ready_bracket(ticks,fresh[-1][1]['time'],game['finish'],other,fresh_ticks)
@@ -107,8 +132,11 @@ def analyze_events(game,side,raw,native,opposite):
                           definitely_over_two_ticks=game['finish']-bracket[1]>100)
     return dict(match=game['id'],candidate_side=side,linkage=linkage,fresh_hit_ticks=fresh_ticks,
                 contact_to_server_delay_envelope_ms=[delay_lo,delay_hi],contact_delay_median_ms=statistics.median(delays),
-                windows=windows,post_third_hit_windows=len(after_entry),certified_ready_windows=sum(successes),longest_certified_ready_window_run=best,
-                readiness_class_counts={k:sum(w['own_reach_at_ready']['classification']==k for w in after_entry) for k in ('in','out','mixed','unknown')},
+                windows=windows,post_third_hit_windows=k3['windows'],
+                certified_ready_windows=k3['certified_ready_windows'],
+                longest_certified_ready_window_run=k3['longest_certified_ready_window_run'],
+                readiness_class_counts=k3['readiness_class_counts'],
+                landmarks=landmarks,
                 terminal_unfinished_window=terminal,
                 objective='Opponent denied throughout; own reach needed at native fresh window. Own out-of-reach while immune is allowed. Gate delays never shift readiness.',
                 limits='Observed readiness brackets and finite sampled geometry. Send interval uses full observed contact-delay envelope, not exact counterfactual packet timing. A certificate is conservative; failed/mixed classification is not an impossibility proof. The final censored immunity window is not scored.')

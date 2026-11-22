@@ -39,6 +39,7 @@ def report(stage):
         lines.extend(['','## '+title,''])
         lines.extend(['| '+' | '.join(columns)+' |','| '+' | '.join(['---']*len(columns))+' |'])
         references=[]
+        native_blocks=[]
         for name in (protocol.get('native_maps',protocol['maps']) if mode=='native' else protocol['maps']):
             base=folder/mode/name
             completed=base/'summary.json'
@@ -50,12 +51,18 @@ def report(stage):
                 r=read(completed)
                 by_arm={(v.get('actor',v.get('arm')),v['foe']):v for v in r.values()}
                 cells=[tally(by_arm[pair]) for pair in matchups]
+                if mode=='native':
+                    counts=[v['wins']+v['draws']+v['losses'] for pair in matchups for v in [by_arm[pair]]]
+                    native_blocks.append((name,min(counts),max(counts)))
                 if 'original_16k' in protocol:
                     for arm in DISPLAY:
                         opponent=protocol['contestants'][arm]['target']
                         old=by_arm.get((arm+'-16k',opponent),by_arm[arm,opponent])
                         references.append([name,DISPLAY[arm],tally(by_arm[arm,opponent]),tally(old),tally(by_arm['wtap',opponent])])
-            else:cells=['pending']*len(matchups)
+            else:
+                cells=['pending']*len(matchups)
+                if mode=='native':
+                    native_blocks.append((name,0,0))
             lines.append('| '+' | '.join([name,*cells])+' |')
         if references:
             lines.extend(['','### Matched final and original checkpoints','','| Platform | Frozen opponent | Selected specialist | Original 16k specialist | Plain W-tap |',
@@ -66,8 +73,21 @@ def report(stage):
                 'Matching timing recordings and action seeds across maps lets the platform change while the fixture stays fixed. '
                 'The same timing recordings appear in several cells.'])
         else:
-            lines.extend(['','The live comparison has eight independently played seat and RTT blocks per matchup. '
-                'Each published block has passed movement, physical click-spacing, map-state and countdown spawn checks.'])
+            planned=8
+            design_path=folder/'native/design.json'
+            if design_path.is_file():
+                design=read(design_path)
+                if isinstance(design,dict) and isinstance(design.get('blocks'),list):
+                    planned=len(design['blocks'])
+            completed_min=min((lo for _,lo,_ in native_blocks),default=0)
+            completed_max=max((hi for _,_,hi in native_blocks),default=0)
+            if completed_min==completed_max==planned:
+                sample_note=f'All {planned} of {planned} planned seat-and-RTT blocks per matchup are completed.'
+            elif completed_min==completed_max:
+                sample_note=f'Partial native sample: {completed_min} of {planned} planned seat-and-RTT blocks completed per matchup.'
+            else:
+                sample_note=f'Partial native sample: {completed_min}–{completed_max} of {planned} planned seat-and-RTT blocks completed per matchup.'
+            lines.extend(['',sample_note+' Each published block has passed movement, physical click-spacing, map-state and countdown spawn checks.'])
             check=folder/'native/release-check'
             if (check/'verified.json').is_file() and (check/'spawn-checks.json').is_file():
                 scores=read(check/'verified.json')['matches'];plan=read(check/'protocol.json')['plan']
