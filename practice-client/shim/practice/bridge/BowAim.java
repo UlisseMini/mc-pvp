@@ -58,7 +58,8 @@ import java.util.UUID;
 /** Capped aim correction and an independent bow trajectory overlay. */
 public final class BowAim {
     static BowAim hooks;
-    private static final double RANGE = 65, NEAR_AIM = 8, TURN_PER_TICK = 1;
+    private static final double RANGE = 65, THROW_RANGE = 56, NEAR_AIM = 9.5;
+    private static final double BOW_TURN_PER_TICK = 2.8, THROW_TURN_PER_TICK = 4.2;
     private static final double[] AIM_HEIGHTS = {.50, .76, .88, .32};
     private static final int DEFAULT_LIMIT = 3;
     private final Map<UUID, Track> tracks = new HashMap<>();
@@ -558,7 +559,7 @@ public final class BowAim {
         }
         tracks.values().removeIf(track -> track.tick() < tick - BowMotion.CAPACITY);
         synchronized (airborneThrows) {
-            airborneThrows.removeIf(at -> tick - at.thrownTick > 36
+            airborneThrows.removeIf(at -> tick - at.thrownTick > BowBallistics.MAX_THROW_TICKS + 4
                     || tick - at.thrownTick > at.shot.time + at.leadShift + 3.0);
         }
         boolean bowActive = drawing(mc, self);
@@ -684,13 +685,19 @@ public final class BowAim {
             releaseTargetId = id;
             releasePolicy.reset();
         }
+        // Wait 1-2 ticks if aim is still slewing toward ideal (unconstrained by limit) so we never fire mid-slew
+        double residualDeg = Math.hypot(wrap(target.ideal.yaw - self.field_70177_z),
+                target.ideal.pitch - self.field_70125_A);
+        double appliedDeg = Math.hypot(yawOffset, pitchOffset);
+        if (residualDeg > 0.9 && appliedDeg < limit - 0.15) return;
+
         boolean losingCover = false;
         if ((releaseMode == ReleaseMode.SMART || releaseMode == ReleaseMode.EV)
                 && target.prediction != null && world != null) {
             double[] ahead = target.prediction.meanPath[Math.min(4, target.prediction.meanPath.length - 1)];
             Vec3 eye = new Vec3(self.field_70165_t, self.field_70163_u + self.func_70047_e(), self.field_70161_v);
             Vec3 futurePt = new Vec3(ahead[0], ahead[1] + target.bodyHeight, ahead[2]);
-            losingCover = world.func_72933_a(eye, futurePt) != null;
+            losingCover = world.func_147447_a(eye, futurePt, false, true, false) != null;
         }
         boolean fire;
         if (releaseMode == ReleaseMode.EV && waitModel != null && Double.isFinite(currentEv) && Double.isFinite(currentVWait)) {
@@ -713,13 +720,15 @@ public final class BowAim {
     }
 
     private void evaluateCurrentAim(Minecraft mc, EntityPlayerSP self, Selection selected) {
-        double speed = selected.throwable ? BowBallistics.THROW_SPEED : BowBallistics.speed(self.func_71057_bx());
+        double speed = selected.throwable ? BowBallistics.THROW_SPEED
+                : (autoRelease ? 3.0 : BowBallistics.speed(self.func_71057_bx()));
         double gravity = selected.throwable ? BowBallistics.THROW_GRAVITY : BowBallistics.GRAVITY;
         double eyeY = self.field_70163_u + self.func_70047_e();
         Shot shot = BowBallistics.fromAim(self.field_70165_t, eyeY,
                 self.field_70161_v, speed, self.field_70177_z, self.field_70125_A, gravity);
         double ideal = selected.ideal.time;
-        double flight = Math.min(BowBallistics.MAX_TICKS, ideal + Math.max(4, ideal * .30));
+        int maxFlight = selected.throwable ? BowBallistics.MAX_THROW_TICKS : BowBallistics.MAX_TICKS;
+        double flight = Math.min(maxFlight, ideal + Math.max(4, ideal * .30));
         BowAimPreview.Guide guide = BowAimPreview.trace(world, shot, flight, null);
         if (selected.prediction != null && neural != null) {
             boolean obstructed = guide.blocked && guide.travelTicks < ideal - 0.5;
@@ -793,19 +802,21 @@ public final class BowAim {
     }
 
     private Selection choose(Minecraft mc, EntityPlayerSP self, float yaw, float pitch, boolean isThrowable) {
-        double speed = isThrowable ? BowBallistics.THROW_SPEED : BowBallistics.speed(self.func_71057_bx());
+        // When autoRelease is enabled, pre-aim for full-draw speed (3.0) during charge so pitch never lags at tick 20
+        double speed = isThrowable ? BowBallistics.THROW_SPEED
+                : (autoRelease ? 3.0 : BowBallistics.speed(self.func_71057_bx()));
         double gravity = isThrowable ? BowBallistics.THROW_GRAVITY : BowBallistics.GRAVITY;
         if (speed <= 0) return null;
         ItemStack held = isThrowable ? self.func_70694_bm() : self.func_71011_bu();
         int punchLevel = (!isThrowable && held != null) ? EnchantmentHelper.func_77506_a(49, held) : 0;
         int powerLevel = (!isThrowable && held != null) ? EnchantmentHelper.func_77506_a(48, held) : 0;
-        double maxRange = isThrowable ? 38.0 : RANGE;
+        double maxRange = isThrowable ? THROW_RANGE : RANGE;
         double eyeY = self.field_70163_u + self.func_70047_e();
         double yr = Math.toRadians(yaw), pr = Math.toRadians(pitch);
         Vec3 from = new Vec3(self.field_70165_t, eyeY, self.field_70161_v);
         Vec3 to = new Vec3(from.field_72450_a - Math.sin(yr) * Math.cos(pr) * maxRange,
                 eyeY - Math.sin(pr) * maxRange, from.field_72449_c + Math.cos(yr) * Math.cos(pr) * maxRange);
-        MovingObjectPosition wall = world.func_72933_a(from, to);
+        MovingObjectPosition wall = world.func_147447_a(from, to, false, true, false);
         if (wall != null && wall.field_72307_f != null) to = wall.field_72307_f;
         EntityPlayer pointedAt = null;
         double first = from.func_72438_d(to);
@@ -820,6 +831,7 @@ public final class BowAim {
 
         Selection best = null;
         double bestScore = Double.POSITIVE_INFINITY, bestDistance = Double.POSITIVE_INFINITY;
+        double bearingGate = isThrowable ? 38.0 : 26.0;
         for (EntityPlayer other : world.field_73010_i) {
             if (!eligible(self, other)) continue;
             double dx = other.field_70165_t - from.field_72450_a, dz = other.field_70161_v - from.field_72449_c;
@@ -827,11 +839,14 @@ public final class BowAim {
             double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (distance < 2 || distance > maxRange) continue;
             double bearing = Math.toDegrees(Math.atan2(-dx, dz));
-            if (Math.abs(wrap(bearing - yaw)) > 20) continue;
+            if (Math.abs(wrap(bearing - yaw)) > bearingGate) continue;
             Selection candidate = solution(mc, self, other, speed, gravity, eyeY, isThrowable, punchLevel, powerLevel);
             if (candidate == null) continue;
-            double angle = Math.hypot(wrap(candidate.ideal.yaw - yaw), candidate.ideal.pitch - pitch);
-            // Gently prioritize high-EV void-exposed targets within NEAR_AIM without ever yanking off crosshair
+            double angleIdeal = Math.hypot(wrap(candidate.ideal.yaw - yaw), candidate.ideal.pitch - pitch);
+            double nowPitch = Math.toDegrees(-Math.atan2(dy, Math.hypot(dx, dz)));
+            double angleNow = Math.hypot(wrap(bearing - yaw), nowPitch - pitch);
+            // Lock whether aiming near the predicted lead OR directly near the target (crucial for long snowball leads!)
+            double angle = Math.min(angleIdeal, angleNow);
             double score = angle - Math.min(2.2, 0.35 * candidate.ev);
             if (angle <= NEAR_AIM && (best == null || score < bestScore - .35
                     || Math.abs(score - bestScore) <= .35 && distance < bestDistance)) {
@@ -888,7 +903,7 @@ public final class BowAim {
         }
         for (AirborneThrow at : snapshot) {
             double rem = (at.thrownTick + at.leadShift + at.shot.time) - tick;
-            if (rem <= 0.5 || rem > BowBallistics.MAX_TICKS) continue;
+            if (rem <= 0.5 || rem > BowBallistics.MAX_THROW_TICKS) continue;
             for (int k = 0; k < K; k++) {
                 double pCov = neural.modeHitProbAt(at.shot, pred, k, rem);
                 uncovered[k] *= Math.max(0.0, 1.0 - pCov);
@@ -901,24 +916,41 @@ public final class BowAim {
                                    boolean isThrowable, int punchLevel, double targetHealth,
                                    double expectedBowDmg, double[] outVals, double[] outVoids) {
         int K = pred.weights.length;
+        int maxBase = BowBallistics.MAX_TICKS;
+        int maxAllowed = isThrowable ? BowBallistics.MAX_THROW_TICKS : maxBase;
         double ivx = shot.vxAt(shot.time), ivz = shot.vzAt(shot.time);
-        double tEval = Math.min(BowBallistics.MAX_TICKS, shot.time + Math.max(0.0, shift));
-        int lo = (int)tEval, hi = Math.min(BowBallistics.MAX_TICKS, lo + 1);
-        double frac = tEval - lo;
-        int prevT = Math.max(0, lo - 1);
-        int dt = Math.max(1, hi - prevT);
+        double tEval = Math.min(maxAllowed, shot.time + Math.max(0.0, shift));
         for (int k = 0; k < K; k++) {
-            double[] pLo = pred.paths[k][lo], pHi = pred.paths[k][hi];
-            double[] sLo = pred.stds[k][lo], sHi = pred.stds[k][hi];
-            double mx = pLo[0] + frac * (pHi[0] - pLo[0]);
-            double my = pLo[1] + frac * (pHi[1] - pLo[1]);
-            double mz = pLo[2] + frac * (pHi[2] - pLo[2]);
-            double sx = sLo[0] + frac * (sHi[0] - sLo[0]);
-            double sz = sLo[2] + frac * (sHi[2] - sLo[2]);
-            double[] pPrev = pred.paths[k][prevT];
-            double tvx = (pHi[0] - pPrev[0]) / dt;
-            double tvy = (pHi[1] - pPrev[1]) / dt;
-            double tvz = (pHi[2] - pPrev[2]) / dt;
+            double mx, my, mz, sx, sz, tvx, tvy, tvz;
+            if (tEval <= maxBase) {
+                int lo = (int)tEval, hi = Math.min(maxBase, lo + 1);
+                double frac = tEval - lo;
+                int prevT = Math.max(0, lo - 1);
+                int dt = Math.max(1, hi - prevT);
+                double[] pLo = pred.paths[k][lo], pHi = pred.paths[k][hi];
+                double[] sLo = pred.stds[k][lo], sHi = pred.stds[k][hi];
+                mx = pLo[0] + frac * (pHi[0] - pLo[0]);
+                my = pLo[1] + frac * (pHi[1] - pLo[1]);
+                mz = pLo[2] + frac * (pHi[2] - pLo[2]);
+                sx = sLo[0] + frac * (sHi[0] - sLo[0]);
+                sz = sLo[2] + frac * (sHi[2] - sLo[2]);
+                double[] pPrev = pred.paths[k][prevT];
+                tvx = (pHi[0] - pPrev[0]) / dt;
+                tvy = (pHi[1] - pPrev[1]) / dt;
+                tvz = (pHi[2] - pPrev[2]) / dt;
+            } else {
+                double extra = tEval - maxBase;
+                double[] pLast = pred.paths[k][maxBase], pRef = pred.paths[k][maxBase - 6];
+                tvx = (pLast[0] - pRef[0]) / 6.0;
+                tvy = (pLast[1] - pRef[1]) / 6.0;
+                tvz = (pLast[2] - pRef[2]) / 6.0;
+                mx = pLast[0] + tvx * extra;
+                my = pLast[1] + tvy * extra;
+                mz = pLast[2] + tvz * extra;
+                double scale = 1.0 + extra / (double)maxBase;
+                sx = pred.stds[k][maxBase][0] * scale;
+                sz = pred.stds[k][maxBase][2] * scale;
+            }
             VoidKbValue.Score sc = VoidKbValue.scoreMode(mx, my, mz, tvx, tvy, tvz, sx, sz, ivx, ivz,
                     isThrowable, punchLevel, targetHealth, expectedBowDmg, solidQuery);
             outVoids[k] = sc.voidProb;
@@ -957,11 +989,12 @@ public final class BowAim {
             double[] bestVoids = new double[K];
             boolean valsScored = false;
 
+            int maxTicks = isThrowable ? BowBallistics.MAX_THROW_TICKS : BowBallistics.MAX_TICKS;
             int totalCandidates = K + 1;
             for (int c = 0; c < totalCandidates; c++) {
                 if (c < K && effWeights[c] < 0.02) continue;
                 double[][] rawPath = c < K ? pred.paths[c] : pred.meanPath;
-                double[][] candPath = BowNeuralMotion.shiftPath(rawPath, shift);
+                double[][] candPath = BowNeuralMotion.shiftAndExtendPath(rawPath, shift, maxTicks);
                 for (double fraction : AIM_HEIGHTS) {
                     double aimAt = height * fraction;
                     Shot shot = BowBallistics.intercept(self.field_70165_t, eyeY, self.field_70161_v,
@@ -1027,7 +1060,8 @@ public final class BowAim {
         double scale = Math.min(1, limit / Math.max(1e-9, Math.hypot(dy, dp)));
         dy *= scale;
         dp *= scale;
-        double step = selected == null ? 1 : Math.min(1, TURN_PER_TICK / Math.max(1e-9,
+        double turnSpeed = (selected != null && selected.throwable) ? THROW_TURN_PER_TICK : BOW_TURN_PER_TICK;
+        double step = selected == null ? 1 : Math.min(1, turnSpeed / Math.max(1e-9,
                 Math.hypot(dy - yawOffset, dp - pitchOffset)));
         dy = yawOffset + step * (dy - yawOffset);
         dp = pitchOffset + step * (dp - pitchOffset);
@@ -1095,7 +1129,8 @@ public final class BowAim {
         boolean bowActive = drawing(mc, self);
         boolean throwActive = !bowActive && mode != null && throwablesEnabled && holdingThrowable(mc, self) && target != null;
         if ((!path && !intercept && !ghostsEnabled) || (!bowActive && !throwActive)) return;
-        double speed = throwActive ? BowBallistics.THROW_SPEED : BowBallistics.speed(self.func_71057_bx());
+        double speed = throwActive ? BowBallistics.THROW_SPEED
+                : (autoRelease ? 3.0 : BowBallistics.speed(self.func_71057_bx()));
         if (speed <= 0) return;
         double gravity = throwActive ? BowBallistics.THROW_GRAVITY : BowBallistics.GRAVITY;
         double x = self.field_70142_S + (self.field_70165_t - self.field_70142_S) * partial;

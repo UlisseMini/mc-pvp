@@ -3,6 +3,7 @@ package practice.core.bow;
 /** Minecraft 1.8.9 bow arrow & throwable (snowball/egg) launch and dry flight. Positions and speeds use world blocks and ticks. */
 public final class BowBallistics {
     public static final int MAX_TICKS = 42;
+    public static final int MAX_THROW_TICKS = 72;
     private static final int PREVIEW_TICKS = 120;
     public static final double DRAG = .99f, GRAVITY = .05f;
     public static final double THROW_SPEED = 1.5, THROW_GRAVITY = .03f;

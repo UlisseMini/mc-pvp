@@ -44,7 +44,8 @@ final class BowAimPreview {
             double time = Math.min(ticks, tick);
             Vec3 to = new Vec3(shot.xAt(time), shot.yAt(time), shot.zAt(time));
             if (!world.func_175667_e(new BlockPos(to))) { guide.blocked = true; break; }
-            MovingObjectPosition wall = world.func_147447_a(from, to, true, false, false);
+            // Match exact 1.8.9 EntityArrow/EntityThrowable rayTraceBlocks(from, to, stopOnLiquid=false, ignoreNonSolid=true, false)
+            MovingObjectPosition wall = world.func_147447_a(from, to, false, true, false);
             double fraction = wall == null ? 1 : portion(from, to, wall.field_72307_f);
             if (expanded != null && tick < target.path.length) {
                 double[] first = target.path[tick - 1], next = target.path[tick];
@@ -139,19 +140,30 @@ final class BowAimPreview {
     private static void drawModeGhosts(RenderManager camera, BowAim.Selection sel,
                                        double camX, double camY, double camZ) {
         BowNeuralMotion.Prediction pred = sel.prediction;
-        double tEval = Math.max(0.0, Math.min(BowBallistics.MAX_TICKS, sel.ideal.time + sel.leadShift));
-        int lo = (int)tEval;
-        int hi = Math.min(BowBallistics.MAX_TICKS, lo + 1);
-        double frac = tEval - lo;
+        int maxBase = BowBallistics.MAX_TICKS;
+        int maxAllowed = sel.throwable ? BowBallistics.MAX_THROW_TICKS : maxBase;
+        double tEval = Math.max(0.0, Math.min(maxAllowed, sel.ideal.time + sel.leadShift));
         int K = pred.weights.length;
 
         for (int k = 0; k < K; k++) {
             double w = pred.weights[k];
             if (w < MIN_GHOST_WEIGHT && k != sel.aimedMode) continue;
-            double[] pLo = pred.paths[k][lo], pHi = pred.paths[k][hi];
-            double gx = pLo[0] + frac * (pHi[0] - pLo[0]);
-            double gy = pLo[1] + frac * (pHi[1] - pLo[1]);
-            double gz = pLo[2] + frac * (pHi[2] - pLo[2]);
+            double gx, gy, gz;
+            if (tEval <= maxBase) {
+                int lo = (int)tEval;
+                int hi = Math.min(maxBase, lo + 1);
+                double frac = tEval - lo;
+                double[] pLo = pred.paths[k][lo], pHi = pred.paths[k][hi];
+                gx = pLo[0] + frac * (pHi[0] - pLo[0]);
+                gy = pLo[1] + frac * (pHi[1] - pLo[1]);
+                gz = pLo[2] + frac * (pHi[2] - pLo[2]);
+            } else {
+                double extra = tEval - maxBase;
+                double[] pLast = pred.paths[k][maxBase], pRef = pred.paths[k][maxBase - 6];
+                gx = pLast[0] + (pLast[0] - pRef[0]) / 6.0 * extra;
+                gy = pLast[1] + (pLast[1] - pRef[1]) / 6.0 * extra;
+                gz = pLast[2] + (pLast[2] - pRef[2]) / 6.0 * extra;
+            }
 
             double dx = gx - camX, dy = gy - camY, dz = gz - camZ;
             double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);

@@ -402,8 +402,239 @@ public final class BowNeuralMotion {
             }
         }
         meanPath[0][0] = p0x; meanPath[0][1] = p0y; meanPath[0][2] = p0z;
-        if (withCycle) applyPeriodicCycle(track, paths, meanPath, 0.22);
+        if (withCycle) {
+            if (!applyBridgeAndSteadyContinuation(track, weights, paths, stds, rhos, meanPath)) {
+                applyPeriodicCycle(track, paths, meanPath, 0.22);
+            }
+        }
         return new Prediction(weights, paths, stds, rhos, meanPath, x, q);
+    }
+
+    /**
+     * Extend a 43-tick path out to maxTicks (e.g. 72 for long-range snowballs up to 55b)
+     * with smooth velocity continuation from ticks [36..42], plus optional RTT shift.
+     */
+    public static double[][] shiftAndExtendPath(double[][] path, double shiftTicks, int maxTicks) {
+        int srcLast = path.length - 1;
+        int ref = Math.max(0, srcLast - 6);
+        double dtRef = Math.max(1, srcLast - ref);
+        double evx = (path[srcLast][0] - path[ref][0]) / dtRef;
+        double evy = (path[srcLast][1] - path[ref][1]) / dtRef;
+        double evz = (path[srcLast][2] - path[ref][2]) / dtRef;
+        double[][] out = new double[maxTicks + 1][3];
+        for (int t = 0; t <= maxTicks; t++) {
+            double ts = t + Math.max(0.0, shiftTicks);
+            if (ts <= srcLast) {
+                int lo = (int)ts, hi = Math.min(srcLast, lo + 1);
+                double f = ts - lo;
+                for (int a = 0; a < 3; a++) out[t][a] = path[lo][a] * (1.0 - f) + path[hi][a] * f;
+            } else {
+                double extra = ts - srcLast;
+                out[t][0] = path[srcLast][0] + evx * extra;
+                out[t][1] = path[srcLast][1] + evy * extra;
+                out[t][2] = path[srcLast][2] + evz * extra;
+            }
+        }
+        return out;
+    }
+
+    /** Sample mode k's predicted (pos, std, rho) at any tick in [0..MAX_THROW_TICKS] with clean extrapolation > 42t. */
+    private static void sampleModeState(Prediction pred, int k, double tEval,
+                                        double[] outPos, double[] outStd, double[] outRho) {
+        int maxT = BowBallistics.MAX_TICKS;
+        double tc = Math.max(0.0, tEval);
+        if (tc <= maxT) {
+            int lo = (int)tc, hi = Math.min(maxT, lo + 1);
+            double frac = tc - lo;
+            double[] pLo = pred.paths[k][lo], pHi = pred.paths[k][hi];
+            double[] sLo = pred.stds[k][lo], sHi = pred.stds[k][hi];
+            for (int a = 0; a < 3; a++) {
+                outPos[a] = pLo[a] + frac * (pHi[a] - pLo[a]);
+                outStd[a] = sLo[a] + frac * (sHi[a] - sLo[a]);
+            }
+            outRho[0] = pred.rhos[k][lo] + frac * (pred.rhos[k][hi] - pred.rhos[k][lo]);
+            return;
+        }
+        double extra = tc - maxT;
+        int ref = maxT - 6;
+        double[] pLast = pred.paths[k][maxT], pRef = pred.paths[k][ref];
+        double[] sLast = pred.stds[k][maxT];
+        for (int a = 0; a < 3; a++) {
+            double v = (pLast[a] - pRef[a]) / 6.0;
+            outPos[a] = pLast[a] + v * extra;
+            outStd[a] = sLast[a] * (1.0 + extra / (double)maxT);
+        }
+        outRho[0] = pred.rhos[k][maxT];
+    }
+
+    /**
+     * Exact physics-grounded multi-speed continuation for active bridging (sideways constant-speed,
+     * variable speedbridging, and diagonal-up stair speedbridging into empty void air where the
+     * future blocks do not exist yet in the voxel grid).
+     *
+     * Anchors at unsmoothed serverPos(0) to remove 1.8.9's 2*v 3-tick remote interpolation lag,
+     * uses floor-envelope climb rate for periodic stair jumps, and emits a calibrated speed-bracket
+     * distribution across modes [1.00x nominal, 1.28x fast, 0.68x slow, 0.15x pause] so rapid
+     * snowball/egg volleys automatically cover the entire speed distribution for a confirmed hit.
+     */
+    private static boolean applyBridgeAndSteadyContinuation(Track track, double[] weights,
+                                                            double[][][] paths, double[][][] stds,
+                                                            double[][] rhos, double[][] meanPath) {
+        int len = track.length();
+        if (len < 16 || paths.length < 4) return false;
+
+        // 1. Detect active bridging (holding block + looking down >= 32 deg, or sneaking with block)
+        int lookDownBlock = 0, blockTicks = 0, sneakTicks = 0;
+        int win = Math.min(18, len);
+        for (int a = 0; a < win; a++) {
+            int fl = track.flags(a);
+            boolean hasBlk = (fl & 2) != 0;
+            boolean sneak = (fl & 1) != 0;
+            if (hasBlk) blockTicks++;
+            if (sneak) sneakTicks++;
+            if (hasBlk && track.pitch(a) >= 32f) lookDownBlock++;
+        }
+        boolean activeBridgePose = (track.flags(0) & 2) != 0
+                && (lookDownBlock >= Math.min(6, win / 2)
+                    || (blockTicks >= Math.min(10, win - 2) && sneakTicks >= 3));
+
+        // 2. Measure steady velocity & straightness over W = 16..24 ticks using unsmoothed serverPos!
+        int W = Math.min(24, len - 1);
+        int half = W / 2;
+        double sx0 = track.serverGet(0, 0), sy0 = track.serverGet(0, 1), sz0 = track.serverGet(0, 2);
+        double netDx = sx0 - track.serverGet(W, 0);
+        double netDz = sz0 - track.serverGet(W, 2);
+        double netDist = Math.hypot(netDx, netDz);
+        double vxAll = netDx / W, vzAll = netDz / W;
+        double spdAll = netDist / W;
+
+        // Compare recent half vs older half to ensure they are truly continuing steadily (not turning/stopping!)
+        double vxRec = (sx0 - track.serverGet(half, 0)) / half;
+        double vzRec = (sz0 - track.serverGet(half, 2)) / half;
+        double vxOld = (track.serverGet(half, 0) - track.serverGet(W, 0)) / (W - half);
+        double vzOld = (track.serverGet(half, 2) - track.serverGet(W, 2)) / (W - half);
+        double spdRec = Math.hypot(vxRec, vzRec);
+        double spdOld = Math.hypot(vxOld, vzOld);
+
+        // Require meaningful horizontal movement (0.045..0.35 b/t) and consistent direction!
+        if (spdAll < 0.045 || spdAll > 0.36 || spdRec < 0.035 || spdOld < 0.030) return false;
+        double dirCos = (vxRec * vxOld + vzRec * vzOld) / Math.max(1e-6, spdRec * spdOld);
+
+        // Straightness check: path length vs net displacement (allows small zig-zag / shift-tap cadence)
+        double pathLen = 0.0;
+        for (int a = 0; a < W; a++) {
+            pathLen += Math.hypot(track.get(a, 0) - track.get(a + 1, 0), track.get(a, 2) - track.get(a + 1, 2));
+        }
+        double straightness = netDist / Math.max(1e-6, pathLen);
+
+        // Floor-envelope vertical climb rate (robust to periodic stair-jump arcs!)
+        double minYRecent = Double.POSITIVE_INFINITY, minYOld = Double.POSITIVE_INFINITY;
+        int fWin = Math.min(8, half);
+        for (int a = 0; a < fWin; a++) minYRecent = Math.min(minYRecent, track.serverGet(a, 1));
+        for (int a = W - fWin; a <= W; a++) minYOld = Math.min(minYOld, track.serverGet(a, 1));
+        double floorDt = Math.max(1.0, W - fWin);
+        double stairVy = (minYRecent - minYOld) / floorDt;
+        // Also check mid-window monotonic rise for stair bridging
+        boolean stairClimbing = activeBridgePose && stairVy >= 0.055 && stairVy <= 0.32;
+        if (!stairClimbing) stairVy = 0.0;
+
+        // Gate: either active bridging pose (relaxed straightness for ninja/stair cadence)
+        // OR ultra-clean constant-speed straight-line running (e.g. sprinting down a bridge without block in hand)
+        boolean steadyStraight = !activeBridgePose && dirCos >= 0.97 && straightness >= 0.94
+                && Math.abs(spdRec - spdOld) / Math.max(0.05, spdAll) <= 0.22
+                && Math.abs(minYRecent - minYOld) < 0.45;
+        boolean bridgeMatch = activeBridgePose && dirCos >= 0.86 && straightness >= 0.80;
+        if (!bridgeMatch && !steadyStraight) return false;
+
+        // Estimate observed speed variability to calibrate how wide the speed-bracket fan should be
+        double spdDiff = Math.abs(spdRec - spdOld) / Math.max(0.05, spdAll);
+        // Check 3-tick speed oscillation (classic speedbridge shift-tap rhythm)
+        double spdSum = 0, spdSq = 0;
+        int nSeg = Math.min(18, len - 3);
+        for (int a = 0; a < nSeg; a++) {
+            double s3 = Math.hypot(track.serverGet(a, 0) - track.serverGet(a + 3, 0),
+                    track.serverGet(a, 2) - track.serverGet(a + 3, 2)) / 3.0;
+            spdSum += s3; spdSq += s3 * s3;
+        }
+        double sMean = spdSum / Math.max(1, nSeg);
+        double sCv = Math.sqrt(Math.max(0.0, spdSq / Math.max(1, nSeg) - sMean * sMean)) / Math.max(0.05, sMean);
+
+        // Use weighted blend of recent and full-window velocity (fast response + smooth cadence averaging)
+        double vx = 0.55 * vxRec + 0.45 * vxAll;
+        double vz = 0.55 * vzRec + 0.45 * vzAll;
+        double baseY = stairClimbing ? (minYRecent + 0.30) : sy0;
+
+        // Calibrate multi-speed bracket multipliers using physical Minecraft bridging speed bounds
+        // (a slow sneak-bridger can burst +0.07 b/t by unsneaking, while max walking/bridging speed caps ~0.27 b/t)
+        double curSpd = Math.hypot(vx, vz);
+        double spreadScale = Math.max(0.22, Math.min(0.42, 0.20 + 0.45 * sCv + 0.25 * spdDiff));
+        double fastSpd = bridgeMatch
+                ? Math.min(0.275, Math.max(curSpd * (1.0 + spreadScale), curSpd + 0.075))
+                : Math.min(0.32, curSpd * (1.0 + spreadScale));
+        double fastMult = Math.max(1.08, fastSpd / Math.max(0.04, curSpd));
+        double slowMult = Math.max(0.42, 1.00 - spreadScale);
+        double[] mults = {1.00, fastMult, slowMult, 0.12};
+        double[] bridgeWeights = bridgeMatch
+                ? new double[]{0.38, 0.26, 0.24, 0.12}
+                : new double[]{0.44, 0.24, 0.20, 0.12};
+        // Blend strength: 1.0 for clear active bridging / stair bridging, 0.65 for general steady straight line
+        double blend = bridgeMatch ? 1.0 : 0.65;
+
+        int maxT = BowBallistics.MAX_TICKS;
+        int K = paths.length;
+        double ux = vx / Math.max(1e-6, Math.hypot(vx, vz));
+        double uz = vz / Math.max(1e-6, Math.hypot(vx, vz));
+
+        // Reassign weights: first 4 modes carry the calibrated multi-speed bridge brackets, remaining keep neural diversity
+        double neuralTailW = 0.0;
+        for (int k = 4; k < K; k++) neuralTailW += weights[k];
+        double keepTail = bridgeMatch ? Math.min(0.10, neuralTailW) : Math.min(0.25, neuralTailW);
+        double bridgeMass = 1.0 - keepTail;
+        for (int k = 0; k < 4; k++) weights[k] = bridgeMass * bridgeWeights[k];
+        if (K > 4) {
+            if (neuralTailW > 1e-6) {
+                for (int k = 4; k < K; k++) weights[k] = keepTail * (weights[k] / neuralTailW);
+            } else {
+                for (int k = 4; k < K; k++) weights[k] = keepTail / (K - 4);
+            }
+        }
+
+        for (int k = 0; k < 4; k++) {
+            double m = mults[k];
+            for (int t = 1; t <= maxT; t++) {
+                double bx = sx0 + vx * m * t;
+                double by = baseY + stairVy * m * t;
+                double bz = sz0 + vz * m * t;
+                paths[k][t][0] = paths[k][t][0] * (1.0 - blend) + bx * blend;
+                paths[k][t][1] = paths[k][t][1] * (1.0 - blend) + by * blend;
+                paths[k][t][2] = paths[k][t][2] * (1.0 - blend) + bz * blend;
+
+                // Tight perpendicular uncertainty, realistic along-bridge speed uncertainty
+                double sigAlong = 0.14 + (0.012 + 0.025 * sCv) * t;
+                double sigPerp = 0.12 + 0.008 * t;
+                double sigY = stairClimbing ? (0.30 + 0.014 * t) : (0.14 + 0.006 * t);
+                double sX = Math.hypot(ux * sigAlong, uz * sigPerp);
+                double sZ = Math.hypot(uz * sigAlong, ux * sigPerp);
+                stds[k][t][0] = stds[k][t][0] * (1.0 - blend) + sX * blend;
+                stds[k][t][1] = stds[k][t][1] * (1.0 - blend) + sigY * blend;
+                stds[k][t][2] = stds[k][t][2] * (1.0 - blend) + sZ * blend;
+                double rhoBridge = (ux * uz * (sigAlong * sigAlong - sigPerp * sigPerp))
+                        / Math.max(1e-5, sX * sZ);
+                rhoBridge = Math.max(-0.85, Math.min(0.85, rhoBridge));
+                rhos[k][t] = rhos[k][t] * (1.0 - blend) + rhoBridge * blend;
+            }
+        }
+        // Recompute meanPath cleanly from updated weights & paths
+        for (int t = 1; t <= maxT; t++) {
+            double mx = 0, my = 0, mz = 0;
+            for (int k = 0; k < K; k++) {
+                mx += weights[k] * paths[k][t][0];
+                my += weights[k] * paths[k][t][1];
+                mz += weights[k] * paths[k][t][2];
+            }
+            meanPath[t][0] = mx; meanPath[t][1] = my; meanPath[t][2] = mz;
+        }
+        return true;
     }
 
     /** Shift a trajectory forward by leadShiftTicks (e.g. ownPingMs / 50.0) for server RTT compensation. */
@@ -432,11 +663,12 @@ public final class BowNeuralMotion {
         return Math.max(0.0, Math.min(1.0, total));
     }
 
-    /** Per-mode hit probabilities P_k(hit | shot) for both arrows and throwables. */
+    /** Per-mode hit probabilities P_k(hit | shot) for both arrows and throwables (supports up to MAX_THROW_TICKS). */
     public double[] modeHitProbs(Shot shot, Prediction pred, double leadShiftTicks) {
         if (shot == null || pred == null) return null;
         double tHit = shot.time;
-        if (tHit <= 0.0 || tHit > BowBallistics.MAX_TICKS) return null;
+        int maxAllowed = shot.gravity < 0.04 ? BowBallistics.MAX_THROW_TICKS : BowBallistics.MAX_TICKS;
+        if (tHit <= 0.0 || tHit > maxAllowed) return null;
         double tr = BowBallistics.travel(tHit);
         double ax = shot.x + shot.vx * tr;
         double ay = shot.y + shot.vy * tr - BowBallistics.fall(tHit, shot.gravity);
@@ -449,28 +681,18 @@ public final class BowNeuralMotion {
         double sigProj = SPREAD * spd * tr;
         double varProj = sigProj * sigProj;
 
-        double tEval = Math.min(BowBallistics.MAX_TICKS, tHit + Math.max(0.0, leadShiftTicks));
-        int lo = (int)tEval;
-        int hi = Math.min(BowBallistics.MAX_TICKS, lo + 1);
-        double frac = tEval - lo;
+        double tEval = Math.min(maxAllowed, tHit + Math.max(0.0, leadShiftTicks));
         double[] out = new double[numModes];
+        double[] mu = new double[3], st = new double[3], rhoArr = new double[1];
         for (int k = 0; k < numModes; k++) {
             if (pred.weights[k] < 1e-4) continue;
-            double[] pLo = pred.paths[k][lo], pHi = pred.paths[k][hi];
-            double[] sLo = pred.stds[k][lo], sHi = pred.stds[k][hi];
-            double mx = pLo[0] + frac * (pHi[0] - pLo[0]);
-            double my = pLo[1] + frac * (pHi[1] - pLo[1]);
-            double mz = pLo[2] + frac * (pHi[2] - pLo[2]);
-            double stx = sLo[0] + frac * (sHi[0] - sLo[0]);
-            double sty = sLo[1] + frac * (sHi[1] - sLo[1]);
-            double stz = sLo[2] + frac * (sHi[2] - sLo[2]);
-            double r0 = pred.rhos[k][lo] + frac * (pred.rhos[k][hi] - pred.rhos[k][lo]);
-            double covXz = r0 * stx * stz;
-            double sx = Math.sqrt(stx * stx + varProj);
-            double sy = Math.sqrt(sty * sty + varProj);
-            double sz = Math.sqrt(stz * stz + varProj);
+            sampleModeState(pred, k, tEval, mu, st, rhoArr);
+            double covXz = rhoArr[0] * st[0] * st[2];
+            double sx = Math.sqrt(st[0] * st[0] + varProj);
+            double sy = Math.sqrt(st[1] * st[1] + varProj);
+            double sz = Math.sqrt(st[2] * st[2] + varProj);
             double rhoEff = Math.max(-0.92, Math.min(0.92, covXz / Math.max(1e-6, sx * sz)));
-            out[k] = correlatedBoxProb(ax, ay, az, mx, my, mz, sx, sy, sz, rhoEff, ivx, ivy, ivz);
+            out[k] = correlatedBoxProb(ax, ay, az, mu[0], mu[1], mu[2], sx, sy, sz, rhoEff, ivx, ivy, ivz);
         }
         return out;
     }
@@ -482,7 +704,8 @@ public final class BowNeuralMotion {
     public double modeHitProbAt(Shot shot, Prediction pred, int k, double evalTick) {
         if (shot == null || pred == null || k < 0 || k >= numModes) return 0.0;
         double tHit = shot.time;
-        if (tHit <= 0.0 || tHit > BowBallistics.MAX_TICKS || evalTick <= 0.0 || evalTick > BowBallistics.MAX_TICKS) {
+        int maxAllowed = shot.gravity < 0.04 ? BowBallistics.MAX_THROW_TICKS : BowBallistics.MAX_TICKS;
+        if (tHit <= 0.0 || tHit > maxAllowed || evalTick <= 0.0 || evalTick > maxAllowed) {
             return 0.0;
         }
         double tr = BowBallistics.travel(tHit);
@@ -497,24 +720,14 @@ public final class BowNeuralMotion {
         double sigProj = SPREAD * spd * tr;
         double varProj = sigProj * sigProj;
 
-        int lo = (int)evalTick;
-        int hi = Math.min(BowBallistics.MAX_TICKS, lo + 1);
-        double frac = evalTick - lo;
-        double[] pLo = pred.paths[k][lo], pHi = pred.paths[k][hi];
-        double[] sLo = pred.stds[k][lo], sHi = pred.stds[k][hi];
-        double mx = pLo[0] + frac * (pHi[0] - pLo[0]);
-        double my = pLo[1] + frac * (pHi[1] - pLo[1]);
-        double mz = pLo[2] + frac * (pHi[2] - pLo[2]);
-        double stx = sLo[0] + frac * (sHi[0] - sLo[0]);
-        double sty = sLo[1] + frac * (sHi[1] - sLo[1]);
-        double stz = sLo[2] + frac * (sHi[2] - sLo[2]);
-        double r0 = pred.rhos[k][lo] + frac * (pred.rhos[k][hi] - pred.rhos[k][lo]);
-        double covXz = r0 * stx * stz;
-        double sx = Math.sqrt(stx * stx + varProj);
-        double sy = Math.sqrt(sty * sty + varProj);
-        double sz = Math.sqrt(stz * stz + varProj);
+        double[] mu = new double[3], st = new double[3], rhoArr = new double[1];
+        sampleModeState(pred, k, evalTick, mu, st, rhoArr);
+        double covXz = rhoArr[0] * st[0] * st[2];
+        double sx = Math.sqrt(st[0] * st[0] + varProj);
+        double sy = Math.sqrt(st[1] * st[1] + varProj);
+        double sz = Math.sqrt(st[2] * st[2] + varProj);
         double rhoEff = Math.max(-0.92, Math.min(0.92, covXz / Math.max(1e-6, sx * sz)));
-        return correlatedBoxProb(ax, ay, az, mx, my, mz, sx, sy, sz, rhoEff, ivx, ivy, ivz);
+        return correlatedBoxProb(ax, ay, az, mu[0], mu[1], mu[2], sx, sy, sz, rhoEff, ivx, ivy, ivz);
     }
 
     /** Expected Hit-Equivalent value: sum_k effWeights[k] * P_k(hit | shot) * modeValues[k]. */

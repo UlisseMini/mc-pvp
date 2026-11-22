@@ -90,6 +90,7 @@ def main():
     run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.SumoStatsChecks'])
     run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.BedWarsForecastHistoryCheck'])
     run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.BedWarsForecastGhostsCheck'])
+    run([JAVA,'-ea','-cp',os.pathsep.join(map(str,[api,core,tests])),'practice.tests.BowBridgingChecks'])
     if args.install:
         if not args.module_only:
             backup=args.game_dir/'settings-backups'/('practice-bridge-'+str(time.time_ns()))

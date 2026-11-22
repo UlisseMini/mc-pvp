@@ -108,6 +108,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         archive.root(recording?dir:null);replay.root(dir);
     }
     private synchronized void finishLog(){CaptureLog l=log;log=null;if(l!=null){l.close();finishing.add(l);}}
+    private boolean livePlay(Channel c){return !offlinePlayback&&clients.contains(c)&&c.attr(NetworkManager.field_150739_c).get()==EnumConnectionState.PLAY;}
     private boolean play(Channel c){if(offlinePlayback)return false;boolean play=clients.contains(c)&&c.attr(NetworkManager.field_150739_c).get()==EnumConnectionState.PLAY;if(play&&!loopback(c)&&!remoteRecording)unrecordedPlay.add(c);return play&&(loopback(c)||remoteRecording);}
     private synchronized void session(Channel c){
         if(active!=c){finishLog();active=c;session=System.currentTimeMillis()+"-"+UUID.randomUUID().toString();match="";lastServer=0;lastState=Collections.emptyMap();lastHello=0;lastTelemetry=0;started=unrecordedPlay.contains(c);remoteSession="r"+UUID.randomUUID().toString().replace("-","");archive.end();publisher.close();views.close();lastViews=Collections.emptyMap();replay.clear();}
@@ -126,24 +127,37 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         }
         started=true;
     }
+    private final ThreadLocal<Long> passiveInNs=new ThreadLocal<>();
     public void wireBefore(Object context,Object buffer){
-        pending.remove();Channel c=((ChannelHandlerContext)context).channel();if(!play(c))return;session(c);
+        pending.remove();passiveInNs.remove();Channel c=((ChannelHandlerContext)context).channel();
+        if(!livePlay(c))return;
+        passiveInNs.set(System.nanoTime());
+        if(!play(c))return;session(c);
         ByteBuf b=(ByteBuf)buffer;int size=b.readableBytes();if(size>2097152){emit("packet_oversize",map("bytes",size),true);return;}
         byte[] copy=new byte[size];b.getBytes(b.readerIndex(),copy);pending.set(new Raw(c,copy));
     }
     public void wireAfter(Object packets){
-        Raw raw=pending.get();pending.remove();if(raw==null)return;
-        List<?> list=(List<?>)packets;if(list.isEmpty())return;Object packet=list.get(list.size()-1);
-        if(ConnectionScope.canSend(raw.channel))BotHooks.receive(packet);
-        BowAim.observePacket(false,packet,raw.ns);
-        wire("in",packet,raw);
+        Raw raw=pending.get();pending.remove();
+        Long inNs=passiveInNs.get();passiveInNs.remove();
+        List<?> list=(List<?>)packets;
+        if(list!=null&&!list.isEmpty()){
+            Object packet=list.get(list.size()-1);
+            if(inNs!=null)BowAim.observePacket(false,packet,raw!=null?raw.ns:inNs);
+            if(raw!=null){
+                if(ConnectionScope.canSend(raw.channel))BotHooks.receive(packet);
+                wire("in",packet,raw);
+            }
+        }
     }
     public void wireOut(Object context,Object packet,Object buffer){
-        Channel c=((ChannelHandlerContext)context).channel();if(!play(c))return;session(c);
+        Channel c=((ChannelHandlerContext)context).channel();
+        if(!livePlay(c))return;
+        long nowNs=System.nanoTime();
+        BowAim.observePacket(true,packet,nowNs);
+        if(!play(c))return;session(c);
         ByteBuf b=(ByteBuf)buffer;int size=b.readableBytes();if(size>2097152){emit("packet_oversize",map("bytes",size),true);return;}
         byte[] copy=new byte[size];b.getBytes(b.readerIndex(),copy);
         Raw raw=new Raw(c,copy);
-        BowAim.observePacket(true,packet,raw.ns);
         wire("out",packet,raw);
     }
     private long packetId(Object p){synchronized(packetIds){Long id=packetIds.get(p);if(id==null){id=packetSequence.incrementAndGet();packetIds.put(p,id);}return id;}}
