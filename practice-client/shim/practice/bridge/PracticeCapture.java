@@ -65,7 +65,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     private static final class Raw {Channel channel;byte[] bytes;long ms,ns;Raw(Channel c,byte[] b){channel=c;bytes=b;ms=System.currentTimeMillis();ns=System.nanoTime();}}
     PracticeCapture(ReloadHost host,Path directory,Path source){this.host=host;this.directory=directory;this.bridgeSha256=bridgeHash(source);this.remoteUpload=new RemoteCaptureUpload(directory);}
     String moduleSha256(){return host.moduleSha256();}
-    void settings(Properties p){
+    synchronized void settings(Properties p){
         boolean next=Boolean.parseBoolean(p.getProperty("capture.enabled","true"));
         frames=Boolean.parseBoolean(p.getProperty("capture.frames","true"));coordination=Boolean.parseBoolean(p.getProperty("link.enabled","true"));
         String archivePath=p.getProperty("archive.directory","").trim();baseArchive=archivePath.isEmpty()?null:Paths.get(archivePath);
@@ -73,10 +73,14 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     }
     synchronized void remoteRecording(boolean next){
         if(remoteRecording&&!next&&active!=null&&!loopback(active)){emit("capture_stopped",map("reason","remote_record_off"),false);finishLog();}
+        if(!remoteRecording&&next&&active!=null&&!loopback(active)){
+            // Each re-enabled remote recording interval gets its own archive ID so later clips are never hidden.
+            remoteSession="r"+UUID.randomUUID().toString().replace("-","");
+        }
         remoteRecording=next;
     }
     private static boolean loopback(Channel c){return ConnectionScope.local(c);}
-    void offlinePlayback(boolean value){offlinePlayback=value;if(value){finishLog();archive.end();publisher.close();views.close();replay.clear();lastReplayFrame=Collections.emptyMap();}}
+    synchronized void offlinePlayback(boolean value){offlinePlayback=value;if(value){finishLog();archive.end();publisher.close();views.close();replay.clear();lastReplayFrame=Collections.emptyMap();}}
     boolean practiceAllowed(){return !offlinePlayback&&ConnectionScope.practice();}
     private boolean observing(){return !offlinePlayback&&active!=null&&active==ConnectionScope.current()&&active.isActive()&&(loopback(active)||remoteRecording);}
     private boolean remote(){return active!=null&&!loopback(active);}
@@ -103,7 +107,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
         if(dir!=null && !BotRuntime.enabled() && TrainingTimer.active())dir=dir.resolveSibling("slow-sumo").resolve("runtime/pov");
         archive.root(recording?dir:null);replay.root(dir);
     }
-    private void finishLog(){CaptureLog l=log;log=null;if(l!=null){l.close();finishing.add(l);}}
+    private synchronized void finishLog(){CaptureLog l=log;log=null;if(l!=null){l.close();finishing.add(l);}}
     private boolean play(Channel c){if(offlinePlayback)return false;boolean play=clients.contains(c)&&c.attr(NetworkManager.field_150739_c).get()==EnumConnectionState.PLAY;if(play&&!loopback(c)&&!remoteRecording)unrecordedPlay.add(c);return play&&(loopback(c)||remoteRecording);}
     private synchronized void session(Channel c){
         if(active!=c){finishLog();active=c;session=System.currentTimeMillis()+"-"+UUID.randomUUID().toString();match="";lastServer=0;lastState=Collections.emptyMap();lastHello=0;lastTelemetry=0;started=unrecordedPlay.contains(c);remoteSession="r"+UUID.randomUUID().toString().replace("-","");archive.end();publisher.close();views.close();lastViews=Collections.emptyMap();replay.clear();}
@@ -169,6 +173,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     }
     public void apply(Object packet,boolean after){
         if(!observing()||!(packet instanceof Packet)||EnumConnectionState.func_150752_a((Packet)packet)!=EnumConnectionState.PLAY)return;
+        if(EnumConnectionState.PLAY.func_179246_a(EnumPacketDirection.CLIENTBOUND,(Packet)packet)==null)return;
         Minecraft mc=Minecraft.func_71410_x();boolean main=mc.func_152345_ab();
         if(!main){if(after)schedulingPacket.remove();else schedulingPacket.set(packet);}
         if(main&&ConnectionScope.canSend(active))BotHooks.apply(packet,after);
@@ -286,8 +291,11 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     }
     String status(){return "Remote record "+(remoteRecording?"ON":"OFF")+" | "+(log==null?"Capture off":log.status())+" | "+remoteUpload.status()+" | observer errors "+ObserverHooks.errors+" | link "+(lastServer==0?"waiting":System.currentTimeMillis()-lastServer+" ms old")+" | "+(remote()?remoteSession:match);}
     void emit(String type,Map<String,Object> data,boolean deliver){
-        long seq=sequence.incrementAndGet(),ms=System.currentTimeMillis(),ns=System.nanoTime();record(type,seq,ms,ns,data);
-        if(deliver&&(!remote()||host.wantsRemoteCaptureEvents()))enqueue(new PracticeEvent(type,seq,ms,ns,data));
+        long seq=sequence.incrementAndGet(),ms=System.currentTimeMillis(),ns=System.nanoTime();
+        boolean deliverEvent=deliver&&(!remote()||host.wantsRemoteCaptureEvents());
+        Map<String,Object> recordData=deliverEvent&&remote()?new LinkedHashMap<>(data):data;
+        record(type,seq,ms,ns,recordData);
+        if(deliverEvent)enqueue(new PracticeEvent(type,seq,ms,ns,data));
     }
     private void record(String type,long seq,long ms,long ns,Map<String,Object> data){
         CaptureLog writer=log;
@@ -356,6 +364,8 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
             if(!Arrays.asList("welcome","state","pong","marker_ack","replay_view","replay_menu","sumo_finish").contains(type))return;
             if(type.equals("welcome") && data.get("training_speed") instanceof Number){
                 TrainingTimer.accept(active,data);archiveLocation();
+                // Trigger an immediate hello ack so /duel works right after /slowmo.
+                lastHello=0;
             }
             if(type.equals("replay_view")){replay.receive(data);return;}
             if(type.equals("replay_menu")){Minecraft.func_71410_x().func_147108_a(new ReplayMenu(this));return;}

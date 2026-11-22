@@ -16,7 +16,7 @@ final class PracticeViews implements AutoCloseable {
     private long statsAt;
     private final ArrayDeque<Double> delivery=new ArrayDeque<>(),draw=new ArrayDeque<>();
     private Map<String,Object> statistics=Collections.emptyMap();
-    @SuppressWarnings("unchecked") Map<String,Object> update(Minecraft mc,Map<String,Object> state,float partial){
+    @SuppressWarnings("unchecked") synchronized Map<String,Object> update(Minecraft mc,Map<String,Object> state,float partial){
         String next=String.valueOf(state.getOrDefault("match",""));
         if(mc.field_71439_g==null||mc.field_71441_e==null||next.isEmpty()||!(state.get("players") instanceof List)){close();return map();}
         if(!next.equals(match)){close();match=next;opening=new OpeningWindow(number(state,"combat_start",System.currentTimeMillis()).longValue());}
@@ -69,5 +69,5 @@ final class PracticeViews implements AutoCloseable {
     }
     private static double[] values(Object o){List<?> a=(List<?>)o;double[] v=new double[a.size()];for(int i=0;i<v.length;i++)v[i]=((Number)a.get(i)).doubleValue();return v;}
     private static double distance(Map<String,Object> eye,Map<String,Object> target){double[] p=values(eye.get("pos"));p[1]+=number(eye,"eye_height",1.62).doubleValue();return ReachMath.distance(p,ReachMath.expand(values(target.get("box")),number(target,"border",0.1).doubleValue()));}
-    public void close(){if(reader!=null)reader.close();reader=null;match="";descriptor="";opening=null;delivery.clear();draw.clear();statistics=Collections.emptyMap();statsAt=0;}
+    public synchronized void close(){if(reader!=null)reader.close();reader=null;match="";descriptor="";opening=null;delivery.clear();draw.clear();statistics=Collections.emptyMap();statsAt=0;}
 }

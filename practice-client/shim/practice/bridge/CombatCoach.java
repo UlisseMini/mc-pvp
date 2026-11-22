@@ -248,6 +248,12 @@ final class CombatCoach {
             coach.pending = coach.moving = null;
             coach.jumpNote = null;
             coach.history.clear();
+            coach.damage.clear();
+            coach.swings.clear();
+            coach.previousRaw = Collections.emptySet();
+            coach.knownDamageTick = -1000;
+            coach.learnedWeapons.clear();
+            coach.provisionalWeapons.clear();
         }
     }
 
@@ -255,7 +261,8 @@ final class CombatCoach {
         CombatCoach coach = INSTANCE;
         if (!coach.block || coach.suspended || !(packets instanceof List)) return;
         for (Object packet : (List<?>) packets)
-            if (packet instanceof S19PacketEntityStatus || packet instanceof S06PacketUpdateHealth)
+            if (packet instanceof S19PacketEntityStatus || packet instanceof S06PacketUpdateHealth
+                    || packet instanceof S1CPacketEntityMetadata)
                 coach.receivedTimes.put(packet, System.nanoTime());
     }
 
@@ -272,9 +279,13 @@ final class CombatCoach {
             if (use.func_149568_f() != 255) return;
             ItemStack stack = use.func_149574_g();
             guard = stack != null && stack.func_77973_b() instanceof ItemSword;
-        } else if (packet instanceof C07PacketPlayerDigging &&
-                ((C07PacketPlayerDigging) packet).func_180762_c() != C07PacketPlayerDigging.Action.RELEASE_USE_ITEM) {
-            return;
+        } else if (packet instanceof C07PacketPlayerDigging) {
+            C07PacketPlayerDigging.Action action = ((C07PacketPlayerDigging) packet).func_180762_c();
+            if (action != C07PacketPlayerDigging.Action.RELEASE_USE_ITEM
+                    && action != C07PacketPlayerDigging.Action.DROP_ITEM
+                    && action != C07PacketPlayerDigging.Action.DROP_ALL_ITEMS) {
+                return;
+            }
         }
         coach.guardPackets.transition(channel, System.nanoTime(), guard);
     }
@@ -309,8 +320,10 @@ final class CombatCoach {
         if (mc.func_147114_u() == null) return false;
         NetworkPlayerInfo info = mc.func_147114_u().func_175102_a(player.func_110124_au());
         int ping = info == null ? 0 : info.func_178853_c();
-        if (info != null && ping >= 0 && guardPackets.covers(ConnectionScope.current(), received, ping)) return true;
-        // Native-use history also covers enabling the trainer in the middle of a hold.
+        Channel channel = ConnectionScope.current();
+        boolean trustedPing = info != null && (ConnectionScope.local(channel) ? ping >= 0 : ping > 1);
+        if (trustedPing && guardPackets.covers(channel, received, ping)) return true;
+        // Native-use history also covers enabling the trainer in the middle of a hold or fake 0/1 ms tab ping.
         return guardDuration >= 3 && received - guardStartedAt >= Math.max(150, ping + 50L) * 1_000_000L;
     }
 

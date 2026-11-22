@@ -126,9 +126,23 @@ public final class ReplayRecording {
     public double tickStep(double ms){int lo=0,hi=ticks.length;while(lo<hi){int m=(lo+hi)>>>1;if(ticks[m]<=ms)lo=m+1;else hi=m;}return lo<ticks.length?ticks[lo]:durationMs;}
     public double previousTick(double ms){int lo=0,hi=ticks.length;while(lo<hi){int m=(lo+hi)>>>1;if(ticks[m]<ms)lo=m+1;else hi=m;}return lo>0?ticks[lo-1]:0;}
 
+    private static List<Path> newestFirst(List<Path> paths){
+        List<Path> sorted=new ArrayList<>(paths);
+        Map<Path,Long> times=new HashMap<>(sorted.size()*2);
+        for(Path p:sorted){
+            long t=0;
+            try{t=Files.getLastModifiedTime(p).toMillis();}catch(IOException ignored){}
+            times.put(p,t);
+        }
+        sorted.sort((a,b)->{
+            int c=Long.compare(times.getOrDefault(b,0L),times.getOrDefault(a,0L));
+            return c!=0?c:b.getFileName().toString().compareTo(a.getFileName().toString());
+        });
+        return sorted;
+    }
     public static List<Entry> catalog(Path captures,Path archive,Function<String,Map<String,Object>> parser)throws IOException{
         Objects.requireNonNull(parser,"JSON parser");List<Entry> entries=new ArrayList<Entry>();
-        List<Path> captured=captures!=null&&Files.isDirectory(captures)?files(captures):Collections.<Path>emptyList();
+        List<Path> captured=captures!=null&&Files.isDirectory(captures)?newestFirst(files(captures)):Collections.<Path>emptyList();
         for(Path p:captured){
             if(firstSegment(p)&&p.toString().endsWith(".jsonl.gz")){
                 Map<String,Object> header=header(p,parser),data=object(header.get("data"));
@@ -148,10 +162,17 @@ public final class ReplayRecording {
             if(entries.size()>=4096)break;
         }
         if(captures!=null)entries.addAll(sumoEntries(captures));
-        if(archive!=null&&Files.isDirectory(archive))for(Path folder:files(archive)){
-            Entry entry=archiveEntry(folder,parser);
-            if(entry!=null)entries.add(entry);
-            if(entries.size()>=4096)break;
+        if(archive!=null&&Files.isDirectory(archive)){
+            List<Path> folders=newestFirst(files(archive));
+            int remaining=Math.max(0,4096-entries.size());
+            if(remaining>0)for(Path folder:folders){
+                List<Entry> found=archiveEntries(folder,parser,true);
+                for(Entry entry:found){
+                    entries.add(entry);
+                    if(entries.size()>=4096)break;
+                }
+                if(entries.size()>=4096)break;
+            }
         }
         Collections.sort(entries,(a,b)->{int c=Long.compare(b.startMs,a.startMs);return c!=0?c:a.id.compareTo(b.id);});return Collections.unmodifiableList(entries);
     }
@@ -159,30 +180,43 @@ public final class ReplayRecording {
         return archiveEntry(folder,parser,true);
     }
     public static Entry archiveEntry(Path folder,Function<String,Map<String,Object>> parser,boolean useFullSession)throws IOException{
-        if(!Files.isDirectory(folder)||!folder.getFileName().toString().matches("m[0-9]+|r[0-9a-fA-F]+"))return null;
+        List<Entry> all=archiveEntries(folder,parser,useFullSession);
+        return all.isEmpty()?null:all.get(0);
+    }
+    public static List<Entry> archiveEntries(Path folder,Function<String,Map<String,Object>> parser,boolean useFullSession)throws IOException{
+        if(!Files.isDirectory(folder)||!folder.getFileName().toString().matches("m[0-9]+|r[0-9a-fA-F]+"))return Collections.emptyList();
         Path mp=folder.resolve("manifest.json");Map<String,Object> manifest=Collections.emptyMap();
         if(Files.isRegularFile(mp)&&Files.size(mp)<=1024*1024)try{manifest=parse(parser,new String(Files.readAllBytes(mp),StandardCharsets.UTF_8));}catch(RuntimeException ignored){}
         List<Path> archived=files(folder);
-        Path first=null;for(Path p:archived)if(firstSegment(p)&&p.getFileName().toString().matches("a-client-.*-events\\.jsonl\\.gz")){first=p;break;}
-        if(first==null)for(Path p:archived)if(firstSegment(p)&&p.getFileName().toString().matches("b-client-.*-events\\.jsonl\\.gz")){first=p;break;}
-        if(first==null)return null;
-        Map<String,Object> header=header(first,parser),metadata=object(header.get("metadata"));
-        if(metadata.isEmpty())metadata=object(manifest.get("metadata"));if(metadata.isEmpty())metadata=object(header.get("data"));
-        boolean mid=bool(metadata,"started_mid_connection",true);String full=text(metadata,"full_session_capture","");
-        if(useFullSession&&!full.isEmpty())try{
-            Path candidate=Paths.get(full);
-            if(!candidate.isAbsolute())candidate=first.getParent().resolve(candidate);
-            if(Files.isRegularFile(candidate)&&candidate.toString().endsWith(".jsonl.gz")){
-                Map<String,Object> fullHeader=header(candidate,parser);
-                if(!fullHeader.isEmpty()){
-                    first=candidate;header=fullHeader;mid=bool(object(header.get("data")),"started_mid_connection",true);
+        List<Path> chains=new ArrayList<>();
+        for(Path p:archived)if(firstSegment(p)&&p.getFileName().toString().matches("a-client-.*-events\\.jsonl\\.gz"))chains.add(p);
+        if(chains.isEmpty())for(Path p:archived)if(firstSegment(p)&&p.getFileName().toString().matches("b-client-.*-events\\.jsonl\\.gz")){chains.add(p);break;}
+        if(chains.isEmpty())return Collections.emptyList();
+        List<Entry> result=new ArrayList<>(chains.size());
+        String baseId=folder.getFileName().toString();
+        for(int idx=0;idx<chains.size();idx++){
+            Path first=chains.get(idx);
+            Map<String,Object> header=header(first,parser),metadata=object(header.get("metadata"));
+            if(metadata.isEmpty())metadata=object(manifest.get("metadata"));if(metadata.isEmpty())metadata=object(header.get("data"));
+            boolean mid=bool(metadata,"started_mid_connection",true);String full=text(metadata,"full_session_capture","");
+            if(useFullSession&&!full.isEmpty()&&chains.size()==1)try{
+                Path candidate=Paths.get(full);
+                if(!candidate.isAbsolute())candidate=first.getParent().resolve(candidate);
+                if(Files.isRegularFile(candidate)&&candidate.toString().endsWith(".jsonl.gz")){
+                    Map<String,Object> fullHeader=header(candidate,parser);
+                    if(!fullHeader.isEmpty()){
+                        first=candidate;header=fullHeader;mid=bool(object(header.get("data")),"started_mid_connection",true);
+                    }
                 }
-            }
-        }catch(InvalidPathException ignored){}
-        long start=integer(header,"time_ms",integer(manifest,"start_ms",0)),finish=integer(manifest,"finish_ms",integer(manifest,"last_received_sample_ms",start));
-        String id=folder.getFileName().toString(),server=text(metadata,"server_host",text(object(header.get("data")),"server_host","local lab"));
-        long preferred=integer(manifest,"start_ms",start);
-        return new Entry(id,id+" — "+server,server,start,Math.max(0,finish-start),first,mid,folder,false,preferred,finish>start?finish:0);
+            }catch(InvalidPathException ignored){}
+            long start=integer(header,"time_ms",integer(manifest,"start_ms",0));
+            long finish=integer(manifest,"finish_ms",integer(manifest,"last_received_sample_ms",start));
+            String id=chains.size()==1?baseId:baseId+"#"+(idx+1);
+            String server=text(metadata,"server_host",text(object(header.get("data")),"server_host","local lab"));
+            long preferred=chains.size()==1?integer(manifest,"start_ms",start):start;
+            result.add(new Entry(id,id+" — "+server,server,start,Math.max(0,finish-start),first,mid,folder,false,preferred,finish>start?finish:0));
+        }
+        return result;
     }
     /** Filename-only catalogue; supply a JSON parser for session metadata. */
     public static List<Entry> catalog(Path captures,Path archive)throws IOException{

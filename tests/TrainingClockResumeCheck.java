@@ -27,6 +27,10 @@ public final class TrainingClockResumeCheck {
         TrainingClock.synchronize(change,TrainingClock.at(change).game(change),1,after+500,.5);
         long later=TrainingClock.gameNanos(now+1_500_000_000L,now+1_500_000_000L,after+1500);
         if(later-first!=1_000_000_000L)throw new AssertionError("Live 1x to 0.5x change");
-        System.out.println("Sleep, 0.3x to 1x, 1x to 0.5x and seven-CPS pacing verified.");
+        // A five-second backward NTP wall-clock correction while monotonic time advances 50 ms at 0.5x
+        // must advance game time by +25 ms rather than jumping backward by 2.5 seconds.
+        long afterNtp=TrainingClock.gameNanos(now+1_550_000_000L,now+1_550_000_000L,after+1550-5000);
+        if(afterNtp-later!=25_000_000L)throw new AssertionError("Backward wall-clock step moved gameNanos backward: "+(afterNtp-later));
+        System.out.println("Sleep, backward NTP step, 0.3x to 1x, 1x to 0.5x and seven-CPS pacing verified.");
     }
 }

@@ -141,7 +141,9 @@ final class MeleeObservations {
             Item.func_150891_b(weapon.func_77973_b()) + ":" + weapon.func_77978_p();
         double[] modifiers = {0, 0, 1};
         for (PotionEffect effect : (Collection<PotionEffect>) opponent.func_70651_bq()) {
-            Potion potion = Potion.field_76425_a[effect.func_76456_a()];
+            int id = effect.func_76456_a();
+            if (id < 0 || id >= Potion.field_76425_a.length) continue;
+            Potion potion = Potion.field_76425_a[id];
             if (potion == null) continue;
             AttributeModifier mod = potion.func_111186_k().get(SharedMonsterAttributes.field_111264_e);
             if (mod != null) add(modifiers, mod, potion.func_111183_a(effect.func_76458_c(), mod));
@@ -180,7 +182,7 @@ final class MeleeObservations {
     private static void add(double[] modifiers, AttributeModifier modifier, double amount) {
         int operation = modifier.func_111169_c();
         if (operation == 2) modifiers[2] *= 1 + amount;
-        else modifiers[operation] += amount;
+        else if (operation == 0 || operation == 1) modifiers[operation] += amount;
     }
 
     static boolean arrowThreat(Minecraft mc, EntityPlayerSP self) {

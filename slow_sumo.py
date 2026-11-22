@@ -23,7 +23,7 @@ def manager():
             raise RuntimeError('Unexpected manager in the training directory')
         os.kill(state['pid'], 0)
         return state
-    except (FileNotFoundError, ProcessLookupError):
+    except (FileNotFoundError, ProcessLookupError, PermissionError, json.JSONDecodeError, OSError):
         return None
 
 
@@ -65,7 +65,11 @@ def change(speed, stop):
             time.sleep(.3)
         raise SystemExit('The training room did not confirm the speed. See '+str(ROOM/'launcher.log'))
     if state:
-        if json.loads((DATA/'status.json').read_text())['matches']:
+        try:
+            active_matches = json.loads((DATA/'status.json').read_text()).get('matches', [])
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            active_matches = []
+        if active_matches:
             raise SystemExit('Finish the active slow sumo duel or use /stop before closing the room.')
         lab.RUNTIME = DATA
         lab.send('shutdown')

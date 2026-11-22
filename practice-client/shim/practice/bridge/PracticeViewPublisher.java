@@ -13,8 +13,8 @@ final class PracticeViewPublisher implements AutoCloseable {
     private String match="";
     private long sequence,lastPublish,tickNs;
     void tick(){tickNs=System.nanoTime();}
-    Map<String,Object> descriptor(){return publisher==null?map():map("port",publisher.port(),"token",publisher.token,"match",match);}
-    void update(Minecraft mc,Map<String,Object> state,float partial){
+    synchronized Map<String,Object> descriptor(){return publisher==null?map():map("port",publisher.port(),"token",publisher.token,"match",match);}
+    synchronized void update(Minecraft mc,Map<String,Object> state,float partial){
         String next=String.valueOf(state.getOrDefault("match",""));
         if(mc.field_71439_g==null||mc.field_71441_e==null||next.isEmpty()||!(state.get("players") instanceof List)){close();return;}
         List<?> names=(List<?>)state.get("players");
@@ -38,5 +38,5 @@ final class PracticeViewPublisher implements AutoCloseable {
         v[i+12]=b.field_72336_d;v[i+13]=b.field_72337_e;v[i+14]=b.field_72334_f;v[i+15]=p.func_70111_Y();
         v[i+16]=p.func_70093_af()?1:0;v[i+17]=p.field_70173_aa;
     }
-    public void close(){if(publisher!=null)publisher.close();publisher=null;match="";}
+    public synchronized void close(){if(publisher!=null)publisher.close();publisher=null;match="";}
 }

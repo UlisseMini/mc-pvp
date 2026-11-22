@@ -31,10 +31,16 @@ def ingest(root,session,name,host,digest,body):
         'interactive_server_replay_available':False,'source_scope':'own-client only; no authoritative server or opponent-client POV',
         'clock':'client UNIX milliseconds; monotonic values process-local','parts':{}}
     if manifest['server_host']!=host:raise ValueError('session host changed')
+    def update_index():
+        index=root/'pov'/'remote-index.json';data=json.loads(index.read_text())if index.exists()else{'schema':1,'sessions':{}}
+        data['sessions'][session]={'role':'human-remote','server_host':host,'start_ms':manifest['start_ms'],'last_sample_ms':manifest.get('last_received_sample_ms'),
+            'manifest':session+'/manifest.json','source_scope':manifest['source_scope'],'parts':len(manifest['parts'])}
+        atomic(index,(json.dumps(data,indent=2)+'\n').encode())
     prior=manifest['parts'].get(name)
     if prior:
         if prior['sha256']!=digest:raise ValueError('conflicting duplicate')
         if not (folder/name).exists():raise ValueError('acknowledged part missing')
+        update_index()
         return digest
     poses=[];counts={};footer=None;start=None;last=None;capture_meta={}
     with gzip.GzipFile(fileobj=io.BytesIO(body))as raw:
@@ -68,22 +74,27 @@ def ingest(root,session,name,host,digest,body):
     if counts.get('connection_end')or counts.get('capture_stopped'):manifest['finish_ms']=last
     manifest['metadata']=metadata if capture_meta else manifest.get('metadata',metadata)
     atomic(manifest_path,(json.dumps(manifest,indent=2)+'\n').encode())
-    index=root/'pov'/'remote-index.json';data=json.loads(index.read_text())if index.exists()else{'schema':1,'sessions':{}}
-    data['sessions'][session]={'role':'human-remote','server_host':host,'start_ms':manifest['start_ms'],'last_sample_ms':manifest.get('last_received_sample_ms'),
-        'manifest':session+'/manifest.json','source_scope':manifest['source_scope'],'parts':len(manifest['parts'])}
-    atomic(index,(json.dumps(data,indent=2)+'\n').encode())
+    update_index()
     return digest
 
 class Handler(http.server.BaseHTTPRequestHandler):
     server_version='PracticeLocalCapture/1'
+    def setup(self):
+        super().setup()
+        self.connection.settimeout(10)
     def log_message(self,*args):pass  # Never print payload/chat/host/account data.
     def response(self,status,body=b''):
         self.send_response(status);self.send_header('Content-Type','text/plain');self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
+    def _loopback_host_ok(self):
+        host_hdr=(self.headers.get('Host') or '').strip().lower()
+        port=self.server.server_port
+        return host_hdr in (f'127.0.0.1:{port}',f'localhost:{port}','127.0.0.1','localhost')
     def do_GET(self):
+        if not ipaddress.ip_address(self.client_address[0]).is_loopback or not self._loopback_host_ok():return self.response(403)
         if self.path=='/health':self.response(200,b'practice-local-capture-v1\n')
         else:self.response(404)
     def do_POST(self):
-        if not ipaddress.ip_address(self.client_address[0]).is_loopback or self.path!='/practice/capture':return self.response(403)
+        if not ipaddress.ip_address(self.client_address[0]).is_loopback or not self._loopback_host_ok() or self.path!='/practice/capture':return self.response(403)
         try:
             length=int(self.headers.get('Content-Length','-1'))
             if self.headers.get('Content-Type')!='application/gzip'or not 1<=length<=MAX_COMPRESSED:raise ValueError('request size/type')
@@ -114,5 +125,5 @@ if __name__=='__main__':
         args.root.mkdir(parents=True,exist_ok=True);lock=(args.root/'capture-ingest.lock').open('a')
         try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         except BlockingIOError:raise SystemExit('Local capture receiver already running')
-        server=http.server.HTTPServer(('127.0.0.1',PORT),Handler);server.archive_root=args.root
+        server=http.server.ThreadingHTTPServer(('127.0.0.1',PORT),Handler);server.daemon_threads=True;server.archive_root=args.root
         (args.root/'capture-ingest.pid').write_text(str(os.getpid()));server.serve_forever()

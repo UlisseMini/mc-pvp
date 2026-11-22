@@ -10,7 +10,8 @@ import java.util.*;
 /** Local module replacement. No server, downloads or remotely supplied code. */
 public final class ReloadHost implements AutoCloseable {
     private final Path directory;
-    private String fingerprint="",status="Not loaded",moduleSha256="unreported";
+    private String fingerprint="";
+    private volatile String status="Not loaded",moduleSha256="unreported";
     private PracticeExtension active;
     private URLClassLoader loader;
     private Path copy;
@@ -22,12 +23,12 @@ public final class ReloadHost implements AutoCloseable {
     public String status(){return status;}
     public String moduleSha256(){return moduleSha256;}
     public boolean wantsRemoteCaptureEvents(){return remoteCaptureEvents;}
-    public void services(PracticeServices services){this.services=services;}
+    public synchronized void services(PracticeServices services){this.services=services;}
     private byte[] readBounded(Path p,int max) throws IOException {
         if(Files.size(p)>max)throw new IOException(p.getFileName()+" is too large");
         byte[] data=Files.readAllBytes(p);if(data.length>max)throw new IOException("File grew while reading");return data;
     }
-    public boolean reload(boolean force) {
+    public synchronized boolean reload(boolean force) {
         URLClassLoader candidateLoader=null;PracticeExtension candidate=null;Path candidateCopy=null;
         try {
             byte[] jar=readBounded(directory.resolve("practice-module.jar"),4*1024*1024);
@@ -35,7 +36,7 @@ public final class ReloadHost implements AutoCloseable {
             MessageDigest digest=MessageDigest.getInstance("SHA-256");digest.update(jar);digest.update(config);
             String next=Base64.getEncoder().encodeToString(digest.digest());
             if(!force && next.equals(fingerprint))return false;
-            fingerprint=next;Properties props=new Properties();props.load(new ByteArrayInputStream(config));
+            Properties props=new Properties();props.load(new ByteArrayInputStream(config));
             Path cache=directory.resolve("loaded");Files.createDirectories(cache);
             candidateCopy=Files.createTempFile(cache,"module-",".jar");Files.write(candidateCopy,jar);
             candidateLoader=new URLClassLoader(new URL[]{candidateCopy.toUri().toURL()},PracticeExtension.class.getClassLoader());
@@ -45,6 +46,7 @@ public final class ReloadHost implements AutoCloseable {
             boolean wantsRemote=candidate.wantsRemoteCaptureEvents();
             dispose(active,loader,copy);
             active=candidate;loader=candidateLoader;copy=candidateCopy;faulted=false;
+            fingerprint=next;
             remoteCaptureEvents=wantsRemote;
             StringBuilder hex=new StringBuilder();for(byte b:MessageDigest.getInstance("SHA-256").digest(jar))hex.append(String.format("%02x",b&255));moduleSha256=hex.toString();
             status="Loaded local module "+next.substring(0,8);return true;
@@ -83,5 +85,5 @@ public final class ReloadHost implements AutoCloseable {
         try{if(loader!=null)loader.close();}catch(IOException ignored){}
         try{if(copy!=null)Files.deleteIfExists(copy);}catch(IOException ignored){}
     }
-    public void close(){dispose(active,loader,copy);active=null;loader=null;copy=null;}
+    public synchronized void close(){dispose(active,loader,copy);active=null;loader=null;copy=null;}
 }

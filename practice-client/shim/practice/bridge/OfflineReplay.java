@@ -416,9 +416,9 @@ final class OfflineReplay {
         target=Math.max(recording.playStart(),Math.min(recording.playEnd(),target));
         try{
             boolean rewind=target<time||worldAheadOfPlayhead;
-            if(rewind){reset();time=0;worldAheadOfPlayhead=false;}
+            if(rewind){reset();time=0;worldAheadOfPlayhead=false;seedEarlierChunks();}
             seekForward(target);
-            if(rewind)seedArena(target);
+            if(rewind)seedRemainingChunks(target);
             pose();
         }catch(Exception e){paused=true;failure="Seek failed: "+e.getMessage();}
         finally{seeking=false;if(controls instanceof OfflineReplayMenu)Minecraft.func_71410_x().func_147108_a(controls);}
@@ -480,10 +480,17 @@ final class OfflineReplay {
             applyWire(wire);
         }
     }
-    private void seedArena(double target)throws Exception{
+    private void seedEarlierChunks()throws Exception{
         if(recording.sumo==null)return;
         for(ReplayRecording.Wire wire:recording.sumo.earlierChunks)applyWire(wire);
+    }
+    private void seedRemainingChunks(double target)throws Exception{
+        if(recording.sumo==null)return;
         for(ReplayRecording.Wire wire:recording.sumo.initialChunks)if(wire.atMs>target)applyWire(wire);
+    }
+    private void seedArena(double target)throws Exception{
+        seedEarlierChunks();
+        seedRemainingChunks(target);
     }
     @SuppressWarnings("unchecked") private void applyWire(ReplayRecording.Wire wire)throws Exception{
         PacketBuffer bytes=new PacketBuffer(Unpooled.wrappedBuffer(wire.bytes));

@@ -48,6 +48,12 @@ def main():
                 before=(session/'manifest.json').read_bytes();body=(game/'captures'/name).read_bytes()
                 check(ingest.ingest(server.archive_root,'r'+'a'*32,name,'example.invalid:25565',digest,body)==digest,'repeat delivery checksum dedupes')
                 check((session/'manifest.json').read_bytes()==before,'duplicate does not add rows/parts')
+            # Deleting remote-index.json and re-delivering a duplicate part must repair the index before acking.
+            idx_path=server.archive_root/'pov'/'remote-index.json'
+            idx_path.unlink()
+            first_name,first_digest=next(iter(sources.items()))
+            check(ingest.ingest(server.archive_root,'r'+'a'*32,first_name,'example.invalid:25565',first_digest,(game/'captures'/first_name).read_bytes())==first_digest,'duplicate repairs index')
+            check(('r'+'a'*32) in json.loads(idx_path.read_text()).get('sessions',{}),'remote-index.json restored on duplicate retry')
             badbody=gzip.compress(b'{"type":"capture_end"}\n')
             for session_id,name,digest,body in [('r../escape','a-client-bad-events.jsonl.gz',hashlib.sha256(badbody).hexdigest(),badbody),('r'+'b'*32,'../escape',hashlib.sha256(badbody).hexdigest(),badbody),('r'+'b'*32,'a-client-bad-events.jsonl.gz','0'*64,badbody),('r'+'b'*32,'a-client-bad-events.jsonl.gz',hashlib.sha256(badbody[:-3]).hexdigest(),badbody[:-3])]:
                 failed=False

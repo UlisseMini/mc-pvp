@@ -107,22 +107,33 @@ class RoomProxyClock:
         self.path = path
         self.plan = (epoch_ms, 0., rate, 0, rate)
         self.next_read = 0.
+        self._wall_minus_mono = None
 
-    def now(self):
-        real = time.monotonic()
+    def _effective_wall_ms(self, mono=None, wall_ms=None):
+        mono = time.monotonic() if mono is None else mono
+        wall_ms = time.time() * 1000 if wall_ms is None else wall_ms
+        proposed = wall_ms - mono * 1000.0
+        if self._wall_minus_mono is None or proposed - self._wall_minus_mono > 2.0:
+            # Follow forward host-sleep advances, but refuse backward NTP wall jumps.
+            self._wall_minus_mono = proposed
+        return mono * 1000.0 + self._wall_minus_mono
+
+    def now(self, mono=None, wall_ms=None):
+        real = time.monotonic() if mono is None else mono
         if real >= self.next_read:
             self.next_read = real + .025
             try:
                 plan = json.loads(self.path.read_text())
                 self.plan = (plan['training_wall'], plan['training_game_ns'] / 1e9, plan['training_speed'],
                              plan['training_next_wall'], plan['training_next_speed'])
-            except FileNotFoundError:
+            except (FileNotFoundError, json.JSONDecodeError, KeyError, OSError):
                 pass
         start, game, rate, switch, target = self.plan
-        now_ms = time.time() * 1000
+        now_ms = self._effective_wall_ms(real, wall_ms)
         if switch and now_ms >= switch:
             game += (switch - start) * rate / 1000
             start, rate = switch, target
+        rate = max(.1, rate)
         return game + (now_ms - start) * rate / 1000, rate
 
     def bot_clock_flags(self, epoch_ms):
@@ -138,14 +149,36 @@ class RoomProxyClock:
 
     async def wait(self, due):
         while True:
-            game, rate = self.now()
+            mono = time.monotonic()
+            game, rate = self.now(mono)
             remaining = (due - game) / rate
             if remaining <= 0:
                 return
-            await asyncio.sleep(min(.05, remaining))
+            _, _, _, switch, _ = self.plan
+            cap = .05
+            if switch:
+                now_ms = self._effective_wall_ms(mono)
+                if switch > now_ms:
+                    cap = min(cap, max(.001, (switch - now_ms) / 1000.0))
+            await asyncio.sleep(min(cap, remaining))
 
 
 async def latency_proxy(port,configuration,upstream_port=25566,room_clock=None):
+    rtt_cache = {'mtime': None, 'size': None, 'checked': 0.0, 'delay': 0.0}
+    def half_rtt():
+        now = time.monotonic()
+        if now - rtt_cache['checked'] < .025:
+            return rtt_cache['delay']
+        rtt_cache['checked'] = now
+        try:
+            st = configuration.stat()
+            if st.st_mtime_ns != rtt_cache['mtime'] or st.st_size != rtt_cache['size']:
+                rtt_cache['delay'] = max(0.0, float(properties(configuration).get('rtt_ms', '0')) / 2000.0)
+                rtt_cache['mtime'], rtt_cache['size'] = st.st_mtime_ns, st.st_size
+        except (OSError, ValueError):
+            pass
+        return rtt_cache['delay']
+
     async def connection(reader,writer):
         try:up_reader,up_writer=await asyncio.open_connection('127.0.0.1',upstream_port)
         except OSError:writer.close();return
@@ -153,12 +186,14 @@ async def latency_proxy(port,configuration,upstream_port=25566,room_clock=None):
             queue=asyncio.Queue(maxsize=256)
             async def ingest():
                 last_due=0
-                while data:=await source.read(65536):
-                    delay=float(properties(configuration).get('rtt_ms','0'))/2000
-                    now=room_clock.now()[0] if room_clock else asyncio.get_running_loop().time()
-                    due=max(last_due,now+delay);last_due=due
-                    await queue.put((due,data))
-                await queue.put((0,None))
+                try:
+                    while data:=await source.read(65536):
+                        delay=half_rtt()
+                        now=room_clock.now()[0] if room_clock else asyncio.get_running_loop().time()
+                        due=max(last_due,now+delay);last_due=due
+                        await queue.put((due,data))
+                finally:
+                    await queue.put((0,None))
             async def deliver():
                 while True:
                     due,data=await queue.get()
@@ -166,13 +201,18 @@ async def latency_proxy(port,configuration,upstream_port=25566,room_clock=None):
                     if room_clock:await room_clock.wait(due)
                     else:await asyncio.sleep(max(0,due-asyncio.get_running_loop().time()))
                     dest.write(data);await dest.drain()
-            try:await asyncio.gather(ingest(),deliver())
-            finally:dest.close()
+            try:
+                await asyncio.gather(ingest(),deliver())
+                if dest.can_write_eof() and not dest.is_closing():
+                    dest.write_eof()
+            except (ConnectionError,OSError,asyncio.CancelledError):
+                if not dest.is_closing():dest.close()
         tasks=[asyncio.create_task(pipe(reader,up_writer)),asyncio.create_task(pipe(up_reader,writer))]
         try:
-            await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
+            await asyncio.gather(*tasks,return_exceptions=True)
         finally:
-            for task in tasks:task.cancel()
+            for task in tasks:
+                if not task.done():task.cancel()
             await asyncio.gather(*tasks,return_exceptions=True)
             writer.close();up_writer.close()
     return await asyncio.start_server(connection,'127.0.0.1',port)
@@ -265,11 +305,16 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
     loop=asyncio.get_running_loop()
     for sig in (signal.SIGINT,signal.SIGTERM):loop.add_signal_handler(sig,stop.set)
     def launch(role,args,cwd,replace=None,complete_command=False):
-        log=open(RUNTIME/f'logs/{role}.log','w');logs.append(log)
+        log=open(RUNTIME/f'logs/{role}.log','w')
         environment=clean_environment()
         process=subprocess.Popen(args if complete_command else sandbox_java(args),cwd=cwd,stdin=subprocess.PIPE,stdout=log,stderr=subprocess.STDOUT,text=True,env=environment)
-        if replace is None:processes.append(process)
-        else:processes[replace]=process
+        if replace is None:
+            processes.append(process);logs.append(log)
+        else:
+            old_log=logs[replace]
+            processes[replace]=process;logs[replace]=log
+            try:old_log.close()
+            except OSError:pass
         return process
     base=['-Xms128M','-Xmx1024M','-XX:ActiveProcessorCount=2','-Dlab.root='+str(game_root),*clock_flags,'-javaagent:'+str(agent)]
     server=launch('server',[*base,'-Xmx2048M','-Dlab.role=server','-Dlog4j.configurationFile='+str(CACHE/'server-logging.xml'),'-jar',CACHE/'server.jar','nogui'],RUNTIME/'server')
@@ -318,7 +363,10 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
             for i,p in enumerate(processes[1:]):
                 if p.poll() is not None:raise RuntimeError(f'Bot {i} exited; see runtime/logs/bot{i}.log')
             if not initialized:
-                status=json.loads((RUNTIME/'status.json').read_text())
+                try:
+                    status=json.loads((RUNTIME/'status.json').read_text())
+                except (FileNotFoundError,json.JSONDecodeError,OSError):
+                    await asyncio.sleep(.1);continue
                 healthy=True
                 for i in range(BOT_SLOTS):
                     try:
@@ -345,14 +393,17 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
                 request.unlink()
                 if command=='shutdown':stop.set();break
                 if command=='reload-bots':
-                    state=json.loads((RUNTIME/'status.json').read_text());busy={m[k] for m in state['matches'] for k in ('a','b')}
+                    try:state=json.loads((RUNTIME/'status.json').read_text())
+                    except (FileNotFoundError,json.JSONDecodeError,OSError):state={'matches':[]}
+                    busy={m[k] for m in state.get('matches',[]) for k in ('a','b')}
                     reloaded=[]
                     for i in range(BOT_SLOTS):
                         if f'LabSlot{i}' in busy:continue
                         (RUNTIME/f'bots/{i}/control.properties').write_text('enabled=false\n')
                         old=processes[i+1];old.terminate()
-                        try:old.wait(timeout=3)
-                        except subprocess.TimeoutExpired:old.kill();old.wait()
+                        try:await asyncio.to_thread(old.wait,3)
+                        except subprocess.TimeoutExpired:
+                            old.kill();await asyncio.to_thread(old.wait)
                         await asyncio.sleep(.4);start_bot(i,i+1);reloaded.append(i)
                     print('Reloaded idle bot clients '+str(reloaded)+'; active duels keep running.',flush=True)
                     continue
@@ -368,11 +419,19 @@ async def serve(frame_sleep_ms=10,bot_backend='forge',slot_backends='',bot_slots
             try:process.wait(timeout=10)
             except subprocess.TimeoutExpired:process.kill();process.wait()
         for proxy in proxies:await proxy.wait_closed()
-        for log in logs:log.close()
+        for log in logs:
+            try:log.close()
+            except OSError:pass
+        try:lock.close()
+        except OSError:pass
         (RUNTIME/'manager.json').unlink(missing_ok=True)
 
 
+_INBOX_SEQUENCE = 0
+
+
 def send(command):
+    global _INBOX_SEQUENCE
     try:
         manager=json.loads((RUNTIME/'manager.json').read_text());os.kill(manager['pid'],0)
         state=json.loads((RUNTIME/'status.json').read_text())
@@ -380,7 +439,8 @@ def send(command):
     except (FileNotFoundError,ProcessLookupError,PermissionError,json.JSONDecodeError) as error:
         raise RuntimeError('PvP Lab is stopped. Double-click Start PvP Lab.command first.') from error
     inbox=RUNTIME/'manager/inbox';inbox.mkdir(parents=True,exist_ok=True)
-    path=inbox/(str(uuid.uuid4())+'.json')
+    _INBOX_SEQUENCE += 1
+    path=inbox/f'{time.time_ns():020d}-{_INBOX_SEQUENCE:06d}-{uuid.uuid4().hex[:8]}.json'
     temporary=path.with_suffix('.tmp')
     try:
         temporary.write_text(json.dumps({'command':command}))

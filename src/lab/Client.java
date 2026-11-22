@@ -710,7 +710,7 @@ public final class Client {
                 SumoWtapController.Decision tap=sumoWtap.decide(now,obs.targetFreshHurtCue==0?Double.NEGATIVE_INFINITY:obs.targetFreshHurtCue,
                     sumoContact==0?Double.NEGATIVE_INFINITY:sumoContact,ping,
                     DuelSettings.hurtWindowTicks(controls),ClickRate.intervalNanos(controls)/1e6,lastPress,
-                    lastClick>sumoConsumedPress,obs.sprint,obs.ground,obs.x,obs.z,obs.vx,obs.vz,obs.tx,obs.tz,
+                    lastClick!=0&&lastClick!=sumoConsumedPress,obs.sprint,obs.ground,obs.x,obs.z,obs.vx,obs.vz,obs.tx,obs.tz,
                     obs.tvx*.05,obs.tvz*.05,obs.localRange,attackReach());
                 setKeys(tap.forward(),0,tap.forward());
                 if(tap!=SumoWtapController.Decision.HOLD)log(Compat.map("type","sumo_wtap","time",now,"match",match,
@@ -877,7 +877,7 @@ public final class Client {
                 // event. Vanilla itself starts/stops use and suppresses attacks.
                 if(block&&!blockKey)R.call(R.cls("net.minecraft.client.settings.KeyBinding"),"onTick",(int)R.call(key,"getKeyCode"));
                 blockKey=block;
-                plan.put("type","blockhit_plan");plan.put("time",now);plan.put("match",match);
+                plan.put("type","blockhit_plan");plan.put("time",now);plan.put("wall_monotonic_ns",System.nanoTime());plan.put("match",match);
                 plan.put("observation_time",obs.time);plan.put("incoming_cue",lastObservedHurt);plan.put("block_key",block);
                 plan.put("fresh_hurt_cue",obs.freshHurtCue);
                 plan.put("native_blocking",R.call(player,"isBlocking"));plan.put("reason",reason);plan.put("requested_block",requested);

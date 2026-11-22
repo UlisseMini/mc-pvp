@@ -871,7 +871,10 @@ public final class Referee {
             if(DuelSettings.reach(m.configA)!=3||DuelSettings.reach(m.configB)!=3)message(p,"§dModified reach: "+DuelSettings.reach(m.configA)+" / "+DuelSettings.reach(m.configB)+" blocks (first / second player).");
             if(m.sumo()){
                 message(p,"§b"+summaryName(m.a,m.label("a"),who,"§b")+" §e"+m.ha+" hits §8| §6"+summaryName(m.b,m.label("b"),who,"§6")+" §e"+m.hb+" hits");
-                message(p,"§7"+reason.replace('_',' ')+" · "+String.format(Locale.ROOT,"%.1f",Math.max(0,m.finish-m.start)/1000.0)+" seconds");
+                double displayedSeconds=TrainingClock.ROOM
+                    ? Math.max(0,(TrainingClock.gameMillis(m.finish)-TrainingClock.gameMillis(m.start))/1000.0)
+                    : Math.max(0,m.finish-m.start)/1000.0;
+                message(p,"§7"+reason.replace('_',' ')+" · "+String.format(Locale.ROOT,"%.1f",displayedSeconds)+(TrainingClock.ROOM?" game seconds":" seconds"));
                 message(p,"§b/rematch §8| §b/bots §8| §b/replay "+m.id);
                 if(!isBot(who))button(p,"Watch server replay "+m.id,"/replay "+m.id);
                 continue;

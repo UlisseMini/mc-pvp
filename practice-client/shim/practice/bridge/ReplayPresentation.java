@@ -23,7 +23,7 @@ final class ReplayPresentation {
         Thread reader;
         Archive(String match){this.match=match;}
     }
-    private Path root;
+    private volatile Path root;
     private volatile Map<String,Object> state=Collections.emptyMap();
     private volatile Archive archive;
     void root(Path root){this.root=root;}
@@ -83,7 +83,8 @@ final class ReplayPresentation {
             Map<String,Object> frame;PoseTrack track=tracks.get(source);
             if(track!=null)frame=track.at(time);
             else{Map<String,Object> current=object(packet.get(source)),following=object(next.get(source));frame=new LinkedHashMap<>();
-                if(!current.isEmpty())for(String side:Arrays.asList("a","b")){Map<String,Object> p=object(current.get(side)),q=object(following.get(side));frame.put(side,q.isEmpty()?p:PoseTrack.interpolate(p,q,elapsed/50));}}
+                double tickMs=50.0/Math.max(0.1,TrainingTimer.active()?TrainingTimer.acknowledged():1.0);
+                if(!current.isEmpty())for(String side:Arrays.asList("a","b")){Map<String,Object> p=object(current.get(side)),q=object(following.get(side));frame.put(side,q.isEmpty()?p:PoseTrack.interpolate(p,q,elapsed/tickMs));}}
             if(!frame.isEmpty())views.put(source,frame);
         }
         String source=String.valueOf(state.get("source"));

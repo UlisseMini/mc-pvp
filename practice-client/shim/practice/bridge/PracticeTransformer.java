@@ -82,9 +82,11 @@ public final class PracticeTransformer implements IClassTransformer {
                 for(AbstractInsnNode i:m.instructions.toArray())if(i.getOpcode()==Opcodes.RETURN)m.instructions.insertBefore(i,call("wireOut",1,2,3));hooks++;
             }else if(handler&&m.desc.endsWith(")V")&&Type.getArgumentTypes(m.desc).length==1 && !m.name.startsWith("<")){
                 String arg=Type.getArgumentTypes(m.desc)[0].getClassName();
-                // All play-handler packet methods have one packet argument. This also
-                // covers obfuscated descriptors before Forge's deobfuscation pass.
-                if(arg.startsWith("net.minecraft.network.play.server.") || arg.matches("[a-z]{2,3}")){
+                // All play-handler packet methods have one clientbound packet argument. Exclude
+                // addToSendQueue(Packet) (`ff`) and onDisconnect(IChatComponent) (`eu`).
+                if((arg.startsWith("net.minecraft.network.play.server.") || (arg.matches("[a-z]{2,3}") && !arg.equals("ff") && !arg.equals("eu")))
+                        && !named(m,"func_147297_a","addToSendQueue","func_147297_a")
+                        && !named(m,"func_147231_a","onDisconnect","func_147231_a")){
                     m.instructions.insert(flag("apply",1,false));
                     for(AbstractInsnNode i:m.instructions.toArray())if(i.getOpcode()==Opcodes.RETURN)m.instructions.insertBefore(i,flag("apply",1,true));hooks++;
                 }
@@ -181,17 +183,21 @@ public final class PracticeTransformer implements IClassTransformer {
         String lock = "java/util/concurrent/locks/ReentrantReadWriteLock";
         String read = lock + "$ReadLock";
         String write = lock + "$WriteLock";
+        int rewritten = 0;
         for (AbstractInsnNode instruction : method.instructions.toArray()) {
             if (!(instruction instanceof MethodInsnNode)) continue;
             MethodInsnNode call = (MethodInsnNode) instruction;
             if (call.owner.equals(lock) && call.name.equals("readLock") && call.desc.equals("()L" + read + ";")) {
                 call.name = "writeLock";
                 call.desc = "()L" + write + ";";
+                rewritten++;
             } else if (call.owner.equals(read) && call.desc.equals("()V")
                     && (call.name.equals("lock") || call.name.equals("unlock"))) {
                 call.owner = write;
+                rewritten++;
             }
         }
+        if (rewritten < 3) throw new IllegalStateException("Outbound drain lock hook incomplete: " + rewritten);
     }
     private static AbstractInsnNode previousCode(AbstractInsnNode instruction){
         do{instruction=instruction.getPrevious();}while(instruction!=null&&instruction.getOpcode()<0);

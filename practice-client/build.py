@@ -106,6 +106,13 @@ def main():
         if not cfg.exists():install(SRC/'settings.properties',cfg)
         if 'archive.directory=' not in cfg.read_text():
             with cfg.open('a') as f:f.write('\narchive.directory='+str(ROOT/'runtime/pov')+'\n')
+        bundle_candidates=[ROOT/'runtime/bedwars-forecast/advanced/bedwars-forecast.bin.gz',
+                           ROOT/'runtime/bedwars-forecast/bedwars-forecast.bin.gz']
+        bundle_src=next((p for p in bundle_candidates if p.is_file()),None)
+        if bundle_src is not None:
+            install(bundle_src,args.game_dir/'config/pvp-practice/bedwars-forecast.bin.gz')
+        else:
+            print('Note: bedwars-forecast.bin.gz not found under runtime/bedwars-forecast; skipping forecast model install.')
         print('Installed into',args.game_dir)
     print('Built and tested:',BUILD)
 

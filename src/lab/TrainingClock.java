@@ -7,6 +7,7 @@ public final class TrainingClock {
     private static final double INITIAL = Double.parseDouble(System.getProperty("lab.trainingSpeed", "1"));
     private static final long MONO_EPOCH = ROOM ? System.nanoTime()-(System.currentTimeMillis()-EPOCH)*1_000_000L : 0;
     private static volatile long wallEpochOnMonotonicClock = MONO_EPOCH;
+    private static volatile boolean wallEpochAnchored = false;
     static final class Segment {
         final long wall, gameNs;
         final double rate;
@@ -58,13 +59,18 @@ public final class TrainingClock {
         return gameNanos(now,System.nanoTime(),System.currentTimeMillis());
     }
     static long gameNanos(long eventNs,long sampledNs,long sampledWallMs){
-        // nanoTime and wall time can advance by different amounts across host sleep.
-        // Keep nanosecond precision between samples, but select a rate at the actual
-        // wall instant of the event, including a recent event before a speed change.
-        long origin=wallEpochOnMonotonicClock;
+        // nanoTime and wall time can diverge across host sleep or NTP steps.
+        // Anchor on first sample, follow forward host-sleep jumps (>2 ms),
+        // and refuse backward wall-clock steps so gameNanos never moves backward.
         long sampledOffset=(sampledWallMs-EPOCH)*1_000_000L;
-        if(Math.abs((sampledNs-origin)-sampledOffset)>2_000_000L){
-            origin=sampledNs-sampledOffset;
+        long proposed=sampledNs-sampledOffset;
+        long origin=wallEpochOnMonotonicClock;
+        if(!wallEpochAnchored){
+            origin=proposed;
+            wallEpochOnMonotonicClock=origin;
+            wallEpochAnchored=true;
+        }else if(origin-proposed>2_000_000L){
+            origin=proposed;
             wallEpochOnMonotonicClock=origin;
         }
         long offset=eventNs-origin;

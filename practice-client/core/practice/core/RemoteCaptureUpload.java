@@ -64,22 +64,45 @@ public final class RemoteCaptureUpload implements AutoCloseable {
         while(parts.hasNext()){
             Part part=parts.next();
             Path ack=outbox.resolve(part.file.getFileName()+".ack");
-            if(Files.exists(ack)||part.complete()&&upload(part.meta,part.file,ack))parts.remove();
+            Path rejected=outbox.resolve(part.file.getFileName()+".rejected");
+            if(Files.exists(ack)||Files.exists(rejected)){parts.remove();continue;}
+            if(!part.complete())continue;
+            try{
+                if(upload(part.meta,part.file,ack))parts.remove();
+            }catch(RejectedPartException bad){
+                Files.createDirectories(outbox);
+                Files.write(rejected,(bad.getMessage()+"\n").getBytes(StandardCharsets.UTF_8),StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING);
+                status="local part rejected (retained on disk): "+part.file.getFileName()+" ("+bad.getMessage()+")";
+                parts.remove();
+            }catch(Exception transientError){
+                status="local backlog retained: "+transientError.getClass().getSimpleName()+": "+transientError.getMessage();
+            }
         }
+    }
+    private static final class RejectedPartException extends IOException {
+        RejectedPartException(String message){super(message);}
     }
     private void recover()throws IOException{
         if(!Files.isDirectory(outbox))return;
         Map<String,Properties> sessions=new HashMap<>();
         try(DirectoryStream<Path> descriptors=Files.newDirectoryStream(outbox,"*.properties")){
             for(Path descriptor:descriptors){
-                Properties meta=new Properties();try(InputStream in=Files.newInputStream(descriptor)){meta.load(in);}
-                sessions.put(meta.getProperty("first",""),meta);
+                try{
+                    Properties meta=new Properties();try(InputStream in=Files.newInputStream(descriptor)){meta.load(in);}
+                    String first=meta.getProperty("first","");
+                    if(!first.isEmpty())sessions.put(first,meta);
+                }catch(IOException|IllegalArgumentException corrupt){
+                    status="skipped corrupt outbox descriptor: "+descriptor.getFileName();
+                }
             }
         }
         if(sessions.isEmpty()||!Files.isDirectory(captures))return;
         try(DirectoryStream<Path> files=Files.newDirectoryStream(captures,"a-client-*.jsonl.gz")){
             List<Path> sorted=new ArrayList<>();
-            for(Path file:files)if(!Files.exists(outbox.resolve(file.getFileName()+".ack")))sorted.add(file);
+            for(Path file:files){
+                if(!Files.exists(outbox.resolve(file.getFileName()+".ack"))
+                        &&!Files.exists(outbox.resolve(file.getFileName()+".rejected")))sorted.add(file);
+            }
             Collections.sort(sorted);
             for(Path file:sorted){
                 Matcher name=CAPTURE_NAME.matcher(file.getFileName().toString());
@@ -122,7 +145,9 @@ public final class RemoteCaptureUpload implements AutoCloseable {
         c.setRequestProperty("Content-Type","application/gzip");c.setRequestProperty("X-Practice-Session",meta.getProperty("session"));c.setRequestProperty("X-Practice-Part",file.getFileName().toString());
         c.setRequestProperty("X-Practice-Host",Base64.getEncoder().encodeToString(meta.getProperty("host","").getBytes(StandardCharsets.UTF_8)));c.setRequestProperty("X-Practice-Sha256",sha.toString());
         try{try(OutputStream out=c.getOutputStream();InputStream in=Files.newInputStream(file)){byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1)out.write(b,0,n);}
-            if(c.getResponseCode()!=200)throw new IOException("local lab HTTP "+c.getResponseCode());
+            int code=c.getResponseCode();
+            if(code==400)throw new RejectedPartException("local lab HTTP 400");
+            if(code!=200)throw new IOException("local lab HTTP "+code);
             String response;try(BufferedReader in=new BufferedReader(new InputStreamReader(c.getInputStream(),StandardCharsets.UTF_8))){response=in.readLine();}
             if(!sha.toString().equals(response))throw new IOException("local acknowledgement mismatch");
             Files.write(ack,(sha+"\n").getBytes(StandardCharsets.UTF_8),StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING);status="local lab acknowledged "+file.getFileName();

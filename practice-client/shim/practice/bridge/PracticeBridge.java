@@ -88,7 +88,7 @@ public final class PracticeBridge {
     @SubscribeEvent public void key(InputEvent.KeyInputEvent event) {
         Minecraft mc=Minecraft.func_71410_x();
         // Do not log text typed into chat or menus.
-        if(Keyboard.getEventKeyState()&&!Keyboard.isRepeatEvent()&&Keyboard.getEventKey()==Keyboard.KEY_F8){offline.browser();return;}
+        if(mc.field_71462_r==null&&Keyboard.getEventKeyState()&&!Keyboard.isRepeatEvent()&&Keyboard.getEventKey()==Keyboard.KEY_F8){offline.browser();return;}
         if(offline.active){
             if(mc.field_71462_r==null&&Keyboard.getEventKeyState()&&!Keyboard.isRepeatEvent()){
                 int key=Keyboard.getEventKey();
@@ -375,8 +375,10 @@ public final class PracticeBridge {
         Properties props=new Properties();Path config=directory.resolve("settings.properties");
         if(Files.exists(config))try(InputStream in=Files.newInputStream(config)){props.load(in);}
         props.setProperty(key,value);Path tmp=Files.createTempFile(directory,"settings-",".tmp");
-        try(OutputStream out=Files.newOutputStream(tmp)){props.store(out,"PvP Practice: reloads automatically");}
-        Files.move(tmp,config,StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
+        try{
+            try(OutputStream out=Files.newOutputStream(tmp)){props.store(out,"PvP Practice: reloads automatically");}
+            Files.move(tmp,config,StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
+        }finally{Files.deleteIfExists(tmp);}
         settings();host.reload(true);
     }
     private void set(String key,String value) throws IOException {
