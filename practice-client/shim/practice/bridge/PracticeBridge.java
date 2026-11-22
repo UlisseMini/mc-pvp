@@ -406,11 +406,11 @@ public final class PracticeBridge {
             if(args.length==1)return func_175762_a(args,Arrays.asList("help","replays","ledger","hud","sumocoach","sumoanalysis","keystrokes","sprint","sprintkb","potions","reach","range","crosshair","opening","advantage","ghost","jumpreset","blockhit","oldblock","oldsneak","hurtcam","dynamicfov","remote","capture","record","mark","forecast","bowaim","status","reload","metrics","link","debug","ping"));
             if(args.length==2&&args[0].equals("help"))return func_175762_a(args,helpTopics);
             if(bowAim!=null&&args[0].equals("bowaim")){
-                if(args.length==2)return func_175762_a(args,Arrays.asList("on","legacy","linear","off","status","preview","trajectory","intercept","limit","chance","autorelease","release","threshold","ping"));
+                if(args.length==2)return func_175762_a(args,Arrays.asList("on","legacy","linear","off","status","preview","trajectory","intercept","ghosts","throwables","limit","chance","autorelease","release","threshold","ping"));
                 if(args.length==3&&args[1].equals("trajectory"))return func_175762_a(args,Arrays.asList("on","off","auto"));
-                if(args.length==3&&args[1].equals("release"))return func_175762_a(args,Arrays.asList("smart","threshold"));
+                if(args.length==3&&args[1].equals("release"))return func_175762_a(args,Arrays.asList("ev","smart","threshold"));
                 if(args.length==3&&args[1].equals("ping"))return func_175762_a(args,Arrays.asList("auto","0","40","80","120"));
-                if(args.length==3&&Arrays.asList("intercept","chance","autorelease").contains(args[1]))
+                if(args.length==3&&Arrays.asList("intercept","ghosts","throwables","chance","autorelease").contains(args[1]))
                     return func_175762_a(args,Arrays.asList("on","off"));
             }
             if(args.length>=2&&args[0].equals("remote")){
@@ -511,15 +511,17 @@ public final class PracticeBridge {
                     usage("mark"," <text>","Mark a moment");
                     break;
                 case "bowaim":
-                    usage("bowaim"," on/legacy/linear/off","Choose neural+voxel aim, legacy adaptive, straight-line, or off");
-                    usage("bowaim preview","","Show only the arrow trajectory");
+                    usage("bowaim"," on/legacy/linear/off","Choose neural v3 EV+void aim, legacy adaptive, straight-line, or off");
+                    usage("bowaim preview","","Show only the projectile trajectory");
                     usage("bowaim trajectory"," on/off/auto","Show the flight path with or without assist");
                     usage("bowaim intercept"," on/off","Show the predicted hit position and time");
-                    usage("bowaim chance"," on/off","Show estimated hit chance over the crosshair");
-                    usage("bowaim autorelease"," on/off","Auto-release at full draw using the active release policy");
-                    usage("bowaim release"," smart/threshold","Smart peak-spike optimal stopping or fixed threshold");
+                    usage("bowaim ghosts"," on/off","Show multi-mode landing ghost players when locked on");
+                    usage("bowaim throwables"," on/off","Enable snowball & egg aim assist with airborne volley coverage");
+                    usage("bowaim chance"," on/off","Show Hit-Equivalent EV & wait cue over the crosshair");
+                    usage("bowaim autorelease"," on/off","Auto-release bow at full draw using the active release policy");
+                    usage("bowaim release"," ev/smart/threshold","Learned V_wait EV timing, smart peak-spike, or fixed threshold");
                     usage("bowaim threshold"," <1–100>","Set the auto-release layup/cutoff percentage");
-                    usage("bowaim ping"," auto/<0–250>","Own-ping RTT lead shift (auto uses own connection ping)");
+                    usage("bowaim ping"," auto/<0–250>","Own-ping RTT lead shift (auto uses live packet RTT)");
                     usage("bowaim limit"," <0–8>","Set the maximum correction in degrees");
                     usage("bowaim status","","Show current bow aim mode");
                     break;

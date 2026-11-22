@@ -9,15 +9,22 @@ import net.minecraft.util.BlockPos;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import org.lwjgl.opengl.GL11;
+import practice.core.bow.BowBallistics;
 import practice.core.bow.BowBallistics.Shot;
+import practice.core.bow.BowNeuralMotion;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/** A depth-tested preview of the current launch direction and an estimated moving target intercept. */
+/** A depth-tested preview of the current launch direction, moving target intercept, and multi-mode landing ghosts. */
 final class BowAimPreview {
     private static final int PATH_COLOR = 0x83DAFA, HIT_COLOR = 0xFFE28C;
+    private static final int GHOST_AIMED_COLOR = 0xFFE28C;
+    private static final int GHOST_AIMED_VOID_COLOR = 0xFFAD42;
+    private static final int GHOST_VOID_COLOR = 0xFF6B4A;
+    private static final int GHOST_SAFE_COLOR = 0x76D8FF;
+    private static final double MIN_GHOST_WEIGHT = 0.06;
 
     private BowAimPreview() {}
 
@@ -83,8 +90,14 @@ final class BowAimPreview {
     }
 
     static void draw(Minecraft mc, Guide guide, boolean path, boolean marker, float partial) {
+        draw(mc, guide, path, marker, false, null, partial);
+    }
+
+    static void draw(Minecraft mc, Guide guide, boolean path, boolean marker,
+                     boolean showGhosts, BowAim.Selection selection, float partial) {
         Entity camera = mc.func_175606_aa();
-        if (camera == null || !path && (!marker || guide.feet == null)) return;
+        boolean hasGhosts = showGhosts && selection != null && selection.prediction != null && selection.ideal != null;
+        if (camera == null || (!path && (!marker || guide.feet == null) && !hasGhosts)) return;
         double x = camera.field_70142_S + (camera.field_70165_t - camera.field_70142_S) * partial;
         double y = camera.field_70137_T + (camera.field_70163_u - camera.field_70137_T) * partial;
         double z = camera.field_70136_U + (camera.field_70161_v - camera.field_70136_U) * partial;
@@ -111,12 +124,95 @@ final class BowAimPreview {
                 }
                 GL11.glEnd();
             }
+            if (hasGhosts) {
+                drawModeGhosts(mc.func_175598_ae(), selection, x, y, z);
+            }
             if (marker && guide.feet != null)
                 intercept(mc.func_175598_ae(), guide, guide.feet.func_72438_d(new Vec3(x, y, z)));
         } finally {
             GL11.glPopMatrix();
             GL11.glPopAttrib();
         }
+    }
+
+    /** Render translucent player silhouettes at ALL top predicted landing modes (pi_k >= 6%) at projectile arrival time. */
+    private static void drawModeGhosts(RenderManager camera, BowAim.Selection sel,
+                                       double camX, double camY, double camZ) {
+        BowNeuralMotion.Prediction pred = sel.prediction;
+        double tEval = Math.max(0.0, Math.min(BowBallistics.MAX_TICKS, sel.ideal.time + sel.leadShift));
+        int lo = (int)tEval;
+        int hi = Math.min(BowBallistics.MAX_TICKS, lo + 1);
+        double frac = tEval - lo;
+        int K = pred.weights.length;
+
+        for (int k = 0; k < K; k++) {
+            double w = pred.weights[k];
+            if (w < MIN_GHOST_WEIGHT && k != sel.aimedMode) continue;
+            double[] pLo = pred.paths[k][lo], pHi = pred.paths[k][hi];
+            double gx = pLo[0] + frac * (pHi[0] - pLo[0]);
+            double gy = pLo[1] + frac * (pHi[1] - pLo[1]);
+            double gz = pLo[2] + frac * (pHi[2] - pLo[2]);
+
+            double dx = gx - camX, dy = gy - camY, dz = gz - camZ;
+            double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (dist <= 1.5 || dist > 96.0) continue;
+
+            boolean isAimed = (k == sel.aimedMode);
+            boolean isVoid = sel.modeVoids != null && k < sel.modeVoids.length && sel.modeVoids[k] >= 0.45;
+            double uncovered = (sel.modeUncovered != null && k < sel.modeUncovered.length) ? sel.modeUncovered[k] : 1.0;
+
+            int tint = isAimed ? (isVoid ? GHOST_AIMED_VOID_COLOR : GHOST_AIMED_COLOR)
+                    : (isVoid ? GHOST_VOID_COLOR : GHOST_SAFE_COLOR);
+            float probScale = (float)Math.max(0.15, Math.min(1.0, w));
+            float coverDim = (float)(0.35 + 0.65 * Math.max(0.0, Math.min(1.0, uncovered)));
+            float fade = (float)Math.min(1.0, (dist - 1.5) / 3.5) * coverDim;
+            float bodyAlpha = fade * (isAimed ? (0.28f + 0.46f * probScale) : (0.14f + 0.42f * probScale));
+            float eyeAlpha = fade * (isAimed ? (0.48f + 0.44f * probScale) : (0.26f + 0.42f * probScale));
+
+            GL11.glPushMatrix();
+            try {
+                GL11.glTranslated(gx, gy, gz);
+                // Aimed mode gets a clean floor/feet ring so it stands out immediately
+                if (isAimed) {
+                    GL11.glLineWidth(2.2f);
+                    color(tint, fade * 0.85f);
+                    GL11.glBegin(GL11.GL_LINE_LOOP);
+                    GL11.glVertex3d(-.32, .03, -.32); GL11.glVertex3d(.32, .03, -.32);
+                    GL11.glVertex3d(.32, .03, .32); GL11.glVertex3d(-.32, .03, .32);
+                    GL11.glEnd();
+                }
+
+                GL11.glRotatef(-camera.field_78735_i, 0, 1, 0);
+                GL11.glBegin(GL11.GL_QUADS);
+                color(tint, bodyAlpha);
+                quad(-.24, 1.40, .24, 1.88);
+                quad(-.25, .74, .25, 1.37);
+                quad(-.46, .78, -.28, 1.37);
+                quad(.28, .78, .46, 1.37);
+                quad(-.23, .04, -.022, .71);
+                quad(.022, .04, .23, .71);
+                color(tint, eyeAlpha);
+                quad(-.16, 1.60, -.07, 1.65);
+                quad(.07, 1.60, .16, 1.65);
+                GL11.glEnd();
+
+                GL11.glTranslated(0, 2.02, 0);
+                GL11.glRotatef(camera.field_78732_j, 1, 0, 0);
+                double unit = Math.min(.125, .024 + dist * .0013);
+                GL11.glScaled(-unit, unit, unit);
+                String tag = Math.round(w * 100.0) + "%" + (isVoid ? " V" : "");
+                BedWarsGhostDrawing.label(tag, 0, tint, Math.max(0.5f, fade));
+            } finally {
+                GL11.glPopMatrix();
+            }
+        }
+    }
+
+    private static void quad(double left, double bottom, double right, double top) {
+        GL11.glVertex3d(left, bottom, 0);
+        GL11.glVertex3d(right, bottom, 0);
+        GL11.glVertex3d(right, top, 0);
+        GL11.glVertex3d(left, top, 0);
     }
 
     private static void intercept(RenderManager camera, Guide guide, double distance) {

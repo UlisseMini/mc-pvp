@@ -7,7 +7,7 @@ package practice.core.bow;
  * bridge walks, and corner lock-ins without waiting forever for a high raw percentage.
  */
 public final class BowReleasePolicy {
-    public enum ReleaseMode { SMART, THRESHOLD }
+    public enum ReleaseMode { EV, SMART, THRESHOLD }
 
     private static final double MIN_FLOOR = 0.22;
     private static final double SPIKE_MARGIN = 0.07;
@@ -32,6 +32,49 @@ public final class BowReleasePolicy {
 
     public boolean shouldFire(double prob, int thresholdPct, ReleaseMode mode) {
         return shouldFire(prob, thresholdPct, mode, false);
+    }
+
+    /**
+     * EV-Optimal stopping rule using learned continuation value V_wait(s_t) in Hit-Equivalents.
+     * Fires when immediate EV >= alpha * V_wait (or on a guaranteed void layup / cover loss / patience decay).
+     */
+    public boolean shouldFireEv(double evNow, double vWait, double prob,
+                                int thresholdPct, boolean losingCover, double fireAlpha) {
+        if (!Double.isFinite(evNow) || evNow <= 0.0 || !Double.isFinite(prob) || prob <= 0.0) return false;
+        int w = holdTicks++;
+        if (w == 0) ema = evNow;
+        else ema = 0.88 * ema + 0.12 * evNow;
+        if (evNow > best) best = evNow;
+
+        // 1. High-value void-kill opportunity or clean layup when EV beats waiting
+        double bar = Math.max(0.24, fireAlpha * Math.max(0.0, vWait));
+        if (evNow >= bar && prob >= 0.18) {
+            spiking = true;
+            return true;
+        }
+
+        // 2. Immediate void layup (e.g. >= 3.2x hit-equivalents) even if V_wait is high
+        if (evNow >= 3.2 && prob >= 0.42 && evNow >= 0.82 * bar) {
+            spiking = true;
+            return true;
+        }
+
+        // 3. Cover urgency: about to lose line of sight while holding a decent shot
+        if (losingCover && prob >= MIN_FLOOR && evNow >= 0.25) {
+            spiking = true;
+            return true;
+        }
+
+        // 4. Opportunity-cost patience decay after holding full draw > 1.5s
+        if (w >= PATIENCE_START_TICKS) {
+            double decay = Math.max(0.55, 1.0 - 0.015 * (w - PATIENCE_START_TICKS));
+            if (evNow >= bar * decay && prob >= 0.20) {
+                spiking = true;
+                return true;
+            }
+        }
+        spiking = evNow >= bar * 0.85;
+        return false;
     }
 
     /**

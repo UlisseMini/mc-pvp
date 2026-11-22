@@ -8,12 +8,13 @@ import java.util.Map;
 import java.util.function.IntUnaryOperator;
 
 final class BedWarsGhostDrawing {
-    private static final String CHARACTERS = "0123456789s%.";
+    private static final String CHARACTERS = "0123456789s%.Vx+";
     private static final String[] PIXELS = {
         "111101101101111", "010110010010111", "111001111100111",
         "111001111001111", "101101111001001", "111100111001111",
         "111100111101111", "111001010010010", "111101111101111",
-        "111101111001111", "000111110001110", "101001010100101", "000000000000010"
+        "111101111001111", "000111110001110", "101001010100101", "000000000000010",
+        "101101101101010", "000101010101000", "000010111010000"
     };
 
     private BedWarsGhostDrawing() {}

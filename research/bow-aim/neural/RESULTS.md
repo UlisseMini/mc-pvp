@@ -93,3 +93,39 @@ Extracted from all local Hypixel captures (`research/bow-aim/neural/extract_rich
 - `target_took_kb_midflight`: 4 (9.3%)
 - `near_miss_spread`: 2 (4.7%)
 - `sudden_stop` / `sudden_sprint`: 2 (4.6%)
+
+---
+
+## BowAim v3 Tactical Projectile Engine (Void-KB EV + Snowball/Egg Volley Coverage + Multi-Mode Ghosts + Learned `V_wait` Head)
+
+- **Exact 1.8.9 Void-KB Scorer (`VoidKbValue.java`):** 14-tick 1.8.9 `knockBack` + Punch enchantment + gravity + solid wall/floor collision + conservative counter-strafe + 18-block void scan (unloaded chunks conservatively solid). Hit-Equivalent values: Bow `1.0×` normal / `8.0×` void kill (`5.0×` lethal HP finish); Snowball/Egg `0.4×` normal / `10.0×` void kill.
+- **Learned Continuation Value Head (`BowWaitModel.java`, `bow-wait.bin`, `109 KB`):** 2-round Causal Longstaff-Schwartz Fitted Value Iteration (FVI) over frozen `BowNeuralNetV2` 224-dim trunk + 10 shooter-relative tactical features (`234 → 96 → 48 → 1 + Softplus`, trained on 671 windows / `79,178` mirrored samples; validation-tuned `fireAlpha = 0.75`). Eliminated Round 0 hindsight inflation (`mean_y: 2.288 → 1.590`).
+- **Exact Python ↔ Java 8 v3 Parity (`check_v3_parity.py`):**
+  - `VoidKbValue` (40 bridge/edge/wall/Punch cases): **`0` void-kill mismatches**, `max_drop_err = 2.89e-15`, `max_val_err = 0.00`.
+  - Throwable ballistics + Volley Coverage + `BowWaitModel` (24 real sealed tracks): `max_t = 8.02e-6`, `max_cov = 4.62e-6`, `max_V_wait = 2.57e-6` (`0.13 ms` cold).
+
+### 1. Sealed Bow Tactical Benchmark (495 unseen BedWars `bw-09..12` + 5 SkyWars 3.0s windows)
+| Arm | Fire% | Hit% | **EV / Arrow** | **EV / Window** | **Void Kills / 10** | **VK / 10 (Void-Opp)** | Avg Hold |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `v2_myopic_immediate` | 100.0% | 85.1% | 1.401× | 1.401× | 0.79 | 2.46 | 0.8t |
+| `v2_myopic_smart` | 100.0% | 85.0% | 1.414× | 1.414× | 0.81 | 2.52 | 1.9t |
+| `v3_ev_immediate` | 100.0% | 84.8% | 1.404× | 1.404× | 0.80 | 2.49 | 0.8t |
+| **`v3_ev_vwait` (Full v3)** | **99.8%** | **84.7%** | **1.464×** | **1.461×** | **0.88 (+11.4%)** | **2.75 (+11.8%)** | **1.5t** |
+
+- **SkyWars (275 windows):** `v2_myopic_smart` `1.539×` (`1.06` VK/10) → **`v3_ev_vwait` `1.621×` (`1.18` VK/10, `+11.3%`)**.
+- **BedWars (220 windows):** `v2_myopic_smart` `1.258×` (`0.48` VK/10) → **`v3_ev_vwait` `1.267×` (`0.50` VK/10)**.
+
+### 2. Sealed Snowball / Egg Volley Benchmark (Unseen BedWars + SkyWars, Range 10–26b)
+| Burst / Arm | Joint Hit% | **Joint Void-Kill%** | **Burst EV** |
+| --- | ---: | ---: | ---: |
+| **3-Throw Full Sealed (`n = 14,344`)** `linear` | 72.08% | 5.65% | 0.831× |
+| **3-Throw Full Sealed (`n = 14,344`)** `v2_single` | 92.37% | 8.34% | 1.170× |
+| **3-Throw Full Sealed (`n = 14,344`)** **`v3_ev_volley`** | **92.08% (+20.0%)** | **8.47% (+50% vs linear)** | **1.182×** |
+| **10-Throw Sustained — All (`n = 517`)** `linear` | 83.93% | 14.23% | 1.702× |
+| **10-Throw Sustained — All (`n = 517`)** `v2_single` | 96.94% | 20.79% | 2.383× |
+| **10-Throw Sustained — All (`n = 517`)** `v3_ev_novolley` | 96.83% | **21.97%** | **2.496×** |
+| **10-Throw Sustained — All (`n = 517`)** **`v3_ev_volley`** | **96.84%** | **21.77% (+53% vs linear)** | **2.477×** |
+| **10-Throw Sustained — Void-Exposed (`n = 125`)** `linear` | 88.54% | 58.84% | 6.003× |
+| **10-Throw Sustained — Void-Exposed (`n = 125`)** `v2_single` | 98.60% | 85.96% | 8.647× |
+| **10-Throw Sustained — Void-Exposed (`n = 125`)** `v3_ev_novolley` | 98.95% | **90.84% (+4.88pp vs v2)** | **9.116×** |
+| **10-Throw Sustained — Void-Exposed (`n = 125`)** **`v3_ev_volley`** | **99.70%** | **90.02% (+31.2pp vs linear)** | **9.041×** |

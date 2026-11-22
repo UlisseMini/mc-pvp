@@ -9,14 +9,18 @@ import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.block.Block;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemBow;
+import net.minecraft.item.ItemEgg;
+import net.minecraft.item.ItemSnowball;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
 import net.minecraft.network.play.client.C03PacketPlayer.C05PacketPlayerLook;
 import net.minecraft.network.play.client.C07PacketPlayerDigging;
+import net.minecraft.network.play.client.C08PacketPlayerBlockPlacement;
 import net.minecraft.network.play.client.C0EPacketClickWindow;
 import net.minecraft.network.play.server.S0EPacketSpawnObject;
 import net.minecraft.network.play.server.S32PacketConfirmTransaction;
@@ -32,8 +36,10 @@ import practice.core.bow.BowMotion.Track;
 import practice.core.bow.BowNeuralMotion;
 import practice.core.bow.BowReleasePolicy;
 import practice.core.bow.BowReleasePolicy.ReleaseMode;
+import practice.core.bow.BowWaitModel;
 import practice.core.bow.BridgeMotion;
 import practice.core.bow.BowHitChance;
+import practice.core.bow.VoidKbValue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,11 +66,22 @@ public final class BowAim {
     private final BridgeMotion bridge;
     private final BowHitChance chance;
     private final BowNeuralMotion neural;
+    private final BowWaitModel waitModel;
     private final BowReleasePolicy releasePolicy = new BowReleasePolicy();
     private final PracticeCapture capture;
     private final BowAimTeams teams = new BowAimTeams();
     private final Path settings;
+    private final BlockPos.MutableBlockPos solidCursor = new BlockPos.MutableBlockPos();
     private WorldClient world;
+    private final VoidKbValue.SolidQuery solidQuery = this::isBlockSolid;
+
+    private boolean isBlockSolid(int wx, int wy, int wz) {
+        if (world == null || wy < 0 || wy >= 256) return false;
+        solidCursor.func_181079_c(wx, wy, wz);
+        if (!world.func_175667_e(solidCursor)) return true; // unloaded chunk -> safe solid, never hallucinate void
+        Block b = world.func_180495_p(solidCursor).func_177230_c();
+        return b != null && b.func_180646_a(world, solidCursor) != null;
+    }
     private Mode mode;
     private boolean legacyAdaptive;
     private int tick, limit = DEFAULT_LIMIT;
@@ -73,8 +90,9 @@ public final class BowAim {
     private float yawOffset, pitchOffset;
     private boolean intercept;
     private boolean showChance = true, autoRelease, releasedWhileHeld, autoFiring;
-    private ReleaseMode releaseMode = ReleaseMode.SMART;
-    private double probability = Double.NaN;
+    private boolean throwablesEnabled = true, ghostsEnabled = true;
+    private ReleaseMode releaseMode = ReleaseMode.EV;
+    private double probability = Double.NaN, currentEv = Double.NaN, currentPVoid = 0.0, currentVWait = Double.NaN;
     private int threshold = 75;
     private int pingOverrideMs = -1; // -1 = auto (passive live packet RTT -> server-list ping -> non-spoofed tab ping)
     private volatile double livePacketPingMs = 0.0;
@@ -82,10 +100,27 @@ public final class BowAim {
     private double tabPingMs = 0.0;
     private final Map<Integer, Long> pendingClicks = new HashMap<>();
     private volatile long lastBowReleaseNs = 0L;
+    private final List<AirborneThrow> airborneThrows = new ArrayList<>();
+    private volatile int snapTick;
+    private volatile double snapEyeX, snapEyeY, snapEyeZ, snapThrowTime = 14.0, snapLeadShift;
+    private volatile float snapYaw, snapPitch;
+    private volatile boolean snapCanThrow;
     private NetHandlerPlayClient lastConn;
     private Trajectory trajectory = Trajectory.AUTO;
 
     private enum Trajectory { AUTO, ON, OFF }
+
+    private static final class AirborneThrow {
+        final int thrownTick;
+        final double leadShift;
+        final Shot shot;
+
+        AirborneThrow(int thrownTick, double leadShift, Shot shot) {
+            this.thrownTick = thrownTick;
+            this.leadShift = leadShift;
+            this.shot = shot;
+        }
+    }
 
     static final class Selection {
         final EntityPlayer player;
@@ -95,15 +130,33 @@ public final class BowAim {
         final AxisAlignedBB bounds;
         final boolean building;
         final double bodyHeight;
+        final boolean throwable;
+        final double ev;
+        final double pVoid;
+        final double leadShift;
+        final double[] modeValues;
+        final double[] modeVoids;
+        final double[] modeUncovered;
+        final int aimedMode;
 
         Selection(EntityPlayer player, Shot ideal, double[][] path, BowNeuralMotion.Prediction prediction,
-                  boolean building, double bodyHeight) {
+                  boolean building, double bodyHeight, boolean throwable,
+                  double ev, double pVoid, double leadShift,
+                  double[] modeValues, double[] modeVoids, double[] modeUncovered, int aimedMode) {
             this.player = player;
             this.ideal = ideal;
             this.path = path;
             this.prediction = prediction;
             this.building = building;
             this.bodyHeight = bodyHeight;
+            this.throwable = throwable;
+            this.ev = ev;
+            this.pVoid = pVoid;
+            this.leadShift = leadShift;
+            this.modeValues = modeValues;
+            this.modeVoids = modeVoids;
+            this.modeUncovered = modeUncovered;
+            this.aimedMode = aimedMode;
             bounds = player.func_174813_aQ().func_72317_d(
                     -player.field_70165_t, -player.field_70163_u, -player.field_70161_v);
         }
@@ -140,6 +193,13 @@ public final class BowAim {
             System.err.println("[PracticeBridge] Could not load bow neural model: " + failure.getMessage());
         }
         neural = loadedNeural;
+        BowWaitModel loadedWait = null;
+        try (InputStream data = BowAim.class.getResourceAsStream("/practice/bow-wait.bin")) {
+            if (data != null) loadedWait = BowWaitModel.read(data);
+        } catch (IOException failure) {
+            System.err.println("[PracticeBridge] Could not load bow wait model: " + failure.getMessage());
+        }
+        waitModel = loadedWait;
         if (Files.isRegularFile(settings)) {
             Properties saved = new Properties();
             try (InputStream stream = Files.newInputStream(settings)) {
@@ -150,8 +210,10 @@ public final class BowAim {
                 showChance = Boolean.parseBoolean(saved.getProperty("chance", "true"));
                 autoRelease = Boolean.parseBoolean(saved.getProperty("autorelease", "false"));
                 threshold = percent(saved.getProperty("threshold", "75"));
-                releaseMode = ReleaseMode.valueOf(saved.getProperty("releasemode", "smart").toUpperCase(Locale.ROOT));
+                releaseMode = ReleaseMode.valueOf(saved.getProperty("releasemode", "ev").toUpperCase(Locale.ROOT));
                 pingOverrideMs = parsePing(saved.getProperty("ping", "auto"));
+                throwablesEnabled = Boolean.parseBoolean(saved.getProperty("throwables", "true"));
+                ghostsEnabled = Boolean.parseBoolean(saved.getProperty("ghosts", "true"));
             } catch (IOException | IllegalArgumentException ignored) {}
         }
     }
@@ -205,6 +267,21 @@ public final class BowAim {
             } else if (packet instanceof C07PacketPlayerDigging) {
                 if (((C07PacketPlayerDigging)packet).func_180762_c() == C07PacketPlayerDigging.Action.RELEASE_USE_ITEM) {
                     aim.lastBowReleaseNs = ns;
+                }
+            } else if (packet instanceof C08PacketPlayerBlockPlacement) {
+                C08PacketPlayerBlockPlacement use = (C08PacketPlayerBlockPlacement)packet;
+                if (use.func_149568_f() == 255 && aim.snapCanThrow) {
+                    ItemStack st = use.func_149574_g();
+                    if (st != null && (st.func_77973_b() instanceof ItemSnowball || st.func_77973_b() instanceof ItemEgg)) {
+                        Shot thrown = BowBallistics.withTime(
+                                BowBallistics.fromAimThrowable(aim.snapEyeX, aim.snapEyeY, aim.snapEyeZ,
+                                        aim.snapYaw, aim.snapPitch),
+                                aim.snapThrowTime);
+                        synchronized (aim.airborneThrows) {
+                            if (aim.airborneThrows.size() >= 20) aim.airborneThrows.remove(0);
+                            aim.airborneThrows.add(new AirborneThrow(aim.snapTick, aim.snapLeadShift, thrown));
+                        }
+                    }
                 }
             }
             return;
@@ -268,7 +345,8 @@ public final class BowAim {
     }
 
     private void save(Trajectory path, boolean marker, int maximum,
-                      boolean display, boolean automatic, int minimum, ReleaseMode rMode, int pingMs) throws IOException {
+                      boolean display, boolean automatic, int minimum, ReleaseMode rMode, int pingMs,
+                      boolean allowThrowables, boolean showGhosts) throws IOException {
         Properties values = new Properties();
         values.setProperty("trajectory", path.name().toLowerCase(Locale.ROOT));
         values.setProperty("intercept", String.valueOf(marker));
@@ -278,6 +356,8 @@ public final class BowAim {
         values.setProperty("threshold", String.valueOf(minimum));
         values.setProperty("releasemode", rMode.name().toLowerCase(Locale.ROOT));
         values.setProperty("ping", pingMs < 0 ? "auto" : String.valueOf(pingMs));
+        values.setProperty("throwables", String.valueOf(allowThrowables));
+        values.setProperty("ghosts", String.valueOf(showGhosts));
         Path temp = Files.createTempFile(settings.getParent(), "bow-aim-", ".tmp");
         try {
             try (OutputStream stream = Files.newOutputStream(temp)) { values.store(stream, "Bow aim display"); }
@@ -293,6 +373,8 @@ public final class BowAim {
         threshold = minimum;
         releaseMode = rMode;
         pingOverrideMs = pingMs;
+        throwablesEnabled = allowThrowables;
+        ghostsEnabled = showGhosts;
         if (!automatic) releasedWhileHeld = false;
         releasePolicy.reset();
     }
@@ -311,7 +393,8 @@ public final class BowAim {
             case "linear": mode = Mode.LINEAR; legacyAdaptive = false; break;
             case "off": mode = null; reset(); break;
             case "preview":
-                save(Trajectory.ON, false, limit, showChance, autoRelease, threshold, releaseMode, pingOverrideMs);
+                save(Trajectory.ON, false, limit, showChance, autoRelease, threshold, releaseMode, pingOverrideMs,
+                        throwablesEnabled, ghostsEnabled);
                 mode = null;
                 reset();
                 return "Bow trajectory preview on · aim off";
@@ -320,36 +403,52 @@ public final class BowAim {
                     Trajectory path;
                     try { path = Trajectory.valueOf(value.toUpperCase(Locale.ROOT)); }
                     catch (IllegalArgumentException e) { throw new IllegalArgumentException("Use trajectory on, off or auto"); }
-                    save(path, intercept, limit, showChance, autoRelease, threshold, releaseMode, pingOverrideMs);
+                    save(path, intercept, limit, showChance, autoRelease, threshold, releaseMode, pingOverrideMs,
+                            throwablesEnabled, ghostsEnabled);
                 }
                 return "Bow trajectory " + trajectory.name().toLowerCase(Locale.ROOT);
             case "intercept":
-                if (!value.isEmpty()) save(trajectory, toggle(value), limit, showChance, autoRelease, threshold, releaseMode, pingOverrideMs);
+                if (!value.isEmpty()) save(trajectory, toggle(value), limit, showChance, autoRelease, threshold,
+                        releaseMode, pingOverrideMs, throwablesEnabled, ghostsEnabled);
                 return "Bow intercept " + (intercept ? "on" : "off");
+            case "ghosts":
+                if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, autoRelease, threshold,
+                        releaseMode, pingOverrideMs, throwablesEnabled, toggle(value));
+                return "Bow multi-mode ghosts " + (ghostsEnabled ? "on" : "off");
+            case "throwables":
+                if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, autoRelease, threshold,
+                        releaseMode, pingOverrideMs, toggle(value), ghostsEnabled);
+                return "Snowball/egg volley aim " + (throwablesEnabled ? "on" : "off");
             case "limit":
-                if (!value.isEmpty()) save(trajectory, intercept, degrees(value), showChance, autoRelease, threshold, releaseMode, pingOverrideMs);
+                if (!value.isEmpty()) save(trajectory, intercept, degrees(value), showChance, autoRelease, threshold,
+                        releaseMode, pingOverrideMs, throwablesEnabled, ghostsEnabled);
                 return "Bow aim correction limit " + limit + "°";
             case "chance":
-                if (!value.isEmpty()) save(trajectory, intercept, limit, toggle(value), autoRelease, threshold, releaseMode, pingOverrideMs);
-                return "Bow hit chance display " + (showChance ? "on" : "off");
+                if (!value.isEmpty()) save(trajectory, intercept, limit, toggle(value), autoRelease, threshold,
+                        releaseMode, pingOverrideMs, throwablesEnabled, ghostsEnabled);
+                return "Bow EV/chance display " + (showChance ? "on" : "off");
             case "autorelease":
-                if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, toggle(value), threshold, releaseMode, pingOverrideMs);
+                if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, toggle(value), threshold,
+                        releaseMode, pingOverrideMs, throwablesEnabled, ghostsEnabled);
                 return "Bow auto-release " + (autoRelease
                         ? "on (" + releaseMode.name().toLowerCase(Locale.ROOT) + ", layup " + threshold + "%)" : "off");
             case "release":
                 if (!value.isEmpty()) {
                     ReleaseMode chosen;
                     try { chosen = ReleaseMode.valueOf(value.toUpperCase(Locale.ROOT)); }
-                    catch (IllegalArgumentException e) { throw new IllegalArgumentException("Use release smart or threshold"); }
-                    save(trajectory, intercept, limit, showChance, autoRelease, threshold, chosen, pingOverrideMs);
+                    catch (IllegalArgumentException e) { throw new IllegalArgumentException("Use release ev, smart or threshold"); }
+                    save(trajectory, intercept, limit, showChance, autoRelease, threshold, chosen, pingOverrideMs,
+                            throwablesEnabled, ghostsEnabled);
                 }
                 return "Bow auto-release policy " + releaseMode.name().toLowerCase(Locale.ROOT)
                         + " (layup " + threshold + "%)";
             case "threshold":
-                if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, autoRelease, percent(value), releaseMode, pingOverrideMs);
+                if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, autoRelease, percent(value),
+                        releaseMode, pingOverrideMs, throwablesEnabled, ghostsEnabled);
                 return "Bow auto-release threshold " + threshold + "%";
             case "ping":
-                if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, autoRelease, threshold, releaseMode, parsePing(value));
+                if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, autoRelease, threshold,
+                        releaseMode, parsePing(value), throwablesEnabled, ghostsEnabled);
                 return "Bow ping lead " + pingSourceLabel(Minecraft.func_71410_x());
             case "status": break;
             default: throw new IllegalArgumentException("Use /p help bowaim");
@@ -360,8 +459,10 @@ public final class BowAim {
         }
         String activeName = mode == null ? "off"
                 : mode == Mode.ADAPTIVE ? (neural != null && !legacyAdaptive
-                        ? "neural v2 (K=" + neural.modes() + " + multi-vox, ping="
-                          + pingSourceLabel(Minecraft.func_71410_x()) + ")"
+                        ? "neural v3 (EV+void" + (waitModel != null ? "+V_wait" : "")
+                          + (throwablesEnabled ? "+snow/egg" : "")
+                          + (ghostsEnabled ? "+ghosts" : "")
+                          + ", ping=" + pingSourceLabel(Minecraft.func_71410_x()) + ")"
                         : "legacy adaptive")
                 : mode.name().toLowerCase(Locale.ROOT);
         return "Bow aim " + activeName + (target == null ? "" : " · " + target.player.func_70005_c_());
@@ -374,11 +475,16 @@ public final class BowAim {
         target = null;
         releaseTargetId = null;
         probability = Double.NaN;
+        currentEv = Double.NaN;
+        currentPVoid = 0.0;
+        currentVWait = Double.NaN;
+        snapCanThrow = false;
         releasePolicy.reset();
     }
 
     void reset() {
         tracks.clear();
+        synchronized (airborneThrows) { airborneThrows.clear(); }
         forgetAim();
         releasedWhileHeld = false;
         world = null;
@@ -451,19 +557,47 @@ public final class BowAim {
                     px, py, pz, cue, player.field_70759_as, player.field_70125_A, stateFlags, sx, sy, sz, rel10);
         }
         tracks.values().removeIf(track -> track.tick() < tick - BowMotion.CAPACITY);
-        if ((mode == null && !intercept) || !drawing(mc, self) || (motion == null && neural == null)) {
+        synchronized (airborneThrows) {
+            airborneThrows.removeIf(at -> tick - at.thrownTick > 36
+                    || tick - at.thrownTick > at.shot.time + at.leadShift + 3.0);
+        }
+        boolean bowActive = drawing(mc, self);
+        boolean throwActive = !bowActive && mode != null && throwablesEnabled && holdingThrowable(mc, self);
+        if (((mode == null && !intercept) || (!bowActive && !throwActive)) || (motion == null && neural == null)) {
             forgetAim();
             return;
         }
         float rawYaw = self.field_70177_z - yawOffset, rawPitch = pitch(self.field_70125_A - pitchOffset);
-        target = choose(mc, self, rawYaw, rawPitch);
+        target = choose(mc, self, rawYaw, rawPitch, throwActive);
         if (mode != null) {
             adjust(self, rawYaw, rawPitch, target);
             boolean canEstimate = mode == Mode.ADAPTIVE && target != null
                     && (target.prediction != null || chance != null) && (showChance || autoRelease);
-            probability = canEstimate ? estimate(mc, self, target) : Double.NaN;
-            tryAutoRelease(mc, self, mc.field_71474_y.field_74313_G.func_151470_d());
+            if (canEstimate) {
+                evaluateCurrentAim(mc, self, target);
+            } else {
+                probability = Double.NaN;
+                currentEv = Double.NaN;
+                currentPVoid = 0.0;
+                currentVWait = Double.NaN;
+            }
+            if (bowActive) {
+                tryAutoRelease(mc, self, mc.field_71474_y.field_74313_G.func_151470_d());
+            } else {
+                releasePolicy.reset();
+                releaseTargetId = null;
+            }
         }
+        // Snapshot throw state on main thread for lock-free packet observer
+        snapTick = tick;
+        snapEyeX = self.field_70165_t;
+        snapEyeY = self.field_70163_u + self.func_70047_e();
+        snapEyeZ = self.field_70161_v;
+        snapYaw = self.field_70177_z;
+        snapPitch = self.field_70125_A;
+        snapThrowTime = (target != null && target.throwable) ? target.ideal.time : 14.0;
+        snapLeadShift = leadShiftTicks(mc);
+        snapCanThrow = throwActive;
     }
 
     private static int playerFlags(EntityPlayer player) {
@@ -551,13 +685,22 @@ public final class BowAim {
             releasePolicy.reset();
         }
         boolean losingCover = false;
-        if (releaseMode == ReleaseMode.SMART && target.prediction != null && world != null) {
+        if ((releaseMode == ReleaseMode.SMART || releaseMode == ReleaseMode.EV)
+                && target.prediction != null && world != null) {
             double[] ahead = target.prediction.meanPath[Math.min(4, target.prediction.meanPath.length - 1)];
             Vec3 eye = new Vec3(self.field_70165_t, self.field_70163_u + self.func_70047_e(), self.field_70161_v);
             Vec3 futurePt = new Vec3(ahead[0], ahead[1] + target.bodyHeight, ahead[2]);
             losingCover = world.func_72933_a(eye, futurePt) != null;
         }
-        if (!releasePolicy.shouldFire(probability, threshold, releaseMode, losingCover)) return;
+        boolean fire;
+        if (releaseMode == ReleaseMode.EV && waitModel != null && Double.isFinite(currentEv) && Double.isFinite(currentVWait)) {
+            fire = releasePolicy.shouldFireEv(currentEv, currentVWait, probability, threshold, losingCover,
+                    waitModel.fireAlpha());
+        } else {
+            ReleaseMode fallback = releaseMode == ReleaseMode.EV ? ReleaseMode.SMART : releaseMode;
+            fire = releasePolicy.shouldFire(probability, threshold, fallback, losingCover);
+        }
+        if (!fire) return;
         releasedWhileHeld = true;
         autoFiring = true;
         try {
@@ -569,20 +712,63 @@ public final class BowAim {
         }
     }
 
-    private double estimate(Minecraft mc, EntityPlayerSP self, Selection selected) {
-        double speed = BowBallistics.speed(self.func_71057_bx());
-        Shot shot = BowBallistics.fromAim(self.field_70165_t, self.field_70163_u + self.func_70047_e(),
-                self.field_70161_v, speed, self.field_70177_z, self.field_70125_A);
+    private void evaluateCurrentAim(Minecraft mc, EntityPlayerSP self, Selection selected) {
+        double speed = selected.throwable ? BowBallistics.THROW_SPEED : BowBallistics.speed(self.func_71057_bx());
+        double gravity = selected.throwable ? BowBallistics.THROW_GRAVITY : BowBallistics.GRAVITY;
+        double eyeY = self.field_70163_u + self.func_70047_e();
+        Shot shot = BowBallistics.fromAim(self.field_70165_t, eyeY,
+                self.field_70161_v, speed, self.field_70177_z, self.field_70125_A, gravity);
         double ideal = selected.ideal.time;
         double flight = Math.min(BowBallistics.MAX_TICKS, ideal + Math.max(4, ideal * .30));
         BowAimPreview.Guide guide = BowAimPreview.trace(world, shot, flight, null);
         if (selected.prediction != null && neural != null) {
-            if (guide.blocked && guide.travelTicks < ideal - 0.5) return 0.0;
-            Shot timed = BowBallistics.withTime(shot, ideal);
-            return neural.calibratedHitProb(timed, selected.prediction, leadShiftTicks(mc));
+            boolean obstructed = guide.blocked && guide.travelTicks < ideal - 0.5;
+            double shift = selected.leadShift;
+            if (obstructed) {
+                probability = 0.0;
+                currentEv = 0.0;
+                currentPVoid = 0.0;
+            } else {
+                Shot timed = BowBallistics.withTime(shot, ideal);
+                double[] mp = neural.modeHitProbs(timed, selected.prediction, shift);
+                double rawP = 0.0;
+                double rawEv = 0.0;
+                double rawPVoid = 0.0;
+                int K = selected.prediction.weights.length;
+                for (int k = 0; k < K; k++) {
+                    double w = selected.prediction.weights[k];
+                    double wEff = (selected.modeUncovered != null && k < selected.modeUncovered.length)
+                            ? w * selected.modeUncovered[k] : w;
+                    double val = (selected.modeValues != null && k < selected.modeValues.length)
+                            ? selected.modeValues[k] : (selected.throwable ? VoidKbValue.THROW_BASE : VoidKbValue.BOW_BASE);
+                    double vp = (selected.modeVoids != null && k < selected.modeVoids.length)
+                            ? selected.modeVoids[k] : 0.0;
+                    double mkP = mp != null ? mp[k] : 0.0;
+                    rawP += w * mkP;
+                    rawEv += wEff * mkP * val;
+                    rawPVoid += w * mkP * vp;
+                }
+                double calP = neural.calibrate(Math.max(0.0, Math.min(1.0, rawP)));
+                double calScale = rawP > 1e-4 ? calP / rawP : 1.0;
+                probability = calP;
+                currentEv = rawEv * calScale;
+                currentPVoid = Math.max(0.0, Math.min(1.0, rawPVoid * calScale));
+            }
+            if (waitModel != null) {
+                currentVWait = waitModel.predictWaitEv(selected.prediction,
+                        self.field_70165_t, eyeY, self.field_70161_v,
+                        selected.player.field_70165_t, selected.player.field_70163_u, selected.player.field_70161_v,
+                        currentEv, probability, currentPVoid, selected.throwable, !obstructed);
+            } else {
+                currentVWait = Double.NaN;
+            }
+            return;
         }
-        return chance.estimate(tracks.get(selected.player.func_110124_au()), selected.building, shot, ideal,
-                guide.travelTicks, selected.path);
+        probability = chance != null ? chance.estimate(tracks.get(selected.player.func_110124_au()),
+                selected.building, shot, ideal, guide.travelTicks, selected.path) : Double.NaN;
+        currentEv = Double.isFinite(probability) ? probability : Double.NaN;
+        currentPVoid = 0.0;
+        currentVWait = Double.NaN;
     }
 
     private static boolean eligible(EntityPlayer self, EntityPlayer other) {
@@ -598,14 +784,27 @@ public final class BowAim {
                 && inUse != null && inUse.func_77973_b() instanceof ItemBow;
     }
 
-    private Selection choose(Minecraft mc, EntityPlayerSP self, float yaw, float pitch) {
-        double speed = BowBallistics.speed(self.func_71057_bx());
+    private static boolean holdingThrowable(Minecraft mc, EntityPlayerSP self) {
+        ItemStack held = self.func_70694_bm();
+        return mc.field_71462_r == null && mc.field_71415_G && self.func_70089_S()
+                && !self.func_175149_v() && !self.func_70090_H()
+                && self.func_71011_bu() == null
+                && held != null && (held.func_77973_b() instanceof ItemSnowball || held.func_77973_b() instanceof ItemEgg);
+    }
+
+    private Selection choose(Minecraft mc, EntityPlayerSP self, float yaw, float pitch, boolean isThrowable) {
+        double speed = isThrowable ? BowBallistics.THROW_SPEED : BowBallistics.speed(self.func_71057_bx());
+        double gravity = isThrowable ? BowBallistics.THROW_GRAVITY : BowBallistics.GRAVITY;
         if (speed <= 0) return null;
+        ItemStack held = isThrowable ? self.func_70694_bm() : self.func_71011_bu();
+        int punchLevel = (!isThrowable && held != null) ? EnchantmentHelper.func_77506_a(49, held) : 0;
+        int powerLevel = (!isThrowable && held != null) ? EnchantmentHelper.func_77506_a(48, held) : 0;
+        double maxRange = isThrowable ? 38.0 : RANGE;
         double eyeY = self.field_70163_u + self.func_70047_e();
         double yr = Math.toRadians(yaw), pr = Math.toRadians(pitch);
         Vec3 from = new Vec3(self.field_70165_t, eyeY, self.field_70161_v);
-        Vec3 to = new Vec3(from.field_72450_a - Math.sin(yr) * Math.cos(pr) * RANGE,
-                eyeY - Math.sin(pr) * RANGE, from.field_72449_c + Math.cos(yr) * Math.cos(pr) * RANGE);
+        Vec3 to = new Vec3(from.field_72450_a - Math.sin(yr) * Math.cos(pr) * maxRange,
+                eyeY - Math.sin(pr) * maxRange, from.field_72449_c + Math.cos(yr) * Math.cos(pr) * maxRange);
         MovingObjectPosition wall = world.func_72933_a(from, to);
         if (wall != null && wall.field_72307_f != null) to = wall.field_72307_f;
         EntityPlayer pointedAt = null;
@@ -617,25 +816,27 @@ public final class BowAim {
             double distance = from.func_72438_d(hit.field_72307_f);
             if (distance < first) { first = distance; pointedAt = other; }
         }
-        if (pointedAt != null) return solution(mc, self, pointedAt, speed, eyeY);
+        if (pointedAt != null) return solution(mc, self, pointedAt, speed, gravity, eyeY, isThrowable, punchLevel, powerLevel);
 
         Selection best = null;
-        double bestAngle = NEAR_AIM, bestDistance = Double.POSITIVE_INFINITY;
+        double bestScore = Double.POSITIVE_INFINITY, bestDistance = Double.POSITIVE_INFINITY;
         for (EntityPlayer other : world.field_73010_i) {
             if (!eligible(self, other)) continue;
             double dx = other.field_70165_t - from.field_72450_a, dz = other.field_70161_v - from.field_72449_c;
             double dy = other.field_70163_u + .9 - eyeY;
             double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (distance < 2 || distance > RANGE) continue;
+            if (distance < 2 || distance > maxRange) continue;
             double bearing = Math.toDegrees(Math.atan2(-dx, dz));
             if (Math.abs(wrap(bearing - yaw)) > 20) continue;
-            Selection candidate = solution(mc, self, other, speed, eyeY);
+            Selection candidate = solution(mc, self, other, speed, gravity, eyeY, isThrowable, punchLevel, powerLevel);
             if (candidate == null) continue;
             double angle = Math.hypot(wrap(candidate.ideal.yaw - yaw), candidate.ideal.pitch - pitch);
-            if (angle <= NEAR_AIM && (best == null || angle < bestAngle - .35
-                    || Math.abs(angle - bestAngle) <= .35 && distance < bestDistance)) {
+            // Gently prioritize high-EV void-exposed targets within NEAR_AIM without ever yanking off crosshair
+            double score = angle - Math.min(2.2, 0.35 * candidate.ev);
+            if (angle <= NEAR_AIM && (best == null || score < bestScore - .35
+                    || Math.abs(score - bestScore) <= .35 && distance < bestDistance)) {
                 best = candidate;
-                bestAngle = angle;
+                bestScore = score;
                 bestDistance = distance;
             }
         }
@@ -675,7 +876,59 @@ public final class BowAim {
         return new byte[][]{fine, coarse};
     }
 
-    private Selection solution(Minecraft mc, EntityPlayerSP self, EntityPlayer player, double speed, double eyeY) {
+    private double[] computeModeUncovered(BowNeuralMotion.Prediction pred, boolean isThrowable) {
+        int K = pred.weights.length;
+        double[] uncovered = new double[K];
+        for (int k = 0; k < K; k++) uncovered[k] = 1.0;
+        if (!isThrowable || neural == null) return uncovered;
+        List<AirborneThrow> snapshot;
+        synchronized (airborneThrows) {
+            if (airborneThrows.isEmpty()) return uncovered;
+            snapshot = new ArrayList<>(airborneThrows);
+        }
+        for (AirborneThrow at : snapshot) {
+            double rem = (at.thrownTick + at.leadShift + at.shot.time) - tick;
+            if (rem <= 0.5 || rem > BowBallistics.MAX_TICKS) continue;
+            for (int k = 0; k < K; k++) {
+                double pCov = neural.modeHitProbAt(at.shot, pred, k, rem);
+                uncovered[k] *= Math.max(0.0, 1.0 - pCov);
+            }
+        }
+        return uncovered;
+    }
+
+    private void scoreModesForShot(Shot shot, BowNeuralMotion.Prediction pred, double shift,
+                                   boolean isThrowable, int punchLevel, double targetHealth,
+                                   double expectedBowDmg, double[] outVals, double[] outVoids) {
+        int K = pred.weights.length;
+        double ivx = shot.vxAt(shot.time), ivz = shot.vzAt(shot.time);
+        double tEval = Math.min(BowBallistics.MAX_TICKS, shot.time + Math.max(0.0, shift));
+        int lo = (int)tEval, hi = Math.min(BowBallistics.MAX_TICKS, lo + 1);
+        double frac = tEval - lo;
+        int prevT = Math.max(0, lo - 1);
+        int dt = Math.max(1, hi - prevT);
+        for (int k = 0; k < K; k++) {
+            double[] pLo = pred.paths[k][lo], pHi = pred.paths[k][hi];
+            double[] sLo = pred.stds[k][lo], sHi = pred.stds[k][hi];
+            double mx = pLo[0] + frac * (pHi[0] - pLo[0]);
+            double my = pLo[1] + frac * (pHi[1] - pLo[1]);
+            double mz = pLo[2] + frac * (pHi[2] - pLo[2]);
+            double sx = sLo[0] + frac * (sHi[0] - sLo[0]);
+            double sz = sLo[2] + frac * (sHi[2] - sLo[2]);
+            double[] pPrev = pred.paths[k][prevT];
+            double tvx = (pHi[0] - pPrev[0]) / dt;
+            double tvy = (pHi[1] - pPrev[1]) / dt;
+            double tvz = (pHi[2] - pPrev[2]) / dt;
+            VoidKbValue.Score sc = VoidKbValue.scoreMode(mx, my, mz, tvx, tvy, tvz, sx, sz, ivx, ivz,
+                    isThrowable, punchLevel, targetHealth, expectedBowDmg, solidQuery);
+            outVoids[k] = sc.voidProb;
+            outVals[k] = sc.value;
+        }
+    }
+
+    private Selection solution(Minecraft mc, EntityPlayerSP self, EntityPlayer player,
+                               double speed, double gravity, double eyeY,
+                               boolean isThrowable, int punchLevel, int powerLevel) {
         if (!teams.opponent(mc, self, player)) return null;
         Track track = tracks.get(player.func_110124_au());
         if (track == null || track.tick() != tick || track.length() < 2) return null;
@@ -683,26 +936,45 @@ public final class BowAim {
         AxisAlignedBB bounds = player.func_174813_aQ();
         double height = bounds.field_72337_e - bounds.field_72338_b;
 
-        // Unified End-to-End Multi-Modal Neural v2 + Multi-Scale Voxels + Continuous Refinement + Ping Lead
+        // BowAim v3: Multi-Modal Neural + Multi-Scale Voxels + Exact 1.8.9 Void-KB EV + Snowball Volley Coverage
         if (chosen == Mode.ADAPTIVE && neural != null && !legacyAdaptive) {
             byte[][] vox = sampleMultiScaleVoxels(player.field_70165_t, player.field_70163_u, player.field_70161_v);
             BowNeuralMotion.Prediction pred = neural.predict(track, vox[0], vox[1], true);
             double shift = leadShiftTicks(mc);
+            int K = pred.weights.length;
+            double[] uncovered = computeModeUncovered(pred, isThrowable);
+            double[] effWeights = new double[K];
+            for (int k = 0; k < K; k++) effWeights[k] = pred.weights[k] * uncovered[k];
+
+            double targetHealth = player.func_110143_aJ();
+            double expectedBowDmg = isThrowable ? 0.0 : VoidKbValue.expectedBowDamage(speed, powerLevel);
+
             Shot bestShot = null;
             double[][] bestPath = null;
             double bestHeight = height * AIM_HEIGHTS[0];
-            double bestProb = -1.0;
-            int totalCandidates = pred.paths.length + 1;
+            double bestEv = -1.0;
+            double[] bestVals = new double[K];
+            double[] bestVoids = new double[K];
+            boolean valsScored = false;
+
+            int totalCandidates = K + 1;
             for (int c = 0; c < totalCandidates; c++) {
-                double[][] rawPath = c < pred.paths.length ? pred.paths[c] : pred.meanPath;
+                if (c < K && effWeights[c] < 0.02) continue;
+                double[][] rawPath = c < K ? pred.paths[c] : pred.meanPath;
                 double[][] candPath = BowNeuralMotion.shiftPath(rawPath, shift);
                 for (double fraction : AIM_HEIGHTS) {
                     double aimAt = height * fraction;
-                    Shot shot = BowBallistics.intercept(self.field_70165_t, eyeY, self.field_70161_v, speed, candPath, aimAt);
+                    Shot shot = BowBallistics.intercept(self.field_70165_t, eyeY, self.field_70161_v,
+                            speed, candPath, aimAt, gravity);
                     if (shot != null && !BowAimPreview.trace(world, shot, shot.time, null).blocked) {
-                        double p = neural.rawHitProb(shot, pred, shift);
-                        if (p > bestProb) {
-                            bestProb = p;
+                        if (!valsScored) {
+                            scoreModesForShot(shot, pred, shift, isThrowable, punchLevel, targetHealth,
+                                    expectedBowDmg, bestVals, bestVoids);
+                            valsScored = true;
+                        }
+                        double ev = neural.expectedValue(shot, pred, shift, effWeights, bestVals);
+                        if (ev > bestEv) {
+                            bestEv = ev;
                             bestShot = shot;
                             bestPath = candPath;
                             bestHeight = aimAt;
@@ -712,9 +984,25 @@ public final class BowAim {
                 }
             }
             if (bestShot != null) {
-                Shot refined = neural.refineShot(self.field_70165_t, eyeY, self.field_70161_v, speed,
-                        bestShot, pred, shift, cand -> !BowAimPreview.trace(world, cand, cand.time, null).blocked);
-                return new Selection(player, refined, bestPath, pred, false, bestHeight);
+                Shot refined = neural.refineShotEv(self.field_70165_t, eyeY, self.field_70161_v, speed,
+                        bestShot, pred, shift, effWeights, bestVals,
+                        cand -> !BowAimPreview.trace(world, cand, cand.time, null).blocked);
+                double[] mp = neural.modeHitProbs(refined, pred, shift);
+                double evFin = 0.0, pVoidFin = 0.0;
+                int aimedMode = 0;
+                double bestModeContrib = -1.0;
+                for (int k = 0; k < K; k++) {
+                    double mkP = mp != null ? mp[k] : 0.0;
+                    double contrib = effWeights[k] * mkP * bestVals[k];
+                    evFin += contrib;
+                    pVoidFin += pred.weights[k] * mkP * bestVoids[k];
+                    if (contrib > bestModeContrib) {
+                        bestModeContrib = contrib;
+                        aimedMode = k;
+                    }
+                }
+                return new Selection(player, refined, bestPath, pred, false, bestHeight, isThrowable,
+                        evFin, Math.min(1.0, pVoidFin), shift, bestVals, bestVoids, uncovered, aimedMode);
             }
             return null;
         }
@@ -724,10 +1012,11 @@ public final class BowAim {
         double[][] path = bridge != null && chosen == Mode.ADAPTIVE ? bridge.apply(track, base) : base;
         for (double fraction : AIM_HEIGHTS) {
             double aimAt = height * fraction;
-            Shot shot = BowBallistics.intercept(self.field_70165_t, eyeY, self.field_70161_v, speed, path, aimAt);
-            // Current eye-to-eye visibility can differ from the arrow's route to the future position.
+            Shot shot = BowBallistics.intercept(self.field_70165_t, eyeY, self.field_70161_v,
+                    speed, path, aimAt, gravity);
             if (shot != null && !BowAimPreview.trace(world, shot, shot.time, null).blocked)
-                return new Selection(player, shot, path, null, path != base, aimAt);
+                return new Selection(player, shot, path, null, path != base, aimAt, isThrowable,
+                        0.0, 0.0, 0.0, null, null, null, 0);
         }
         return null;
     }
@@ -759,31 +1048,64 @@ public final class BowAim {
     private static float pitch(float angle) { return Math.max(-90, Math.min(90, angle)); }
 
     void hud(Minecraft mc, int width, int height) {
-        if (!showChance || mode == null || !Double.isFinite(probability) || mc.field_71439_g == null
-                || !drawing(mc,mc.field_71439_g)) return;
-        boolean smartSpiking = autoRelease && releaseMode == ReleaseMode.SMART && releasePolicy.isSpiking();
-        String text = (int)Math.floor(probability * 100) + "%" + (smartSpiking ? " ▲" : "");
+        EntityPlayerSP self = mc.field_71439_g;
+        if (!showChance || mode == null || !Double.isFinite(probability) || self == null) return;
+        boolean bowActive = drawing(mc, self);
+        boolean throwActive = !bowActive && throwablesEnabled && holdingThrowable(mc, self) && target != null;
+        if (!bowActive && !throwActive) return;
+
+        int pct = (int)Math.floor(probability * 100.0);
+        String text;
+        int color;
+        if (Double.isFinite(currentEv) && target != null && target.prediction != null) {
+            boolean voidShot = currentPVoid >= 0.12 || currentEv >= 2.0;
+            double waitBar = waitModel != null && Double.isFinite(currentVWait)
+                    ? waitModel.fireAlpha() * currentVWait : Double.NaN;
+            boolean shouldWait = bowActive && Double.isFinite(waitBar)
+                    && waitBar > Math.max(0.45, currentEv * 1.15) && currentEv < 3.2;
+            boolean fireReady = (bowActive && autoRelease && releasePolicy.isSpiking())
+                    || (bowActive && Double.isFinite(waitBar) && currentEv >= waitBar && probability >= 0.25)
+                    || (voidShot && probability >= 0.45);
+            if (shouldWait) {
+                text = String.format(Locale.ROOT, "NOW %.1fx · WAIT %.1fx", currentEv, currentVWait);
+                color = 0xFFFFB86C;
+            } else if (voidShot) {
+                text = String.format(Locale.ROOT, "%.1fx VOID (%d%%)", currentEv, pct) + (fireReady ? " ▲" : "");
+                color = fireReady ? 0xFFFFDC84 : 0xFFFF8E53;
+            } else {
+                text = String.format(Locale.ROOT, "%.1fx (%d%%)", currentEv, pct) + (fireReady ? " ▲" : "");
+                color = fireReady ? 0xFF7CF5A8 : 0xFFB7EEFF;
+            }
+        } else {
+            boolean smartSpiking = autoRelease && releaseMode == ReleaseMode.SMART && releasePolicy.isSpiking();
+            text = pct + "%" + (smartSpiking ? " ▲" : "");
+            color = autoRelease && probability * 100 >= threshold ? 0xFFFFDC84
+                    : smartSpiking ? 0xFF7CF5A8 : 0xFFB7EEFF;
+        }
         int y = height / 2 - 18, textWidth = mc.field_71466_p.func_78256_a(text);
-        int x = (width - textWidth)/2;
-        Gui.func_73734_a(x-3,y-2,x+textWidth+3,y+10,0xA5111A24);
-        int color = autoRelease && probability * 100 >= threshold ? 0xFFFFDC84
-                : smartSpiking ? 0xFF7CF5A8 : 0xFFB7EEFF;
-        mc.field_71466_p.func_175063_a(text,x,y,color);
+        int x = (width - textWidth) / 2;
+        Gui.func_73734_a(x - 3, y - 2, x + textWidth + 3, y + 10, 0xA5111A24);
+        mc.field_71466_p.func_175063_a(text, x, y, color);
     }
 
     void draw(Minecraft mc, float partial) {
         boolean path = trajectory == Trajectory.ON || trajectory == Trajectory.AUTO && mode != null;
         EntityPlayerSP self = mc.field_71439_g;
-        if ((!path && !intercept) || self == null || mc.field_71441_e == null || !drawing(mc, self)) return;
-        double speed = BowBallistics.speed(self.func_71057_bx());
+        if (self == null || mc.field_71441_e == null) return;
+        boolean bowActive = drawing(mc, self);
+        boolean throwActive = !bowActive && mode != null && throwablesEnabled && holdingThrowable(mc, self) && target != null;
+        if ((!path && !intercept && !ghostsEnabled) || (!bowActive && !throwActive)) return;
+        double speed = throwActive ? BowBallistics.THROW_SPEED : BowBallistics.speed(self.func_71057_bx());
         if (speed <= 0) return;
+        double gravity = throwActive ? BowBallistics.THROW_GRAVITY : BowBallistics.GRAVITY;
         double x = self.field_70142_S + (self.field_70165_t - self.field_70142_S) * partial;
         double y = self.field_70137_T + (self.field_70163_u - self.field_70137_T) * partial + self.func_70047_e();
         double z = self.field_70136_U + (self.field_70161_v - self.field_70136_U) * partial;
-        Shot current = BowBallistics.fromAim(x, y, z, speed, self.field_70177_z, self.field_70125_A);
+        Shot current = BowBallistics.fromAim(x, y, z, speed, self.field_70177_z, self.field_70125_A, gravity);
         Selection forecast = world == mc.field_71441_e && (mode != null || intercept) ? target : null;
+        boolean showGhosts = ghostsEnabled && mode != null && forecast != null && forecast.prediction != null;
         BowAimPreview.draw(mc, BowAimPreview.trace(mc.field_71441_e, current, current.time, forecast),
-                path, intercept, partial);
+                path, intercept, showGhosts, forecast, partial);
     }
 
     /** Send the displayed correction before the normal release request. */
@@ -798,7 +1120,7 @@ public final class BowAim {
         if (!nudged && !recording && !aim.autoFiring) return;
         aim.teams.observe(mc);
         float yaw = self.field_70177_z - aim.yawOffset, pitch = pitch(self.field_70125_A - aim.pitchOffset);
-        Selection current = aim.choose(mc, self, yaw, pitch);
+        Selection current = aim.choose(mc, self, yaw, pitch, false);
         if (current == null || aim.target == null || current.player != aim.target.player) {
             self.field_70177_z = yaw;
             self.field_70125_A = pitch;

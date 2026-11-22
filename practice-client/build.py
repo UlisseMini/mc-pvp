@@ -81,7 +81,7 @@ def main():
                 owner,name=p[3].rsplit('/',1);bot_mappings.append(f'M.{owner}.{name}{p[4]}={names_by_srg.get(name,name)}')
         manifest='Manifest-Version: 1.0\nFMLCorePlugin: practice.bridge.PracticeLoadingPlugin\nFMLCorePluginContainsFMLMod: true\n\n'
         bow_models = {f'practice/{name}': (SRC/'assets/practice'/name).read_bytes()
-                      for name in ('bow-motion.bin','bridge-motion.bin','bow-hit-chance.bin','bow-neural.bin')
+                      for name in ('bow-motion.bin','bridge-motion.bin','bow-hit-chance.bin','bow-neural.bin','bow-wait.bin')
                       if (SRC/'assets/practice'/name).is_file()}
         jar(BUILD/'practice-bridge.jar',shim,[{'modid':'practicebridge','name':'PvP Practice Bridge','description':'Local, reloadable practice HUD and telemetry.','version':'0.4.0','mcversion':'1.8.9','authorList':['PvP Lab']}],{'META-INF/MANIFEST.MF':manifest,'practice/field-names.properties':field_names,'lab/mappings.properties':'\n'.join(bot_mappings),**bow_models})
     tests=BUILD/'tests';compile_to(tests,sorted((SRC/'tests').rglob('*.java')),os.pathsep.join(map(str,[api,core,module])))

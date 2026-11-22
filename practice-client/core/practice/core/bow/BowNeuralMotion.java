@@ -45,13 +45,18 @@ public final class BowNeuralMotion {
         public final double[][][] stds;  // [K][MAX_TICKS+1][3]
         public final double[][] rhos;    // [K][MAX_TICKS+1]
         public final double[][] meanPath;
+        public final float[] trunk224;
+        public final int cardinalQ;
 
-        Prediction(double[] weights, double[][][] paths, double[][][] stds, double[][] rhos, double[][] meanPath) {
+        Prediction(double[] weights, double[][][] paths, double[][][] stds, double[][] rhos,
+                   double[][] meanPath, float[] trunk224, int cardinalQ) {
             this.weights = weights;
             this.paths = paths;
             this.stds = stds;
             this.rhos = rhos;
             this.meanPath = meanPath;
+            this.trunk224 = trunk224;
+            this.cardinalQ = cardinalQ;
         }
     }
 
@@ -398,7 +403,7 @@ public final class BowNeuralMotion {
         }
         meanPath[0][0] = p0x; meanPath[0][1] = p0y; meanPath[0][2] = p0z;
         if (withCycle) applyPeriodicCycle(track, paths, meanPath, 0.22);
-        return new Prediction(weights, paths, stds, rhos, meanPath);
+        return new Prediction(weights, paths, stds, rhos, meanPath, x, q);
     }
 
     /** Shift a trajectory forward by leadShiftTicks (e.g. ownPingMs / 50.0) for server RTT compensation. */
@@ -420,29 +425,37 @@ public final class BowNeuralMotion {
     }
 
     public double rawHitProb(Shot shot, Prediction pred, double leadShiftTicks) {
-        if (shot == null || pred == null) return 0.0;
+        double[] mp = modeHitProbs(shot, pred, leadShiftTicks);
+        if (mp == null) return 0.0;
+        double total = 0.0;
+        for (int k = 0; k < numModes; k++) total += pred.weights[k] * mp[k];
+        return Math.max(0.0, Math.min(1.0, total));
+    }
+
+    /** Per-mode hit probabilities P_k(hit | shot) for both arrows and throwables. */
+    public double[] modeHitProbs(Shot shot, Prediction pred, double leadShiftTicks) {
+        if (shot == null || pred == null) return null;
         double tHit = shot.time;
-        if (tHit <= 0.0 || tHit > BowBallistics.MAX_TICKS) return 0.0;
+        if (tHit <= 0.0 || tHit > BowBallistics.MAX_TICKS) return null;
         double tr = BowBallistics.travel(tHit);
         double ax = shot.x + shot.vx * tr;
-        double ay = shot.y + shot.vy * tr - BowBallistics.fall(tHit);
+        double ay = shot.y + shot.vy * tr - BowBallistics.fall(tHit, shot.gravity);
         double az = shot.z + shot.vz * tr;
         double spd = Math.sqrt(shot.vx * shot.vx + shot.vy * shot.vy + shot.vz * shot.vz);
         double dragT = Math.pow(BowBallistics.DRAG, tHit);
         double ivx = shot.vx * dragT;
-        double ivy = shot.vy * dragT - BowBallistics.GRAVITY * (1.0 - dragT) / (1.0 - BowBallistics.DRAG);
+        double ivy = shot.vy * dragT - shot.gravity * (1.0 - dragT) / (1.0 - BowBallistics.DRAG);
         double ivz = shot.vz * dragT;
-        double sigArrow = SPREAD * spd * tr;
-        double varArrow = sigArrow * sigArrow;
+        double sigProj = SPREAD * spd * tr;
+        double varProj = sigProj * sigProj;
 
         double tEval = Math.min(BowBallistics.MAX_TICKS, tHit + Math.max(0.0, leadShiftTicks));
         int lo = (int)tEval;
         int hi = Math.min(BowBallistics.MAX_TICKS, lo + 1);
         double frac = tEval - lo;
-        double total = 0.0;
+        double[] out = new double[numModes];
         for (int k = 0; k < numModes; k++) {
-            double w = pred.weights[k];
-            if (w < 1e-4) continue;
+            if (pred.weights[k] < 1e-4) continue;
             double[] pLo = pred.paths[k][lo], pHi = pred.paths[k][hi];
             double[] sLo = pred.stds[k][lo], sHi = pred.stds[k][hi];
             double mx = pLo[0] + frac * (pHi[0] - pLo[0]);
@@ -453,34 +466,99 @@ public final class BowNeuralMotion {
             double stz = sLo[2] + frac * (sHi[2] - sLo[2]);
             double r0 = pred.rhos[k][lo] + frac * (pred.rhos[k][hi] - pred.rhos[k][lo]);
             double covXz = r0 * stx * stz;
-            double sx = Math.sqrt(stx * stx + varArrow);
-            double sy = Math.sqrt(sty * sty + varArrow);
-            double sz = Math.sqrt(stz * stz + varArrow);
+            double sx = Math.sqrt(stx * stx + varProj);
+            double sy = Math.sqrt(sty * sty + varProj);
+            double sz = Math.sqrt(stz * stz + varProj);
             double rhoEff = Math.max(-0.92, Math.min(0.92, covXz / Math.max(1e-6, sx * sz)));
-            total += w * correlatedBoxProb(ax, ay, az, mx, my, mz, sx, sy, sz, rhoEff, ivx, ivy, ivz);
+            out[k] = correlatedBoxProb(ax, ay, az, mx, my, mz, sx, sy, sz, rhoEff, ivx, ivy, ivz);
         }
-        return Math.max(0.0, Math.min(1.0, total));
+        return out;
+    }
+
+    /**
+     * Evaluate probability that an already-airborne projectile (landing at shot.time) hits mode k
+     * at future offset evalTick relative to the target's current predicted trajectory.
+     */
+    public double modeHitProbAt(Shot shot, Prediction pred, int k, double evalTick) {
+        if (shot == null || pred == null || k < 0 || k >= numModes) return 0.0;
+        double tHit = shot.time;
+        if (tHit <= 0.0 || tHit > BowBallistics.MAX_TICKS || evalTick <= 0.0 || evalTick > BowBallistics.MAX_TICKS) {
+            return 0.0;
+        }
+        double tr = BowBallistics.travel(tHit);
+        double ax = shot.x + shot.vx * tr;
+        double ay = shot.y + shot.vy * tr - BowBallistics.fall(tHit, shot.gravity);
+        double az = shot.z + shot.vz * tr;
+        double spd = Math.sqrt(shot.vx * shot.vx + shot.vy * shot.vy + shot.vz * shot.vz);
+        double dragT = Math.pow(BowBallistics.DRAG, tHit);
+        double ivx = shot.vx * dragT;
+        double ivy = shot.vy * dragT - shot.gravity * (1.0 - dragT) / (1.0 - BowBallistics.DRAG);
+        double ivz = shot.vz * dragT;
+        double sigProj = SPREAD * spd * tr;
+        double varProj = sigProj * sigProj;
+
+        int lo = (int)evalTick;
+        int hi = Math.min(BowBallistics.MAX_TICKS, lo + 1);
+        double frac = evalTick - lo;
+        double[] pLo = pred.paths[k][lo], pHi = pred.paths[k][hi];
+        double[] sLo = pred.stds[k][lo], sHi = pred.stds[k][hi];
+        double mx = pLo[0] + frac * (pHi[0] - pLo[0]);
+        double my = pLo[1] + frac * (pHi[1] - pLo[1]);
+        double mz = pLo[2] + frac * (pHi[2] - pLo[2]);
+        double stx = sLo[0] + frac * (sHi[0] - sLo[0]);
+        double sty = sLo[1] + frac * (sHi[1] - sLo[1]);
+        double stz = sLo[2] + frac * (sHi[2] - sLo[2]);
+        double r0 = pred.rhos[k][lo] + frac * (pred.rhos[k][hi] - pred.rhos[k][lo]);
+        double covXz = r0 * stx * stz;
+        double sx = Math.sqrt(stx * stx + varProj);
+        double sy = Math.sqrt(sty * sty + varProj);
+        double sz = Math.sqrt(stz * stz + varProj);
+        double rhoEff = Math.max(-0.92, Math.min(0.92, covXz / Math.max(1e-6, sx * sz)));
+        return correlatedBoxProb(ax, ay, az, mx, my, mz, sx, sy, sz, rhoEff, ivx, ivy, ivz);
+    }
+
+    /** Expected Hit-Equivalent value: sum_k effWeights[k] * P_k(hit | shot) * modeValues[k]. */
+    public double expectedValue(Shot shot, Prediction pred, double leadShiftTicks,
+                                double[] effWeights, double[] modeValues) {
+        double[] mp = modeHitProbs(shot, pred, leadShiftTicks);
+        if (mp == null) return 0.0;
+        double ev = 0.0;
+        for (int k = 0; k < numModes; k++) {
+            double w = effWeights != null ? effWeights[k] : pred.weights[k];
+            double v = modeValues != null ? modeValues[k] : 1.0;
+            ev += w * mp[k] * v;
+        }
+        return ev;
     }
 
     /** Continuous multi-mode (yaw, pitch) coordinate-ascent refinement around best discrete mode shot. */
     public Shot refineShot(double shooterX, double eyeY, double shooterZ, double speed,
                            Shot initial, Prediction pred, double leadShiftTicks, Predicate<Shot> isClear) {
+        return refineShotEv(shooterX, eyeY, shooterZ, speed, initial, pred, leadShiftTicks, null, null, isClear);
+    }
+
+    /** Continuous (yaw, pitch) coordinate-ascent refinement maximizing EV (supports arrows & throwables + volley weights). */
+    public Shot refineShotEv(double shooterX, double eyeY, double shooterZ, double speed,
+                             Shot initial, Prediction pred, double leadShiftTicks,
+                             double[] effWeights, double[] modeValues, Predicate<Shot> isClear) {
         if (initial == null || pred == null) return initial;
         Shot best = initial;
-        double bestP = rawHitProb(initial, pred, leadShiftTicks);
+        double bestScore = expectedValue(initial, pred, leadShiftTicks, effWeights, modeValues);
         float yaw = initial.yaw, pitch = initial.pitch;
         double tHit = initial.time;
+        double gravity = initial.gravity;
         final float[] steps = {0.65f, 0.28f};
         final float[][] dirs = {{1f, 0f}, {-1f, 0f}, {0f, 1f}, {0f, -1f}};
         for (float step : steps) {
             for (float[] d : dirs) {
                 float ny = yaw + d[0] * step;
                 float np = Math.max(-90f, Math.min(90f, pitch + d[1] * step));
-                Shot cand = BowBallistics.withTime(BowBallistics.fromAim(shooterX, eyeY, shooterZ, speed, ny, np), tHit);
+                Shot cand = BowBallistics.withTime(
+                        BowBallistics.fromAim(shooterX, eyeY, shooterZ, speed, ny, np, gravity), tHit);
                 if (isClear != null && !isClear.test(cand)) continue;
-                double p = rawHitProb(cand, pred, leadShiftTicks);
-                if (p > bestP + 1e-4) {
-                    bestP = p;
+                double sc = expectedValue(cand, pred, leadShiftTicks, effWeights, modeValues);
+                if (sc > bestScore + 1e-4) {
+                    bestScore = sc;
                     best = cand;
                     yaw = ny;
                     pitch = np;
