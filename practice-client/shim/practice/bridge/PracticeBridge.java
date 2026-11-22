@@ -406,11 +406,11 @@ public final class PracticeBridge {
             if(args.length==1)return func_175762_a(args,Arrays.asList("help","replays","ledger","hud","sumocoach","sumoanalysis","keystrokes","sprint","sprintkb","potions","reach","range","crosshair","opening","advantage","ghost","jumpreset","blockhit","oldblock","oldsneak","hurtcam","dynamicfov","remote","capture","record","mark","forecast","bowaim","status","reload","metrics","link","debug","ping"));
             if(args.length==2&&args[0].equals("help"))return func_175762_a(args,helpTopics);
             if(bowAim!=null&&args[0].equals("bowaim")){
-                if(args.length==2)return func_175762_a(args,Arrays.asList("on","legacy","linear","off","status","preview","trajectory","intercept","ghosts","throwables","limit","chance","autorelease","release","threshold","ping"));
+                if(args.length==2)return func_175762_a(args,Arrays.asList("on","legacy","linear","off","status","preview","trajectory","intercept","ghosts","throwables","bridgehack","limit","chance","autorelease","release","threshold","ping"));
                 if(args.length==3&&args[1].equals("trajectory"))return func_175762_a(args,Arrays.asList("on","off","auto"));
                 if(args.length==3&&args[1].equals("release"))return func_175762_a(args,Arrays.asList("ev","smart","threshold"));
                 if(args.length==3&&args[1].equals("ping"))return func_175762_a(args,Arrays.asList("auto","0","40","80","120"));
-                if(args.length==3&&Arrays.asList("intercept","ghosts","throwables","chance","autorelease").contains(args[1]))
+                if(args.length==3&&Arrays.asList("intercept","ghosts","throwables","bridgehack","chance","autorelease").contains(args[1]))
                     return func_175762_a(args,Arrays.asList("on","off"));
             }
             if(args.length>=2&&args[0].equals("remote")){
@@ -517,6 +517,7 @@ public final class PracticeBridge {
                     usage("bowaim intercept"," on/off","Show the predicted hit position and time");
                     usage("bowaim ghosts"," on/off","Show multi-mode landing ghost players when locked on");
                     usage("bowaim throwables"," on/off","Enable snowball & egg aim assist with airborne volley coverage");
+                    usage("bowaim bridgehack"," on/off","Optional explicit kinematic bridge continuation override (default off)");
                     usage("bowaim chance"," on/off","Show Hit-Equivalent EV & wait cue over the crosshair");
                     usage("bowaim autorelease"," on/off","Auto-release bow at full draw using the active release policy");
                     usage("bowaim release"," ev/smart/threshold","Learned V_wait EV timing, smart peak-spike, or fixed threshold");

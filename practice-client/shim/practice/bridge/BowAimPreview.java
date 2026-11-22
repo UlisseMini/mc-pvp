@@ -140,8 +140,8 @@ final class BowAimPreview {
     private static void drawModeGhosts(RenderManager camera, BowAim.Selection sel,
                                        double camX, double camY, double camZ) {
         BowNeuralMotion.Prediction pred = sel.prediction;
-        int maxBase = BowBallistics.MAX_TICKS;
-        int maxAllowed = sel.throwable ? BowBallistics.MAX_THROW_TICKS : maxBase;
+        int maxBase = pred.maxHorizon();
+        int maxAllowed = sel.throwable ? Math.max(maxBase, BowBallistics.MAX_THROW_TICKS) : maxBase;
         double tEval = Math.max(0.0, Math.min(maxAllowed, sel.ideal.time + sel.leadShift));
         int K = pred.weights.length;
 

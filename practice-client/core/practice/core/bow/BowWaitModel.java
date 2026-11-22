@@ -13,25 +13,24 @@ import java.io.InputStream;
  */
 public final class BowWaitModel {
     public static final int MAGIC = 0x42574154; // 'BWAT'
-    public static final int TRUNK_DIM = 224;
     public static final int TACTICAL_DIM = 10;
-    public static final int IN_DIM = TRUNK_DIM + TACTICAL_DIM; // 234
 
-    private final int hidden1, hidden2;
+    private final int inDim, trunkDim, hidden1, hidden2;
     private final float fireAlpha;
     private final float[] w1, b1, w2, b2, w3, b3;
 
     private BowWaitModel(DataInputStream in) throws IOException {
         if (in.readInt() != MAGIC) throw new IOException("Invalid bow-wait model magic");
-        int inDim = in.readInt();
+        inDim = in.readInt();
         hidden1 = in.readInt();
         hidden2 = in.readInt();
         fireAlpha = in.readFloat();
-        if (inDim != IN_DIM || hidden1 < 8 || hidden1 > 256 || hidden2 < 4 || hidden2 > 256
+        trunkDim = inDim - TACTICAL_DIM;
+        if (trunkDim < 64 || trunkDim > 512 || hidden1 < 8 || hidden1 > 256 || hidden2 < 4 || hidden2 > 256
                 || !Float.isFinite(fireAlpha) || fireAlpha < 0.2f || fireAlpha > 3.0f) {
             throw new IOException("Invalid bow-wait header");
         }
-        w1 = readFloats(in, hidden1 * IN_DIM);
+        w1 = readFloats(in, hidden1 * inDim);
         b1 = readFloats(in, hidden1);
         w2 = readFloats(in, hidden2 * hidden1);
         b2 = readFloats(in, hidden2);
@@ -46,6 +45,7 @@ public final class BowWaitModel {
     }
 
     public double fireAlpha() { return fireAlpha; }
+    public int trunkDim() { return trunkDim; }
 
     /**
      * Predict V_wait(s_t) in Hit-Equivalents (e.g. 0.7 = normal hit, 4.5 = upcoming void kill window).
@@ -55,7 +55,7 @@ public final class BowWaitModel {
                                 double targetX, double targetY, double targetZ,
                                 double qShootNow, double pHitNow, double pVoidNow,
                                 boolean isThrowable, boolean hasLosNow) {
-        if (pred == null || pred.trunk224 == null || pred.trunk224.length != TRUNK_DIM) return 0.0;
+        if (pred == null || pred.trunk224 == null || pred.trunk224.length != trunkDim) return Double.NaN;
         double dx = shooterX - targetX;
         double dy = shooterY - targetY;
         double dz = shooterZ - targetZ;
@@ -63,24 +63,24 @@ public final class BowWaitModel {
         double srz = rotZ(dx, dz, pred.cardinalQ);
         double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-        float[] in = new float[IN_DIM];
-        System.arraycopy(pred.trunk224, 0, in, 0, TRUNK_DIM);
-        in[TRUNK_DIM]     = clampF(srx / 32.0, -2f, 2f);
-        in[TRUNK_DIM + 1] = clampF(dy / 32.0, -2f, 2f);
-        in[TRUNK_DIM + 2] = clampF(srz / 32.0, -2f, 2f);
-        in[TRUNK_DIM + 3] = clampF(dist / 32.0, 0f, 2.5f);
-        in[TRUNK_DIM + 4] = (float)(Math.log1p(dist) / 4.0);
-        in[TRUNK_DIM + 5] = clampF(qShootNow / 8.0, 0f, 2.0f);
-        in[TRUNK_DIM + 6] = clampF(pHitNow, 0f, 1f);
-        in[TRUNK_DIM + 7] = clampF(pVoidNow, 0f, 1f);
-        in[TRUNK_DIM + 8] = isThrowable ? 1f : 0f;
-        in[TRUNK_DIM + 9] = hasLosNow ? 1f : 0f;
+        float[] in = new float[inDim];
+        System.arraycopy(pred.trunk224, 0, in, 0, trunkDim);
+        in[trunkDim]     = clampF(srx / 32.0, -2f, 2f);
+        in[trunkDim + 1] = clampF(dy / 32.0, -2f, 2f);
+        in[trunkDim + 2] = clampF(srz / 32.0, -2f, 2f);
+        in[trunkDim + 3] = clampF(dist / 32.0, 0f, 2.5f);
+        in[trunkDim + 4] = (float)(Math.log1p(dist) / 4.0);
+        in[trunkDim + 5] = clampF(qShootNow / 8.0, 0f, 2.0f);
+        in[trunkDim + 6] = clampF(pHitNow, 0f, 1f);
+        in[trunkDim + 7] = clampF(pVoidNow, 0f, 1f);
+        in[trunkDim + 8] = isThrowable ? 1f : 0f;
+        in[trunkDim + 9] = hasLosNow ? 1f : 0f;
 
         float[] h1 = new float[hidden1];
         for (int o = 0; o < hidden1; o++) {
             float sum = b1[o];
-            int row = o * IN_DIM;
-            for (int i = 0; i < IN_DIM; i++) sum += in[i] * w1[row + i];
+            int row = o * inDim;
+            for (int i = 0; i < inDim; i++) sum += in[i] * w1[row + i];
             h1[o] = silu(sum);
         }
         float[] h2 = new float[hidden2];

@@ -36,6 +36,7 @@ public final class BowMotion {
         private final byte[] flags = new byte[CAPACITY];
         private final float[][] rel = new float[CAPACITY][10];
         private final boolean[] hasRel = new boolean[CAPACITY];
+        private final float[][] blk4 = new float[CAPACITY][4];
         private int tick = Integer.MIN_VALUE, length;
 
         public int tick() { return tick; }
@@ -55,6 +56,11 @@ public final class BowMotion {
 
         public void add(int now, double x, double y, double z, int cue, float headYaw, float headPitch, int stateFlags,
                         double serverX, double serverY, double serverZ, float[] relational10) {
+            add(now, x, y, z, cue, headYaw, headPitch, stateFlags, serverX, serverY, serverZ, relational10, null);
+        }
+
+        public void add(int now, double x, double y, double z, int cue, float headYaw, float headPitch, int stateFlags,
+                        double serverX, double serverY, double serverZ, float[] relational10, float[] recentBlk4) {
             if (now == tick) return;
             int gap = now - tick;
             if (length == 0 || gap <= 0 || gap > 3 || distance(x, y, z) > 2.5 * gap) {
@@ -78,6 +84,11 @@ public final class BowMotion {
                         Arrays.fill(rel[idx], 0f);
                         hasRel[idx] = false;
                     }
+                    if (recentBlk4 != null && recentBlk4.length >= 4) {
+                        System.arraycopy(recentBlk4, 0, blk4[idx], 0, 4);
+                    } else {
+                        Arrays.fill(blk4[idx], 0f);
+                    }
                     length = Math.min(CAPACITY, length + 1);
                 }
             }
@@ -96,6 +107,11 @@ public final class BowMotion {
                 Arrays.fill(rel[index], 0f);
                 hasRel[index] = false;
             }
+            if (recentBlk4 != null && recentBlk4.length >= 4) {
+                System.arraycopy(recentBlk4, 0, blk4[index], 0, 4);
+            } else {
+                Arrays.fill(blk4[index], 0f);
+            }
             length = Math.min(CAPACITY, length + 1);
         }
 
@@ -111,6 +127,7 @@ public final class BowMotion {
         public int flags(int age) { return flags[(tick - age) & MASK] & 0xFF; }
         public float[] rel(int age) { return rel[(tick - age) & MASK]; }
         public boolean hasRel(int age) { return hasRel[(tick - age) & MASK]; }
+        public float[] blk4(int age) { return blk4[(tick - age) & MASK]; }
 
         /** Native observations can repeat between packets, so estimate velocity across multiple ticks. */
         private double velocity(int age, int a, int b, int axis) {

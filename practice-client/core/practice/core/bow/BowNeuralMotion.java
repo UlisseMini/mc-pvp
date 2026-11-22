@@ -41,23 +41,32 @@ public final class BowNeuralMotion {
 
     public static final class Prediction {
         public final double[] weights;
-        public final double[][][] paths; // [K][MAX_TICKS+1][3]
-        public final double[][][] stds;  // [K][MAX_TICKS+1][3]
-        public final double[][] rhos;    // [K][MAX_TICKS+1]
+        public final double[][][] paths; // [K][maxHorizon+1][3]
+        public final double[][][] stds;  // [K][maxHorizon+1][3]
+        public final double[][] rhos;    // [K][maxHorizon+1]
         public final double[][] meanPath;
-        public final float[] trunk224;
+        public final float[] trunk224;   // trunk embedding (224 for v2, 256 for v4)
         public final int cardinalQ;
+        public final float[] futBlk245;  // optional 5x7x7 future-block-placement probs (v4)
 
-        Prediction(double[] weights, double[][][] paths, double[][][] stds, double[][] rhos,
-                   double[][] meanPath, float[] trunk224, int cardinalQ) {
+        public Prediction(double[] weights, double[][][] paths, double[][][] stds, double[][] rhos,
+                          double[][] meanPath, float[] trunk, int cardinalQ) {
+            this(weights, paths, stds, rhos, meanPath, trunk, cardinalQ, null);
+        }
+
+        public Prediction(double[] weights, double[][][] paths, double[][][] stds, double[][] rhos,
+                          double[][] meanPath, float[] trunk, int cardinalQ, float[] futBlk245) {
             this.weights = weights;
             this.paths = paths;
             this.stds = stds;
             this.rhos = rhos;
             this.meanPath = meanPath;
-            this.trunk224 = trunk224;
+            this.trunk224 = trunk;
             this.cardinalQ = cardinalQ;
+            this.futBlk245 = futBlk245;
         }
+
+        public int maxHorizon() { return paths[0].length - 1; }
     }
 
     private BowNeuralMotion(DataInputStream in) throws IOException {
@@ -438,10 +447,10 @@ public final class BowNeuralMotion {
         return out;
     }
 
-    /** Sample mode k's predicted (pos, std, rho) at any tick in [0..MAX_THROW_TICKS] with clean extrapolation > 42t. */
+    /** Sample mode k's predicted (pos, std, rho) at any tick in [0..MAX_THROW_TICKS] with clean extrapolation past maxHorizon. */
     private static void sampleModeState(Prediction pred, int k, double tEval,
                                         double[] outPos, double[] outStd, double[] outRho) {
-        int maxT = BowBallistics.MAX_TICKS;
+        int maxT = pred.maxHorizon();
         double tc = Math.max(0.0, tEval);
         if (tc <= maxT) {
             int lo = (int)tc, hi = Math.min(maxT, lo + 1);
@@ -456,15 +465,21 @@ public final class BowNeuralMotion {
             return;
         }
         double extra = tc - maxT;
-        int ref = maxT - 6;
+        int ref = Math.max(0, maxT - 6);
+        double dtRef = Math.max(1.0, maxT - ref);
         double[] pLast = pred.paths[k][maxT], pRef = pred.paths[k][ref];
         double[] sLast = pred.stds[k][maxT];
         for (int a = 0; a < 3; a++) {
-            double v = (pLast[a] - pRef[a]) / 6.0;
+            double v = (pLast[a] - pRef[a]) / dtRef;
             outPos[a] = pLast[a] + v * extra;
             outStd[a] = sLast[a] * (1.0 + extra / (double)maxT);
         }
         outRho[0] = pred.rhos[k][maxT];
+    }
+
+    /** Public static access to the optional explicit bridging/steady continuation overlay (/p bowaim bridgehack). */
+    public static boolean applyBridgeHack(Track track, Prediction pred) {
+        return applyBridgeAndSteadyContinuation(track, pred.weights, pred.paths, pred.stds, pred.rhos, pred.meanPath);
     }
 
     /**
@@ -580,7 +595,7 @@ public final class BowNeuralMotion {
         // Blend strength: 1.0 for clear active bridging / stair bridging, 0.65 for general steady straight line
         double blend = bridgeMatch ? 1.0 : 0.65;
 
-        int maxT = BowBallistics.MAX_TICKS;
+        int maxT = paths[0].length - 1;
         int K = paths.length;
         double ux = vx / Math.max(1e-6, Math.hypot(vx, vz));
         double uz = vz / Math.max(1e-6, Math.hypot(vx, vz));
