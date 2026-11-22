@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c1416">
+  <meta name="description" content="Explore uncertainty on the map and compare learning from a player's history in BedWars.">
+  <title>BedWars Forecast Atlas</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <header class="mast wrap">
+    <a class="brand" href="#top"><span aria-hidden="true" class="brand-mark"><i></i><i></i><i></i><i></i></span> BedWars Forecast Atlas</a>
+    <nav aria-label="Report"><a href="#replay">Replay</a><a href="#scores">Results</a><a href="#method">Method</a></nav>
+  </header>
+  <main id="top" class="wrap">
+    <section class="intro">
+      <p class="kicker">Recorded matches <span></span> 5 to 120 seconds ahead</p>
+      <h1>Where will they go?</h1>
+      <p>Explore probability on the actual arena geometry. Jump to the forecast’s target second, then compare how the prediction changes after learning the player’s habits.</p>
+    </section>
+
+    <section id="replay" aria-labelledby="replay-title" class="workspace">
+      <div class="section-heading">
+        <div><p class="kicker">Replay explorer</p><h2 id="replay-title">Forecast on the map</h2></div>
+        <p id="replay-scope" class="muted">Loading held-out matches…</p>
+      </div>
+      <div class="replay-shell">
+        <div class="selectors">
+          <label>Match <select id="game" aria-label="Match"></select></label>
+          <label>Player <select id="player" aria-label="Player"></select></label>
+          <label>Horizon <select id="horizon" aria-label="Horizon"></select></label>
+          <label>Model <select id="model" aria-label="Model"></select></label>
+        </div>
+        <div class="stage" id="stage">
+          <div id="scene" aria-label="Interactive 3D voxel replay"></div>
+          <div class="camera" aria-label="Camera presets">
+            <button type="button" data-camera="orbit" aria-pressed="true">Orbit</button>
+            <button type="button" data-camera="top" aria-pressed="false">Top</button>
+            <button type="button" data-camera="follow" aria-pressed="false">Follow</button>
+          </div>
+          <div class="stage-time"><span id="frame-mode">Forecast time</span><strong id="frame-clock">–:––</strong></div>
+          <div class="empty" id="stage-status" role="status">Loading match geometry…</div>
+          <div class="stage-legend">
+            <div class="heatbar"></div>
+            <div><span>Lower</span><span>Higher</span></div>
+            <span class="legend-caption">Probability per horizontal tile</span>
+          </div>
+        </div>
+        <div class="transport">
+          <div class="timeline-head">
+            <label for="timeline">Forecast issued <output id="issue-clock">–:––</output></label>
+            <span id="support-count" class="muted"></span>
+          </div>
+          <input id="timeline" type="range" min="0" max="1" value="0" step="1" aria-label="Forecast issue time">
+          <div class="actions">
+            <div class="step-buttons" aria-label="Find an issue time"><button id="previous" type="button" aria-label="Earlier forecast">−</button><button id="next" type="button" aria-label="Later forecast">+</button></div>
+            <button id="issue" type="button">Show issue</button>
+            <button id="outcome" class="accent" type="button">Jump to outcome</button>
+            <button id="compare" type="button">Toggle adaptation</button>
+          </div>
+          <p class="event-note" id="outcome-note" aria-live="polite"></p>
+        </div>
+      </div>
+      <p class="under-scene">Drag to orbit, right-drag to pan, and scroll to zoom. The colored map is fixed at issue time while you inspect the outcome. Player labels are local to each match.</p>
+      <div class="keyframes" aria-label="Example forecast and outcome renders">
+        <a href="?game=game-09&amp;horizon=60&amp;player=0&amp;model=meta-history&amp;t=683&amp;view=issue#replay">
+          <img src="./assets/atlas-forecast.png" alt="The block-built arena with a heatmap, looking down from the orbit camera." width="1118" height="670" loading="lazy">
+          <span>Match 09 · Forecast at 11:23</span>
+        </a>
+        <a href="?game=game-09&amp;horizon=60&amp;player=0&amp;model=meta-history&amp;t=683&amp;view=outcome#replay">
+          <img src="./assets/atlas-outcome.png" alt="The same BedWars forecast overlay over the arena at its 60-second outcome." width="1118" height="670" loading="lazy">
+          <span>Match 09 · Recorded outcome at 12:23</span>
+        </a>
+      </div>
+    </section>
+
+    <section id="scores" aria-labelledby="scores-title" class="report">
+      <div class="section-heading">
+        <div><p class="kicker">Held-out evaluation</p><h2 id="scores-title">Where the models helped</h2></div>
+        <p class="muted">Lower log loss is better</p>
+      </div>
+      <div id="results-text" class="result-notes" aria-live="polite"></div>
+      <div class="score-controls">
+        <label>Evaluation slice <select id="cohort"><option value="all">All recorded endpoints</option><option value="adapt" selected>Late game with ≥8 examples</option><option value="early-style">Early adaptation with 4–11 examples</option></select></label>
+        <label>Scoring resolution <select id="resolution"><option value="block">Exact 3D block</option><option value="near16">16-block horizontal tile</option><option value="near32">32-block horizontal tile</option></select></label>
+      </div>
+      <div class="table-wrap"><table id="score-table"><caption class="sr-only">Average held-out log loss by horizon</caption></table></div>
+      <div class="detail-grid">
+        <div>
+          <h3>Same initialization, with and without adaptation</h3>
+          <p id="adapt-description" class="muted"></p>
+          <div id="adapt-bars" class="adapt-bars"></div>
+        </div>
+        <div>
+          <h3>Player-level results</h3>
+          <p id="player-description" class="muted"></p>
+          <div class="table-wrap"><table id="player-table"><caption class="sr-only">Adaptation changes by player in the selected match</caption></table></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="method" class="methods" aria-labelledby="method-title">
+      <p class="kicker">How to read the results</p>
+      <h2 id="method-title">From blocks to behavior</h2>
+      <div class="method-grid">
+        <article><h3>Multi-scale heatmap</h3><p>Predict a 16-block tile, then predict the precise horizontal block and altitude conditional on that tile. Train against the original block plus 16- and 32-block spatial losses. Several hotspots can emerge in the same distribution.</p></article>
+        <article><h3>Adaptation</h3><p>Every 30 seconds, use the last 32 eligible examples for that player. A training example becomes available after its future endpoint has been recorded. ANIL adapts a small spatial output bias. Meta history learns how much to trust an empirical player heatmap.</p><a href="https://arxiv.org/abs/1909.09157">Read the ANIL paper</a></article>
+        <article><h3>Evidence</h3><p>The final fit uses eight games. The four latest matches are held out from that fit. Within each held-out match the models adapt online using completed examples. Exact-block comparisons use the same recorded endpoints for every model.</p></article>
+        <article><h3>Capture and rendering</h3><p>The arenas come from captured chunk packets and timed block edits. Tiles show display-quantized horizontal probability, summed over altitude. The benchmark uses full-precision probabilities. Unloaded players and missing frames can leave gaps.</p></article>
+      </div>
+    </section>
+  </main>
+  <footer class="wrap footer"><span>BedWars Forecast Atlas</span><a href="#top">Back to top</a></footer>
+</body>
+</html>

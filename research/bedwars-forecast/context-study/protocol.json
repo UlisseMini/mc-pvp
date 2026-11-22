@@ -1,0 +1,13 @@
+{
+  "input": "runtime/bedwars-forecast/advanced/tracks.json.gz",
+  "input_sha256": "bf345d6d7b8f5138e1aa5f706b608ac02204d563b76d91e1d945a22431ccb052",
+  "development": ["game-01", "game-02", "game-03", "game-04", "game-05", "game-06", "game-07", "game-08"],
+  "manual_inspection": ["game-03", "game-07", "game-08"],
+  "evaluation": ["game-09", "game-10", "game-11", "game-12"],
+  "evaluation_status": "Previously reported matches reserved from fitting and manual inspection in this experiment. No new games have been captured since that study.",
+  "horizons": [5, 10, 30, 60, 120],
+  "metrics": ["exact 3D foot-block negative log likelihood", "16-block horizontal tile negative log likelihood"],
+  "cohorts": ["All recorded endpoints", "same post-landmark and support rule as the previous study"],
+  "aggregation": "paired game macro means and per-game spread",
+  "seed": 6472
+}

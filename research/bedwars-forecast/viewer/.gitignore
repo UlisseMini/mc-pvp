@@ -1,0 +1,4 @@
+/dist/assets/*-view.bin.gz
+/dist/assets/poses-*.json.gz
+/dist/assets/terrain-*.json.gz
+/dist/assets/report.json

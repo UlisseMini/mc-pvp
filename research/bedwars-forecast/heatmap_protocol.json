@@ -1,0 +1,19 @@
+{
+  "train": ["game-01", "game-02", "game-03", "game-04", "game-05", "game-06"],
+  "development": ["game-07", "game-08"],
+  "test": ["game-09", "game-10", "game-11", "game-12"],
+  "final_training": "train and development",
+  "horizons": [5, 10, 30, 60, 120],
+  "tile_width": 16,
+  "tile_min": -128,
+  "snapshot_seconds": 1,
+  "support_stride_seconds": 3,
+  "adaptation_refresh_seconds": 30,
+  "maximum_support": 32,
+  "minimum_active_support": 4,
+  "minimum_reported_support": 8,
+  "metrics": "exact 3D block log loss and 16/32-block horizontal tile log loss on recorded endpoints",
+  "aggregation": "paired match-macro means, match spread, conditional on recorded position",
+  "adaptation_test": "at starts at or after 55% of the match plus 10 seconds, with at least 8 completed support labels",
+  "seeds": [393, 911]
+}
