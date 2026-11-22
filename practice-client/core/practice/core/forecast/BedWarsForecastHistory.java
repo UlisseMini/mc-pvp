@@ -14,12 +14,26 @@ import java.util.UUID;
 public final class BedWarsForecastHistory {
     private static final int[] HORIZONS = {5, 10, 30, 60, 120};
     private static final int LABEL_STRIDE = 3, SUPPORT_EPOCH = 30, SUPPORT_LIMIT = 32;
-    private static final int SUPPORT_BUFFER = SUPPORT_LIMIT + SUPPORT_EPOCH / LABEL_STRIDE + 1;
+    private static final int SUPPORT_BUFFER = 220, TRAIL_LIMIT = 1200;
     private static final int LOOKBACK = HORIZONS[HORIZONS.length - 1] + 2;
     private final Map<Integer, Map<UUID, Input>> frames = new LinkedHashMap<>();
     private final Map<UUID, List<Deque<Support>>> supports = new HashMap<>();
+    private final Map<UUID, List<float[]>> trails = new HashMap<>();
     private float openingY = Float.NaN;
     private int lastSecond = -1;
+
+    public static final class PersonalContext {
+        public final int second;
+        /** Rows of [second, x, y, z] ordered by second <= current second. */
+        public final float[][] trail;
+        /** Rows of 28 floats: 27 standard support fields + issueSecond at index 27. */
+        public final float[][] routes;
+        public PersonalContext(int second, float[][] trail, float[][] routes) {
+            this.second = second;
+            this.trail = trail;
+            this.routes = routes;
+        }
+    }
 
     public static int[] horizons() { return HORIZONS.clone(); }
 
@@ -46,9 +60,10 @@ public final class BedWarsForecastHistory {
     }
 
     private static final class Support {
-        final int due;
-        final float[] values;
-        Support(int due, Input origin, Observation destination) {
+        final int issued, due;
+        final float[] values, routeRow;
+        Support(int issued, int due, Input origin, Observation destination) {
+            this.issued = issued;
             this.due = due;
             values = new float[27];
             System.arraycopy(origin.observation.xyz, 0, values, 0, 3);
@@ -56,12 +71,16 @@ public final class BedWarsForecastHistory {
             System.arraycopy(origin.features, 0, values, 6, 17);
             System.arraycopy(destination.xyz, 0, values, 23, 3);
             values[26] = origin.observation.yaw;
+            routeRow = new float[28];
+            System.arraycopy(values, 0, routeRow, 0, 27);
+            routeRow[27] = issued;
         }
     }
 
     public void clear() {
         frames.clear();
         supports.clear();
+        trails.clear();
         openingY = Float.NaN;
         lastSecond = -1;
     }
@@ -79,7 +98,13 @@ public final class BedWarsForecastHistory {
         Map<UUID, Input> inputs = new LinkedHashMap<>();
         for (Map.Entry<UUID, Observation> item : observations.entrySet()) {
             UUID id = item.getKey();
-            inputs.put(id, features(id, item.getValue(), own, local.equals(id), observations.size(), second));
+            Observation pose = item.getValue();
+            inputs.put(id, features(id, pose, own, local.equals(id), observations.size(), second));
+            if (withinGrid(pose.xyz)) {
+                List<float[]> trail = trails.computeIfAbsent(id, ignored -> new ArrayList<>());
+                trail.add(new float[]{second, pose.xyz[0], pose.xyz[1], pose.xyz[2]});
+                if (trail.size() > TRAIL_LIMIT) trail.remove(0);
+            }
         }
         complete(second, inputs);
         frames.put(second, inputs);
@@ -138,10 +163,28 @@ public final class BedWarsForecastHistory {
                 Observation destination = item.getValue().observation;
                 if (origin == null || !withinGrid(destination.xyz)) continue;
                 Deque<Support> bucket = supports.computeIfAbsent(id, ignored -> supportBuckets()).get(i);
-                bucket.addLast(new Support(second, origin, destination));
+                bucket.addLast(new Support(issued, second, origin, destination));
                 if (bucket.size() > SUPPORT_BUFFER) bucket.removeFirst();
             }
         }
+    }
+
+    public PersonalContext personalContext(UUID id, int horizon, int second) {
+        int index = Arrays.binarySearch(HORIZONS, horizon);
+        if (index < 0) throw new IllegalArgumentException("Unknown forecast horizon " + horizon);
+        List<float[]> rawTrail = trails.get(id);
+        float[][] trailArr = rawTrail == null ? new float[0][] : rawTrail.toArray(new float[0][]);
+        List<Deque<Support>> buckets = supports.get(id);
+        float[][] routeArr;
+        if (buckets == null) {
+            routeArr = new float[0][];
+        } else {
+            Deque<Support> bucket = buckets.get(index);
+            List<float[]> rows = new ArrayList<>(bucket.size());
+            for (Support support : bucket) if (support.due <= second) rows.add(support.routeRow);
+            routeArr = rows.toArray(new float[0][]);
+        }
+        return new PersonalContext(second, trailArr, routeArr);
     }
 
     public float[][] examples(UUID id, int horizon, int second) {

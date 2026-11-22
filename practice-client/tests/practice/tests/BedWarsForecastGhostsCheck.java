@@ -65,6 +65,29 @@ public final class BedWarsForecastGhostsCheck {
                 "vertically separated forecasts at the same X/Z have independent bodies");
         check(select(0, 3, new Volume(), new Volume()).isEmpty(), "empty fields don't have a marker");
         check(select(100, 3, soon, later).isEmpty(), "100 percent hides partial probabilities");
+
+        // Multi-player union preserves per-player peak probability instead of 1/N dilution.
+        Volume p1 = new Volume(), p2 = new Volume(), combined = new Volume();
+        set(p1, 3, 3, 35, .60f);
+        set(p2, 11, 11, 35, .55f);
+        combined.unionWith(p1);
+        combined.unionWith(p2);
+        List<Marker> unionMarkers = BedWarsForecastGhosts.select(new Volume[]{combined}, new int[]{10}, 50, 4);
+        check(unionMarkers.size() == 2, "union retains both players' 50%+ hotspots without 1/N dilution");
+
+        // Terrain masking reweights void voxels down and snaps feet onto walkable terrain.
+        Volume masked = new Volume();
+        set(masked, 2, 2, 35, .70f); // void voxel
+        set(masked, 8, 8, 35, .30f); // island voxel
+        float[] tMask = new float[BedWarsPredictor.VOXELS];
+        int[] tFeet = new int[BedWarsPredictor.VOXELS];
+        int islandBin = (8 * SIDE + 8) * LEVELS + 35;
+        tMask[islandBin] = 1f;
+        tFeet[islandBin] = BedWarsPredictor.packFeet(4, 77, 5);
+        masked.applyTerrain(tMask, tFeet, 0.02f);
+        check(masked.mass[islandBin] > 0.90f, "walkable island receives >90% probability after terrain masking");
+        check(masked.x(islandBin) == 4 && masked.y(islandBin) == 77 && masked.z(islandBin) == 5, "ghost snaps to walkable block");
+
         System.out.println("BedWarsForecastGhostsCheck passed: " + checks + " checks");
     }
 }

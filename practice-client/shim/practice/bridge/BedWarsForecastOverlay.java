@@ -60,11 +60,12 @@ final class BedWarsForecastOverlay {
     private static final int PATCH = 4, PATCHES = GRID * TILE / PATCH;
     private static final long SECOND = 1_000_000_000L;
     static final String START_MARKER = "Protect your bed and destroy the enemy beds";
-    private static final String DEFAULT_MODEL = "heatmap";
+    private static final String DEFAULT_MODEL = "personal-gate";
+    private static final float TERRAIN_AIR_WEIGHT = 0.15f;
     private static final List<String> STANDARD_MODELS = Collections.unmodifiableList(Arrays.asList(
             "stay", "velocity", "drift", "motion", "motion-no-motion", "motion-no-context",
             "heatmap-ce", "heatmap", "head-tune", "anil-prior", "anil", "history", "meta-history",
-            "personal-hotspots", "personal-routes"));
+            "personal-hotspots", "personal-routes", "personal-gate"));
     private static final Pattern PLAYER_NAME = Pattern.compile("[A-Za-z0-9_]{1,16}");
     private static final Pattern TEAM_NAME = Pattern.compile("[A-Za-z0-9_-]{1,32}");
     private static final Pattern DIAMOND_TIMER = Pattern.compile("^Diamond II in:? (\\d{1,2}):(\\d{2})$");
@@ -122,7 +123,21 @@ final class BedWarsForecastOverlay {
     private static final class Query {
         final Input input;
         final float[][][] supports;
-        Query(Input input, float[][][] supports) { this.input = input; this.supports = supports; }
+        final BedWarsForecastHistory.PersonalContext[] personal;
+        Query(Input input, float[][][] supports, BedWarsForecastHistory.PersonalContext[] personal) {
+            this.input = input;
+            this.supports = supports;
+            this.personal = personal;
+        }
+    }
+
+    private static final class TerrainMask {
+        final float[] voxelWeight;
+        final int[] walkableFeet;
+        TerrainMask(float[] voxelWeight, int[] walkableFeet) {
+            this.voxelWeight = voxelWeight;
+            this.walkableFeet = walkableFeet;
+        }
     }
 
     private static final class Result {
@@ -178,7 +193,7 @@ final class BedWarsForecastOverlay {
     }
 
     private boolean selected(Pose pose, UUID local) {
-        if (selectedPlayers.isEmpty() && selectedTeams.isEmpty()) return true;
+        if (selectedPlayers.isEmpty() && selectedTeams.isEmpty()) return !pose.id.equals(local);
         if (selectedPlayers.contains(lower(pose.name)) || pose.id.equals(local) && selectedPlayers.contains("me")) return true;
         return !Collections.disjoint(pose.team, selectedTeams);
     }
@@ -289,7 +304,7 @@ final class BedWarsForecastOverlay {
         long now = System.nanoTime();
         sync(mc, now);
         updateWorker();
-        if (!enabled || world == null || mc.field_71439_g == null) return;
+        if (world == null || mc.field_71439_g == null) return;
         recoverClock(mc, now);
         if (start == 0) return;
         long elapsed = now - start;
@@ -301,15 +316,19 @@ final class BedWarsForecastOverlay {
         Map<UUID, Observation> observations = new LinkedHashMap<>();
         for (Pose pose : poses.values()) observations.put(pose.id, pose.observation);
         Map<UUID, Input> inputs = history.add(second, local, observations);
-        if (predictor == null || pending != null || selectedHorizons.isEmpty()) return;
+        if (!enabled || predictor == null || pending != null || selectedHorizons.isEmpty()) return;
         boolean withVolume = usesVolume(display) && predictor.hasVolume();
         int[] horizons = selectedHorizons.stream().mapToInt(Integer::intValue).toArray();
         List<Query> queries = new ArrayList<>();
         for (Pose pose : poses.values()) {
             if (!selected(pose, local) || !BedWarsForecastHistory.withinGrid(pose.observation.xyz)) continue;
             float[][][] examples = new float[horizons.length][][];
-            for (int i = 0; i < horizons.length; i++) examples[i] = history.examples(pose.id, horizons[i], second);
-            queries.add(new Query(inputs.get(pose.id), examples));
+            BedWarsForecastHistory.PersonalContext[] personal = new BedWarsForecastHistory.PersonalContext[horizons.length];
+            for (int i = 0; i < horizons.length; i++) {
+                examples[i] = history.examples(pose.id, horizons[i], second);
+                personal[i] = history.personalContext(pose.id, horizons[i], second);
+            }
+            queries.add(new Query(inputs.get(pose.id), examples, personal));
         }
         if (queries.isEmpty()) {
             result = null;
@@ -319,32 +338,41 @@ final class BedWarsForecastOverlay {
         final BedWarsPredictor network = predictor;
         final long generation = revision;
         final String chosenModel = model;
-        pending = worker.submit(() -> predict(network, generation, second, chosenModel, horizons, queries, withVolume));
+        final TerrainMask terrainMask = withVolume ? snapshotTerrain(world) : null;
+        pending = worker.submit(() -> predict(network, generation, second, chosenModel, horizons, queries, withVolume, terrainMask));
     }
 
     private static Result predict(BedWarsPredictor network, long generation, int second, String model,
-                                  int[] horizons, List<Query> queries, boolean withVolume) {
+                                  int[] horizons, List<Query> queries, boolean withVolume, TerrainMask terrainMask) {
         float[][] grids = new float[horizons.length][GRID * GRID];
         Volume[] volumes = withVolume ? new Volume[horizons.length] : null;
         if (volumes != null) for (int i = 0; i < horizons.length; i++) {
             volumes[i] = new Volume();
             grids[i] = volumes[i].horizontal;
         }
-        float weight = 1f / queries.size();
         int[] labels = new int[horizons.length];
         for (Query query : queries) {
             Input input = query.input;
             for (int i = 0; i < horizons.length; i++) {
                 float[][] support = query.supports[i];
+                BedWarsForecastHistory.PersonalContext personal = query.personal[i];
                 if (volumes != null) {
-                    volumes[i].add(network.forecast3d(model, horizons[i], input.features, input.observation.xyz,
-                            input.velocity, input.observation.yaw, support), weight);
+                    Volume single = network.forecast3d(model, horizons[i], input.features, input.observation.xyz,
+                            input.velocity, input.observation.yaw, support, personal);
+                    if (terrainMask != null) {
+                        single.applyTerrain(terrainMask.voxelWeight, terrainMask.walkableFeet, TERRAIN_AIR_WEIGHT);
+                    }
+                    volumes[i].unionWith(single);
                 } else {
                     float[] values = network.forecast(model, horizons[i], input.features, input.observation.xyz,
-                            input.velocity, input.observation.yaw, support);
-                    for (int n = 0; n < values.length; n++) grids[i][n] += values[n] * weight;
+                            input.velocity, input.observation.yaw, support, personal);
+                    for (int n = 0; n < values.length; n++) {
+                        float a = Math.max(0f, Math.min(1f, grids[i][n]));
+                        float b = Math.max(0f, Math.min(1f, values[n]));
+                        grids[i][n] = 1f - (1f - a) * (1f - b);
+                    }
                 }
-                labels[i] += support.length;
+                labels[i] += "personal-gate".equals(model) && personal != null ? personal.routes.length : support.length;
             }
         }
         return new Result(generation, second, queries.size(), horizons, labels, grids, volumes);
@@ -355,7 +383,7 @@ final class BedWarsForecastOverlay {
             try {
                 predictor = loading.get();
                 issue = "";
-                if (!models().contains(model)) model = models().get(0);
+                if (!models().contains(model)) model = models().contains("meta-history") ? "meta-history" : models().get(0);
             } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
             catch (ExecutionException e) { issue = "Could not open " + bundle.getFileName() + " (/p forecast reload)"; }
             loading = null;
@@ -379,14 +407,64 @@ final class BedWarsForecastOverlay {
         }
     }
 
+    private TerrainMask snapshotTerrain(WorldClient world) {
+        float[] voxelWeight = new float[BedWarsPredictor.VOXELS];
+        int[] walkableFeet = new int[BedWarsPredictor.VOXELS];
+        int[] bestDist = new int[BedWarsPredictor.VOXELS];
+        Arrays.fill(bestDist, Integer.MAX_VALUE);
+        int levels = BedWarsPredictor.LEVELS;
+        for (int tx = 0; tx < GRID; tx++) {
+            int baseX = MAP_MIN + tx * TILE;
+            for (int tz = 0; tz < GRID; tz++) {
+                int baseZ = MAP_MIN + tz * TILE;
+                int cell = tx * GRID + tz;
+                int cellBase = cell * levels;
+                boolean loaded = world.func_175667_e(new BlockPos(baseX + TILE / 2, 0, baseZ + TILE / 2));
+                if (!loaded) {
+                    // Never suppress unloaded distant islands.
+                    for (int l = 0; l < levels; l++) voxelWeight[cellBase + l] = 1f;
+                    continue;
+                }
+                for (int dx = 0; dx < TILE; dx += 2) {
+                    for (int dz = 0; dz < TILE; dz += 2) {
+                        int wx = baseX + dx, wz = baseZ + dz;
+                        int surface = world.func_175645_m(new BlockPos(wx, 0, wz)).func_177956_o();
+                        if (surface <= 0 || surface >= 248) continue;
+                        int dist = Math.abs(dx - TILE / 2) + Math.abs(dz - TILE / 2);
+                        // Mark surface level + 1 level below (covered base interior) and 1 level above (jump/stairs).
+                        int sLevel = (surface - BedWarsPredictor.MIN_Y) / BedWarsPredictor.HEIGHT_STEP;
+                        for (int dl = -1; dl <= 1; dl++) {
+                            int lvl = sLevel + dl;
+                            if (lvl < 0 || lvl >= levels) continue;
+                            int v = cellBase + lvl;
+                            float w = dl == 0 ? 1f : 0.45f;
+                            if (w > voxelWeight[v]) voxelWeight[v] = w;
+                            if (dl == 0 && dist < bestDist[v]) {
+                                bestDist[v] = dist;
+                                walkableFeet[v] = BedWarsPredictor.packFeet(wx, surface, wz);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return new TerrainMask(voxelWeight, walkableFeet);
+    }
+
     private float[] surfaces(WorldClient world) {
         float[] heights = new float[PATCHES * PATCHES];
         Arrays.fill(heights, Float.NaN);
         for (int i = 0; i < PATCHES; i++) for (int j = 0; j < PATCHES; j++) {
-            BlockPos probe = new BlockPos(MAP_MIN + i * PATCH + PATCH / 2, 0, MAP_MIN + j * PATCH + PATCH / 2);
-            if (!world.func_175667_e(probe)) continue;
-            int surface = world.func_175645_m(probe).func_177956_o();
-            if (surface > 0) heights[i * PATCHES + j] = surface + .045f;
+            int baseX = MAP_MIN + i * PATCH, baseZ = MAP_MIN + j * PATCH;
+            if (!world.func_175667_e(new BlockPos(baseX + PATCH / 2, 0, baseZ + PATCH / 2))) continue;
+            int best = 0;
+            for (int dx = 0; dx < PATCH; dx++) {
+                for (int dz = 0; dz < PATCH; dz++) {
+                    int surface = world.func_175645_m(new BlockPos(baseX + dx, 0, baseZ + dz)).func_177956_o();
+                    if (surface > best) best = surface;
+                }
+            }
+            if (best > 0) heights[i * PATCHES + j] = best + .045f;
         }
         return heights;
     }
@@ -518,7 +596,7 @@ final class BedWarsForecastOverlay {
     private static String displayModel(String id) { return id.replace('-', ' ').replace('_', ' '); }
 
     private static boolean adaptive(String id) {
-        return Arrays.asList("head-tune","anil","history","meta-history","personal-hotspots","personal-routes").contains(id);
+        return Arrays.asList("head-tune","anil","history","meta-history","personal-hotspots","personal-routes","personal-gate").contains(id);
     }
 
     private List<String> models() {

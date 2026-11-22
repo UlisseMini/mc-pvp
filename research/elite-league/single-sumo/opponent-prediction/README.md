@@ -123,3 +123,35 @@ python3.11 research/elite-league/single-sumo/opponent-prediction/native.py
 
 The task files, preprocessed datasets, weights, and reports are under
 `build/elite-league/single-sumo/opponent-prediction/`.
+
+## Arena-centered & family-CV update (`opponent-prediction-v2`)
+
+Two bugs in the initial pipeline were fixed while preserving the original
+evidence above untouched:
+
+1. **Arena centering:** `PredictionTrace.java` and `native.py` previously fed
+   world coordinates around `(4096.5, 12, 0.5)` into the radial/arena-relative
+   features (`f[12..15]` had mean ~4096 / std ~3360, drowning out ±6-block ring
+   edge geometry). Both now subtract the legal head-0 arena midpoint and floor Y.
+2. **Unseen early stopping & GRU regularization:** `unseen_mlp` and `unseen_gru`
+   previously early-stopped on `validation[~unseen]` (the same 13 seen training
+   opponents). They now choose stopping epochs via 3-fold held-out-family CV
+   across the 6 seen families, with 0.25 memory dropout and 0.02 weight decay
+   on `unseen_gru`.
+
+Averaged across both seeds on the identical panels (`build/elite-league/single-sumo/opponent-prediction-v2/`):
+
+| Predictor | 20-opp sim test (v1 → v2) | Archived native test (v1 → v2) | Unseen sim (v1 → v2) | Unseen native (v1 → v2) |
+| --- | ---: | ---: | ---: | ---: |
+| Generic short-context MLP | .3739 → **.3635** | .3843 → **.3714** | .5497 → .5531 | .5808 → **.5793** |
+| In-context GRU | .3535 → **.3460** | .3644 → **.3573** | .5794 → **.5730** | .5669 → **.5564** |
+| One MLP per opponent | .3125 → **.2939** | .3207 → **.3021** | — | — |
+| Shared MLP given opponent ID | .3139 → **.2987** | .3263 → **.3106** | — | — |
+
+On the hidden-switch panel (first 300 ms after a tactic change at 2 s), `unseen_gru`
+improved from `.6004` to **`.5801`** and `unseen_mlp` from `.5736` to **`.5532`**.
+On archived native unseen opponents, `unseen_gru` improved from `.5669` to **`.5564`**
+(beating `unseen_mlp` `.5793` by `.0229` nats). On the broader 7-policy simulator
+unseen panel, `unseen_gru` improved by `.0064` nats (`.5794` → `.5730`) and
+after-hurt loss improved by `.0090` nats (`.5596` → `.5506`), while still trailing
+`unseen_mlp` on full unseen generalization across all four actions.

@@ -150,6 +150,13 @@ class Analogues:
         return self.targets[idx], w / w.sum(axis=1, keepdims=True)
 
 
+def center_y_block(xyz):
+    """Center Y on the integer feet-block midpoint (floor(y) + 0.5) so standing mass stays in the feet block."""
+    out = np.array(xyz, dtype=float, copy=True)
+    out[..., 1] = np.floor(out[..., 1]) + .5
+    return out
+
+
 class PlayerModel:
     def __init__(self, train, horizon, ablate=True):
         self.h = horizon
@@ -176,16 +183,16 @@ class PlayerModel:
 
     def predict(self, rows):
         xyz, yaw, features = (rows[k] for k in ('xyz', 'yaw', 'features'))
-        stay = gaussian_residuals(xyz, self.stay)
+        stay = gaussian_residuals(center_y_block(xyz), self.stay)
         base_avail = self.availability[rows['own'].astype(int)]
         avail = self.logistic.predict_proba(features)[:, 1] if self.logistic is not None else base_avail
         result = {'Stay': (stay, base_avail),
-                  'Constant velocity': (gaussian_residuals(motion_projection(rows, self.h), self.velocity), base_avail),
-                  'Learned drift': (gaussian_residuals(self.drift_center(rows), self.drift).blend(stay, .88), avail)}
+                  'Constant velocity': (gaussian_residuals(center_y_block(motion_projection(rows, self.h)), self.velocity), base_avail),
+                  'Learned drift': (gaussian_residuals(center_y_block(self.drift_center(rows)), self.drift).blend(stay, .88), avail)}
         scale = [2.2 + np.sqrt(self.h) * .55, 1.0 + np.sqrt(self.h) * .15, 2.2 + np.sqrt(self.h) * .55]
         for name, (columns, analogue) in self.models.items():
             delta, weights = analogue.query(features[:, columns])
-            centers = local_to_world(delta, yaw) + xyz[:, None, :]
+            centers = center_y_block(local_to_world(delta, yaw) + xyz[:, None, :])
             result[name] = (gaussian_law(centers, scale, weights).blend(stay, .77), avail)
         return result
 
@@ -216,10 +223,11 @@ class PersonalModel:
         candidates = {'Personal hotspots': (general, p), 'Personal routes': (general, p)}
         if self.analogue is not None:
             scale = [2.2 + np.sqrt(horizon) * .55, 1.0 + np.sqrt(horizon) * .15, 2.2 + np.sqrt(horizon) * .55]
-            centers = np.broadcast_to(self.hotspots, (len(rows['time']), *self.hotspots.shape))
+            hotspots_pts = center_y_block(self.hotspots)
+            centers = np.broadcast_to(hotspots_pts, (len(rows['time']), *hotspots_pts.shape))
             hotspots = gaussian_law(centers, scale, np.ones(len(self.hotspots)) / len(self.hotspots))
             centers, weights = self.analogue.query(route_features(rows))
-            routes = gaussian_law(centers, scale, weights)
+            routes = gaussian_law(center_y_block(centers), scale, weights)
             candidates = {'Personal hotspots': (hotspots.blend(general, weight), p),
                           'Personal routes': (routes.blend(general, weight), p)}
         return candidates
@@ -433,8 +441,13 @@ def load_games(path):
         games = json.load(stream)['matches']
     for game in games:
         game['frames'] = {int(t): v for t, v in game['frames'].items()}
-        first = game['frames'][min(game['frames'])]
-        game['base_y'] = float(first[2][first[0]][2]) if first[0] in first[2] else 75.
+        first_t = min(game['frames'])
+        opening_y = [p[2] for t, frame in game['frames'].items() if t < first_t + 8 for p in frame[2].values()]
+        if opening_y:
+            game['base_y'] = float(np.median(opening_y))
+        else:
+            first = game['frames'][first_t]
+            game['base_y'] = float(first[2][first[0]][2]) if first[0] in first[2] else 75.
         game['cut'] = int(.55 * max(game['frames']))
     return games
 

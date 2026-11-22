@@ -225,7 +225,7 @@ public final class BowAim {
     }
 
     void tick(Minecraft mc, boolean replay) {
-        if (replay || mc.field_71441_e == null || mode == null && !intercept) {
+        if (replay || mc.field_71441_e == null) {
             if (world != null) reset();
             return;
         }
@@ -246,7 +246,7 @@ public final class BowAim {
                     player.field_70165_t, player.field_70163_u, player.field_70161_v, cue);
         }
         tracks.values().removeIf(track -> track.tick() < tick - BowMotion.CAPACITY);
-        if (!drawing(mc, self) || motion == null) {
+        if ((mode == null && !intercept) || !drawing(mc, self) || motion == null) {
             forgetAim();
             return;
         }

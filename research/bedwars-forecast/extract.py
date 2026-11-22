@@ -81,6 +81,53 @@ def player_snapshot(state):
     return [self_entity['uuid'], bool(state.get('entities_truncated')), players]
 
 
+def skip_slot(raw, pos):
+    item_id, = struct.unpack_from('>h', raw, pos)
+    pos += 2
+    if item_id < 0:
+        return pos
+    pos += 3  # count (byte) + damage (short)
+    # Skip NBT tag if present (0x00 = TAG_End means no NBT)
+    if pos < len(raw) and raw[pos] != 0:
+        raise ValueError('NBT slot metadata unsupported in fast scanner')
+    return pos + 1
+
+
+def parse_metadata_sneak(raw, pos):
+    """Scan all Protocol 47 DataWatcher entries for index 0 (entity flags, bit 1 = sneaking)."""
+    sneak = None
+    end = len(raw)
+    while pos < end:
+        item = raw[pos]
+        pos += 1
+        if item == 0x7F:
+            break
+        dtype = item >> 5
+        index = item & 0x1F
+        if dtype == 0:
+            if pos >= end:
+                break
+            if index == 0:
+                sneak = bool(raw[pos] & 2)
+            pos += 1
+        elif dtype == 1:
+            pos += 2
+        elif dtype in (2, 3):
+            pos += 4
+        elif dtype == 4:
+            _, pos = read_string(raw, pos)
+        elif dtype == 5:
+            try:
+                pos = skip_slot(raw, pos)
+            except (ValueError, struct.error):
+                break
+        elif dtype in (6, 7):
+            pos += 12
+        else:
+            break
+    return sneak
+
+
 class EntityPackets:
     """Track protocol 47 player entities when the snapshot hits its 128-entity cap."""
 
@@ -139,8 +186,10 @@ class EntityPackets:
                 slot, item = struct.unpack_from('>hh', raw, pos)
                 if slot == 0:
                     entity[6] = max(0, item)
-            if kind == 0x1C and raw[pos] == 0:
-                entity[5] = bool(raw[pos + 1] & 2)
+            if kind == 0x1C:
+                sneak = parse_metadata_sneak(raw, pos)
+                if sneak is not None:
+                    entity[5] = sneak
 
     def supplement(self, snapshot, eliminated, count):
         own, truncated, players = snapshot
@@ -247,6 +296,7 @@ def main():
     parser.add_argument('--captures', type=Path, default=DEFAULT)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--workers', type=int, default=4)
+    parser.add_argument('--id-map', type=Path, help='Optional JSON map of match_key -> stable game ID')
     args = parser.parse_args()
     sources = discover(args.captures)
     if not sources:
@@ -256,9 +306,21 @@ def main():
     manifest = [[file.name for file in files] for files in sources]
     with ProcessPoolExecutor(max_workers=args.workers) as executor:
         results = list(executor.map(extract, sources))
-    matches = sorted((m for games, _ in results for m in games if m['frames']), key=lambda m: m['start_ms'])
-    for i, match in enumerate(matches, 1):
-        match['id'] = f'game-{i:02}'
+    matches = sorted((m for games, _ in results for m in games if m['frames']), key=lambda m: (m['start_ms'], m['capture']))
+    fixed_ids = json.loads(args.id_map.read_text()) if args.id_map and args.id_map.is_file() else {}
+    used_ids = set(fixed_ids.values())
+    next_index = 1
+    for match in matches:
+        key = f"{match['capture']}:{match['start_ms']}"
+        match['match_key'] = key
+        if key in fixed_ids:
+            match['id'] = fixed_ids[key]
+        else:
+            while f'game-{next_index:02}' in used_ids:
+                next_index += 1
+            match['id'] = f'game-{next_index:02}'
+            used_ids.add(match['id'])
+            next_index += 1
     with gzip.open(args.out, 'wt') as stream:
         json.dump({'created_utc': datetime.now(timezone.utc).isoformat(), 'source_files': manifest,
                    'read_errors': [error for _, errors in results for error in errors], 'matches': matches}, stream)

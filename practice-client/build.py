@@ -106,7 +106,8 @@ def main():
         if not cfg.exists():install(SRC/'settings.properties',cfg)
         if 'archive.directory=' not in cfg.read_text():
             with cfg.open('a') as f:f.write('\narchive.directory='+str(ROOT/'runtime/pov')+'\n')
-        bundle_candidates=[ROOT/'runtime/bedwars-forecast/advanced/bedwars-forecast.bin.gz',
+        bundle_candidates=[ROOT/'runtime/bedwars-forecast/v3-upgraded/bedwars-forecast.bin.gz',
+                           ROOT/'runtime/bedwars-forecast/advanced/bedwars-forecast.bin.gz',
                            ROOT/'runtime/bedwars-forecast/bedwars-forecast.bin.gz']
         bundle_src=next((p for p in bundle_candidates if p.is_file()),None)
         if bundle_src is not None:

@@ -117,7 +117,47 @@ public final class BowMotion {
                 path[t][a] = track.get(0, a) + delta;
             }
         }
+        if (mode == Mode.ADAPTIVE) applyCycle(track, path, .22);
         return path;
+    }
+
+    /** Detect sustained periodic horizontal strafing (15-58 tick period) and blend repeated motion. */
+    private static void applyCycle(Track track, double[][] path, double gate) {
+        if (track.length() < 46) return;
+        double variation = 0;
+        for (int age = 0; age < 24; age += 3)
+            for (int axis : new int[]{0, 2})
+                variation += sq((track.get(age, axis) - track.get(age + 3, axis))
+                        - (track.get(24, axis) - track.get(27, axis))) * .125;
+        if (variation < .06) return;
+        int bestPeriod = 0;
+        double bestError = Double.POSITIVE_INFINITY;
+        for (int period = 15; period <= 58 && 2 * period + 12 < track.length(); period++) {
+            double error = 0;
+            for (int age = 0; age < period + 8; age += 2) {
+                for (int axis : new int[]{0, 2}) {
+                    double now = track.get(age, axis) - track.get(age + 3, axis);
+                    double before = track.get(age + period, axis) - track.get(age + period + 3, axis);
+                    error += sq(now - before);
+                }
+            }
+            error /= ((period + 9) / 2) * variation;
+            double penalized = error + .0009 * period;
+            if (penalized < bestError) {
+                bestError = penalized;
+                bestPeriod = period;
+            }
+        }
+        if (bestPeriod == 0 || bestError >= gate) return;
+        double confidence = .9 * (1 - bestError / gate);
+        for (int t = 1; t < path.length; t++) {
+            for (int axis : new int[]{0, 2}) {
+                double full = track.get(0, axis) - track.get(bestPeriod, axis);
+                double part = track.get(bestPeriod - t % bestPeriod, axis) - track.get(bestPeriod, axis);
+                double repeat = track.get(0, axis) + full * (t / bestPeriod) + part;
+                path[t][axis] = path[t][axis] * (1 - confidence) + repeat * confidence;
+            }
+        }
     }
 
     private void adapt(Track track, int index, double[] displacement) {

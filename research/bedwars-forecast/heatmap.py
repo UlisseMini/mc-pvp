@@ -110,19 +110,19 @@ class Heatmap(nn.Module):
         residual = self.field(enc).reshape(-1, 8, 8).repeat_interleave(2, 1).repeat_interleave(2, 2)
         return logits + residual.flatten(1), enc
 
-    def fine_logp(self, enc, xyz, label, tile, batch_hindex):
-        log_xz, log_y = self.fine_logp_parts(enc, xyz, label, tile)
+    def fine_logp(self, enc, xyz, label, tile, batch_hindex, features=None):
+        log_xz, log_y = self.fine_logp_parts(enc, xyz, label, tile, features)
         return log_xz + log_y
 
-    def fine_logp_parts(self, enc, xyz, label, tile):
-        horiz, y_logits, y_weights = self.fine_components(enc, xyz, tile)
+    def fine_logp_parts(self, enc, xyz, label, tile, features=None):
+        horiz, y_logits, y_weights = self.fine_components(enc, xyz, tile, features)
         fine = (label[:, [0, 2]] - EDGE) % WIDTH
         log_xz = horiz.gather(2, fine[:, :, None])[:, :, 0].sum(dim=1)
         height_label = (label[:, 1] - HEIGHT_MIN)[:, None, None].expand(-1, 3, 1)
         log_y = torch.logsumexp(y_logits.gather(2, height_label)[:, :, 0] + y_weights, dim=1)
         return log_xz, log_y
 
-    def fine_components(self, enc, xyz, tile):
+    def fine_components(self, enc, xyz, tile, features=None):
         center = self.tile_xy[tile]
         delta = (center - xyz[:, [0, 2]]) / 64
         raw = self.fine(torch.cat((enc, center / 112, delta), dim=1))
@@ -137,11 +137,13 @@ class Heatmap(nn.Module):
         horiz = torch.logaddexp(learnt + torch.log1p(-gate)[:, None, None],
                                 current + torch.log(gate)[:, None, None])
         # Height is a normalized histogram with an exact 1-block bin width.
+        # Recover match base_y from features[:, 10] = (xyz[:, 1] - base_y) / 10 instead of hardcoding y=52.
+        base_y = (xyz[:, 1] - features[:, 10] * 10.0) if features is not None else torch.full_like(xyz[:, 1], 52.0)
         center_y = xyz[:, 1] + 12 * torch.tanh(raw[:, 33])
         scale = .65 + 3 * F.softplus(raw[:, 34])
         broad_y = xyz[:, 1] + 35 * torch.tanh(raw[:, 35])
         broad_scale = 4 + 14 * F.softplus(raw[:, 36])
-        heights = torch.stack((center_y, broad_y, torch.full_like(center_y, 52)), dim=1)
+        heights = torch.stack((center_y, broad_y, base_y), dim=1)
         scales = torch.stack((scale, broad_scale, torch.full_like(scale, 49)), dim=1)
         y_logits = F.log_softmax(-.5 * ((self.height_axis[None, None] - heights[:, :, None])
                                         / scales[:, :, None]) ** 2, dim=2)
@@ -172,20 +174,70 @@ def parent_mass(prob, tile):
     return blocks.gather(1, parent[:, None])[:, 0]
 
 
-def supervised(data, mode, eligible, epochs, seed):
+def d4_augment(batch, label, rng):
+    """Apply a random D4 symmetry (8 rotations/reflections) preserving [-128, 127]^2 bijectively."""
+    feat, xyz, vel, hindex = batch
+    feat = feat.clone()
+    xyz = xyz.clone()
+    vel = vel.clone()
+    label = label.clone()
+    sym = int(rng.integers(0, 8))
+    if sym >= 4:
+        # Reflect across X=0 (block x -> -1 - x); flip heading-local lateral velocity signs.
+        xyz[:, 0] = -xyz[:, 0]
+        vel[:, 0] = -vel[:, 0]
+        label[:, 0] = -1 - label[:, 0]
+        feat[:, 0] = -feat[:, 0]
+        feat[:, 3] = -feat[:, 3]
+    rot = sym & 3
+    if rot == 1:
+        xyz[:, 0], xyz[:, 2] = -xyz[:, 2].clone(), xyz[:, 0].clone()
+        vel[:, 0], vel[:, 2] = -vel[:, 2].clone(), vel[:, 0].clone()
+        label[:, 0], label[:, 2] = -1 - label[:, 2].clone(), label[:, 0].clone()
+    elif rot == 2:
+        xyz[:, 0], xyz[:, 2] = -xyz[:, 0].clone(), -xyz[:, 2].clone()
+        vel[:, 0], vel[:, 2] = -vel[:, 0].clone(), -vel[:, 2].clone()
+        label[:, 0], label[:, 2] = -1 - label[:, 0].clone(), -1 - label[:, 2].clone()
+    elif rot == 3:
+        xyz[:, 0], xyz[:, 2] = xyz[:, 2].clone(), -xyz[:, 0].clone()
+        vel[:, 0], vel[:, 2] = vel[:, 2].clone(), -vel[:, 0].clone()
+        label[:, 0], label[:, 2] = label[:, 2].clone(), -1 - label[:, 0].clone()
+    cell = (label[:, [0, 2]] - EDGE) // WIDTH
+    tile = cell[:, 0] * SIZE + cell[:, 1]
+    return (feat, xyz, vel, hindex), label, tile
+
+
+def supervised(data, mode, eligible, epochs, seed, augment=True, balanced=True):
     torch.manual_seed(seed)
     model = Heatmap()
     optimizer = torch.optim.AdamW(model.parameters(), lr=.003, weight_decay=.006)
     rng = np.random.default_rng(seed)
     train_weights = torch.tensor([1, .45, .28] if mode == 'multiscale' else [1, 0, 0])
+    sample_w = np.ones(len(data), dtype=np.float32)
+    if balanced:
+        games = data.raw['game'][eligible]
+        hidx = data.raw['hindex'][eligible]
+        el_w = np.zeros(len(eligible), dtype=np.float32)
+        for g in np.unique(games):
+            for hi in range(len(HORIZONS)):
+                sel = (games == g) & (hidx == hi)
+                if sel.any():
+                    el_w[sel] = 1.0 / sel.sum()
+        el_w /= el_w.mean()
+        sample_w[eligible] = el_w
+    sw_tensor = torch.tensor(sample_w)
     for epoch in range(epochs):
         total = 0.
         for index in np.array_split(rng.permutation(eligible), max(1, len(eligible) // 512)):
             batch = data.batch(index)
             label, tile = data.target(index)
+            if augment:
+                batch, label, tile = d4_augment(batch, label, rng)
             coarse, enc = model.coarse(batch)
-            fine = model.fine_logp(enc, batch[1], label, tile, batch[3])
-            loss = (scores(coarse, fine, tile) * train_weights).mean() * 3
+            fine = model.fine_logp(enc, batch[1], label, tile, batch[3], batch[0])
+            per_row = (scores(coarse, fine, tile) * train_weights).sum(dim=1)
+            w = sw_tensor[index]
+            loss = (per_row * w).sum() / w.sum().clamp_min(1e-8)
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 3.)
@@ -246,7 +298,7 @@ def fit_anil(data, init, episodes, iterations, seed):
         sb, _ = model.coarse(data.batch(early.ravel()))
         qb, enc = model.coarse(data.batch(late.ravel()))
         label, tile = data.target(late.ravel())
-        fine = model.fine_logp(enc, data.xyz[late.ravel()], label, tile, data.hindex[late.ravel()])
+        fine = model.fine_logp(enc, data.xyz[late.ravel()], label, tile, data.hindex[late.ravel()], data.features[late.ravel()])
         bias = model.head_bias(sb.reshape(-1, CAP, CELLS), data.tile[early], valid, data.hindex[late[:, 0]])
         after = scores(qb + bias.repeat_interleave(qsize, dim=0), fine, tile)
         before = scores(qb, fine, tile)
@@ -282,7 +334,7 @@ class MetaHistory(nn.Module):
         return .94 * torch.sigmoid(logits) * support_count / (support_count + 4)
 
 
-def fit_meta_history(data, prior, episodes, iterations, seed):
+def fit_meta_history(data, prior, episodes, iterations, seed, oof_priors=None):
     meta = MetaHistory()
     opt = torch.optim.AdamW(meta.parameters(), lr=.045, weight_decay=.04)
     rng = np.random.default_rng(seed)
@@ -290,8 +342,17 @@ def fit_meta_history(data, prior, episodes, iterations, seed):
         support, valid, query = draw_episodes(episodes, rng, n=22, query_count=12)
         late = query.ravel()
         with torch.no_grad():
-            raw, _ = prior.coarse(data.batch(late))
-            base = raw.softmax(dim=1)
+            if oof_priors is not None:
+                base = torch.empty((len(late), CELLS), dtype=torch.float32)
+                games_late = data.raw['game'][late]
+                for g_id in np.unique(games_late):
+                    sel = np.flatnonzero(games_late == g_id)
+                    m = oof_priors.get(g_id, prior)
+                    raw, _ = m.coarse(data.batch(late[sel]))
+                    base[sel] = raw.softmax(dim=1)
+            else:
+                raw, _ = prior.coarse(data.batch(late))
+                base = raw.softmax(dim=1)
         hist = torch.tensor(np.stack([history_dist(data.tile[row[m]].numpy())
                                       for row, m in zip(support, valid.numpy())])).repeat_interleave(12, dim=0)
         count = valid.sum(1).repeat_interleave(12)
@@ -369,9 +430,9 @@ def evaluate_game(data, game, models, mix_models, out, split, write_assets):
         c_logits, c_enc = ce.coarse(data.batch(index))
         h_logits, h_enc = heatmap.coarse(data.batch(index))
         a_logits, a_enc = anil.coarse(data.batch(index))
-        c_fine = ce.fine_logp(c_enc, data.xyz[index], label, tile, data.hindex[index])
-        h_fine = heatmap.fine_logp(h_enc, data.xyz[index], label, tile, data.hindex[index])
-        a_fine = anil.fine_logp(a_enc, data.xyz[index], label, tile, data.hindex[index])
+        c_fine = ce.fine_logp(c_enc, data.xyz[index], label, tile, data.hindex[index], data.features[index])
+        h_fine = heatmap.fine_logp(h_enc, data.xyz[index], label, tile, data.hindex[index], data.features[index])
+        a_fine = anil.fine_logp(a_enc, data.xyz[index], label, tile, data.hindex[index], data.features[index])
         counts = np.zeros(len(index), dtype=np.int16)
         anil_bias, ordinary_bias = torch.zeros_like(a_logits), torch.zeros_like(h_logits)
         histograms = torch.full_like(h_logits, 1 / CELLS)
@@ -574,7 +635,18 @@ def fit_suite(data, training, epochs, iterations, seed):
     ce = supervised(data, 'exact', eligible, epochs, seed)
     ms = supervised(data, 'multiscale', eligible, epochs, seed)
     anil = fit_anil(data, ms, episodes, iterations, seed+1)
-    meta = fit_meta_history(data, ms, episodes, max(60, iterations//2), seed+2)
+    # Out-of-fold upstream models for meta-history so it calibrates against realistic generalization error.
+    train_list = list(training)
+    oof_priors = {}
+    if len(train_list) >= 2:
+        folds = (train_list[::2], train_list[1::2])
+        for fold_idx, held in enumerate(folds):
+            others = [g for g in train_list if g not in held]
+            fold_el = np.flatnonzero(np.isin(data.raw['game'], tuple(others)) & observed(data.raw))
+            fold_model = supervised(data, 'multiscale', fold_el, max(6, epochs - 2), seed + 100 + fold_idx)
+            for g in held:
+                oof_priors[g] = fold_model
+    meta = fit_meta_history(data, ms, episodes, max(60, iterations//2), seed+2, oof_priors=oof_priors or None)
     baselines = []
     for i, h in enumerate(HORIZONS):
         choose = ((data.raw['hindex'] == i) & np.isin(data.raw['game'], tuple(training)))

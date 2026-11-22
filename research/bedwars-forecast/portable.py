@@ -28,7 +28,7 @@ def rows(stream, values):
         floats(stream, row)
 
 
-def write_bundle(source, output, checkpoint=None):
+def write_bundle(source, output, checkpoint=None, personal_gate=None):
     with gzip.open(source, 'rt') as stream:
         data = json.load(stream)
     if data['version'] != 1 or tuple(data['views']) != MODELS:
@@ -37,12 +37,20 @@ def write_bundle(source, output, checkpoint=None):
     if horizons != sorted(set(horizons)):
         raise ValueError('Forecast horizons must be increasing and unique')
     fine = None
+    gate = None
     if checkpoint is not None:
         import torch
         fine = torch.load(checkpoint, map_location='cpu', weights_only=True)
+    if personal_gate is not None:
+        import torch
+        if fine is None:
+            raise ValueError('Personal gate v3 bundle requires heatmap fine checkpoint')
+        gates = torch.load(personal_gate, map_location='cpu', weights_only=True)
+        gate = gates['full personal gate']
+    version = 3 if gate is not None else (2 if fine is not None else 1)
     with gzip.open(output, 'wb', compresslevel=5) as stream:
         stream.write(b'BWPM')
-        integers(stream, [2 if fine is not None else 1, 16, len(horizons), *horizons])
+        integers(stream, [version, 16, len(horizons), *horizons])
         for model in NETWORKS:
             for layer in LAYERS:
                 rows(stream, data[model][f'{layer}.weight'])
@@ -69,6 +77,13 @@ def write_bundle(source, output, checkpoint=None):
                 integers(stream, [len(index['features'])])
                 rows(stream, index['features'])
                 rows(stream, index['targets'])
+        if gate is not None:
+            rows(stream, gate['offset.weight'].tolist())
+            floats(stream, gate['center'].tolist())
+            floats(stream, gate['scale'].tolist())
+            for layer in ('layers.0', 'layers.2'):
+                rows(stream, gate[f'{layer}.weight'].tolist())
+                floats(stream, gate[f'{layer}.bias'].tolist())
 
 
 def refresh_fixtures(tracks, checkpoint, protocol_path, target):
@@ -127,6 +142,7 @@ def main():
     parser.add_argument('artifact_dir', type=Path)
     parser.add_argument('--refresh-fixtures', action='store_true')
     parser.add_argument('--tracks', type=Path)
+    parser.add_argument('--personal-gate', type=Path, default=None)
     parser.add_argument('--protocol', type=Path, default=Path(__file__).with_name('heatmap_protocol.json'))
     args = parser.parse_args()
     root = args.artifact_dir
@@ -134,7 +150,10 @@ def main():
     fixture_json = root / 'parity.json'
     fixtures = root / 'parity.bin'
     checkpoint = root / 'heatmap-models.pt'
-    write_bundle(root / 'bedwars-forecast.json.gz', model, checkpoint if checkpoint.exists() else None)
+    gate_path = args.personal_gate
+    if gate_path is None and (root / 'context-gates.pt').is_file():
+        gate_path = root / 'context-gates.pt'
+    write_bundle(root / 'bedwars-forecast.json.gz', model, checkpoint if checkpoint.exists() else None, gate_path)
     if args.refresh_fixtures:
         refresh_fixtures(args.tracks or root / 'tracks.json.gz', root / 'heatmap-models.pt', args.protocol, fixture_json)
     if fixture_json.is_file():

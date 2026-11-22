@@ -108,8 +108,9 @@ def route_matches(rows, query, track, horizon):
 
     def geometry(ix):
         f = rows['features'][ix]
+        # Both 2s (f[:, 0:3]) and 8s (f[:, 3:6]) velocities are in the same heading-local frame.
         return np.column_stack((rows['xyz'][ix]/[13, 6, 13],
-                                rows['velocity'][ix][:, [0,2]]/2.2, f[:,3:6]/3.4, f[:,8]/2))
+                                f[:, [0, 2]]/2.2, f[:, 3:6]/3.4, f[:, 8]/2))
 
     current, earlier = geometry(query), geometry(reference)
     # A reference at s is admitted only when its future endpoint has arrived.
@@ -153,7 +154,7 @@ def kernel_probability(points, weights, scale, actual):
 def prior_probability(net, old_gate, data, query, track):
     logits, enc = net.coarse(data.batch(query))
     label, tile = data.target(query)
-    log_xz, log_y = net.fine_logp_parts(enc, data.xyz[query], label, tile)
+    log_xz, log_y = net.fine_logp_parts(enc, data.xyz[query], label, tile, data.features[query])
     fine = log_xz + log_y
     probability = logits.softmax(1)
     adjusted = probability.clone()
@@ -367,6 +368,7 @@ def summarize(rows, estimates):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out',required=True,type=Path)
+    parser.add_argument('--heatmap-checkpoint',type=Path,default=None)
     parser.add_argument('--no-cache',action='store_true')
     cli=parser.parse_args()
     torch.set_num_threads(5)
@@ -384,7 +386,7 @@ def main():
     data=data_for(games)
     seen=observed(data.raw)
     seed=p['seed']
-    core=root/'runtime/bedwars-forecast/advanced/heatmap-models.pt'
+    core=cli.heatmap_checkpoint or (root/'runtime/bedwars-forecast/advanced/heatmap-models.pt')
     pack=torch.load(core,map_location='cpu',weights_only=True)
     base=Heatmap()
     base.load_state_dict(pack['heatmap'])

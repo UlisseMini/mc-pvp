@@ -26,6 +26,11 @@ public final class BedWarsPredictor {
         "heatmap-ce", "heatmap", "head-tune", "anil-prior", "anil", "history", "meta-history",
         "personal-hotspots", "personal-routes"
     };
+    private static final String[] MODELS_V3 = {
+        "stay", "velocity", "drift", "motion", "motion-no-motion", "motion-no-context",
+        "heatmap-ce", "heatmap", "head-tune", "anil-prior", "anil", "history", "meta-history",
+        "personal-hotspots", "personal-routes", "personal-gate"
+    };
     private static final double[] ANIL_SMOOTH = {.25, .5, .25};
     private static final double[] HIST_SMOOTH = gaussianKernel(.65, 2);
     private static final int[] ROUTE_FEATURES = {6, 8, 12, 14};
@@ -34,24 +39,27 @@ public final class BedWarsPredictor {
     private final Heatmap exact, shared, anil;
     private final float[] steps, historyIntercept, historyCoefficients;
     private final Baseline[] baseline;
+    private final PersonalGate personalGate;
 
     private BedWarsPredictor(DataInputStream input) throws IOException {
         if (input.readInt() != 0x4257504d) throw new IOException("Unsupported BedWars forecast bundle");
         int version = input.readInt();
-        if ((version != 1 && version != 2) || input.readInt() != SIDE) {
+        if ((version < 1 || version > 3) || input.readInt() != SIDE) {
             throw new IOException("Unsupported BedWars forecast bundle");
         }
         int n = checkedSize(input, 1, 12);
         horizons = new int[n];
         for (int i = 0; i < n; i++) horizons[i] = checkedSize(input, 1, 300);
-        exact = new Heatmap(input, version == 2);
-        shared = new Heatmap(input, version == 2);
-        anil = new Heatmap(input, version == 2);
+        boolean hasFine = version >= 2;
+        exact = new Heatmap(input, hasFine);
+        shared = new Heatmap(input, hasFine);
+        anil = new Heatmap(input, hasFine);
         steps = readFloats(input, n);
         historyIntercept = readFloats(input, n);
         historyCoefficients = readFloats(input, 4);
         baseline = new Baseline[n];
         for (int i = 0; i < n; i++) baseline[i] = new Baseline(input);
+        personalGate = version >= 3 ? new PersonalGate(input, n) : null;
         if (input.read() != -1) throw new IOException("Unexpected BedWars forecast data");
     }
 
@@ -63,8 +71,9 @@ public final class BedWarsPredictor {
     }
 
     public int[] horizons() { return horizons.clone(); }
-    public String[] models() { return MODELS.clone(); }
+    public String[] models() { return (personalGate != null ? MODELS_V3 : MODELS).clone(); }
     public boolean hasVolume() { return shared.fineHidden != null; }
+    public boolean hasPersonalGate() { return personalGate != null; }
 
     /** A 16 by 4 by 16 block display grid with a representative feet block inside each bin. */
     public static final class Volume {
@@ -77,6 +86,54 @@ public final class BedWarsPredictor {
             for (int i = 0; i < CELLS; i++) horizontal[i] += source.horizontal[i] * weight;
             for (int i = 0; i < VOXELS; i++) {
                 deposit(i, source.mass[i] * weight, source.peak[i] * weight, source.feet[i]);
+            }
+        }
+
+        /** Probabilistic union across players: P(at least one player here) = 1 - prod(1 - p_i). */
+        public void unionWith(Volume source) {
+            for (int i = 0; i < CELLS; i++) {
+                float a = Math.max(0f, Math.min(1f, horizontal[i]));
+                float b = Math.max(0f, Math.min(1f, source.horizontal[i]));
+                horizontal[i] = 1f - (1f - a) * (1f - b);
+            }
+            for (int i = 0; i < VOXELS; i++) {
+                float a = Math.max(0f, Math.min(1f, mass[i]));
+                float b = Math.max(0f, Math.min(1f, source.mass[i]));
+                mass[i] = 1f - (1f - a) * (1f - b);
+                if (source.peak[i] > peak[i]) {
+                    peak[i] = source.peak[i];
+                    feet[i] = source.feet[i];
+                }
+            }
+        }
+
+        /** Reweight voxel probabilities onto loaded walkable terrain while keeping airWeight for mid-air/void. */
+        public void applyTerrain(float[] voxelWeight, int[] walkableFeet, float airWeight) {
+            if (voxelWeight == null || voxelWeight.length != VOXELS) return;
+            double total = 0;
+            for (int i = 0; i < VOXELS; i++) {
+                float factor = voxelWeight[i] > 0f ? voxelWeight[i] : airWeight;
+                mass[i] *= factor;
+                peak[i] *= factor;
+                total += mass[i];
+                if (walkableFeet != null && walkableFeet[i] != 0) {
+                    feet[i] = walkableFeet[i];
+                    if (mass[i] > 0f && peak[i] <= 0f) peak[i] = mass[i];
+                }
+            }
+            if (total > 1e-12) {
+                float inv = (float)(1.0 / total);
+                for (int i = 0; i < VOXELS; i++) {
+                    mass[i] *= inv;
+                    peak[i] *= inv;
+                }
+            }
+            Arrays.fill(horizontal, 0f);
+            for (int cell = 0; cell < CELLS; cell++) {
+                float sum = 0f;
+                int base = cell * LEVELS;
+                for (int level = 0; level < LEVELS; level++) sum += mass[base + level];
+                horizontal[cell] = sum;
             }
         }
 
@@ -109,6 +166,10 @@ public final class BedWarsPredictor {
         }
     }
 
+    public static int packFeet(int x, int y, int z) {
+        return blockKey(x, y, z);
+    }
+
     private static int blockKey(int x, int y, int z) {
         return (x - MIN_BLOCK) << 16 | (z - MIN_BLOCK) << 8 | (y - MIN_Y);
     }
@@ -119,25 +180,40 @@ public final class BedWarsPredictor {
      */
     public float[] forecast(String model, int horizon, float[] features, float[] xyz, float[] velocity,
                             float yaw, float[][] completedSupport) {
-        return forecast(model, horizon, features, xyz, velocity, yaw, completedSupport, null);
+        return forecast(model, horizon, features, xyz, velocity, yaw, completedSupport, null, null);
+    }
+
+    public float[] forecast(String model, int horizon, float[] features, float[] xyz, float[] velocity,
+                            float yaw, float[][] completedSupport, BedWarsForecastHistory.PersonalContext personal) {
+        return forecast(model, horizon, features, xyz, velocity, yaw, completedSupport, personal, null);
     }
 
     public Volume forecast3d(String model, int horizon, float[] features, float[] xyz, float[] velocity,
                              float yaw, float[][] completedSupport) {
+        return forecast3d(model, horizon, features, xyz, velocity, yaw, completedSupport, null);
+    }
+
+    public Volume forecast3d(String model, int horizon, float[] features, float[] xyz, float[] velocity,
+                             float yaw, float[][] completedSupport, BedWarsForecastHistory.PersonalContext personal) {
         if (!hasVolume()) throw new IllegalStateException("3D forecasts need the updated model bundle");
         Volume volume = new Volume();
-        forecast(model, horizon, features, xyz, velocity, yaw, completedSupport, volume);
+        forecast(model, horizon, features, xyz, velocity, yaw, completedSupport, personal, volume);
         return volume;
     }
 
     private float[] forecast(String model, int horizon, float[] features, float[] xyz, float[] velocity,
-                             float yaw, float[][] completedSupport, Volume volume) {
+                             float yaw, float[][] completedSupport, BedWarsForecastHistory.PersonalContext personal,
+                             Volume volume) {
         int h = Arrays.binarySearch(horizons, horizon);
         if (h < 0) throw new IllegalArgumentException("Unsupported forecast horizon " + horizon);
         requireFinite(features, FEATURE_COUNT);
         requireFinite(xyz, 3);
         requireFinite(velocity, 3);
         if (!Float.isFinite(yaw)) throw new IllegalArgumentException("Invalid yaw");
+        if ("personal-gate".equals(model)) {
+            if (personalGate == null) throw new IllegalStateException("personal-gate requires a v3 model bundle");
+            return forecastPersonalGate(h, horizon, features, xyz, velocity, yaw, personal, volume);
+        }
         float[][] support = validSupport(completedSupport);
         double[] result;
         Heatmap map = null;
@@ -410,7 +486,8 @@ public final class BedWarsPredictor {
                           .65 + 3 * softplus(fine[34]), weights[0]);
                 addHeight(heights, values, xyz[1] + 35 * Math.tanh(fine[35]),
                           4 + 14 * softplus(fine[36]), weights[1]);
-                addHeight(heights, values, 52, 49, weights[2]);
+                double baseY = xyz[1] - features[10] * 10.0;
+                addHeight(heights, values, baseY, 49, weights[2]);
                 for (int level = 0; level < LEVELS; level++) {
                     int first = level * HEIGHT_STEP, bestY = first;
                     double sum = 0;
@@ -592,7 +669,7 @@ public final class BedWarsPredictor {
             for (int i = 0; i < weights.length; i++) {
                 int k = nearest.indices[i] * 3;
                 double dx = targets[k], dz = targets[k + 2];
-                grid.add(xyz[0] + c * dx - s * dz, xyz[1] + targets[k + 1], xyz[2] + s * dx + c * dz,
+                grid.add(xyz[0] + c * dx - s * dz, Math.floor(xyz[1] + targets[k + 1]) + .5, xyz[2] + s * dx + c * dz,
                          width, heightWidth, width, weights[i] * weight);
             }
         }
@@ -694,10 +771,11 @@ public final class BedWarsPredictor {
         double[] forecast(String model, int h, float[] features, float[] xyz, float[] move, double yaw,
                           float[][] support, Volume volume) {
             GaussianGrid grid = new GaussianGrid(volume);
+            double cy = Math.floor(xyz[1]) + .5;
             if ("stay".equals(model)) {
-                stay.add(grid, xyz[0], xyz[1], xyz[2], 1);
+                stay.add(grid, xyz[0], cy, xyz[2], 1);
             } else if ("velocity".equals(model)) {
-                velocity.add(grid, xyz[0] + move[0] * h, xyz[1], xyz[2] + move[2] * h, 1);
+                velocity.add(grid, xyz[0] + move[0] * h, cy, xyz[2] + move[2] * h, 1);
             } else if ("drift".equals(model)) {
                 double dx = driftIntercept[0], dy = driftIntercept[1], dz = driftIntercept[2];
                 for (int i = 0; i < FEATURE_COUNT; i++) {
@@ -706,8 +784,8 @@ public final class BedWarsPredictor {
                     dz += driftCoefficients[2 * FEATURE_COUNT + i] * (double) features[i];
                 }
                 double c = Math.cos(yaw), s = Math.sin(yaw);
-                drift.add(grid, xyz[0] + c * dx - s * dz, xyz[1] + dy, xyz[2] + s * dx + c * dz, .88);
-                stay.add(grid, xyz[0], xyz[1], xyz[2], .12);
+                drift.add(grid, xyz[0] + c * dx - s * dz, Math.floor(xyz[1] + dy) + .5, xyz[2] + s * dx + c * dz, .88);
+                stay.add(grid, xyz[0], cy, xyz[2], .12);
             } else {
                 Analogues analogues;
                 boolean personal = false;
@@ -727,17 +805,308 @@ public final class BedWarsPredictor {
                 double heightWidth = 1 + Math.sqrt(h) * .15;
                 double part = personal ? support.length / (support.length + 45.) : 0;
                 analogues.add(grid, features, xyz, yaw, width, heightWidth, .77 * (1 - part));
-                stay.add(grid, xyz[0], xyz[1], xyz[2], .23 * (1 - part));
+                stay.add(grid, xyz[0], cy, xyz[2], .23 * (1 - part));
                 if (personal) {
                     double[] weights = "personal-routes".equals(model)
                         ? routeWeights(xyz, move, features, support) : null;
                     for (int i = 0; i < support.length; i++) {
                         double weight = weights == null ? 1. / support.length : weights[i];
-                        grid.add(support[i][23], support[i][24], support[i][25], width, heightWidth, width, part * weight);
+                        grid.add(support[i][23], Math.floor(support[i][24]) + .5, support[i][25], width, heightWidth, width, part * weight);
                     }
                 }
             }
             return grid.finish();
+        }
+    }
+
+    private float[] forecastPersonalGate(int hIndex, int horizon, float[] features, float[] xyz, float[] velocity,
+                                         float yaw, BedWarsForecastHistory.PersonalContext personal, Volume volume) {
+        double[] gateFeatures = new double[33];
+        for (int i = 0; i < FEATURE_COUNT; i++) gateFeatures[i] = features[i];
+
+        boolean[] available = new boolean[7];
+        available[0] = true; // heatmap
+        available[1] = true; // motion
+        available[2] = true; // stay tightly
+
+        // Windowed personal trail clouds: recent (24s), older (>=18s, stride 3, cap 88), home (cap 48)
+        double[][] recentPts = null, oldPts = null, homePts = null, routePts = null;
+        double[] recentW = null, oldW = null, homeW = null, routeW = null;
+
+        float[][] trail = personal == null ? new float[0][] : personal.trail;
+        int nowSec = personal == null ? 0 : personal.second;
+        if (trail.length > 0) {
+            int n = trail.length;
+            // 1. Recent trail: last 24 entries with age < 24
+            double[][] rTmp = new double[24][3];
+            double[] rWTmp = new double[24];
+            int rCount = 0;
+            double rSum = 0, meanX = 0, meanZ = 0;
+            double speedSum = 0;
+            int speedCount = 0, slowCount = 0, slowRun = 0;
+            boolean slowStillGoing = true;
+            int curTileX = (int)Math.floor((xyz[0] + 128.0) / 16.0);
+            int curTileZ = (int)Math.floor((xyz[2] + 128.0) / 16.0);
+            int sameRecent = 0;
+            float[] home = trail[0];
+            boolean usableHome = home[0] <= 10f && Math.hypot(home[1], home[3]) >= 36.0;
+            int homeFreq = 0;
+            for (int k = 0; k < 24 && n - 1 - k >= 0; k++) {
+                int idx = n - 1 - k;
+                float[] pt = trail[idx];
+                double age = nowSec - pt[0];
+                if (age < 0 || age >= 24) break;
+                double w = Math.exp(-age / 10.0);
+                rTmp[rCount][0] = pt[1]; rTmp[rCount][1] = pt[2]; rTmp[rCount][2] = pt[3];
+                rWTmp[rCount] = w;
+                rCount++;
+                rSum += w;
+                meanX += pt[1] * w;
+                meanZ += pt[3] * w;
+                int tx = (int)Math.floor((pt[1] + 128.0) / 16.0);
+                int tz = (int)Math.floor((pt[3] + 128.0) / 16.0);
+                if (tx == curTileX && tz == curTileZ) sameRecent++;
+                if (usableHome && Math.hypot(pt[1] - home[1], pt[3] - home[3]) <= 15.0) homeFreq++;
+                if (idx > 0 && pt[0] - trail[idx - 1][0] == 1f) {
+                    double move = Math.hypot(pt[1] - trail[idx - 1][1], pt[3] - trail[idx - 1][3]);
+                    if (move <= 10.0) {
+                        speedSum += move;
+                        speedCount++;
+                        boolean isSlow = move < 0.45;
+                        if (isSlow) {
+                            slowCount++;
+                            if (slowStillGoing) slowRun++;
+                        } else {
+                            slowStillGoing = false;
+                        }
+                    } else {
+                        slowStillGoing = false;
+                    }
+                } else {
+                    slowStillGoing = false;
+                }
+            }
+            if (rCount > 0 && rSum > 0) {
+                recentPts = Arrays.copyOf(rTmp, rCount);
+                recentW = Arrays.copyOf(rWTmp, rCount);
+                for (int i = 0; i < rCount; i++) recentW[i] /= rSum;
+                available[3] = true;
+                meanX /= rSum;
+                meanZ /= rSum;
+            } else {
+                meanX = xyz[0];
+                meanZ = xyz[2];
+            }
+
+            // 2. Older locations: stamps % 3 == 0 and age >= 18, newest 88
+            double[][] oTmp = new double[88][3];
+            double[] oWTmp = new double[88];
+            int oCount = 0;
+            double oSum = 0, oSameW = 0;
+            for (int idx = n - 1; idx >= 0 && oCount < 88; idx--) {
+                float[] pt = trail[idx];
+                int t = Math.round(pt[0]);
+                double age = nowSec - t;
+                if (age < 18 || (t % 3) != 0) continue;
+                double w = Math.exp(-age / 185.0);
+                oTmp[oCount][0] = pt[1]; oTmp[oCount][1] = pt[2]; oTmp[oCount][2] = pt[3];
+                oWTmp[oCount] = w;
+                oCount++;
+                oSum += w;
+                int tx = (int)Math.floor((pt[1] + 128.0) / 16.0);
+                int tz = (int)Math.floor((pt[3] + 128.0) / 16.0);
+                if (tx == curTileX && tz == curTileZ) oSameW += w;
+            }
+            if (oCount > 0 && oSum > 0) {
+                oldPts = Arrays.copyOf(oTmp, oCount);
+                oldW = Arrays.copyOf(oWTmp, oCount);
+                for (int i = 0; i < oCount; i++) oldW[i] /= oSum;
+                available[4] = true;
+            }
+
+            // 3. Home visits: within 15 horizontal, 9 vertical of home, stamps % 2 == 0, newest 48
+            double[][] hTmp = new double[48][3];
+            double[] hWTmp = new double[48];
+            int hCount = 0;
+            if (usableHome) {
+                for (int idx = n - 1; idx >= 0 && hCount < 48; idx--) {
+                    float[] pt = trail[idx];
+                    int t = Math.round(pt[0]);
+                    if ((t & 1) != 0) continue;
+                    if (Math.hypot(pt[1] - home[1], pt[3] - home[3]) <= 15.0 && Math.abs(pt[2] - home[2]) <= 9.0) {
+                        hTmp[hCount][0] = pt[1]; hTmp[hCount][1] = pt[2]; hTmp[hCount][2] = pt[3];
+                        hWTmp[hCount] = 1.0;
+                        hCount++;
+                    }
+                }
+            }
+            if (hCount > 0) {
+                homePts = Arrays.copyOf(hTmp, hCount);
+                homeW = Arrays.copyOf(hWTmp, hCount);
+                for (int i = 0; i < hCount; i++) homeW[i] /= hCount;
+                available[6] = true;
+            }
+
+            double denomSpeed = Math.max(1, speedCount);
+            double denomRecent = Math.max(1, rCount);
+            double shareRecent = sameRecent / denomRecent;
+            double shareOld = oSameW / Math.max(1e-6, oSum);
+            double distHome = Math.hypot(xyz[0] - home[1], xyz[2] - home[3]);
+            gateFeatures[17] = (speedSum / denomSpeed) / 4.0;
+            gateFeatures[18] = slowCount / denomSpeed;
+            gateFeatures[19] = slowRun / 24.0;
+            gateFeatures[20] = Math.hypot(xyz[0] - meanX, xyz[2] - meanZ) / 30.0;
+            gateFeatures[21] = rCount / 24.0;
+            gateFeatures[22] = Math.log1p(oSum) / 5.0;
+            gateFeatures[23] = shareRecent;
+            gateFeatures[24] = shareOld;
+            gateFeatures[25] = shareRecent - shareOld;
+            gateFeatures[26] = usableHome ? 1.0 : 0.0;
+            gateFeatures[27] = usableHome ? distHome / 80.0 : 0.0;
+            gateFeatures[28] = usableHome ? (homeFreq / denomRecent) : 0.0;
+            gateFeatures[29] = Math.log1p(hCount) / 4.0;
+        }
+
+        // 4. Route matches from matured routes
+        float[][] routes = personal == null ? new float[0][] : personal.routes;
+        if (routes.length > 0) {
+            double[] qg = {
+                xyz[0] / 13.0, xyz[1] / 6.0, xyz[2] / 13.0,
+                features[0] / 2.2, features[2] / 2.2,
+                features[3] / 3.4, features[4] / 3.4, features[5] / 3.4,
+                features[8] / 2.0
+            };
+            Neighbors best = new Neighbors(Math.min(20, routes.length));
+            for (int i = 0; i < routes.length; i++) {
+                float[] r = routes[i];
+                double age = nowSec - r[27] - horizon;
+                if (age < 0) continue;
+                double ds = square(qg[0] - r[0] / 13.0) + square(qg[1] - r[1] / 6.0) + square(qg[2] - r[2] / 13.0)
+                        + square(qg[3] - r[6] / 2.2) + square(qg[4] - r[8] / 2.2)
+                        + square(qg[5] - r[9] / 3.4) + square(qg[6] - r[10] / 3.4) + square(qg[7] - r[11] / 3.4)
+                        + square(qg[8] - r[14] / 2.0);
+                best.offer(i, ds + age / 170.0);
+            }
+            if (best.used > 0) {
+                double minDist = Double.POSITIVE_INFINITY, sumDist = 0;
+                for (int i = 0; i < best.used; i++) {
+                    minDist = Math.min(minDist, best.distances[i]);
+                    sumDist += best.distances[i];
+                }
+                routePts = new double[best.used][3];
+                routeW = new double[best.used];
+                double wSum = 0;
+                for (int i = 0; i < best.used; i++) {
+                    float[] r = routes[best.indices[i]];
+                    routePts[i][0] = r[23]; routePts[i][1] = r[24]; routePts[i][2] = r[25];
+                    routeW[i] = Math.exp(-0.55 * (best.distances[i] - minDist));
+                    wSum += routeW[i];
+                }
+                for (int i = 0; i < best.used; i++) routeW[i] /= wSum;
+                available[5] = true;
+                gateFeatures[30] = Math.log1p(best.used) / 3.1;
+                gateFeatures[31] = Math.sqrt(Math.min(49.0, minDist)) / 6.0;
+                gateFeatures[32] = Math.sqrt(Math.min(49.0, sumDist / best.used)) / 6.0;
+            } else {
+                gateFeatures[30] = 0; gateFeatures[31] = 7.0 / 6.0; gateFeatures[32] = 7.0 / 6.0;
+            }
+        } else {
+            gateFeatures[30] = 0; gateFeatures[31] = 7.0 / 6.0; gateFeatures[32] = 7.0 / 6.0;
+        }
+
+        double[] gw = personalGate.weights(gateFeatures, hIndex, available);
+
+        // Combine experts into horizontal + optional 3D Volume
+        double[] horiz = new double[CELLS];
+        // Expert 0: Heatmap
+        if (gw[0] > 1e-6) {
+            double[] hm = softmax(shared.logits(horizon, features, 0, xyz, 0, velocity, 0));
+            for (int k = 0; k < CELLS; k++) horiz[k] += gw[0] * hm[k];
+            if (volume != null) {
+                Volume hmVol = new Volume();
+                shared.fillVolume(hmVol, hm, horizon, features, xyz);
+                volume.add(hmVol, (float)gw[0]);
+            }
+        }
+        // Expert 1: Motion mixture
+        if (gw[1] > 1e-6) {
+            Volume mVol = volume != null ? new Volume() : null;
+            double[] mot = baseline[hIndex].forecast("motion", horizon, features, xyz, velocity, yaw, new float[0][], mVol);
+            for (int k = 0; k < CELLS; k++) horiz[k] += gw[1] * mot[k];
+            if (volume != null) volume.add(mVol, (float)gw[1]);
+        }
+        // Experts 2..6: Gaussian clouds centered on discrete feet blocks (floor(pt) + 0.5)
+        double gaussTotalW = gw[2] + gw[3] + gw[4] + gw[5] + gw[6];
+        if (gaussTotalW > 1e-6) {
+            Volume gVol = volume != null ? new Volume() : null;
+            GaussianGrid grid = new GaussianGrid(gVol);
+            if (gw[2] > 1e-6) {
+                double sx = Math.floor(xyz[0]) + 0.5, sy = Math.floor(xyz[1]) + 0.5, sz = Math.floor(xyz[2]) + 0.5;
+                grid.add(sx, sy, sz, 0.5, 0.46, 0.5, gw[2] * 0.68 / gaussTotalW);
+                grid.add(sx, sy, sz, 1.9, 0.87, 1.9, gw[2] * 0.24 / gaussTotalW);
+                grid.add(sx, sy, sz, 6.5, 2.1, 6.5, gw[2] * 0.08 / gaussTotalW);
+            }
+            if (gw[3] > 1e-6 && recentPts != null) {
+                double xz = 1.1 + 0.016 * horizon, yw = 0.55 + 0.006 * horizon;
+                for (int i = 0; i < recentPts.length; i++)
+                    grid.add(Math.floor(recentPts[i][0]) + 0.5, Math.floor(recentPts[i][1]) + 0.5,
+                             Math.floor(recentPts[i][2]) + 0.5, xz, yw, xz, gw[3] * recentW[i] / gaussTotalW);
+            }
+            if (gw[4] > 1e-6 && oldPts != null) {
+                double xz = 1.3 + 0.020 * horizon, yw = 0.67 + 0.006 * horizon;
+                for (int i = 0; i < oldPts.length; i++)
+                    grid.add(Math.floor(oldPts[i][0]) + 0.5, Math.floor(oldPts[i][1]) + 0.5,
+                             Math.floor(oldPts[i][2]) + 0.5, xz, yw, xz, gw[4] * oldW[i] / gaussTotalW);
+            }
+            if (gw[5] > 1e-6 && routePts != null) {
+                double xz = 2.2 + 0.027 * horizon, yw = 0.8 + 0.007 * horizon;
+                for (int i = 0; i < routePts.length; i++)
+                    grid.add(Math.floor(routePts[i][0]) + 0.5, Math.floor(routePts[i][1]) + 0.5,
+                             Math.floor(routePts[i][2]) + 0.5, xz, yw, xz, gw[5] * routeW[i] / gaussTotalW);
+            }
+            if (gw[6] > 1e-6 && homePts != null) {
+                double xz = 1.05 + 0.009 * horizon, yw = 0.55 + 0.004 * horizon;
+                for (int i = 0; i < homePts.length; i++)
+                    grid.add(Math.floor(homePts[i][0]) + 0.5, Math.floor(homePts[i][1]) + 0.5,
+                             Math.floor(homePts[i][2]) + 0.5, xz, yw, xz, gw[6] * homeW[i] / gaussTotalW);
+            }
+            double[] gp = grid.finish();
+            for (int k = 0; k < CELLS; k++) horiz[k] += gaussTotalW * gp[k];
+            if (volume != null) volume.add(gVol, (float)gaussTotalW);
+        }
+        normalize(horiz);
+        float[] out = new float[CELLS];
+        for (int k = 0; k < CELLS; k++) out[k] = (float)horiz[k];
+        if (volume != null) System.arraycopy(out, 0, volume.horizontal, 0, CELLS);
+        return out;
+    }
+
+    private static final class PersonalGate {
+        final int horizons;
+        final float[] offset, center, scale;
+        final Dense hidden, output;
+
+        PersonalGate(DataInputStream input, int horizons) throws IOException {
+            this.horizons = horizons;
+            offset = readFloats(input, horizons * 7);
+            center = readFloats(input, 33);
+            scale = readFloats(input, 33);
+            hidden = new Dense(input, 33 + horizons, 24);
+            output = new Dense(input, 24, 7);
+        }
+
+        double[] weights(double[] features, int hIndex, boolean[] available) {
+            double[] in = new double[33 + horizons];
+            for (int i = 0; i < 33; i++) {
+                double v = (features[i] - center[i]) / Math.max(1e-6, scale[i]);
+                in[i] = Math.max(-5.0, Math.min(5.0, v));
+            }
+            in[33 + hIndex] = 1.0;
+            double[] logits = output.apply(hidden.apply(in, true), false);
+            for (int k = 0; k < 7; k++) {
+                logits[k] = available[k] ? logits[k] + offset[hIndex * 7 + k] : -1e8;
+            }
+            return softmax(logits);
         }
     }
 }
