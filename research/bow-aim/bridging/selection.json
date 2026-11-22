@@ -1,0 +1,8 @@
+{
+  "selected": "bridge_half",
+  "strength": 0.5,
+  "decision": "Use the 50% specialist blend for confident building poses. Development showed gains on archived rising and flat-sneaking starts, the smallest loss on block poses without nearby placements, and better results on irregular staircase drills than the full and progression-gated alternatives.",
+  "held_out_recorded_games": [9,10,11,12],
+  "held_out_script_seed": 186713259,
+  "held_out_script_tracks_per_pattern": 44
+}

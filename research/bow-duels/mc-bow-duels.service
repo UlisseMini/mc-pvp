@@ -1,0 +1,15 @@
+[Unit]
+Description=Minecraft Bow Duel policy league
+After=local-fs.target
+
+[Service]
+User=uli
+WorkingDirectory=/home/uli/mc-bow-duels/adversarial-002
+ExecStart=/home/uli/mc-sumo-league/venv/bin/python -u competition.py --out /home/uli/mc-bow-duels/run-005-adversarial --seed-from-run /home/uli/mc-bow-duels/run-003-rust
+Restart=on-failure
+RestartSec=30
+Environment=OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+Environment=BOW_GEOMETRY_LIB=/home/uli/mc-bow-duels/fast-002/build/libbow_geometry.so
+
+[Install]
+WantedBy=multi-user.target

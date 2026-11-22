@@ -1,0 +1,9 @@
+{
+  "selected": "cycle_loose",
+  "gate": 0.4,
+  "gate_index": 2,
+  "development_episodes_per_map_start": 15,
+  "development_hits": {"cycle_strict": 1082, "cycle_medium": 1145, "cycle_loose": 1178},
+  "held_out_episodes_per_map_start": 36,
+  "selection_note": "Chosen by the frozen overall development hit-count rule before running the held-out arena maps. Review per-difficulty regressions separately."
+}

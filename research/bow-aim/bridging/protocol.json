@@ -1,0 +1,13 @@
+{
+  "data": "Archived BedWars client ticks, with block-held and downward-facing pose near a solid block update as a high-confidence proxy for building. The nearby-update cue is used only for dataset selection.",
+  "calibration": {"fit_games":[1,2,3,4,5,6], "development_games":[7,8]},
+  "final_fit_games":[1,2,3,4,5,6,7,8],
+  "held_out_games":[9,10,11,12],
+  "observed_features": ["consecutive client positions", "sneak flag", "block in hand while looking down"],
+  "test_cases": ["flat sustained sneak", "flat sneak release", "rising by 0.62 blocks within 18 ticks", "other nearby-placement windows", "block pose without placement", "general"],
+  "counterfactual_ranges_blocks":[10,18,28,40,52],
+  "arms":["five-tick straight line","installed adaptive motion","half specialist","full specialist"],
+  "choice":"Choose a blend from development shots. Prefer improvement on rising and sustained-sneak tracks, with near-zero loss on non-building cases. Freeze any limitations before game 09–12 scoring.",
+  "scripted_motion":"Separate seeded side-bridge and staircase drills with different speeds, pause lengths, and movement angles. Never fit weights on scripted holdout drills.",
+  "verifier":"Exactly the same future positions, origin, full draw and dispersion seed for every model at each replay issue. Recorded block updates only label the movement cohort. These accuracy scores model open shots with hitbox and arrow physics."
+}

@@ -1,0 +1,14 @@
+{
+  "geometry": "protocol-47 terrain exported for the BedWars replay viewer, advanced to match second 110",
+  "development_maps": [7, 8, 9],
+  "held_out_maps": [10, 11],
+  "excluded_map": "game-12 repeats game-07 base geometry",
+  "development_seed": 923477,
+  "held_out_seed": 71033629,
+  "difficulty": ["repeating strafe", "variable reversals and jump feints", "variable footwork and post-launch arrow reaction"],
+  "motion_comparators": ["five-tick linear", "installed adaptive model", "periodic movement correction"],
+  "candidate_gate_values": [0.1, 0.22, 0.4],
+  "selection_rule": "Select the candidate with the most total hits on dev, with smaller gate winning ties. Then score that one against the fixed comparators on fresh maps. Keep all three difficulty levels and report misses due to terrain.",
+  "episode": "Two independently moving grounded actors, one manual-equivalent release, randomized draw from 15 to 20 ticks, matched RNG and positions at release. Defender can react to the arm's visible arrow after a seeded delay.",
+  "metric": "Hits per eligible shared pre-release state, eligible states per attempted episode, and shooter/target travel before release"
+}

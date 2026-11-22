@@ -1,0 +1,14 @@
+{
+  "source": "12 frozen BedWars captures, consecutive client tick snapshots of remote players",
+  "initial_training_games": [1, 2, 3, 4, 5, 6],
+  "development_games": [7, 8],
+  "final_training_games": [1, 2, 3, 4, 5, 6, 7, 8],
+  "evaluation_games": [9, 10, 11, 12],
+  "comparison": ["five-tick constant velocity", "shared regression", "shared regression plus causal player-specific residuals"],
+  "ranges_blocks": [12, 24, 38, 54],
+  "charge_ticks": 20,
+  "shot_origin": "counterfactual open-air shooter at target starting feet height and matched seeded bearings",
+  "score": "native-sized hitbox intersection under matched arrow dispersion, plus held-out X/Z and Y forecast errors",
+  "observation_policy": "remote positions from the shooter's client; no future or hidden observations enter prediction. Evaluation requires 42 consecutive recorded future ticks for both arms.",
+  "inference_horizons_ticks": [3, 5, 8, 12, 16, 22, 30, 42]
+}
