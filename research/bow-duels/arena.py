@@ -343,8 +343,14 @@ class Arena:
         self.move_projectiles(go)
         self.t[go] += 1
         dead = self.hp <= 0
-        done = dead.any(axis=-1) | (self.t >= self.limit)
-        winner = dead[:, 1].astype(np.int8) - dead[:, 0]
+        timed_out = self.t >= self.limit
+        done = dead.any(axis=-1) | timed_out
+        winner = dead[:, 1].astype(np.int8) - dead[:, 0].astype(np.int8)
+        # Break passive cover-stalemate draws at timeout by net HP advantage (>= 0.5 HP)
+        timeout_only = timed_out & ~dead.any(axis=-1)
+        hp_diff = self.hp[:, 0] - self.hp[:, 1]
+        hp_tiebreak = np.where(hp_diff >= 0.5, 1, np.where(hp_diff <= -0.5, -1, 0)).astype(np.int8)
+        winner = np.where(timeout_only, hp_tiebreak, winner)
         return done, winner
 
     def melee(self, attack, go):

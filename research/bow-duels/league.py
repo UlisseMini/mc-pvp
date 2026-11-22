@@ -286,7 +286,8 @@ def rollout(policy, champion, batch, ticks, limit, seed, schedule=None, sample_s
         done, result = env.step(seat_actions(controls(act), foe, seat))
         result = result * (1-2*seat)
         damage = (hp - env.hp.clip(0, 20))
-        reward = .045 * (damage[env.rows, 1-seat] - damage[env.rows, seat]) + result * done
+        reward = (.045 * (damage[env.rows, 1-seat] - damage[env.rows, seat])
+                  + result * done - .15 * (done & (result == 0)))
         wins += int((done & (result > 0)).sum())
         draws += int((done & (result == 0)).sum())
         games += int(done.sum())

@@ -137,6 +137,37 @@ class Competition:
             save(self.out / 'protocol.json', {**self.manifest, 'incumbent_file': None, 'incumbent_sha256': None})
             self.persist()
             return
+        comp_state = self.args.seed_from_run / 'state.pt'
+        if comp_state.exists():
+            snapshot = torch.load(comp_state, map_location='cpu', weights_only=True)
+            inc_name = snapshot['incumbent']
+            src_frozen = self.args.seed_from_run / 'frozen'
+            initial = torch.load(src_frozen / (inc_name + '.pt'), map_location='cpu', weights_only=True)
+            save(self.archive_dir / 'previous-incumbent.pt', initial)
+            old = []
+            for prev_name in snapshot['archive'][-ACTIVE_ARCHIVE:]:
+                pf = src_frozen / (prev_name + '.pt')
+                if pf.exists():
+                    save(self.archive_dir / f'previous-{prev_name}.pt',
+                         torch.load(pf, map_location='cpu', weights_only=True))
+                    old.append(f'previous-{prev_name}')
+            self.state = dict(protocol=self.manifest, generation=1, phase='counters', step=0,
+                              incumbent='previous-incumbent', archive=old, plans={}, counter_tests={})
+            self.models = {}
+            for kind in MODELS:
+                key = f'generalist-{kind}'
+                rec = snapshot['learners'].get(key)
+                if rec:
+                    pol, opt = learner(kind)
+                    pol.load_state_dict(rec['policy']['state'])
+                    self.models[key] = (pol, opt)
+                else:
+                    self.models[key] = learner(kind)
+            self.prepare_counters()
+            save(self.out / 'protocol.json', {**self.manifest, 'incumbent_file': str(comp_state),
+                                              'incumbent_sha256': hashlib.sha256(comp_state.read_bytes()).hexdigest()})
+            self.persist()
+            return
         source = sorted(self.args.seed_from_run.glob('g[0-9][0-9][0-9].pt'))
         if not source:
             raise ValueError('The previous run has no completed generation')
