@@ -30,16 +30,23 @@ public final class BowMotion {
     public static final class Track {
         private final double[][] pos = new double[3][CAPACITY];
         private final byte[] context = new byte[CAPACITY];
+        private final float[] yaw = new float[CAPACITY];
+        private final float[] pitch = new float[CAPACITY];
+        private final byte[] flags = new byte[CAPACITY];
         private int tick = Integer.MIN_VALUE, length;
 
         public int tick() { return tick; }
         public int length() { return length; }
 
         public void add(int now, double x, double y, double z) {
-            add(now, x, y, z, 0);
+            add(now, x, y, z, 0, 0f, 0f, 0);
         }
 
         public void add(int now, double x, double y, double z, int cue) {
+            add(now, x, y, z, cue, 0f, 0f, 0);
+        }
+
+        public void add(int now, double x, double y, double z, int cue, float headYaw, float headPitch, int stateFlags) {
             if (now == tick) return;
             int gap = now - tick;
             if (length == 0 || gap <= 0 || gap > 3 || distance(x, y, z) > 2.5 * gap) {
@@ -53,6 +60,9 @@ public final class BowMotion {
                     pos[1][idx] = sy + (y - sy) * frac;
                     pos[2][idx] = sz + (z - sz) * frac;
                     context[idx] = (byte)cue;
+                    yaw[idx] = headYaw;
+                    pitch[idx] = headPitch;
+                    flags[idx] = (byte)stateFlags;
                     length = Math.min(CAPACITY, length + 1);
                 }
             }
@@ -62,6 +72,9 @@ public final class BowMotion {
             pos[1][index] = y;
             pos[2][index] = z;
             context[index] = (byte)cue;
+            yaw[index] = headYaw;
+            pitch[index] = headPitch;
+            flags[index] = (byte)stateFlags;
             length = Math.min(CAPACITY, length + 1);
         }
 
@@ -71,6 +84,9 @@ public final class BowMotion {
 
         public double get(int age, int axis) { return pos[axis][(tick - age) & MASK]; }
         public int cue(int age) { return context[(tick - age) & MASK] & 3; }
+        public float yaw(int age) { return yaw[(tick - age) & MASK]; }
+        public float pitch(int age) { return pitch[(tick - age) & MASK]; }
+        public int flags(int age) { return flags[(tick - age) & MASK] & 0xFF; }
 
         /** Native observations can repeat between packets, so estimate velocity across multiple ticks. */
         private double velocity(int age, int a, int b, int axis) {

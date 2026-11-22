@@ -41,6 +41,13 @@ public final class BowBallistics {
         return new Shot(x, eyeY, z, speed, Math.toRadians(yaw), Math.toRadians(pitch), PREVIEW_TICKS);
     }
 
+    public static Shot withTime(Shot base, double time) {
+        return new Shot(base.x + OFFSET * Math.cos(Math.toRadians(base.yaw)),
+                base.y + .1f, base.z + OFFSET * Math.sin(Math.toRadians(base.yaw)),
+                Math.sqrt(base.vx * base.vx + base.vy * base.vy + base.vz * base.vz),
+                Math.toRadians(base.yaw), Math.toRadians(base.pitch), time);
+    }
+
     private static final double[] TRAVEL = new double[PREVIEW_TICKS + 1];
     static {
         double v = 1;

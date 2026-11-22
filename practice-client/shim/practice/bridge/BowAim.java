@@ -6,12 +6,16 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemBow;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemSword;
 import net.minecraft.network.play.client.C03PacketPlayer.C05PacketPlayerLook;
 import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.BlockPos;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
 import practice.core.bow.BowBallistics;
@@ -19,6 +23,9 @@ import practice.core.bow.BowBallistics.Shot;
 import practice.core.bow.BowMotion;
 import practice.core.bow.BowMotion.Mode;
 import practice.core.bow.BowMotion.Track;
+import practice.core.bow.BowNeuralMotion;
+import practice.core.bow.BowReleasePolicy;
+import practice.core.bow.BowReleasePolicy.ReleaseMode;
 import practice.core.bow.BridgeMotion;
 import practice.core.bow.BowHitChance;
 
@@ -44,16 +51,21 @@ public final class BowAim {
     private final BowMotion motion;
     private final BridgeMotion bridge;
     private final BowHitChance chance;
+    private final BowNeuralMotion neural;
+    private final BowReleasePolicy releasePolicy = new BowReleasePolicy();
     private final PracticeCapture capture;
     private final BowAimTeams teams = new BowAimTeams();
     private final Path settings;
     private WorldClient world;
     private Mode mode;
+    private boolean legacyAdaptive;
     private int tick, limit = DEFAULT_LIMIT;
     private Selection target;
+    private UUID releaseTargetId;
     private float yawOffset, pitchOffset;
     private boolean intercept;
     private boolean showChance = true, autoRelease, releasedWhileHeld, autoFiring;
+    private ReleaseMode releaseMode = ReleaseMode.SMART;
     private double probability = Double.NaN;
     private int threshold = 75;
     private Trajectory trajectory = Trajectory.AUTO;
@@ -64,14 +76,17 @@ public final class BowAim {
         final EntityPlayer player;
         final Shot ideal;
         final double[][] path;
+        final BowNeuralMotion.Prediction prediction;
         final AxisAlignedBB bounds;
         final boolean building;
         final double bodyHeight;
 
-        Selection(EntityPlayer player, Shot ideal, double[][] path, boolean building, double bodyHeight) {
+        Selection(EntityPlayer player, Shot ideal, double[][] path, BowNeuralMotion.Prediction prediction,
+                  boolean building, double bodyHeight) {
             this.player = player;
             this.ideal = ideal;
             this.path = path;
+            this.prediction = prediction;
             this.building = building;
             this.bodyHeight = bodyHeight;
             bounds = player.func_174813_aQ().func_72317_d(
@@ -103,6 +118,13 @@ public final class BowAim {
             System.err.println("[PracticeBridge] Could not load bow hit chance model: " + failure.getMessage());
         }
         chance = probabilities;
+        BowNeuralMotion loadedNeural = null;
+        try (InputStream data = BowAim.class.getResourceAsStream("/practice/bow-neural.bin")) {
+            if (data != null) loadedNeural = BowNeuralMotion.read(data);
+        } catch (IOException failure) {
+            System.err.println("[PracticeBridge] Could not load bow neural model: " + failure.getMessage());
+        }
+        neural = loadedNeural;
         if (Files.isRegularFile(settings)) {
             Properties saved = new Properties();
             try (InputStream stream = Files.newInputStream(settings)) {
@@ -113,6 +135,7 @@ public final class BowAim {
                 showChance = Boolean.parseBoolean(saved.getProperty("chance", "true"));
                 autoRelease = Boolean.parseBoolean(saved.getProperty("autorelease", "false"));
                 threshold = percent(saved.getProperty("threshold", "75"));
+                releaseMode = ReleaseMode.valueOf(saved.getProperty("releasemode", "smart").toUpperCase(Locale.ROOT));
             } catch (IOException | IllegalArgumentException ignored) {}
         }
     }
@@ -134,7 +157,7 @@ public final class BowAim {
     }
 
     private void save(Trajectory path, boolean marker, int maximum,
-                      boolean display, boolean automatic, int minimum) throws IOException {
+                      boolean display, boolean automatic, int minimum, ReleaseMode rMode) throws IOException {
         Properties values = new Properties();
         values.setProperty("trajectory", path.name().toLowerCase(Locale.ROOT));
         values.setProperty("intercept", String.valueOf(marker));
@@ -142,6 +165,7 @@ public final class BowAim {
         values.setProperty("chance", String.valueOf(display));
         values.setProperty("autorelease", String.valueOf(automatic));
         values.setProperty("threshold", String.valueOf(minimum));
+        values.setProperty("releasemode", rMode.name().toLowerCase(Locale.ROOT));
         Path temp = Files.createTempFile(settings.getParent(), "bow-aim-", ".tmp");
         try {
             try (OutputStream stream = Files.newOutputStream(temp)) { values.store(stream, "Bow aim display"); }
@@ -155,7 +179,9 @@ public final class BowAim {
         showChance = display;
         autoRelease = automatic;
         threshold = minimum;
+        releaseMode = rMode;
         if (!automatic) releasedWhileHeld = false;
+        releasePolicy.reset();
     }
 
     private static boolean toggle(String text) {
@@ -167,11 +193,12 @@ public final class BowAim {
         String[] args = text.toLowerCase(Locale.ROOT).split("\\s+", 2);
         String value = args.length > 1 ? args[1] : "";
         switch (args[0]) {
-            case "on": case "adaptive": mode = Mode.ADAPTIVE; break;
-            case "linear": mode = Mode.LINEAR; break;
+            case "on": case "adaptive": case "neural": mode = Mode.ADAPTIVE; legacyAdaptive = false; break;
+            case "legacy": mode = Mode.ADAPTIVE; legacyAdaptive = true; break;
+            case "linear": mode = Mode.LINEAR; legacyAdaptive = false; break;
             case "off": mode = null; reset(); break;
             case "preview":
-                save(Trajectory.ON, false, limit, showChance, autoRelease, threshold);
+                save(Trajectory.ON, false, limit, showChance, autoRelease, threshold, releaseMode);
                 mode = null;
                 reset();
                 return "Bow trajectory preview on · aim off";
@@ -180,33 +207,45 @@ public final class BowAim {
                     Trajectory path;
                     try { path = Trajectory.valueOf(value.toUpperCase(Locale.ROOT)); }
                     catch (IllegalArgumentException e) { throw new IllegalArgumentException("Use trajectory on, off or auto"); }
-                    save(path, intercept, limit, showChance, autoRelease, threshold);
+                    save(path, intercept, limit, showChance, autoRelease, threshold, releaseMode);
                 }
                 return "Bow trajectory " + trajectory.name().toLowerCase(Locale.ROOT);
             case "intercept":
-                if (!value.isEmpty()) save(trajectory, toggle(value), limit, showChance, autoRelease, threshold);
+                if (!value.isEmpty()) save(trajectory, toggle(value), limit, showChance, autoRelease, threshold, releaseMode);
                 return "Bow intercept " + (intercept ? "on" : "off");
             case "limit":
-                if (!value.isEmpty()) save(trajectory, intercept, degrees(value), showChance, autoRelease, threshold);
+                if (!value.isEmpty()) save(trajectory, intercept, degrees(value), showChance, autoRelease, threshold, releaseMode);
                 return "Bow aim correction limit " + limit + "°";
             case "chance":
-                if (!value.isEmpty()) save(trajectory, intercept, limit, toggle(value), autoRelease, threshold);
+                if (!value.isEmpty()) save(trajectory, intercept, limit, toggle(value), autoRelease, threshold, releaseMode);
                 return "Bow hit chance display " + (showChance ? "on" : "off");
             case "autorelease":
-                if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, toggle(value), threshold);
-                return "Bow auto-release " + (autoRelease ? "on at " + threshold + "%" : "off");
+                if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, toggle(value), threshold, releaseMode);
+                return "Bow auto-release " + (autoRelease
+                        ? "on (" + releaseMode.name().toLowerCase(Locale.ROOT) + ", layup " + threshold + "%)" : "off");
+            case "release":
+                if (!value.isEmpty()) {
+                    ReleaseMode chosen;
+                    try { chosen = ReleaseMode.valueOf(value.toUpperCase(Locale.ROOT)); }
+                    catch (IllegalArgumentException e) { throw new IllegalArgumentException("Use release smart or threshold"); }
+                    save(trajectory, intercept, limit, showChance, autoRelease, threshold, chosen);
+                }
+                return "Bow auto-release policy " + releaseMode.name().toLowerCase(Locale.ROOT)
+                        + " (layup " + threshold + "%)";
             case "threshold":
-                if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, autoRelease, percent(value));
+                if (!value.isEmpty()) save(trajectory, intercept, limit, showChance, autoRelease, percent(value), releaseMode);
                 return "Bow auto-release threshold " + threshold + "%";
             case "status": break;
             default: throw new IllegalArgumentException("Use /p help bowaim");
         }
-        if (mode != null && motion == null) {
+        if (mode != null && motion == null && neural == null) {
             mode = null;
             return "Bow aim model missing from the installed bridge";
         }
-        return mode == null ? "Bow aim off" : "Bow aim " + mode.name().toLowerCase(Locale.ROOT)
-                + (target == null ? "" : " · " + target.player.func_70005_c_());
+        String activeName = mode == null ? "off"
+                : mode == Mode.ADAPTIVE ? (neural != null && !legacyAdaptive ? "neural (K=" + neural.modes() + " + voxels)" : "legacy adaptive")
+                : mode.name().toLowerCase(Locale.ROOT);
+        return "Bow aim " + activeName + (target == null ? "" : " · " + target.player.func_70005_c_());
     }
 
     void chat(Minecraft mc, String message) { teams.chat(mc, message); }
@@ -214,7 +253,9 @@ public final class BowAim {
     private void forgetAim() {
         yawOffset = pitchOffset = 0;
         target = null;
+        releaseTargetId = null;
         probability = Double.NaN;
+        releasePolicy.reset();
     }
 
     void reset() {
@@ -240,13 +281,23 @@ public final class BowAim {
         for (EntityPlayer player : world.field_73010_i) {
             if (!eligible(self, player) || !teams.opponent(mc, self, player)) continue;
             ItemStack held = player.func_70694_bm();
-            int cue = BridgeMotion.cue(player.func_70093_af(), held != null && held.func_77973_b() instanceof ItemBlock,
-                    player.field_70125_A);
+            Item heldItem = held == null ? null : held.func_77973_b();
+            boolean isBlock = heldItem instanceof ItemBlock;
+            int cue = BridgeMotion.cue(player.func_70093_af(), isBlock, player.field_70125_A);
+            int stateFlags = 0;
+            if (player.func_70093_af()) stateFlags |= 1;
+            if (isBlock) stateFlags |= 2;
+            if (heldItem instanceof ItemSword) stateFlags |= 4;
+            if (heldItem instanceof ItemBow) stateFlags |= 8;
+            if (player.func_71011_bu() != null) stateFlags |= 16;
+            if (player.field_70737_aN > 0) stateFlags |= 32;
+            if (player.field_70733_aJ > 0f) stateFlags |= 64;
             tracks.computeIfAbsent(player.func_110124_au(), ignored -> new Track()).add(tick,
-                    player.field_70165_t, player.field_70163_u, player.field_70161_v, cue);
+                    player.field_70165_t, player.field_70163_u, player.field_70161_v, cue,
+                    player.field_70759_as, player.field_70125_A, stateFlags);
         }
         tracks.values().removeIf(track -> track.tick() < tick - BowMotion.CAPACITY);
-        if ((mode == null && !intercept) || !drawing(mc, self) || motion == null) {
+        if ((mode == null && !intercept) || !drawing(mc, self) || (motion == null && neural == null)) {
             forgetAim();
             return;
         }
@@ -254,8 +305,9 @@ public final class BowAim {
         target = choose(mc, self, rawYaw, rawPitch);
         if (mode != null) {
             adjust(self, rawYaw, rawPitch, target);
-            probability = mode != Mode.ADAPTIVE || target == null || chance == null || !showChance && !autoRelease
-                    ? Double.NaN : estimate(self, target);
+            boolean canEstimate = mode == Mode.ADAPTIVE && target != null
+                    && (target.prediction != null || chance != null) && (showChance || autoRelease);
+            probability = canEstimate ? estimate(self, target) : Double.NaN;
             tryAutoRelease(mc, self, mc.field_71474_y.field_74313_G.func_151470_d());
         }
     }
@@ -278,13 +330,24 @@ public final class BowAim {
 
     private void tryAutoRelease(Minecraft mc, EntityPlayerSP self, boolean holdingUse) {
         if (mode != Mode.ADAPTIVE || !autoRelease || releasedWhileHeld || !holdingUse || target == null
-                || self.func_71057_bx() < 20 || !(probability * 100 >= threshold)) return;
+                || self.func_71057_bx() < 20) {
+            releasePolicy.reset();
+            releaseTargetId = null;
+            return;
+        }
+        UUID id = target.player.func_110124_au();
+        if (!id.equals(releaseTargetId)) {
+            releaseTargetId = id;
+            releasePolicy.reset();
+        }
+        if (!releasePolicy.shouldFire(probability, threshold, releaseMode)) return;
         releasedWhileHeld = true;
         autoFiring = true;
         try {
             mc.field_71442_b.func_78766_c(self);
         } finally {
             autoFiring = false;
+            releasePolicy.reset();
             clearUse(mc.field_71474_y.field_74313_G);
         }
     }
@@ -294,10 +357,18 @@ public final class BowAim {
         Shot shot = BowBallistics.fromAim(self.field_70165_t, self.field_70163_u + self.func_70047_e(),
                 self.field_70161_v, speed, self.field_70177_z, self.field_70125_A);
         double ideal = selected.ideal.time;
-        double flight = Math.min(BowBallistics.MAX_TICKS,ideal + Math.max(4,ideal*.30));
+        double flight = Math.min(BowBallistics.MAX_TICKS, ideal + Math.max(4, ideal * .30));
         BowAimPreview.Guide guide = BowAimPreview.trace(world, shot, flight, null);
-        return chance.estimate(tracks.get(selected.player.func_110124_au()),selected.building,shot,ideal,
-                guide.travelTicks,selected.path);
+        if (selected.prediction != null && neural != null) {
+            if (guide.blocked && guide.travelTicks < ideal - 0.5) return 0.0;
+            Shot evaluated = BowBallistics.fromAim(self.field_70165_t, self.field_70163_u + self.func_70047_e(),
+                    self.field_70161_v, speed, self.field_70177_z, self.field_70125_A);
+            // Evaluate analytic multi-mode hit probability along the player's actual current aim at flight time ideal
+            Shot timed = BowBallistics.withTime(evaluated, ideal);
+            return neural.calibratedHitProb(timed, selected.prediction);
+        }
+        return chance.estimate(tracks.get(selected.player.func_110124_au()), selected.building, shot, ideal,
+                guide.travelTicks, selected.path);
     }
 
     private static boolean eligible(EntityPlayer self, EntityPlayer other) {
@@ -357,21 +428,79 @@ public final class BowAim {
         return best;
     }
 
+    private byte[] sampleLocalVoxels(double x, double y, double z) {
+        byte[] vox = new byte[BowNeuralMotion.VOX_DIM];
+        if (world == null) return vox;
+        int bx = (int)Math.floor(x), by = (int)Math.floor(y), bz = (int)Math.floor(z);
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (int dy = -3; dy <= 3; dy++) {
+            int wy = by + dy;
+            if (wy < 0 || wy >= 256) continue;
+            int yOff = (dy + 3) * 81;
+            for (int dz = -4; dz <= 4; dz++) {
+                int wz = bz + dz;
+                int zOff = yOff + (dz + 4) * 9;
+                for (int dx = -4; dx <= 4; dx++) {
+                    cursor.func_181079_c(bx + dx, wy, wz);
+                    Block block = world.func_180495_p(cursor).func_177230_c();
+                    if (block != null && block.func_180646_a(world, cursor) != null) {
+                        vox[zOff + (dx + 4)] = 1;
+                    }
+                }
+            }
+        }
+        return vox;
+    }
+
     private Selection solution(Minecraft mc, EntityPlayerSP self, EntityPlayer player, double speed, double eyeY) {
         if (!teams.opponent(mc, self, player)) return null;
         Track track = tracks.get(player.func_110124_au());
         if (track == null || track.tick() != tick || track.length() < 2) return null;
         Mode chosen = mode == null ? Mode.ADAPTIVE : mode;
-        double[][] base = motion.path(track, chosen, BowBallistics.MAX_TICKS);
-        double[][] path = bridge != null && chosen == Mode.ADAPTIVE ? bridge.apply(track, base) : base;
         AxisAlignedBB bounds = player.func_174813_aQ();
         double height = bounds.field_72337_e - bounds.field_72338_b;
+
+        // Unified End-to-End Multi-Modal Neural + 9x7x9 Voxel Aim Solver
+        if (chosen == Mode.ADAPTIVE && neural != null && !legacyAdaptive) {
+            byte[] vox = sampleLocalVoxels(player.field_70165_t, player.field_70163_u, player.field_70161_v);
+            BowNeuralMotion.Prediction pred = neural.predict(track, vox, true);
+            Shot bestShot = null;
+            double[][] bestPath = null;
+            double bestHeight = height * AIM_HEIGHTS[0];
+            double bestProb = -1.0;
+            int totalCandidates = pred.paths.length + 1;
+            for (int c = 0; c < totalCandidates; c++) {
+                double[][] candPath = c < pred.paths.length ? pred.paths[c] : pred.meanPath;
+                for (double fraction : AIM_HEIGHTS) {
+                    double aimAt = height * fraction;
+                    Shot shot = BowBallistics.intercept(self.field_70165_t, eyeY, self.field_70161_v, speed, candPath, aimAt);
+                    if (shot != null && !BowAimPreview.trace(world, shot, shot.time, null).blocked) {
+                        double p = neural.rawHitProb(shot, pred);
+                        if (p > bestProb) {
+                            bestProb = p;
+                            bestShot = shot;
+                            bestPath = candPath;
+                            bestHeight = aimAt;
+                        }
+                        break; // first unblocked body height for this mode
+                    }
+                }
+            }
+            if (bestShot != null) {
+                return new Selection(player, bestShot, bestPath, pred, false, bestHeight);
+            }
+            return null;
+        }
+
+        if (motion == null) return null;
+        double[][] base = motion.path(track, chosen, BowBallistics.MAX_TICKS);
+        double[][] path = bridge != null && chosen == Mode.ADAPTIVE ? bridge.apply(track, base) : base;
         for (double fraction : AIM_HEIGHTS) {
             double aimAt = height * fraction;
             Shot shot = BowBallistics.intercept(self.field_70165_t, eyeY, self.field_70161_v, speed, path, aimAt);
             // Current eye-to-eye visibility can differ from the arrow's route to the future position.
             if (shot != null && !BowAimPreview.trace(world, shot, shot.time, null).blocked)
-                return new Selection(player, shot, path, path != base, aimAt);
+                return new Selection(player, shot, path, null, path != base, aimAt);
         }
         return null;
     }
@@ -405,11 +534,13 @@ public final class BowAim {
     void hud(Minecraft mc, int width, int height) {
         if (!showChance || mode == null || !Double.isFinite(probability) || mc.field_71439_g == null
                 || !drawing(mc,mc.field_71439_g)) return;
-        String text = (int)Math.floor(probability * 100) + "%";
+        boolean smartSpiking = autoRelease && releaseMode == ReleaseMode.SMART && releasePolicy.isSpiking();
+        String text = (int)Math.floor(probability * 100) + "%" + (smartSpiking ? " ▲" : "");
         int y = height / 2 - 18, textWidth = mc.field_71466_p.func_78256_a(text);
         int x = (width - textWidth)/2;
         Gui.func_73734_a(x-3,y-2,x+textWidth+3,y+10,0xA5111A24);
-        int color = autoRelease && probability*100 >= threshold ? 0xFFFFDC84 : 0xFFB7EEFF;
+        int color = autoRelease && probability * 100 >= threshold ? 0xFFFFDC84
+                : smartSpiking ? 0xFF7CF5A8 : 0xFFB7EEFF;
         mc.field_71466_p.func_175063_a(text,x,y,color);
     }
 

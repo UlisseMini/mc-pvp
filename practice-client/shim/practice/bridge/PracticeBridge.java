@@ -406,8 +406,9 @@ public final class PracticeBridge {
             if(args.length==1)return func_175762_a(args,Arrays.asList("help","replays","ledger","hud","sumocoach","sumoanalysis","keystrokes","sprint","sprintkb","potions","reach","range","crosshair","opening","advantage","ghost","jumpreset","blockhit","oldblock","oldsneak","hurtcam","dynamicfov","remote","capture","record","mark","forecast","bowaim","status","reload","metrics","link","debug","ping"));
             if(args.length==2&&args[0].equals("help"))return func_175762_a(args,helpTopics);
             if(bowAim!=null&&args[0].equals("bowaim")){
-                if(args.length==2)return func_175762_a(args,Arrays.asList("on","linear","off","status","preview","trajectory","intercept","limit","chance","autorelease","threshold"));
+                if(args.length==2)return func_175762_a(args,Arrays.asList("on","legacy","linear","off","status","preview","trajectory","intercept","limit","chance","autorelease","release","threshold"));
                 if(args.length==3&&args[1].equals("trajectory"))return func_175762_a(args,Arrays.asList("on","off","auto"));
+                if(args.length==3&&args[1].equals("release"))return func_175762_a(args,Arrays.asList("smart","threshold"));
                 if(args.length==3&&Arrays.asList("intercept","chance","autorelease").contains(args[1]))
                     return func_175762_a(args,Arrays.asList("on","off"));
             }
@@ -509,13 +510,14 @@ public final class PracticeBridge {
                     usage("mark"," <text>","Mark a moment");
                     break;
                 case "bowaim":
-                    usage("bowaim"," on/linear/off","Choose adaptive aim, straight-line lead, or manual aim");
+                    usage("bowaim"," on/legacy/linear/off","Choose neural+voxel aim, legacy adaptive, straight-line, or off");
                     usage("bowaim preview","","Show only the arrow trajectory");
                     usage("bowaim trajectory"," on/off/auto","Show the flight path with or without assist");
                     usage("bowaim intercept"," on/off","Show the predicted hit position and time");
                     usage("bowaim chance"," on/off","Show estimated hit chance over the crosshair");
-                    usage("bowaim autorelease"," on/off","Release at full draw when hit chance passes the threshold");
-                    usage("bowaim threshold"," <1–100>","Set the auto-release chance threshold");
+                    usage("bowaim autorelease"," on/off","Auto-release at full draw using the active release policy");
+                    usage("bowaim release"," smart/threshold","Smart peak-spike optimal stopping or fixed threshold");
+                    usage("bowaim threshold"," <1–100>","Set the auto-release layup/cutoff percentage");
                     usage("bowaim limit"," <0–8>","Set the maximum correction in degrees");
                     usage("bowaim status","","Show current bow aim mode");
                     break;
