@@ -41,7 +41,21 @@ public final class BowMotion {
 
         public void add(int now, double x, double y, double z, int cue) {
             if (now == tick) return;
-            if (length == 0 || now != tick + 1 || distance(x, y, z) > 2.5) length = 0;
+            int gap = now - tick;
+            if (length == 0 || gap <= 0 || gap > 3 || distance(x, y, z) > 2.5 * gap) {
+                length = 0;
+            } else if (gap > 1) {
+                double sx = get(0, 0), sy = get(0, 1), sz = get(0, 2);
+                for (int step = 1; step < gap; step++) {
+                    double frac = step / (double)gap;
+                    int idx = (tick + step) & MASK;
+                    pos[0][idx] = sx + (x - sx) * frac;
+                    pos[1][idx] = sy + (y - sy) * frac;
+                    pos[2][idx] = sz + (z - sz) * frac;
+                    context[idx] = (byte)cue;
+                    length = Math.min(CAPACITY, length + 1);
+                }
+            }
             tick = now;
             int index = now & MASK;
             pos[0][index] = x;
@@ -109,7 +123,8 @@ public final class BowMotion {
     private void adapt(Track track, int index, double[] displacement) {
         int h = HORIZONS[index];
         // Only finished examples enter the memory. Space their starts to reduce duplicate evidence
-        // from adjacent ticks. Compare recent velocities in world axes and downweight distant starts.
+        // from adjacent ticks. Compare recent velocities (position-invariant so adaptation transfers
+        // across bridges and islands).
         double mass = 0, squares = 0;
         double[] offset = new double[3];
         for (int age = h + 4; age + CONTEXT < track.length(); age += Math.max(4, h / 2)) {
@@ -117,8 +132,7 @@ public final class BowMotion {
             for (int a = 0; a < 3; a++) {
                 double fast = track.velocity(0, 0, 3, a) - track.velocity(age, 0, 3, a);
                 double previous = track.velocity(0, 3, 9, a) - track.velocity(age, 3, 9, a);
-                double position = track.get(0, a) - track.get(age, a);
-                distance += sq(fast / .13) + sq(previous / .20) + sq(position / (a == 1 ? 2.0 : 6.0));
+                distance += sq(fast / .13) + sq(previous / .20);
             }
             double w = Math.exp(-.5 * distance - age / 180.);
             if (w < .015) continue;

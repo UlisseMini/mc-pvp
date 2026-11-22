@@ -127,8 +127,8 @@ public final class ProbabilityStudy {
         int[] size=new int[STEPS];
         int groups=0;
         for (int i=0;i<STEPS;i++) {
-            total[groups]=i==0 ? 0 : scores[i].positives + 5*i/(double)(STEPS-1);
-            weight[groups]=i==0 ? 5+scores[i].count : 5+scores[i].count;
+            total[groups]=scores[i].positives + 5*i/(double)(STEPS-1);
+            weight[groups]=5+scores[i].count;
             size[groups]=1;
             groups++;
             while (groups>1 && total[groups-2]/weight[groups-2] > total[groups-1]/weight[groups-1]) {

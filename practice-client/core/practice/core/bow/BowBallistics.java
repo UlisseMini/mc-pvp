@@ -86,8 +86,10 @@ public final class BowBallistics {
     }
 
     public static double travel(double t) {
-        int i = (int)t;
-        return t == i ? TRAVEL[i] : TRAVEL[i] + (t - i) * (TRAVEL[i + 1] - TRAVEL[i]);
+        double clamped = Math.max(0, Math.min(PREVIEW_TICKS, t));
+        int i = (int)clamped;
+        if (i >= PREVIEW_TICKS) return TRAVEL[PREVIEW_TICKS];
+        return clamped == i ? TRAVEL[i] : TRAVEL[i] + (clamped - i) * (TRAVEL[i + 1] - TRAVEL[i]);
     }
 
     public static double fall(double t) { return GRAVITY * (t - travel(t)) / (1 - DRAG); }

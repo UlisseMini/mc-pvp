@@ -175,6 +175,7 @@ fn describe(
     p: Vec3,
     yaw: f32,
     seat: i32,
+    sneak: u8,
     boxes: &[Bounds],
     active: &[u8],
     projectile_pos: &[[f32; 3]],
@@ -217,7 +218,7 @@ fn describe(
         &mut output[2 * GRID..2 * GRID + RAYS],
     );
 
-    let eye = [p[0], p[1] + 1.62, p[2]];
+    let eye = [p[0], p[1] + 1.62 - 0.08 * ((sneak != 0) as u8 as f64), p[2]];
     let start = 2 * GRID + RAYS;
     output[start..].fill(0.);
     for i in 0..PROJECTILES {
@@ -360,6 +361,7 @@ pub unsafe extern "C" fn bow_view(
     pos: *const [f32; 3],
     yaw: *const f32,
     seat: *const i32,
+    sneak: *const u8,
     boxes: *const Bounds,
     active: *const u8,
     projectile_pos: *const [f32; 3],
@@ -371,6 +373,7 @@ pub unsafe extern "C" fn bow_view(
     let pos = slice::from_raw_parts(pos, rows);
     let yaw = slice::from_raw_parts(yaw, rows);
     let seat = slice::from_raw_parts(seat, rows);
+    let sneak = slice::from_raw_parts(sneak, rows);
     let boxes = slice::from_raw_parts(boxes, rows * BLOCKS);
     let active = slice::from_raw_parts(active, rows * BLOCKS);
     let projectile_pos = slice::from_raw_parts(projectile_pos, rows * PROJECTILES);
@@ -385,6 +388,7 @@ pub unsafe extern "C" fn bow_view(
             vec3(&pos[row]),
             yaw[row],
             seat[row],
+            sneak[row],
             &boxes[blocks.clone()],
             &active[blocks],
             &projectile_pos[projectiles.clone()],

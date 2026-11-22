@@ -33,7 +33,7 @@ for src,dst in ((built/'practice-bridge.jar','mods/practice-bridge.jar'),
 (game/'config/splash.properties').write_text('enabled=false\n')
 (game/'config/pvp-practice/bow-aim.properties').unlink(missing_ok=True)
 (game/'options.txt').write_text('renderDistance:2\nmaxFps:30\nsoundCategory_master:0.0\n')
-args=['-Xmx768M','-Dhmc.lwjgl.update_sleep=1','-Dlog4j.configurationFile='+str(root/'.cache/server-logging.xml'),
+jvm_args=['-Xmx768M','-Dhmc.lwjgl.update_sleep=1','-Dlog4j.configurationFile='+str(root/'.cache/server-logging.xml'),
       '-javaagent:'+str(forge_runtime.HEADLESS),'-cp',os.pathsep.join(map(str,cp)),
       'net.minecraft.launchwrapper.Launch','--username','BowProbe','--version','1.8.9',
       '--gameDir',str(game),'--assetsDir',str(forge_runtime.ASSETS),'--assetIndex','1.8',
@@ -41,7 +41,7 @@ args=['-Xmx768M','-Dhmc.lwjgl.update_sleep=1','-Dlog4j.configurationFile='+str(r
       '--userType','legacy','--tweakClass','net.minecraftforge.fml.common.launcher.FMLTweaker']
 log=result/('native-smoke.log' if game.name=='forge-smoke' else game.name+'.log')
 with log.open('w') as out:
-    proc=subprocess.run(forge_runtime.command(args,game),cwd=game,stdout=out,stderr=subprocess.STDOUT,
+    proc=subprocess.run(forge_runtime.command(jvm_args,game),cwd=game,stdout=out,stderr=subprocess.STDOUT,
                         env={'PATH':'/usr/bin:/bin','LANG':'en_US.UTF-8','TMPDIR':str(game/'tmp')+'/'},timeout=100)
 lines=log.read_text(errors='replace').splitlines()
 ok=[line for line in lines if 'BOW_NATIVE_PASS' in line]

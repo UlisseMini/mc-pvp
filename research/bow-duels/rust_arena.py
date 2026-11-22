@@ -29,7 +29,7 @@ class Geometry:
         self.terrain.argtypes = [_N, _N, _P, _P, _P, _N, _P, _P]
         self.terrain.restype = None
         self.view = lib.bow_view
-        self.view.argtypes = [_N] + [_P] * 10
+        self.view.argtypes = [_N] + [_P] * 11
         self.view.restype = None
         self.move = lib.bow_move
         self.move.argtypes = [_N] + [_P] * 7
@@ -49,9 +49,13 @@ class RustArena(Arena):
     def terrain_hit(self, origin, delta, rows=None):
         boxes, active = (self.boxes, self.active_box) if rows is None else (self.boxes[rows], self.active_box[rows])
         count = len(boxes)
+        output = np.empty(delta.shape[:-1], dtype=np.float64)
+        if not count or not output.size:
+            return output
+        boxes = np.ascontiguousarray(boxes, dtype=np.float32)
+        active = np.ascontiguousarray(active, dtype=np.uint8)
         delta = np.ascontiguousarray(delta, dtype=np.float64)
         origin = np.ascontiguousarray(origin, dtype=np.float64)
-        output = np.empty(delta.shape[:-1], dtype=np.float64)
         rays = delta.size // (count * 3)
         stride = origin.size // (count * 3)
         if stride not in (1, rays):
@@ -62,12 +66,17 @@ class RustArena(Arena):
 
     def view_features(self, seat, p, yaw):
         output = np.empty((self.n, TERRAIN + ARROWS * PROJ), dtype=np.float32)
+        p = np.ascontiguousarray(p, dtype=np.float32)
+        yaw = np.ascontiguousarray(yaw, dtype=np.float32)
         seats = np.ascontiguousarray(np.broadcast_to(seat, self.n), dtype=np.int32)
-        self.geometry.view(self.n, ptr(p), ptr(yaw), ptr(seats), ptr(self.boxes), ptr(self.active_box),
+        sneak = np.ascontiguousarray(self.sneak[self.rows, seats], dtype=np.uint8)
+        self.geometry.view(self.n, ptr(p), ptr(yaw), ptr(seats), ptr(sneak), ptr(self.boxes), ptr(self.active_box),
                            ptr(self.ap), ptr(self.av), ptr(self.age), ptr(self.apearl), ptr(output))
         return output
 
     def move_positions(self, go, drag):
+        go = np.ascontiguousarray(go, dtype=np.uint8)
+        drag = np.ascontiguousarray(drag, dtype=np.float64)
         self.geometry.move(self.n, ptr(self.pos), ptr(self.vel), ptr(self.ground),
                            ptr(self.boxes), ptr(self.active_box), ptr(go), ptr(drag))
 

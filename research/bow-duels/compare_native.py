@@ -109,7 +109,9 @@ def projectile(module, rows):
         frames = [r for r in same_case if r['id'] == spawn['id'] and r['event'] == 'tick']
         count = 0
         error = 0.
+        impact_speed = None
         for frame in free_projectile_frames(spawn, frames):
+            impact_speed = float(np.linalg.norm(env.av[0, ix]))
             env.move_projectiles(np.ones(1, bool))
             if not env.age[0, ix]:
                 break
@@ -118,6 +120,7 @@ def projectile(module, rows):
         for _ in range(80):
             if not env.age[0, ix]:
                 break
+            impact_speed = float(np.linalg.norm(env.av[0, ix]))
             env.move_projectiles(np.ones(1, bool))
         row = dict(case=case, owner=owner, native_hit=None if pearl else bool(damages),
                    sim_hit=None if pearl else bool(env.hits[0, owner]),
@@ -131,6 +134,10 @@ def projectile(module, rows):
                             int(r['tick']) >= int(damages[0]['tick']) and float(r['hp']) < 20)
             row['native_raw_damage'] = float(damages[0]['detail'])
             row['native_hp_loss'] = 20 - float(observed['hp'])
+            row['sim_hp_loss'] = float(20 - env.hp[0, 1 - owner])
+            base_raw = float(np.ceil((impact_speed or 0.) * 2))
+            row['expected_base_hp_loss'] = float(.52 * base_raw)
+            row['expected_max_crit_hp_loss'] = float(.52 * (base_raw + int(base_raw) // 2 + 1))
             row['punch_velocity_error'] = float(np.linalg.norm(env.vel[0, 1-owner] - vec(observed, VEL)))
             row['native_punch_v'] = vec(observed, VEL).tolist()
             row['sim_punch_v'] = env.vel[0, 1-owner].tolist()
@@ -187,10 +194,33 @@ def main():
             if case['max_air_path_error'] > .001:
                 raise RuntimeError('Dry-air projectile path diverged')
             if case['pearl']:
-                if case['pearl_destination_error'] > .001 or case['sim_pearl_cost'] != case['native_pearl_cost']:
+                if ('pearl_destination_error' not in case
+                        or case['pearl_destination_error'] > .001
+                        or case['sim_pearl_cost'] != case['native_pearl_cost']):
                     raise RuntimeError('Pearl impact diverged')
             elif case['sim_hit'] != case['native_hit'] or case.get('punch_velocity_error', 0) > .001:
                 raise RuntimeError('Arrow hit or Punch impulse diverged')
+            elif case['native_hit']:
+                sim_loss = case.get('sim_hp_loss')
+                if sim_loss is None or abs(sim_loss - case['expected_base_hp_loss']) > 1e-3:
+                    raise RuntimeError(f"Simulated arrow HP loss diverged: {sim_loss} vs {case['expected_base_hp_loss']}")
+                if not (case['expected_base_hp_loss'] - 1e-3 <= case['native_hp_loss'] <= case['expected_max_crit_hp_loss'] + 1e-3):
+                    raise RuntimeError(f"Native arrow HP loss outside crit envelope: {case['native_hp_loss']}")
+                if abs(case['native_hp_loss'] - .52 * case['native_raw_damage']) > 1e-3:
+                    raise RuntimeError('Native arrow armor multiplier diverged')
+        # Verify immunity window prevents double arrow HP loss inside one 10-tick hurt window.
+        pair_env = implementation.Arena(1, 13)
+        pair_env.active_box[:] = False
+        pair_env.pos[0, 0] = [0, 0, -5]
+        pair_env.pos[0, 1] = [0, 0, 0]
+        for slot in (0, 1):
+            pair_env.ap[0, slot] = [0, 1.0, -1.0]
+            pair_env.av[0, slot] = [0, 0, 2.5]
+            pair_env.age[0, slot] = 1
+        pair_env.move_projectiles(np.ones(1, bool))
+        expected_single = .52 * np.ceil(2.5 * 2)
+        if pair_env.hits[0, 0] != 1 or abs((20 - float(pair_env.hp[0, 1])) - expected_single) > 1e-3:
+            raise RuntimeError('Same-window double-arrow immunity check failed')
     result = json.dumps(out, indent=2) + '\n'
     if args.out:
         args.out.write_text(result)

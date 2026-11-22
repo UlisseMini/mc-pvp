@@ -14,9 +14,15 @@ from league import MODELS, SCRIPTS, SEQ, Policy, evaluate, optimize, rollout, sa
 
 COUNTERS = ('mlp', 'gru')
 COUNTER_ROLES = tuple(f'counter-{kind}' for kind in COUNTERS)
+PLAN_SEED = 5192041
 DEV_SEED = 7832023
 TITLE_SEED = 2378203
 ACTIVE_ARCHIVE = 16
+
+
+def foe_seed(base, generation, name):
+    token = int.from_bytes(hashlib.blake2b(name.encode(), digest_size=4).digest(), 'little')
+    return (base + 1009 * generation + (token % 1000003)) & 0x7fffffff
 
 
 def frozen(policy):
@@ -65,10 +71,10 @@ def family_merit(matches):
     return dict(mean=mean, families=scores, merit=(mean + min(scores.values())) / 2)
 
 
-def plans_for(policy, archive, threats, panel, limit):
+def plans_for(policy, archive, threats, panel, limit, generation):
     names = sorted(archive)
-    scores = {name: win_score(versus(policy, archive[name], panel, limit, DEV_SEED + i))
-              for i, name in enumerate(names)}
+    scores = {name: win_score(versus(policy, archive[name], panel, limit, foe_seed(PLAN_SEED, generation, name)))
+              for name in names}
     weights = {name: hardness(score) for name, score in scores.items()}
     total = sum(weights.values())
     worst = min(scores, key=lambda name: (scores[name], name))
@@ -124,7 +130,13 @@ class Competition:
 
     def start(self):
         if self.args.seed_from_run is None:
-            raise ValueError('The first run requires the frozen previous champion')
+            self.state = dict(protocol=self.manifest, generation=1, phase='counters', step=0,
+                              incumbent='reactive', archive=[], plans={}, counter_tests={})
+            self.models = {f'generalist-{kind}': learner(kind) for kind in MODELS}
+            self.prepare_counters()
+            save(self.out / 'protocol.json', {**self.manifest, 'incumbent_file': None, 'incumbent_sha256': None})
+            self.persist()
+            return
         source = sorted(self.args.seed_from_run.glob('g[0-9][0-9][0-9].pt'))
         if not source:
             raise ValueError('The previous run has no completed generation')
@@ -162,15 +174,25 @@ class Competition:
         save(self.checkpoint, self.state)
 
     def load_named(self, name):
+        if name in self.scripts:
+            return self.scripts[name]
         if name not in self.read_frozen:
             item = torch.load(self.archive_dir / (name + '.pt'), map_location='cpu', weights_only=True)
             self.read_frozen[name] = thaw(item)
         return self.read_frozen[name]
 
+    def prune_cache(self):
+        s = self.state
+        keep = set(s['archive'][-ACTIVE_ARCHIVE:]) | {s['incumbent']}
+        for name in list(self.read_frozen):
+            if name not in keep:
+                del self.read_frozen[name]
+
     def archive(self):
         s = self.state
-        return {**self.scripts, **{name: self.load_named(name) for name in s['archive'][-ACTIVE_ARCHIVE:]
-                                  if name != s['incumbent']}}
+        scripts = {name: sid for name, sid in self.scripts.items() if name != s['incumbent']}
+        return {**scripts, **{name: self.load_named(name) for name in s['archive'][-ACTIVE_ARCHIVE:]
+                              if name != s['incumbent']}}
 
     def train_update(self):
         s, args = self.state, self.args
@@ -217,7 +239,7 @@ class Competition:
         s['counter_tests'] = tests
         threats = [name for name, match in tests.items() if match['qualified']]
         archive = self.archive()
-        s['plans'] = {name: plans_for(policy, archive, threats, a.panel, a.limit)
+        s['plans'] = {name: plans_for(policy, archive, threats, a.panel, a.limit, s['generation'])
                       for name, (policy, _) in self.models.items() if name.startswith('generalist')}
         s.update(phase='generalists', step=0)
         self.persist()
@@ -233,8 +255,8 @@ class Competition:
         actors = {incumbent: defending, **{n: model[0] for n, model in self.models.items()}}
         receipts = {}
         for name, policy in actors.items():
-            panel = {foe: versus(policy, archive[foe], a.panel, a.limit, DEV_SEED + i)
-                     for i, foe in enumerate(sorted(archive))}
+            panel = {foe: versus(policy, archive[foe], a.panel, a.limit, foe_seed(DEV_SEED, g, foe))
+                     for foe in sorted(archive)}
             receipts[name] = dict(family_merit(panel), field=panel)
         for name, policy in actors.items():
             if name == incumbent:
@@ -256,7 +278,8 @@ class Competition:
                 s['archive'].append(name)
         if best:
             winner = entrants[best[0]]
-            s['archive'].append(incumbent)
+            if incumbent not in self.scripts:
+                s['archive'].append(incumbent)
         s['archive'] = list(dict.fromkeys(n for n in s['archive'] if n != winner))
         results = dict(generation=g, incumbent=incumbent, winner=winner, promoted=best[0] if best else None,
                        counter_tests=s['counter_tests'], sampling=s['plans'], entrants=entrants,
@@ -264,6 +287,7 @@ class Competition:
         save(self.out / f'g{g:03d}.json', results)
         print(g, 'title:', winner, 'promoted' if best else 'retained', flush=True)
         s.update(generation=g+1, phase='counters', step=0, incumbent=winner, counter_tests={}, plans={})
+        self.prune_cache()
         self.prepare_counters()
         self.persist()
 

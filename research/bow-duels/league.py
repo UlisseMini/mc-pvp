@@ -225,10 +225,12 @@ def imitate(models, optimizers, batch, ticks):
         obs, actions, resets = demonstration(batch, ticks, seed)
         for policy, opt in zip(models.values(), optimizers.values(), strict=True):
             for _ in range(8):
+                hidden = policy.memory(batch)
                 for start in range(0, ticks, SEQ):
                     window = slice(start, start + SEQ)
                     target = actions[window]
-                    output, _, _, _ = policy(obs[window], policy.memory(batch), resets[window])
+                    output, _, _, hidden = policy(obs[window], hidden, resets[window])
+                    hidden = None if hidden is None else hidden.detach()
                     key, mouse = output.split((sum(KEYS), 2), -1)
                     loss = sum(F.cross_entropy(k.reshape(-1, n), target[..., i].flatten().long())
                                for i, (k, n) in enumerate(zip(key.split(KEYS, -1), KEYS, strict=True)))

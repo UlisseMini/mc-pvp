@@ -103,7 +103,7 @@ public final class DodgeArena {
             double scale = speed / Math.max(1, Math.hypot(dx,dz));
             dx *= scale;
             dz *= scale;
-            if (!map.support(x+dx*2.7, homeY, z+dz*2.7)) {
+            if (!map.support(x+dx*2.7, y, z+dz*2.7)) {
                 dx = (homeX-x) * .12;
                 dz = (homeZ-z) * .12;
             }
@@ -117,14 +117,18 @@ public final class DodgeArena {
             if (jump && grounded) vy = .42;
             if (map.body(x,y+vy,z,1.79)) {
                 if (vy < 0) {
-                    // Resolve the contact to the exact top of the supporting cube.
-                    y = Math.floor(y+vy+1e-5) + 1;
+                    // Step down from current y to find the highest supporting surface along the fall.
+                    double landed = Math.floor(y + vy + 1e-5) + 1;
+                    for (int by = (int)Math.floor(y); by >= (int)Math.floor(y + vy + 1e-5); by--) {
+                        if (map.body(x, by + .01, z, .05)) { landed = by + 1; break; }
+                    }
+                    y = landed;
                     grounded = true;
                 }
                 vy = 0;
             } else {
                 y += vy;
-                grounded = map.body(x,y-.08,z,1.79);
+                grounded = map.body(x,y-.08,z,.07);
             }
             vy = grounded ? 0 : (vy-.08)*.98;
         }
@@ -340,7 +344,7 @@ public final class DodgeArena {
             Projectile arrow = new Projectile(shot,speed,scene.spreadSeed);
             Actor sameShooter = new Actor(shooter), sameTarget = new Actor(target);
             boolean reacted = false;
-            for (int t = 1; t <= FLIGHT; t++) {
+            for (int t = 0; t < FLIGHT; t++) {
                 scene.shooter(sameShooter,sameTarget,scene.when+t);
                 reacted |= scene.defender(sameTarget,scene.when+t,arrow);
                 String stopped = arrow.tick(map,sameTarget);

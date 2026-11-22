@@ -22,7 +22,10 @@ def session(job):
             for line in stream:
                 if not line.startswith(b'{"type":"tick_end"'):
                     continue
-                now = int(SNAPSHOT.search(line)[1])
+                match = SNAPSHOT.search(line)
+                if match is None:
+                    continue
+                now = int(match[1])
                 while game_at < len(games) and now >= games[game_at]['end_ms']:
                     game_at += 1
                 if game_at == len(games):

@@ -83,7 +83,11 @@ def run(out):
         for child in processes:
             if child.poll() is None:
                 child.terminate()
-                child.wait(timeout=10)
+                try:
+                    child.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    child.kill()
+                    child.wait(timeout=5)
     if not (out/'done').exists():
         raise RuntimeError('Server never completed the scenario schedule')
     captures = []
