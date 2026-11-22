@@ -69,6 +69,7 @@ final class BedWarsForecastOverlay {
     private static final Pattern PLAYER_NAME = Pattern.compile("[A-Za-z0-9_]{1,16}");
     private static final Pattern TEAM_NAME = Pattern.compile("[A-Za-z0-9_-]{1,32}");
     private static final Pattern DIAMOND_TIMER = Pattern.compile("^Diamond II in:? (\\d{1,2}):(\\d{2})$");
+    private static final Pattern BED_DESTROYED = Pattern.compile("^BED DESTRUCTION > ([A-Za-z]+) Bed\\b.*", Pattern.CASE_INSENSITIVE);
     private static final Pattern COLOR_CODE = Pattern.compile("§([0-9a-f])", Pattern.CASE_INSENSITIVE);
 
     private final Path bundle, displayFile;
@@ -79,6 +80,8 @@ final class BedWarsForecastOverlay {
     });
     private final BedWarsForecastHistory history = new BedWarsForecastHistory();
     private final Set<String> eliminated = new HashSet<>();
+    private final Set<String> bedsDestroyed = new HashSet<>();
+    private final Map<String, Integer> teamSpawnTile = new LinkedHashMap<>();
     private final TreeSet<Integer> selectedHorizons = new TreeSet<>(Collections.singleton(10));
     private Set<String> selectedPlayers = Collections.emptySet(), selectedTeams = Collections.emptySet();
     private NetHandlerPlayClient connection;
@@ -124,19 +127,26 @@ final class BedWarsForecastOverlay {
         final Input input;
         final float[][][] supports;
         final BedWarsForecastHistory.PersonalContext[] personal;
-        Query(Input input, float[][][] supports, BedWarsForecastHistory.PersonalContext[] personal) {
+        final boolean bedDestroyed;
+        final int homeTile;
+        Query(Input input, float[][][] supports, BedWarsForecastHistory.PersonalContext[] personal,
+              boolean bedDestroyed, int homeTile) {
             this.input = input;
             this.supports = supports;
             this.personal = personal;
+            this.bedDestroyed = bedDestroyed;
+            this.homeTile = homeTile;
         }
     }
 
     private static final class TerrainMask {
         final float[] voxelWeight;
         final int[] walkableFeet;
-        TerrainMask(float[] voxelWeight, int[] walkableFeet) {
+        final int[] patchSurfaceY;
+        TerrainMask(float[] voxelWeight, int[] walkableFeet, int[] patchSurfaceY) {
             this.voxelWeight = voxelWeight;
             this.walkableFeet = walkableFeet;
+            this.patchSurfaceY = patchSurfaceY;
         }
     }
 
@@ -217,6 +227,13 @@ final class BedWarsForecastOverlay {
             int space = line.indexOf(' ');
             if (space > 0 && PLAYER_NAME.matcher(line.substring(0, space)).matches())
                 eliminated.add(lower(line.substring(0, space)));
+        } else if (start != 0) {
+            Matcher destroyed = BED_DESTROYED.matcher(line);
+            if (destroyed.matches()) {
+                bedsDestroyed.add(lower(destroyed.group(1)));
+            } else if (line.startsWith("BED DESTRUCTION > Your Bed") && mc.field_71439_g != null) {
+                bedsDestroyed.addAll(teamKeys(team(mc, mc.field_71439_g)));
+            }
         }
     }
 
@@ -237,6 +254,8 @@ final class BedWarsForecastOverlay {
         lastSecond = -1;
         history.clear();
         eliminated.clear();
+        bedsDestroyed.clear();
+        teamSpawnTile.clear();
         clearResults();
     }
 
@@ -321,6 +340,14 @@ final class BedWarsForecastOverlay {
         int[] horizons = selectedHorizons.stream().mapToInt(Integer::intValue).toArray();
         List<Query> queries = new ArrayList<>();
         for (Pose pose : poses.values()) {
+            if (second <= 14 && BedWarsForecastHistory.withinGrid(pose.observation.xyz)) {
+                int tx = (int)Math.floor((pose.observation.xyz[0] - MAP_MIN) / TILE);
+                int tz = (int)Math.floor((pose.observation.xyz[2] - MAP_MIN) / TILE);
+                if (tx >= 0 && tx < GRID && tz >= 0 && tz < GRID) {
+                    int home = tx * GRID + tz;
+                    for (String key : pose.team) teamSpawnTile.putIfAbsent(key, home);
+                }
+            }
             if (!selected(pose, local) || !BedWarsForecastHistory.withinGrid(pose.observation.xyz)) continue;
             float[][][] examples = new float[horizons.length][][];
             BedWarsForecastHistory.PersonalContext[] personal = new BedWarsForecastHistory.PersonalContext[horizons.length];
@@ -328,7 +355,13 @@ final class BedWarsForecastOverlay {
                 examples[i] = history.examples(pose.id, horizons[i], second);
                 personal[i] = history.personalContext(pose.id, horizons[i], second);
             }
-            queries.add(new Query(inputs.get(pose.id), examples, personal));
+            boolean bedDown = !Collections.disjoint(pose.team, bedsDestroyed);
+            int homeTile = -1;
+            for (String key : pose.team) {
+                Integer found = teamSpawnTile.get(key);
+                if (found != null) { homeTile = found; break; }
+            }
+            queries.add(new Query(inputs.get(pose.id), examples, personal, bedDown, homeTile));
         }
         if (queries.isEmpty()) {
             result = null;
@@ -338,7 +371,7 @@ final class BedWarsForecastOverlay {
         final BedWarsPredictor network = predictor;
         final long generation = revision;
         final String chosenModel = model;
-        final TerrainMask terrainMask = withVolume ? snapshotTerrain(world) : null;
+        final TerrainMask terrainMask = snapshotTerrain(world, withVolume);
         pending = worker.submit(() -> predict(network, generation, second, chosenModel, horizons, queries, withVolume, terrainMask));
     }
 
@@ -356,16 +389,25 @@ final class BedWarsForecastOverlay {
             for (int i = 0; i < horizons.length; i++) {
                 float[][] support = query.supports[i];
                 BedWarsForecastHistory.PersonalContext personal = query.personal[i];
+                float[] reach = terrainMask != null
+                        ? BedWarsPredictor.reachabilityMask(terrainMask.patchSurfaceY, PATCHES,
+                                input.observation.xyz[0], input.observation.xyz[1], input.observation.xyz[2],
+                                horizons[i], TERRAIN_AIR_WEIGHT)
+                        : null;
+                if (reach != null && query.bedDestroyed && query.homeTile >= 0 && horizons[i] >= 20) {
+                    reach[query.homeTile] *= 0.55f;
+                }
                 if (volumes != null) {
                     Volume single = network.forecast3d(model, horizons[i], input.features, input.observation.xyz,
                             input.velocity, input.observation.yaw, support, personal);
                     if (terrainMask != null) {
-                        single.applyTerrain(terrainMask.voxelWeight, terrainMask.walkableFeet, TERRAIN_AIR_WEIGHT);
+                        single.applyTerrain(terrainMask.voxelWeight, terrainMask.walkableFeet, reach, TERRAIN_AIR_WEIGHT);
                     }
                     volumes[i].unionWith(single);
                 } else {
                     float[] values = network.forecast(model, horizons[i], input.features, input.observation.xyz,
                             input.velocity, input.observation.yaw, support, personal);
+                    if (reach != null) BedWarsPredictor.applyTileReach(values, reach);
                     for (int n = 0; n < values.length; n++) {
                         float a = Math.max(0f, Math.min(1f, grids[i][n]));
                         float b = Math.max(0f, Math.min(1f, values[n]));
@@ -407,12 +449,14 @@ final class BedWarsForecastOverlay {
         }
     }
 
-    private TerrainMask snapshotTerrain(WorldClient world) {
-        float[] voxelWeight = new float[BedWarsPredictor.VOXELS];
-        int[] walkableFeet = new int[BedWarsPredictor.VOXELS];
-        int[] bestDist = new int[BedWarsPredictor.VOXELS];
-        Arrays.fill(bestDist, Integer.MAX_VALUE);
+    private TerrainMask snapshotTerrain(WorldClient world, boolean withVolume) {
+        float[] voxelWeight = withVolume ? new float[BedWarsPredictor.VOXELS] : null;
+        int[] walkableFeet = withVolume ? new int[BedWarsPredictor.VOXELS] : null;
+        int[] bestDist = withVolume ? new int[BedWarsPredictor.VOXELS] : null;
+        if (bestDist != null) Arrays.fill(bestDist, Integer.MAX_VALUE);
+        int[] patchSurfaceY = new int[PATCHES * PATCHES];
         int levels = BedWarsPredictor.LEVELS;
+        int sub = PATCHES / GRID;
         for (int tx = 0; tx < GRID; tx++) {
             int baseX = MAP_MIN + tx * TILE;
             for (int tz = 0; tz < GRID; tz++) {
@@ -421,15 +465,24 @@ final class BedWarsForecastOverlay {
                 int cellBase = cell * levels;
                 boolean loaded = world.func_175667_e(new BlockPos(baseX + TILE / 2, 0, baseZ + TILE / 2));
                 if (!loaded) {
-                    // Never suppress unloaded distant islands.
-                    for (int l = 0; l < levels; l++) voxelWeight[cellBase + l] = 1f;
+                    if (voxelWeight != null) {
+                        for (int l = 0; l < levels; l++) voxelWeight[cellBase + l] = 1f;
+                    }
+                    for (int ox = 0; ox < sub; ox++) {
+                        int row = (tx * sub + ox) * PATCHES + tz * sub;
+                        for (int oz = 0; oz < sub; oz++) patchSurfaceY[row + oz] = -1;
+                    }
                     continue;
                 }
                 for (int dx = 0; dx < TILE; dx += 2) {
+                    int px = tx * sub + dx / PATCH;
                     for (int dz = 0; dz < TILE; dz += 2) {
                         int wx = baseX + dx, wz = baseZ + dz;
                         int surface = world.func_175645_m(new BlockPos(wx, 0, wz)).func_177956_o();
                         if (surface <= 0 || surface >= 248) continue;
+                        int pIdx = px * PATCHES + tz * sub + dz / PATCH;
+                        if (surface > patchSurfaceY[pIdx]) patchSurfaceY[pIdx] = surface;
+                        if (voxelWeight == null) continue;
                         int dist = Math.abs(dx - TILE / 2) + Math.abs(dz - TILE / 2);
                         // Mark surface level + 1 level below (covered base interior) and 1 level above (jump/stairs).
                         int sLevel = (surface - BedWarsPredictor.MIN_Y) / BedWarsPredictor.HEIGHT_STEP;
@@ -448,7 +501,7 @@ final class BedWarsForecastOverlay {
                 }
             }
         }
-        return new TerrainMask(voxelWeight, walkableFeet);
+        return new TerrainMask(voxelWeight, walkableFeet, patchSurfaceY);
     }
 
     private float[] surfaces(WorldClient world) {
@@ -590,6 +643,7 @@ final class BedWarsForecastOverlay {
         return displayModel(model) + " · " + result.players + (result.players == 1 ? " player" : " players")
                 + (display.mode == Mode.GHOSTS ? "" : " · " + display.projection.label)
                 + (display.mode == Mode.HEATMAP ? "" : " · " + ghosts.size() + " ghosts ≥" + display.threshold + "%")
+                + (bedsDestroyed.isEmpty() ? "" : " · " + bedsDestroyed.size() + (bedsDestroyed.size() == 1 ? " bed down" : " beds down"))
                 + (estimated ? " · estimated clock" : "");
     }
 

@@ -109,16 +109,29 @@ public final class BedWarsPredictor {
 
         /** Reweight voxel probabilities onto loaded walkable terrain while keeping airWeight for mid-air/void. */
         public void applyTerrain(float[] voxelWeight, int[] walkableFeet, float airWeight) {
-            if (voxelWeight == null || voxelWeight.length != VOXELS) return;
+            applyTerrain(voxelWeight, walkableFeet, null, airWeight);
+        }
+
+        /** Reweight voxel probabilities onto loaded walkable terrain and BFS-reachable tiles. */
+        public void applyTerrain(float[] voxelWeight, int[] walkableFeet, float[] tileReachWeight, float airWeight) {
+            if (voxelWeight == null && tileReachWeight == null) return;
+            if (voxelWeight != null && voxelWeight.length != VOXELS) return;
+            if (tileReachWeight != null && tileReachWeight.length != CELLS) return;
             double total = 0;
-            for (int i = 0; i < VOXELS; i++) {
-                float factor = voxelWeight[i] > 0f ? voxelWeight[i] : airWeight;
-                mass[i] *= factor;
-                peak[i] *= factor;
-                total += mass[i];
-                if (walkableFeet != null && walkableFeet[i] != 0) {
-                    feet[i] = walkableFeet[i];
-                    if (mass[i] > 0f && peak[i] <= 0f) peak[i] = mass[i];
+            for (int cell = 0; cell < CELLS; cell++) {
+                float reach = tileReachWeight != null ? tileReachWeight[cell] : 1f;
+                int base = cell * LEVELS;
+                for (int level = 0; level < LEVELS; level++) {
+                    int i = base + level;
+                    float terrainFactor = voxelWeight == null ? 1f : (voxelWeight[i] > 0f ? voxelWeight[i] : airWeight);
+                    float factor = terrainFactor * reach;
+                    mass[i] *= factor;
+                    peak[i] *= factor;
+                    total += mass[i];
+                    if (walkableFeet != null && walkableFeet[i] != 0) {
+                        feet[i] = walkableFeet[i];
+                        if (mass[i] > 0f && peak[i] <= 0f) peak[i] = mass[i];
+                    }
                 }
             }
             if (total > 1e-12) {
@@ -168,6 +181,120 @@ public final class BedWarsPredictor {
 
     public static int packFeet(int x, int y, int z) {
         return blockKey(x, y, z);
+    }
+
+    /** Reweight a 2D tile distribution by per-tile reachability weights and renormalize. */
+    public static void applyTileReach(float[] horizontal, float[] tileReachWeight) {
+        if (horizontal == null || tileReachWeight == null || horizontal.length != CELLS || tileReachWeight.length != CELLS) return;
+        double total = 0;
+        for (int i = 0; i < CELLS; i++) {
+            horizontal[i] *= tileReachWeight[i];
+            total += horizontal[i];
+        }
+        if (total > 1e-12) {
+            float inv = (float)(1.0 / total);
+            for (int i = 0; i < CELLS; i++) horizontal[i] *= inv;
+        }
+    }
+
+    /**
+     * Fast weighted BFS over 4x4-block terrain patches from a player's current block.
+     * Walking along loaded islands/bridges costs 4/step; bridging over loaded void costs 12/step;
+     * unloaded distant chunks cost 6/step so unseen islands are never falsely zeroed.
+     */
+    public static float[] reachabilityMask(int[] patchSurfaceY, int patches,
+                                           float playerX, float playerY, float playerZ,
+                                           int horizonSec, float airWeight) {
+        float[] tileWeight = new float[CELLS];
+        Arrays.fill(tileWeight, 1f);
+        if (patchSurfaceY == null || patches <= 0 || patchSurfaceY.length != patches * patches) return tileWeight;
+        int patchBlocks = (SIDE * TILE_WIDTH) / patches;
+        int sx = Math.max(0, Math.min(patches - 1, (int)Math.floor((playerX - MIN_BLOCK) / patchBlocks)));
+        int sz = Math.max(0, Math.min(patches - 1, (int)Math.floor((playerZ - MIN_BLOCK) / patchBlocks)));
+        int totalNodes = patches * patches;
+        int[] dist = new int[totalNodes];
+        Arrays.fill(dist, Integer.MAX_VALUE);
+        int maxCost = Math.round(5.8f * horizonSec + 14.0f);
+        int cutoff = maxCost * 3 + 48;
+        // Dial's algorithm (bucket queue) over integer block-equivalent costs: O(V + E), <0.15ms.
+        int buckets = cutoff + 24;
+        int[] head = new int[buckets];
+        Arrays.fill(head, -1);
+        int[] next = new int[totalNodes];
+        int[] prev = new int[totalNodes];
+        Arrays.fill(next, -1);
+        Arrays.fill(prev, -1);
+        int start = sx * patches + sz;
+        dist[start] = 0;
+        head[0] = start;
+        final int[] DX = {1, -1, 0, 0};
+        final int[] DZ = {0, 0, 1, -1};
+        for (int cost = 0; cost <= cutoff; cost++) {
+            int u = head[cost];
+            while (u != -1) {
+                head[cost] = next[u];
+                if (head[cost] != -1) prev[head[cost]] = -1;
+                next[u] = prev[u] = -1;
+                if (dist[u] == cost) {
+                    int ux = u / patches, uz = u % patches;
+                    int uy = patchSurfaceY[u];
+                    for (int dir = 0; dir < 4; dir++) {
+                        int vx = ux + DX[dir], vz = uz + DZ[dir];
+                        if (vx < 0 || vx >= patches || vz < 0 || vz >= patches) continue;
+                        int v = vx * patches + vz;
+                        int vy = patchSurfaceY[v];
+                        int step;
+                        if (vy > 0) {
+                            int dy = uy > 0 ? Math.abs(vy - uy) : 0;
+                            step = patchBlocks + (dy > 4 ? dy - 4 : 0);
+                        } else if (vy == 0) {
+                            step = patchBlocks * 3;
+                        } else {
+                            step = patchBlocks + patchBlocks / 2;
+                        }
+                        int nd = cost + step;
+                        if (nd < dist[v] && nd <= cutoff) {
+                            int old = dist[v];
+                            if (old <= cutoff) {
+                                int p = prev[v], n = next[v];
+                                if (p != -1) next[p] = n; else if (head[old] == v) head[old] = n;
+                                if (n != -1) prev[n] = p;
+                            }
+                            dist[v] = nd;
+                            int h = head[nd];
+                            next[v] = h;
+                            prev[v] = -1;
+                            if (h != -1) prev[h] = v;
+                            head[nd] = v;
+                        }
+                    }
+                }
+                u = head[cost];
+            }
+        }
+        int sub = patches / SIDE;
+        float decayScale = 0.35f * maxCost + 14.0f;
+        for (int tx = 0; tx < SIDE; tx++) {
+            for (int tz = 0; tz < SIDE; tz++) {
+                int best = Integer.MAX_VALUE;
+                for (int ox = 0; ox < sub; ox++) {
+                    int row = (tx * sub + ox) * patches + tz * sub;
+                    for (int oz = 0; oz < sub; oz++) {
+                        int d = dist[row + oz];
+                        if (d < best) best = d;
+                    }
+                }
+                if (best <= maxCost) {
+                    tileWeight[tx * SIDE + tz] = 1f;
+                } else if (best == Integer.MAX_VALUE) {
+                    tileWeight[tx * SIDE + tz] = airWeight;
+                } else {
+                    float w = (float)Math.exp(-(best - maxCost) / decayScale);
+                    tileWeight[tx * SIDE + tz] = Math.max(airWeight, w);
+                }
+            }
+        }
+        return tileWeight;
     }
 
     private static int blockKey(int x, int y, int z) {

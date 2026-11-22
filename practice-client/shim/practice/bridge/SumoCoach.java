@@ -127,7 +127,7 @@ final class SumoCoach implements SumoStats.Listener {
     }
 
     static final class Summary {
-        String id, venue, opponent, result;
+        String id, venue, opponent, result, headline;
         long finished;
         int launches, targets, opportunities, early, brakes, unclicked, sprint, aim, timer;
         List<String> details;
@@ -778,6 +778,7 @@ final class SumoCoach implements SumoStats.Listener {
         summary.sprint = stats.losses(Cue.SPRINT);
         summary.aim = stats.losses(Cue.AIM);
         summary.timer = stats.losses(Cue.COOLDOWN);
+        summary.headline = headline(summary, stats);
         List<String> details = new ArrayList<>();
         summary.details = details;
         if (round.partial) details.add("Partial observations: joined the round after combat began.");
@@ -873,6 +874,25 @@ final class SumoCoach implements SumoStats.Listener {
 
     private static String serverSprintLine(int sprint, int fresh) {
         return "Server sprint on fresh accepted hits: " + sprint + "/" + fresh;
+    }
+
+    private static String headline(Summary summary, SumoStats stats) {
+        if (stats.launches == 0) return "";
+        StringBuilder out = new StringBuilder();
+        out.append("Early brakes ").append(stats.earlyBrakes).append('/').append(stats.earlyOpenings);
+        if (stats.worst != null) out.append(" · worst slide ").append(SumoStats.blocks(stats.worst.peakSlide()));
+        if (stats.savingSamples > 0 && stats.totalKbSaved >= 0.25)
+            out.append(" · KB saved ~").append(SumoStats.blocks(stats.totalKbSaved));
+        int sprintAfterW = stats.earlySprintOffAfterRelease();
+        if (sprintAfterW >= 2) {
+            out.append(" · §e").append(sprintAfterW).append(" sprint-off after W-up (restart sprint before click)");
+        } else if (stats.costlyBrakeExchanges > 0) {
+            out.append(" · §e").append(stats.costlyBrakeExchanges).append(" costly missed brake")
+               .append(stats.costlyBrakeExchanges == 1 ? "" : "s").append(" — ").append(focus(summary));
+        } else {
+            out.append(" · §a").append(focus(summary));
+        }
+        return out.toString();
     }
 
     private static String focus(Summary summary) {

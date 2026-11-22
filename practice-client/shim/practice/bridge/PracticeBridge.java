@@ -235,9 +235,11 @@ public final class PracticeBridge {
             match.save(directory.resolve("sumo-replays"));
             ChatComponentText message=new ChatComponentText("§b[Practice] §fSumo vs "+match.opponent+"  ");
             message.func_150257_a(sumoLink(match.id));
-            if(sumoCoach!=null&&sumoCoach.enabled(SumoCoach.Option.SUMMARY)&&sumoCoach.find(match.id)!=null)
-                message.func_150257_a(sumoStatsLink(match.id));
+            SumoCoach.Summary coached=sumoCoach!=null&&sumoCoach.enabled(SumoCoach.Option.SUMMARY)?sumoCoach.find(match.id):null;
+            if(coached!=null) message.func_150257_a(sumoStatsLink(match.id));
             mc.field_71456_v.func_146158_b().func_146227_a(message);
+            if(coached!=null&&coached.headline!=null&&!coached.headline.isEmpty())
+                mc.field_71456_v.func_146158_b().func_146227_a(new ChatComponentText("§7  ↳ §f"+coached.headline));
         }catch(IOException failure){
             System.out.println("[PracticeReplay] Could not index MMC Sumo replay: "+failure.getMessage());
         }
@@ -254,6 +256,8 @@ public final class PracticeBridge {
         ChatComponentText line=new ChatComponentText("§b[Practice] §fSumo vs "+summary.opponent+" · "+summary.result);
         line.func_150257_a(sumoStatsLink(summary.id));
         Minecraft.func_71410_x().field_71456_v.func_146158_b().func_146227_a(line);
+        if(summary.headline!=null&&!summary.headline.isEmpty())
+            Minecraft.func_71410_x().field_71456_v.func_146158_b().func_146227_a(new ChatComponentText("§7  ↳ §f"+summary.headline));
     }
     @SubscribeEvent public void renderTick(TickEvent.RenderTickEvent event){if(event.phase==TickEvent.Phase.END)capture.render(event.renderTickTime);else if(offline.active){offline.renderPose(event.renderTickTime);host.event(new PracticeEvent("replay_frame",0,System.currentTimeMillis(),System.nanoTime(),offline.replayFrame()));}else capture.replayRender();}
     @SubscribeEvent public void world(RenderWorldLastEvent event){
