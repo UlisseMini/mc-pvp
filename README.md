@@ -2,7 +2,7 @@
 
 > [!WARNING]
 > ## ⚠️⚠️⚠️ VIBECODED SLOP! ⚠️⚠️⚠️
-> **I'll make an actual reasonable writeup later, but for now this README (and a lot of this repo) is all AI-generated with zero guidance.**
+> **I may make an actual reasonable writeup later, but for now this README (and a lot of this repo) is all AI-generated with zero guidance.**
 
 A collection of AI, physics, and practice-tool explorations built around **Minecraft Java 1.8.9** and **modern Minecraft (Java 26.3)** combat.
 
