@@ -184,6 +184,9 @@ public final class PracticeBridge {
     }
     void offlineStarted(){sprintPressed=false;if(bedWarsForecast!=null)bedWarsForecast.suspend();if(bowAim!=null)bowAim.reset();}
     void offlineStopped(){sprintPressed=false;host.event(new PracticeEvent("replay_frame",0,0,0,Collections.emptyMap()));scope();}
+    @SubscribeEvent public void replaySound(net.minecraftforge.client.event.sound.PlaySoundEvent event){
+        if(offline.muteSound(event.name))event.result=null;
+    }
     private static final int SLOW_MOTION_BUTTON=8137;
     @SubscribeEvent public void menuButtons(GuiScreenEvent.InitGuiEvent.Post e){
         if(e.gui instanceof GuiIngameMenu && TrainingTimer.configurable())

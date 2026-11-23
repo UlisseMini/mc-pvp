@@ -3,6 +3,7 @@ package practice.bridge;
 import practice.core.replay.ReplayRecording;
 import practice.core.replay.ReplayRecoil;
 import practice.core.replay.MmcSumoReplay;
+import practice.core.replay.ReplaySumoMoments;
 import practice.core.replay.ReplayMotion;
 import practice.core.replay.ReplayVisuals;
 import practice.core.CaptureLog;
@@ -61,6 +62,9 @@ final class OfflineReplay {
         boolean frozen(){return paused&&scrubDirection==0;}
         @Override public void func_72835_b(){if(!frozen())super.func_72835_b();}
         @Override public void func_72939_s(){if(!frozen())super.func_72939_s();}
+        @Override public void func_73025_a(int x,int z,boolean load){
+            if(load||!retainSumoArena)super.func_73025_a(x,z,load);
+        }
     }
     static final class SinkNetwork extends NetworkManager {
         long discarded;
@@ -136,6 +140,8 @@ final class OfflineReplay {
     }
     private int scrubDirection;
     private boolean worldAheadOfPlayhead;
+    private boolean retainSumoArena;
+    private boolean playingImpact;
     private long loadToken;
     private List<ReplayRecording.Entry> sumoMatches=Collections.emptyList();
     private final Map<String,java.util.concurrent.Future<ReplayRecording>> prepared=new HashMap<>();
@@ -153,9 +159,13 @@ final class OfflineReplay {
     }
     private Map<String,Object> parse(String s){return gson.fromJson(s,Map.class);}
     void browser(){if(!active)refresh();Minecraft.func_71410_x().func_147108_a(new OfflineReplayMenu(this));}
-    boolean watchSumo(String id)throws java.io.IOException{
+    private Path captures(){return directory.resolve("captures");}
+    private ReplayRecording.Entry sumoEntry(String id)throws java.io.IOException{
         MmcSumoReplay.Match match=MmcSumoReplay.read(directory.resolve("sumo-replays"),id);
-        ReplayRecording.Entry selected=ReplayRecording.sumoEntry(directory.resolve("captures"),match);
+        return ReplayRecording.sumoEntry(captures(),match);
+    }
+    boolean watchSumo(String id)throws java.io.IOException{
+        ReplayRecording.Entry selected=sumoEntry(id);
         if(selected==null)return false;
         select(selected);
         return true;
@@ -168,8 +178,7 @@ final class OfflineReplay {
         }
         ReplayRecording.Entry selected;
         if(id.matches("[a-f0-9]{32}")){
-            MmcSumoReplay.Match match=MmcSumoReplay.read(directory.resolve("sumo-replays"),id);
-            selected=ReplayRecording.sumoEntry(directory.resolve("captures"),match);
+            selected=sumoEntry(id);
         }else if(id.matches("m[0-9]{4,9}")){
             Path archive=archiveRoot();
             selected=archive==null?null:ReplayRecording.archiveEntry(archive.resolve(id),this::parse);
@@ -202,8 +211,7 @@ final class OfflineReplay {
     void openQueuedMatch(){
         if(queuedMatch==null||loading||live())return;
         if(queuedWriter!=null){
-            try{if(!queuedWriter.awaitClosed(1))return;}
-            catch(InterruptedException interrupted){Thread.currentThread().interrupt();return;}
+            if(!queuedWriter.closed())return;
             queuedWriter=null;
         }
         Minecraft mc=Minecraft.func_71410_x();
@@ -222,7 +230,7 @@ final class OfflineReplay {
         String archive=p.getProperty("archive.directory","");
         return archive.isEmpty()?null:Paths.get(archive);
     }
-    void refresh(){try{entries=ReplayRecording.catalog(directory.resolve("captures"),archiveRoot(),this::parse);}catch(Exception e){message="Could not list captures: "+e.getMessage();}}
+    void refresh(){try{entries=ReplayRecording.catalog(captures(),archiveRoot(),this::parse);}catch(Exception e){message="Could not list captures: "+e.getMessage();}}
     boolean live(){Minecraft mc=Minecraft.func_71410_x();return ConnectionScope.current()!=null||(!active&&mc.field_71441_e!=null);}
     private void prepareNeighbors(ReplayRecording previous){
         int index=sumoIndex();
@@ -304,20 +312,28 @@ final class OfflineReplay {
         }
         time=0;scrubDirection=0;worldAheadOfPlayhead=false;
         freePosition=previousFreePosition=null;items.clear();failure="";message="";
-        if(selected.isSumo()&&sumoIndex()<0)try{sumoMatches=ReplayRecording.sumoEntries(directory.resolve("captures"));}
+        if(selected.isSumo()&&sumoIndex()<0)try{sumoMatches=ReplayRecording.sumoEntries(captures());}
         catch(java.io.IOException ignored){}
         prepareNeighbors(previous);
         linked=Collections.emptyMap();ownSource=null;opponentName=null;
         if(selected.archiveFolder!=null)try{Path manifest=selected.archiveFolder.resolve("manifest.json");if(Files.isRegularFile(manifest)&&Files.size(manifest)<=1048576){Map<String,Object> players=object(parse(new String(Files.readAllBytes(manifest),"UTF-8")).get("players"));ReplayRecording.Pose first=value.poseAt(Math.max(0,selected.preferredStartMs-value.startMs));if(first==null&&!value.poses.isEmpty())first=value.poses.get(0);String name=first==null?"":String.valueOf(first.self.get("name"));for(String side:Arrays.asList("a","b"))if(name.equals(object(players.get(side)).get("name"))){ownSource=side;Object otherName=object(players.get(side.equals("a")?"b":"a")).get("name");if(otherName instanceof String)opponentName=(String)otherName;}}
             linked=OfflinePoseLinks.load(selected.archiveFolder,value.startMs,ownSource,this::parse);}catch(Exception ignored){}
-        double start=visibleStart(value,selected);
+        double start=value.openingTime();
         if(seekWall!=null){
             paused=true;
-            start=Math.min(value.playEnd(),Math.max(start,seekWall-value.startMs));
+            start=Math.min(value.playEnd(),Math.max(visibleStart(value,selected),seekWall-value.startMs));
         }
         seeking=true;
         try{
-            reset();advance(start);seedArena(start);time=start;pose();
+            reset();
+            if(value.sumo!=null){
+                advance(value.playStart());
+                seedArena(value.playStart());
+                retainSumoArena=true;
+            }
+            advance(start);
+            time=start;
+            pose();
         }finally{seeking=false;}
         if(replacing&&closed)mc.func_147108_a(null);
         else mc.func_147108_a(controls instanceof OfflineReplayMenu?controls:new OfflineReplayMenu(this));
@@ -325,6 +341,7 @@ final class OfflineReplay {
     }
     void reset()throws Exception{
         Minecraft mc=Minecraft.func_71410_x();ownActor=null;observedTarget=null;mc.func_175607_a(null);
+        retainSumoArena=false;
         skins.resetWorld();
         mc.field_71456_v.func_146158_b().func_146231_a();
         network=new SinkNetwork();handler=new OfflineHandler(mc,network,new GameProfile(UUID.nameUUIDFromBytes("practice-offline-viewer".getBytes("UTF-8")),"OfflineViewer"));network.func_150719_a(handler);
@@ -386,12 +403,13 @@ final class OfflineReplay {
     private void updatePlayback(double elapsed,int nextDirection){
         double target=projectedTime(elapsed);
         if(scrubDirection<0&&target<time){
-            // Keep the arena loaded during reverse preview. Replay poses and
-            // readouts follow the cursor, then native packets catch up on release.
+            // Replay poses follow the cursor while the arena remains loaded.
             time=target;
-            worldAheadOfPlayhead=true;
+            worldAheadOfPlayhead=recording.sumo==null;
         }else if(target>time){
+            double previous=time;
             seekForward(target);
+            if(scrubDirection==0&&nextDirection==0&&time>previous&&failure.isEmpty())playImpacts(previous,time);
         }
         if(worldAheadOfPlayhead&&nextDirection>=0)seek(time);
         scrubDirection=nextDirection;
@@ -405,7 +423,11 @@ final class OfflineReplay {
     }
     void seekForward(double target){
         if(!seeking)saveSpectatorLook();
-        try{advance(target);time=target;if(time>=recording.playEnd())paused=true;}
+        try{
+            advance(target);
+            time=target;
+            if(time>=recording.playEnd())paused=true;
+        }
         catch(Exception e){paused=true;e.printStackTrace();failure="Playback stopped at "+String.format(Locale.ROOT,"%.3fs: ",time/1000)+e.getClass().getSimpleName()+": "+e.getMessage();}
         finally{restoreSpectatorLook();}
     }
@@ -416,18 +438,43 @@ final class OfflineReplay {
         target=Math.max(recording.playStart(),Math.min(recording.playEnd(),target));
         try{
             boolean rewind=target<time||worldAheadOfPlayhead;
-            if(rewind){reset();time=0;worldAheadOfPlayhead=false;seedEarlierChunks();}
+            if(rewind&&recording.sumo==null){reset();time=0;worldAheadOfPlayhead=false;}
             seekForward(target);
-            if(rewind)seedRemainingChunks(target);
             pose();
         }catch(Exception e){paused=true;failure="Seek failed: "+e.getMessage();}
-        finally{seeking=false;if(controls instanceof OfflineReplayMenu)Minecraft.func_71410_x().func_147108_a(controls);}
+        finally{
+            seeking=false;
+            Minecraft mc=Minecraft.func_71410_x();
+            if(controls instanceof OfflineReplayMenu&&mc.field_71462_r!=controls)mc.func_147108_a(controls);
+        }
         lastNs=System.nanoTime();
     }
     void togglePause(){
         if(paused&&time>=recording.playEnd())seek(recording.playStart());
         paused=!paused;
         lastNs=System.nanoTime();
+    }
+    boolean muteSound(String name){
+        if(!active||playingImpact)return false;
+        if(seeking||scrubDirection!=0)return true;
+        return recording.sumo!=null&&(name.endsWith("player.hurt")||name.equals("damage.hit")||name.equals("random.hurt"));
+    }
+    private void playImpacts(double from,double to){
+        if(recording.sumoMoments==null)return;
+        ReplaySumoMoments moments=recording.sumoMoments;
+        Minecraft mc=Minecraft.func_71410_x();
+        playingImpact=true;
+        try{
+            for(int i=moments.after(from),end=moments.after(to);i<end;i++){
+                ReplaySumoMoments.Impact hit=moments.impacts.get(i);
+                if(hit.own)mc.func_147118_V().func_147682_a(net.minecraft.client.audio.PositionedSoundRecord.func_147674_a(new ResourceLocation("game.player.hurt"),1));
+                else{
+                    Map<String,Object> target=opponent(recording.poseAt(hit.atMs));
+                    practice.core.replay.ReplayMotion.Vector pos=practice.core.replay.ReplayMotion.vector(target.get("pos"));
+                    if(pos!=null)mc.field_71441_e.func_72980_b(pos.x,pos.y,pos.z,"game.player.hurt",1,1,false);
+                }
+            }
+        }finally{playingImpact=false;}
     }
     boolean openCommandChat(int key){
         Minecraft mc=Minecraft.func_71410_x();
@@ -477,6 +524,7 @@ final class OfflineReplay {
             // objectives created before the recording. They do not affect poses.
             if(!recording.hasJoin&&wire.protocolId>=0x3b&&wire.protocolId<=0x3e){skipped++;continue;}
             if(recording.sumo!=null&&wire.atMs<recording.sumo.countdownMs&&(wire.protocolId==2||wire.protocolId==0x45)){skipped++;continue;}
+            if(retainSumoArena&&(wire.protocolId==1||wire.protocolId==7)){skipped++;continue;}
             applyWire(wire);
         }
     }
@@ -524,6 +572,7 @@ final class OfflineReplay {
     Map<String,Object> opponent(){return opponent(recording.poseAt(time));}
     private Map<String,Object> opponent(ReplayRecording.Pose pose){
         if(pose==null)return Collections.emptyMap();
+        if(recording.entry.sumoMatch!=null)return ReplaySumoMoments.opponent(pose,recording.entry.sumoMatch.opponent);
         if(opponentName!=null&&pose.state.get("entities")instanceof List)for(Object o:(List<?>)pose.state.get("entities")){
             Map<String,Object> entity=object(o);if(opponentName.equals(entity.get("name")))return entity;
         }
@@ -536,7 +585,7 @@ final class OfflineReplay {
             if(observedTarget.field_70170_p==mc.field_71441_e)mc.field_71441_e.func_73028_b(OBSERVED_TARGET_ID);
             observedTarget=null;
         }
-        if(target!=null||id==Integer.MIN_VALUE||(recording.hasJoin&&!worldAheadOfPlayhead)||!(pose.get("name") instanceof String))return target;
+        if(target!=null||id==Integer.MIN_VALUE||(recording.sumo==null&&recording.hasJoin&&!worldAheadOfPlayhead)||!(pose.get("name") instanceof String))return target;
         if(observedTarget==null){
             String name=(String)pose.get("name");
             UUID uuid=recordedId(pose,"recorded-target-"+id);
@@ -571,6 +620,9 @@ final class OfflineReplay {
         double fraction=span>0&&span<=175&&(recording.sumo==null||next.atMs<=recording.playEnd())?(clock-snapshot.atMs)/span:0;
         Map<String,Object> self=snapshot==null?Collections.emptyMap():snapshot.self;
         visualSelf=fraction>0?ReplayVisuals.between(self,next.self,fraction):self;
+        Map<String,Object> other=opponent(snapshot);
+        skins.remember(other);
+        visualTarget=fraction>0?ReplayVisuals.between(other,opponent(next),fraction):other;
         if(!self.isEmpty()){
             skins.remember(self);
             if(ownActor==null||ownActor.field_70170_p!=mc.field_71441_e){ownActor=new RecordedPlayer(mc.field_71441_e,new GameProfile(recordedId(self,"recorded-self"),String.valueOf(self.getOrDefault("name","RecordedSelf"))),true);mc.field_71441_e.func_73027_a(-2147483000,ownActor);}
@@ -588,9 +640,6 @@ final class OfflineReplay {
             Map<String,Object> future=nextEntities.get(state.get("id"));
             apply(entity,future==null?state:ReplayVisuals.between(state,future,fraction));
         }
-        Map<String,Object> other=opponent(snapshot);
-        skins.remember(other);
-        visualTarget=fraction>0?ReplayVisuals.between(other,opponent(next),fraction):other;
         Entity target=target(mc,other);if(target!=mc.field_71439_g)apply(target,visualTarget);
         mc.field_71439_g.func_82142_c(true);mc.field_71439_g.field_70145_X=true;mc.field_71439_g.field_71075_bZ.field_75100_b=true;
         mc.field_71474_y.field_74320_O=0;

@@ -35,21 +35,27 @@ public final class MmcSumoReplay {
     public static final class Match {
         public final String id, capture, opponent;
         public final int part;
+        public final int lastPart;
         public final long start, finish;
         public final boolean won;
 
-        private Match(String id, String capture, String opponent, int part, long start, long finish, boolean won) {
+        private Match(String id, String capture, String opponent, int part, int lastPart, long start, long finish, boolean won) {
             this.id = id;
             this.capture = capture;
             this.opponent = opponent;
             this.part = part;
+            this.lastPart = lastPart;
             this.start = start;
             this.finish = finish;
             this.won = won;
         }
 
         public Path firstSegment(Path captures) {
-            String name = part == 1 ? capture : capture.replace(".jsonl.gz", "-part" + part + ".jsonl.gz");
+            return segment(captures,part);
+        }
+        public Path lastSegment(Path captures) {return lastPart==0?null:segment(captures,lastPart);}
+        private Path segment(Path captures,int index) {
+            String name = index == 1 ? capture : capture.replace(".jsonl.gz", "-part" + index + ".jsonl.gz");
             return captures.resolve(name);
         }
 
@@ -59,6 +65,7 @@ public final class MmcSumoReplay {
             p.setProperty("capture", capture);
             p.setProperty("opponent", opponent);
             p.setProperty("part", Integer.toString(part));
+            if(lastPart>0)p.setProperty("last_part",Integer.toString(lastPart));
             p.setProperty("start", Long.toString(start));
             p.setProperty("finish", Long.toString(finish));
             p.setProperty("won", Boolean.toString(won));
@@ -89,9 +96,11 @@ public final class MmcSumoReplay {
         if (!LOCAL_CAPTURE.matcher(capture).matches() || !opponent.matches("[A-Za-z0-9_]{1,16}")) return null;
         try {
             int part = Integer.parseInt(p.getProperty("part", ""));
+            int lastPart = Integer.parseInt(p.getProperty("last_part","0"));
             long start = Long.parseLong(p.getProperty("start", "")), finish = Long.parseLong(p.getProperty("finish", ""));
             if (part < 1 || part > 10000 || start <= 0 || finish <= start || finish - start > 600000) return null;
-            return new Match(id, capture, opponent, part, start, finish, Boolean.parseBoolean(p.getProperty("won")));
+            if(lastPart!=0&&(lastPart<part||lastPart>10000))return null;
+            return new Match(id, capture, opponent, part, lastPart, start, finish, Boolean.parseBoolean(p.getProperty("won")));
         } catch (NumberFormatException malformed) {
             return null;
         }
@@ -147,7 +156,7 @@ public final class MmcSumoReplay {
             if (!won && !loser.equalsIgnoreCase(player)) return null;
             String other = won ? loser : winner;
             if (opponent != null && !opponent.equalsIgnoreCase(other)) return null;
-            Match match = new Match(id(), capture, other, part, start, now, won);
+            Match match = new Match(id(), capture, other, part, 0, start, now, won);
             clearMatch();
             return match;
         }

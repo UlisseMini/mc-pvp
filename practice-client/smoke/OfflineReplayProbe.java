@@ -207,7 +207,7 @@ public final class OfflineReplayProbe {
                 check(mc.field_71474_y.field_74320_O==0,"perspective toggles back to first person");
                 result.put("remote",JsonData.map("has_join",remote.hasJoin,"packets",remote.packets.size(),"poses",remote.poses.size(),"warnings",remote.warnings,"applied",field(replay,"applied")));
                 call(replay,"stop",new Class[0]);
-                Path folder=Paths.get(System.getProperty("practice.test.labArchive")),file=Paths.get(System.getProperty("practice.test.labCapture"));ReplayRecording.Entry le=ReplayRecording.catalog(null,folder.getParent(),s->(Map<String,Object>)gson.fromJson(s,Map.class)).stream().filter(v->v.id.equals(folder.getFileName().toString())).findFirst().get();lab=ReplayRecording.load(le,s->(Map<String,Object>)gson.fromJson(s,Map.class));check(lab.hasJoin,"existing real lab full session contains JOIN");play(le,lab);
+                Path folder=Paths.get(System.getProperty("practice.test.labArchive"));ReplayRecording.Entry le=ReplayRecording.archiveEntry(folder,s->(Map<String,Object>)gson.fromJson(s,Map.class));lab=ReplayRecording.load(le,s->(Map<String,Object>)gson.fromJson(s,Map.class));check(lab.hasJoin,"existing real lab full session contains JOIN");play(le,lab);
                 Map<String,Object> lm=gson.fromJson(new String(Files.readAllBytes(folder.resolve("manifest.json")),"UTF-8"),Map.class);double sample=Math.min(lab.durationMs-1,Math.max(1000,((Number)lm.get("start_ms")).doubleValue()-lab.startMs+12000));seek(sample);check(String.valueOf(field(replay,"failure")).isEmpty(),"real lab packet reconstruction has no handler failure");check(lab.timeline.stream().anyMatch(m->m.kind.equals("attack"))&&lab.timeline.stream().anyMatch(m->m.kind.contains("velocity")),"lab attack/S12 timeline decoded");
                 Map<String,Object> own=(Map<String,Object>)call(replay,"self",new Class[0]),target=(Map<String,Object>)call(replay,"opponent",new Class[0]);check(!target.isEmpty(),"lab observed target selected from recorded own view");check(Double.isFinite(practice.math.ReachAdvantage.distance(own,target)),"recorded own reach is measurable");Map<String,Object> data=(Map<String,Object>)call(replay,"replayFrame",new Class[0]);check(!((Map)data.get("reach_advantage")).isEmpty(),"independent linked client POV supports real advantage");host.getClass().getMethod("event",PracticeEvent.class).invoke(host,new PracticeEvent("connection_scope",0,0,0,JsonData.map("practice_allowed",true)));host.getClass().getMethod("event",PracticeEvent.class).invoke(host,new PracticeEvent("replay_frame",0,0,0,data));Frame frame=(Frame)host.getClass().getMethod("render",float.class,int.class,int.class).invoke(host,0f,960,540);frame=(Frame)call(replay,"hud",new Class[]{Frame.class,int.class,int.class},frame,960,540);
                 List<Object> lines=new ArrayList<>();for(Frame.Line line:frame.lines)lines.add(JsonData.map("text",line.text,"x",line.x,"y",line.y,"color",line.color,"scale",line.scale,"right",line.right,"centered",line.centered));result.put("overlay",lines);result.put("lab",JsonData.map("has_join",lab.hasJoin,"packets",lab.packets.size(),"poses",lab.poses.size(),"timeline",lab.timeline.size(),"warnings",lab.warnings,"time_ms",field(replay,"time"),"applied",field(replay,"applied")));check(!lines.isEmpty(),"actual viewer overlay frame exported");
@@ -227,11 +227,14 @@ public final class OfflineReplayProbe {
                 ReplayRecording selected=(ReplayRecording)field(replay,"recording");
                 check(selected.entry.id.equals("sumo:"+System.getProperty("practice.test.sumoMatch")),"chat link opens its exact archived MMC duel");
                 check(selected.sumo.capturedCountdown&&selected.sumo.capturedResult
-                        &&((Number)field(replay,"time")).doubleValue()==selected.playStart()
-                        &&String.valueOf(field(replay,"failure")).isEmpty(),"MMC replay opens at its recorded five-second countdown");
-                check(arenaHasBlocks(mc)&&selected.sumo.hasArenaTerrain,"captured arena blocks are present at the countdown frame");
+                        &&((Number)field(replay,"time")).doubleValue()==selected.openingTime()
+                        &&String.valueOf(field(replay,"failure")).isEmpty(),"MMC replay opens at its decisive moment");
+                check(arenaHasBlocks(mc)&&selected.sumo.hasArenaTerrain,"captured arena blocks are present at the opening frame");
+                Object arenaWorld=mc.field_71441_e,ownActor=field(replay,"ownActor");
                 seek(0);
-                check(((Number)field(replay,"time")).doubleValue()==selected.playStart(),"rewind cannot expose arena preparation or the prior match");
+                check(((Number)field(replay,"time")).doubleValue()==selected.playStart()&&arenaHasBlocks(mc)
+                                &&mc.field_71441_e==arenaWorld&&field(replay,"ownActor")==ownActor,
+                        "rewind to the countdown retains terrain, world and the recorded player");
                 call(replay,"key",new Class[]{int.class,boolean.class},org.lwjgl.input.Keyboard.KEY_SPACE,false);
                 check(!((Boolean)field(replay,"paused")),"Space resumes replay");
                 call(replay,"key",new Class[]{int.class,boolean.class},org.lwjgl.input.Keyboard.KEY_SPACE,false);
@@ -255,14 +258,16 @@ public final class OfflineReplayProbe {
                 check(((Number)call(replay,"projectedTime",new Class[]{double.class},40d)).doubleValue()==initial+30,
                         "reverse preview interpolates between playback ticks");
                 call(replay,"updatePlayback",playbackClock,0d,0);
-                check(field(replay,"network")!=forwardWorld&&(Boolean)field(replay,"paused")&&arenaHasBlocks(mc),
-                        "releasing left restores the arena at the new time and keeps the pause state");
+                check(field(replay,"network")==forwardWorld&&(Boolean)field(replay,"paused")&&arenaHasBlocks(mc),
+                        "releasing left keeps the arena loaded and preserves the pause state");
                 call(replay,"key",new Class[]{int.class,boolean.class},org.lwjgl.input.Keyboard.KEY_RBRACKET,false);
                 check(((Number)field(replay,"speed")).doubleValue()==1,"right bracket restores the 1x F8 preset");
                 call(replay,"key",new Class[]{int.class,boolean.class},org.lwjgl.input.Keyboard.KEY_PERIOD,false);
                 check(((Number)field(replay,"time")).doubleValue()==selected.tickStep(initial+50),"period steps one recorded tick forward");
                 call(replay,"key",new Class[]{int.class,boolean.class},org.lwjgl.input.Keyboard.KEY_COMMA,false);
-                check(((Number)field(replay,"time")).doubleValue()==selected.previousTick(selected.tickStep(initial+50)),"comma steps one recorded tick back");
+                check(((Number)field(replay,"time")).doubleValue()==selected.previousTick(selected.tickStep(initial+50))
+                                &&mc.field_71441_e==arenaWorld&&field(replay,"ownActor")==ownActor,
+                        "comma steps one recorded tick back without replacing the world or recorded player");
                 ReplayRecording.Pose swing=selected.poses.stream().filter(p->p.atMs>=selected.playStart()&&p.atMs<=selected.playEnd()
                         &&p.self.get("swingProgress") instanceof Number&&((Number)p.self.get("swingProgress")).floatValue()>.2f
                         &&p.self.containsKey("held")&&p.self.get("held")==null).findFirst().get();
@@ -381,8 +386,8 @@ public final class OfflineReplayProbe {
             if(stage>=10&&stage<=15&&ticks-at>400)throw new AssertionError("Additional replay did not load");
             if(stage==10&&!(Boolean)field(replay,"loading")){
                 ReplayRecording selected=(ReplayRecording)field(replay,"recording");
-                check(selected.entry.id.equals(adjacentId)&&((Number)field(replay,"time")).doubleValue()==selected.playStart(),
-                        "Down opens the next match at its countdown");
+                check(selected.entry.id.equals(adjacentId)&&((Number)field(replay,"time")).doubleValue()==selected.openingTime(),
+                        "Down opens the next match at its decisive moment");
                 result.put("next_match_switch_ms",(System.nanoTime()-switchTime)/1e6);
                 switchTime=System.nanoTime();
                 call(replay,"key",new Class[]{int.class,boolean.class},org.lwjgl.input.Keyboard.KEY_UP,false);
@@ -402,6 +407,7 @@ public final class OfflineReplayProbe {
             }
             if(stage==12&&!(Boolean)field(replay,"loading")){
                 ReplayRecording selected=(ReplayRecording)field(replay,"recording");
+                seek(selected.playStart());
                 check(selected.entry.id.equals("sumo:"+System.getProperty("practice.test.cachedTerrainMatch"))
                         &&!selected.sumo.earlierChunks.isEmpty()&&arenaHasBlocks(mc),
                         "previously cached MMC arena is rebuilt with captured earlier chunks");

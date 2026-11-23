@@ -434,24 +434,24 @@ reload is needed.
 Open **`/practice replays`** or **`/p replays`**, the **Local replays** title-screen
 button, or **F8**. The client registers only `/practice` and its `/p` alias.
 It never registers or intercepts `/replay`; that command remains the server's.
-You can browse while connected. Playback starts after the live connection closes
-and runs locally.
+You can browse while connected. Playback starts after the live connection closes.
 
 With remote recording enabled, completed Minemen Club Sumo matches get a local
-**Watch replay** link in chat. Clicking it performs the normal Minecraft
-disconnect from MMC, waits for the recording to finish writing, and opens the
-selected match offline. Saved matches also appear under **Show MMC Sumo only**
-in **Local replays** by opponent and result.
+**Watch replay** link in chat. Clicking it disconnects from MMC, waits for the
+capture file to close, and opens the offline replay in the same Minecraft
+window. Press **F8** for the timeline, camera and display controls. **Return to
+MMC** in **F8** or the **Esc** menu reconnects normally. It uses your last MMC
+server entry, a saved MMC entry, or `mineman.club` as the fallback.
 
-While watching an offline replay, click **Return to MMC** in the **Esc** menu
-or **F8** controls to close the replay and reconnect to Minemen Club. The button
-uses your current MMC server entry or one from your saved multiplayer list,
-with `mineman.club` as the fallback.
+Saved matches also appear under **Show MMC Sumo only** in **Local replays**.
+Replays opened from the title screen work entirely offline.
 
-MMC Sumo clips show the arena at the five-second countdown and stop at the
-recorded result. Preparation packets stay outside the visible timeline. The
-viewer prepares arena terrain sent just after the countdown and can restore
-matching terrain from earlier packets in the same capture when MMC reuses a chunk.
+MMC Sumo clips open paused just before the winner's apparent finishing combo,
+or about three seconds before the result. The timeline still goes back to the
+recorded five-second countdown. Backward steps and scrubbing keep the arena
+loaded and follow the recorded player positions. During playback, each observed
+hit triggers one hurt sound. Scrubbing is silent. The viewer also uses recorded
+terrain sent just after the countdown or earlier in the same capture.
 
 The browser lists local capture files and the existing lab/remote archive with
 recorded date, server and duration. A `≈` duration is a file-time estimate before
@@ -657,8 +657,8 @@ opens or seeks the offline recording and pauses 250 ms before the first
 event when the clip allows it. The browser report also has a copyable
 Minecraft seek command for any selected time. Practice replays use the
 configured archive directory. If a live practice connection is open,
-the seek waits for you to disconnect. MMC playback uses the existing
-disconnect and offline playback flow.
+the seek waits for you to disconnect. MMC Sumo bookmarks use the same
+disconnect and replay flow as the **Watch replay** link.
 
 A practice trade is confirmed when reciprocal scoring hits share a server tick.
 Other hits or MMC cues within 120 ms can be grouped for review. Same-side

@@ -50,6 +50,7 @@ def main():
     compile_to(work/'probe',[SRC/'smoke/OfflineReplayProbe.java',SRC/'smoke/ReplayGraphics.java'],os.pathsep.join([str(BUILD/'compile-api.jar'),str(BUILD/'api'),str(BUILD/'core'),*libraries]));jar(work/'probe.jar',work/'probe')
     for src,dest in [(BUILD/'practice-bridge.jar',game/'mods/practice-bridge.jar'),(work/'probe.jar',game/'mods/replay-probe.jar'),(BUILD/'practice-module.jar',game/'config/pvp-practice/practice-module.jar'),(SRC/'settings.properties',game/'config/pvp-practice/settings.properties')]:shutil.copyfile(src,dest)
     with(game/'config/pvp-practice/settings.properties').open('a')as f:f.write('\narchive.directory='+str(ROOT/'runtime/pov')+'\nreach.enabled=true\n')
+    (game/'config/pvp-practice/replay-display.properties').write_text('')
     (game/'config/splash.properties').write_text('enabled=false\n');(game/'options.txt').write_text('renderDistance:2\nmaxFps:30\nsoundCategory_master:0.0\n')
     report=game/'verification.json';report.unlink(missing_ok=True)
     if args.graphical:classpath=graphical_classpath(classpath)

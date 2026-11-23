@@ -17,18 +17,24 @@ public final class ReplayRecording {
         public final double durationMs;
         public final Path firstFile,archiveFolder;
         public final boolean midConnection,durationEstimated;
+        public final MmcSumoReplay.Match sumoMatch;
         private final Path lastFile;
         public Entry(String id,String label,String server,long startMs,double durationMs,Path firstFile,boolean midConnection,Path archiveFolder){
             this(id,label,server,startMs,durationMs,firstFile,midConnection,archiveFolder,false,startMs,0);
         }
         private Entry(String id,String label,String server,long startMs,double durationMs,Path firstFile,boolean midConnection,Path archiveFolder,boolean estimated,long preferred,long finish){
-            this(id,label,server,startMs,durationMs,firstFile,midConnection,archiveFolder,estimated,preferred,finish,null);
+            this(id,label,server,startMs,durationMs,firstFile,midConnection,archiveFolder,estimated,preferred,finish,null,null);
         }
         private Entry(String id,String label,String server,long startMs,double durationMs,Path firstFile,boolean midConnection,
                       Path archiveFolder,boolean estimated,long preferred,long finish,Path lastFile){
+            this(id,label,server,startMs,durationMs,firstFile,midConnection,archiveFolder,estimated,preferred,finish,lastFile,null);
+        }
+        private Entry(String id,String label,String server,long startMs,double durationMs,Path firstFile,boolean midConnection,
+                      Path archiveFolder,boolean estimated,long preferred,long finish,Path lastFile,MmcSumoReplay.Match sumoMatch){
             this.id=id;this.label=label;this.server=server;this.startMs=startMs;this.durationMs=durationMs;
             this.firstFile=firstFile.toAbsolutePath().normalize();this.midConnection=midConnection;this.archiveFolder=archiveFolder;durationEstimated=estimated;preferredStartMs=preferred;finishMs=finish;
             this.lastFile=lastFile==null?null:lastFile.toAbsolutePath().normalize();
+            this.sumoMatch=sumoMatch;
         }
         public boolean isSumo(){return id.startsWith("sumo:");}
     }
@@ -92,6 +98,7 @@ public final class ReplayRecording {
     public final boolean hasAttackSamples;
     public final ReplayMotion motion;
     public final ReplaySumoClip sumo;
+    public final ReplaySumoMoments sumoMoments;
     public final ReplayInputs inputs;
     private final List<Wire> inbound;
     private final double[] ticks;
@@ -101,6 +108,7 @@ public final class ReplayRecording {
         timeline=Collections.unmodifiableList(marks);this.warnings=Collections.unmodifiableList(new ArrayList<String>(warnings));hasJoin=join;this.selfId=selfId;
         this.hasAttackSamples=hasAttackSamples;
         this.sumo=sumo;
+        sumoMoments=sumo==null?null:ReplaySumoMoments.read(sumo,entry.sumoMatch,poses,marks);
         this.inputs=inputs;
         this.coach=coach;this.coachOrigin=coachOrigin;
         for(Mark m:marks)if("sprint_hit".equals(m.kind))sprintHits.put(m.atMs,(Boolean)m.details.get("sprint"));
@@ -112,6 +120,7 @@ public final class ReplayRecording {
     public List<Wire> inboundPackets(){return inbound;}
     public double playStart(){return sumo==null?0:sumo.startMs;}
     public double playEnd(){return sumo==null?durationMs:sumo.finishMs;}
+    public double openingTime(){return sumoMoments==null?Math.max(0,entry.preferredStartMs-startMs):sumoMoments.openingMs;}
     public ReplayRecoil.Count recoilAt(double ms){return recoil.at(ms);}
     public boolean attackScaleFlash(double ms){return recoil.flashingAt(ms);}
     /** Last recorded pose; no extrapolation or fabricated entity state. */
@@ -227,7 +236,7 @@ public final class ReplayRecording {
         Path first=match.firstSegment(captures);
         if(!Files.isRegularFile(first))return null;
         return new Entry("sumo:"+match.id,"Sumo vs "+match.opponent+(match.won?" · Win":" · Loss"),"MMC",
-                match.start,match.finish-match.start,first,match.part>1,null,false,match.start,match.finish);
+                match.start,match.finish-match.start,first,match.part>1,null,false,match.start,match.finish,match.lastSegment(captures),match);
     }
     public static List<Entry> sumoEntries(Path captures)throws IOException{
         Path sumo=captures.resolveSibling("sumo-replays");

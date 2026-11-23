@@ -183,6 +183,30 @@ public final class ReplayRecordingChecks {
         ReplayRecording.Entry selected=ReplayRecording.sumoEntry(captures,saved);
         check(selected!=null&&selected.firstFile.equals(segment)&&selected.preferredStartMs==9100&&selected.finishMs==18002
                 &&MmcSumoReplay.read(metadata,"../example")==null,"bookmark round trips by local ID and selects an exact match span");
+        Map<String,Map<String,Object>> rows=new HashMap<>();
+        rows.put("start",row("capture_start",8000,map("started_mid_connection",true)));
+        rows.put("pose",row("tick_end",8110,map("self",map("id",7,"pos",Arrays.asList(0.,4.,0.),"hurtTime",0),
+                "entities",Collections.singletonList(map("id",8,"name","Example","kind","EntityOtherPlayerMP","pos",Arrays.asList(2.,4.,0.))))));
+        byte[] hurt={(byte)0x1a,0,0,0,7,2};
+        rows.put("hit",wire(true,15000,1,hurt));
+        rows.put("same-hit",wire(true,15050,2,hurt));
+        rows.put("next-hit",wire(true,16150,3,hurt));
+        rows.put("last-hit",wire(true,16950,4,hurt));
+        rows.put("tail",row("tick_end",17002,map("screen",null)));
+        rows.put("end",map("type","capture_end","writer_complete",true,"continues","currently-open.jsonl.gz"));
+        Files.write(metadata.resolve(match.id+".properties"),
+                ("last_part="+match.part+"\n").getBytes(StandardCharsets.UTF_8),StandardOpenOption.APPEND);
+        gzip(segment,"start","pose","hit","same-hit","next-hit","last-hit","tail","end");
+        ReplayRecording.Entry bounded=ReplayRecording.sumoEntry(captures,MmcSumoReplay.read(metadata,match.id));
+        ReplayRecording combo=ReplayRecording.load(bounded,rows::get);
+        check(!warns(combo,"Missing linked segment")&&combo.sumoMoments.impacts.size()==3,
+                "a sealed clip ends before the open capture part and collapses repeated hurt cues");
+        double startOfCombo=combo.sumoMoments.impacts.get(0).atMs;
+        check(combo.openingTime()==startOfCombo-450&&combo.sumoMoments.after(startOfCombo)==1&&combo.playStart()<combo.openingTime(),
+                "opening leads the winner's finishing combo while full countdown remains seekable");
+        gzip(segment,"start","pose","last-hit","tail","end");
+        ReplayRecording single=ReplayRecording.load(bounded,rows::get);
+        check(single.openingTime()==single.playEnd()-3000,"a single hit opens at the last three seconds");
     }
     private static void smoothPoses(){
         Map<String,Object> from=map("id",7,"pos",Arrays.asList(0.,4.,0.),"yaw",179.);
