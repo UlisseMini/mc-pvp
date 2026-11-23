@@ -1,5 +1,9 @@
 # Minecraft PvP Lab
 
+> [!WARNING]
+> ## ⚠️⚠️⚠️ VIBECODED SLOP! ⚠️⚠️⚠️
+> **I'll make an actual reasonable writeup later, but for now this README (and a lot of this repo) is all AI-generated with zero guidance.**
+
 A collection of AI, physics, and practice-tool explorations built around **Minecraft Java 1.8.9** and **modern Minecraft (Java 26.3)** combat.
 
 Fight self-play bots locally, replay exchanges from every player's point of view, train neural networks on real gameplay captures, and reverse-engineer the exact tick-by-tick physics that decide fights.
