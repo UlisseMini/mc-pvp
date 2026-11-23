@@ -30,7 +30,10 @@
 
   <div class="wide-breakout">
     <figure style="margin:0;">
-      <img src="assets/bow-aim-live.gif" alt="Real in-game Minecraft 1.8.9 render of Neural BowAim showing K=6 predicted ghosts, ballistic arrow arc, and hit probability HUD" onerror="this.src='assets/bow-aim-results.png'">
+      <video width="1440" height="810" controls autoplay loop muted playsinline poster="assets/bow-aim-live-poster.webp" aria-label="Minecraft 1.8.9 replay with Neural Bow Aim's predicted ghosts, arrow trajectory, and hit probability">
+        <source src="assets/bow-aim-live.mp4" type="video/mp4">
+        <img src="assets/bow-aim-live.gif" alt="Minecraft 1.8.9 replay with Neural Bow Aim's predicted ghosts, arrow trajectory, and hit probability">
+      </video>
       <figcaption>
         <strong>Real in-game Forge 1.8.9 replay with Neural BowAim overlays active.</strong> Translucent silhouettes show the network's top predicted future landing spots (<code>K=6</code> coherent movement modes) at arrow arrival time, color-coded by safe hit vs. void-kill opportunity (<code>V</code>), alongside the glowing ballistic arc and expected-value HUD.
       </figcaption>
@@ -85,9 +88,9 @@
   </p>
 
   <figure>
-    <img src="assets/bow-aim-wait-still.png" alt="In-game Hypixel render showing BowAim v4 displaying NOW 0.3x · WAIT 0.8x with translucent K=6 predicted target ghosts and glowing cyan trajectory arc">
+    <img src="assets/bow-aim-wait-still.png" width="1440" height="810" loading="lazy" alt="Bow Aim's NOW and WAIT estimates over predicted target positions and the arrow trajectory">
     <figcaption>
-      Live in-game render of <code>BowWaitModel</code> in action: right before the target steps out of cover, the HUD flashes <code>NOW 0.3x · WAIT 0.8x</code> while the translucent K=6 ghosts fan out across the island edge. A moment later (seen in the GIF at top) the window spikes to <code>0.9x (94%) ▲</code> and the arrow connects.
+      Right before the target steps out of cover, <code>BowWaitModel</code> shows a higher estimate for waiting, while the predicted positions fan out across the island edge.
     </figcaption>
   </figure>
 

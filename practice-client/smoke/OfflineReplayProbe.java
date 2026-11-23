@@ -21,7 +21,9 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.event.ClickEvent;
+import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.ClientCommandHandler;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.*;
 import net.minecraftforge.fml.common.event.*;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -44,6 +46,10 @@ public final class OfflineReplayProbe {
         call(capture,"remoteRecording",new Class[]{boolean.class},true);if(Boolean.getBoolean("practice.test.graphical")){stage=4;}
         if(System.getProperty("practice.test.reuseRemote")!=null){stage=2;remoteFile=Paths.get(System.getProperty("practice.test.reuseRemote"));}
         FMLCommonHandler.instance().bus().register(this);
+        if(stage==4)MinecraftForge.EVENT_BUS.register(this);
+    }
+    @SubscribeEvent public void graphicalMenu(GuiOpenEvent event) throws org.lwjgl.LWJGLException {
+        if(stage==4&&event.gui instanceof GuiMainMenu)ReplayGraphics.restoreContext();
     }
     void play(ReplayRecording.Entry e,ReplayRecording r)throws Exception{call(replay,"start",new Class[]{ReplayRecording.Entry.class,ReplayRecording.class},e,r);}
     void seek(double t)throws Exception{call(replay,"seek",new Class[]{double.class},t);}
@@ -156,7 +162,8 @@ public final class OfflineReplayProbe {
     @SubscribeEvent public void tick(TickEvent.ClientTickEvent event){if(event.phase!=TickEvent.Phase.END)return;Minecraft mc=Minecraft.func_71410_x();ticks++;
         try{
             if(stage==4&&ticks>=25){
-                Gson gson=new Gson();Path folder=Paths.get(System.getProperty("practice.test.labArchive")),file=Paths.get(System.getProperty("practice.test.labCapture"));ReplayRecording.Entry le=ReplayRecording.catalog(null,folder.getParent(),s->(Map<String,Object>)gson.fromJson(s,Map.class)).stream().filter(v->v.id.equals(folder.getFileName().toString())).findFirst().get();lab=ReplayRecording.load(le,s->(Map<String,Object>)gson.fromJson(s,Map.class));play(le,lab);
+                ReplayGraphics.prepare(mc);
+                Gson gson=new Gson();Path folder=Paths.get(System.getProperty("practice.test.labArchive"));ReplayRecording.Entry le=ReplayRecording.archiveEntry(folder,s->(Map<String,Object>)gson.fromJson(s,Map.class));check(le!=null,"graphical lab fixture found");lab=ReplayRecording.load(le,s->(Map<String,Object>)gson.fromJson(s,Map.class));play(le,lab);
                 Map<String,Object> manifest=gson.fromJson(new String(Files.readAllBytes(folder.resolve("manifest.json")),"UTF-8"),Map.class);double target=((Number)manifest.get("start_ms")).doubleValue()-lab.startMs+12000;seek(Math.min(lab.durationMs-1,target));check(String.valueOf(field(replay,"failure")).isEmpty(),"graphical lab reconstruction");mc.func_147108_a(new net.minecraft.client.gui.GuiScreen(){public boolean func_73868_f(){return false;}});mc.func_71364_i();stage=5;at=ticks;return;
             }
             if(stage==5){if(ticks-at>=60){check(mc.field_71441_e!=null,"graphical replay world exists");net.minecraft.util.ScreenShotHelper.func_148259_a(mc.field_71412_D,"offline-replay.png",mc.field_71443_c,mc.field_71440_d,mc.func_147110_a());System.out.println("[OfflineProbe] GRAPHICAL SCENE SAVED");call(replay,"camera",new Class[]{String.class},"free");double[] fp=(double[])field(replay,"freePosition");double yaw=Math.toRadians(mc.field_71439_g.field_70177_z);fp[0]+=Math.sin(yaw)*4;fp[2]-=Math.cos(yaw)*4;mc.field_71439_g.field_70125_A=20;stage=6;at=ticks;}return;}

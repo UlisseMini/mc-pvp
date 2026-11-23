@@ -636,6 +636,12 @@ and tests that recording plus an existing lab capture entirely offline. The
 `--graphical` produces an actual OpenGL screenshot in an isolated offline client,
 using existing pinned libraries/natives and no live connection.
 
+Run `python3 practice-client/render_showcase.py` with the local Bow Aim and Sumo
+captures available to regenerate the site showcase media. It saves 1440 × 810
+MP4s and stills plus smaller GIFs under `build/practice-client/showcase-media/`.
+Use `--clip` to regenerate one clip. Both offline renderers reload Minecraft
+resources after restoring the OpenGL context to keep the terrain and item textures intact.
+
 ## Match event ledger
 
 From the project folder, generate a report and local replay bookmarks with

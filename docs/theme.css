@@ -235,6 +235,7 @@ figure {
 figure img, figure video {
   display: block;
   width: 100%;
+  height: auto;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
@@ -250,7 +251,7 @@ figcaption {
 
 .media-pair {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   gap: 1.15rem;
   align-items: start;
 }
@@ -505,4 +506,5 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .container { padding: 2rem 1rem 4rem; }
   .wide-breakout { width: 100%; left: 0; transform: none; }
+  th, td { padding: 0.5rem; overflow-wrap: anywhere; }
 }
