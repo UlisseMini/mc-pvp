@@ -1,11 +1,13 @@
 package practice.smoke;
 
 import com.google.gson.Gson;
+import io.netty.buffer.Unpooled;
 import java.lang.reflect.*;
 import java.nio.file.*;
 import java.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.gui.ChatLine;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.player.EntityPlayer;
@@ -13,8 +15,11 @@ import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.network.play.server.S02PacketChat;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.ScreenShotHelper;
+import net.minecraft.util.StringUtils;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
@@ -38,6 +43,8 @@ public final class ShowcaseRenderProbe {
     private int warmupTicks, totalFrames, ticks, stage, stepCount, savedFrames;
     private int settleTicks;
     private boolean pendingShot, checkPlacements;
+    private String voidMessage;
+    private int voidTarget;
     private Field modeField, trajField, ghostsField, interceptField, chanceField, autoRelField, limitField, pingField;
     private Field renderedItemField;
     private Method bowTickMethod, bowDrawMethod, bowHudMethod;
@@ -93,6 +100,8 @@ public final class ShowcaseRenderProbe {
         warmupTicks = Integer.parseInt(System.getProperty("showcase.warmupTicks", "40"));
         totalFrames = Integer.parseInt(System.getProperty("showcase.frames", "80"));
         checkPlacements = Boolean.getBoolean("showcase.checkPlacements");
+        voidMessage = System.getProperty("showcase.voidMessage", "");
+        voidTarget = Integer.getInteger("showcase.voidTarget", -1);
 
         if ("bowaim".equals(mode)) {
             if (bowAim == null) throw new IllegalStateException("Bow Aim is unavailable");
@@ -171,13 +180,16 @@ public final class ShowcaseRenderProbe {
         // The vanilla equip animation briefly lowers the old item after a slot switch.
         if (stableItemFrames >= 5 && rendered != item)
             throw new IllegalStateException("Native item renderer kept the wrong item at " + time + "ms");
-        if (!checkPlacements) return;
         if (item == Item.func_150891_b(Items.field_151031_f)) {
             if (using) {
                 sawDraw = true;
-                sawPrediction |= getField(bowAim, "target") != null;
+                Object prediction = getField(bowAim, "target");
+                if (prediction != null && (voidTarget < 0
+                        || ((EntityPlayer)getField(prediction, "player")).func_145782_y() == voidTarget))
+                    sawPrediction = true;
             } else if (sawDraw) sawRelease = true;
         }
+        if (!checkPlacements) return;
         for (BlockPos pos : RECORDED_STONE_PLACEMENTS) {
             if (mc.field_71441_e.func_175623_d(pos)) seenAir.add(pos);
             if (seenAir.contains(pos) && mc.field_71441_e.func_180495_p(pos).func_177230_c() == Blocks.field_150348_b
@@ -186,11 +198,31 @@ public final class ShowcaseRenderProbe {
         }
     }
 
-    private void verifyShowcase() {
+    private void verifyShowcase(Minecraft mc) throws Exception {
         if (checkPlacements && (!sawDraw || !sawRelease || !sawPrediction
                 || confirmedPlacements.size() != RECORDED_STONE_PLACEMENTS.length))
             throw new IllegalStateException("Incomplete Bow Aim sequence: draw=" + sawDraw + ", release=" + sawRelease
                     + ", prediction=" + sawPrediction + ", confirmed placements=" + confirmedPlacements.size());
+        if (!voidMessage.isEmpty()) {
+            List<?> chat = (List<?>)getField(mc.field_71456_v.func_146158_b(), "field_146252_h");
+            boolean credited = chat.stream().map(line -> ((ChatLine)line).func_151461_a().func_150260_c())
+                    .map(text -> StringUtils.func_76338_a(text).trim()).anyMatch(voidMessage::equals);
+            if (!sawDraw || !sawRelease || !sawPrediction || !credited)
+                throw new IllegalStateException("Incomplete void-kill sequence: draw=" + sawDraw
+                        + ", release=" + sawRelease + ", target prediction=" + sawPrediction + ", kill feed=" + credited);
+        }
+    }
+
+    private static String chatText(ReplayRecording.Wire wire) throws java.io.IOException {
+        PacketBuffer bytes = new PacketBuffer(Unpooled.wrappedBuffer(wire.bytes));
+        try {
+            bytes.func_150792_a();
+            S02PacketChat chat = new S02PacketChat();
+            chat.func_148837_a(bytes);
+            return StringUtils.func_76338_a(chat.func_148915_c().func_150260_c()).trim();
+        } finally {
+            bytes.release();
+        }
     }
 
     @SubscribeEvent
@@ -214,6 +246,8 @@ public final class ShowcaseRenderProbe {
                 rec = ReplayRecording.load(entry, s -> (Map<String, Object>)gson.fromJson(s, Map.class));
                 if (!rec.hasJoin) throw new IllegalStateException("Showcase capture is missing the initial world");
                 if ("bowaim".equals(mode)) {
+                    double joinTime = rec.packets.stream().filter(w -> w.inbound && w.protocolId == 0x01)
+                            .findFirst().orElseThrow(() -> new IllegalStateException("Missing JOIN_GAME")).atMs;
                     // The Hypixel fixture contains scoreboard changes that fail during offline seek.
                     // Suppress scoreboard packets for this showcase only.
                     Field modField = Field.class.getDeclaredField("modifiers");
@@ -224,7 +258,11 @@ public final class ShowcaseRenderProbe {
                         List<ReplayRecording.Wire> orig = (List<ReplayRecording.Wire>)f.get(rec);
                         List<ReplayRecording.Wire> kept = new ArrayList<>();
                         for (ReplayRecording.Wire w : orig) {
+                            // A segment can begin with packets from the previous server before JOIN_GAME.
+                            if (w.atMs < joinTime) continue;
                             if (w.inbound && (w.protocolId == 0x3B || w.protocolId == 0x3C || w.protocolId == 0x3D || w.protocolId == 0x3E)) continue;
+                            if (w.inbound && w.protocolId == 0x02 && !voidMessage.isEmpty()
+                                    && !voidMessage.equals(chatText(w))) continue;
                             kept.add(w);
                         }
                         modField.setInt(f, f.getModifiers() & ~Modifier.FINAL);
@@ -324,7 +362,7 @@ public final class ShowcaseRenderProbe {
             savedFrames++;
             pendingShot = false;
             if (savedFrames >= totalFrames) {
-                verifyShowcase();
+                verifyShowcase(mc);
                 System.out.println("[ShowcaseProbe] CAPTURE COMPLETE frames=" + savedFrames);
                 stage = 3;
                 mc.func_71400_g();

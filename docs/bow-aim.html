@@ -30,12 +30,12 @@
 
   <div class="wide-breakout">
     <figure style="margin:0;">
-      <video width="1440" height="810" controls autoplay loop muted playsinline poster="assets/bow-aim-live-poster.webp" aria-label="Minecraft 1.8.9 replay with Neural Bow Aim's predicted ghosts, arrow trajectory, and hit probability">
+      <video width="1440" height="810" controls autoplay loop muted playsinline poster="assets/bow-aim-live-poster.webp" aria-label="Bow Aim's automatic shot knocks a SkyWars player off the grassy crossing and into the void">
         <source src="assets/bow-aim-live.mp4" type="video/mp4">
-        <img src="assets/bow-aim-live.gif" alt="Minecraft 1.8.9 replay with Neural Bow Aim's predicted ghosts, arrow trajectory, and hit probability">
+        <img src="assets/bow-aim-live.gif" alt="Bow Aim's automatic shot knocks a SkyWars player off the grassy crossing and into the void">
       </video>
       <figcaption>
-        <strong>Recorded Hypixel gameplay replayed in Minecraft Java 1.8.9.</strong> During the recorded bow draws, the overlay recomputes the arrow trajectory, expected value, and up to six possible target positions. The clip follows the original item switches and stone placements.
+        <strong>Automatic release at the edge of a SkyWars crossing.</strong> Bow Aim releases the arrow as the player moves across the grassy path. The hit knocks them into the gap, and Hypixel credits the void kill. The ghosts and trajectory are predictions recomputed in the Minecraft 1.8.9 replay.
       </figcaption>
     </figure>
   </div>
@@ -86,6 +86,14 @@
   <p>
     Not every hit is worth the same. In v3 we built an exact 14-tick 1.8.9 knockback + void-edge simulator (<code>VoidKbValue</code>) that checks whether hitting a predicted ghost will knock the player into the void (valued at 8× a normal bow hit, or 10× for snowballs/eggs). Then we trained a lightweight continuation-value head (<code>BowWaitModel</code>, 109 KB) that compares <em>shooting right now</em> vs. <em>holding the bow for a few more ticks</em>. When a player is about to step from solid island blocks onto a narrow bridge, the HUD flashes <code>NOW · WAIT</code>—holding fire for ~1.5 ticks on average and lifting void kills per 10 shots on void-exposed targets from <strong>2.46 → 2.75 (+11.8%)</strong>.
   </p>
+
+  <figure id="second-void-kill">
+    <video width="1440" height="810" controls loop muted playsinline preload="none" poster="assets/bow-aim-void-second-poster.webp" aria-label="A second recorded SkyWars void kill from an aim-assisted bow shot at a player on a wooden ledge">
+      <source src="assets/bow-aim-void-second.mp4" type="video/mp4">
+      <img src="assets/bow-aim-void-second.gif" alt="Aim-assisted bow shot knocks a SkyWars player off a wooden ledge">
+    </video>
+    <figcaption><strong>A second void kill at the wooden crossing.</strong> The ghosts cluster around the opponent as they rise above the planks. I release the shot manually with aim assist active, and the arrow knocks them off.</figcaption>
+  </figure>
 
   <figure>
     <img src="assets/bow-aim-wait-still.png" width="1440" height="810" loading="lazy" alt="Bow Aim's NOW and WAIT estimates over predicted target positions and the arrow trajectory">

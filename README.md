@@ -10,11 +10,11 @@ This isn't a neat single-purpose library—it's a collection of projects I built
 
 <p align="center">
   <img src="docs/assets/sumo-two-pov-live.gif" alt="Real Minecraft 1.8.9 Sumo replay with recorded keystrokes and knockback feedback" width="49%" />
-  <img src="docs/assets/bow-aim-live.gif" alt="Real Hypixel Minecraft 1.8.9 replay with Neural BowAim K=6 predicted ghosts and arrow arc" width="49%" />
+  <img src="docs/assets/bow-aim-live.gif" alt="Recorded SkyWars void kill with Neural Bow Aim's predicted ghosts and arrow trajectory" width="49%" />
 </p>
 
 <p align="center">
-  <em>Left: A Sumo fight replayed in Forge 1.8.9 with recorded keystrokes and knockback feedback. &nbsp;·&nbsp; Right: Neural Bow Aim forecasts overlaid on a recorded Hypixel replay.</em>
+  <em>Left: A Sumo fight replayed in Forge 1.8.9 with recorded keystrokes and knockback feedback. &nbsp;·&nbsp; Right: Neural Bow Aim forecasts overlaid on a recorded SkyWars void kill.</em>
 </p>
 
 ---
