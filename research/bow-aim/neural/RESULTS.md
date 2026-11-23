@@ -129,3 +129,29 @@ Extracted from all local Hypixel captures (`research/bow-aim/neural/extract_rich
 | **10-Throw Sustained — Void-Exposed (`n = 125`)** `v2_single` | 98.60% | 85.96% | 8.647× |
 | **10-Throw Sustained — Void-Exposed (`n = 125`)** `v3_ev_novolley` | 98.95% | **90.84% (+4.88pp vs v2)** | **9.116×** |
 | **10-Throw Sustained — Void-Exposed (`n = 125`)** **`v3_ev_volley`** | **99.70%** | **90.02% (+31.2pp vs linear)** | **9.041×** |
+
+---
+
+## BowNeural v4 (`BNN4`: 2.5D + 25×25 Spatial CNNs + Dynamic Placed Blocks + 4-Head Attention + Velocity-Residual out to 72t + Future-Block Head)
+
+- **Data (`extract_v4.py`):** 82 Hypixel matches (12 BedWars + 70 SkyWars), `1,504,178` remote + `218,736` self ticks, `28,399` real `S23`/`S22` block placements; exact frozen sealed test split (`bw-09..12` + 5 unseen SkyWars) preserved untouched. Train only adds 6% physics-exact synthetic bridging (`19,992` samples) + square-root behavioral stratification.
+- **Model (`947,049` floats, `3.79 MB`, `bow-neural.bin`):** 48t×30ch Conv1d + 4-head Temporal Self-Attention + LayerNorm (`h.transpose(1,2).contiguous()` fixes PyTorch 2.0 MPS non-contiguous `silu_backward` bug), 2.5D Vertical-Channel Spatial CNN (`Conv2d 14→32→48→64` on `9×9` `[solid, recently_placed]`), Wide Top-Down CNN (`Conv2d 4→16→24→32` on `25×25`), 3-block 256-dim residual trunk, velocity-residual heads anchored on `serverPos(0)` out to **`72` ticks (3.6s)**, auxiliary `5×7×7` future-block-placement head (`63.3%` voxel recall on sealed BedWars, ~35× base rate), and retrained `BowWaitNet` v4 (`bow-wait.bin`, `121 KB`, `266`-dim input, `alpha = 1.150`).
+- **Exact Python ↔ Java 8 v4 Parity (`check_v4_parity.py`, 24 real sealed tracks):** `max_w = 8.67e-7`, `max_pos = 6.38e-6`, `max_std = 5.74e-6`, `max_rho = 7.68e-7`, `max_prob = 6.15e-7`, `max_futBlkSum = 1.83e-5`, live latency **`3.35 ms/target`**.
+- **Configurable Explicit Fallback:** `/p bowaim bridgehack off|on` (default **`off`** — pure learned `BNN4`).
+
+### 1. Bridging Stress Suite (Snowballs, `0–160ms` ping — Pure Learned vs Explicit `bridgehack`)
+| Scenario | Old Pure NN (`BNN2`, `bridgehack=OFF`) | **Pure `BNN4` (`bridgehack=OFF`, Python)** | **Pure `BNN4` (`bridgehack=OFF`, Live Java EV)** | **`BNN4 + bridgehack=ON`** |
+| --- | ---: | ---: | ---: | ---: |
+| **Constant sideways** (`0.08–0.24 b/t`, `12–48b`, `0–160ms`) | `13/48` (`27.1%`) | `44/48` (`91.7%`) | **`48/48` (`100.0%`)** | `48/48` (`100.0%`) |
+| **Diagonal-up stair speedbridging** (`p=6/7/9`, `12–36b`, `0–100ms`) | `5/18` (`27.8%`) | **`18/18` (`100.0%`)** | **`18/18` (`100.0%`)** | `18/18` (`100.0%`) |
+| **Variable-speed 4-throw volley** (`0.68×/1.00×/1.28×`, `18–34b`, `80ms`) | `5/9` (`55.6%`) | `7/9` (`77.8%`) | `7/9` (`77.8%`) | **`9/9` (`100.0%`)** |
+
+### 2. Matched Head-to-Head on Identical Sealed PvP Bow Shots (`BNN2` vs Pure `BNN4`)
+- Full sealed `BNN4`: BedWars 0ms `74.79%` (`166,144` shots, Brier `0.1404`, pred `75.4%` vs actual `74.8%`, real-bridge slice `72.96%`), BedWars 100ms `70.53%`, SkyWars 0ms `72.53%`.
+- **Matched identical-shot comparison** (`BNN2` with its exact coarse voxels vs `BNN4`):
+  - Sealed BedWars 0ms (`66,472` shots): `BNN2 76.73%` vs `BNN4 74.86%` (`-1.87pp`; real-bridge slice `74.40%` vs `73.21%`)
+  - Sealed BedWars 100ms (`66,376` shots): `BNN2 72.57%` vs `BNN4 70.70%` (`-1.87pp`)
+  - Sealed SkyWars 0ms (`9,112` shots): `BNN2 73.22%` vs `BNN4 71.85%` (`-1.37pp`)
+- **Causal Diagnosis (Per-Horizon ADE on Sealed BedWars):**
+  - `min-of-K` error: `BNN4` **beats `BNN2` at `42t`** (`1.854` vs `1.913`), **ties at `30t`** (`1.299` vs `1.299`), and is **worse at short horizons `3t–10t`** (`0.197` vs `0.158` at `3t`, `0.321` vs `0.257` at `6t`, `0.475` vs `0.408` at `10t`).
+  - Root cause: (1) a single horizon-shared velocity gate `vgate` multiplying the 12-tick average `vbase` across all 9 horizons `3..72` (so `72t` dominates `vgate` gradients by `24×` and pulls `3t–6t` in the stale 12-tick direction on sharp stops/turns), plus (2) `947k` params trained at `stride=3` with heavy `1/sqrt(c)` bridge oversampling and no dropout (`tr_nll = -1.188` vs `val_nll = -0.824`). Future v4.1 fix: horizon-specific gating (or instantaneous `v(0)` at short horizons + `vbase` at long horizons) + `stride=2` + Stage-2 natural-distribution hit-rate fine-tuning.

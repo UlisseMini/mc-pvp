@@ -257,8 +257,8 @@ def eval_split_v4(model, device, data_dir: Path, split: str, mode_filter=None, s
                                               lead_shift=rtt_ticks, refine=True)
                     hit = 0
                     if shot is not None:
-                        # simulate_arrow_hit expects 9-tuple without gravity
-                        hit = 1 if simulate_arrow_hit(shot[:9], spos, idx + rtt_int, rng) else 0
+                        # simulate_arrow_hit expects (shot[:9], future_pos_from_launch, rng)
+                        hit = 1 if simulate_arrow_hit(shot[:9], spos[idx + rtt_int:idx + rtt_int + 43], rng) else 0
                     stats[rng_d][0] += hit; stats[rng_d][1] += 1
                     raw_probs.append(prob); actual_hits.append(hit)
                     if is_real_bridge:
@@ -461,7 +461,7 @@ def main():
 
     print('Fitting validation-only calibration curve...', flush=True)
     val_res = eval_split_v4(model, device, args.data, 'val', stride=12, rtt_ticks=0.0)
-    cal_curve = fit_calibration(val_res['raw_probs'], val_res['actual_hits'], n_bins=21)
+    cal_curve = fit_calibration(val_res['raw_probs'], val_res['actual_hits'], steps=21)
     print(f'  Val hit={val_res["total_hit"]*100:.2f}%, real-bridge={val_res["real_bridge_hit"]*100:.2f}% '
           f'({val_res["real_bridge_shots"]} shots), fut_blk P={val_res["fblk_prec"]*100:.1f}% R={val_res["fblk_rec"]*100:.1f}%', flush=True)
 

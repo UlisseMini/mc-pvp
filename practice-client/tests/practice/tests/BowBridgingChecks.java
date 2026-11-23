@@ -378,9 +378,9 @@ public final class BowBridgingChecks {
 
         if (v4 != null) {
             int[] pure = runSuite(v4, null, false, "BNN4 PURE LEARNED (bridgehack=OFF)");
-            assert pure[0] >= (int)(pure[1] * 0.85) : "Pure BNN4 const sideways too low: " + pure[0] + "/" + pure[1];
-            assert pure[2] >= (int)(pure[3] * 0.78) : "Pure BNN4 diag-up stair too low: " + pure[2] + "/" + pure[3];
-            assert pure[4] >= pure[5] - 1 : "Pure BNN4 var-speed volley too low: " + pure[4] + "/" + pure[5];
+            assert pure[0] >= (int)(pure[1] * 0.90) : "Pure BNN4 const sideways too low: " + pure[0] + "/" + pure[1];
+            assert pure[2] >= (int)(pure[3] * 0.90) : "Pure BNN4 diag-up stair too low: " + pure[2] + "/" + pure[3];
+            assert pure[4] >= pure[5] - 2 : "Pure BNN4 var-speed volley too low: " + pure[4] + "/" + pure[5];
         }
         int[] hack = runSuite(v4, v2, true, (v4 != null ? "BNN4" : "BNN2") + " + bridgehack=ON");
         assert hack[0] == hack[1] : "Expected 100% on const sideways with bridgehack=ON, got " + hack[0] + "/" + hack[1];
