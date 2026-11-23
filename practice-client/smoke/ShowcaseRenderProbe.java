@@ -8,12 +8,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.BlockPos;
 import net.minecraft.util.ScreenShotHelper;
-import net.minecraft.world.WorldSettings;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
@@ -23,23 +24,30 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.LWJGLException;
+import practice.api.WorldFrame;
 import practice.core.replay.ReplayRecording;
 
 /** Offline graphical renderer for showcase GIFs & stills (BowAim K=6 ghosts + Two-POV Sumo). */
 @Mod(modid="showcaseprobe", name="Showcase Render Probe", version="1", clientSideOnly=true, dependencies="required-after:practicebridge")
 public final class ShowcaseRenderProbe {
-    private Object replay, bowAim;
+    private Object replay, bowAim, host;
     private ReplayRecording rec;
     private String mode, archiveId;
     private Path archiveRoot, outDir;
     private double startSec, stepMs, firstStepFrom;
     private int warmupTicks, totalFrames, ticks, stage, stepCount, savedFrames;
     private int settleTicks;
-    private boolean bowDrawActive, pendingShot;
-    private ItemStack bowStack;
+    private boolean pendingShot, checkPlacements;
     private Field modeField, trajField, ghostsField, interceptField, chanceField, autoRelField, limitField, pingField;
-    private Field itemInUseField, itemInUseCountField;
+    private Field renderedItemField;
     private Method bowTickMethod, bowDrawMethod, bowHudMethod;
+    private static final BlockPos[] RECORDED_STONE_PLACEMENTS = {
+        new BlockPos(-19, 60, 62), new BlockPos(-19, 61, 62),
+        new BlockPos(-19, 61, 63), new BlockPos(-19, 61, 64)
+    };
+    private final Set<BlockPos> seenAir = new HashSet<>(), confirmedPlacements = new HashSet<>();
+    private boolean sawDraw, sawRelease, sawPrediction;
+    private int previousItem = -1, stableItemFrames;
     private final GuiScreen invisibleScreen = new GuiScreen() {
         @Override public boolean func_73868_f() { return false; }
         @Override public void func_73863_a(int mouseX, int mouseY, float partialTicks) {}
@@ -74,6 +82,7 @@ public final class ShowcaseRenderProbe {
         Object bridge = Loader.instance().getIndexedModList().get("practicebridge").getMod();
         replay = getField(bridge, "offline");
         bowAim = getField(bridge, "bowAim");
+        host = getField(bridge, "host");
         mode = System.getProperty("showcase.mode", "bowaim");
         archiveId = System.getProperty("showcase.id");
         archiveRoot = Paths.get(System.getProperty("showcase.archiveRoot"));
@@ -83,7 +92,7 @@ public final class ShowcaseRenderProbe {
         stepMs = Double.parseDouble(System.getProperty("showcase.stepMs", "50.0"));
         warmupTicks = Integer.parseInt(System.getProperty("showcase.warmupTicks", "40"));
         totalFrames = Integer.parseInt(System.getProperty("showcase.frames", "80"));
-        bowStack = new ItemStack(Items.field_151031_f);
+        checkPlacements = Boolean.getBoolean("showcase.checkPlacements");
 
         if ("bowaim".equals(mode)) {
             if (bowAim == null) throw new IllegalStateException("Bow Aim is unavailable");
@@ -106,8 +115,7 @@ public final class ShowcaseRenderProbe {
             bowDrawMethod.setAccessible(true);
             bowHudMethod = bc.getDeclaredMethod("hud", Minecraft.class, int.class, int.class);
             bowHudMethod.setAccessible(true);
-            itemInUseField = findField(EntityPlayer.class, "field_71074_e", "itemInUse");
-            itemInUseCountField = findField(EntityPlayer.class, "field_71072_f", "itemInUseCount");
+            renderedItemField = findField(net.minecraft.client.renderer.ItemRenderer.class, "field_78453_b", "itemToRender");
         }
 
         FMLCommonHandler.instance().bus().register(this);
@@ -127,34 +135,62 @@ public final class ShowcaseRenderProbe {
         interceptField.set(bowAim, true);
         chanceField.set(bowAim, true);
         autoRelField.set(bowAim, false);
-        limitField.set(bowAim, 8);
+        limitField.set(bowAim, 0);
         pingField.set(bowAim, 60);
     }
 
-    private void syncSelfToOwnActor(Minecraft mc) throws Exception {
-        Entity own = (Entity)getField(replay, "ownActor");
-        EntityPlayerSP self = mc.field_71439_g;
-        if (own == null || self == null) return;
-        self.field_70142_S = own.field_70142_S;
-        self.field_70137_T = own.field_70137_T;
-        self.field_70136_U = own.field_70136_U;
-        self.field_70169_q = own.field_70169_q;
-        self.field_70167_r = own.field_70167_r;
-        self.field_70166_s = own.field_70166_s;
-        self.field_70165_t = own.field_70165_t;
-        self.field_70163_u = own.field_70163_u;
-        self.field_70161_v = own.field_70161_v;
-        self.field_70177_z = own.field_70177_z;
-        self.field_70126_B = own.field_70126_B;
-        self.field_70125_A = own.field_70125_A;
-        self.field_70127_C = own.field_70127_C;
-        self.field_70759_as = own.field_70177_z;
-        self.field_70758_at = own.field_70126_B;
-        self.field_70122_E = own.field_70122_E;
-        mc.field_71442_b.func_78746_a(WorldSettings.GameType.SURVIVAL);
-        self.field_71071_by.field_70462_a[self.field_71071_by.field_70461_c] = bowStack;
-        itemInUseField.set(self, bowStack);
-        itemInUseCountField.set(self, 72000 - 20);
+    private static void restoreRecordedHand(EntityPlayerSP viewer, EntityPlayer recorded) {
+        int slot = recorded.field_71071_by.field_70461_c;
+        ItemStack held = recorded.func_70694_bm();
+        viewer.field_71071_by.field_70461_c = slot;
+        viewer.field_71071_by.field_70462_a[slot] = held;
+        viewer.func_71034_by();
+        if (held != null && recorded.func_71039_bw())
+            viewer.func_71008_a(held, recorded.func_71052_bv());
+    }
+
+    private static int itemId(ItemStack stack) {
+        return stack == null ? 0 : Item.func_150891_b(stack.func_77973_b());
+    }
+
+    private void verifyBowFrame(Minecraft mc) throws Exception {
+        double time = (double)getField(replay, "time");
+        Map<String, Object> expected = rec.poseAt(time).self;
+        EntityPlayerSP viewer = mc.field_71439_g;
+        int item = ((Number)expected.get("held_item_id")).intValue();
+        int slot = ((Number)expected.get("slot")).intValue();
+        boolean using = Boolean.TRUE.equals(expected.get("using_item"));
+        int remaining = ((Number)expected.get("use_ticks")).intValue();
+        if (itemId(viewer.func_70694_bm()) != item || viewer.field_71071_by.field_70461_c != slot
+                || viewer.func_71039_bw() != using || viewer.func_71052_bv() != remaining)
+            throw new IllegalStateException("First-person hand differs from recording at " + time + "ms"
+                    + " (expected item " + item + ", slot " + slot + ", use " + remaining + ")");
+        stableItemFrames = item == previousItem ? stableItemFrames + 1 : 1;
+        previousItem = item;
+        int rendered = itemId((ItemStack)renderedItemField.get(mc.func_175597_ag()));
+        // The vanilla equip animation briefly lowers the old item after a slot switch.
+        if (stableItemFrames >= 5 && rendered != item)
+            throw new IllegalStateException("Native item renderer kept the wrong item at " + time + "ms");
+        if (!checkPlacements) return;
+        if (item == Item.func_150891_b(Items.field_151031_f)) {
+            if (using) {
+                sawDraw = true;
+                sawPrediction |= getField(bowAim, "target") != null;
+            } else if (sawDraw) sawRelease = true;
+        }
+        for (BlockPos pos : RECORDED_STONE_PLACEMENTS) {
+            if (mc.field_71441_e.func_175623_d(pos)) seenAir.add(pos);
+            if (seenAir.contains(pos) && mc.field_71441_e.func_180495_p(pos).func_177230_c() == Blocks.field_150348_b
+                    && confirmedPlacements.add(pos))
+                System.out.println("[ShowcaseProbe] Stone placed at " + pos + " in frame " + savedFrames + " (" + time + "ms)");
+        }
+    }
+
+    private void verifyShowcase() {
+        if (checkPlacements && (!sawDraw || !sawRelease || !sawPrediction
+                || confirmedPlacements.size() != RECORDED_STONE_PLACEMENTS.length))
+            throw new IllegalStateException("Incomplete Bow Aim sequence: draw=" + sawDraw + ", release=" + sawRelease
+                    + ", prediction=" + sawPrediction + ", confirmed placements=" + confirmedPlacements.size());
     }
 
     @SubscribeEvent
@@ -247,12 +283,12 @@ public final class ShowcaseRenderProbe {
                 call(replay, "pose", new Class<?>[0]);
 
                 if ("bowaim".equals(mode) && bowAim != null) {
-                    Entity own = (Entity)getField(replay, "ownActor");
-                    syncSelfToOwnActor(mc);
-                    boolean wasDead = own != null && own.field_70128_L;
+                    EntityPlayer own = (EntityPlayer)getField(replay, "ownActor");
+                    restoreRecordedHand(mc.field_71439_g, own);
+                    boolean wasDead = own.field_70128_L;
                     GuiScreen savedGui = mc.field_71462_r;
                     boolean savedFocus = mc.field_71415_G;
-                    if (own != null) own.field_70128_L = true;
+                    own.field_70128_L = true;
                     mc.field_71462_r = null;
                     mc.field_71415_G = true;
                     try {
@@ -260,9 +296,8 @@ public final class ShowcaseRenderProbe {
                     } finally {
                         mc.field_71462_r = savedGui;
                         mc.field_71415_G = savedFocus;
-                        if (own != null) own.field_70128_L = wasDead;
+                        own.field_70128_L = wasDead;
                     }
-                    bowDrawActive = true;
                 }
 
                 if (stepCount > warmupTicks) {
@@ -281,11 +316,15 @@ public final class ShowcaseRenderProbe {
         if (event.phase != TickEvent.Phase.END || stage != 2 || !pendingShot) return;
         Minecraft mc = Minecraft.func_71410_x();
         try {
+            if ("bowaim".equals(mode)) verifyBowFrame(mc);
+            else if (!((WorldFrame)call(host, "world", new Class<?>[]{float.class}, event.renderTickTime)).spheres.isEmpty())
+                throw new IllegalStateException("Sumo showcase has a reach sphere");
             String fname = String.format(Locale.ROOT, "frame_%03d.png", savedFrames);
             ScreenShotHelper.func_148259_a(outDir.toFile(), fname, mc.field_71443_c, mc.field_71440_d, mc.func_147110_a());
             savedFrames++;
             pendingShot = false;
             if (savedFrames >= totalFrames) {
+                verifyShowcase();
                 System.out.println("[ShowcaseProbe] CAPTURE COMPLETE frames=" + savedFrames);
                 stage = 3;
                 mc.func_71400_g();
@@ -299,7 +338,7 @@ public final class ShowcaseRenderProbe {
 
     @SubscribeEvent
     public void onWorldRender(RenderWorldLastEvent event) {
-        if (!"bowaim".equals(mode) || !bowDrawActive || bowAim == null || stage != 2) return;
+        if (!"bowaim".equals(mode) || stage != 2) return;
         Minecraft mc = Minecraft.func_71410_x();
         GuiScreen savedGui = mc.field_71462_r;
         boolean savedFocus = mc.field_71415_G;
@@ -318,7 +357,7 @@ public final class ShowcaseRenderProbe {
     @SubscribeEvent
     public void onOverlay(RenderGameOverlayEvent.Post event) {
         if (event.type != RenderGameOverlayEvent.ElementType.ALL) return;
-        if (!"bowaim".equals(mode) || !bowDrawActive || bowAim == null || stage != 2) return;
+        if (!"bowaim".equals(mode) || stage != 2) return;
         Minecraft mc = Minecraft.func_71410_x();
         GuiScreen savedGui = mc.field_71462_r;
         boolean savedFocus = mc.field_71415_G;

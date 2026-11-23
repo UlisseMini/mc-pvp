@@ -15,8 +15,8 @@ from replay_smoke import forge_runtime, graphical_classpath, graphical_jvm_args
 
 BOW_ARCHIVE = 'r89135e805d114bb8b48081428b99b615'
 CLIPS = {
-    'bow-aim-live': ('bowaim', BOW_ARCHIVE, 116.2, 20, 95, 50, 800, 14, 112),
-    'bow-aim-wait-still': ('bowaim', BOW_ARCHIVE, 115.5, 28, 6, 55, 0, 0, 0),
+    'bow-aim-live': ('bowaim', BOW_ARCHIVE, 115.75, 20, 135, 50, 800, 14, 112),
+    'bow-aim-wait-still': ('bowaim', BOW_ARCHIVE, 115.75, 83, 6, 50, 0, 0, 0),
     'sumo-two-pov-live': ('sumo', 'm10373', 7.5, 5, 90, 50, 800, 14, 112),
 }
 
@@ -70,10 +70,10 @@ def render(name, work, probe, classpath, output):
     settings = (SRC / 'settings.properties').read_text()
     settings += f'\narchive.directory={staged}\n'
     if mode == 'sumo':
-        settings += ('reach.enabled=true\nghost.me.enabled=true\nghost.bot.enabled=true\n'
+        settings += ('reach.enabled=false\nghost.me.enabled=true\nghost.bot.enabled=true\n'
                      'advantage.enabled=true\nopening.enabled=true\nkeystrokes.enabled=true\n')
         (config / 'replay-display.properties').write_text(
-            'recorded.own_velocity=false\nrecorded.change_log=false\n')
+            'recorded.reach_fields=false\nrecorded.own_velocity=false\nrecorded.change_log=false\n')
     else:
         settings += 'reach.enabled=false\nkeystrokes.enabled=false\nadvantage.enabled=false\nopening.enabled=false\n'
     (config / 'settings.properties').write_text(settings)
@@ -87,6 +87,7 @@ def render(name, work, probe, classpath, output):
         f'-Dshowcase.mode={mode}', f'-Dshowcase.id={archive}', f'-Dshowcase.archiveRoot={staged}',
         f'-Dshowcase.outDir={game}', f'-Dshowcase.startSec={start}', f'-Dshowcase.warmupTicks={warmup}',
         f'-Dshowcase.frames={frames}', f'-Dshowcase.stepMs={step}',
+        f'-Dshowcase.checkPlacements={str(name == "bow-aim-live").lower()}',
         f'-Dlog4j.configurationFile={ROOT / ".cache/server-logging.xml"}',
         '-cp', os.pathsep.join(map(str, classpath)), 'net.minecraft.launchwrapper.Launch',
         '--username', 'ShowcaseRender', '--version', '1.8.9', '--gameDir', str(game),
@@ -121,7 +122,7 @@ def render(name, work, probe, classpath, output):
                   f'[colors]palettegen=max_colors={colors}:stats_mode=diff[palette];'
                   '[frames][palette]paletteuse=dither=bayer:bayer_scale=4')
     subprocess.run(sequence + ['-vf', gif_filter, str(output / f'{name}.gif')], check=True)
-    poster = screenshots / ('frame_007.png' if mode == 'bowaim' else 'frame_030.png')
+    poster = screenshots / ('frame_023.png' if mode == 'bowaim' else 'frame_030.png')
     subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-i', str(poster),
                     '-c:v', 'libwebp', '-quality', '90', str(output / f'{name}-poster.webp')], check=True)
 
@@ -137,7 +138,7 @@ def main():
     classpath = graphical_classpath(forge_runtime.stage_dependencies())
     sources = [SRC / 'smoke' / name for name in ('ShowcaseRenderProbe.java', 'ReplayGraphics.java')]
     libraries = json.loads((ROOT / '.cache/classpath.json').read_text())
-    cp = os.pathsep.join([str(BUILD / 'compile-api.jar'), str(BUILD / 'core'), *libraries])
+    cp = os.pathsep.join([str(BUILD / 'compile-api.jar'), str(BUILD / 'api'), str(BUILD / 'core'), *libraries])
     compile_to(work / 'probe', sources, cp)
     probe = work / 'showcase-probe.jar'
     jar(probe, work / 'probe')

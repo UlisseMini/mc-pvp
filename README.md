@@ -9,12 +9,12 @@ This isn't a neat single-purpose library—it's a collection of projects I built
 **[Read the full visual writeup & interactive demos →](https://ulissemini.github.io/mc-pvp/)** *(or open [`docs/index.html`](docs/index.html) locally)*
 
 <p align="center">
-  <img src="docs/assets/sumo-two-pov-live.gif" alt="Real Minecraft 1.8.9 two-POV Sumo replay with reach spheres, delayed ghost, and keystrokes" width="49%" />
+  <img src="docs/assets/sumo-two-pov-live.gif" alt="Real Minecraft 1.8.9 Sumo replay with recorded keystrokes and knockback feedback" width="49%" />
   <img src="docs/assets/bow-aim-live.gif" alt="Real Hypixel Minecraft 1.8.9 replay with Neural BowAim K=6 predicted ghosts and arrow arc" width="49%" />
 </p>
 
 <p align="center">
-  <em>Left: Real 1.8.9 Forge practice client replaying a Sumo fight with reach spheres, delayed-view ghost, and live keystrokes. &nbsp;·&nbsp; Right: Neural BowAim running on a real Hypixel capture—predicting <code>K=6</code> possible future landing spots over 3D terrain voxels.</em>
+  <em>Left: A Sumo fight replayed in Forge 1.8.9 with recorded keystrokes and knockback feedback. &nbsp;·&nbsp; Right: Neural Bow Aim forecasts overlaid on a recorded Hypixel replay.</em>
 </p>
 
 ---
