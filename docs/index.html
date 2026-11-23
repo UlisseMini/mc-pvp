@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minecraft PvP Lab · Interactive Demos &amp; Guides</title>
+<style>
+  :root {
+    --bg: #0b1120;
+    --surface: #111827;
+    --surface-hover: #1e293b;
+    --border: #1f2937;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #2dd4bf;
+    --accent-dim: rgba(45, 212, 191, 0.14);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 5rem;
+  }
+  header { margin-bottom: 2.5rem; }
+  .eyebrow {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    margin-bottom: 0.9rem;
+  }
+  h1 {
+    margin: 0 0 0.6rem;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .subtitle {
+    margin: 0;
+    max-width: 680px;
+    color: var(--muted);
+    font-size: 1.08rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2.2rem;
+  }
+  .card {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    background: var(--surface-hover);
+  }
+  .thumb {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    background: #020617;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-body {
+    padding: 1.25rem 1.35rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+  }
+  .card h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.22rem;
+    line-height: 1.25;
+  }
+  .card p {
+    margin: 0 0 1rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+    flex: 1;
+  }
+  .cta {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  footer {
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.92rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">Minecraft PvP Lab · Interactive Demos</div>
+      <h1>See Minecraft PvP tick by tick</h1>
+      <p class="subtitle">
+        Browser-ready visual explainers and 3D replay viewers from our Minecraft 1.8.9 and modern combat experiments—no Minecraft install required.
+      </p>
+    </header>
+
+    <div class="grid">
+      <a class="card" href="sumo-trade-guide/index.html">
+        <img class="thumb" src="assets/sumo-replay-still.webp" alt="First-person Minecraft 1.8.9 Sumo replay with keystrokes HUD">
+        <div class="card-body">
+          <div class="tag">Interactive Video Guide</div>
+          <h2>Why You Flew Back (Sumo Trade Review)</h2>
+          <p>Step frame-by-frame through real Minemen Club sumo exchanges to see how early jumps, W-releases, miss cooldowns, and sprint-braking decide who stays on the platform.</p>
+          <span class="cta">Open interactive guide →</span>
+        </div>
+      </a>
+
+      <a class="card" href="movement-and-knockback.html">
+        <img class="thumb" src="assets/physics-explorer.png" alt="Tick-by-tick Minecraft 1.8.9 movement and knockback chart">
+        <div class="card-body">
+          <div class="tag">Interactive Physics Simulator</div>
+          <h2>Movement &amp; Knockback, One Tick at a Time</h2>
+          <p>Scrub through exact Java 1.8.9 physics ticks. Toggle sprint-contact braking on or off and watch how ground vs. air friction changes backward travel to the exact floating-point bit.</p>
+          <span class="cta">Launch tick explorer →</span>
+        </div>
+      </a>
+
+      <a class="card" href="bow-duels-viewer/index.html">
+        <img class="thumb" src="assets/bow-duels-3d.png" alt="3D isometric view of AI bow duelists firing arrows around cover">
+        <div class="card-body">
+          <div class="tag">3D Replay Viewer</div>
+          <h2>Bow Duels Self-Play League</h2>
+          <p>Watch evolved neural archers strafe around cover pillars, trade curved arrows, and clutch knockouts inside our Rust-accelerated 1.8.9 bow duel arena—from both orbit and first-person POV.</p>
+          <span class="cta">Watch 3D bow duels →</span>
+        </div>
+      </a>
+    </div>
+
+    <footer>
+      <span>Part of <strong>mc-pvp</strong> — AI, physics, and practice tools for Minecraft PvP.</span>
+      <a href="https://github.com/UlisseMini/mc-pvp">View source &amp; full write-ups on GitHub →</a>
+    </footer>
+  </div>
+</body>
+</html>

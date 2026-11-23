@@ -1,5 +1,5 @@
 import unittest
-from fresh_window_analysis import ready_bracket,reach_window
+from tools.fresh_window_analysis import ready_bracket,reach_window
 
 
 class FreshWindowsCheck(unittest.TestCase):
@@ -30,7 +30,7 @@ class FreshWindowsCheck(unittest.TestCase):
         self.assertEqual(res['duration_ms']['out'],0.0)
 
     def test_landmark_starts_at_three_consecutive_unanswered_hits_not_third_total(self):
-        from fresh_window_analysis import analyze_events
+        from tools.fresh_window_analysis import analyze_events
         game=dict(id='m_test',a='A',b='B',start=0,finish=7000,combat_profile={'fresh_hit_ticks':10})
         def atk(t,who,s_before,s_after,hrt=0):
             return dict(type='science_server_attack',time=t,server_tick=t//50,attacker=who,
@@ -76,7 +76,7 @@ class FreshWindowsCheck(unittest.TestCase):
         self.assertFalse(res['landmarks']['5']['established'])
 
     def test_timed_scenario_can_classify_more_than_100_hits(self):
-        from trade_return_windows import attack_kind
+        from tools.trade_return_windows import attack_kind
         e=dict(score_before=[120,0],score_after=[121,0],target_before={'hurtResistantTime':9,'maxHurtResistantTime':18})
         self.assertEqual(attack_kind(e,{'scenario':True}),'fresh')
         self.assertEqual(attack_kind(e,{'scenario':False}),'after_winning_score')

@@ -97,7 +97,7 @@ def properties(path):
 
 def match_events(path,identifier):
     """Stream one match, including verified compressed history after rotation."""
-    from event_logs import iter_events
+    from tools.event_logs import iter_events
     yield from iter_events(path, identifier)
 
 

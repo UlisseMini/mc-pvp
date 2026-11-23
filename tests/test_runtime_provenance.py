@@ -2,7 +2,7 @@ import hashlib
 import tempfile
 import unittest
 from pathlib import Path
-from runtime_provenance import artifact_hashes, client_provenance, client_matches, cohort_provenance
+from tools.runtime_provenance import artifact_hashes, client_provenance, client_matches, cohort_provenance
 
 
 class RuntimeProvenanceTest(unittest.TestCase):

@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from boxing_upgrade_audit import ROOT, events
-from trade_return_windows import attack_kind, link_clicks
+from tools.trade_return_windows import attack_kind, link_clicks
 
 
 def measure(hits, threshold, finish_tick):

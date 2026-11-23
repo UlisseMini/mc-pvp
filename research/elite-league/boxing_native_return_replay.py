@@ -8,7 +8,7 @@ from pathlib import Path
 
 from boxing_task_stage_audit import capture
 from boxing_upgrade_audit import ROOT, events
-from trade_return_windows import link_clicks
+from tools.trade_return_windows import link_clicks
 
 
 def press_check(polls):

@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 
 from boxing_upgrade_audit import ROOT, events
-from trade_return_windows import F32, attack_kind, box_distance, link_clicks
+from tools.trade_return_windows import F32, attack_kind, box_distance, link_clicks
 
 
 def trade_windows(hits, drains, finish_tick, threshold):

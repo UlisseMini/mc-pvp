@@ -11,7 +11,7 @@ from audit import captures
 from run import ROOT
 
 sys.path.insert(0, str(ROOT))
-from trade_return_windows import attack_kind, link_clicks
+from tools.trade_return_windows import attack_kind, link_clicks
 
 
 def capture(mid, side, source):

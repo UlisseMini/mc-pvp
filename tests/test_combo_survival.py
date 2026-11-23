@@ -1,6 +1,6 @@
 import unittest
-from combo_survival import episodes, geometric_distance
-from native_windows import overlap
+from tools.combo_survival import episodes, geometric_distance
+from tools.native_windows import overlap
 
 
 class ComboCheck(unittest.TestCase):

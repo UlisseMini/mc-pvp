@@ -86,6 +86,4 @@ python3 research/bow-duels/native_parity.py runtime/bow-league/parity/native-new
 python3 research/bow-duels/compare_native.py runtime/bow-league/parity/native-new --verify
 ```
 
-On Hetzner the service is `mc-bow-duels`. The current checkpoint directory
-is `/home/uli/mc-bow-duels/run-005-adversarial`. Earlier runs are archived
-under `run-003-rust` and `run-002`.
+Run the league locally with `python3 research/bow-duels/competition.py` (set `BOW_GEOMETRY_LIB` to point to the compiled Rust library for AVX2-accelerated rollouts).

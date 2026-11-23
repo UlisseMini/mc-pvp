@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch
-from combo_curriculum import maintenance
+from tools.combo_curriculum import maintenance
 
 
 class CurriculumCheck(unittest.TestCase):
@@ -12,7 +12,7 @@ class CurriculumCheck(unittest.TestCase):
         self.own=[{**p,'attack_reach':3} for p in self.probes]
 
     def evaluate(self):
-        with patch('combo_curriculum.server_events',return_value=self.hits),patch('combo_curriculum.client_events',side_effect=lambda game,side:self.own if side=='a' else self.probes):
+        with patch('tools.combo_curriculum.server_events',return_value=self.hits),patch('tools.combo_curriculum.client_events',side_effect=lambda game,side:self.own if side=='a' else self.probes):
             return maintenance(self.game)
 
     def test_reduced_reach_and_long_finite_chain(self):

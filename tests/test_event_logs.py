@@ -7,8 +7,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-import event_logs
-from event_logs import EventLogError, finalize_rotation, iter_events, prepare_rotation
+from tools import event_logs
+from tools.event_logs import EventLogError, finalize_rotation, iter_events, prepare_rotation
 
 
 class EventLogsTest(unittest.TestCase):
@@ -106,7 +106,7 @@ class EventLogsTest(unittest.TestCase):
             with self.path.open('ab') as source:
                 source.write(self.rows('m2'))
             return result
-        with patch('event_logs._verify_archive', side_effect=changed):
+        with patch('tools.event_logs._verify_archive', side_effect=changed):
             with self.assertRaisesRegex(EventLogError, 'Source changed'):
                 prepare_rotation(self.path)
         self.assertEqual([e['match'] for e in iter_events(self.path)], ['m1', 'm2'])
@@ -121,7 +121,7 @@ class EventLogsTest(unittest.TestCase):
     def test_bad_decompressed_verification_never_publishes_history(self):
         original = self.rows('m1')
         self.path.write_bytes(original)
-        with patch('event_logs._verify_archive', return_value=('0' * 64, len(original))):
+        with patch('tools.event_logs._verify_archive', return_value=('0' * 64, len(original))):
             with self.assertRaisesRegex(EventLogError, 'SHA256'):
                 prepare_rotation(self.path)
         self.assertEqual(self.path.read_bytes(), original)
@@ -152,7 +152,7 @@ class EventLogsTest(unittest.TestCase):
         self.path.write_bytes(self.rows('old'))
         self.rotate()
         self.path.write_bytes(self.rows('new'))
-        with patch('event_logs.gzip.open', side_effect=AssertionError('history opened')):
+        with patch('tools.event_logs.gzip.open', side_effect=AssertionError('history opened')):
             self.assertEqual([e['match'] for e in iter_events(self.path, 'new')], ['new'])
             with self.assertRaisesRegex(AssertionError, 'history opened'):
                 list(iter_events(self.path, 'old'))
@@ -188,7 +188,7 @@ class EventLogsTest(unittest.TestCase):
             if Path(target) == self.path:
                 raise OSError('simulated interruption')
             return original_replace(source, target)
-        with patch('event_logs.os.replace', side_effect=interrupted):
+        with patch('tools.event_logs.os.replace', side_effect=interrupted):
             with self.assertRaisesRegex(OSError, 'simulated interruption'):
                 finalize_rotation(plan, writer_stopped=True)
         self.assertEqual([e['match'] for e in iter_events(self.path)], ['m1', 'm2'])
@@ -211,7 +211,7 @@ class EventLogsTest(unittest.TestCase):
                 finalize_rotation(plan, writer_stopped=True)
                 return old
             return original_manifest(path)
-        with patch('event_logs._manifest', side_effect=rotate_on_manifest):
+        with patch('tools.event_logs._manifest', side_effect=rotate_on_manifest):
             self.assertEqual([e['match'] for e in iter_events(self.path)], ['m1', 'm2'])
 
 

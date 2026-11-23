@@ -10,7 +10,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from trade_return_windows import attack_kind, link_clicks
+from tools.trade_return_windows import attack_kind, link_clicks
 
 SERVER = {"replication_server_input", "replication_server_clock", "science_server_attack", "hit"}
 CLIENT = {"science_click", "engine_attack", "click", "reach_probe"}

@@ -29,6 +29,7 @@ CTX_DIM = 34
 FINE_Y, FINE_Z, FINE_X = 7, 9, 9
 FINE_DIM = FINE_Y * FINE_Z * FINE_X  # 567
 TOP_CH, TOP_S = 4, 25
+TOP_DIM = TOP_CH * TOP_S * TOP_S     # 2500
 FUT_Y, FUT_Z, FUT_X = 5, 7, 7
 FUT_DIM = FUT_Y * FUT_Z * FUT_X      # 245
 NUM_MODES = 6
@@ -685,13 +686,15 @@ class BowNeuralNetV4(nn.Module):
         h = F.silu(self.conv3(h))
         h = F.silu(self.conv4(h))  # (B, 96, 6)
 
-        # 4-head self-attention over 6 temporal tokens
-        tok = h.transpose(1, 2)  # (B, 6, 96)
+        # 4-head self-attention over 6 temporal tokens (.contiguous() prevents PyTorch 2.0 MPS silu_backward bug!)
+        tok = h.transpose(1, 2).contiguous()  # (B, 6, 96)
         B = tok.shape[0]
         qkv = self.attn_qkv(tok).view(B, 6, 3, 4, 24)
-        q, k, v = qkv[:, :, 0].transpose(1, 2), qkv[:, :, 1].transpose(1, 2), qkv[:, :, 2].transpose(1, 2)
+        q = qkv[:, :, 0].transpose(1, 2).contiguous()
+        k = qkv[:, :, 1].transpose(1, 2).contiguous()
+        v = qkv[:, :, 2].transpose(1, 2).contiguous()
         att = F.softmax(torch.matmul(q, k.transpose(-2, -1)) * (24.0 ** -0.5), dim=-1)
-        out_a = torch.matmul(att, v).transpose(1, 2).reshape(B, 6, 96)
+        out_a = torch.matmul(att, v).transpose(1, 2).contiguous().view(B, 6, 96)
         tok = self.attn_ln(tok + self.attn_out(out_a))  # (B, 6, 96)
 
         h_cat = torch.cat([tok[:, 0, :], tok.mean(dim=1), tok.amax(dim=1)], dim=-1)
@@ -813,7 +816,7 @@ def loss_v4(logits, means, logstd, rho, fut_blk_logits, target, mask, fut_blk, h
     if fblk_w > 0:
         valid_fb = has_fblk > 0.5
         if valid_fb.any():
-            pos_w = torch.tensor(45.0, device=logits.device)
+            pos_w = torch.tensor(120.0, device=logits.device)
             fb_bce = F.binary_cross_entropy_with_logits(
                 fut_blk_logits[valid_fb], fut_blk[valid_fb], pos_weight=pos_w
             )
@@ -884,18 +887,34 @@ def main():
     print(f'Device: {device}', flush=True)
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
-    print('Loading TRAIN split (real matches + simulated-remote self)...', flush=True)
-    tr_real = load_split_v4(args.data, 'train', stride=args.stride, include_self=True)
-    n_real = len(tr_real[0])
-    print(f'  Real train samples: {n_real:,} ({time.time()-t0:.1f}s)', flush=True)
-
-    n_synth = int(round(n_real * args.synth_frac))
-    if n_synth > 0:
-        print(f'Generating {n_synth:,} physics-exact synthetic bridging samples (train ONLY)...', flush=True)
-        tr_syn = generate_synthetic_bridging_samples(n_samples=n_synth, seed=777)
-        tr_all = tuple(np.concatenate([a, b], axis=0) for a, b in zip(tr_real, tr_syn))
+    cache_path = args.data / f'cache_v4_s{args.stride}.npz'
+    if cache_path.exists():
+        print(f'Loading fast cache {cache_path}...', flush=True)
+        cz = np.load(cache_path)
+        tr_all = tuple(cz[f'tr_{k}'] for k in range(10))
+        val_arr = tuple(cz[f'val_{k}'] for k in range(10))
+        print(f'  Loaded train={len(tr_all[0]):,}, val={len(val_arr[0]):,} ({time.time()-t0:.1f}s)', flush=True)
     else:
-        tr_all = tr_real
+        print('Loading TRAIN split (real matches + simulated-remote self)...', flush=True)
+        tr_real = load_split_v4(args.data, 'train', stride=args.stride, include_self=True)
+        n_real = len(tr_real[0])
+        print(f'  Real train samples: {n_real:,} ({time.time()-t0:.1f}s)', flush=True)
+
+        n_synth = int(round(n_real * args.synth_frac))
+        if n_synth > 0:
+            print(f'Generating {n_synth:,} physics-exact synthetic bridging samples (train ONLY)...', flush=True)
+            tr_syn = generate_synthetic_bridging_samples(n_samples=n_synth, seed=777)
+            tr_all = tuple(np.concatenate([a, b], axis=0) for a, b in zip(tr_real, tr_syn))
+        else:
+            tr_all = tr_real
+
+        print('Loading VAL split...', flush=True)
+        val_arr = load_split_v4(args.data, 'val', stride=max(args.stride, 4), include_self=False)
+        print(f'  Val samples: {len(val_arr[0]):,} ({time.time()-t0:.1f}s)', flush=True)
+        save_d = {f'tr_{k}': tr_all[k] for k in range(10)}
+        save_d.update({f'val_{k}': val_arr[k] for k in range(10)})
+        np.savez(cache_path, **save_d)
+        print(f'  Saved fast cache to {cache_path}', flush=True)
 
     bkt = tr_all[9]
     bkt_counts = np.bincount(bkt, minlength=5)
@@ -905,10 +924,6 @@ def main():
     probs_s1 = w_s1[bkt]; probs_s1 /= probs_s1.sum()
     w_s2 = np.array([1.0 / (max(1, c) ** 0.22) for c in bkt_counts], dtype=np.float64)
     probs_s2 = w_s2[bkt]; probs_s2 /= probs_s2.sum()
-
-    print('Loading VAL split...', flush=True)
-    val_arr = load_split_v4(args.data, 'val', stride=max(args.stride, 4), include_self=False)
-    print(f'  Val samples: {len(val_arr[0]):,} ({time.time()-t0:.1f}s)', flush=True)
 
     # Vectorized zero-overhead batch slicer (10x faster than Python DataLoader __getitem__!)
     def slice_batch(arrays, idx_np):
@@ -934,7 +949,7 @@ def main():
     @torch.no_grad()
     def eval_val():
         model.eval()
-        tot_nll = 0.0; tot_fblk_tp = 0.0; tot_fblk_pos = 0.0; n_b = 0
+        tot_nll = 0.0; tp = fp = fn = 0.0; n_b = 0
         nv = len(val_arr[0])
         for b0 in range(0, nv, 512):
             idx_np = np.arange(b0, min(nv, b0 + 512))
@@ -945,19 +960,23 @@ def main():
             tot_nll += float(nll.item()); n_b += 1
             vf = bhfb > 0.5
             if vf.any():
-                probs_fb = torch.sigmoid(fbl[vf])
-                pos_mask = bfb[vf] > 0.5
-                tot_fblk_tp += float((probs_fb[pos_mask] > 0.5).sum().item())
-                tot_fblk_pos += float(pos_mask.sum().item())
-        return tot_nll / max(1, n_b), tot_fblk_tp / max(1.0, tot_fblk_pos)
+                pr = torch.sigmoid(fbl[vf]) > 0.5
+                gt = bfb[vf] > 0.5
+                tp += float((pr & gt).sum().item())
+                fp += float((pr & (~gt)).sum().item())
+                fn += float(((~pr) & gt).sum().item())
+        return tot_nll / max(1, n_b), tp / max(1.0, tp + fn), tp / max(1.0, tp + fp)
 
     # ---- Stage 1: Representation + Multi-Task + Volley Set-Cover + Square-Root Stratified Sampling ----
     n_tr = len(tr_all[0])
-    steps_per_ep = min(n_tr, 240000)
-    opt = torch.optim.AdamW(model.parameters(), lr=1.8e-3, weight_decay=2e-4)
-    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs_s1)
+    steps_per_ep = min(n_tr, 260000)
+    base_lr1 = 1.3e-3
+    opt = torch.optim.AdamW(model.parameters(), lr=base_lr1, weight_decay=2e-4)
+    total_s1_steps = args.epochs_s1 * ((steps_per_ep + args.batch_size - 1) // args.batch_size)
+    warmup_steps = 200
     best_val = float('inf')
     best_s1_state = None
+    g_step = 0
 
     print(f'\n--- Stage 1: {args.epochs_s1} epochs ({steps_per_ep:,} stratified samples/epoch, bs={args.batch_size}) ---', flush=True)
     for ep in range(1, args.epochs_s1 + 1):
@@ -965,21 +984,28 @@ def main():
         model.train()
         tr_loss = 0.0; tr_nll = 0.0; nb = 0
         for b0 in range(0, steps_per_ep, args.batch_size):
+            g_step += 1
+            if g_step <= warmup_steps:
+                cur_lr = base_lr1 * (g_step / float(warmup_steps))
+            else:
+                prog = (g_step - warmup_steps) / float(max(1, total_s1_steps - warmup_steps))
+                cur_lr = 3e-5 + 0.5 * (base_lr1 - 3e-5) * (1.0 + math.cos(math.pi * min(1.0, prog)))
+            for pg in opt.param_groups:
+                pg['lr'] = cur_lr
             idx_np = ep_idx[b0:b0 + args.batch_size]
             bh, bc, bvb, bf3, bt2, btgt, bmsk, bfb, bhfb = slice_batch(tr_all, idx_np)
             bh, bc, bvb, bf3, bt2, btgt, bfb = augment_v4(bh, bc, bvb, bf3, bt2, btgt, bfb)
             lo, me, ls, rh, fbl = model(bh, bc, bvb, bf3, bt2)
             loss, nll = loss_v4(lo, me, ls, rh, fbl, btgt, bmsk, bfb, bhfb, h_weights,
-                                wta_w=0.08, volley_w=0.12, hit_w=0.0, fblk_w=0.20, nll_w=1.0)
+                                wta_w=0.08, volley_w=0.12, hit_w=0.0, fblk_w=0.15, nll_w=1.0)
             opt.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 2.5)
             opt.step()
             tr_loss += float(loss.item()); tr_nll += float(nll.item()); nb += 1
-        sched.step()
-        val_nll, fblk_rec = eval_val()
+        val_nll, fb_rec, fb_prec = eval_val()
         print(f'  S1 ep {ep:2d}/{args.epochs_s1} | tr_loss={tr_loss/nb:.4f} tr_nll={tr_nll/nb:.4f} '
-              f'| val_nll={val_nll:.4f} fblk_recall@0.5={fblk_rec*100:.1f}% ({time.time()-t0:.0f}s)', flush=True)
+              f'| val_nll={val_nll:.4f} fblk_R={fb_rec*100:.1f}% fblk_P={fb_prec*100:.1f}% ({time.time()-t0:.0f}s)', flush=True)
         if val_nll < best_val:
             best_val = val_nll
             best_s1_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
@@ -989,8 +1015,8 @@ def main():
 
     # ---- Stage 2: Direct Expected-Hit-Probability + Calibrated Fine-Tuning ----
     print(f'\n--- Stage 2: {args.epochs_s2} epochs (Hit-Prob + Volley + Natural Calibration) ---', flush=True)
-    opt2 = torch.optim.AdamW(model.parameters(), lr=3.0e-4, weight_decay=2e-4)
-    sched2 = torch.optim.lr_scheduler.CosineAnnealingLR(opt2, T_max=args.epochs_s2)
+    opt2 = torch.optim.AdamW(model.parameters(), lr=2.5e-4, weight_decay=2e-4)
+    sched2 = torch.optim.lr_scheduler.CosineAnnealingLR(opt2, T_max=args.epochs_s2, eta_min=1e-5)
     best_s2_val = float('inf')
     best_s2_state = best_s1_state
 
@@ -1012,9 +1038,9 @@ def main():
             opt2.step()
             tr_loss += float(loss.item()); nb += 1
         sched2.step()
-        val_nll, fblk_rec = eval_val()
+        val_nll, fb_rec, fb_prec = eval_val()
         print(f'  S2 ep {ep:2d}/{args.epochs_s2} | tr_loss={tr_loss/nb:.4f} '
-              f'| val_nll={val_nll:.4f} fblk_recall@0.5={fblk_rec*100:.1f}% ({time.time()-t0:.0f}s)', flush=True)
+              f'| val_nll={val_nll:.4f} fblk_R={fb_rec*100:.1f}% fblk_P={fb_prec*100:.1f}% ({time.time()-t0:.0f}s)', flush=True)
         if val_nll < best_s2_val:
             best_s2_val = val_nll
             best_s2_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
