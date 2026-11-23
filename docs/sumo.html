@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1.8.9 Sumo &amp; The Skill Ceiling · Minecraft PvP Lab</title>
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html"><span class="brand-dot"></span>Minecraft PvP Lab</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a class="active" href="sumo.html">1.8 Sumo</a>
+      <a href="bow-aim.html">Neural Bow Aim</a>
+      <a href="side-projects.html">Side Explorations</a>
+      <a href="play.html">Play &amp; Mod</a>
+      <a class="gh-link" href="https://github.com/UlisseMini/mc-pvp">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+  <span class="eyebrow">Thread 1 · Classic 1.8.9 PvP</span>
+  <h1>How far out does the skill ceiling for Minecraft Sumo actually go?</h1>
+  <p class="lead">
+    Sumo looks absurdly simple: two players, empty hands, a tiny 13×13 stone island, first one knocked off loses. Yet the best human players pull off things that look like wizardry. I built a local practice server, a Forge replay/coaching mod, slow-motion sumo, and an RL league to figure out what is actually happening tick by tick—and to get better myself.
+  </p>
+
+  <h2 class="no-rule">What kicked all of this off</h2>
+  <p>
+    This whole rabbit hole started from watching the #1 Sumo player play and wondering how much real depth was hiding inside 1.8.9 melee physics. Watch these two videos—especially the second one at <strong>0:58</strong>. Right before losing near the edge, he flicks his mouse to the right to deal <em>sideways knockback</em>, throws off his opponent's movement completely, and turns a lost position at the edge into a win:
+  </p>
+
+  <div class="wide-breakout media-pair">
+    <figure style="margin:0;">
+      <div class="video-embed">
+        <iframe src="https://www.youtube-nocookie.com/embed/cVK9z1SRGu4" title="Sumo gameplay inspiration" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+      <figcaption><strong>Where the curiosity started.</strong> Watching clean high-level 1.8.9 Sumo and realizing how much micro-timing is invisible at normal speed.</figcaption>
+    </figure>
+    <figure style="margin:0;">
+      <div class="video-embed">
+        <iframe src="https://www.youtube-nocookie.com/embed/46nk9OZsSbE?start=58" title="Sumo montage at 0:58 sideways knockback play" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+      <figcaption><strong>Marvel at 0:58:</strong> right at the edge and about to fall, he flicks his mouse right to send sideways knockback, disrupts the opponent's pathing, and steals the round.</figcaption>
+    </figure>
+  </div>
+
+  <details class="primer">
+    <summary>New to Minecraft 1.8.9 PvP? 30-second primer (skip if you already play)</summary>
+    <div class="primer-body">
+      <p><strong>Reach &amp; Lag:</strong> Every player has a 3.0-block attack reach measured from <em>their own client's view</em> of the opponent. Because network packets take time to arrive (and Minecraft smooths enemy movement over 3 ticks), two players running at each other can literally disagree on who is within 3 blocks.</p>
+      <p><strong>Sprint-Resetting (W-tapping):</strong> Your first melee hit while sprinting deals massive extra knockback, which immediately consumes your server sprint state. To get heavy knockback again on the next hit, players briefly release and re-press <strong>W</strong> ("W-tapping") so the server sees sprint turn off and back on.</p>
+      <p><strong>Knockback Braking (0.6× slowdown):</strong> Every time you land a melee hit while locally sprinting in 1.8.9, Minecraft multiplies your <em>own</em> horizontal speed by <strong>0.6×</strong>—even if your opponent is currently invulnerable! Clicking on target right after getting knocked backward acts like an emergency brake.</p>
+      <p><strong>Miss Cooldown:</strong> If you swing and miss air, 1.8.9 enforces a 10-tick cooldown before another click can register on an entity.</p>
+    </div>
+  </details>
+
+  <h2>First: seeing the invisible (and getting better myself)</h2>
+  <p>
+    Before training a single AI, a big part of my motivation was simply wanting to <em>see</em> why I was winning or losing trades on Minemen Club (MMC) and train the right muscle memory. So I built a local 1.8.9 practice server and a custom Forge mod with three tools I actually use to practice:
+  </p>
+  <ul>
+    <li><strong>Slow-motion Sumo (<code>0.10×</code> to <code>1.00×</code> speed):</strong> Scales physics ticks, bot CPS, and simulated network ping together so you can play a full duel at half or quarter speed and feel every timing window.</li>
+    <li><strong>Two-POV overlays &amp; multi-POV replays:</strong> Live reach spheres, a pink ghost showing <em>where the opponent's delayed client currently sees you</em>, a live Sumo Coach (flashing green when you land a verified 0.6× KB brake, plus Sprint-KB vs. Base-KB verdicts), and jump-reset / blockhit drills.</li>
+    <li><strong>Frame-by-frame trade breakdowns:</strong> Offline replays with recorded keystrokes, CPS, sprint packets, and counterfactual "how much less would you have slid if you hadn't dropped sprint here?" estimates.</li>
+  </ul>
+
+  <div class="callout amber">
+    <div class="callout-title">Biggest practical takeaway for human players: stop W-tapping the instant you get hit</div>
+    <p>
+      Looking at my own replays exposed a brutal habit: if you release <strong>W</strong> immediately as you take knockback, you drop local sprint right when you're flying backward. That means your clicks during the slide <strong>stop triggering the 0.6× knockback brake</strong>—throwing away the single highest-value brakes in the entire exchange and launching you off the platform. Keep W + sprint held through the first incoming hit so your immediate clicks brake your recoil, <em>then</em> reset sprint cleanly before your next fresh hit.
+    </p>
+  </div>
+
+  <div class="wide-breakout media-pair">
+    <figure style="margin:0;">
+      <img src="assets/sumo-trade-replay.gif" alt="First-person 1.8.9 Sumo replay showing keystrokes HUD and knockback braking">
+      <figcaption><strong>Real MMC Sumo replay in the Forge offline viewer</strong> with live recorded keystrokes, CPS, and KB-reduction telemetry. <a href="sumo-trade-guide/index.html">Open the interactive frame-by-frame Sumo Trade Guide →</a></figcaption>
+    </figure>
+    <figure style="margin:0;">
+      <img src="assets/sumo-two-pov-live.gif" alt="Two-POV 1.8.9 Sumo replay showing translucent reach spheres and delayed opponent ghost" onerror="this.src='assets/reach-advantage.png'">
+      <figcaption><strong>Two different realities at the same instant.</strong> Live translucent reach spheres and delayed-view ghosts inside 1.8.9 make the ping reach advantage visible in 3D. <a href="movement-and-knockback.html">Open the Tick-by-Tick Physics Explorer →</a></figcaption>
+    </figure>
+  </div>
+
+  <figure>
+    <img src="assets/reach-advantage.png" alt="Two client views of distance to opponent's hitbox showing a +2.74 block reach gap">
+    <figcaption>
+      <strong>Why a combo feels untouchable:</strong> In recorded duel <code>m2151</code>, the green curve (your client's view of the opponent) stays inside the 3.0-block reach line while the burnt-orange curve (their client's delayed view of you) drifts <strong>+2.74 blocks</strong> farther away.
+    </figcaption>
+  </figure>
+
+  <h2>Then: training RL bots—and figuring out <em>why</em> the best ones win</h2>
+  <p>
+    Once the simulator matched real 1.8.9 physics and all 28 real Minemen Club arena layouts, I started running an adversarial 7-CPS reinforcement learning league (a main GRU fighter + specialized counter-agents trained to beat each generation's champion).
+  </p>
+  <p>
+    In matched 7-CPS play, the Gen 4 champion (<code>sumo-league-remote-004</code>) went <strong>255–0–1 against plain W-tap</strong> in simulation, <strong>8–0</strong> against plain W-tap in real Minecraft, and beat the earlier <code>sumo-seven-first</code> specialist <strong>226–20–10</strong> (the same specialist that had previously swept an earlier champion 32–0!). Against me personally in the first five post-fix normal-speed human duels (<code>m800000050–054</code>), Gen 4 went <strong>5–0</strong>—even though I clicked 6.75 CPS to its 3.96 CPS.
+  </p>
+  <p>
+    Win rates are boring without knowing <strong>what the bot is actually doing</strong>. So we ran causal control interventions—breaking one skill at a time and swapping individual keys between Gen 3 and Gen 4 on identical seeds and clocks. Four real discoveries jumped out:
+  </p>
+
+  <div class="wide-breakout">
+    <figure style="margin:0;">
+      <img src="assets/sumo-dissection.png" alt="Four-panel causal dissection of the Gen 4 Sumo champion">
+      <figcaption>
+        <strong>Causal dissection of the Gen 4 Sumo champion.</strong> (A) Against W-tap, Gen 4 loses every single opening hit yet wins 99.6% by clicking less, connecting twice as often, and landing 2× more KB brakes. (B) Breaking click discipline or sprint resets collapses win rate; blind auto-Ctrl resets also lose heavily. (C) Shapley attribution of the +16.4-point gain over Gen 3. (D) Swapping older GRU hidden states shows timing recurrence, not long-term opponent adaptation.
+      </figcaption>
+    </figure>
+  </div>
+
+  <h3>1. Click discipline destroys spam clicking at 7 CPS</h3>
+  <p>
+    Against plain W-tap, <strong>W-tap landed the very first hit in all 256/256 games</strong>—and still lost 255 of them. W-tap clicked <strong>6.65 CPS</strong> and only connected on <strong>38.7%</strong> of clicks, constantly wasting its 7-CPS budget on air swings and eating miss cooldowns. Gen 4 clicked just <strong>4.06 CPS</strong>, connected on <strong>74.0%</strong> of presses (<strong>82.3%</strong> against Seven!), and delivered <strong>1.76 outward sprint-contact brakes per incoming hit</strong> vs. W-tap's <strong>0.85</strong>.
+  </p>
+  <p>
+    When we intervened and forced Gen 4 to click freely after the first hurt cue, its wins against Seven plummeted from <strong>226 → 12</strong> (and against Gen 3 from <strong>153 → 6</strong>). Spending even a single click on air delays your 0.6× brake right when knockback arrives.
+  </p>
+
+  <h3>2. A possibly new 1.8.9 technique: tapping the Sprint key instead of W-tapping</h3>
+  <p>
+    This was one of the coolest surprises in the entire project. Instead of releasing <strong>W</strong> to reset sprint like every human 1.8.9 PvPer does, the learned Sumo policy resets server sprint by <strong>tapping the Sprint key (Ctrl) while keeping W held</strong>—letting Minecraft send a sprint <code>STOP</code> packet on contact and re-arm sprint on the next tick without sacrificing forward input!
+  </p>
+  <p>
+    Naturally, I wondered: <em>if sprint-key tapping is that good, what happens if we hard-code it to auto-reset Ctrl after every sprinting contact?</em> We tested that exact variant (<code>gen4-auto-sprint</code>) using the same frozen Gen 4 weights:
+  </p>
+  <ul>
+    <li>Auto-Ctrl actually raised sprint-powered fresh hits from <strong>94.8% → 98.1%</strong>—and still <strong>lost 2–12 (2 draws) in real Minecraft</strong> and <strong>31–214 in simulation</strong> against intact Gen 4!</li>
+    <li><strong>Why?</strong> At 80 ms ping, blindly resetting Ctrl after every contact dropped its contact rate (<code>76.3% → 67.8%</code>) and cut outward KB brakes per incoming hit (<code>1.79 → 1.50</code>). Gen 4 isn't blindly tapping Ctrl on every hit—it's choosing <em>when</em> to reset sprint vs. when to keep sprint latched for consecutive brakes.</li>
+  </ul>
+
+  <h3>3. Hurt-timed jumps help—while strafing is still unsolved</h3>
+  <p>
+    Removing Gen 4's jumps within 150 ms of getting hit drops its wins against Gen 3 from <strong>153 → 39</strong> (and against its own counter from <strong>124 → 37</strong>), while removing jumps <em>outside</em> that hurt window changes nothing (<code>226/226</code> wins vs. Seven preserved). On the flip side, A/D strafing is actually still a weak spot: disabling Gen 4's strafe keys on fresh seeds <em>increased</em> its wins against Gen 3 (<code>67 → 85</code>) and its own counter (<code>67 → 93</code>). Our bots are still nowhere near that #1 human player's sideways-KB mouse flick at the edge!
+  </p>
+
+  <h3>4. Honest open question: are the bots adapting to opponents mid-match?</h3>
+  <p>
+    One of my original hypotheses was that a recurrent policy would read an opponent's pattern (hit-selecting, jump-reset timing, strafing habits) mid-duel and "break their pattern." We tested that directly on Gen 4:
+  </p>
+  <ul>
+    <li>Resetting the GRU hidden state every tick destroys the bot (<code>226 → 3</code> wins vs. Seven), and keeping just the last <strong>6 ticks</strong> recovers <code>223/226</code> wins—so recurrence is essential for short-term timing.</li>
+    <li><strong>The swap test:</strong> After 100 or 240 decisions, we swapped in an older GRU state from a <em>different match against the same opponent</em> vs. a <em>different opponent</em> (replaying only the last 6 real ticks). Win rates were virtually identical: <strong>585/830 vs. 580/830</strong> at 100 ticks, and <strong>231/377 vs. 231/377</strong> at 240 ticks.</li>
+  </ul>
+  <p>
+    So far, we haven't seen convincing mid-match opponent adaptation in RL Sumo bots. One guess is that bots lack human reaction-time bottlenecks and play closer to a memoryless equilibrium—still an open question!
+  </p>
+
+  <div class="callout">
+    <div class="callout-title">Quick sidebar on 1.8.9 Boxing: why plain W-tap is shockingly hard to beat</div>
+    <p>
+      In parallel, I ran a deep series of studies on 1.8.9 Boxing (first to 100 hits + established-combo maintenance). The honest headline: plain W-tap is <em>brutally</em> strong in regulation boxing. Many clever tricks—blind jump escapes, fixed first-hit delays, late backsteps—looked great on individual clips or single timing phases, then tied or lost to W-tap across fresh clocks. Sub-millisecond packet-drain boundaries (literally a <strong>0.15 ms</strong> tracker shift) and whether the defender lands one early 0.6× recoil brake routinely flip an entire combo. Full evidence lives in <a href="https://github.com/UlisseMini/mc-pvp/blob/main/research/combo-research-brief.md">the boxing research log</a>.
+    </p>
+  </div>
+
+  <div class="tech-divider">Under the hood · For ML &amp; systems readers</div>
+
+  <h2>How the 1.8.9 lab &amp; simulator stay honest</h2>
+  <p>
+    Early on, simplified toy simulators lied constantly—a missing fall-damage velocity packet or a 1-tick sprint-acceleration bug would make a bot look unbeatable in sim and collapse in real Minecraft. Everything here follows strict ground-truth rules:
+  </p>
+  <ul>
+    <li><strong>Reconstructed real MMC arenas:</strong> Decoded 430 recorded Minemen Club sumo matches from raw Protocol 47 chunk/block packets to recover all <strong>9 floor outlines and 28 block-exact variants</strong> (verified block-for-block against stock 1.8.9 <code>Entity.moveEntity</code> collision boxes).</li>
+    <li><strong>Exact physics + recorded timing calendars:</strong> The fast Java simulator tracks both clients' independent render interpolation, packet queues, server drains, hurt immunity, and 0.6× contact slowdowns using real recorded host timing calendars, with a frozen split between training, development, and sealed validation maps/clocks.</li>
+    <li><strong>Legal own-client observations only:</strong> Every playing policy sees only its own client's state (22-dim input into an 8- or 32-unit GRU/MLP) and outputs ordinary physical keys + click gate under an enforced 7-CPS (142.857 ms) ceiling.</li>
+    <li><strong>Mandatory W-tap comparison gate:</strong> Every controller is evaluated against plain W-tap under identical reach, RTT, CPS ceiling, aim settings, and native Minecraft repeats.</li>
+  </ul>
+
+  <figure>
+    <img src="assets/sumo-arenas.png" alt="All nine reconstructed Minemen Club sumo platform outlines with gold spawn markers">
+    <figcaption>
+      <strong>All 9 floor outlines recovered from 430 real MMC Sumo captures.</strong> Training uses the 137-block default; four shapes are used for routine map validation and four are held out as sealed test maps. <a href="https://github.com/UlisseMini/mc-pvp/blob/main/research/mmc-arena/README.md">Arena measurement protocol →</a>
+    </figcaption>
+  </figure>
+
+  <h3>Interactive explorers &amp; deeper docs</h3>
+  <div class="card-grid">
+    <a class="card" href="sumo-trade-guide/index.html">
+      <img src="assets/sumo-replay-still.webp" alt="First-person Sumo trade guide">
+      <div class="card-body">
+        <div class="card-tag">Interactive Video Guide</div>
+        <h3>Why You Flew Back</h3>
+        <p>Step frame-by-frame through five real MMC trades: early jumps, W-release timing, miss cooldowns, and heavy hits.</p>
+        <span class="card-cta">Open guide →</span>
+      </div>
+    </a>
+    <a class="card" href="movement-and-knockback.html">
+      <img src="assets/physics-explorer.png" alt="Tick-by-tick movement and knockback explorer">
+      <div class="card-body">
+        <div class="card-tag amber">Interactive Simulator</div>
+        <h3>Movement &amp; Knockback, One Tick at a Time</h3>
+        <p>Scrub through exact 1.8.9 ground/air friction and toggle sprint-contact braking on or off to see every floating-point tick.</p>
+        <span class="card-cta">Launch tick explorer →</span>
+      </div>
+    </a>
+  </div>
+
+  <footer class="site-footer">
+    <span>Next chapter: <a href="bow-aim.html">Predicting Opponents: Neural Bow Aim →</a></span>
+    <span><a href="https://github.com/UlisseMini/mc-pvp/blob/main/docs/FORMAL-MODEL.md">Formal 1.8.9 Model</a> · <a href="https://github.com/UlisseMini/mc-pvp/blob/main/research/elite-league/single-sumo/analysis/gen4/README.md">Raw Gen 4 Dissection</a></span>
+  </footer>
+</main>
+</body>
+</html>

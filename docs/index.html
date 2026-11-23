@@ -3,176 +3,123 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Minecraft PvP Lab · Interactive Demos &amp; Guides</title>
-<style>
-  :root {
-    --bg: #0b1120;
-    --surface: #111827;
-    --surface-hover: #1e293b;
-    --border: #1f2937;
-    --text: #f8fafc;
-    --muted: #94a3b8;
-    --accent: #2dd4bf;
-    --accent-dim: rgba(45, 212, 191, 0.14);
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
-  }
-  .wrap {
-    max-width: 1040px;
-    margin: 0 auto;
-    padding: 3.5rem 1.5rem 5rem;
-  }
-  header { margin-bottom: 2.5rem; }
-  .eyebrow {
-    display: inline-block;
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent);
-    background: var(--accent-dim);
-    padding: 0.25rem 0.65rem;
-    border-radius: 999px;
-    margin-bottom: 0.9rem;
-  }
-  h1 {
-    margin: 0 0 0.6rem;
-    font-size: clamp(2rem, 4vw, 2.8rem);
-    letter-spacing: -0.02em;
-    line-height: 1.15;
-  }
-  .subtitle {
-    margin: 0;
-    max-width: 680px;
-    color: var(--muted);
-    font-size: 1.08rem;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin-top: 2.2rem;
-  }
-  .card {
-    display: flex;
-    flex-direction: column;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    overflow: hidden;
-    text-decoration: none;
-    color: inherit;
-    transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
-  }
-  .card:hover {
-    transform: translateY(-3px);
-    border-color: var(--accent);
-    background: var(--surface-hover);
-  }
-  .thumb {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    object-fit: cover;
-    background: #020617;
-    border-bottom: 1px solid var(--border);
-  }
-  .card-body {
-    padding: 1.25rem 1.35rem 1.4rem;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-  }
-  .tag {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--accent);
-    margin-bottom: 0.4rem;
-  }
-  .card h2 {
-    margin: 0 0 0.5rem;
-    font-size: 1.22rem;
-    line-height: 1.25;
-  }
-  .card p {
-    margin: 0 0 1rem;
-    color: var(--muted);
-    font-size: 0.95rem;
-    flex: 1;
-  }
-  .cta {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--accent);
-  }
-  footer {
-    margin-top: 3.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 0.92rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    justify-content: space-between;
-  }
-  footer a { color: var(--accent); text-decoration: none; }
-  footer a:hover { text-decoration: underline; }
-</style>
+<title>Minecraft PvP Lab · Sumo Physics, RL Bots &amp; Opponent Prediction</title>
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="eyebrow">Minecraft PvP Lab · Interactive Demos</div>
-      <h1>See Minecraft PvP tick by tick</h1>
-      <p class="subtitle">
-        Browser-ready visual explainers and 3D replay viewers from our Minecraft 1.8.9 and modern combat experiments—no Minecraft install required.
-      </p>
-    </header>
-
-    <div class="grid">
-      <a class="card" href="sumo-trade-guide/index.html">
-        <img class="thumb" src="assets/sumo-replay-still.webp" alt="First-person Minecraft 1.8.9 Sumo replay with keystrokes HUD">
-        <div class="card-body">
-          <div class="tag">Interactive Video Guide</div>
-          <h2>Why You Flew Back (Sumo Trade Review)</h2>
-          <p>Step frame-by-frame through real Minemen Club sumo exchanges to see how early jumps, W-releases, miss cooldowns, and sprint-braking decide who stays on the platform.</p>
-          <span class="cta">Open interactive guide →</span>
-        </div>
-      </a>
-
-      <a class="card" href="movement-and-knockback.html">
-        <img class="thumb" src="assets/physics-explorer.png" alt="Tick-by-tick Minecraft 1.8.9 movement and knockback chart">
-        <div class="card-body">
-          <div class="tag">Interactive Physics Simulator</div>
-          <h2>Movement &amp; Knockback, One Tick at a Time</h2>
-          <p>Scrub through exact Java 1.8.9 physics ticks. Toggle sprint-contact braking on or off and watch how ground vs. air friction changes backward travel to the exact floating-point bit.</p>
-          <span class="cta">Launch tick explorer →</span>
-        </div>
-      </a>
-
-      <a class="card" href="bow-duels-viewer/index.html">
-        <img class="thumb" src="assets/bow-duels-3d.png" alt="3D isometric view of AI bow duelists firing arrows around cover">
-        <div class="card-body">
-          <div class="tag">3D Replay Viewer</div>
-          <h2>Bow Duels Self-Play League</h2>
-          <p>Watch evolved neural archers strafe around cover pillars, trade curved arrows, and clutch knockouts inside our Rust-accelerated 1.8.9 bow duel arena—from both orbit and first-person POV.</p>
-          <span class="cta">Watch 3D bow duels →</span>
-        </div>
-      </a>
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html"><span class="brand-dot"></span>Minecraft PvP Lab</a>
+    <div class="nav-links">
+      <a class="active" href="index.html">Home</a>
+      <a href="sumo.html">1.8 Sumo</a>
+      <a href="bow-aim.html">Neural Bow Aim</a>
+      <a href="side-projects.html">Side Explorations</a>
+      <a href="play.html">Play &amp; Mod</a>
+      <a class="gh-link" href="https://github.com/UlisseMini/mc-pvp">GitHub ↗</a>
     </div>
-
-    <footer>
-      <span>Part of <strong>mc-pvp</strong> — AI, physics, and practice tools for Minecraft PvP.</span>
-      <a href="https://github.com/UlisseMini/mc-pvp">View source &amp; full write-ups on GitHub →</a>
-    </footer>
   </div>
+</nav>
+
+<main class="container">
+  <span class="eyebrow">Personal Exploration Lab · Minecraft 1.8.9 &amp; ML</span>
+  <h1>Probing the skill ceiling of Minecraft PvP—and predicting opponents</h1>
+  <p class="lead">
+    This isn't a neat, single-purpose library. It's a collection of projects I built out of genuine curiosity around two questions: <strong>how deep does the skill ceiling for classic 1.8.9 Sumo actually go</strong> (and how can I use those insights to get better myself?), and <strong>what happens when you train neural networks to predict real opponents</strong> in bows, duels, and BedWars?
+  </p>
+
+  <div class="wide-breakout media-pair">
+    <figure style="margin:0;">
+      <img src="assets/sumo-two-pov-live.gif" alt="Real 1.8.9 Sumo replay showing live reach spheres, delayed ghost, and keystrokes HUD" onerror="this.src='assets/sumo-trade-replay.gif'">
+      <figcaption><strong>1.8.9 Sumo &amp; the Practice Lab:</strong> Making invisible mechanics visible—reach spheres, delayed-view ghosts, 0.6× knockback brakes, slow-motion duels, and 7-CPS RL champions. <a href="sumo.html">Read the Sumo writeup →</a></figcaption>
+    </figure>
+    <figure style="margin:0;">
+      <img src="assets/bow-aim-live.gif" alt="Real Hypixel Minecraft 1.8.9 replay with Neural BowAim K=6 predicted ghosts and ballistic arc" onerror="this.src='assets/bow-aim-results.png'">
+      <figcaption><strong>Neural Bow Aim:</strong> Predicting 6 possible future movement modes over 3D terrain voxels in &lt;1.5 ms inside Java 8—plus waiting a split second for void kills. <a href="bow-aim.html">Read the Bow Aim writeup →</a></figcaption>
+    </figure>
+  </div>
+
+  <h2 class="no-rule">Start wherever you're most curious</h2>
+  <div class="wide-breakout card-grid">
+    <a class="card" href="sumo.html">
+      <img src="assets/sumo-dissection.png" alt="Gen 4 Sumo champion causal dissection chart">
+      <div class="card-body">
+        <div class="card-tag">Main Thread 1 · 1.8.9 PvP</div>
+        <h3>How Far Does the Sumo Skill Ceiling Go?</h3>
+        <p>Started from watching the #1 Sumo player's sideways-KB edge flicks. Covers why you shouldn't W-tap immediately when hit, why our 7-CPS RL champion crushes W-tap (255–0–1), the surprising Ctrl sprint-reset discovery, and why adaptation is still an open mystery.</p>
+        <span class="card-cta">Read the Sumo breakdown →</span>
+      </div>
+    </a>
+
+    <a class="card" href="bow-aim.html">
+      <img src="assets/bow-aim-results.png" alt="Neural Bow Aim benchmark results">
+      <div class="card-body">
+        <div class="card-tag">Main Thread 2 · Prediction</div>
+        <h3>Neural Bow Aim &amp; Void-Kill Timing</h3>
+        <p>Trained on 1.23M ticks of real Hypixel gameplay. Multi-mode K=6 predictions + 3D terrain voxels take real-shot hit rate from 32% raw / 50% linear to 72%+, with learned <code>V_wait</code> timing for void kills and snowball volleys.</p>
+        <span class="card-cta">Explore Neural Bow Aim →</span>
+      </div>
+    </a>
+
+    <a class="card" href="side-projects.html">
+      <img src="assets/bow-duels-sim.gif" alt="Bow Duels Rust simulator replay">
+      <div class="card-body">
+        <div class="card-tag amber">Side Explorations</div>
+        <h3>Bow Duels, Modern Sword &amp; BedWars</h3>
+        <p>Curiosity detours into opponent prediction: a 105k ticks/s Rust Bow Duels league, emergent jump-resetting and delayed crits in Modern Sword (26.3), and 3D BedWars habit heatmaps (cool visually, honestly not very useful in-game).</p>
+        <span class="card-cta">Browse side explorations →</span>
+      </div>
+    </a>
+  </div>
+
+  <h2>Interactive browser demos (no Minecraft required)</h2>
+  <p>
+    Want to poke around the mechanics and replays yourself? All three interactive tools run right in your browser:
+  </p>
+
+  <div class="wide-breakout card-grid">
+    <a class="card" href="sumo-trade-guide/index.html">
+      <img src="assets/sumo-replay-still.webp" alt="First-person MMC Sumo replay with keystrokes">
+      <div class="card-body">
+        <div class="card-tag">Interactive Video Guide</div>
+        <h3>Why You Flew Back (Sumo Trade Guide)</h3>
+        <p>Step frame-by-frame through five real Minemen Club exchanges to see early jumps, W-release traps, miss cooldowns, and KB braking in action.</p>
+        <span class="card-cta">Open trade guide →</span>
+      </div>
+    </a>
+
+    <a class="card" href="movement-and-knockback.html">
+      <img src="assets/physics-explorer.png" alt="Tick-by-tick movement and knockback chart">
+      <div class="card-body">
+        <div class="card-tag amber">Interactive Tick Explorer</div>
+        <h3>Movement &amp; Knockback, One Tick at a Time</h3>
+        <p>Scrub through exact 1.8.9 movement ticks, toggle sprint-contact braking on or off, and inspect every floating-point velocity update.</p>
+        <span class="card-cta">Launch tick simulator →</span>
+      </div>
+    </a>
+
+    <a class="card" href="bow-duels-viewer/index.html">
+      <img src="assets/bow-duels-3d.png" alt="3D isometric Bow Duels arena">
+      <div class="card-body">
+        <div class="card-tag">3D Replay Viewer</div>
+        <h3>Bow Duels Self-Play Arena</h3>
+        <p>Watch evolved neural archers strafe around cover pillars and trade curved arrows from orbit or first-person POV.</p>
+        <span class="card-cta">Open 3D viewer →</span>
+      </div>
+    </a>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Want to fight the bots or use the practice mod yourself?</div>
+    <p>
+      The local 1.8.9 server lets you duel W-tap, <code>sumo-league-remote-004</code>, or slow the entire game down to half or quarter speed while seeing live KB-brake flashes, jump-reset feedback, and multi-POV replays. <a href="play.html">See the Play &amp; Mod setup guide →</a>
+    </p>
+  </div>
+
+  <footer class="site-footer">
+    <span>Built by Ulisse Mini · MIT License</span>
+    <span><a href="https://github.com/UlisseMini/mc-pvp">Source code on GitHub</a> · <a href="https://github.com/UlisseMini/mc-pvp/blob/main/research/README.md">Research Index</a></span>
+  </footer>
+</main>
 </body>
 </html>

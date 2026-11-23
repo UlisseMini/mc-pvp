@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neural Bow Aim &amp; Opponent Prediction · Minecraft PvP Lab</title>
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html"><span class="brand-dot"></span>Minecraft PvP Lab</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="sumo.html">1.8 Sumo</a>
+      <a class="active" href="bow-aim.html">Neural Bow Aim</a>
+      <a href="side-projects.html">Side Explorations</a>
+      <a href="play.html">Play &amp; Mod</a>
+      <a class="gh-link" href="https://github.com/UlisseMini/mc-pvp">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+  <span class="eyebrow">Thread 2 · Predicting Opponents</span>
+  <h1>Predicting where a player will be when your arrow arrives</h1>
+  <p class="lead">
+    One of the coolest moments in Minecraft (and games in general) is when raw reflexes aren't enough—you genuinely have to predict your opponent. With a bow at 30+ blocks, the arrow takes half a second to get there. Straight-line aiming assumes players run off bridges into the void. I trained neural networks on 1.23 million ticks of real Hypixel BedWars and SkyWars gameplay to see how accurately you can actually predict real human movement—and when it's better to wait a split second for a void kill.
+  </p>
+
+  <div class="wide-breakout">
+    <figure style="margin:0;">
+      <img src="assets/bow-aim-live.gif" alt="Real in-game Minecraft 1.8.9 render of Neural BowAim showing K=6 predicted ghosts, ballistic arrow arc, and hit probability HUD" onerror="this.src='assets/bow-aim-results.png'">
+      <figcaption>
+        <strong>Real in-game Forge 1.8.9 replay with Neural BowAim overlays active.</strong> Translucent silhouettes show the network's top predicted future landing spots (<code>K=6</code> coherent movement modes) at arrow arrival time, color-coded by safe hit vs. void-kill opportunity (<code>V</code>), alongside the glowing ballistic arc and expected-value HUD.
+      </figcaption>
+    </figure>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-num">32% → 72%</div>
+      <div class="stat-label">Hit rate on 202 real recorded Hypixel bow shots (unassisted vs. BowNeural v2 + ping lead)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">79.1%</div>
+      <div class="stat-label">Sealed BedWars hit rate across 184,564 shots (+15.8 pts over straight-line lead)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">+11.8%</div>
+      <div class="stat-label">More void kills per 10 arrows on void-exposed targets using learned <code>V_wait</code> timing</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">&lt;1.5 ms</div>
+      <div class="stat-label">Live pure-Java 8 inference per target inside Minecraft 1.8.9 (Python↔Java parity &lt;1e-5)</div>
+    </div>
+  </div>
+
+  <details class="primer">
+    <summary>New to BedWars / SkyWars bow physics? 20-second primer</summary>
+    <div class="primer-body">
+      <p><strong>Bridges &amp; the Void:</strong> BedWars and SkyWars are played on floating islands connected by narrow 1-block bridges over an instant-death void. Knocking someone off a bridge with a single arrow or snowball is an instant kill—worth way more than ordinary HP damage on solid ground.</p>
+      <p><strong>Arrow Flight &amp; Spread:</strong> A fully charged 1.8.9 arrow travels at ~3.0 blocks/tick with gravity (0.05/tick²) and air drag (0.99×/tick) plus small random angular spread. At 35–50 blocks, flight time is 0.6–1.0 seconds—plenty of time for a player to turn, jump, stop at a bridge edge, or duck behind cover.</p>
+    </div>
+  </details>
+
+  <h2>Why naive straight-line aiming misses (and what actually fixed it)</h2>
+  <p>
+    If you just multiply a player's current velocity by arrow flight time, you hit ~50% of real Hypixel shots (and only 33% past 32 blocks). Watching replays made three huge failure modes obvious:
+  </p>
+
+  <h3>1. Predict 6 possible futures instead of 1 blurry average</h3>
+  <p>
+    Suppose an opponent is strafing back and forth or approaching a fork on a bridge. A single-path model averages "go left" and "go right"—aiming straight into empty space between them! Instead, the network outputs <strong>K=6 coherent multi-mode trajectories</strong> (each with its own probability weight and uncertainty ellipse). The aim solver evaluates exact 1.8.9 arrow ballistics across all 6 modes and picks the angle maximizing expected hit value.
+  </p>
+
+  <h3>2. Give the model 3D terrain eyes</h3>
+  <p>
+    Humans don't walk into walls or blindly sprint off bridges into the void. Feeding the network a local <strong>3D solid-block voxel grid</strong> around the target (<code>9×7×9</code> fine + <code>11×5×11</code> coarse in v2, upgraded to a true 3D CNN + <code>25×25</code> top-down map with recently placed blocks in v4) added a massive jump in accuracy—especially on narrow bridges and around island corners, pushing sealed BedWars accuracy to <strong>79.1%</strong> (<strong>+17.1 pts</strong> over straight-line aiming at 54 blocks).
+  </p>
+
+  <h3>3. Know when <em>not</em> to shoot yet (Void-KB EV &amp; <code>V_wait</code>)</h3>
+  <p>
+    Not every hit is worth the same. In v3 we built an exact 14-tick 1.8.9 knockback + void-edge simulator (<code>VoidKbValue</code>) that checks whether hitting a predicted ghost will knock the player into the void (valued at 8× a normal bow hit, or 10× for snowballs/eggs). Then we trained a lightweight continuation-value head (<code>BowWaitModel</code>, 109 KB) that compares <em>shooting right now</em> vs. <em>holding the bow for a few more ticks</em>. When a player is about to step from solid island blocks onto a narrow bridge, the HUD flashes <code>NOW · WAIT</code>—holding fire for ~1.5 ticks on average and lifting void kills per 10 shots on void-exposed targets from <strong>2.46 → 2.75 (+11.8%)</strong>.
+  </p>
+
+  <figure>
+    <img src="assets/bow-aim-wait-still.png" alt="In-game Hypixel render showing BowAim v4 displaying NOW 0.3x · WAIT 0.8x with translucent K=6 predicted target ghosts and glowing cyan trajectory arc">
+    <figcaption>
+      Live in-game render of <code>BowWaitModel</code> in action: right before the target steps out of cover, the HUD flashes <code>NOW 0.3x · WAIT 0.8x</code> while the translucent K=6 ghosts fan out across the island edge. A moment later (seen in the GIF at top) the window spikes to <code>0.9x (94%) ▲</code> and the arrow connects.
+    </figcaption>
+  </figure>
+
+  <div class="wide-breakout">
+    <figure style="margin:0;">
+      <img src="assets/bow-aim-results.png" alt="Neural Bow Aim hit-rate benchmarks on 202 real Hypixel shots and 184,564 sealed BedWars shots">
+      <figcaption>
+        <strong>Left:</strong> Replay evaluation of all 202 real bow shots I actually fired across 13 Hypixel sessions—neural + 60 ms ping lead more than doubles raw unassisted hit rate (32% → 72%). <strong>Right:</strong> Sealed held-out BedWars ablation showing separate gains from multi-mode prediction and 3D terrain voxels.
+      </figcaption>
+    </figure>
+  </div>
+
+  <h2>Honest reality check: why it still misses 28% of real shots</h2>
+  <p>
+    Even with full neural aim and ping lead, 43 of my 202 real Hypixel shots still missed. Breaking down every single miss shows the true physical ceiling of prediction:
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Failure mode (43 misses on 202 real Hypixel shots)</th>
+        <th class="num">Count</th>
+        <th class="num">Share</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Lateral curve or strafe change mid-flight</td><td class="num">14</td><td class="num">32.6%</td></tr>
+      <tr><td>Partial-draw slow arrow (long flight time)</td><td class="num">9</td><td class="num">20.9%</td></tr>
+      <tr><td>Sudden vertical jump or drop off a ledge</td><td class="num">7</td><td class="num">16.3%</td></tr>
+      <tr><td>Deliberate mid-flight reversal / arrow dodge</td><td class="num">5</td><td class="num">11.6%</td></tr>
+      <tr><td>Target took knockback from someone else mid-flight</td><td class="num">4</td><td class="num">9.3%</td></tr>
+      <tr><td>Near-miss within native random arrow spread / sudden stop</td><td class="num">4</td><td class="num">9.3%</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Once an arrow is in the air for 0.7 seconds, a player who reacts to seeing you draw and reverses direction can always dodge a single projectile. That's also why snowball/egg volleys work so well on void bridges: on 10-throw bursts over void opportunities, neural targeting reaches <strong>99.7% joint hit rate</strong> and <strong>90.8% joint void-kill rate</strong> (vs. 58.8% for straight-line aiming).
+  </p>
+
+  <div class="tech-divider">Under the hood · Architecture &amp; v1 → v4 evolution</div>
+
+  <h2>From Ridge Regression to <code>BowNeuralNetV4</code></h2>
+  <p>
+    Everything trains strictly on <strong>pure offline human gameplay</strong> reconstructed causally from Protocol 47 packet captures (zero synthetic sim-to-real shortcut)—<strong>1,228,783 remote-player ticks across 42 full Hypixel matches</strong> (12 BedWars + 30 SkyWars), with 9 matches permanently sealed as a test set never touched during training or tuning.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Version</th>
+        <th>Key Addition</th>
+        <th>Headline Sealed Result</th>
+        <th class="num">Size / Latency</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Linear / Ridge</strong></td>
+        <td>Constant velocity vs. 8-horizon ridge regression</td>
+        <td>63.3% → 69.2% BedWars (open); 50.2% → 55.4% real shots</td>
+        <td class="num">1 KB / &lt;0.1 ms</td>
+      </tr>
+      <tr>
+        <td><strong>BowNeural v1</strong></td>
+        <td>1D Conv history + <code>9×7×9</code> voxel encoder + <code>K=6</code> modes + smart peak-spike release</td>
+        <td><strong>79.1%</strong> sealed BedWars (184k shots); <strong>56.5%</strong> live terrain-occluded POV (+9.1 pts)</td>
+        <td class="num">912 KB / 0.8 ms</td>
+      </tr>
+      <tr>
+        <td><strong>BowNeural v2</strong></td>
+        <td>48-tick history + unsmoothed <code>serverPos</code> packet lead + relational threats + fine/coarse voxels + correlated <code>ρ_xz</code> + direct hit-rate fine-tuning</td>
+        <td><strong>76.6%</strong> against true unsmoothed <code>serverPos</code> (72.1% at 100ms RTT); <strong>72.4%</strong> on 202 real Hypixel shots</td>
+        <td class="num">1.96 MB / 1.49 ms</td>
+      </tr>
+      <tr>
+        <td><strong>BowAim v3</strong></td>
+        <td>Exact 14-tick <code>VoidKbValue</code> + causal Longstaff-Schwartz FVI <code>V_wait</code> head + snowball/egg volley coverage + in-game multi-mode ghosts</td>
+        <td><strong>+11.8%</strong> void kills/10 on void-exposed bow windows; <strong>90.8%</strong> joint void-kill rate on 10-throw bursts</td>
+        <td class="num">+109 KB / +0.13 ms</td>
+      </tr>
+      <tr>
+        <td><strong>BowNeural v4</strong></td>
+        <td>Multi-head temporal self-attention + true 3D CNN (<code>9×7×9×2</code> solid + recently placed) + 2D CNN (<code>25×25×4</code> top-down floor/void map) + auxiliary future-block-placement head out to 72 ticks (3.6s)</td>
+        <td><strong>74.8%</strong> BedWars (166k shots, 73.0% bridging) &amp; <strong>72.5%</strong> SkyWars vs true <code>serverPos</code>; <strong>69/75</strong> pure-NN bridging suite (18/18 diagonal stair-up!)</td>
+        <td class="num">3.6 MB / Java 8</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    Every version is verified bit-for-bit between PyTorch and our zero-dependency Java 8 runtime inside the Forge mod (<code>max_prob_err &lt; 1e-6</code>), including a passive C0E→S32 / bow-spawn RTT tracker because Hypixel spoofs tab-list ping to 1 ms!
+  </p>
+
+  <footer class="site-footer">
+    <span>Next chapter: <a href="side-projects.html">Side Explorations (Bow Duels, Modern Sword, BedWars) →</a></span>
+    <span><a href="https://github.com/UlisseMini/mc-pvp/blob/main/research/bow-aim/neural/RESULTS.md">Full v1–v3 Benchmark Log</a> · <a href="https://github.com/UlisseMini/mc-pvp/blob/main/research/bow-aim/neural/train_v4.py">v4 Model Code</a></span>
+  </footer>
+</main>
+</body>
+</html>

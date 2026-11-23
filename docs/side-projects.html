@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Side Explorations · Minecraft PvP Lab</title>
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html"><span class="brand-dot"></span>Minecraft PvP Lab</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="sumo.html">1.8 Sumo</a>
+      <a href="bow-aim.html">Neural Bow Aim</a>
+      <a class="active" href="side-projects.html">Side Explorations</a>
+      <a href="play.html">Play &amp; Mod</a>
+      <a class="gh-link" href="https://github.com/UlisseMini/mc-pvp">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+  <span class="eyebrow amber">Curiosity Detours · Prediction in Other Modes</span>
+  <h1>Side Explorations: Bow Duels, Modern Sword &amp; BedWars Heatmaps</h1>
+  <p class="lead">
+    Alongside 1.8.9 Sumo and Neural Bow Aim, I wandered into three side projects all driven by the same curiosity about <strong>opponent prediction</strong>: reading strafe patterns in 1v1 bow duels, seeing if modern cooldown-based sword combat produces clearer predictive spacing, and testing how predictable BedWars players are over a whole match.
+  </p>
+
+  <h2 class="no-rule">1. Bow Duels Self-Play League (AVX2 Rust Simulator)</h2>
+  <p>
+    In 1v1 Bow Duels (bows, cover pillars, knockback, and ender pearls), shooting at a purely random strafer is tough—but real opponents rarely randomize cleanly. I wanted to see what happens when two neural archers evolve against each other with cover and ender pearls.
+  </p>
+  <p>
+    To train fast, I wrote a batched AVX2 Rust physics and raycasting engine (<code>geometry.rs</code>) that hits <strong>105,000 arena ticks/second</strong> (12× faster than NumPy) while matching real Forge 1.8.9 movement within <code>4.2×10⁻⁶</code> blocks and exact arrow hit/miss outcomes. Every generation spawns specialized counter-agents to exploit the current champion's strafe and cover habits, then trains new generalists (MLP, GRU, and future-position forecasting GRUs) against the growing threat pool.
+  </p>
+
+  <div class="wide-breakout media-pair">
+    <figure style="margin:0;">
+      <img src="assets/bow-duels-sim.gif" alt="Animated top-down replay of evolved AI archers fighting around cover pillars">
+      <figcaption><strong>Simulated Bow Duel knockout:</strong> evolved AI archer (blue) weaving around cover pillars against a reactive shooter (orange).</figcaption>
+    </figure>
+    <figure style="margin:0;">
+      <img src="assets/bow-duels-3d.png" alt="3D isometric view of the Bow Duels arena with cover pillars and arrow arcs">
+      <figcaption><strong>Interactive 3D viewer:</strong> switch between orbit and first-person champion POV. <a href="bow-duels-viewer/index.html">Open the 3D Bow Duels Replay Viewer →</a></figcaption>
+    </figure>
+  </div>
+
+  <p>
+    <strong>Honest status:</strong> All league win rates so far are in the verified Rust simulator (e.g., ablating strategy noise in the GRU drops win rates against strong peers into long stalemate draws, while crushing predictable `strafe` and `reactive` scripts 28–2 and 27–3). Full-duel native Forge transfer hasn't been evaluated yet. <a href="https://github.com/UlisseMini/mc-pvp/blob/main/research/bow-duels/README.md">Bow Duels architecture &amp; benchmarks →</a>
+  </p>
+
+  <h2>2. Modern Minecraft (Java 26.3) Sword League</h2>
+  <p>
+    Full disclosure: modern cooldown-based sword PvP was a digression—I don't play modern Minecraft much and didn't study these results nearly as deeply as 1.8.9 Sumo. I spun up a fast JVM flat-court simulator and a headless Linux-VM promotion ladder mainly because I thought attack cooldowns might create cleaner, more legible predictive dynamics.
+  </p>
+  <p>
+    Even without much hand-holding, self-play trained purely on win/health reward rediscovered <strong>two genuinely cool techniques</strong> verified in real Minecraft Java 26.3:
+  </p>
+  <ul>
+    <li><strong>Emergent hurt-timed jump-resetting:</strong> A policy trained from scratch learned to jump on <strong>624/624</strong> ticks with an incoming hurt animation (and <strong>0/1,031</strong> other ticks). One-tick counterfactual forks showed jumping cut outward knockback by a median <strong>0.20 blocks in 100/102 native cases</strong>; disabling its hurt sensor dropped its real-Java wins against the league opponent from <strong>7/8 → 1/8</strong>.</li>
+    <li><strong>Deliberate delayed-crit counter:</strong> The Season 9 promoted champion (<code>1ed6988f</code>) intentionally <em>passed up the first free charged swing</em> in all <strong>32/32</strong> native Java fights, absorbed the opening hit, and replied 8–14 ticks later with a falling critical hit—landing <strong>210 criticals out of 214 attacks</strong> (vs. 0/286 for W-tap) and beating the previous champion <strong>15–1</strong> head-to-head!</li>
+  </ul>
+
+  <div class="wide-breakout">
+    <figure style="margin:0;">
+      <img src="assets/hero-sword-duel.gif" alt="60fps rendered Minecraft Java 26.3 Sword League champion duel" style="max-width:620px;margin:0 auto;">
+      <figcaption style="text-align:center;"><strong>Real rendered Minecraft Java 26.3 exhibition</strong> from the automated promotion ladder (Season 14 champion). Every promotion is gated on fresh ordinary-Java duels in both seats and at both 0 ms and 100 ms added ping.</figcaption>
+    </figure>
+  </div>
+
+  <div class="wide-breakout">
+    <figure style="margin:0;">
+      <img src="assets/sword26-emergent.png" alt="Two emergent tactics discovered by the Modern Sword 26.3 self-play bots">
+      <figcaption>
+        <strong>Two emergent techniques discovered from win/health reward alone.</strong> (A) Zeroing the from-scratch bot's hurt sensor crashes its real-Java wins from 7/8 to 1/8. (B) The Season 9 champion skipped the opening swing in 32/32 real fights to set up a 98% critical-hit counter style. <a href="https://github.com/UlisseMini/mc-pvp/blob/main/research/sword26/README.md">Modern sword lab docs →</a>
+      </figcaption>
+    </figure>
+  </div>
+
+  <h2>3. BedWars 3D Player Location Forecasting</h2>
+  <p>
+    This started from a fun curiosity: <em>given only what your client sees during a Hypixel BedWars match, how well can a model forecast where every player on the map will be 5, 10, 30, 60, or 120 seconds from now?</em>
+  </p>
+  <p>
+    The model combines global map priors with an online per-player memory built live during the match (recent trails, favorite islands, repeated bridge routes, and inferred home base). On 100,075 held-out forecasts across unseen games, adapting to each player's personal habits assigns <strong>6.0× higher geometric mean probability</strong> to the exact 3D foot-block 60 seconds later compared to a static map heatmap.
+  </p>
+
+  <div class="wide-breakout media-pair">
+    <figure style="margin:0;">
+      <img src="assets/bedwars-3d-map.png" alt="3D isometric BedWars map with glowing probability heatmap of predicted player locations">
+      <figcaption><strong>3D isometric forecast map:</strong> glowing probability clouds over reconstructed BedWars islands showing predicted player density.</figcaption>
+    </figure>
+    <figure style="margin:0;">
+      <img src="assets/bedwars-forecasts.png" alt="Held-out 10-second and 60-second BedWars player location heatmaps">
+      <figcaption><strong>10s vs. 60s individual &amp; crowd forecasts:</strong> white circles mark start positions, teal crosses mark where players actually ended up.</figcaption>
+    </figure>
+  </div>
+
+  <div class="wide-breakout">
+    <figure style="margin:0;">
+      <img src="assets/bedwars-habit-gains.png" alt="BedWars personal habit log-loss gains across 5s to 120s and per-player breakdown">
+      <figcaption>
+        <strong>Players are creatures of habit—until they switch routines.</strong> Players who camp two islands give massive +3.0 nat gains at 60s; when a player suddenly rotates to a new side of the map mid-game (<code>Mujoku</code>), personal memory briefly lags behind.
+      </figcaption>
+    </figure>
+  </div>
+
+  <div class="callout amber">
+    <div class="callout-title">Honest verdict on BedWars forecasting</div>
+    <p>
+      Even though the statistical lift is huge and the 3D live overlay / heatmap viewer looks really cool, in actual gameplay I didn't find it very useful or much of an advantage—you already have a decent mental model of coarse map flow, and past 30 seconds uncertainty spreads out across whole islands anyway. Fun ML &amp; visualization experiment, not a secret weapon.
+    </p>
+  </div>
+
+  <footer class="site-footer">
+    <span>Next: <a href="play.html">Fight the Bots &amp; Use the Mod Locally →</a></span>
+    <span><a href="https://github.com/UlisseMini/mc-pvp/blob/main/research/bedwars-forecast/README.md">BedWars Study</a> · <a href="https://github.com/UlisseMini/mc-pvp/blob/main/research/sword26/LEAGUE.md">Sword26 Log</a></span>
+  </footer>
+</main>
+</body>
+</html>

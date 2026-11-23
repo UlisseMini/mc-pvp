@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Play Locally &amp; Forge Practice Mod · Minecraft PvP Lab</title>
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html"><span class="brand-dot"></span>Minecraft PvP Lab</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="sumo.html">1.8 Sumo</a>
+      <a href="bow-aim.html">Neural Bow Aim</a>
+      <a href="side-projects.html">Side Explorations</a>
+      <a class="active" href="play.html">Play &amp; Mod</a>
+      <a class="gh-link" href="https://github.com/UlisseMini/mc-pvp">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+  <span class="eyebrow">Practice Server · Slow-Mo · Forge 1.8.9 Mod</span>
+  <h1>Fight the bots, practice in slow motion, and inspect your replays</h1>
+  <p class="lead">
+    Half the reason I built this lab was to have a sandbox for actually improving at 1.8.9 PvP—drilling jump resets, blockhitting, KB braking, and fighting calibrated RL bots on the real 13×13 Minemen Club sumo floor without waiting in queues.
+  </p>
+
+  <h2 class="no-rule">1. Classic 1.8.9 Practice Lab (macOS)</h2>
+  <p>
+    You need <strong>Python 3</strong>, a <strong>Java 17 JDK</strong>, and the official Minecraft launcher with <strong>Minecraft Java 1.8.9</strong> installed. From the repo folder:
+  </p>
+  <pre><code>python3 lab.py prepare
+python3 lab.py build
+python3 lab.py sandbox-test
+python3 lab.py serve --bot-backend legacy</code></pre>
+  <p>
+    Open Minecraft 1.8.9 → <strong>Multiplayer → Direct Connect → <code>127.0.0.1:25565</code></strong> (or double-click <code>Start PvP Lab.command</code> on macOS for the Forge bot backend). Useful in-game commands:
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Command</th><th>What it does</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>/bots</code></td><td>Clickable menu of baselines and trained league champions</td></tr>
+      <tr><td><code>/duel wtap sumo preset=mmc</code></td><td>Sumo against plain W-tap on the reconstructed 13×13 MMC floor</td></tr>
+      <tr><td><code>/duel sumo-league-remote-004 sumo preset=mmc</code></td><td>Fight the 7-CPS Gen 4 RL champion</td></tr>
+      <tr><td><code>/duel wtap</code> / <code>/duel wtap diamond</code></td><td>First-to-100 boxing or full-diamond / <code>rod_diamond</code> sword duels</td></tr>
+      <tr><td><code>/drill jumpreset</code> / <code>/drill mixed</code></td><td>Repeating jump-reset and rod-approach drills with live timing feedback</td></tr>
+      <tr><td><code>/replay</code> / <code>/rematch</code> / <code>/watch</code></td><td>Replay your last fight from Human, Bot, or Server POV</td></tr>
+    </tbody>
+  </table>
+
+  <h2>2. Slow-Motion Sumo (<code>0.10×</code> to <code>1.00×</code> speed)</h2>
+  <p>
+    Double-click <code>Start Slow Sumo.command</code> (or run <code>python3 slow_sumo.py 0.5</code>) and connect to <code>127.0.0.1:25585</code> with the Forge 1.8.9 practice mod. At half speed, every physics tick lasts 100 real ms, a 10-tick fresh-hit window lasts 1 full second, bot CPS scales proportionally, and simulated ping scales too. Press <strong>Esc → Slow motion</strong> or type <code>/slowmo 0.35</code> to change speed mid-duel.
+  </p>
+
+  <h2>3. Forge 1.8.9 Practice Mod Highlights</h2>
+  <p>
+    Install with <code>python3 practice-client/build.py --install</code>, then launch Forge 1.8.9. Type <code>/p</code> for the clickable in-game menu:
+  </p>
+  <ul>
+    <li><strong>Sumo Coach (<code>/p sumocoach</code>):</strong> Live green crosshair flash + sound cues when you land verified 0.6× KB brakes, <strong>Sprint KB</strong> vs. <strong>Base KB</strong> verdict under the crosshair after each fresh hit, and post-match "biggest slides" cards showing where a missed brake cost you blocks.</li>
+    <li><strong>Two-POV Reach &amp; Ghosts:</strong> <code>/p reach on</code> (translucent reach spheres), <code>/p ghost me on</code> (pink silhouette showing where the bot's delayed client sees you), <code>/p range both on</code> (inner blue / outer red crosshair brackets), and live numeric reach advantage.</li>
+    <li><strong>Offline Multi-POV Replay Viewer (<code>/p replays</code> or <code>F8</code>):</strong> Reconstructs recorded lab and opt-in remote captures completely offline with 0.1×–4× scrubbing, single-tick stepping (<code>,</code> / <code>.</code>), live recorded keystrokes, KB-reduction timeline marks, and first-person / spectator cameras.</li>
+    <li><strong>Neural BowAim &amp; BedWars Overlays:</strong> <code>/p bowaim on</code> (trajectory arc, K=6 predicted ghosts, hit chance &amp; <code>V_wait</code> indicator) and <code>/p forecast</code> (3D volumetric heatmaps &amp; ghosts).</li>
+  </ul>
+
+  <h2>4. Modern Sword Lab (Java 26.3) &amp; Tests</h2>
+  <p>
+    Double-click <code>Start Modern Sword Lab.command</code> to fight the Java 26.3 bots on <code>127.0.0.1:25663</code> (bots run inside a headless Lima Linux VM on macOS), or <code>Watch Sword League.command</code> for the 60fps exhibition viewer.
+  </p>
+  <p>To run the Python and Java parity unit tests:</p>
+  <pre><code>python3 -m unittest discover -s tests -v</code></pre>
+
+  <footer class="site-footer">
+    <span><a href="index.html">← Back to Overview</a></span>
+    <span><a href="https://github.com/UlisseMini/mc-pvp/blob/main/docs/LAB-GUIDE.md">Full Lab Handbook</a> · <a href="https://github.com/UlisseMini/mc-pvp/blob/main/practice-client/README.md">Full Mod Command Reference</a></span>
+  </footer>
+</main>
+</body>
+</html>
