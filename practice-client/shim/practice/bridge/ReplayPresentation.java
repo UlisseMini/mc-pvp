@@ -29,6 +29,16 @@ final class ReplayPresentation {
     void root(Path root){this.root=root;}
     Map<String,Object> state(){return state;}
     boolean active(){return Boolean.TRUE.equals(state.get("active"));}
+    static String sprintSubject(Map<String,Object> frame){
+        return String.valueOf("server".equals(frame.get("source")) ? frame.get("camera") : frame.get("source"));
+    }
+    SprintTransitions.Sample serverSprintAt(Map<String,Object> frame,double time){
+        Object events=frame.get("server_sprint_events");
+        if(events instanceof List)return SprintTransitions.read((List<?>)events,time);
+        Archive local=archive;
+        ServerReplayInputs inputs=local!=null&&local.match.equals(frame.get("match"))?local.inputs.get(sprintSubject(frame)):null;
+        return inputs==null?SprintTransitions.Sample.EMPTY:inputs.serverSprintAt(time);
+    }
     void clear(){state=Collections.emptyMap();clearArchive();}
     private void clearArchive(){
         Archive current=archive;

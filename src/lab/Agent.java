@@ -22,14 +22,36 @@ public final class Agent implements ClassFileTransformer {
 
     @Override public byte[] transform(ClassLoader loader, String name, Class<?> cls,
                                       ProtectionDomain domain, byte[] bytes) {
+        boolean watchSprint = "pk".equals(name) && "server".equals(System.getProperty("lab.role"));
         if (name == null || !(name.equals("ave") || name.equals("j") || name.equals("pr")
                 || name.equals("wn") || name.equals("bcy") || name.equals("bex") || name.equals("hm") || name.equals("bfk")
-                || name.equals("en") || name.equals("eo") || name.equals("lh") || name.equals("lm") || name.equals("ek") || name.equals("net/minecraft/server/MinecraftServer"))) return null;
+                || name.equals("en") || name.equals("eo") || name.equals("lh") || name.equals("lm") || name.equals("ek")
+                || name.equals("net/minecraft/server/MinecraftServer") || watchSprint)) return null;
         try {
             ClassNode node = new ClassNode();
             new ClassReader(bytes).accept(node, 0);
             boolean changed = false;
             for (MethodNode method : node.methods) {
+                if (watchSprint && method.name.equals("d") && method.desc.equals("(Z)V")) {
+                    // Observe Entity.setSprinting at the mutation, even if both edges occur in one tick.
+                    int previous = method.maxLocals++;
+                    InsnList before = new InsnList();
+                    before.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                    before.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "pk", "aw", "()Z", false));
+                    before.add(new VarInsnNode(Opcodes.ISTORE, previous));
+                    method.instructions.insert(before);
+                    for (AbstractInsnNode ins : method.instructions.toArray()) if (ins.getOpcode() == Opcodes.RETURN) {
+                        InsnList after = new InsnList();
+                        after.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                        after.add(new VarInsnNode(Opcodes.ILOAD, previous));
+                        after.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                        after.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "pk", "aw", "()Z", false));
+                        after.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "lab/PovLink", "serverSprintChanged",
+                                "(Ljava/lang/Object;ZZ)V", false));
+                        method.instructions.insertBefore(ins, after);
+                    }
+                    changed = true;
+                }
                 // The watchdog compares the last tick timestamp with physical wall time.
                 if (TrainingClock.ROOM && name.equals("net/minecraft/server/MinecraftServer") && method.name.equals("aL") && method.desc.equals("()J")) {
                     for(AbstractInsnNode ins:method.instructions.toArray()) if(ins.getOpcode()==Opcodes.LRETURN)

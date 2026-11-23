@@ -18,8 +18,19 @@ final class SumoCoachScreen extends GuiScreen {
     private static final int SETTINGS = 0, CURRENT = 1, LAST = 2, RECENT = 3;
     private static final int BACK = 4, BRAKE_SOUND = 5, VOLUME = 6, JUMP = 7, UP = 8, DOWN = 9;
     private static final int SOUNDS = 10, HELP = 11, SOUND_CHOICE = 40, SOUND_PREVIEW = 60;
+    private static final int GAIN_SOUND = 12, GAIN_FLASH = 13, LOSS_SOUND = 14, LOSS_FLASH = 15;
     private static final int OPTION = 20, HISTORY = 100;
+    private static final int FIRST_CUE_Y = 102, CUE_HEIGHT = 22;
     private static final int TEXT = 0xFFEAF0EC, MUTED = 0xFFA9B8BB, GREEN = 0xFF74E6A6;
+    private enum SettingsCue {
+        BRAKE("Successful brake"), SPRINT_OFF("Sprint off at contact"),
+        SERVER_GAIN("Server sprint gain"), SERVER_LOSS("Server sprint loss"),
+        TIMER("Miss timer blocked"), WINDOW("Unclicked opening"), AIM("In-range aim miss");
+
+        final String label;
+        SettingsCue(String label) { this.label = label; }
+    }
+    private static final SettingsCue[] SETTINGS_CUES = SettingsCue.values();
     private static final List<String> ANALYSIS_HELP = Arrays.asList(
             "Where you lost ground",
             "Slid is the furthest you moved along the direction of the hit. The main timestamp is when the hit reached your client. Each +ms line is time since that hit.",
@@ -45,7 +56,7 @@ final class SumoCoachScreen extends GuiScreen {
     private final GuiScreen parent;
     private final SumoCoach coach;
     private SumoCoach.Summary selected;
-    private int tab, scroll, analysisScroll, left, width;
+    private int tab, scroll, settingsScroll, analysisScroll, left, width;
     private String error = "";
 
     SumoCoachScreen(GuiScreen parent, SumoCoach coach, SumoCoach.Summary selected) {
@@ -85,19 +96,55 @@ final class SumoCoachScreen extends GuiScreen {
         option(SUMMARY, left, 76, half);
         button(VOLUME, left + half + 6, 76, half, "Volume " + coach.volume + "%");
         int audio = left + width - 159, visual = left + width - 65;
-        button(BRAKE_SOUND, audio - 24, 102, 115, coach.brakeSound.label);
-        shortOption(BRAKE_FLASH, visual, 102, "Flash");
-        shortOption(SPRINT_SOUND, audio, 124, "Sound");
-        shortOption(SPRINT_TEXT, visual, 124, "Note");
-        shortOption(TIMER_SOUND, audio, 146, "Sound");
-        shortOption(TIMER_TEXT, visual, 146, "Note");
-        shortOption(WINDOW_SOUND, audio, 168, "Sound");
-        shortOption(WINDOW_TEXT, visual, 168, "Note");
-        button(OPTION + COSTLY_BRAKE_SOUND.ordinal(), audio - 23, 190, 88, "Brake alert " + on(coach.enabled(COSTLY_BRAKE_SOUND)));
-        shortOption(AIM_FLASH, visual, 190, "Flash");
+        int visible = visibleSettingsCues();
+        int maxScroll = SETTINGS_CUES.length - visible;
+        settingsScroll = Math.min(settingsScroll, maxScroll);
+        for (int i = 0; i < visible; i++) {
+            int y = FIRST_CUE_Y + i * CUE_HEIGHT;
+            switch (SETTINGS_CUES[settingsScroll + i]) {
+                case BRAKE:
+                    button(BRAKE_SOUND, audio - 24, y, 115, coach.brakeSound.label);
+                    shortOption(BRAKE_FLASH, visual, y, "Flash");
+                    break;
+                case SPRINT_OFF:
+                    shortOption(SPRINT_SOUND, audio, y, "Sound");
+                    shortOption(SPRINT_TEXT, visual, y, "Note");
+                    break;
+                case SERVER_GAIN:
+                case SERVER_LOSS:
+                    boolean gain = SETTINGS_CUES[settingsScroll + i] == SettingsCue.SERVER_GAIN;
+                    ServerSprintCue.Mode mode = coach.serverSprintMode(gain);
+                    button(gain ? GAIN_SOUND : LOSS_SOUND, audio, y, 65, "Sound " + on(mode.sound()));
+                    button(gain ? GAIN_FLASH : LOSS_FLASH, visual, y, 65, "Flash " + on(mode.flash()));
+                    break;
+                case TIMER:
+                    shortOption(TIMER_SOUND, audio, y, "Sound");
+                    shortOption(TIMER_TEXT, visual, y, "Note");
+                    break;
+                case WINDOW:
+                    shortOption(WINDOW_SOUND, audio, y, "Sound");
+                    shortOption(WINDOW_TEXT, visual, y, "Note");
+                    break;
+                case AIM:
+                    button(OPTION + COSTLY_BRAKE_SOUND.ordinal(), audio - 23, y, 88, "Brake alert " + on(coach.enabled(COSTLY_BRAKE_SOUND)));
+                    shortOption(AIM_FLASH, visual, y, "Flash");
+                    break;
+            }
+        }
+        if (maxScroll > 0) {
+            int y = field_146295_m - 46;
+            button(UP, left + width - 86, y, 40, "Up").field_146124_l = settingsScroll > 0;
+            button(DOWN, left + width - 42, y, 42, "Down").field_146124_l = settingsScroll < maxScroll;
+        }
         button(SOUNDS, left + 76, field_146295_m - 24, width - 237, "Sounds");
         button(JUMP, left + width - 157, field_146295_m - 24, 157,
                 "Jump-reset trainer: " + on(CombatCoach.jumpEnabled()));
+    }
+
+    private int visibleSettingsCues() {
+        int available = field_146295_m - 26 - FIRST_CUE_Y;
+        if (available >= SETTINGS_CUES.length * CUE_HEIGHT - 2) return SETTINGS_CUES.length;
+        return Math.max(0, (available - CUE_HEIGHT + 2) / CUE_HEIGHT);
     }
 
     private int soundRows() { return Math.max(1, (field_146295_m - 79) / 21); }
@@ -139,7 +186,11 @@ final class SumoCoachScreen extends GuiScreen {
     @Override protected void func_146284_a(GuiButton button) {
         int id = button.field_146127_k;
         if (id == BACK) { back(); return; }
-        if (id == UP || id == DOWN) { scroll(id == UP ? -4 : 4); return; }
+        if (id == UP || id == DOWN) {
+            int step = tab == SETTINGS ? 1 : 4;
+            scroll(id == UP ? -step : step);
+            return;
+        }
         if (id == HELP) {
             analysisScroll = scroll;
             tab = HELP;
@@ -162,6 +213,8 @@ final class SumoCoachScreen extends GuiScreen {
             if (id == BRAKE_SOUND) coach.nextSound();
             else if (id == VOLUME) coach.nextVolume();
             else if (id == JUMP) coach.toggleJump();
+            else if (id >= GAIN_SOUND && id <= LOSS_FLASH)
+                coach.toggleServerSprint(id == GAIN_SOUND || id == GAIN_FLASH, id == GAIN_FLASH || id == LOSS_FLASH);
             else if (id >= SOUND_CHOICE && id < SOUND_CHOICE + SumoCoach.SoundCue.values().length)
                 coach.nextSound(SumoCoach.SoundCue.values()[id - SOUND_CHOICE]);
             else if (id >= OPTION && id < OPTION + SumoCoach.Option.values().length)
@@ -183,7 +236,11 @@ final class SumoCoachScreen extends GuiScreen {
     }
 
     private void scroll(int amount) {
-        if (tab == SETTINGS) return;
+        if (tab == SETTINGS) {
+            int next = Math.max(0, Math.min(SETTINGS_CUES.length - visibleSettingsCues(), settingsScroll + amount));
+            if (next != settingsScroll) { settingsScroll = next; func_73866_w_(); }
+            return;
+        }
         int max = tab == SOUNDS ? Math.max(0, SumoCoach.SoundCue.values().length - soundRows()) :
                 tab == RECENT ? Math.max(0, coach.recent().size() - 1) : Math.max(0, wrapped().size() - visibleLines());
         scroll = Math.max(0, Math.min(max, scroll + amount));
@@ -216,9 +273,10 @@ final class SumoCoachScreen extends GuiScreen {
     }
 
     private void drawSettings() {
-        String[] labels = {"Successful brake", "Sprint off at contact", "Miss timer blocked", "Unclicked opening", "In-range aim miss"};
-        for (int i = 0; i < labels.length; i++) text(labels[i], left + 3, 109 + i * 22, TEXT);
-        if (field_146295_m >= 265) text("Live cues are available in the lab.", left + 3, 220, MUTED);
+        for (int i = 0; i < visibleSettingsCues(); i++)
+            text(SETTINGS_CUES[settingsScroll + i].label, left + 3, FIRST_CUE_Y + 7 + i * CUE_HEIGHT, TEXT);
+        int noteY = FIRST_CUE_Y + SETTINGS_CUES.length * CUE_HEIGHT + 8;
+        if (field_146295_m - 36 >= noteY) text("Live cues are available in the lab.", left + 3, noteY, MUTED);
     }
 
     private void drawSounds() {

@@ -14,6 +14,8 @@ final class ReplayData {
     final List<Map<String,Object>> frames=new ArrayList<>(),events=new ArrayList<>();
     final List<Long> times=new ArrayList<>();
     final Map<String,NavigableMap<Long,Boolean>> sprintHits=Map.of("a",new TreeMap<>(),"b",new TreeMap<>());
+    final Map<String,practice.replay.SprintTransitions> sprintTransitions=
+        Map.of("a",new practice.replay.SprintTransitions(),"b",new practice.replay.SprintTransitions());
     final long start,duration;
     final double originalCenter;
     final boolean posesRecorded;
@@ -110,6 +112,13 @@ final class ReplayData {
             case "hit" -> {
                 String kind=flag(row,"rod")?"rod contact":flag(row,"damage_upgrade")?"damage upgrade":"fresh hit";
                 serverSteps.event(ms,actor(row,"attacker")+" → "+actor(row,"target")+" · "+kind);
+            }
+            case "server_sprint" -> {
+                if(row.get("sprint") instanceof Boolean sprint) for(String side:sprintTransitions.keySet())
+                    if(Objects.equals(row.get("player"),result.get(side))){
+                        sprintTransitions.get(side).add(ms,sprint);
+                        serverSteps.event(ms,label(side)+(sprint?" · server sprint gained":" · server sprint lost"));
+                    }
             }
             case "blocked_damage","critical","rod_trick" ->
                 serverSteps.event(ms,actor(row,"attacker")+" · "+type.replace('_',' '));

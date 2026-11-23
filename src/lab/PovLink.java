@@ -109,6 +109,24 @@ public final class PovLink {
         Map<String,Object> out=ScienceTrace.state(player);out.put("id",R.call(player,"getEntityId"));out.put("name",R.name(player));
         out.put("health",R.call(player,"getHealth"));out.put("blocking",R.call(player,"isBlocking"));out.put("hurt_time",R.num(player,"hurtTime"));return out;
     }
+    public static void serverSprintChanged(Object player, boolean previous, boolean sprint) {
+        if (previous == sprint || Referee.server == null) return;
+        try {
+            if (!R.cls("net.minecraft.entity.player.EntityPlayerMP").isInstance(player)) return;
+            String name = R.name(player);
+            Referee.Match match = Referee.find(name);
+            long now = System.currentTimeMillis();
+            if (match == null || now < match.start || match.finish != 0) return;
+            Map<String,Object> change = Map.of("match", match.id, "player", name, "sprint", sprint);
+            Referee.append(match.replay, event("server_sprint", change));
+            if (Referee.isBot(name) || !subscribed(name)) return;
+            if (peers.get(name).connection != R.get(player, "playerNetServerHandler")) return;
+            send(player, Map.of("type", "server_sprint", "version", 1, "match", match.id, "player", name,
+                    "sprint", sprint, "server_tick", Referee.ticks, "server_ms", now));
+        } catch (RuntimeException error) {
+            if (errors++ < 4) error.printStackTrace();
+        }
+    }
     static void sumoFinished(Referee.Match match,String reason){
         List<String> players=List.of(match.a,match.b);
         for(int side=0;side<players.size();side++){

@@ -20,6 +20,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
+import practice.replay.SprintTransitions;
 import practice.core.replay.ReplayInputs.Event;
 import practice.core.replay.ReplayInputs.Key;
 import practice.core.replay.ReplayInputs.State;
@@ -34,10 +35,12 @@ public final class ServerReplayInputs {
     private final double first, last;
     private final TreeMap<Double,Boolean> localSprint,clickGate,sentSprint;
     private final ReplayCoachFeedback.Reader coach;
+    private final SprintTransitions serverSprint;
 
     private ServerReplayInputs(Reader reader) {
         reader.finishDecisions();
         coach=reader.coach;
+        serverSprint=reader.serverSprint;
         localSprint=reader.localSprint;
         clickGate=reader.clickGate;
         sentSprint=reader.sentSprint;
@@ -55,6 +58,7 @@ public final class ServerReplayInputs {
         return first <= ms && ms <= last && inputs.available ? inputs.at(ms) : null;
     }
     public Map<String,Object> coachAt(double ms){return coach.at(ms);}
+    public SprintTransitions.Sample serverSprintAt(double ms){return serverSprint.at(ms);}
 
     /** Bot-only evidence up to the playhead. A sprint message is an outbound client packet. */
     public Map<String,Object> botDetails(double ms){
@@ -140,6 +144,7 @@ public final class ServerReplayInputs {
         double headTime=Double.NaN,anchorNs=Double.NaN,anchorMs;
 
         final ReplayCoachFeedback.Reader coach;
+        final SprintTransitions serverSprint = new SprintTransitions();
         Reader(boolean bot, long start,String opponent) {
             this.bot = bot;
             this.start = start;
@@ -154,6 +159,7 @@ public final class ServerReplayInputs {
                 case "native_input_head": case "observation": case "duel_network": return bot;
                 case "attack_click_before": case "attack_click_after": case "packet_wire":
                 case "packet_handler_enter": case "motion_travel_after": case "sumo_coach_cue": return true;
+                case "link_server_sprint": return true;
                 default: return false;
             }
         }
@@ -190,6 +196,12 @@ public final class ServerReplayInputs {
             first = Math.min(first, ms);
             last = Math.max(last, ms);
             Map<String, Object> data = object(row.get("data"));
+            if (type.equals("link_server_sprint")) {
+                Object sprint = data.get("sprint");
+                if (sprint instanceof Boolean && data.get("match") != null && data.get("match").equals(row.get("match")))
+                    serverSprint.add(number(data, "server_ms", Double.NaN) - start, (Boolean)sprint);
+                return;
+            }
             coach.accept(type,ms,row,data);
             switch (type) {
                 case "pov_archive_start":

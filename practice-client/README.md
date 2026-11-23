@@ -171,6 +171,24 @@ Sprint KB cue**, or use `/p sprintkb on` and `/p sprintkb off`. Server replays
 read this verdict from the selected participant’s hits. The local offline viewer
 can show verdicts saved in new lab recordings. Public MMC recordings lack the
 referee feed.
+
+During a live localhost lab fight, **Sprint lost** and **Sprint gained** above
+the crosshair show changes to your own server sprint flag, including when an
+accepted attack uses it up. They arrive with the server-to-client delay.
+In **Esc → Sumo Coach → Settings**, the **Server sprint gain** and
+**Server sprint loss** rows each have independent **Sound** and **Flash** switches.
+Both flash by default. Use **Sounds** to change or preview each sound. The defaults
+use a lower tone for loss and a higher tone for gain. **Volume** applies to both.
+These switches work independently of **Live coaching**.
+`/p serversprint` reads the same settings and can set each cue to `off`, `flash`,
+`sound`, or `both`, for example `/p serversprint loss both`.
+In server replays, both players' recorded transitions follow the selected POV,
+or the player you follow in the server view. The offline viewer uses transitions
+captured on the recorded client or in its lab archive. Flash timing follows the
+playhead. Sounds play as you pass the transition during playback in the offline
+viewer or on an updated lab server. A replay needs recorded server sprint
+evidence to show these cues.
+
 Reach fields and the numeric advantage use the same observation and drawing
 functions as live play. Clients with no recorded data are explicitly unavailable;
 older 5 Hz recordings are labeled. Playback interpolates visual poses between

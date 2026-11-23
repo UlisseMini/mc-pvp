@@ -112,7 +112,8 @@ final class SumoCoach implements SumoStats.Listener {
         BRAKE("Successful brake", Sound.HARP, .55f, 1.25f), DOUBLE("Two brakes (tones)", Sound.PLING, .55f, 1.25f),
         TRIPLE("Three brakes (tones)", Sound.ORB, .55f, 1.25f), SPRINT("Sprint off", Sound.BASS, .55f, .85f),
         COSTLY("Costly missed brake", Sound.BASS_ATTACK, .95f, 1.35f), TIMER("Miss timer", Sound.CLICK, .45f, .8f),
-        UNCLICKED("Unclicked opening", Sound.HARP, .40f, .7f), AIM("Aim miss", Sound.SILENT, .45f, 1f);
+        UNCLICKED("Unclicked opening", Sound.HARP, .40f, .7f), AIM("Aim miss", Sound.SILENT, .45f, 1f),
+        SERVER_GAIN("Server sprint gain", Sound.ORB, .7f, 1.55f), SERVER_LOSS("Server sprint loss", Sound.ORB, .7f, .65f);
 
         final String label, key;
         final Sound fallback;
@@ -257,6 +258,14 @@ final class SumoCoach implements SumoStats.Listener {
         if (cue == SoundCue.BRAKE && brakeSound != BrakeSound.OFF) playBrake(1);
         else play(cue);
     }
+    ServerSprintCue.Mode serverSprintMode(boolean gain) { return bridge.serverSprintMode(gain); }
+    void toggleServerSprint(boolean gain, boolean flash) throws IOException {
+        ServerSprintCue.Mode mode = serverSprintMode(gain);
+        bridge.setServerSprintMode(gain, flash ? ServerSprintCue.Mode.of(!mode.flash(), mode.sound())
+                : ServerSprintCue.Mode.of(mode.flash(), !mode.sound()));
+    }
+    void playServerSprint(boolean gain) { play(gain ? SoundCue.SERVER_GAIN : SoundCue.SERVER_LOSS); }
+
     void nextVolume() throws IOException { bridge.storeSetting("sumocoach.volume", Integer.toString(volume >= 100 ? 0 : Math.min(100, volume + 25))); }
     void toggleJump() throws IOException { bridge.storeSetting("jumpreset.enabled", Boolean.toString(!CombatCoach.jumpEnabled())); }
 

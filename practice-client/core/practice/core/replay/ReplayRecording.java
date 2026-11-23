@@ -6,6 +6,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
+import practice.replay.SprintTransitions;
 
 /** Local capture reader only. It never connects, sends, changes files or infers
  * server damage acceptance from client animations. All times are milliseconds
@@ -85,9 +86,11 @@ public final class ReplayRecording {
     public final List<Pose> poses;
     public final List<Mark> timeline;
     private final NavigableMap<Double,Boolean> sprintHits=new TreeMap<>();
+    private final SprintTransitions serverSprint=new SprintTransitions();
     private final ReplayCoachFeedback.Reader coach;
     private final double coachOrigin;
     public Map<String,Object> coachAt(double ms){return coach.at(coachOrigin+ms);}
+    public SprintTransitions.Sample serverSprintAt(double ms){return serverSprint.at(ms);}
     public Boolean sprintHitAt(double ms){
         Map.Entry<Double,Boolean> hit=sprintHits.floorEntry(ms);
         return hit!=null&&ms-hit.getKey()<practice.replay.SprintHit.DISPLAY_MS?hit.getValue():null;
@@ -111,7 +114,10 @@ public final class ReplayRecording {
         sumoMoments=sumo==null?null:ReplaySumoMoments.read(sumo,entry.sumoMatch,poses,marks);
         this.inputs=inputs;
         this.coach=coach;this.coachOrigin=coachOrigin;
-        for(Mark m:marks)if("sprint_hit".equals(m.kind))sprintHits.put(m.atMs,(Boolean)m.details.get("sprint"));
+        for(Mark m:marks){
+            if("sprint_hit".equals(m.kind))sprintHits.put(m.atMs,(Boolean)m.details.get("sprint"));
+            if("server_sprint".equals(m.kind))serverSprint.add(m.atMs,(Boolean)m.details.get("sprint"));
+        }
         recoil=new ReplayRecoil(marks,sumo==null?Math.max(0,entry.preferredStartMs-start):sumo.startMs);
         motion=new ReplayMotion(motionSamples,marks,poses);
         List<Wire> in=new ArrayList<Wire>();for(Wire w:packets)if(w.inbound)in.add(w);inbound=Collections.unmodifiableList(in);
@@ -401,6 +407,7 @@ public final class ReplayRecording {
         List<RawMotion> motionSamples=new ArrayList<>();
         List<RawInput> inputEvents=new ArrayList<>();
         Map<Stamp,Boolean> sprintHits=new LinkedHashMap<>();
+        Map<Stamp,Boolean> serverSprint=new LinkedHashMap<>();
         Map<String,Object> pendingClick=null;
         Stamp clickStamp=null;
         boolean hasAttackSamples=false,screenOpen=false;
@@ -430,6 +437,12 @@ public final class ReplayRecording {
                     if("capture_start".equals(type)){origin.add(stamp);captureMid=bool(data,"started_mid_connection",true);continue;}
                     if("link_sprint_hit".equals(type)&&data.get("sprint") instanceof Boolean){
                         origin.add(stamp);sprintHits.put(stamp,(Boolean)data.get("sprint"));continue;
+                    }
+                    if("link_server_sprint".equals(type)&&data.get("sprint") instanceof Boolean){
+                        if(entry.archiveFolder==null||entry.archiveFolder.getFileName().toString().equals(data.get("match"))){
+                            origin.add(stamp);serverSprint.put(stamp,(Boolean)data.get("sprint"));
+                        }
+                        continue;
                     }
                     if(type.equals("key")||type.equals("mouse")){
                         ReplayInputs.Key key=type.equals("key")&&!bool(data,"repeat",false)
@@ -535,6 +548,10 @@ public final class ReplayRecording {
         List<Mark> marks=marks(packets,poses,-1,warnings);
         for(Map.Entry<Stamp,Boolean> hit:sprintHits.entrySet())
             marks.add(new Mark(origin.at(hit.getKey()),"sprint_hit",hit.getValue()?"Sprint KB":"Base KB",Collections.singletonMap("sprint",hit.getValue())));
+        for(Map.Entry<Stamp,Boolean> change:serverSprint.entrySet())
+            marks.add(new Mark(origin.at(change.getKey()),"server_sprint",change.getValue()?"Server sprint gained":"Server sprint lost",
+                    Collections.singletonMap("sprint",change.getValue())));
+        if(serverSprint.isEmpty()) addLabSprintMarks(entry,side,origin.wall,parser,marks);
         for(RawContact contact:contacts){
             contact.details.put("click_start_ms",origin.at(contact.before));
             boolean backward=Boolean.TRUE.equals(contact.details.get("backward"));
@@ -558,6 +575,39 @@ public final class ReplayRecording {
         }
         return new ReplayRecording(entry,origin.wall,duration,packets,poses,marks,warnings.finish(),join,selfId,ticks,hasAttackSamples,
                 motion,sumo,new ReplayInputs(events),coach,origin.ns==Long.MAX_VALUE?origin.wall:origin.ns/1e6);
+    }
+
+    /** Bot archives can have authoritative sprint changes only in the sibling lab recording. */
+    private static void addLabSprintMarks(Entry entry,String side,long origin,
+                                         Function<String,Map<String,Object>> parser,List<Mark> marks) throws IOException {
+        Path folder=entry.archiveFolder;
+        if(folder==null||folder.getParent()==null||!folder.getFileName().toString().matches("m[0-9]{4,9}"))return;
+        String id=folder.getFileName().toString();
+        Path manifest=folder.resolve("manifest.json"), replay=folder.getParent().resolveSibling("replays").resolve(id+".jsonl");
+        List<Mark> recorded=new ArrayList<>();
+        try{
+            if(!Files.isRegularFile(manifest)||Files.size(manifest)>1024*1024||
+                    !Files.isRegularFile(replay)||Files.size(replay)>64L*1024*1024)return;
+            Map<String,Object> meta=parse(parser,new String(Files.readAllBytes(manifest),StandardCharsets.UTF_8));
+            String name=text(object(object(meta.get("players")).get(side)),"name","");
+            if(name.isEmpty())return;
+            try(BufferedReader in=Files.newBufferedReader(replay,StandardCharsets.UTF_8)){
+                for(String line;(line=in.readLine())!=null;){
+                    if(Thread.currentThread().isInterrupted())throw new java.io.InterruptedIOException("Replay load canceled");
+                    if(!line.contains("\"server_sprint\""))continue;
+                    Map<String,Object> row=parse(parser,line);
+                    if(!"server_sprint".equals(row.get("type"))||!name.equals(row.get("player"))||
+                            !id.equals(row.get("match"))||!(row.get("sprint") instanceof Boolean))continue;
+                    long wall=integer(row,"time",-1);
+                    if(wall<Math.max(origin,entry.preferredStartMs)||(entry.finishMs>0&&wall>entry.finishMs))continue;
+                    boolean sprint=(Boolean)row.get("sprint");
+                    recorded.add(new Mark(wall-origin,"server_sprint",sprint?"Server sprint gained":"Server sprint lost",
+                            Collections.singletonMap("sprint",sprint)));
+                }
+            }
+        }catch(java.io.InterruptedIOException canceled){throw canceled;}
+        catch(IOException|RuntimeException unavailable){return;}
+        marks.addAll(recorded);
     }
     private static List<Mark> marks(List<Wire> packets,List<Pose> poses,int initialSelf,Warnings warnings){
         List<Mark> out=new ArrayList<Mark>();Map<String,Double> transactions=new HashMap<String,Double>();Map<Integer,Double> keepalives=new HashMap<Integer,Double>();

@@ -46,9 +46,14 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     private String sprintHitMatch="";
     private long sprintHitUntil;
     private boolean sprintHitBonus;
+    final ServerSprintCue serverSprint = new ServerSprintCue();
 
     Boolean liveSprintHit(){
         return practiceAllowed()&&sprintHitMatch.equals(match)&&System.nanoTime()<sprintHitUntil?sprintHitBonus:null;
+    }
+    void drawServerSprint(Minecraft mc, int width, int height) {
+        if (coordination && practiceAllowed() && !replay.active())
+            serverSprint.draw(match, mc.field_71466_p, width, height);
     }
     private volatile Map<String,Object> lastState=Collections.emptyMap();
     private final Gson gson=new Gson();
@@ -66,6 +71,7 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
     PracticeCapture(ReloadHost host,Path directory,Path source){this.host=host;this.directory=directory;this.bridgeSha256=bridgeHash(source);this.remoteUpload=new RemoteCaptureUpload(directory);}
     String moduleSha256(){return host.moduleSha256();}
     synchronized void settings(Properties p){
+        serverSprint.settings(p);
         boolean next=Boolean.parseBoolean(p.getProperty("capture.enabled","true"));
         frames=Boolean.parseBoolean(p.getProperty("capture.frames","true"));coordination=Boolean.parseBoolean(p.getProperty("link.enabled","true"));
         String archivePath=p.getProperty("archive.directory","").trim();baseArchive=archivePath.isEmpty()?null:Paths.get(archivePath);
@@ -369,6 +375,19 @@ final class PracticeCapture implements ObserverHooks.Sink,PracticeServices {
             Map<String,Object> data=gson.fromJson(json,Map.class);
             if(data==null||!(data.get("version") instanceof Number)||((Number)data.get("version")).intValue()!=1)return;
             String type=String.valueOf(data.get("type"));
+            if (type.equals("server_sprint")) {
+                Minecraft mc = Minecraft.func_71410_x();
+                if (!BotRuntime.enabled() && !replay.active() && mc.field_71439_g != null
+                        && mc.field_71439_g.func_70005_c_().equals(data.get("player"))
+                        && !match.isEmpty() && match.equals(data.get("match")) && data.get("sprint") instanceof Boolean) {
+                    boolean sprint = (Boolean) data.get("sprint");
+                    serverSprint.changed(match, sprint);
+                    if (serverSprint.mode(sprint).sound() && SumoCoach.hooks != null)
+                        SumoCoach.hooks.playServerSprint(sprint);
+                    inputEvent("link_server_sprint", data);
+                }
+                return;
+            }
             if(type.equals("sprint_hit")){
                 Minecraft mc=Minecraft.func_71410_x();
                 if(!BotRuntime.enabled()&&mc.field_71439_g!=null&&mc.field_71439_g.func_70005_c_().equals(data.get("attacker"))

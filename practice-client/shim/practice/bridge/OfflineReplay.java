@@ -134,6 +134,10 @@ final class OfflineReplay {
     Map<String,PoseTrack> linked=Collections.emptyMap();String ownSource,opponentName;
     boolean active,paused=true,loading,seeking;double time,speed=1;long lastNs;int cursor,applied,skipped,errors;
     private boolean hideText;
+    long sprintReplayRevision;
+    boolean sprintReplayPlaying(){return !paused && !seeking && scrubDirection == 0;}
+    boolean sprintReplayVisible(){return !hideText && recording != null;}
+    practice.replay.SprintTransitions.Sample serverSprintAt(double ms){return recording.serverSprintAt(ms);}
     Boolean sprintHit(){return recording!=null&&!hideText?recording.sprintHitAt(playhead()):null;}
     Map<String,Object> coachFeedback(){
         return recording!=null&&!hideText&&shows(RECOIL_FLASH)?recording.coachAt(playhead()):Collections.emptyMap();
@@ -304,6 +308,7 @@ final class OfflineReplay {
         boolean closed=mc.field_71462_r==null;
         GuiScreen controls=mc.field_71462_r;
         ReplayRecording previous=recording;
+        sprintReplayRevision++;
         entry=selected;recording=value;for(String warning:value.warnings)System.out.println("[PracticeReplay] "+warning);
         if(!replacing){
             savedPerspective=mc.field_71474_y.field_74320_O;
@@ -433,6 +438,7 @@ final class OfflineReplay {
     }
     void seek(double target){
         if(!active)return;
+        sprintReplayRevision++;
         GuiScreen controls=Minecraft.func_71410_x().field_71462_r;
         saveSpectatorLook();seeking=true;
         target=Math.max(recording.playStart(),Math.min(recording.playEnd(),target));

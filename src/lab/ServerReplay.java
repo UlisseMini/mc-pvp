@@ -25,6 +25,7 @@ public final class ServerReplay {
         String camera="free",source="server",lastEvent="";final Set<String> ghosts=new LinkedHashSet<>();
         int ghostPreset,savedSlot;Object savedInventory;long lastToolbar;boolean viewMissing;
         long eventUntil;
+        long playbackRevision;
         boolean spawned,ended,startPlaying=true;
         Session(String viewer,ReplayData data,int arena,long now){
             this.viewer=viewer;this.data=data;this.arena=arena;center=4096.0*(arena+1);
@@ -212,7 +213,7 @@ public final class ServerReplay {
         s.clock.seekSeconds(seconds,relative,now);clearStep(s);resetPlaybackEvents(s);
     }
     static void resetPlaybackEvents(Session s){
-        s.eventIndex=0;s.ended=false;s.lastEvent="";s.eventUntil=0;
+        s.eventIndex=0;s.ended=false;s.lastEvent="";s.eventUntil=0;s.playbackRevision++;
         while(s.eventIndex<s.data.events.size()&&ReplayData.number(s.data.events.get(s.eventIndex),"time",0)<=s.data.start+s.clock.position())s.eventIndex++;
         Arrays.fill(s.swing,-1);
     }
@@ -275,7 +276,11 @@ public final class ServerReplay {
             hits.subMap(ms-practice.replay.SprintHit.DISPLAY_MS,true,ms+1000,true)
                 .forEach((at,sprint)->cues.add(Map.of("at",at,"sprint",sprint)));
             data.put("sprint_hits",cues);
+            var transitions=s.data.sprintTransitions.get(subject);
+            if(!transitions.isEmpty())
+                data.put("server_sprint_events",transitions.between(ms-practice.replay.SprintTransitions.DISPLAY_MS,ms+1000));
         }
+        data.put("playback_revision",s.playbackRevision);
         data.put("reach",List.of(ReplayData.number(s.data.result,"attack_reach_a",3),ReplayData.number(s.data.result,"attack_reach_b",3)));PovLink.send(viewer,data);
     }
     private static Map<String,Object> viewFrame(Session s,String source,long ms){

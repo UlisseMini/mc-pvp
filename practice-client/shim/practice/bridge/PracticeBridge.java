@@ -354,12 +354,36 @@ public final class PracticeBridge {
                 mc.field_71466_p.func_175063_a(label,(width-mc.field_71466_p.func_78256_a(label))/2f,height/2+13,bonus?0xFF82F2AA:0xFFFFCA79);
             }
         }
+        drawServerSprint(mc, width, height);
         if(offline.active)offline.drawKeystrokes(mc.field_71466_p,width,height,false);
         else if(keystrokes.enabled&&KeystrokesHud.playing(mc)){
             Map<String,Object> replay=capture.replayFrame();
             Object source=replay.get("keystrokes_source");
             if("a".equals(source)||"b".equals(source))KeystrokesHud.drawServerReplay(mc.field_71466_p,replay,width,height,hudLayout);
             else if(replay.isEmpty()||"live".equals(source))KeystrokesHud.drawAtLayout(mc.field_71466_p,keystrokes.live(System.nanoTime()),width,height,hudLayout);
+        }
+    }
+    private void drawServerSprint(Minecraft mc, int width, int height) {
+        ServerSprintCue cue = capture.serverSprint;
+        if (sumoCoach == null || mc.field_71462_r != null) { cue.clearReplay(); return; }
+        if (offline.active && offline.sprintReplayVisible()) {
+            double time = offline.playhead();
+            practice.replay.SprintTransitions.Sample transitions = offline.serverSprintAt(time);
+            cue.replay("offline", offline.sprintReplayRevision, time, offline.sprintReplayPlaying(), transitions, sumoCoach);
+            cue.drawReplay(mc.field_71466_p, width, height, time, transitions);
+        } else if (capture.replay.active() && !offline.active) {
+            Map<String,Object> replay = capture.replayFrame();
+            double time = practice.replay.PoseTrack.number(replay, "time_ms", -1);
+            long revision = (long)practice.replay.PoseTrack.number(replay, "playback_revision", 0);
+            String subject = replay.get("match") + ":" + ReplayPresentation.sprintSubject(replay);
+            practice.replay.SprintTransitions.Sample transitions = capture.replay.serverSprintAt(replay, time);
+            // Older servers supply the playhead but cannot distinguish a seek from playback.
+            boolean playing = replay.get("playback_revision") instanceof Number && !Boolean.TRUE.equals(replay.get("paused"));
+            cue.replay(subject, revision, time, playing, transitions, sumoCoach);
+            cue.drawReplay(mc.field_71466_p, width, height, time, transitions);
+        } else {
+            cue.clearReplay();
+            if (!offline.active) capture.drawServerSprint(mc, width, height);
         }
     }
     void recordCoachCue(String cue,int cuts,boolean first){capture.inputEvent("sumo_coach_cue",practice.core.JsonData.map("cue",cue,"cuts",cuts,"first",first));}
@@ -388,6 +412,10 @@ public final class PracticeBridge {
         }finally{Files.deleteIfExists(tmp);}
         settings();host.reload(true);
     }
+    ServerSprintCue.Mode serverSprintMode(boolean gain) { return capture.serverSprint.mode(gain); }
+    void setServerSprintMode(boolean gain, ServerSprintCue.Mode mode) throws IOException {
+        storeSetting(ServerSprintCue.key(gain), mode.setting());
+    }
     private void set(String key,String value) throws IOException {
         storeSetting(key,value);
         String coach=key.equals("jumpreset.enabled")?"Jump reset trainer":key.equals("blockhit.enabled")?"Blockhit trainer":
@@ -406,8 +434,12 @@ public final class PracticeBridge {
         public int func_82362_a(){return 0;}
         public boolean func_71519_b(ICommandSender sender){return true;}
         @Override public List<String> func_180525_a(ICommandSender sender,String[] args,BlockPos pos){
-            if(args.length==1)return func_175762_a(args,Arrays.asList("help","replays","ledger","hud","sumocoach","sumoanalysis","keystrokes","sprint","sprintkb","potions","reach","range","crosshair","opening","advantage","ghost","jumpreset","blockhit","oldblock","oldsneak","hurtcam","dynamicfov","remote","capture","record","mark","forecast","bowaim","status","reload","metrics","link","debug","ping"));
+            if(args.length==1)return func_175762_a(args,Arrays.asList("help","replays","ledger","hud","sumocoach","sumoanalysis","keystrokes","sprint","sprintkb","serversprint","potions","reach","range","crosshair","opening","advantage","ghost","jumpreset","blockhit","oldblock","oldsneak","hurtcam","dynamicfov","remote","capture","record","mark","forecast","bowaim","status","reload","metrics","link","debug","ping"));
             if(args.length==2&&args[0].equals("help"))return func_175762_a(args,helpTopics);
+            if(args[0].equals("serversprint")){
+                if(args.length==2)return func_175762_a(args,Arrays.asList("gain","loss"));
+                if(args.length==3)return func_175762_a(args,Arrays.asList("off","flash","sound","both"));
+            }
             if(bowAim!=null&&args[0].equals("bowaim")){
                 if(args.length==2)return func_175762_a(args,Arrays.asList("on","legacy","linear","off","status","preview","trajectory","intercept","ghosts","throwables","bridgehack","limit","chance","autorelease","release","threshold","ping"));
                 if(args.length==3&&args[1].equals("trajectory"))return func_175762_a(args,Arrays.asList("on","off","auto"));
@@ -443,6 +475,19 @@ public final class PracticeBridge {
             String command="/p help "+name;
             helpLine(command,description,command,ClickEvent.Action.RUN_COMMAND);
         }
+        private void serverSprint(String[] args) throws IOException {
+            if (args.length == 3 && (args[1].equals("gain") || args[1].equals("loss"))) {
+                ServerSprintCue.Mode mode = ServerSprintCue.Mode.parse(args[2]);
+                if (mode != null) {
+                    setServerSprintMode(args[1].equals("gain"), mode);
+                    say("Server sprint " + args[1] + " cue set to " + mode.setting() + ".");
+                    return;
+                }
+            }
+            say("Server sprint gain: "+serverSprintMode(true).setting()
+                    +" · loss: "+serverSprintMode(false).setting());
+            usage("serversprint", " <gain|loss> <off|flash|sound|both>", "Configure the cue for each server sprint change");
+        }
         private void help(String topic){
             if(!helpTopics.contains(topic)){
                 if(!topic.isEmpty())say("Unknown help topic. Pick a category below.");
@@ -470,6 +515,7 @@ public final class PracticeBridge {
                     usage("hud","","Drag HUD elements");
                     usage("keystrokes"," on/off","Show keys and CPS live and in server replays");
                     usage("sprint"," on/off","Enable ToggleSprint");
+                    usage("serversprint","","Configure server sprint gain and loss cues");
                     usage("potions"," on/off","Show potion timers");
                     say("F8 → Display adjusts overlays per replay view.");
                     break;
@@ -613,6 +659,7 @@ public final class PracticeBridge {
                     if(!Arrays.asList("orb","harp","pling","levelup").contains(args[2]))throw new IllegalArgumentException("Use sound orb, harp, pling or levelup");
                     set("jumpreset.sound",args[2]);
                 }
+                else if(args[0].equals("serversprint"))serverSprint(args);
                 else if(args.length==3&&args[0].equals("ghost")&&Arrays.asList("bot","me").contains(args[1])&&Arrays.asList("on","off").contains(args[2]))set("ghost."+args[1]+".enabled",String.valueOf(args[2].equals("on")));
                 else if(args.length==2&&args[0].equals("opening")&&Arrays.asList("large","small").contains(args[1]))set("opening.large",String.valueOf(args[1].equals("large")));
                 else if(args.length==2&&args[0].equals("crosshair")&&Arrays.asList("on","off").contains(args[1]))
