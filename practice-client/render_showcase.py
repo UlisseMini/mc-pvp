@@ -16,8 +16,8 @@ from replay_smoke import forge_runtime, graphical_classpath, graphical_jvm_args
 
 BOW_ARCHIVE = 'r89135e805d114bb8b48081428b99b615'
 CLIPS = {
-    'bow-aim-live': ('bowaim', 'r7e2b22b38b064c129c6a86b0cb5445b2', 22.826, 20, 145, 50, 800, 14, 112),
-    'bow-aim-void-second': ('bowaim', 'r8898fef4cb2347c7a72da53cebaf8d5d', 28.565, 20, 145, 50, 800, 14, 112),
+    'bow-aim-live': ('bowaim', 'r7e2b22b38b064c129c6a86b0cb5445b2', 22.826, 20, 86, 50, 800, 14, 112),
+    'bow-aim-void-second': ('bowaim', 'r8898fef4cb2347c7a72da53cebaf8d5d', 28.565, 20, 96, 50, 800, 14, 112),
     'bow-aim-wait-still': ('bowaim', BOW_ARCHIVE, 115.75, 83, 6, 50, 0, 0, 0),
     'sumo-two-pov-live': ('sumo', 'm10373', 7.5, 5, 90, 50, 800, 14, 112),
     'bow-aim-placements': ('bowaim', BOW_ARCHIVE, 115.75, 20, 135, 50, 800, 14, 112),
@@ -33,8 +33,8 @@ class VoidShot:
 
 
 VOID_SHOTS = {
-    'bow-aim-live': VoidShot((48, 63), 61, 'Calizum was thrown into the void by Nomophobia.', 31),
-    'bow-aim-void-second': VoidShot((284, 302), 67, 'llucasl4 was thrown into the void by Nomophobia.', 28),
+    'bow-aim-live': VoidShot((48, 63), 61, 'Calizum was thrown into the void by ', 31),
+    'bow-aim-void-second': VoidShot((284, 302), 67, 'llucasl4 was thrown into the void by ', 28),
 }
 
 
@@ -111,8 +111,8 @@ def render(name, work, probe, classpath, output):
     (game / 'config/splash.properties').write_text('enabled=false\n')
     (game / 'options.txt').write_text(
         'renderDistance:6\nuseVbo:true\nfboEnable:true\nmaxFps:60\n'
-        'soundCategory_master:0.0\nguiScale:3\n'
-        + ('fov:-0.25\nchatVisibility:0\n' if void_shot else 'fov:0.25\nchatVisibility:2\n'))
+        'soundCategory_master:0.0\nguiScale:3\nchatVisibility:2\n'
+        + ('fov:-0.25\n' if void_shot else 'fov:0.25\n'))
 
     jvm_args = graphical_jvm_args(game, game)
     if void_shot:

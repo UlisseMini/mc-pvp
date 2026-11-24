@@ -7,7 +7,6 @@ import java.nio.file.*;
 import java.util.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
-import net.minecraft.client.gui.ChatLine;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.player.EntityPlayer;
@@ -45,6 +44,7 @@ public final class ShowcaseRenderProbe {
     private boolean pendingShot, checkPlacements;
     private String voidMessage;
     private int voidTarget;
+    private final List<Double> voidKillTimesMs = new ArrayList<>();
     private Field modeField, trajField, ghostsField, interceptField, chanceField, autoRelField, limitField, pingField;
     private Field renderedItemField;
     private Method bowTickMethod, bowDrawMethod, bowHudMethod;
@@ -203,10 +203,13 @@ public final class ShowcaseRenderProbe {
                 || confirmedPlacements.size() != RECORDED_STONE_PLACEMENTS.length))
             throw new IllegalStateException("Incomplete Bow Aim sequence: draw=" + sawDraw + ", release=" + sawRelease
                     + ", prediction=" + sawPrediction + ", confirmed placements=" + confirmedPlacements.size());
-        if (!voidMessage.isEmpty()) {
+        if ("bowaim".equals(mode)) {
             List<?> chat = (List<?>)getField(mc.field_71456_v.func_146158_b(), "field_146252_h");
-            boolean credited = chat.stream().map(line -> ((ChatLine)line).func_151461_a().func_150260_c())
-                    .map(text -> StringUtils.func_76338_a(text).trim()).anyMatch(voidMessage::equals);
+            if (!chat.isEmpty())
+                throw new IllegalStateException("Unexpected chat lines rendered in showcase: " + chat.size());
+        }
+        if (!voidMessage.isEmpty()) {
+            boolean credited = voidKillTimesMs.stream().anyMatch(t -> t >= firstStepFrom);
             if (!sawDraw || !sawRelease || !sawPrediction || !credited)
                 throw new IllegalStateException("Incomplete void-kill sequence: draw=" + sawDraw
                         + ", release=" + sawRelease + ", target prediction=" + sawPrediction + ", kill feed=" + credited);
@@ -261,8 +264,13 @@ public final class ShowcaseRenderProbe {
                             // A segment can begin with packets from the previous server before JOIN_GAME.
                             if (w.atMs < joinTime) continue;
                             if (w.inbound && (w.protocolId == 0x3B || w.protocolId == 0x3C || w.protocolId == 0x3D || w.protocolId == 0x3E)) continue;
-                            if (w.inbound && w.protocolId == 0x02 && !voidMessage.isEmpty()
-                                    && !voidMessage.equals(chatText(w))) continue;
+                            if (w.inbound && w.protocolId == 0x02) {
+                                if ("packets".equals(fname) && !voidMessage.isEmpty()
+                                        && chatText(w).startsWith(voidMessage)) {
+                                    voidKillTimesMs.add(w.atMs);
+                                }
+                                continue;
+                            }
                             kept.add(w);
                         }
                         modField.setInt(f, f.getModifiers() & ~Modifier.FINAL);
